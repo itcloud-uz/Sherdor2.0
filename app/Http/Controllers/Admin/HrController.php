@@ -1,0 +1,584 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Worker;
+use App\Models\Machinery;
+use App\Models\WorkLog;
+use App\Models\Payroll;
+use App\Models\Building;
+use App\Models\Transaction;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+
+class HrController extends Controller
+{
+    public function index()
+    {
+        return Inertia::render('Admin/HR/Index', [
+            'users' => \App\Models\User::with('roles')->get(),
+            'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
+            'workers' => Worker::all(),
+            'machineries' => Machinery::all(),
+            'buildings' => Building::with('floors.units')->get(),
+            'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->get(),
+            'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
+            'payrolls' => Payroll::with('transaction')->latest()->get(),
+            'cashRequests' => \App\Models\CashRequest::with(['user', 'building'])->orderBy('created_at', 'desc')->get()
+        ]);
+    }
+
+    public function storeUser(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:6',
+            'role' => 'required|string|exists:roles,name',
+            'pinfl' => 'nullable|string',
+            'passport' => 'nullable|string',
+            'salary_rate' => 'nullable|numeric'
+        ]);
+
+        $user = \App\Models\User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'pinfl' => $validated['pinfl'],
+            'passport' => $validated['passport'],
+            'salary_rate' => $validated['salary_rate'],
+        ]);
+
+        $user->assignRole($validated['role']);
+
+        return redirect()->back()->with('message', 'User created and role assigned.');
+    }
+
+    public function storeWorker(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'phone' => 'nullable|string',
+            'role' => 'required|in:office,builder,driver,guard',
+            'salary_type' => 'required|in:fixed_monthly,piece_rate,hourly',
+            'base_rate' => 'required|numeric|min:0',
+            'building_id' => 'nullable|exists:buildings,id',
+            'floor_id' => 'nullable|exists:floors,id',
+            'unit_id' => 'nullable|exists:units,id',
+        ]);
+
+        $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
+        $validated['rate'] = $validated['base_rate'];
+
+        Worker::create($validated);
+        return redirect()->back()->with('message', 'Worker added.');
+    }
+
+    public function storeMachinery(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'owner_name' => 'nullable|string',
+            'machinery_type' => 'nullable|string',
+            'payment_type' => 'required|in:hourly,volume',
+            'license_plate' => 'nullable|string',
+            'cost_per_hour' => 'required|numeric|min:0'
+        ]);
+
+        Machinery::create($validated);
+        return redirect()->back()->with('message', 'Machinery added.');
+    }
+
+    public function updateMachinery(Request $request, Machinery $machinery)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'owner_name' => 'nullable|string',
+            'machinery_type' => 'nullable|string',
+            'payment_type' => 'required|in:hourly,volume',
+            'license_plate' => 'nullable|string',
+            'cost_per_hour' => 'required|numeric|min:0'
+        ]);
+
+        $machinery->update($validated);
+        return redirect()->back()->with('message', 'Texnika yangilandi.');
+    }
+
+    public function deleteMachinery(Machinery $machinery)
+    {
+        $machinery->delete();
+        return redirect()->back()->with('message', 'Texnika o\'chirildi.');
+    }
+
+    public function getMachineryLedger(Machinery $machinery)
+    {
+        $logs = WorkLog::with(['building'])->where('machinery_id', $machinery->id)->orderBy('date', 'desc')->get();
+        $transactions = \App\Models\MachineryTransaction::where('machinery_id', $machinery->id)->orderBy('date', 'desc')->get();
+        
+        $totalEarned = $logs->sum('calculated_cost');
+        
+        // Return both logs and transactions, unpaid_balance is machinery->balance
+        return response()->json([
+            'machinery' => $machinery,
+            'logs' => $logs,
+            'transactions' => $transactions,
+            'total_earned' => $totalEarned,
+            'unpaid_balance' => $machinery->balance
+        ]);
+    }
+
+    public function storeMachineryTransaction(Request $request, Machinery $machinery)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string'
+        ]);
+
+        DB::transaction(function () use ($machinery, $validated) {
+            \App\Models\MachineryTransaction::create([
+                'machinery_id' => $machinery->id,
+                'type' => 'payment',
+                'amount' => $validated['amount'],
+                'description' => $validated['description'],
+                'date' => now()
+            ]);
+
+            $machinery->decrement('balance', $validated['amount']);
+
+            // Deduct from company balance
+            \App\Models\CompanyBalance::addExpense($validated['amount']);
+        });
+
+        return redirect()->back()->with('message', 'To\'lov muvaffaqiyatli amalga oshirildi.');
+    }
+
+    public function storeBiometric(Request $request)
+    {
+        $validated = $request->validate([
+            'person_type' => 'required|in:user,worker',
+            'person_id' => 'required|integer',
+            'image' => 'required|string'
+        ]);
+
+        // Base64 image decode
+        $image = $validated['image'];
+        $image = str_replace('data:image/jpeg;base64,', '', $image);
+        $image = str_replace('data:image/png;base64,', '', $image);
+        $image = str_replace(' ', '+', $image);
+        $imageName = $validated['person_type'] . '_' . $validated['person_id'] . '_' . time() . '.jpg';
+        
+        \Illuminate\Support\Facades\Storage::disk('public')->put('biometrics/' . $imageName, base64_decode($image));
+        $photoPath = '/storage/biometrics/' . $imageName;
+
+        if ($validated['person_type'] === 'user') {
+            $user = \App\Models\User::findOrFail($validated['person_id']);
+            $user->update(['photo_path' => $photoPath]);
+        } else {
+            $worker = \App\Models\Worker::findOrFail($validated['person_id']);
+            $worker->update(['photo_path' => $photoPath]);
+        }
+
+        return redirect()->back()->with('message', 'Biometric rasm muvaffaqiyatli saqlandi.');
+    }
+
+    public function storeLog(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:worker,machinery',
+            'worker_id' => 'nullable|required_if:type,worker|exists:workers,id',
+            'machinery_id' => 'nullable|required_if:type,machinery|exists:machineries,id',
+            'building_id' => 'required|exists:buildings,id',
+            'floor_id' => 'nullable|exists:floors,id',
+            'unit_id' => 'nullable|exists:units,id',
+            'hours_worked' => 'nullable|numeric|min:0',
+            'volume_done' => 'nullable|numeric|min:0',
+            'date' => 'required|date'
+        ]);
+
+        $calculatedCost = 0;
+
+        if ($validated['type'] === 'worker') {
+            $worker = Worker::find($validated['worker_id']);
+            if ($worker->salary_type === 'hourly') {
+                $calculatedCost = ($validated['hours_worked'] ?? 0) * $worker->base_rate;
+            } elseif ($worker->salary_type === 'piece_rate') {
+                $calculatedCost = ($validated['volume_done'] ?? 0) * $worker->base_rate;
+            } else {
+                // fixed monthly could be logged differently, assuming 0 cost per log if it's monthly
+                $calculatedCost = 0; 
+            }
+            $validated['machinery_id'] = null;
+        } else {
+            $machinery = Machinery::find($validated['machinery_id']);
+            $calculatedCost = ($validated['hours_worked'] ?? 0) * $machinery->cost_per_hour;
+            $validated['worker_id'] = null;
+        }
+
+        $validated['calculated_cost'] = $calculatedCost;
+        $validated['status'] = 'unpaid';
+
+        DB::transaction(function () use ($validated, $calculatedCost) {
+            $log = WorkLog::create($validated);
+            
+            // Accrue salary to worker's ledger
+            if ($validated['type'] === 'worker' && $calculatedCost > 0) {
+                $worker = Worker::find($validated['worker_id']);
+                
+                DB::table('worker_transactions')->insert([
+                    'worker_id' => $worker->id,
+                    'type' => 'salary_accrual',
+                    'amount' => $calculatedCost,
+                    'description' => 'Ish xajmi kiritildi: Building #' . $validated['building_id'],
+                    'date' => $validated['date'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                
+                $worker->increment('balance', $calculatedCost);
+            }
+
+            // Accrue salary to machinery ledger
+            if ($validated['type'] === 'machinery' && $calculatedCost > 0) {
+                $machinery = Machinery::find($validated['machinery_id']);
+                
+                DB::table('machinery_transactions')->insert([
+                    'machinery_id' => $machinery->id,
+                    'type' => 'salary_accrual',
+                    'amount' => $calculatedCost,
+                    'description' => 'Texnika ish xajmi kiritildi: Building #' . $validated['building_id'],
+                    'date' => $validated['date'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                
+                $machinery->increment('balance', $calculatedCost);
+            }
+
+            // Automate construction progress tracking based on expenses and volume
+            $building = Building::find($validated['building_id']);
+            if ($building) {
+                $building->increment('actual_expenses', $calculatedCost);
+
+                // Add volume to the active construction stage
+                if (isset($validated['volume_done']) && $validated['volume_done'] > 0) {
+                    $activeStage = \App\Models\ConstructionStage::where('building_id', $building->id)
+                        ->whereColumn('current_volume', '<', 'target_volume')
+                        ->orderBy('id')
+                        ->first();
+                    
+                    if ($activeStage) {
+                        $activeStage->current_volume += $validated['volume_done'];
+                        if ($activeStage->current_volume > $activeStage->target_volume) {
+                            $activeStage->current_volume = $activeStage->target_volume;
+                        }
+                        
+                        if ($activeStage->target_volume > 0) {
+                            $activeStage->progress_percentage = (int) (($activeStage->current_volume / $activeStage->target_volume) * 100);
+                        } else {
+                            $activeStage->progress_percentage = 100;
+                        }
+                        
+                        $activeStage->save();
+                    }
+                }
+            }
+        });
+
+        return redirect()->back()->with('message', 'Log saved. Cost allocated to Building and Worker Ledger.');
+    }
+
+    public function generatePayroll()
+    {
+        DB::transaction(function () {
+            $unpaidLogs = WorkLog::where('status', 'unpaid')->get();
+            
+            if ($unpaidLogs->isEmpty()) {
+                return redirect()->back()->with('error', 'No unpaid logs to generate payroll.');
+            }
+
+            $totalAmount = $unpaidLogs->sum('calculated_cost');
+
+            if ($totalAmount <= 0) {
+                return redirect()->back()->with('error', 'Total amount is 0.');
+            }
+
+            $payroll = Payroll::create([
+                'total_amount' => $totalAmount,
+                'status' => 'pending' // You can change this to 'generated' or something else later if needed
+            ]);
+
+            WorkLog::where('status', 'unpaid')->update([
+                'status' => 'paid',
+                'payroll_id' => $payroll->id
+            ]);
+        });
+
+        return redirect()->back()->with('message', 'Oylik hisoboti muvaffaqiyatli shakllantirildi.');
+    }
+
+    // --- NEW: User Management ---
+    public function updateUser(Request $request, \App\Models\User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'role' => 'nullable|string|exists:roles,name',
+            'pinfl' => 'nullable|string',
+            'passport' => 'nullable|string',
+            'salary_rate' => 'nullable|numeric'
+        ]);
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'pinfl' => $validated['pinfl'],
+            'passport' => $validated['passport'],
+            'salary_rate' => $validated['salary_rate'],
+        ]);
+
+        if (!empty($validated['role'])) {
+            $user->syncRoles([$validated['role']]);
+        }
+
+        return redirect()->back()->with('message', 'Foydalanuvchi yangilandi.');
+    }
+
+    public function deleteUser(\App\Models\User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->back()->with('error', 'O\'zingizni o\'chira olmaysiz.');
+        }
+        $user->delete();
+        return redirect()->back()->with('message', 'Foydalanuvchi o\'chirildi.');
+    }
+
+    public function getUserLedger(\App\Models\User $user)
+    {
+        $transactions = DB::table('user_transactions')->where('user_id', $user->id)->orderByDesc('date')->get();
+        return response()->json([
+            'balance' => $user->balance,
+            'transactions' => $transactions
+        ]);
+    }
+
+    public function storeUserTransaction(Request $request, \App\Models\User $user)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        DB::transaction(function () use ($user, $validated) {
+            DB::table('user_transactions')->insert([
+                'user_id' => $user->id,
+                'type' => $validated['type'],
+                'amount' => $validated['amount'],
+                'description' => $validated['description'],
+                'date' => $validated['date'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            if ($validated['type'] === 'salary_accrual') {
+                $user->increment('balance', $validated['amount']);
+            } else {
+                $user->decrement('balance', $validated['amount']);
+            }
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
+    }
+
+    // --- NEW: Worker Management ---
+    public function updateWorker(Request $request, Worker $worker)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'phone' => 'nullable|string',
+            'role' => 'required|in:office,builder,driver,guard',
+            'salary_type' => 'required|in:fixed_monthly,piece_rate,hourly',
+            'metric_type' => 'nullable|string',
+            'base_rate' => 'required|numeric|min:0'
+        ]);
+
+        $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
+        $validated['rate'] = $validated['base_rate'];
+
+        $worker->update($validated);
+        return redirect()->back()->with('message', 'Xodim ma\'lumotlari yangilandi.');
+    }
+
+    public function deleteWorker(Worker $worker)
+    {
+        $worker->delete();
+        return redirect()->back()->with('message', 'Xodim o\'chirildi.');
+    }
+
+    public function storeManualLog(Request $request)
+    {
+        $validated = $request->validate([
+            'subject_type' => 'required|in:User,Worker,Machinery,VisitorDelivery',
+            'subject_id' => 'nullable|integer',
+            'type' => 'required|in:entry,exit,start_work,stop_work',
+            'image' => 'nullable|string'
+        ]);
+
+        $subjectClass = '\\App\\Models\\' . $validated['subject_type'];
+        
+        $photoPath = null;
+        if (!empty($validated['image'])) {
+            $image = str_replace('data:image/jpeg;base64,', '', $validated['image']);
+            $image = str_replace('data:image/png;base64,', '', $image);
+            $image = str_replace(' ', '+', $image);
+            $imageName = 'events/' . time() . '_manual_' . uniqid() . '.jpg';
+            \Illuminate\Support\Facades\Storage::disk('public')->put($imageName, base64_decode($image));
+            $photoPath = '/storage/' . $imageName;
+        }
+
+        \App\Models\AttendanceLog::create([
+            'subject_type' => $subjectClass,
+            'subject_id' => $validated['subject_id'],
+            'camera_id' => 'Manual Web',
+            'type' => $validated['type'],
+            'timestamp' => now(),
+            'confidence_score' => 100, // Manual is 100%
+            'proof_image' => $photoPath,
+        ]);
+
+        return redirect()->back()->with('message', 'Manual davomat yozildi!');
+    }
+
+    public function getWorkerLedger(Worker $worker)
+    {
+        // Actually, we can just load transactions natively. But if we need an endpoint:
+        $transactions = DB::table('worker_transactions')->where('worker_id', $worker->id)->orderByDesc('date')->get();
+        return response()->json([
+            'balance' => $worker->balance,
+            'transactions' => $transactions
+        ]);
+    }
+
+    public function storeWorkerTransaction(Request $request, Worker $worker)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        DB::transaction(function () use ($worker, $validated) {
+            DB::table('worker_transactions')->insert([
+                'worker_id' => $worker->id,
+                'type' => $validated['type'],
+                'amount' => $validated['amount'],
+                'description' => $validated['description'],
+                'date' => $validated['date'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // If it's Kirim (salary_accrual), balance increases (company owes worker)
+            // If it's Chiqim (payment, advance_payment, penalty), balance decreases
+            if ($validated['type'] === 'salary_accrual') {
+                $worker->increment('balance', $validated['amount']);
+            } else {
+                $worker->decrement('balance', $validated['amount']);
+            }
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
+    }
+    public function storeCashRequest(Request $request)
+    {
+        $validated = $request->validate([
+            'building_id' => 'nullable|exists:buildings,id',
+            'type' => 'required|in:income,expense',
+            'amount' => 'required|numeric|min:0',
+            'target_type' => 'nullable|string',
+            'target_id' => 'nullable|integer',
+            'description' => 'required|string'
+        ]);
+
+        $validated['user_id'] = \Illuminate\Support\Facades\Auth::id() ?? 1; // Defaulting to 1 for demo purposes
+        $validated['status'] = 'pending';
+
+        \App\Models\CashRequest::create($validated);
+
+        return redirect()->back()->with('message', 'Kassa so\'rovi yuborildi. Tasdiqlanishi kutilmoqda.');
+    }
+
+    public function approveCashRequest(\App\Models\CashRequest $cashRequest)
+    {
+        if ($cashRequest->status !== 'pending') {
+            return redirect()->back()->with('error', 'Bu so\'rov allaqachon ko\'rib chiqilgan.');
+        }
+
+        DB::transaction(function () use ($cashRequest) {
+            if ($cashRequest->type === 'expense') {
+                \App\Models\CompanyBalance::addExpense($cashRequest->amount);
+                
+                if ($cashRequest->target_type === 'worker' && $cashRequest->target_id) {
+                    $worker = \App\Models\Worker::find($cashRequest->target_id);
+                    if ($worker) {
+                        // Advance payment, decrement balance (they owe us or have been paid early)
+                        $worker->decrement('balance', $cashRequest->amount);
+                    }
+                } elseif ($cashRequest->target_type === 'machinery' && $cashRequest->target_id) {
+                    // Update machinery balance if needed in future (e.g., unpaid_balance decrement)
+                    // Currently machinery balance is tracked via logs, but we can do it if machinery model has a balance column.
+                } elseif ($cashRequest->target_type === 'payroll' && $cashRequest->target_id) {
+                    $payroll = \App\Models\Payroll::find($cashRequest->target_id);
+                    if ($payroll) {
+                        $payroll->update(['status' => 'paid']);
+                    }
+                } elseif ($cashRequest->target_type === 'other' && str_contains($cashRequest->description, 'Payroll #')) {
+                    // Fallback for old requests
+                    preg_match('/Payroll #(\d+)/', $cashRequest->description, $matches);
+                    if (isset($matches[1])) {
+                        $payroll = \App\Models\Payroll::find($matches[1]);
+                        if ($payroll) {
+                            $payroll->update(['status' => 'paid']);
+                        }
+                    }
+                }
+            } else {
+                \App\Models\CompanyBalance::addIncome($cashRequest->amount);
+                
+                if ($cashRequest->target_type === 'worker' && $cashRequest->target_id) {
+                    $worker = \App\Models\Worker::find($cashRequest->target_id);
+                    if ($worker) {
+                        // Returning money, increment balance
+                        $worker->increment('balance', $cashRequest->amount);
+                    }
+                }
+            }
+
+            $cashRequest->update(['status' => 'approved']);
+        });
+
+        return redirect()->back()->with('message', 'So\'rov tasdiqlandi va hisob-kitobga ta\'sir qildi.');
+    }
+
+    public function rejectCashRequest(\App\Models\CashRequest $cashRequest)
+    {
+        if ($cashRequest->status !== 'pending') {
+            return redirect()->back()->with('error', 'Bu so\'rov allaqachon ko\'rib chiqilgan.');
+        }
+
+        $cashRequest->update(['status' => 'rejected']);
+
+        return redirect()->back()->with('message', 'So\'rov rad etildi.');
+    }
+
+    public function printPayroll($id)
+    {
+        $payroll = \App\Models\Payroll::with(['workLogs.worker', 'workLogs.machinery', 'workLogs.building'])->findOrFail($id);
+        
+        return view('admin.hr.print_payroll', compact('payroll'));
+    }
+}

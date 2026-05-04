@@ -1,0 +1,354 @@
+<template>
+    <AdminLayout>
+        <Head title="AI Agent - Smart SMS" />
+
+        <div class="p-6 h-screen flex flex-col bg-[#020205] overflow-y-auto custom-scrollbar">
+            <!-- Header -->
+            <div class="flex justify-between items-end mb-8 relative z-10">
+                <div class="relative">
+                    <div class="absolute -left-10 -top-10 w-40 h-40 bg-neon-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
+                    <h1 class="text-4xl font-display font-black text-white uppercase tracking-wider drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        AI Agent <span class="text-neon-purple">Smart SMS</span>
+                    </h1>
+                    <p class="text-xs text-text-muted font-mono mt-2">Avtomatlashtirilgan xabarnomalar va Rasilka markazi</p>
+                </div>
+                <div class="flex gap-4">
+                    <button @click="showSettingsModal = true" class="px-4 py-2 bg-black/50 border border-white/20 text-white font-mono text-xs rounded shadow-[0_0_10px_rgba(255,255,255,0.1)] hover:border-white transition-all">
+                        ⚙️ Eskiz.uz Sozlamalari
+                    </button>
+                    <div class="px-4 py-2 bg-black/50 border border-neon-cyan/50 text-neon-cyan font-mono text-xs rounded shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+                        Hisobingiz: <b>{{ settings?.current_balance ?? 0 }} so'm</b>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block Selector -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Avto-xabar bloki -->
+                <div @click="openRuleModal('auto')" class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A] hover:bg-neon-cyan/5 cursor-pointer transition-all group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-cyan/10 blur-[50px] group-hover:bg-neon-cyan/20 transition-all"></div>
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-xl font-display text-neon-cyan mb-2">Avto-xabar Bloki</h3>
+                    <p class="text-xs text-text-muted font-mono leading-relaxed">Mijoz kiritilganda yoki shartnoma tuzilganda avtomatik ravishda xush kelibsiz yoki tasdiqlash xabarini yuborish.</p>
+                </div>
+
+                <!-- Qarzdorlarga eslatma bloki -->
+                <div @click="openRuleModal('debtor')" class="glass-panel p-6 border border-neon-magenta/30 bg-[#05050A] hover:bg-neon-magenta/5 cursor-pointer transition-all group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-magenta/10 blur-[50px] group-hover:bg-neon-magenta/20 transition-all"></div>
+                    <div class="text-4xl mb-4">💰</div>
+                    <h3 class="text-xl font-display text-neon-magenta mb-2">Qarzdorlarga Eslatma</h3>
+                    <p class="text-xs text-text-muted font-mono leading-relaxed">To'lov muddati o'tgan mijozlarga rejalashtirilgan vaqtda avtomatik ravishda qarzdorlik eslatmasini yuborish.</p>
+                </div>
+
+                <!-- Aksiya/Reklama bloki -->
+                <div @click="openPromoModal" class="glass-panel p-6 border border-neon-yellow/30 bg-[#05050A] hover:bg-neon-yellow/5 cursor-pointer transition-all group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-yellow/10 blur-[50px] group-hover:bg-neon-yellow/20 transition-all"></div>
+                    <div class="text-4xl mb-4">📢</div>
+                    <h3 class="text-xl font-display text-neon-yellow mb-2">Aksiya va Rasilka</h3>
+                    <p class="text-xs text-text-muted font-mono leading-relaxed">Tashqi bazadan Excel/CSV yuklab, ularga ommaviy reklama va aksiya SMS larini yuborish.</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                <!-- Shablonlar Listi -->
+                <div class="glass-panel border border-white/10 flex flex-col bg-[#05050A]">
+                    <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
+                        <h3 class="text-lg font-display text-white">📝 SMS Shablonlar</h3>
+                        <button @click="showTemplateModal = true" class="text-xs text-neon-purple hover:text-white transition-colors font-mono">+ Yangi</button>
+                    </div>
+                    <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                        <div v-for="t in templates" :key="t.id" class="p-3 bg-black/40 border border-white/5 rounded-lg">
+                            <div class="text-xs text-white font-bold mb-1">{{ t.name }}</div>
+                            <div class="text-[10px] text-text-muted font-mono line-clamp-2">{{ t.content }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Faol Qoidalar (Rules) -->
+                <div class="glass-panel border border-white/10 flex flex-col bg-[#05050A]">
+                    <div class="p-4 border-b border-white/10 bg-black/40">
+                        <h3 class="text-lg font-display text-white">⚙️ Faol Qoidalar</h3>
+                    </div>
+                    <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                        <div v-for="r in rules" :key="r.id" class="p-3 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-white font-bold mb-1">{{ r.name }}</div>
+                                <div class="text-[10px] text-text-muted font-mono">
+                                    Tur: <span class="text-neon-cyan uppercase">{{ r.event_trigger }}</span> | Vaqt: {{ r.schedule_time }}
+                                </div>
+                            </div>
+                            <div class="w-2 h-2 rounded-full" :class="r.is_active ? 'bg-neon-green shadow-[0_0_5px_#39FF14]' : 'bg-red-500'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jurnal -->
+                <div class="glass-panel border border-white/10 flex flex-col bg-[#05050A]">
+                    <div class="p-4 border-b border-white/10 bg-black/40">
+                        <h3 class="text-lg font-display text-white">📊 Jo'natish Jurnali</h3>
+                    </div>
+                    <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                        <div v-for="log in logs" :key="log.id" class="p-2 border-b border-white/5 last:border-0 flex justify-between items-center">
+                            <div>
+                                <div class="text-xs text-white font-mono">{{ log.phone_number }}</div>
+                                <div class="text-[10px] text-text-muted truncate max-w-[150px]">{{ log.message }}</div>
+                            </div>
+                            <span :class="{
+                                'text-neon-green': log.status === 'DELIVRD',
+                                'text-neon-yellow': log.status === 'pending' || log.status === 'sent' || log.status === 'pending_batch',
+                                'text-neon-magenta': log.status === 'UNDELIV' || log.status === 'failed'
+                            }" class="text-[10px] font-mono font-bold uppercase">{{ log.status }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <Modal :show="showSettingsModal" @close="showSettingsModal = false">
+            <div class="glass-panel p-6 border border-white/30 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-white mb-4">Eskiz.uz Sozlamalari</h2>
+                <form @submit.prevent="submitSettings" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Email (Login)</label>
+                        <input v-model="settingsForm.email" type="email" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Parol</label>
+                        <input v-model="settingsForm.password" type="password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all">
+                        <p class="text-[10px] text-text-muted mt-1">* Parolni faqat o'zgartirmoqchi bo'lsangiz kiriting.</p>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="showSettingsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="settingsForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Template Modal -->
+        <Modal :show="showTemplateModal" @close="showTemplateModal = false">
+            <div class="glass-panel p-6 border border-neon-purple/30 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-neon-purple mb-4">Yangi Shablon</h2>
+                <form @submit.prevent="submitTemplate" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Shablon Nomi</label>
+                        <input v-model="templateForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1 flex justify-between">
+                            <span>SMS Matni</span>
+                            <span :class="templateForm.content.length > 160 ? 'text-neon-magenta' : 'text-neon-green'">{{ templateForm.content.length }} / 160 belgi</span>
+                        </label>
+                        <textarea v-model="templateForm.content" rows="4" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all" required></textarea>
+                        <p class="text-[10px] text-text-muted mt-1">Dinamik teglardan foydalanishingiz mumkin: <span class="text-neon-cyan">[Ism]</span>, <span class="text-neon-cyan">[Familiya]</span>, <span class="text-neon-cyan">[Qarz]</span></p>
+                        <p v-if="templateForm.content.length > 160" class="text-[10px] text-neon-magenta mt-1 font-bold">Diqqat! SMS 160 belgidan oshdi, u 2 ta SMS bo'lib ketishi mumkin va balansdan 2 barobar ko'p pul yechiladi.</p>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="showTemplateModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="templateForm.processing || templateForm.content.length === 0" class="px-4 py-2 bg-neon-purple text-white font-bold font-mono text-xs rounded hover:bg-neon-purple/80 transition-colors">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Rule Modal (Auto/Debtor) -->
+        <Modal :show="showRuleModal" @close="showRuleModal = false">
+            <div class="glass-panel p-6 border border-white/30 bg-[#05050A]" :class="{'border-neon-cyan/50': ruleType === 'auto', 'border-neon-magenta/50': ruleType === 'debtor'}">
+                <h2 class="text-2xl font-display mb-4" :class="{'text-neon-cyan': ruleType === 'auto', 'text-neon-magenta': ruleType === 'debtor'}">
+                    {{ ruleType === 'auto' ? 'Avto-xabar Sozlamalari' : 'Qarzdorlarga Eslatma Sozlamalari' }}
+                </h2>
+                <form @submit.prevent="submitRule" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Qoida Nomi</label>
+                        <input v-model="ruleForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: Har Dushanba Eslatma">
+                    </div>
+                    
+                    <div v-if="ruleType === 'debtor'" class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-1">Hafta kunlari (masalan: 1,3,5)</label>
+                            <input v-model="ruleForm.schedule_days" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" placeholder="1 = Dushanba, 7 = Yakshanba">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-1">Yuborish Vaqti</label>
+                            <input v-model="ruleForm.schedule_time" type="time" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">SMS Shablonni Tanlang</label>
+                        <select v-model="ruleForm.template_id" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required>
+                            <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="showRuleModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="ruleForm.processing" class="px-4 py-2 text-black font-bold font-mono text-xs rounded hover:opacity-80 transition-all" :class="{'bg-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.4)]': ruleType === 'auto', 'bg-neon-magenta shadow-[0_0_10px_rgba(255,0,60,0.4)]': ruleType === 'debtor'}">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Promo/Audience Modal -->
+        <Modal :show="showPromoModal" @close="showPromoModal = false">
+            <div class="glass-panel p-6 border border-neon-yellow/30 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-neon-yellow mb-4">Aksiya va Ommaviy Rasilka</h2>
+                
+                <div class="space-y-6">
+                    <!-- Upload Section -->
+                    <div class="p-4 border border-dashed border-white/20 rounded-xl bg-white/5 text-center">
+                        <h3 class="text-sm font-mono text-white mb-2">1. Mijozlar Bazasini Yuklash (CSV)</h3>
+                        <p class="text-xs text-text-muted mb-4">Faqat bitta "Telefon Raqam" (998901234567) ustuni bo'lishi kerak.</p>
+                        
+                        <form @submit.prevent="submitUpload" class="flex flex-col items-center gap-3">
+                            <input type="file" @change="uploadForm.file = $event.target.files[0]" accept=".csv" class="block w-full max-w-xs text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer">
+                            <button type="submit" :disabled="uploadForm.processing || !uploadForm.file" class="px-4 py-2 bg-white/10 text-white font-mono text-xs rounded hover:bg-white/20 transition-colors disabled:opacity-50">Yuklash</button>
+                        </form>
+                    </div>
+
+                    <!-- Setup Rule Section -->
+                    <form @submit.prevent="submitPromoRule" class="space-y-4">
+                        <h3 class="text-sm font-mono text-white">2. Rasilka Rejasini Tuzish</h3>
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-1">Rasilka Nomi</label>
+                            <input v-model="promoRuleForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required placeholder="Masalan: Yangi Yil Aksiyasi">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-mono text-text-muted mb-1">Hafta kunlari (masalan: 1,3,5)</label>
+                                <input v-model="promoRuleForm.schedule_days" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono text-text-muted mb-1">Yuborish Vaqti (Eng faol vaqt)</label>
+                                <input v-model="promoRuleForm.schedule_time" type="time" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-1">SMS Shablonni Tanlang</label>
+                            <select v-model="promoRuleForm.template_id" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required>
+                                <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" @click="showPromoModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Yopish</button>
+                            <button type="submit" :disabled="promoRuleForm.processing" class="px-4 py-2 bg-neon-yellow text-black font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(252,238,9,0.3)]">Rasilkani Saqlash</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Modal>
+
+    </AdminLayout>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Modal from '@/Components/Modal.vue';
+
+const props = defineProps({
+    templates: Array,
+    rules: Array,
+    campaigns: Array,
+    settings: Object,
+    logs: Array
+});
+
+const showSettingsModal = ref(false);
+const settingsForm = useForm({
+    email: props.settings?.email || '',
+    password: ''
+});
+
+function submitSettings() {
+    settingsForm.post(route('admin.ai_agents.settings'), {
+        onSuccess: () => {
+            showSettingsModal.value = false;
+        }
+    });
+}
+
+const showTemplateModal = ref(false);
+const templateForm = useForm({
+    name: '',
+    content: ''
+});
+
+function submitTemplate() {
+    templateForm.post(route('admin.ai_agents.template.save'), {
+        onSuccess: () => {
+            showTemplateModal.value = false;
+            templateForm.reset();
+        }
+    });
+}
+
+const showRuleModal = ref(false);
+const ruleType = ref('auto');
+const ruleForm = useForm({
+    name: '',
+    event_trigger: '',
+    template_id: '',
+    schedule_time: '',
+    schedule_days: ''
+});
+
+function openRuleModal(type) {
+    ruleType.value = type;
+    ruleForm.event_trigger = type;
+    if (type === 'auto') {
+        ruleForm.schedule_time = 'immediate';
+        ruleForm.schedule_days = '';
+    } else {
+        ruleForm.schedule_time = '10:00';
+    }
+    showRuleModal.value = true;
+}
+
+function submitRule() {
+    ruleForm.post(route('admin.ai_agents.rule.save'), {
+        onSuccess: () => {
+            showRuleModal.value = false;
+            ruleForm.reset();
+        }
+    });
+}
+
+const showPromoModal = ref(false);
+const uploadForm = useForm({
+    file: null
+});
+const promoRuleForm = useForm({
+    name: '',
+    event_trigger: 'promo',
+    template_id: '',
+    schedule_time: '18:00',
+    schedule_days: ''
+});
+
+function openPromoModal() {
+    showPromoModal.value = true;
+}
+
+function submitUpload() {
+    uploadForm.post(route('admin.ai_agents.upload'), {
+        onSuccess: () => {
+            uploadForm.reset();
+            alert("Baza muvaffaqiyatli yuklandi!");
+        }
+    });
+}
+
+function submitPromoRule() {
+    promoRuleForm.post(route('admin.ai_agents.rule.save'), {
+        onSuccess: () => {
+            showPromoModal.value = false;
+            promoRuleForm.reset();
+        }
+    });
+}
+</script>

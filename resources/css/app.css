@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: theme('colors.abyss');
+    color: theme('colors.text-primary');
+    -webkit-font-smoothing: antialiased;
+    background-image: none; 
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/5 border border-white/10;
+    backdrop-filter: blur(40px);
+    box-shadow: theme('boxShadow.depth');
+  }
+  
+  .glass-card {
+    @apply bg-black/40 border border-white/10 rounded-2xl overflow-hidden relative;
+    backdrop-filter: blur(24px);
+    box-shadow: theme('boxShadow.depth');
+  }
+
+  .glass-card-hover {
+    @apply hover:bg-white/5 hover:border-white/20 transition-all duration-300;
+  }
+
+  .glass-button {
+    @apply px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold text-sm flex items-center justify-center gap-2;
+    backdrop-filter: blur(16px);
+  }
+  
+  .glass-input {
+    @apply bg-black/50 border border-white/10 rounded-xl px-4 py-2 placeholder:text-text-muted focus:outline-none transition-all;
+    color: theme('colors.text-primary');
+  }
+}

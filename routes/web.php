@@ -1,0 +1,174 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    if (auth()->check()) {
+        $user = auth()->user();
+        if ($user->hasRole('Partner')) {
+            return redirect()->route('partner');
+        } elseif ($user->hasRole('Operator')) {
+            return redirect()->route('operator');
+        }
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('login');
+});
+
+// Public Receipt Verification Route
+Route::get('/receipt/verify/{hash}', [\App\Http\Controllers\Public\PublicReceiptController::class, 'verify'])->name('public.receipt.verify');
+Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicReceiptController::class, 'authenticate'])->name('public.receipt.auth');
+
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm');
+    Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
+    Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
+    Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
+    Route::post('/contracts', [\App\Http\Controllers\Admin\ContractController::class, 'store'])->name('contracts.store');
+    
+    // Multi-format Contract Exports (Client Ledger)
+    Route::get('/crm/ledger/{contract}/export/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportPdf'])->name('contracts.export.pdf');
+    Route::get('/crm/ledger/{contract}/export/docx', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportDocx'])->name('contracts.export.docx');
+    Route::get('/crm/ledger/{contract}/export/xlsx', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportXlsx'])->name('contracts.export.xlsx');
+    
+    Route::get('/crm/contracts/{contract}/export-doc/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportContractPdf'])->name('contracts.document.export.pdf');
+    
+    Route::post('/contracts/{contract}/upload-signature', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAndVerifySignature'])->name('contracts.upload_signature');
+    Route::get('/facility', [\App\Http\Controllers\Admin\FacilityController::class, 'index'])->name('facility');
+    Route::post('/facility/buildings', [\App\Http\Controllers\Admin\FacilityController::class, 'storeBuilding'])->name('facility.buildings.store');
+    Route::put('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateBuilding'])->name('facility.buildings.update');
+    Route::delete('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyBuilding'])->name('facility.buildings.destroy');
+    Route::post('/facility/stages', [\App\Http\Controllers\Admin\FacilityController::class, 'storeStage'])->name('facility.stages.store');
+    Route::post('/facility/floors', [\App\Http\Controllers\Admin\FacilityController::class, 'storeFloor'])->name('facility.floors.store');
+    Route::put('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateFloor'])->name('facility.floors.update');
+    Route::delete('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyFloor'])->name('facility.floors.destroy');
+    Route::post('/facility/units', [\App\Http\Controllers\Admin\FacilityController::class, 'storeUnit'])->name('facility.units.store');
+    Route::put('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateUnit'])->name('facility.units.update');
+
+    // Developer Settings
+    Route::get('/developer/settings', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'index'])->name('developer.settings');
+    Route::post('/developer/otp/request', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'requestOtp'])->name('developer.otp.request');
+    Route::post('/developer/otp/verify', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'verifyOtp'])->name('developer.otp.verify');
+    Route::post('/developer/keys', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'generateKey'])->name('developer.keys.store');
+    Route::delete('/developer/keys/{id}', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'revokeKey'])->name('developer.keys.destroy');
+
+    Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');
+    
+    // Finance Module
+    Route::get('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance');
+    
+    Route::prefix('finance')->name('finance.')->group(function () {
+        Route::post('/transactions', [\App\Http\Controllers\Admin\FinanceController::class, 'store'])->name('transactions.store');
+        Route::put('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'update'])->name('transactions.update');
+        Route::delete('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroy'])->name('transactions.destroy');
+        Route::get('/transactions/{transaction}/export/pdf', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportPdf'])->name('transactions.export.pdf');
+        Route::get('/transactions/{transaction}/print', [\App\Http\Controllers\Admin\TransactionExportController::class, 'print'])->name('transactions.export.print');
+        Route::post('/transactions/{transaction}/approve', [\App\Http\Controllers\Admin\FinanceController::class, 'approveTransaction'])->name('transactions.approve');
+        Route::post('/transactions/{transaction}/reject', [\App\Http\Controllers\Admin\FinanceController::class, 'rejectTransaction'])->name('transactions.reject');
+        
+        // Supplier Payments from Finance
+        Route::post('/suppliers/pay', [\App\Http\Controllers\Admin\FinanceController::class, 'paySupplier'])->name('suppliers.pay');
+    });
+
+    Route::post('/finance/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('finance.liabilities.store');
+    Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');
+    Route::delete('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyLiability'])->name('finance.liabilities.destroy');
+    Route::post('/finance/liabilities/{liability}/payments', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiabilityPayment'])->name('finance.liabilities.payments.store');
+    
+    Route::get('/finance/transactions/{transaction}/export/pdf', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportPdf'])->name('finance.transactions.export.pdf');
+    
+    // Liability Exports
+    Route::get('/finance/liabilities/{liability}/export/pdf', [\App\Http\Controllers\Admin\LiabilityExportController::class, 'exportPdf'])->name('finance.liabilities.export.pdf');
+    Route::get('/finance/liabilities/{liability}/export/docx', [\App\Http\Controllers\Admin\LiabilityExportController::class, 'exportDocx'])->name('finance.liabilities.export.docx');
+    Route::get('/finance/liabilities/{liability}/export/xlsx', [\App\Http\Controllers\Admin\LiabilityExportController::class, 'exportXlsx'])->name('finance.liabilities.export.xlsx');
+    
+    Route::get('/partners', [\App\Http\Controllers\Admin\PartnerHubController::class, 'index'])->name('partners');
+    Route::post('/partners', [\App\Http\Controllers\Admin\PartnerHubController::class, 'storePartner'])->name('partners.store');
+    Route::put('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'updatePartner'])->name('partners.update');
+    Route::delete('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'destroyPartner'])->name('partners.destroy');
+    Route::post('/partners/{partner}/advance', [\App\Http\Controllers\Admin\PartnerHubController::class, 'provideAdvance'])->name('partners.advance');
+    Route::post('/partners/{partner}/expense', [\App\Http\Controllers\Admin\PartnerHubController::class, 'reportExpense'])->name('partners.expense');
+    Route::get('/partners/{partner}/ledger', [\App\Http\Controllers\Admin\PartnerHubController::class, 'getPartnerLedger'])->name('partners.ledger');
+    
+    // Approvals / Tasdiqlar
+    Route::get('/approvals', [\App\Http\Controllers\Admin\ApprovalController::class, 'index'])->name('approvals');
+    Route::post('/approvals/{approval}/approve', [\App\Http\Controllers\Admin\ApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('/approvals/{approval}/reject', [\App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
+
+    Route::get('/hr', [\App\Http\Controllers\Admin\HrController::class, 'index'])->name('hr');
+    Route::post('/hr/worker', [\App\Http\Controllers\Admin\HrController::class, 'storeWorker'])->name('hr.worker.store');
+    Route::post('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'updateWorker'])->name('hr.worker.update');
+    Route::delete('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'deleteWorker'])->name('hr.worker.destroy');
+    Route::post('/hr/manual-log', [\App\Http\Controllers\Admin\HrController::class, 'storeManualLog'])->name('hr.manual_log.store');
+    Route::get('/hr/worker/{worker}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getWorkerLedger'])->name('hr.worker.ledger');
+    Route::post('/hr/worker/{worker}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeWorkerTransaction'])->name('hr.worker.transaction.store');
+    
+    Route::post('/hr/users', [\App\Http\Controllers\Admin\HrController::class, 'storeUser'])->name('hr.users.store');
+    Route::post('/hr/users/{user}', [\App\Http\Controllers\Admin\HrController::class, 'updateUser'])->name('hr.users.update');
+    Route::delete('/hr/users/{user}', [\App\Http\Controllers\Admin\HrController::class, 'deleteUser'])->name('hr.users.delete');
+    Route::get('/hr/users/{user}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getUserLedger'])->name('hr.users.ledger');
+    Route::post('/hr/users/{user}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeUserTransaction'])->name('hr.users.transaction.store');
+    
+    Route::post('/hr/machinery', [\App\Http\Controllers\Admin\HrController::class, 'storeMachinery'])->name('hr.machinery.store');
+    Route::post('/hr/machinery/{machinery}', [\App\Http\Controllers\Admin\HrController::class, 'updateMachinery'])->name('hr.machinery.update');
+    Route::delete('/hr/machinery/{machinery}', [\App\Http\Controllers\Admin\HrController::class, 'deleteMachinery'])->name('hr.machinery.destroy');
+    Route::get('/hr/machinery/{machinery}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getMachineryLedger'])->name('hr.machinery.ledger');
+    Route::post('/hr/machinery/{machinery}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineryTransaction'])->name('hr.machinery.transaction.store');
+    
+    Route::post('/hr/log', [\App\Http\Controllers\Admin\HrController::class, 'storeLog'])->name('hr.log.store');
+    Route::post('/hr/biometric', [\App\Http\Controllers\Admin\HrController::class, 'storeBiometric'])->name('hr.biometric.store');
+    Route::post('/hr/payroll', [\App\Http\Controllers\Admin\HrController::class, 'generatePayroll'])->name('hr.payroll.generate');
+    Route::get('/hr/payroll/{id}/print', [\App\Http\Controllers\Admin\HrController::class, 'printPayroll'])->name('hr.payroll.print');
+
+    Route::post('/hr/cash-requests', [\App\Http\Controllers\Admin\HrController::class, 'storeCashRequest'])->name('hr.cash_requests.store');
+    Route::post('/hr/cash-requests/{cashRequest}/approve', [\App\Http\Controllers\Admin\HrController::class, 'approveCashRequest'])->name('hr.cash_requests.approve');
+    Route::post('/hr/cash-requests/{cashRequest}/reject', [\App\Http\Controllers\Admin\HrController::class, 'rejectCashRequest'])->name('hr.cash_requests.reject');
+
+    Route::get('/ai-agents', [\App\Http\Controllers\Admin\AiAgentController::class, 'index'])->name('ai_agents');
+    Route::post('/ai-agents/settings', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveSettings'])->name('ai_agents.settings');
+    Route::post('/ai-agents/test-sms', [\App\Http\Controllers\Admin\AiAgentController::class, 'testSms'])->name('ai_agents.test_sms');
+    Route::post('/ai-agents/template', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveTemplate'])->name('ai_agents.template.save');
+    Route::post('/ai-agents/rule', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveRule'])->name('ai_agents.rule.save');
+    Route::post('/ai-agents/upload', [\App\Http\Controllers\Admin\AiAgentController::class, 'uploadAudience'])->name('ai_agents.upload');
+    Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+
+    // Receipts / Cheklar
+    Route::get('/receipts', [\App\Http\Controllers\Admin\ReceiptController::class, 'index'])->name('receipts');
+
+    // Warehouse & Procurement
+    Route::prefix('warehouse')->name('warehouse.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\WarehouseController::class, 'index'])->name('index');
+        Route::get('/inventory', [\App\Http\Controllers\Admin\WarehouseController::class, 'inventory'])->name('inventory');
+        Route::get('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'suppliers'])->name('suppliers');
+        Route::post('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeSupplier'])->name('suppliers.store');
+        Route::get('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'contracts'])->name('contracts');
+        Route::post('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeContract'])->name('contracts.store');
+        Route::post('/contracts/scan', [\App\Http\Controllers\Admin\WarehouseController::class, 'scanContract'])->name('contracts.scan');
+        Route::get('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'orders'])->name('orders');
+        Route::post('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeOrder'])->name('orders.store');
+        Route::post('/orders/{order}/receive', [\App\Http\Controllers\Admin\WarehouseController::class, 'receiveOrder'])->name('orders.receive');
+    });
+});
+
+Route::get('/operator-panel', [\App\Http\Controllers\OperatorController::class, 'index'])->middleware(['auth', 'verified'])->name('operator');
+Route::post('/operator-panel/requests', [\App\Http\Controllers\OperatorController::class, 'submitRequest'])->middleware(['auth', 'verified'])->name('operator.requests.store');
+
+Route::get('/partner-panel', [\App\Http\Controllers\Admin\PartnerController::class, 'index'])->middleware(['auth', 'verified'])->name('partner');
+Route::post('/partner-panel/vote/{vote}', [\App\Http\Controllers\Admin\PartnerController::class, 'vote'])->middleware(['auth', 'verified'])->name('partner.vote');
+Route::post('/partner-panel/transaction', [\App\Http\Controllers\Admin\PartnerController::class, 'storeTransaction'])->middleware(['auth', 'verified'])->name('partner.transaction.store');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/settings', [\App\Http\Controllers\UserSettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [\App\Http\Controllers\UserSettingsController::class, 'update'])->name('settings.update');
+    
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';

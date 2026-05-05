@@ -71,8 +71,9 @@ class ContractController extends Controller
             'signed_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        if ($contract->status !== 'awaiting_signature') {
-            return response()->json(['error' => 'Contract is not awaiting signature.'], 400);
+        // Allow uploading signature for any active or draft contract, to be flexible
+        if (in_array($contract->status, ['cancelled', 'completed'])) {
+            return response()->json(['error' => 'Contract is closed or cancelled.'], 400);
         }
 
         $file = $request->file('signed_document');
@@ -101,6 +102,55 @@ class ContractController extends Controller
             'message' => $verificationResult['status'] === 'passed' ? 'Verification successful. Contract activated.' : 'Verification failed. ' . $verificationResult['logs']['signature_detection']['error'],
             'status' => $verificationResult['status'],
             'logs' => $verificationResult['logs']
+        ]);
+    }
+
+    public function updatePenaltyRate(\Illuminate\Http\Request $request, \App\Models\Contract $contract)
+    {
+        $request->validate([
+            'daily_penalty_rate' => 'required|numeric|min:0'
+        ]);
+
+        $contract->daily_penalty_rate = $request->daily_penalty_rate;
+        $contract->save();
+
+        // Recalculate penalties
+        $today = \Carbon\Carbon::today();
+        
+        $overdueSchedules = $contract->paymentSchedules()
+            ->where('status', '!=', 'paid')
+            ->whereDate('due_date', '<', $today)
+            ->get();
+
+        $totalPenalty = 0;
+        
+        foreach ($overdueSchedules as $schedule) {
+            $remainingDebt = max(0, $schedule->expected_amount - $schedule->paid_amount);
+            $schedule->remaining_debt = $remainingDebt;
+
+            if ($remainingDebt > 0) {
+                // Number of overdue days
+                $dueDate = \Carbon\Carbon::parse($schedule->due_date)->startOfDay();
+                $daysOverdue = max(0, $dueDate->diffInDays($today));
+                
+                // Calculate total penalty for this schedule
+                $dailyRate = $contract->daily_penalty_rate / 100;
+                $schedulePenalty = $remainingDebt * $dailyRate * $daysOverdue;
+                
+                $schedule->penalty_for_this_month = $schedulePenalty;
+                $totalPenalty += $schedulePenalty;
+            } else {
+                $schedule->penalty_for_this_month = 0;
+            }
+            $schedule->save();
+        }
+
+        $contract->total_penalty_accumulated = $totalPenalty;
+        $contract->save();
+
+        return response()->json([
+            'message' => 'Hisoblandi: Yangi penya stavkasi qo\'llanildi.',
+            'contract' => $contract->load(['client', 'unit', 'paymentSchedules'])
         ]);
     }
 }

@@ -16,15 +16,43 @@ class DeveloperSettingsController extends Controller
     {
         $isUnlocked = Session::get('developer_unlocked', false);
         $keys = [];
+        $users = [];
         
         if ($isUnlocked) {
             $keys = HardwareApiKey::latest()->get();
+            $users = \App\Models\User::with('roles')->get()->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames(),
+                    'telegram_chat_id' => $user->telegram_chat_id,
+                ];
+            });
         }
 
         return Inertia::render('Admin/Developer/Settings', [
             'isUnlocked' => $isUnlocked,
             'apiKeys' => $keys,
+            'users' => $users,
         ]);
+    }
+
+    public function updateUserChatId(Request $request, $id)
+    {
+        if (!Session::get('developer_unlocked', false)) {
+            abort(403);
+        }
+
+        $request->validate([
+            'telegram_chat_id' => 'nullable|string|max:255'
+        ]);
+
+        $user = \App\Models\User::findOrFail($id);
+        $user->telegram_chat_id = $request->telegram_chat_id;
+        $user->save();
+
+        return back()->with('success', 'Telegram Chat ID muvaffaqiyatli yangilandi!');
     }
 
     public function requestOtp()

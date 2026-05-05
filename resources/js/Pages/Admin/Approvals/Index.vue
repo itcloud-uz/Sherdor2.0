@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
@@ -81,7 +81,12 @@ function reject(id) {
     <AdminLayout>
         <div class="space-y-6">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-display font-bold text-white uppercase tracking-wider">Tasdiqlash Markazi</h1>
+                <div class="flex items-center gap-4">
+                    <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-neon-primary/20 border border-white/10 hover:border-neon-primary flex items-center justify-center text-white hover:text-neon-primary transition-all group">
+                        <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    </Link>
+                    <h1 class="text-2xl font-display font-bold text-white uppercase tracking-wider">Tasdiqlash Markazi</h1>
+                </div>
                 
                 <div class="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
                     <button 

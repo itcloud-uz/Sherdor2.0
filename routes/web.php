@@ -15,8 +15,8 @@ Route::get('/', function () {
         }
         return redirect()->route('admin.dashboard');
     }
-    return redirect()->route('login');
-});
+    return Inertia::render('Public/Landing');
+})->name('landing');
 
 // Public Receipt Verification Route
 Route::get('/receipt/verify/{hash}', [\App\Http\Controllers\Public\PublicReceiptController::class, 'verify'])->name('public.receipt.verify');
@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
     Route::post('/contracts', [\App\Http\Controllers\Admin\ContractController::class, 'store'])->name('contracts.store');
+    Route::post('/contracts/{contract}/update-penalty', [\App\Http\Controllers\Admin\ContractController::class, 'updatePenaltyRate'])->name('contracts.update_penalty');
     
     // Multi-format Contract Exports (Client Ledger)
     Route::get('/crm/ledger/{contract}/export/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportPdf'])->name('contracts.export.pdf');
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/developer/otp/verify', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'verifyOtp'])->name('developer.otp.verify');
     Route::post('/developer/keys', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'generateKey'])->name('developer.keys.store');
     Route::delete('/developer/keys/{id}', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'revokeKey'])->name('developer.keys.destroy');
+    Route::put('/developer/users/{id}/chat-id', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateUserChatId'])->name('developer.users.update_chat_id');
 
     Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');
     
@@ -146,6 +148,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/inventory', [\App\Http\Controllers\Admin\WarehouseController::class, 'inventory'])->name('inventory');
         Route::get('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'suppliers'])->name('suppliers');
         Route::post('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeSupplier'])->name('suppliers.store');
+        Route::put('/suppliers/{supplier}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateSupplier'])->name('suppliers.update');
+        Route::delete('/suppliers/{supplier}', [\App\Http\Controllers\Admin\WarehouseController::class, 'destroySupplier'])->name('suppliers.destroy');
+        Route::post('/suppliers/{supplier}/upload', [\App\Http\Controllers\Admin\WarehouseController::class, 'uploadSupplierDocument'])->name('suppliers.upload');
+        Route::post('/suppliers/{supplier}/telegram', [\App\Http\Controllers\Admin\WarehouseController::class, 'sendSupplierDocumentToTelegram'])->name('suppliers.telegram');
         Route::get('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'contracts'])->name('contracts');
         Route::post('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeContract'])->name('contracts.store');
         Route::post('/contracts/scan', [\App\Http\Controllers\Admin\WarehouseController::class, 'scanContract'])->name('contracts.scan');

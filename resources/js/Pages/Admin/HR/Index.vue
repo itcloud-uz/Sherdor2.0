@@ -530,7 +530,7 @@ function scanNewFace() {
     const imageData = canvas.toDataURL('image/jpeg');
 
     isProcessing.value = true;
-    router.post(route('hr.biometric.store'), {
+    router.post(route('admin.hr.biometric.store'), {
         person_type: biometricForm.value.person_type,
         person_id: biometricForm.value.person_id,
         image: imageData
@@ -644,24 +644,30 @@ function generatePayroll() {
     <Head :title="$t('hr_hub')" />
     
     <AdminLayout>
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex items-center gap-4 mb-8">
             <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-blue/50 text-shadow-glow flex items-center gap-3">
                 <span class="text-4xl drop-shadow-[0_0_15px_rgba(0,102,255,0.6)]">👷‍♂️</span> {{ $t('hr_hub') }}
             </h1>
-            
-            <div class="glass-panel p-1 rounded-xl flex gap-1 bg-black/40 border border-white/10">
-                <button 
-                    v-for="tab in tabs" :key="tab.id"
-                    @click="activeTab = tab.id"
-                    class="px-6 py-2 rounded-lg text-sm font-mono tracking-widest transition-all duration-300 uppercase"
-                    :class="activeTab === tab.id ? 'bg-white/10 text-neon-blue border border-neon-blue/30 shadow-[0_0_15px_rgba(0,102,255,0.1)]' : 'text-text-muted hover:text-white hover:bg-white/5'"
-                >
-                    <span class="mr-2">{{ tab.icon }}</span> {{ $t(tab.name) }}
-                </button>
-            </div>
         </div>
 
-        <!-- TAB 0: GLOBAL USER MANAGEMENT -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="glass-panel p-4 rounded-2xl flex flex-col gap-2 bg-black/40 border border-white/10">
+                    <button 
+                        v-for="tab in tabs" :key="tab.id"
+                        @click="activeTab = tab.id"
+                        class="w-full text-left px-6 py-4 rounded-xl text-sm font-mono tracking-widest transition-all duration-300 uppercase flex items-center gap-3"
+                        :class="activeTab === tab.id ? 'bg-white/10 text-neon-blue border border-neon-blue/30 shadow-[0_0_15px_rgba(0,102,255,0.1)] font-bold' : 'text-text-muted hover:text-white hover:bg-white/5 border border-transparent'"
+                    >
+                        <span class="text-xl">{{ tab.icon }}</span> {{ $t(tab.name) }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="lg:col-span-3 min-h-[700px]">
+                <!-- TAB 0: GLOBAL USER MANAGEMENT -->
         <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
@@ -776,29 +782,29 @@ function generatePayroll() {
                     </div>
                 </form>
 
-                <div class="grid grid-cols-2 gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
-                    <div v-for="w in workers" :key="w.id" class="p-5 border border-white/10 rounded-2xl flex flex-col justify-between hover:bg-white/5 hover:border-white/20 transition-all group bg-black/40 aspect-square">
-                        <div>
-                            <div class="w-16 h-16 bg-white/10 border-2 border-white/10 rounded-full flex items-center justify-center mb-4 overflow-hidden shadow-inner">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
+                    <div v-for="w in workers" :key="w.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                        <div class="flex items-start gap-3 mb-3">
+                            <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
                                 <img v-if="w.photo_path" :src="'/storage/' + w.photo_path" class="w-full h-full object-cover">
-                                <span v-else class="text-3xl">👷</span>
+                                <span v-else class="text-lg">👷</span>
                             </div>
-                            <p class="text-base text-white font-bold mb-1 truncate" :title="w.name">{{ w.name }}</p>
-                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">
-                                {{ w.role }}
-                            </p>
-                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">
-                                {{ w.salary_type }} <span v-if="w.salary_type === 'piece_rate'">({{ w.metric_type }})</span>
-                            </p>
+                            <div>
+                                <h3 class="text-xs font-bold text-white mb-0.5 group-hover:text-neon-cyan transition-colors line-clamp-1" :title="w.name">{{ w.name }}</h3>
+                                <p class="text-[9px] font-mono text-text-muted line-clamp-1 uppercase">
+                                    {{ w.role }} / {{ w.salary_type }} <span v-if="w.salary_type === 'piece_rate'">({{ w.metric_type }})</span>
+                                </p>
+                                <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border bg-white/10 text-text-muted border-white/20">
+                                    {{ $currency(w.base_rate || w.rate) }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="mt-4">
-                            <p class="text-sm text-neon-green font-mono font-bold mb-1">{{ $currency(w.base_rate || w.rate) }}</p>
-                            <p class="text-[11px] text-neon-blue font-mono font-bold mb-4">Balans: {{ $currency(w.balance || 0) }}</p>
-                            
-                            <div class="flex gap-2">
-                                <button @click="openLedger(w)" class="flex-1 py-2 bg-neon-cyan/20 text-neon-cyan text-[10px] uppercase font-mono rounded-lg hover:bg-neon-cyan/40 transition-colors">Ledger</button>
-                                <button @click="openWorkerEdit(w)" class="px-3 py-2 bg-white/10 text-white text-[10px] uppercase font-mono rounded-lg hover:bg-white/20 transition-colors">✏️</button>
-                                <button @click="deleteWorker(w.id)" class="px-3 py-2 bg-neon-red/20 text-neon-red text-[10px] uppercase font-mono rounded-lg hover:bg-neon-red/40 transition-colors">🗑️</button>
+                        <div class="flex items-center justify-between border-t border-white/5 pt-3">
+                            <p class="text-[10px] font-mono font-bold" :class="w.balance > 0 ? 'text-neon-green' : (w.balance < 0 ? 'text-neon-red' : 'text-text-muted')">B: {{ $currency(w.balance || 0) }}</p>
+                            <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                                <button @click="openLedger(w)" class="w-6 h-6 flex items-center justify-center bg-neon-cyan/10 text-neon-cyan rounded hover:bg-neon-cyan/30 transition-colors" title="Ledger">📋</button>
+                                <button @click="openWorkerEdit(w)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                <button @click="deleteWorker(w.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                             </div>
                         </div>
                     </div>
@@ -1783,6 +1789,8 @@ function generatePayroll() {
                     </div>
                 </div>
             </div>
+            </div>
+        </div>
         </div>
 
     </AdminLayout>

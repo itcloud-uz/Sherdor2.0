@@ -1,10 +1,16 @@
 <script setup>
+import { ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, Link, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
     settings: Object
 });
+
+const page = usePage();
+const user = page.props.auth.user;
+
+const activeTab = ref('branding');
 
 const form = useForm({
     company_name: props.settings?.company_name || 'ITCloud Sher-Dor ERP',
@@ -16,86 +22,315 @@ const form = useForm({
     logo: null,
 });
 
+const profileForm = useForm({
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    password: '',
+    language: user.language || 'uz',
+    theme_color: user.theme_color || '#00F0FF',
+    theme_style: user.theme_style || 'apple_glass',
+    avatar: null,
+});
+
+const themeColors = [
+    '#FFD700', // Sherdor Gold (Firm Design)
+    '#00F0FF', '#B026FF', '#39FF14', '#FF003C', '#FCee09', 
+    '#9D00FF', '#00FF9D', '#FF9D00', '#FF009D', '#009DFF',
+    '#FFFFFF', '#888888', '#FF5555', '#55FF55', '#5555FF'
+];
+
 function submit() {
     form.post(route('admin.settings.update'), {
         preserveScroll: true,
         onSuccess: () => alert('Settings updated successfully!')
     });
 }
+
+function submitProfile() {
+    profileForm.post(route('settings.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            profileForm.password = '';
+            alert('Profile updated successfully!');
+        }
+    });
+}
+
+const updateTheme = (color) => {
+    profileForm.theme_color = color;
+    document.documentElement.style.setProperty('--color-neon-primary', color);
+    const hexToRgb = (hex) => {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 240, 255';
+    };
+    document.documentElement.style.setProperty('--shadow-neon-primary', `0 0 15px rgba(${hexToRgb(color)}, 0.3)`);
+    submitProfile();
+};
+
+const updateLanguage = (lang) => {
+    profileForm.language = lang;
+    localStorage.setItem('locale', lang);
+    document.documentElement.lang = lang;
+    submitProfile();
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+};
+
+const updateThemeStyle = (style) => {
+    profileForm.theme_style = style;
+    submitProfile();
+    setTimeout(() => {
+        window.location.reload(); 
+    }, 500);
+};
 </script>
 
 <template>
     <Head title="System Settings" />
 
     <AdminLayout>
-        <template #header>
-            <h2 class="font-display font-semibold text-2xl text-white uppercase tracking-widest text-shadow-glow">
-                ⚙️ {{ $t('settings') }}
-            </h2>
-        </template>
+        <div class="mb-8 flex items-center gap-4">
+            <h1 class="text-2xl md:text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-primary/50 text-shadow-glow flex items-center gap-3">
+                <span class="text-3xl drop-shadow-[0_0_15px_var(--color-neon-primary)]">⚙️</span> {{ $t('settings') }}
+            </h1>
+        </div>
 
-        <div class="p-8 max-w-4xl mx-auto space-y-8 animate-[fadeIn_0.5s_ease-out]">
-            <div class="glass-panel p-8 rounded-2xl border border-white/5">
-                <form @submit.prevent="submit" class="space-y-6">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Branding -->
-                        <div class="space-y-4">
-                            <h3 class="text-neon-cyan font-mono text-sm tracking-widest uppercase border-b border-white/10 pb-2">{{ $t('branding_appearance') }}</h3>
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 animate-[fadeIn_0.5s_ease-out]">
+            
+            <!-- Sidebar Tabs -->
+            <div class="w-full md:w-72 space-y-3 shrink-0">
+                <button @click="activeTab = 'branding'" :class="activeTab === 'branding' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                    <span class="text-2xl drop-shadow">🎨</span> Brending va Tashqi Ko'rinish
+                </button>
+                
+                <button @click="activeTab = 'financial'" :class="activeTab === 'financial' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                    <span class="text-2xl drop-shadow">🏦</span> Financial Defaults
+                </button>
+
+                <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                    <span class="text-2xl drop-shadow group-hover:scale-110 transition-transform">👤</span> Profil va Dizayn
+                </button>
+
+                <button disabled class="w-full text-left px-5 py-5 rounded-2xl border bg-black/20 border-white/5 text-white/30 transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4 cursor-not-allowed">
+                    <span class="text-2xl opacity-50">⏳</span> Yangi blok tez orada..!
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1">
+                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-neon-primary/10 blur-[100px] group-hover:bg-neon-primary/20 transition-all pointer-events-none"></div>
+
+                    <form @submit.prevent="submit">
+                        
+                        <!-- Branding Tab -->
+                        <div v-show="activeTab === 'branding'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                            <h3 class="text-neon-cyan font-display text-xl tracking-widest uppercase border-b border-white/10 pb-4 mb-6">Brending va Tashqi Ko'rinish</h3>
                             
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Company Name</label>
-                                <input v-model="form.company_name" type="text" class="glass-input w-full">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Primary Theme Color</label>
-                                <div class="flex items-center gap-4">
-                                    <input v-model="form.primary_theme_color" type="color" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
-                                    <input v-model="form.primary_theme_color" type="text" class="glass-input flex-1 font-mono">
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Company Name</label>
+                                    <input v-model="form.company_name" type="text" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Primary Theme Color</label>
+                                    <div class="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                        <input v-model="form.primary_theme_color" type="color" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                                        <input v-model="form.primary_theme_color" type="text" class="bg-transparent border-0 text-white flex-1 font-mono focus:ring-0">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">{{ $t('custom_logo_desc') }}</label>
+                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                 </div>
                             </div>
                             
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('custom_logo_desc') }}</label>
-                                <input type="file" @input="form.logo = $event.target.files[0]" class="glass-input w-full text-xs" accept="image/*">
+                            <div class="flex justify-end pt-8 border-t border-white/10">
+                                <button type="submit" :disabled="form.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
+                                    <span v-if="form.processing" class="animate-spin">🌀</span>
+                                    Saqlash
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Financials -->
-                        <div class="space-y-4">
-                            <h3 class="text-neon-cyan font-mono text-sm tracking-widest uppercase border-b border-white/10 pb-2">Financial Defaults</h3>
+                        <!-- Financials Tab -->
+                        <div v-show="activeTab === 'financial'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                            <h3 class="text-neon-cyan font-display text-xl tracking-widest uppercase border-b border-white/10 pb-4 mb-6">Financial Defaults</h3>
                             
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Default Currency</label>
-                                <select v-model="form.default_currency" class="glass-input w-full bg-black/50">
-                                    <option value="USD">USD ($)</option>
-                                    <option value="UZS">UZS (So'm)</option>
-                                    <option value="RUB">RUB (₽)</option>
-                                </select>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Default Currency</label>
+                                    <select v-model="form.default_currency" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                        <option value="USD" class="bg-black text-white">USD ($)</option>
+                                        <option value="UZS" class="bg-black text-white">UZS (So'm)</option>
+                                        <option value="RUB" class="bg-black text-white">RUB (₽)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Global Tax Rate (%)</label>
+                                    <input v-model="form.tax_rate" type="number" step="0.01" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-neon-green font-bold text-lg focus:border-neon-green focus:ring-1 focus:ring-neon-green transition-all">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Default Daily Penalty Rate (%)</label>
+                                    <input v-model="form.default_penalty_rate" type="number" step="0.01" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-neon-red font-bold text-lg focus:border-neon-red focus:ring-1 focus:ring-neon-red transition-all">
+                                </div>
                             </div>
                             
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Global Tax Rate (%)</label>
-                                <input v-model="form.tax_rate" type="number" step="0.01" class="glass-input w-full text-neon-green font-bold">
+                            <div class="flex justify-end pt-8 border-t border-white/10 mt-6">
+                                <button type="submit" :disabled="form.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
+                                    <span v-if="form.processing" class="animate-spin">🌀</span>
+                                    Saqlash
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                    <form @submit.prevent="submitProfile" v-show="activeTab === 'profile'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                        <h3 class="text-neon-cyan font-display text-xl tracking-widest uppercase border-b border-white/10 pb-4 mb-6">{{ $t('personal_info') || 'Profil va Dizayn' }}</h3>
+                        
+                        <div class="space-y-5">
+                            <div class="flex items-center gap-6 mb-6">
+                                <div class="w-20 h-20 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                                    <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover" />
+                                    <span v-else class="text-3xl">👤</span>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-xs font-mono text-text-muted uppercase mb-2">Avatar yuklash</label>
+                                    <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
+                                </div>
                             </div>
 
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Default Daily Penalty Rate (%)</label>
-                                <input v-model="form.default_penalty_rate" type="number" step="0.01" class="glass-input w-full text-neon-magenta font-bold">
+                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">F.I.SH</label>
+                                <input type="text" v-model="profileForm.name" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <div v-if="profileForm.errors.name" class="text-neon-red text-xs mt-1">{{ profileForm.errors.name }}</div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">Email</label>
+                                <input type="email" v-model="profileForm.email" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <div v-if="profileForm.errors.email" class="text-neon-red text-xs mt-1">{{ profileForm.errors.email }}</div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">Telefon</label>
+                                <input type="text" v-model="profileForm.phone" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <div v-if="profileForm.errors.phone" class="text-neon-red text-xs mt-1">{{ profileForm.errors.phone }}</div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">Yangi parol (ixtiyoriy)</label>
+                                <input type="password" v-model="profileForm.password" placeholder="••••••••" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <div v-if="profileForm.errors.password" class="text-neon-red text-xs mt-1">{{ profileForm.errors.password }}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-8 border-t border-white/10 mt-6">
+                            <button type="submit" :disabled="profileForm.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
+                                <span v-if="profileForm.processing" class="animate-spin">🌀</span>
+                                Saqlash
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Dizayn va Til -->
+                    <div v-show="activeTab === 'profile'" class="space-y-8 mt-12 animate-[fadeIn_0.5s_ease-out]">
+                        <!-- Global Mavzu (Theme Style) -->
+                        <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
+                            <h2 class="text-xl font-display font-bold text-white mb-6">Global Dizayn Mavzusi</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                                    <span class="text-3xl">🍏</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'apple_glass' ? 'text-neon-primary font-bold' : 'text-text-muted'">Apple Glass</span>
+                                </button>
+                                <button type="button" @click="updateThemeStyle('galaxy')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'galaxy' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                                    <span class="text-3xl">🌌</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'galaxy' ? 'text-neon-primary font-bold' : 'text-text-muted'">Sher-Dor Galaxy</span>
+                                </button>
+                                <button type="button" @click="updateThemeStyle('cyberpunk')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'cyberpunk' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                                    <span class="text-3xl">🤖</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'cyberpunk' ? 'text-neon-primary font-bold' : 'text-text-muted'">Neon Cyberpunk</span>
+                                </button>
+                                <button type="button" @click="updateThemeStyle('minimalist')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'minimalist' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                                    <span class="text-3xl">⬛</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'minimalist' ? 'text-neon-primary font-bold' : 'text-text-muted'">Minimalist</span>
+                                </button>
+                                <button type="button" @click="updateThemeStyle('gold')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'gold' ? 'border-[#FFD700] bg-[#FFD700]/10 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'border-white/10 hover:border-[#FFD700]/50 bg-black/40'">
+                                    <span class="text-3xl text-shadow-glow shadow-[#FFD700]">⚜️</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'gold' ? 'text-[#FFD700] font-bold' : 'text-text-muted'">Gold Royal</span>
+                                </button>
+                                <button type="button" @click="updateThemeStyle('itcloud_cyberglass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'border-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_20px_rgba(0,240,255,0.4)]' : 'border-white/10 hover:border-[#00F0FF]/50 bg-black/40'">
+                                    <span class="text-3xl">🌐</span>
+                                    <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'text-[#00F0FF] font-bold' : 'text-text-muted'">ITCloud Cyberglass</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Dashboard Rangi -->
+                        <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group h-min">
+                            <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('dashboard_theme') || "Dashboard Rangi" }}</h2>
+                            
+                            <div class="grid grid-cols-4 sm:grid-cols-8 gap-3">
+                                <button 
+                                    v-for="color in themeColors" :key="color"
+                                    @click="updateTheme(color)"
+                                    type="button"
+                                    class="w-10 h-10 rounded-xl transition-all duration-300 relative border-2 flex items-center justify-center"
+                                    :class="profileForm.theme_color === color ? 'border-white scale-110 shadow-[0_0_15px_currentColor]' : 'border-transparent hover:scale-105 hover:border-white/50'"
+                                    :style="{ backgroundColor: color, color: color }"
+                                >
+                                    <svg v-if="profileForm.theme_color === color" class="w-5 h-5 text-black drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Interfeys Tili -->
+                        <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 h-min">
+                            <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('interface_language') || "Interfeys Tili" }}</h2>
+                            <div class="grid grid-cols-3 gap-4">
+                                <button 
+                                    type="button"
+                                    @click="updateLanguage('uz')"
+                                    class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
+                                    :class="profileForm.language === 'uz' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
+                                >
+                                    <span class="text-2xl">🇺🇿</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'uz' ? 'text-neon-primary font-bold' : 'text-text-muted'">O'zbek</span>
+                                </button>
+                                
+                                <button 
+                                    type="button"
+                                    @click="updateLanguage('ru')"
+                                    class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
+                                    :class="profileForm.language === 'ru' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
+                                >
+                                    <span class="text-2xl">🇷🇺</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'ru' ? 'text-neon-primary font-bold' : 'text-text-muted'">Русский</span>
+                                </button>
+
+                                <button 
+                                    type="button"
+                                    @click="updateLanguage('en')"
+                                    class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
+                                    :class="profileForm.language === 'en' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
+                                >
+                                    <span class="text-2xl">🇬🇧</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'en' ? 'text-neon-primary font-bold' : 'text-text-muted'">English</span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex justify-end pt-6 border-t border-white/10">
-                        <button type="submit" :disabled="form.processing" class="px-8 py-3 bg-neon-cyan text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_20px_#00F0FF] transition-all disabled:opacity-50 flex items-center gap-2">
-                            <span v-if="form.processing" class="animate-spin">🌀</span>
-                            {{ $t('save_settings') }}
-                        </button>
-                    </div>
-
-                </form>
+                </div>
             </div>
+            
         </div>
     </AdminLayout>
 </template>

@@ -8,6 +8,9 @@ const props = defineProps({
 });
 
 const showModal = ref(false);
+const editMode = ref(false);
+const selectedSupplier = ref(null);
+
 const form = ref({
     name: '',
     company_name: '',
@@ -20,22 +23,88 @@ const form = ref({
 
 const isSubmitting = ref(false);
 
+const openAddModal = () => {
+    editMode.value = false;
+    selectedSupplier.value = null;
+    form.value = { name: '', company_name: '', phone: '', inn: '', bank_account: '', mfo: '', address: '' };
+    showModal.value = true;
+};
+
+const openEditModal = (supplier) => {
+    editMode.value = true;
+    selectedSupplier.value = supplier;
+    form.value = { 
+        name: supplier.name, 
+        company_name: supplier.company_name, 
+        phone: supplier.phone, 
+        inn: supplier.inn, 
+        bank_account: supplier.bank_account, 
+        mfo: supplier.mfo, 
+        address: supplier.address 
+    };
+    showModal.value = true;
+};
+
 function submit() {
     isSubmitting.value = true;
-    router.post(route('admin.warehouse.suppliers.store'), form.value, {
-        onSuccess: () => {
-            isSubmitting.value = false;
-            showModal.value = false;
-            form.value = { name: '', company_name: '', phone: '', inn: '', bank_account: '', mfo: '', address: '' };
-        },
-        onError: () => {
-            isSubmitting.value = false;
-        }
-    });
+    if (editMode.value) {
+        router.put(route('admin.warehouse.suppliers.update', selectedSupplier.value.id), form.value, {
+            onSuccess: () => {
+                isSubmitting.value = false;
+                showModal.value = false;
+            },
+            onError: () => { isSubmitting.value = false; }
+        });
+    } else {
+        router.post(route('admin.warehouse.suppliers.store'), form.value, {
+            onSuccess: () => {
+                isSubmitting.value = false;
+                showModal.value = false;
+            },
+            onError: () => { isSubmitting.value = false; }
+        });
+    }
 }
+
+const deleteSupplier = (id) => {
+    if (confirm("Ta'minotchini o'chirishga ishonchingiz komilmi?")) {
+        router.delete(route('admin.warehouse.suppliers.destroy', id));
+    }
+};
 
 const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS' }).format(amount);
+};
+
+const uploadInput = ref(null);
+const currentSupplierIdForUpload = ref(null);
+
+const triggerUpload = (supplierId) => {
+    currentSupplierIdForUpload.value = supplierId;
+    if (uploadInput.value) {
+        uploadInput.value.click();
+    }
+};
+
+const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file || !currentSupplierIdForUpload.value) return;
+
+    const formData = new FormData();
+    formData.append('document', file);
+
+    router.post(route('admin.warehouse.suppliers.upload', currentSupplierIdForUpload.value), formData, {
+        onFinish: () => {
+            event.target.value = '';
+            currentSupplierIdForUpload.value = null;
+        }
+    });
+};
+
+const sendToTelegram = (id) => {
+    if (confirm("Hujjatni Telegramga yuborasizmi?")) {
+        router.post(route('admin.warehouse.suppliers.telegram', id));
+    }
 };
 </script>
 
@@ -53,20 +122,30 @@ const formatMoney = (amount) => {
                     </h1>
                 </div>
                 
-                <button @click="showModal = true" class="px-6 py-3 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-yellow hover:text-black transition-all shadow-[0_0_20px_rgba(255,255,0,0.2)]">
+                <button @click="openAddModal" class="px-6 py-3 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-yellow hover:text-black transition-all shadow-[0_0_20px_rgba(255,255,0,0.2)]">
                     + Yangi Qo'shish
                 </button>
             </div>
 
+            <!-- Hidden File Input for Document Upload -->
+            <input type="file" ref="uploadInput" @change="handleFileUpload" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group">
-                    <div class="flex justify-between items-start mb-4">
+                <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group relative">
+                    <!-- Edit & Delete Buttons -->
+                    <div class="absolute top-4 right-4 flex items-center gap-2">
+                        <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all" title="Tahrirlash">
+                            ✏️
+                        </button>
+                        <button @click="deleteSupplier(s.id)" class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all" title="O'chirish">
+                            🗑️
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between items-start mb-4 pr-20">
                         <div>
                             <h3 class="text-xl font-bold text-white font-display">{{ s.company_name || s.name }}</h3>
                             <p class="text-[10px] font-mono text-text-muted uppercase mt-1">Vakil: {{ s.name }}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl border border-white/10">
-                            🏢
                         </div>
                     </div>
                     
@@ -85,7 +164,7 @@ const formatMoney = (amount) => {
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <div class="pt-4 border-t border-white/10 flex justify-between items-center mb-4">
                         <span class="text-[10px] font-mono text-text-muted uppercase">Joriy Balans</span>
                         <div class="text-right">
                             <span class="block text-lg font-bold font-mono" :class="s.balance > 0 ? 'text-neon-red' : (s.balance < 0 ? 'text-neon-green' : 'text-white')">
@@ -96,6 +175,34 @@ const formatMoney = (amount) => {
                             </span>
                         </div>
                     </div>
+
+                    <!-- Document Attachment Section -->
+                    <div class="pt-4 border-t border-white/10">
+                        <div v-if="!s.document_path" class="flex items-center justify-center">
+                            <button @click="triggerUpload(s.id)" class="w-full py-2 bg-white/5 border border-dashed border-white/20 text-text-muted hover:text-white hover:border-white/50 text-[10px] font-mono uppercase tracking-widest rounded transition-all">
+                                📎 Hujjat Yuklash
+                            </button>
+                        </div>
+                        <div v-else class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center bg-neon-cyan/5 border border-neon-cyan/20 p-2 rounded">
+                                <span class="text-[10px] font-mono text-neon-cyan uppercase flex items-center gap-2">
+                                    📄 Hujjat biriktirilgan
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <a :href="'/storage/' + s.document_path" target="_blank" class="w-6 h-6 rounded bg-neon-cyan/20 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-black transition-all" title="Yuklab olish">
+                                        ⬇️
+                                    </a>
+                                    <button @click="sendToTelegram(s.id)" class="w-6 h-6 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all" title="Telegramga yuborish">
+                                        ✈️
+                                    </button>
+                                </div>
+                            </div>
+                            <button @click="triggerUpload(s.id)" class="text-center text-[10px] font-mono text-text-muted hover:text-white transition-colors">
+                                Yangilash
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div v-if="suppliers.length === 0" class="col-span-full py-12 text-center text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-2xl glass-panel">
@@ -104,12 +211,14 @@ const formatMoney = (amount) => {
             </div>
         </div>
 
-        <!-- Add Modal -->
+        <!-- Add/Edit Modal -->
         <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
             <div class="glass-panel w-full max-w-xl p-8 rounded-2xl border border-neon-yellow/50 shadow-[0_0_30px_rgba(255,255,0,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
                 
-                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">Yangi Ta'minotchi Qo'shish</h3>
+                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">
+                    {{ editMode ? "Ta'minotchini Tahrirlash" : "Yangi Ta'minotchi Qo'shish" }}
+                </h3>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">

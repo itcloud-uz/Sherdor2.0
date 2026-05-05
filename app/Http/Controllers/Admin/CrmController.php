@@ -12,7 +12,7 @@ class CrmController extends Controller
     public function index()
     {
         $leads = Lead::all();
-        $clients = \App\Models\Client::all();
+        $clients = \App\Models\Client::with('contracts.unit.floor.building')->get();
         $contracts = Contract::with(['client', 'unit', 'paymentSchedules'])->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $overdueSchedules = \App\Models\PaymentSchedule::with('contract.client')

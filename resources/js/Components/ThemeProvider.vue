@@ -19,6 +19,11 @@ watchEffect(() => {
         // We use rgba for the shadow to add 30% opacity (0.3 = ~76 in hex, or just rgba)
         document.documentElement.style.setProperty('--shadow-neon-primary', `${glow} rgba(${rgb}, 0.3)`);
     }
+
+    if (page.props.auth?.user?.theme_style) {
+        document.documentElement.classList.remove('theme-apple_glass', 'theme-galaxy', 'theme-cyberpunk', 'theme-minimalist');
+        document.documentElement.classList.add(`theme-${page.props.auth.user.theme_style}`);
+    }
 });
 </script>
 <template>

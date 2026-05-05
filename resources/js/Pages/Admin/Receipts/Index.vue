@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -35,9 +35,14 @@ function formatDate(dateString) {
     <Head title="Cheklar va Hujjatlar" />
     <AdminLayout>
         <div class="glass-panel p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
-            <div class="mb-6 border-b border-white/10 pb-4">
-                <h2 class="text-2xl font-display text-white font-bold uppercase tracking-widest">Cheklar va Hujjatlar</h2>
-                <p class="text-[10px] font-mono text-text-muted mt-1">Tizimga yuklangan barcha xarajat dalillari (fakturalar, cheklar)</p>
+            <div class="mb-6 border-b border-white/10 pb-4 flex items-center gap-4">
+                <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-neon-primary/20 border border-white/10 hover:border-neon-primary flex items-center justify-center text-white hover:text-neon-primary transition-all group">
+                    <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </Link>
+                <div>
+                    <h2 class="text-2xl font-display text-white font-bold uppercase tracking-widest">Cheklar va Hujjatlar</h2>
+                    <p class="text-[10px] font-mono text-text-muted mt-1">Tizimga yuklangan barcha xarajat dalillari (fakturalar, cheklar)</p>
+                </div>
             </div>
 
             <!-- Tabs -->

@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
-import GalaxyBackground from '@/Components/GalaxyBackground.vue';
+import BackgroundTheme from '@/Components/BackgroundTheme.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
 
 const page = usePage();
@@ -14,13 +14,7 @@ const page = usePage();
     <ThemeProvider>
         <div class="min-h-screen bg-transparent text-text-primary flex flex-col relative overflow-hidden">
             
-            <GalaxyBackground />
-
-        <!-- Ambient Glowing Orbs (Minimal for Partner) -->
-        <div class="fixed inset-0 pointer-events-none z-0">
-            <div class="absolute top-[0%] right-[0%] w-[800px] h-[800px] rounded-full bg-[#FCEE09]/5 blur-[200px]"></div>
-            <div class="absolute bottom-[0%] left-[0%] w-[600px] h-[600px] rounded-full bg-[#00F0FF]/5 blur-[200px]"></div>
-        </div>
+            <BackgroundTheme />
 
         <!-- Top Navigation -->
         <header class="h-20 md:h-24 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-10 relative">

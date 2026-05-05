@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
-import GalaxyBackground from '@/Components/GalaxyBackground.vue';
+import BackgroundTheme from '@/Components/BackgroundTheme.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
 
 const page = usePage();
@@ -15,8 +15,6 @@ const navItems = [
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
     { name: 'Omborxona', route: 'admin.warehouse.index', icon: '📦' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
-    { name: 'Cheklar', route: 'admin.receipts', icon: '🧾' },
-    { name: 'Tasdiqlar', route: 'admin.approvals', icon: '✅' },
     { name: 'ai_agents', route: 'admin.ai_agents', icon: '🤖' },
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
@@ -27,14 +25,7 @@ const navItems = [
     <ThemeProvider>
         <div class="min-h-screen bg-transparent text-text-primary flex relative overflow-hidden">
             
-            <GalaxyBackground />
-
-        <!-- Ambient Glowing Orbs (No Grids!) -->
-        <div class="fixed inset-0 pointer-events-none z-0">
-            <div class="absolute -top-[20%] -left-[10%] w-[800px] h-[800px] rounded-full bg-[#B026FF]/10 blur-[150px]"></div>
-            <div class="absolute top-[40%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[#00F0FF]/10 blur-[150px]"></div>
-            <div class="absolute -bottom-[20%] left-[20%] w-[700px] h-[700px] rounded-full bg-[#39FF14]/5 blur-[150px]"></div>
-        </div>
+            <BackgroundTheme />
 
         <!-- Sidebar -->
         <aside class="w-64 glass-panel border-r border-white/10 flex flex-col z-10 relative">
@@ -63,38 +54,55 @@ const navItems = [
                 </template>
             </nav>
 
-            <div class="p-4 border-t border-white/5">
-                <div class="glass-card p-4 flex flex-col items-center">
-                    <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 mb-2 overflow-hidden">
-                        <img v-if="$page.props.auth.user.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
-                        <span v-else class="text-xs font-bold text-white">{{ $page.props.auth.user.name.charAt(0) }}</span>
-                    </div>
-                    <p class="text-sm font-semibold text-white truncate w-full text-center">{{ $page.props.auth.user.name }}</p>
-                    <p class="text-[10px] font-mono text-neon-yellow mt-1">SUPER ADMIN</p>
-                </div>
-            </div>
+
         </aside>
 
         <!-- Main Content -->
         <main class="flex-1 flex flex-col z-10 h-screen overflow-hidden relative">
             <!-- Top Header -->
-            <header class="h-20 glass-panel border-b border-white/10 flex items-center justify-between px-8">
+            <header class="h-20 glass-panel border-b border-white/10 flex items-center justify-between px-8 relative z-50">
                 <div>
                     <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, {{ $page.props.auth.user.name }}</h2>
                     <p class="text-xs font-mono text-text-muted mt-1">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
                 </div>
                 
                 <div class="flex items-center gap-6">
-                    <!-- Global Language Switcher -->
-                    <LanguageSwitcher />
+                    <!-- User Profile Dropdown -->
+                    <div class="relative group">
+                        <button class="flex items-center gap-3 p-2 pr-4 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10 cursor-default">
+                            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 overflow-hidden shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]">
+                                <img v-if="$page.props.auth.user.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
+                                <span v-else class="text-xs font-bold text-white">{{ $page.props.auth.user.name.charAt(0) }}</span>
+                            </div>
+                            <div class="text-left hidden sm:block">
+                                <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth.user.name }}</p>
+                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">SUPER ADMIN</p>
+                            </div>
+                        </button>
 
-                    <!-- Live Server Status Indicator -->
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-neon-green/20 bg-neon-green/5 shadow-neon-green">
-                        <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
-                        <span class="text-[10px] font-mono text-neon-green uppercase tracking-wider">UBUNTU ONLINE</span>
+                        <!-- Dropdown Menu -->
+                        <div class="absolute right-0 mt-1 w-56 bg-[#050505]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right z-50 p-3 space-y-3">
+                            
+                            <!-- Global Language Switcher -->
+                            <div>
+                                <p class="text-[9px] font-mono text-text-muted mb-2 uppercase px-1">Interfeys Tili</p>
+                                <LanguageSwitcher />
+                            </div>
+
+                            <hr class="border-white/10">
+
+                            <!-- Live Server Status Indicator -->
+                            <div class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-neon-green/20 bg-neon-green/5 shadow-[0_0_10px_rgba(57,255,20,0.1)] cursor-default">
+                                <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+                                <span class="text-[10px] font-mono text-neon-green uppercase tracking-wider">UBUNTU ONLINE</span>
+                            </div>
+                            
+                            <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-mono text-neon-red hover:bg-neon-red/10 border border-transparent hover:border-neon-red/20 rounded-xl transition-colors">
+                                TIZIMDAN CHIQISH
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            </Link>
+                        </div>
                     </div>
-                    
-                    <Link :href="route('logout')" method="post" as="button" class="text-xs font-mono text-neon-magenta hover:text-white transition-colors">LOGOUT</Link>
                 </div>
             </header>
 

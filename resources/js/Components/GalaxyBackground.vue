@@ -2,8 +2,19 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
+const props = defineProps({
+    interactive: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const canvasRef = ref(null);
 let animationFrameId = null;
+let mouseX = 0;
+let mouseY = 0;
+let targetCenterX = window.innerWidth / 2;
+let targetCenterY = window.innerHeight / 2;
 
 onMounted(() => {
     const canvas = canvasRef.value;
@@ -14,8 +25,9 @@ onMounted(() => {
     canvas.width = width;
     canvas.height = height;
 
-    const numStars = 1000;
+    const numStars = 1500;
     const stars = [];
+    const colors = ['#FFD700', '#8A2BE2', '#FF0000', '#FFFFFF', '#FFD700']; // Gold, Purple, Red, White
 
     // Initialize stars
     for (let i = 0; i < numStars; i++) {
@@ -23,24 +35,37 @@ onMounted(() => {
             x: Math.random() * width,
             y: Math.random() * height,
             z: Math.random() * width,
-            o: Math.random(),
-            size: Math.random() * 1.5
+            o: Math.random() + 0.2, // brighter
+            size: Math.random() * 2.5, // larger
+            color: colors[Math.floor(Math.random() * colors.length)]
         });
     }
 
     let centerX = width / 2;
     let centerY = height / 2;
+    mouseX = centerX;
+    mouseY = centerY;
 
     const handleResize = () => {
         width = window.innerWidth;
         height = window.innerHeight;
         canvas.width = width;
         canvas.height = height;
-        centerX = width / 2;
-        centerY = height / 2;
+        if (!props.interactive) {
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+    };
+
+    const handleMouseMove = (e) => {
+        if (props.interactive) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }
     };
 
     window.addEventListener('resize', handleResize);
+    window.addEventListener('mousemove', handleMouseMove);
 
     const animate = () => {
         // Clear with a very slight trailing effect for motion blur
@@ -50,6 +75,14 @@ onMounted(() => {
         // Motion blur effect
         ctx.fillStyle = 'rgba(5, 5, 10, 0.4)';
         ctx.fillRect(0, 0, width, height);
+
+        if (props.interactive) {
+            // Parallax effect: shift the center point smoothly towards the mouse
+            targetCenterX = width / 2 + (mouseX - width / 2) * 0.5;
+            targetCenterY = height / 2 + (mouseY - height / 2) * 0.5;
+            centerX += (targetCenterX - centerX) * 0.05;
+            centerY += (targetCenterY - centerY) * 0.05;
+        }
 
         for (let i = 0; i < numStars; i++) {
             let star = stars[i];
@@ -75,18 +108,15 @@ onMounted(() => {
             if (px >= 0 && px <= width && py >= 0 && py <= height) {
                 const size = star.size * k;
                 
-                // Get theme color from Inertia page props (more efficient than getComputedStyle in a loop)
-                const themeColor = usePage().props.branding?.primary_theme_color || '#FFFFFF';
-                
                 ctx.beginPath();
                 ctx.arc(px, py, size, 0, Math.PI * 2);
-                ctx.fillStyle = themeColor;
-                ctx.globalAlpha = opacity;
+                ctx.fillStyle = star.color;
+                ctx.globalAlpha = opacity > 1 ? 1 : opacity;
                 ctx.fill();
                 
                 // Subtle colored glow
-                ctx.shadowBlur = size * 3;
-                ctx.shadowColor = themeColor;
+                ctx.shadowBlur = size * 4;
+                ctx.shadowColor = star.color;
                 ctx.globalAlpha = 1.0; // reset
             }
         }
@@ -98,6 +128,7 @@ onMounted(() => {
 
     onUnmounted(() => {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('mousemove', handleMouseMove);
         cancelAnimationFrame(animationFrameId);
     });
 });

@@ -69,7 +69,7 @@ class Contract extends Model
 
     public function markAsActiveSold()
     {
-        if ($this->status === 'awaiting_signature' && $this->ai_verification_status === 'passed') {
+        if ($this->ai_verification_status === 'passed') {
             $this->update(['status' => 'active']);
             
             if ($this->unit) {

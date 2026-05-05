@@ -6,6 +6,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 const props = defineProps({
     isUnlocked: Boolean,
     apiKeys: Array,
+    users: Array,
 });
 
 const isProcessing = ref(false);
@@ -45,6 +46,18 @@ function revokeKey(id) {
     if(confirm('Ushbu API Kalitni haqiqatan ham o\'chirib tashlaysizmi? Bu kamerani tizimdan uzadi!')) {
         router.delete(route('admin.developer.keys.destroy', id));
     }
+}
+
+function updateChatId(user) {
+    isProcessing.value = true;
+    router.put(route('admin.developer.users.update_chat_id', user.id), {
+        telegram_chat_id: user.telegram_chat_id
+    }, {
+        preserveScroll: true,
+        onFinish: () => {
+            isProcessing.value = false;
+        }
+    });
 }
 </script>
 
@@ -130,6 +143,41 @@ function revokeKey(id) {
                         </div>
                     </div>
                 </div>
+
+                <!-- TELEGRAM BOT USERS BLOCK -->
+                <div class="glass-panel p-6 rounded-2xl border border-neon-blue/30 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-cyan to-white"></div>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-display font-bold text-white flex items-center gap-3">
+                            <span class="text-neon-blue">🤖</span> Telegram Bot & Xodimlar
+                        </h2>
+                    </div>
+                    <p class="text-sm font-mono text-text-muted mb-8">Bu bo'lim orqali Tizimdagi xodim va hamkorlarni Telegram botiga biriktirasiz. O'zining Chat ID'sini kiritgan foydalanuvchilar Botdan ruxsat oladilar.</p>
+
+                    <div class="space-y-4">
+                        <div v-for="user in users" :key="user.id" class="p-4 border border-white/10 rounded-xl bg-white/[0.02] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div class="flex-1">
+                                <h4 class="text-white font-bold text-lg flex items-center gap-2">
+                                    👤 {{ user.name }}
+                                </h4>
+                                <p class="text-xs font-mono text-text-muted mt-1 uppercase tracking-widest">
+                                    Email: <span class="text-white">{{ user.email }}</span> | 
+                                    Rol: <span class="text-neon-cyan">{{ user.roles.join(', ') || 'Rolsiz' }}</span>
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2 w-full md:w-auto">
+                                <div class="relative w-full md:w-64">
+                                    <input v-model="user.telegram_chat_id" type="text" class="glass-input w-full text-white font-mono text-sm pl-8" placeholder="Chat ID (masalan: 123456789)">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">💬</span>
+                                </div>
+                                <button @click="updateChatId(user)" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue/50 text-xs font-mono uppercase tracking-widest rounded hover:bg-neon-blue hover:text-white transition-colors disabled:opacity-50">
+                                    Saqlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>

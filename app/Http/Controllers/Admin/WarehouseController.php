@@ -67,6 +67,91 @@ class WarehouseController extends Controller
         return back()->with('success', 'Ta\'minotchi qo\'shildi');
     }
 
+    public function updateSupplier(Request $request, Supplier $supplier)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'inn' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'bank_account' => 'nullable|string',
+            'mfo' => 'nullable|string',
+        ]);
+
+        $supplier->update($validated);
+        return back()->with('success', 'Ta\'minotchi yangilandi');
+    }
+
+    public function destroySupplier(Supplier $supplier)
+    {
+        if ($supplier->balance != 0) {
+            return back()->with('error', 'Balansida mablag\' bo\'lgan ta\'minotchini o\'chirib bo\'lmaydi');
+        }
+        
+        $supplier->delete();
+        return back()->with('success', 'Ta\'minotchi o\'chirildi');
+    }
+
+    public function uploadSupplierDocument(Request $request, Supplier $supplier)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240'
+        ]);
+
+        $file = $request->file('document');
+        $filename = 'supplier_doc_' . $supplier->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('supplier_documents', $filename, 'public');
+
+        // Delete old document if exists
+        if ($supplier->document_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($supplier->document_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($supplier->document_path);
+        }
+
+        $supplier->update(['document_path' => $path]);
+
+        return back()->with('success', 'Hujjat muvaffaqiyatli biriktirildi');
+    }
+
+    public function sendSupplierDocumentToTelegram(Supplier $supplier)
+    {
+        if (!$supplier->document_path) {
+            return back()->with('error', 'Yuborish uchun hujjat mavjud emas');
+        }
+
+        $token = env('TELEGRAM_BOT_TOKEN');
+        $chatId = env('TELEGRAM_CHAT_ID');
+
+        if (!$token || !$chatId) {
+            return back()->with('error', 'Telegram Bot sozlamalari (.env) kiritilmagan');
+        }
+
+        $filePath = storage_path('app/public/' . $supplier->document_path);
+
+        if (!file_exists($filePath)) {
+            return back()->with('error', 'Hujjat fayli topilmadi');
+        }
+
+        $caption = "🏢 Ta'minotchi: " . ($supplier->company_name ?: $supplier->name) . "\n"
+                 . "👤 Vakil: " . $supplier->name . "\n"
+                 . "📞 Tel: " . $supplier->phone . "\n"
+                 . "💼 STIR (INN): " . $supplier->inn . "\n\n"
+                 . "Biriktirilgan shartnoma yoki shot-faktura.";
+
+        $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+            ->attach('document', file_get_contents($filePath), basename($filePath))
+            ->post("https://api.telegram.org/bot{$token}/sendDocument", [
+                'chat_id' => $chatId,
+                'caption' => $caption
+            ]);
+
+        if ($response->successful()) {
+            return back()->with('success', 'Hujjat Telegramga yuborildi');
+        }
+
+        return back()->with('error', 'Telegramga yuborishda xatolik: ' . $response->body());
+    }
+
     public function contracts()
     {
         return Inertia::render('Admin/Warehouse/Contracts', [

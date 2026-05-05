@@ -170,7 +170,7 @@ class HrController extends Controller
         $imageName = $validated['person_type'] . '_' . $validated['person_id'] . '_' . time() . '.jpg';
         
         \Illuminate\Support\Facades\Storage::disk('public')->put('biometrics/' . $imageName, base64_decode($image));
-        $photoPath = '/storage/biometrics/' . $imageName;
+        $photoPath = 'biometrics/' . $imageName;
 
         if ($validated['person_type'] === 'user') {
             $user = \App\Models\User::findOrFail($validated['person_id']);

@@ -1,7 +1,7 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
-import GalaxyBackground from '@/Components/GalaxyBackground.vue';
+import BackgroundTheme from '@/Components/BackgroundTheme.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
 
 const page = usePage();
@@ -11,13 +11,7 @@ const page = usePage();
     <ThemeProvider>
         <div class="min-h-screen bg-transparent text-text-primary flex flex-col relative overflow-hidden">
             
-            <GalaxyBackground />
-
-        <!-- Ambient Glowing Orbs -->
-        <div class="fixed inset-0 pointer-events-none z-0">
-            <div class="absolute -top-[10%] -left-[20%] w-[800px] h-[800px] rounded-full bg-[#00F0FF]/10 blur-[160px]"></div>
-            <div class="absolute -bottom-[20%] right-[10%] w-[700px] h-[700px] rounded-full bg-[#39FF14]/5 blur-[150px]"></div>
-        </div>
+            <BackgroundTheme />
 
         <!-- Top Navigation (Header) -->
         <header class="h-20 md:h-24 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-50 relative">

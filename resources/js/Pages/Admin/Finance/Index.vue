@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
@@ -359,22 +359,62 @@ function submitSupplierPayment() {
     <Head :title="$t('finance_core')" />
     <AdminLayout>
         
-        <div class="flex justify-between items-center mb-8">
+        <div class="mb-8">
             <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-green/50 text-shadow-glow flex items-center gap-3">
                 <span class="text-4xl drop-shadow-[0_0_15px_rgba(57,255,20,0.6)]">🏦</span> {{ $t('finance_core') }}
             </h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
-            <div class="glass-panel p-1 rounded-xl flex gap-1 bg-black/40 border border-white/10">
+            <!-- Sidebar Navigation -->
+            <div class="space-y-4">
                 <button 
                     v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
-                    class="px-6 py-2 rounded-lg text-sm font-mono tracking-widest transition-all duration-300 uppercase"
-                    :class="activeTab === tab.id ? 'bg-white/10 text-neon-green border border-neon-green/30 shadow-[0_0_15px_rgba(57,255,20,0.1)]' : 'text-text-muted hover:text-white hover:bg-white/5'"
+                    class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group"
+                    :class="activeTab === tab.id ? 'border-neon-primary bg-white/5' : 'border-white/5 hover:border-white/20 hover:bg-black/40'"
                 >
-                    <span class="mr-2">{{ tab.icon }}</span> {{ $t(tab.name) }}
+                    <div class="w-10 h-10 rounded-xl bg-black/50 border flex items-center justify-center transition-colors shrink-0"
+                         :class="activeTab === tab.id ? 'border-neon-primary text-neon-primary' : 'border-white/10 group-hover:border-white/30 text-white'">
+                        <span class="text-xl">{{ tab.icon }}</span>
+                    </div>
+                    <div class="text-left">
+                        <h3 class="font-display font-bold uppercase tracking-widest text-sm transition-colors"
+                            :class="activeTab === tab.id ? 'text-neon-primary' : 'text-white'">
+                            {{ $t(tab.name) }}
+                        </h3>
+                    </div>
                 </button>
+                
+                <!-- Unified Finance Sub-Navigation (Cheklar / Tasdiqlar) -->
+                <div class="pt-4 border-t border-white/10 space-y-4">
+                    <Link :href="route('admin.receipts')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-cyan/50 hover:bg-neon-cyan/5">
+                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-cyan flex items-center justify-center text-white group-hover:text-neon-cyan shrink-0 transition-colors">
+                            <span class="text-xl">🧾</span>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-cyan transition-colors">
+                                {{ $t('Cheklar') || 'Cheklar' }}
+                            </h3>
+                        </div>
+                    </Link>
+                    
+                    <Link :href="route('admin.approvals')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-yellow/50 hover:bg-neon-yellow/5">
+                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-yellow flex items-center justify-center text-white group-hover:text-neon-yellow shrink-0 transition-colors">
+                            <span class="text-xl">✅</span>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-yellow transition-colors">
+                                {{ $t('Tasdiqlar') || 'Tasdiqlar' }}
+                            </h3>
+                        </div>
+                    </Link>
+                </div>
             </div>
-        </div>
+
+            <!-- Content Area -->
+            <div class="lg:col-span-3">
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
@@ -867,6 +907,9 @@ function submitSupplierPayment() {
                 <div v-if="!suppliers || suppliers.length === 0" class="col-span-full py-12 text-center text-text-muted font-mono text-sm border-dashed border border-white/10 rounded-xl">
                     Hozircha ta'minotchilar mavjud emas.
                 </div>
+            </div>
+        </div>
+
             </div>
         </div>
 

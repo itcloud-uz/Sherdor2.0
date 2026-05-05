@@ -10,3 +10,11 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/v1/face-recognition/log', [FaceRecognitionController::class, 'log'])->name('api.face.log');
 Route::post('/v1/hardware/event', [\App\Http\Controllers\Api\HardwareEventController::class, 'logEvent'])->name('api.hardware.event');
+
+// Telegram Bot API Endpoints
+Route::middleware([\App\Http\Middleware\BotApiMiddleware::class])->prefix('bot/v1')->group(function () {
+    Route::post('/verify-user', [\App\Http\Controllers\Api\BotApiController::class, 'verifyUser']);
+    Route::post('/transactions', [\App\Http\Controllers\Api\BotApiController::class, 'createTransaction']);
+    Route::get('/transactions/pending', [\App\Http\Controllers\Api\BotApiController::class, 'getPendingTransactions']);
+    Route::post('/transactions/approve', [\App\Http\Controllers\Api\BotApiController::class, 'approveTransaction']);
+});

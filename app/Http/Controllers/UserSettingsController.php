@@ -38,6 +38,7 @@ class UserSettingsController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
             'language' => ['required', 'string', 'in:uz,ru,en'],
             'theme_color' => ['nullable', 'string', 'max:20'],
+            'theme_style' => ['nullable', 'string', 'in:apple_glass,galaxy,cyberpunk,minimalist,gold,itcloud_cyberglass'],
         ]);
 
         if ($request->filled('password')) {

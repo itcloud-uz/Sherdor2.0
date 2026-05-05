@@ -31,6 +31,7 @@ const form = useForm({
     password: '',
     language: user.language || 'uz',
     theme_color: user.theme_color || '#00F0FF',
+    theme_style: user.theme_style || 'apple_glass',
     avatar: null,
 });
 
@@ -67,6 +68,14 @@ const updateLanguage = (lang) => {
     localStorage.setItem('locale', lang);
     document.documentElement.lang = lang;
     submit();
+};
+
+const updateThemeStyle = (style) => {
+    form.theme_style = style;
+    submit();
+    setTimeout(() => {
+        window.location.reload(); // Reload to apply background theme completely
+    }, 500);
 };
 </script>
 
@@ -141,7 +150,38 @@ const updateLanguage = (lang) => {
 
             <!-- Dizayn va Til -->
             <div class="space-y-8">
-                <!-- Dashboard Mavzusi -->
+                <!-- Global Mavzu (Theme Style) -->
+                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
+                    <h2 class="text-xl font-display font-bold text-white mb-6">Global Dizayn Mavzusi</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                            <span class="text-3xl">🍏</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'apple_glass' ? 'text-neon-primary font-bold' : 'text-text-muted'">Apple Glass</span>
+                        </button>
+                        <button type="button" @click="updateThemeStyle('galaxy')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'galaxy' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                            <span class="text-3xl">🌌</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'galaxy' ? 'text-neon-primary font-bold' : 'text-text-muted'">Sher-Dor Galaxy</span>
+                        </button>
+                        <button type="button" @click="updateThemeStyle('cyberpunk')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'cyberpunk' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                            <span class="text-3xl">🤖</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'cyberpunk' ? 'text-neon-primary font-bold' : 'text-text-muted'">Neon Cyberpunk</span>
+                        </button>
+                        <button type="button" @click="updateThemeStyle('minimalist')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'minimalist' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
+                            <span class="text-3xl">⬛</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'minimalist' ? 'text-neon-primary font-bold' : 'text-text-muted'">Minimalist</span>
+                        </button>
+                        <button type="button" @click="updateThemeStyle('gold')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'gold' ? 'border-[#FFD700] bg-[#FFD700]/10 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'border-white/10 hover:border-[#FFD700]/50 bg-black/40'">
+                            <span class="text-3xl text-shadow-glow shadow-[#FFD700]">⚜️</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'gold' ? 'text-[#FFD700] font-bold' : 'text-text-muted'">Gold Royal</span>
+                        </button>
+                        <button type="button" @click="updateThemeStyle('itcloud_cyberglass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'itcloud_cyberglass' ? 'border-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_20px_rgba(0,240,255,0.4)]' : 'border-white/10 hover:border-[#00F0FF]/50 bg-black/40'">
+                            <span class="text-3xl">🌐</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'itcloud_cyberglass' ? 'text-[#00F0FF] font-bold' : 'text-text-muted'">ITCloud Cyberglass</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Rangi -->
                 <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group h-min">
                     <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('dashboard_theme') }}</h2>
                     <p class="text-xs text-text-muted mb-4 font-mono">{{ $t('choose_theme_color') }}</p>

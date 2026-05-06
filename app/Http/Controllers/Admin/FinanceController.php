@@ -24,7 +24,10 @@ class FinanceController extends Controller
             'pendingExpenses' => $pendingExpenses,
             'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', 'active')->get(),
             'financialLiabilities' => \App\Models\FinancialLiability::with('payments')->latest()->get(),
-            'suppliers' => \App\Models\Supplier::latest()->get()
+            'suppliers' => \App\Models\Supplier::latest()->get(),
+            'workers' => \App\Models\Worker::latest()->get(),
+            'machineries' => \App\Models\Machinery::latest()->get(),
+            'buildings' => \App\Models\Building::latest()->get()
         ]);
     }
 
@@ -42,6 +45,10 @@ class FinanceController extends Controller
             'transaction_date' => 'nullable|date',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'auto_approve' => 'nullable|boolean',
+            'worker_id' => 'nullable|exists:workers,id',
+            'machinery_id' => 'nullable|exists:machineries,id',
+            'building_id' => 'nullable|exists:buildings,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -124,6 +131,47 @@ class FinanceController extends Controller
                 \App\Models\CompanyBalance::addIncome($transaction->amount, $transaction->account_type);
             } else {
                 \App\Models\CompanyBalance::addExpense($transaction->amount, $transaction->account_type);
+            }
+
+            // Specific target updates
+            if ($transaction->worker_id) {
+                $worker = \App\Models\Worker::find($transaction->worker_id);
+                if ($worker) {
+                    $workerAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                    $worker->increment('balance', $workerAmount);
+                    \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                        'worker_id' => $worker->id,
+                        'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
+                        'amount' => $transaction->amount,
+                        'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
+                        'date' => $transaction->transaction_date ?? now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+            if ($transaction->machinery_id) {
+                $machinery = \App\Models\Machinery::find($transaction->machinery_id);
+                if ($machinery) {
+                    $machineryAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                    $machinery->increment('balance', $machineryAmount);
+                    \Illuminate\Support\Facades\DB::table('machinery_transactions')->insert([
+                        'machinery_id' => $machinery->id,
+                        'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
+                        'amount' => $transaction->amount,
+                        'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
+                        'date' => $transaction->transaction_date ?? now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+            if ($transaction->supplier_id) {
+                $supplier = \App\Models\Supplier::find($transaction->supplier_id);
+                if ($supplier) {
+                    $supplierAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                    $supplier->increment('balance', $supplierAmount);
+                }
             }
         }
 

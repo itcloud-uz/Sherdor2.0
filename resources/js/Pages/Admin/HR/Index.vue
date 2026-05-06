@@ -11,8 +11,7 @@ const props = defineProps({
     buildings: Array,
     unpaidLogs: Array,
     unpaidTotal: [Number, String],
-    payrolls: Array,
-    cashRequests: Array
+    payrolls: Array
 });
 
 const activeTab = ref(0);
@@ -132,29 +131,12 @@ function deleteWorker(id) {
     }
 }
 
-function approveCashRequest(id) {
-    if(!confirm('Ushbu so\'rovni tasdiqlab, balansga ta\'sir qilishini xohlaysizmi?')) return;
-    isProcessing.value = true;
-    router.post(route('admin.hr.cash_requests.approve', id), {}, {
-        onSuccess: () => isProcessing.value = false,
-        onError: () => isProcessing.value = false
-    });
-}
-
-function rejectCashRequest(id) {
-    if(!confirm('Ushbu so\'rovni rad etmoqchimisiz?')) return;
-    isProcessing.value = true;
-    router.post(route('admin.hr.cash_requests.reject', id), {}, {
-        onSuccess: () => isProcessing.value = false,
-        onError: () => isProcessing.value = false
-    });
-}
-
 // Ledger Modal
 const showLedgerModal = ref(false);
 const ledgerWorker = ref(null);
-const ledgerData = ref({ balance: 0, transactions: [] });
-const ledgerForm = ref({ type: 'salary_accrual', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+const ledgerData = ref({ balance: 0, transactions: [], logs: [] });
+const ledgerForm = ref({ type: 'payment', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+const workerLogForm = ref({ building_id: '', volume: '', custom_rate: '', date: new Date().toISOString().split('T')[0] });
 
 function openLedger(w) {
     ledgerWorker.value = w;
@@ -179,6 +161,34 @@ function saveLedgerTransaction() {
             ledgerForm.value.description = '';
             fetchLedger(ledgerWorker.value.id);
             // Wait for Inertia to finish then update global workers array if needed (Inertia reloads props automatically on post)
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function saveWorkerLog() {
+    let payload = {
+        type: 'worker',
+        worker_id: ledgerWorker.value.id,
+        building_id: workerLogForm.value.building_id,
+        date: workerLogForm.value.date
+    };
+    if (ledgerWorker.value.salary_type === 'hourly') {
+        payload.hours_worked = workerLogForm.value.volume;
+    } else {
+        payload.volume_done = workerLogForm.value.volume;
+    }
+    if (workerLogForm.value.custom_rate) {
+        payload.custom_rate = workerLogForm.value.custom_rate;
+    }
+
+    isProcessing.value = true;
+    router.post(route('admin.hr.log.store'), payload, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            workerLogForm.value.volume = '';
+            workerLogForm.value.custom_rate = '';
+            fetchLedger(ledgerWorker.value.id);
         },
         onError: () => isProcessing.value = false
     });
@@ -257,12 +267,92 @@ function deleteMachinery(id) {
     }
 }
 
-// Machinery Ledger Modal State
 const showMachineryLedgerModal = ref(false);
 const machineryLedgerData = ref({ logs: [], transactions: [], total_earned: 0, unpaid_balance: 0 });
 const activeMachinery = ref(null);
 const machineryLedgerForm = ref({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
-const machineryLogForm = ref({ building_id: '', volume: '', date: new Date().toISOString().split('T')[0] });
+const machineryLogForm = ref({ building_id: '', volume: '', custom_rate: '', date: new Date().toISOString().split('T')[0] });
+
+const editLogId = ref(null);
+const editLogForm = ref({ hours_worked: '', volume_done: '', custom_rate: '', date: '' });
+const editTxId = ref(null);
+const editTxForm = ref({ amount: '', description: '', date: '' });
+
+function startEditLog(log) {
+    editLogId.value = log.id;
+    editLogForm.value.hours_worked = log.hours_worked || '';
+    editLogForm.value.volume_done = log.volume_done || '';
+    editLogForm.value.custom_rate = log.rate || '';
+    editLogForm.value.date = log.date ? log.date.split('T')[0] : '';
+}
+
+function submitEditLog() {
+    isProcessing.value = true;
+    router.put(route('admin.hr.log.update', editLogId.value), editLogForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            editLogId.value = null;
+            if (showMachineryLedgerModal.value) {
+                openMachineryLedger(activeMachinery.value);
+            } else if (showLedgerModal.value) {
+                fetchLedger(ledgerWorker.value.id);
+            }
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function destroyLog(id) {
+    if(!confirm("Ish hajmini o'chirmoqchimisiz?")) return;
+    isProcessing.value = true;
+    router.delete(route('admin.hr.log.destroy', id), {
+        onSuccess: () => {
+            isProcessing.value = false;
+            if (showMachineryLedgerModal.value) {
+                openMachineryLedger(activeMachinery.value);
+            } else if (showLedgerModal.value) {
+                fetchLedger(ledgerWorker.value.id);
+            }
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function startEditTx(tx) {
+    editTxId.value = tx.id;
+    editTxForm.value.amount = tx.amount;
+    editTxForm.value.description = tx.description || '';
+    editTxForm.value.date = tx.date ? tx.date.split('T')[0] : '';
+}
+
+function submitEditTx(type) {
+    isProcessing.value = true;
+    router.put(route('admin.hr.transactions.update', { type: type, id: editTxId.value }), editTxForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            editTxId.value = null;
+            if (type === 'machinery') openMachineryLedger(activeMachinery.value);
+            else if (type === 'worker') fetchLedger(ledgerWorker.value.id);
+            else if (type === 'user') fetchUserLedger(ledgerUser.value.id);
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function destroyTx(type, id) {
+    if(!confirm("Tranzaksiyani o'chirmoqchimisiz?")) return;
+    isProcessing.value = true;
+    router.delete(route('admin.hr.transactions.destroy', { type: type, id: id }), {
+        onSuccess: () => {
+            isProcessing.value = false;
+            if (type === 'machinery') openMachineryLedger(activeMachinery.value);
+            else if (type === 'worker') fetchLedger(ledgerWorker.value.id);
+            else if (type === 'user') fetchUserLedger(ledgerUser.value.id);
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
 
 async function openMachineryLedger(m) {
     activeMachinery.value = m;
@@ -303,11 +393,15 @@ function saveMachineryLog() {
     } else {
         payload.volume_done = machineryLogForm.value.volume;
     }
+    if (machineryLogForm.value.custom_rate) {
+        payload.custom_rate = machineryLogForm.value.custom_rate;
+    }
 
     router.post(route('admin.hr.log.store'), payload, {
         onSuccess: () => {
             isProcessing.value = false;
             machineryLogForm.value.volume = '';
+            machineryLogForm.value.custom_rate = '';
             openMachineryLedger(activeMachinery.value);
         },
         onError: () => isProcessing.value = false
@@ -553,6 +647,7 @@ const logForm = ref({
     unit_id: '',
     hours_worked: '',
     volume_done: '',
+    custom_rate: '',
     amount: '',
     target_type: 'building',
     target_id: '',
@@ -590,13 +685,21 @@ const logPreviewCost = computed(() => {
     if (logForm.value.type === 'worker' && logForm.value.worker_id) {
         const w = props.workers.find(x => x.id === parseInt(logForm.value.worker_id));
         if (w) {
-            if (w.salary_type === 'hourly') cost = (Number(logForm.value.hours_worked) || 0) * Number(w.base_rate || w.rate);
-            if (w.salary_type === 'piece_rate') cost = (Number(logForm.value.volume_done) || 0) * Number(w.base_rate || w.rate);
+            if (logForm.value.custom_rate) {
+                cost = (Number(logForm.value.hours_worked) || Number(logForm.value.volume_done) || 0) * Number(logForm.value.custom_rate);
+            } else {
+                if (w.salary_type === 'hourly') cost = (Number(logForm.value.hours_worked) || 0) * Number(w.base_rate || w.rate);
+                if (w.salary_type === 'piece_rate') cost = (Number(logForm.value.volume_done) || 0) * Number(w.base_rate || w.rate);
+            }
         }
     } else if (logForm.value.type === 'machinery' && logForm.value.machinery_id) {
         const m = props.machineries.find(x => x.id === parseInt(logForm.value.machinery_id));
         if (m) {
+            if (logForm.value.custom_rate) {
+            cost = (Number(logForm.value.hours_worked) || 0) * Number(logForm.value.custom_rate);
+        } else {
             cost = (Number(logForm.value.hours_worked) || 0) * Number(m.cost_per_hour);
+        }
         }
     }
     return cost;
@@ -604,25 +707,16 @@ const logPreviewCost = computed(() => {
 
 function submitLog() {
     isProcessing.value = true;
-    if (logForm.value.type === 'expense' || logForm.value.type === 'income') {
-        router.post(route('admin.hr.cash_requests.store'), logForm.value, {
-            onSuccess: () => {
-                isProcessing.value = false;
-                logForm.value.amount = '';
-                logForm.value.description = '';
-            },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.log.store'), logForm.value, {
-            onSuccess: () => {
-                isProcessing.value = false;
-                logForm.value.hours_worked = '';
-                logForm.value.volume_done = '';
-            },
-            onError: () => isProcessing.value = false
-        });
-    }
+    router.post(route('admin.hr.log.store'), logForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            logForm.value.hours_worked = '';
+            logForm.value.volume_done = '';
+            logForm.value.custom_rate = '';
+            logForm.value.date = new Date().toISOString().split('T')[0];
+        },
+        onError: () => isProcessing.value = false
+    });
 }
 
 // TAB 3 Action
@@ -1071,40 +1165,6 @@ function generatePayroll() {
         <!-- TAB 4: Timesheets & Logistics / Cash Requests -->
         <div v-if="activeTab === 4" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
             
-            <!-- Cash Requests Action Center -->
-            <div class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 shadow-[0_0_30px_rgba(255,255,0,0.1)]">
-                <h2 class="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
-                    🟢 Kutayotgan Kassa So'rovlari (Action Center)
-                </h2>
-                
-                <div class="space-y-3">
-                    <div v-for="req in cashRequests.filter(r => r.status === 'pending')" :key="req.id" class="p-4 bg-black/40 rounded-xl border border-white/10 flex justify-between items-center group hover:border-neon-yellow/50 transition-colors">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span v-if="req.type === 'income'" class="px-2 py-0.5 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] uppercase font-mono tracking-widest rounded">Kirim</span>
-                                <span v-else class="px-2 py-0.5 bg-neon-red/20 text-neon-red border border-neon-red/30 text-[10px] uppercase font-mono tracking-widest rounded">Chiqim</span>
-                                <span class="text-xs font-mono text-white">{{ new Date(req.created_at).toLocaleDateString() }}</span>
-                            </div>
-                            <p class="text-sm text-white font-bold">{{ req.description }}</p>
-                            <p class="text-[10px] font-mono text-text-muted mt-1 uppercase">So'radi: {{ req.user?.name || 'Prorab' }} | Obyekt: {{ req.building?.name || 'Noma\'lum' }} | Maqsad: {{ req.target_type === 'worker' ? '👷 Ishchi hisobiga' : (req.target_type === 'machinery' ? '🚜 Texnika hisobiga' : (req.target_type === 'building' ? '🏢 Obyekt xarajati' : '📦 Boshqa')) }}</p>
-                        </div>
-                        <div class="text-right flex flex-col items-end gap-2">
-                            <span class="text-xl font-bold font-display" :class="req.type === 'income' ? 'text-neon-green' : 'text-neon-red'">
-                                {{ req.type === 'income' ? '+' : '-' }} {{ $currency(req.amount) }}
-                            </span>
-                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button @click="approveCashRequest(req.id)" :disabled="isProcessing" class="px-3 py-1 bg-neon-green/20 text-neon-green text-[10px] uppercase font-mono rounded hover:bg-neon-green hover:text-black border border-neon-green/50">Tasdiqlash</button>
-                                <button @click="rejectCashRequest(req.id)" :disabled="isProcessing" class="px-3 py-1 bg-neon-red/20 text-neon-red text-[10px] uppercase font-mono rounded hover:bg-neon-red hover:text-black border border-neon-red/50">Rad etish</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div v-if="!cashRequests.filter(r => r.status === 'pending').length" class="text-center py-6 text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-xl">
-                        Kutayotgan so'rovlar yo'q
-                    </div>
-                </div>
-            </div>
-
             <!-- Existing Work Log Form -->
             <div class="glass-panel p-8 rounded-2xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,102,255,0.1)]">
                 <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_work') }}</h2>
@@ -1124,18 +1184,6 @@ function generatePayroll() {
                                 🚜 {{ $t('machinery') }}
                             </div>
                         </label>
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="logForm.type" value="expense" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-red peer-checked:bg-neon-red/10 peer-checked:text-neon-red text-text-muted transition-all text-sm uppercase tracking-widest font-mono">
-                                💸 Chiqim
-                            </div>
-                        </label>
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="logForm.type" value="income" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-green peer-checked:bg-neon-green/10 peer-checked:text-neon-green text-text-muted transition-all text-sm uppercase tracking-widest font-mono">
-                                💰 Kirim
-                            </div>
-                        </label>
                     </div>
 
                     <div class="grid grid-cols-2 gap-6">
@@ -1146,44 +1194,12 @@ function generatePayroll() {
                                 <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                             </select>
                         </div>
-                        <div v-else-if="logForm.type === 'machinery'">
+                        <div v-if="logForm.type === 'machinery'">
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_machinery') }}</label>
                             <select v-model="logForm.machinery_id" class="glass-input w-full text-white bg-black/50" required>
                                 <option value="" disabled>-- {{ $t('select') }} --</option>
                                 <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }}</option>
                             </select>
-                        </div>
-                        <div v-else class="col-span-1 space-y-4">
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kategoriya / Maqsad</label>
-                                <select v-model="logForm.target_type" class="glass-input w-full text-white bg-black/50" required @change="logForm.target_id = ''">
-                                    <option value="building">🏢 Umumiy Obyekt / Kompaniya</option>
-                                    <option value="worker">👷 Ishchi hisobi (Oylik/Avans/Qarz)</option>
-                                    <option value="machinery">🚜 Texnika hisobi (To'lov/Qarz)</option>
-                                    <option value="other">📦 Boshqa maqsadlar</option>
-                                </select>
-                            </div>
-                            
-                            <div v-if="logForm.target_type === 'worker'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Qaysi Ishchi?</label>
-                                <select v-model="logForm.target_id" class="glass-input w-full text-white bg-black/50" required>
-                                    <option value="" disabled>-- Tanlang --</option>
-                                    <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
-                                </select>
-                            </div>
-
-                            <div v-if="logForm.target_type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Qaysi Texnika?</label>
-                                <select v-model="logForm.target_id" class="glass-input w-full text-white bg-black/50" required>
-                                    <option value="" disabled>-- Tanlang --</option>
-                                    <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} (Egasi: {{ m.owner_name }})</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Summa (So'm)</label>
-                                <input v-model="logForm.amount" type="number" class="glass-input w-full text-white" placeholder="Masalan: 150000" required>
-                            </div>
                         </div>
 
                         <div class="space-y-3">
@@ -1211,12 +1227,12 @@ function generatePayroll() {
                             <input v-model="logForm.hours_worked" type="number" step="0.5" class="glass-input w-full text-white" placeholder="0.0">
                         </div>
                         <div v-if="logForm.type === 'worker'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('volume_done') }} (Piece Rate)</label>
+                            <label class="block text-[10px] font-mono text-neon-yellow mb-1 uppercase">Obyom / Hajm</label>
                             <input v-model="logForm.volume_done" type="number" step="0.1" class="glass-input w-full text-white" placeholder="0.0">
                         </div>
-                        <div v-if="logForm.type === 'expense' || logForm.type === 'income'" class="col-span-2 md:col-span-1">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh / Maqsad</label>
-                            <textarea v-model="logForm.description" class="glass-input w-full text-white h-10 py-2" placeholder="Masalan: Qo'lqop, Simlar uchun..." required></textarea>
+                        <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
+                            <label class="block text-[10px] font-mono text-neon-magenta mb-1 uppercase">Maxsus Narx (Ixtiyoriy)</label>
+                            <input v-model="logForm.custom_rate" type="number" step="0.01" class="glass-input w-full text-white" placeholder="Kelishilgan narx">
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('date') }}</label>
@@ -1229,9 +1245,8 @@ function generatePayroll() {
                         <span class="text-2xl font-display font-bold text-neon-blue">{{ $currency(logPreviewCost) }}</span>
                     </div>
 
-                    <button type="submit" :disabled="isProcessing" class="w-full py-4 rounded-xl text-black font-bold font-mono tracking-widest uppercase hover:shadow-[0_0_20px_rgba(0,102,255,0.5)] transition-all disabled:opacity-50" :class="(logForm.type === 'expense' || logForm.type === 'income') ? 'bg-neon-yellow shadow-[0_0_10px_#FCEE09]' : 'bg-neon-blue'">
-                        <span v-if="logForm.type === 'expense' || logForm.type === 'income'">SO'ROV YUBORISH (TASDIQLASH UCHUN)</span>
-                        <span v-else>{{ $t('save_log') }}</span>
+                    <button type="submit" :disabled="isProcessing" class="w-full py-4 rounded-xl text-black font-bold font-mono tracking-widest uppercase hover:shadow-[0_0_20px_rgba(0,102,255,0.5)] transition-all disabled:opacity-50 bg-neon-blue">
+                        <span>{{ $t('save_log') }}</span>
                     </button>
                 </form>
             </div>
@@ -1392,56 +1407,140 @@ function generatePayroll() {
                     </div>
                 </div>
 
-                <form @submit.prevent="saveLedgerTransaction" class="mb-8 p-4 bg-black/40 border border-white/5 rounded-xl space-y-4">
-                    <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Turi</label>
-                            <select v-model="ledgerForm.type" class="glass-input w-full text-xs bg-black/50" required>
-                                <option value="salary_accrual">Oylik/Ish xaqi hisoblash (Kirim)</option>
-                                <option value="advance_payment">Avans berish (Chiqim)</option>
-                                <option value="payment">To'lov (Chiqim)</option>
-                                <option value="penalty">Jarima (Chiqim)</option>
-                            </select>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <!-- Manual Work Log Form -->
+                    <form @submit.prevent="saveWorkerLog" class="flex flex-col gap-2 p-4 bg-neon-blue/10 rounded-xl border border-neon-blue/30">
+                        <h4 class="text-[10px] font-mono text-neon-blue uppercase tracking-widest border-b border-neon-blue/30 pb-2">➕ Ish Hajmini Kiritish</h4>
+                        <div class="flex gap-2 mt-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Obyekt (Bino)</label>
+                                <select v-model="workerLogForm.building_id" class="glass-input text-xs w-full text-white bg-black/50" required>
+                                    <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                </select>
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ ledgerWorker?.salary_type === 'hourly' ? 'Soat' : 'Hajm (Obyom)' }}</label>
+                                <input v-model="workerLogForm.volume" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Summa</label>
-                            <input v-model="ledgerForm.amount" type="number" step="0.01" class="glass-input w-full text-xs" required>
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Maxsus Narx</label>
+                                <input v-model="workerLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="Ixtiyoriy">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <input v-model="workerLogForm.date" type="date" class="glass-input text-xs w-full" required>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Sana</label>
-                            <input v-model="ledgerForm.date" type="date" class="glass-input w-full text-xs" required>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-neon-blue text-[10px] font-mono uppercase tracking-widest rounded border border-neon-blue/50 hover:bg-neon-blue hover:text-black transition-colors disabled:opacity-50">
+                                Qo'shish
+                            </button>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh</label>
-                            <input v-model="ledgerForm.description" type="text" class="glass-input w-full text-xs">
-                        </div>
-                    </div>
-                    <div class="flex justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue/50 font-bold uppercase tracking-widest text-xs rounded hover:bg-neon-blue hover:text-black transition-all disabled:opacity-50">
-                            Saqlash
-                        </button>
-                    </div>
-                </form>
+                    </form>
 
-                <div class="space-y-2">
-                    <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest mb-2">Tranzaksiyalar Tarixi</h3>
-                    <div v-for="t in ledgerData.transactions" :key="t.id" class="p-3 border border-white/5 rounded-lg flex justify-between items-center hover:bg-white/[0.02] transition-colors">
-                        <div>
-                            <p class="text-[10px] font-mono text-text-muted">{{ t.date }}</p>
-                            <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                    <!-- Ledger Transaction Form -->
+                    <form @submit.prevent="saveLedgerTransaction" class="flex flex-col gap-2 p-4 bg-neon-green/10 rounded-xl border border-neon-green/30">
+                        <h4 class="text-[10px] font-mono text-neon-green uppercase tracking-widest border-b border-neon-green/30 pb-2">💸 Tranzaksiya Qo'shish</h4>
+                        <div class="flex gap-2 mt-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Turi</label>
+                                <select v-model="ledgerForm.type" class="glass-input text-xs w-full bg-black/50" required>
+                                    <option value="payment">To'lov (Chiqim)</option>
+                                    <option value="advance_payment">Avans (Chiqim)</option>
+                                    <option value="penalty">Jarima (Chiqim)</option>
+                                    <option value="salary_accrual">Oylik hisoblash (Kirim)</option>
+                                </select>
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Summa</label>
+                                <input v-model="ledgerForm.amount" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
-                                {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
-                            </p>
-                            <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <input v-model="ledgerForm.date" type="date" class="glass-input text-xs w-full" required>
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Izoh</label>
+                                <input v-model="ledgerForm.description" type="text" class="glass-input text-xs w-full">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50">
+                                Saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
+                    <div v-for="t in ledgerData.transactions" :key="'tx'+t.id" class="flex flex-col gap-2 p-3 border border-white/5 rounded-lg bg-black/40 hover:border-white/20 transition-colors group">
+                        <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
+                            <button @click="submitEditTx('worker')" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                        </div>
+                        <div v-else class="flex justify-between items-center w-full">
+                            <div>
+                                <p class="text-[10px] font-mono text-text-muted">{{ new Date(t.date).toLocaleDateString() }}</p>
+                                <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
+                                        {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
+                                    </p>
+                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="destroyTx('worker', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="!ledgerData.transactions.length" class="text-center py-6 text-text-muted text-xs font-mono border border-dashed border-white/10 rounded-xl">
-                        Tranzaksiyalar topilmadi.
+                    
+                    <div v-for="log in ledgerData.logs" :key="'log'+log.id" class="p-3 border border-white/5 rounded-lg bg-black/40 hover:border-neon-yellow/30 transition-colors group">
+                        <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
+                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
+                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
+                            <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
+                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                        </div>
+                        <div v-else class="flex justify-between items-center w-full">
+                            <div>
+                                <p class="text-[10px] font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
+                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
+                                    Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-neon-red' : 'text-neon-green'">
+                                        - {{ $currency(log.calculated_cost) }}
+                                    </p>
+                                    <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
+                                        :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
+                                        {{ log.status === 'unpaid' ? 'To\'lanmagan' : 'To\'langan' }}
+                                    </span>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="!ledgerData.transactions.length && !ledgerData.logs.length" class="text-center py-6 text-text-muted text-xs font-mono border border-dashed border-white/10 rounded-xl">
+                        Tarix topilmadi.
                     </div>
                 </div>
             </div>
@@ -1504,16 +1603,31 @@ function generatePayroll() {
 
                 <div class="space-y-2">
                     <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest mb-2">Tranzaksiyalar Tarixi</h3>
-                    <div v-for="t in userLedgerData.transactions" :key="t.id" class="p-3 border border-white/5 rounded-lg flex justify-between items-center hover:bg-white/[0.02] transition-colors">
-                        <div>
-                            <p class="text-[10px] font-mono text-text-muted">{{ t.date }}</p>
-                            <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                    <div v-for="t in userLedgerData.transactions" :key="t.id" class="flex flex-col gap-2 p-3 border border-white/5 rounded-lg hover:bg-white/[0.02] transition-colors">
+                        <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
+                            <button @click="submitEditTx('user')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">Saqlash</button>
+                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
-                                {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
-                            </p>
-                            <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                        <div v-else class="flex justify-between items-center w-full group">
+                            <div>
+                                <p class="text-[10px] font-mono text-text-muted">{{ t.date }}</p>
+                                <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
+                                        {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
+                                    </p>
+                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="destroyTx('user', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div v-if="!userLedgerData.transactions.length" class="text-center py-6 text-text-muted text-xs font-mono border border-dashed border-white/10 rounded-xl">
@@ -1716,6 +1830,10 @@ function generatePayroll() {
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ activeMachinery?.payment_type === 'hourly' ? 'Soat' : 'Hajm (Obyom)' }}</label>
                                 <input v-model="machineryLogForm.volume" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
                             </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Maxsus Narx</label>
+                                <input v-model="machineryLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="Ixtiyoriy">
+                            </div>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
@@ -1758,30 +1876,61 @@ function generatePayroll() {
                 </div>
 
                 <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                    <div v-for="tx in machineryLedgerData.transactions" :key="'tx'+tx.id" class="p-4 border border-neon-green/30 rounded-xl bg-neon-green/5 flex justify-between items-center">
-                        <div>
-                            <p class="text-xs font-mono text-white mb-1">{{ new Date(tx.date).toLocaleDateString() }} | 💸 To'lov Qilindi</p>
-                            <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">{{ tx.description || 'Izohsiz' }}</p>
+                    <div v-for="tx in machineryLedgerData.transactions" :key="'tx'+tx.id" class="p-4 border border-neon-green/30 rounded-xl bg-neon-green/5 group transition-colors">
+                        <div v-if="editTxId === tx.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
+                            <button @click="submitEditTx('machinery')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">Saqlash</button>
+                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-neon-green">+ {{ $currency(tx.amount) }}</p>
+                        <div v-else class="flex justify-between items-center w-full">
+                            <div>
+                                <p class="text-xs font-mono text-white mb-1">{{ new Date(tx.date).toLocaleDateString() }} | 💸 To'lov Qilindi</p>
+                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">{{ tx.description || 'Izohsiz' }}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-neon-green">+ {{ $currency(tx.amount) }}</p>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="startEditTx(tx)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="destroyTx('machinery', tx.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div v-for="log in machineryLedgerData.logs" :key="log.id" class="p-4 border border-white/10 rounded-xl bg-black/40 flex justify-between items-center hover:border-neon-yellow/30 transition-colors">
-                        <div>
-                            <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
-                            <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
-                                Obyekt: {{ log.building?.name || 'Noma\'lum' }}
-                            </p>
+                    <div v-for="log in machineryLedgerData.logs" :key="log.id" class="p-4 border border-white/10 rounded-xl bg-black/40 group hover:border-neon-yellow/30 transition-colors">
+                        <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
+                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
+                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
+                            <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
+                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-neon-red' : 'text-neon-green'">
-                                - {{ $currency(log.calculated_cost) }}
-                            </p>
-                            <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
-                                :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
-                                {{ log.status === 'unpaid' ? 'To\'lanmagan' : 'To\'langan' }}
-                            </span>
+                        <div v-else class="flex justify-between items-center w-full">
+                            <div>
+                                <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
+                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
+                                    Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-neon-red' : 'text-neon-green'">
+                                        - {{ $currency(log.calculated_cost) }}
+                                    </p>
+                                    <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
+                                        :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
+                                        {{ log.status === 'unpaid' ? 'To\'lanmagan' : 'To\'langan' }}
+                                    </span>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div v-if="!machineryLedgerData.logs.length && !machineryLedgerData.transactions?.length" class="text-center py-8 text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-xl">

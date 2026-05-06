@@ -122,6 +122,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/hr/machinery/{machinery}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineryTransaction'])->name('hr.machinery.transaction.store');
     
     Route::post('/hr/log', [\App\Http\Controllers\Admin\HrController::class, 'storeLog'])->name('hr.log.store');
+    Route::put('/hr/log/{log}', [\App\Http\Controllers\Admin\HrController::class, 'updateLog'])->name('hr.log.update');
+    Route::delete('/hr/log/{log}', [\App\Http\Controllers\Admin\HrController::class, 'deleteLog'])->name('hr.log.destroy');
+    
+    Route::put('/hr/transactions/{type}/{id}', [\App\Http\Controllers\Admin\HrController::class, 'updateTransaction'])->name('hr.transactions.update');
+    Route::delete('/hr/transactions/{type}/{id}', [\App\Http\Controllers\Admin\HrController::class, 'deleteTransaction'])->name('hr.transactions.destroy');
+    
     Route::post('/hr/biometric', [\App\Http\Controllers\Admin\HrController::class, 'storeBiometric'])->name('hr.biometric.store');
     Route::post('/hr/payroll', [\App\Http\Controllers\Admin\HrController::class, 'generatePayroll'])->name('hr.payroll.generate');
     Route::get('/hr/payroll/{id}/print', [\App\Http\Controllers\Admin\HrController::class, 'printPayroll'])->name('hr.payroll.print');

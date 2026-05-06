@@ -25,8 +25,7 @@ class HrController extends Controller
             'buildings' => Building::with('floors.units')->get(),
             'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->get(),
             'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
-            'payrolls' => Payroll::with('transaction')->latest()->get(),
-            'cashRequests' => \App\Models\CashRequest::with(['user', 'building'])->orderBy('created_at', 'desc')->get()
+            'payrolls' => Payroll::with('transaction')->latest()->get()
         ]);
     }
 
@@ -202,20 +201,23 @@ class HrController extends Controller
         if ($validated['type'] === 'worker') {
             $worker = Worker::find($validated['worker_id']);
             if ($worker->salary_type === 'hourly') {
-                $calculatedCost = ($validated['hours_worked'] ?? 0) * $worker->base_rate;
+                $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
+                $calculatedCost = ($validated['hours_worked'] ?? 0) * $rate;
             } elseif ($worker->salary_type === 'piece_rate') {
-                $calculatedCost = ($validated['volume_done'] ?? 0) * $worker->base_rate;
+                $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
+                $calculatedCost = ($validated['volume_done'] ?? 0) * $rate;
             } else {
-                // fixed monthly could be logged differently, assuming 0 cost per log if it's monthly
                 $calculatedCost = 0; 
             }
             $validated['machinery_id'] = null;
         } else {
             $machinery = Machinery::find($validated['machinery_id']);
-            $calculatedCost = ($validated['hours_worked'] ?? 0) * $machinery->cost_per_hour;
+            $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $machinery->cost_per_hour;
+            $calculatedCost = ($validated['hours_worked'] ?? 0) * $rate;
             $validated['worker_id'] = null;
         }
 
+        $validated['rate'] = $rate ?? 0;
         $validated['calculated_cost'] = $calculatedCost;
         $validated['status'] = 'unpaid';
 
@@ -455,10 +457,13 @@ class HrController extends Controller
     public function getWorkerLedger(Worker $worker)
     {
         // Actually, we can just load transactions natively. But if we need an endpoint:
-        $transactions = DB::table('worker_transactions')->where('worker_id', $worker->id)->orderByDesc('date')->get();
+        $transactions = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('type', '!=', 'salary_accrual')->orderByDesc('date')->get();
+        $logs = \App\Models\WorkLog::with('building')->where('type', 'worker')->where('worker_id', $worker->id)->orderByDesc('date')->get();
+        
         return response()->json([
             'balance' => $worker->balance,
-            'transactions' => $transactions
+            'transactions' => $transactions,
+            'logs' => $logs
         ]);
     }
 
@@ -493,92 +498,203 @@ class HrController extends Controller
 
         return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
     }
-    public function storeCashRequest(Request $request)
-    {
-        $validated = $request->validate([
-            'building_id' => 'nullable|exists:buildings,id',
-            'type' => 'required|in:income,expense',
-            'amount' => 'required|numeric|min:0',
-            'target_type' => 'nullable|string',
-            'target_id' => 'nullable|integer',
-            'description' => 'required|string'
-        ]);
 
-        $validated['user_id'] = \Illuminate\Support\Facades\Auth::id() ?? 1; // Defaulting to 1 for demo purposes
-        $validated['status'] = 'pending';
-
-        \App\Models\CashRequest::create($validated);
-
-        return redirect()->back()->with('message', 'Kassa so\'rovi yuborildi. Tasdiqlanishi kutilmoqda.');
-    }
-
-    public function approveCashRequest(\App\Models\CashRequest $cashRequest)
-    {
-        if ($cashRequest->status !== 'pending') {
-            return redirect()->back()->with('error', 'Bu so\'rov allaqachon ko\'rib chiqilgan.');
-        }
-
-        DB::transaction(function () use ($cashRequest) {
-            if ($cashRequest->type === 'expense') {
-                \App\Models\CompanyBalance::addExpense($cashRequest->amount);
-                
-                if ($cashRequest->target_type === 'worker' && $cashRequest->target_id) {
-                    $worker = \App\Models\Worker::find($cashRequest->target_id);
-                    if ($worker) {
-                        // Advance payment, decrement balance (they owe us or have been paid early)
-                        $worker->decrement('balance', $cashRequest->amount);
-                    }
-                } elseif ($cashRequest->target_type === 'machinery' && $cashRequest->target_id) {
-                    // Update machinery balance if needed in future (e.g., unpaid_balance decrement)
-                    // Currently machinery balance is tracked via logs, but we can do it if machinery model has a balance column.
-                } elseif ($cashRequest->target_type === 'payroll' && $cashRequest->target_id) {
-                    $payroll = \App\Models\Payroll::find($cashRequest->target_id);
-                    if ($payroll) {
-                        $payroll->update(['status' => 'paid']);
-                    }
-                } elseif ($cashRequest->target_type === 'other' && str_contains($cashRequest->description, 'Payroll #')) {
-                    // Fallback for old requests
-                    preg_match('/Payroll #(\d+)/', $cashRequest->description, $matches);
-                    if (isset($matches[1])) {
-                        $payroll = \App\Models\Payroll::find($matches[1]);
-                        if ($payroll) {
-                            $payroll->update(['status' => 'paid']);
-                        }
-                    }
-                }
-            } else {
-                \App\Models\CompanyBalance::addIncome($cashRequest->amount);
-                
-                if ($cashRequest->target_type === 'worker' && $cashRequest->target_id) {
-                    $worker = \App\Models\Worker::find($cashRequest->target_id);
-                    if ($worker) {
-                        // Returning money, increment balance
-                        $worker->increment('balance', $cashRequest->amount);
-                    }
-                }
-            }
-
-            $cashRequest->update(['status' => 'approved']);
-        });
-
-        return redirect()->back()->with('message', 'So\'rov tasdiqlandi va hisob-kitobga ta\'sir qildi.');
-    }
-
-    public function rejectCashRequest(\App\Models\CashRequest $cashRequest)
-    {
-        if ($cashRequest->status !== 'pending') {
-            return redirect()->back()->with('error', 'Bu so\'rov allaqachon ko\'rib chiqilgan.');
-        }
-
-        $cashRequest->update(['status' => 'rejected']);
-
-        return redirect()->back()->with('message', 'So\'rov rad etildi.');
-    }
 
     public function printPayroll($id)
     {
         $payroll = \App\Models\Payroll::with(['workLogs.worker', 'workLogs.machinery', 'workLogs.building'])->findOrFail($id);
         
         return view('admin.hr.print_payroll', compact('payroll'));
+    }
+
+    public function updateLog(Request $request, WorkLog $log)
+    {
+        $validated = $request->validate([
+            'hours_worked' => 'nullable|numeric|min:0',
+            'volume_done' => 'nullable|numeric|min:0',
+            'date' => 'required|date'
+        ]);
+
+        $oldCost = $log->calculated_cost;
+        $newCost = 0;
+
+        if ($log->type === 'worker') {
+            $worker = Worker::find($log->worker_id);
+            if ($worker->salary_type === 'hourly') {
+                $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
+                $newCost = ($validated['hours_worked'] ?? 0) * $rate;
+            } elseif ($worker->salary_type === 'piece_rate') {
+                $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
+                $newCost = ($validated['volume_done'] ?? 0) * $rate;
+            }
+        } else {
+            $machinery = Machinery::find($log->machinery_id);
+            $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $machinery->cost_per_hour;
+            $newCost = ($validated['hours_worked'] ?? 0) * $rate;
+        }
+
+        $delta = $newCost - $oldCost;
+
+        DB::transaction(function () use ($log, $validated, $newCost, $oldCost, $delta, $rate) {
+            $log->update([
+                'hours_worked' => $validated['hours_worked'] ?? null,
+                'volume_done' => $validated['volume_done'] ?? null,
+                'rate' => $rate ?? 0,
+                'calculated_cost' => $newCost,
+                'date' => $validated['date']
+            ]);
+
+            if ($delta != 0) {
+                if ($log->type === 'worker') {
+                    $worker = Worker::find($log->worker_id);
+                    $worker->increment('balance', $delta);
+                    $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $oldCost)->where('date', $log->getOriginal('date'))->where('type', 'salary_accrual')->first();
+                    if ($tx) {
+                        DB::table('worker_transactions')->where('id', $tx->id)->update(['amount' => $newCost, 'date' => $validated['date']]);
+                    }
+                } else {
+                    $machinery = Machinery::find($log->machinery_id);
+                    $machinery->increment('balance', $delta);
+                    $tx = DB::table('machinery_transactions')->where('machinery_id', $machinery->id)->where('amount', $oldCost)->where('date', $log->getOriginal('date'))->where('type', 'salary_accrual')->first();
+                    if ($tx) {
+                        DB::table('machinery_transactions')->where('id', $tx->id)->update(['amount' => $newCost, 'date' => $validated['date']]);
+                    }
+                }
+                
+                $building = Building::find($log->building_id);
+                if ($building) {
+                    $building->increment('actual_expenses', $delta);
+                }
+            }
+        });
+
+        return redirect()->back()->with('message', 'Ish hajmi tahrirlandi.');
+    }
+
+    public function deleteLog(WorkLog $log)
+    {
+        DB::transaction(function () use ($log) {
+            $cost = $log->calculated_cost;
+            
+            if ($log->type === 'worker') {
+                $worker = Worker::find($log->worker_id);
+                $worker->decrement('balance', $cost);
+                $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $cost)->where('date', $log->date)->where('type', 'salary_accrual')->first();
+                if ($tx) {
+                    DB::table('worker_transactions')->where('id', $tx->id)->delete();
+                }
+            } else {
+                $machinery = Machinery::find($log->machinery_id);
+                $machinery->decrement('balance', $cost);
+                $tx = DB::table('machinery_transactions')->where('machinery_id', $machinery->id)->where('amount', $cost)->where('date', $log->date)->where('type', 'salary_accrual')->first();
+                if ($tx) {
+                    DB::table('machinery_transactions')->where('id', $tx->id)->delete();
+                }
+            }
+            
+            $building = Building::find($log->building_id);
+            if ($building) {
+                $building->decrement('actual_expenses', $cost);
+            }
+
+            $log->delete();
+        });
+
+        return redirect()->back()->with('message', 'Ish hajmi o\'chirildi.');
+    }
+
+    public function updateTransaction(Request $request, $type, $id)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'date' => 'required|date'
+        ]);
+
+        DB::transaction(function () use ($type, $id, $validated) {
+            $table = $type . '_transactions';
+            $tx = DB::table($table)->where('id', $id)->first();
+            if (!$tx) abort(404);
+
+            $oldAmount = $tx->amount;
+            $newAmount = $validated['amount'];
+            $delta = $newAmount - $oldAmount;
+
+            DB::table($table)->where('id', $id)->update([
+                'amount' => $newAmount,
+                'description' => $validated['description'],
+                'date' => $validated['date'],
+                'updated_at' => now()
+            ]);
+
+            if ($delta != 0) {
+                if ($type === 'worker') {
+                    $worker = Worker::find($tx->worker_id);
+                    if ($tx->type === 'salary_accrual') {
+                        $worker->increment('balance', $delta);
+                    } else {
+                        $worker->decrement('balance', $delta);
+                        if ($tx->type === 'payment') \App\Models\CompanyBalance::addExpense($delta);
+                    }
+                } elseif ($type === 'machinery') {
+                    $machinery = Machinery::find($tx->machinery_id);
+                    if ($tx->type === 'salary_accrual') {
+                        $machinery->increment('balance', $delta);
+                    } else {
+                        $machinery->decrement('balance', $delta);
+                        if ($tx->type === 'payment') \App\Models\CompanyBalance::addExpense($delta);
+                    }
+                } elseif ($type === 'user') {
+                    $user = \App\Models\User::find($tx->user_id);
+                    if ($tx->type === 'salary_accrual') {
+                        $user->increment('balance', $delta);
+                    } else {
+                        $user->decrement('balance', $delta);
+                        if ($tx->type === 'payment') \App\Models\CompanyBalance::addExpense($delta);
+                    }
+                }
+            }
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya tahrirlandi.');
+    }
+
+    public function deleteTransaction($type, $id)
+    {
+        DB::transaction(function () use ($type, $id) {
+            $table = $type . '_transactions';
+            $tx = DB::table($table)->where('id', $id)->first();
+            if (!$tx) abort(404);
+
+            if ($type === 'worker') {
+                $worker = Worker::find($tx->worker_id);
+                if ($tx->type === 'salary_accrual') {
+                    $worker->decrement('balance', $tx->amount);
+                } else {
+                    $worker->increment('balance', $tx->amount);
+                    if ($tx->type === 'payment') \App\Models\CompanyBalance::addIncome($tx->amount); // revert expense
+                }
+            } elseif ($type === 'machinery') {
+                $machinery = Machinery::find($tx->machinery_id);
+                if ($tx->type === 'salary_accrual') {
+                    $machinery->decrement('balance', $tx->amount);
+                } else {
+                    $machinery->increment('balance', $tx->amount);
+                    if ($tx->type === 'payment') \App\Models\CompanyBalance::addIncome($tx->amount);
+                }
+            } elseif ($type === 'user') {
+                $user = \App\Models\User::find($tx->user_id);
+                if ($tx->type === 'salary_accrual') {
+                    $user->decrement('balance', $tx->amount);
+                } else {
+                    $user->increment('balance', $tx->amount);
+                    if ($tx->type === 'payment') \App\Models\CompanyBalance::addIncome($tx->amount);
+                }
+            }
+
+            DB::table($table)->where('id', $id)->delete();
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya o\'chirildi.');
     }
 }

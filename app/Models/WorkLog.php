@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class WorkLog extends Model
 {
     protected $fillable = [
-        'worker_id', 'machinery_id', 'building_id', 'floor_id', 'unit_id', 'hours_worked', 
-        'volume_done', 'calculated_cost', 'date', 'payroll_id', 'status'
+        'type', 'worker_id', 'machinery_id', 'building_id', 'floor_id', 'unit_id', 'hours_worked', 
+        'volume_done', 'rate', 'calculated_cost', 'date', 'payroll_id', 'status'
     ];
 
     public function worker()

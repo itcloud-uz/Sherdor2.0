@@ -12,7 +12,10 @@ const props = defineProps({
     pendingExpenses: Number,
     contracts: Array,
     financialLiabilities: Array,
-    suppliers: Array
+    suppliers: Array,
+    workers: Array,
+    machineries: Array,
+    buildings: Array
 });
 
 const activeTab = ref(0);
@@ -76,16 +79,20 @@ function deleteTransaction(id) {
 // Tab 4 Form
 const form = ref({
     type: 'income',
-    category: 'Mijoz to\'lovi',
     amount: '',
     currency: 'UZS',
     payment_method: 'cash',
     account_type: 'main',
     contract_id: '',
+    worker_id: '',
+    machinery_id: '',
+    building_id: '',
+    supplier_id: '',
+    category: 'Mijoz to\'lovi',
     transaction_date: new Date().toISOString().split('T')[0],
     attachment: null,
-    auto_approve: true,
-    notes: ''
+    notes: '',
+    auto_approve: true
 });
 
 function handleFileUpload(e) {
@@ -127,7 +134,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category: 'Mijoz to\'lovi', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', transaction_date: new Date().toISOString().split('T')[0], attachment: null, auto_approve: true, notes: '' };
+            form.value = { type: 'income', category: 'Mijoz to\'lovi', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toISOString().split('T')[0], attachment: null, auto_approve: true, notes: '' };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -677,11 +684,46 @@ function submitSupplierPayment() {
                             </template>
                             <template v-else>
                                 <option value="Oylik maoshlar">Oylik maoshlar</option>
+                                <option value="Ishchi To'lovi (Avans/Oylik)">Ishchi To'lovi (Avans/Oylik)</option>
+                                <option value="Texnika To'lovi">Texnika To'lovi</option>
+                                <option value="Ta'minotchi To'lovi">Ta'minotchi To'lovi</option>
+                                <option value="Obyekt Xarajati">Obyekt Xarajati</option>
                                 <option value="Ofis xarajatlari">Ofis xarajatlari</option>
-                                <option value="Qurilish materiallari">Qurilish materiallari</option>
                                 <option value="Soliq va to'lovlar">Soliq va to'lovlar</option>
                                 <option value="Boshqa xarajatlar">Boshqa xarajatlar</option>
                             </template>
+                        </select>
+                    </div>
+
+                    <div v-if="form.category === 'Ishchi To\'lovi (Avans/Oylik)'">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang</label>
+                        <select v-model="form.worker_id" class="glass-input w-full text-white bg-black/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                        </select>
+                    </div>
+
+                    <div v-if="form.category === 'Texnika To\'lovi'">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang</label>
+                        <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
+                        </select>
+                    </div>
+
+                    <div v-if="form.category === 'Ta\'minotchi To\'lovi'">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang</label>
+                        <select v-model="form.supplier_id" class="glass-input w-full text-white bg-black/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
+                        </select>
+                    </div>
+
+                    <div v-if="form.category === 'Obyekt Xarajati' || form.category === 'Qurilish materiallari'">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang</label>
+                        <select v-model="form.building_id" class="glass-input w-full text-white bg-black/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
                     </div>
 

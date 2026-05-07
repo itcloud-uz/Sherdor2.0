@@ -52,7 +52,7 @@ const panels = [
         <GalaxyBackground />
 
         <!-- Navigation (Apple Glassmorphism) -->
-        <nav class="relative z-50 flex items-center justify-between p-6 md:px-12 bg-white/5 border-b border-white/10 sticky top-0 backdrop-blur-2xl shadow-sm">
+        <nav class="relative z-50 flex items-center justify-between p-6 md:px-12 bg-black/80 border-b border-white/10 sticky top-0 backdrop-blur-md shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)]">
                     <span class="font-display font-bold text-xl text-white">S</span>

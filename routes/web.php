@@ -60,6 +60,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Developer Settings
     Route::get('/developer/settings', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'index'])->name('developer.settings');
+    Route::post('/developer/lock', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'lock'])->name('developer.lock');
     Route::post('/developer/otp/request', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'requestOtp'])->name('developer.otp.request');
     Route::post('/developer/otp/verify', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'verifyOtp'])->name('developer.otp.verify');
     Route::post('/developer/keys', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'generateKey'])->name('developer.keys.store');

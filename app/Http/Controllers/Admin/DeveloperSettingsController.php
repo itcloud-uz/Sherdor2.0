@@ -13,6 +13,12 @@ use App\Models\SystemSetting;
 
 class DeveloperSettingsController extends Controller
 {
+    public function lock()
+    {
+        Session::forget('developer_unlocked');
+        return redirect()->route('admin.dashboard')->with('success', 'Dasturchi bloki quluflab qo\'yildi.');
+    }
+
     public function index()
     {
         $isUnlocked = Session::get('developer_unlocked', false);

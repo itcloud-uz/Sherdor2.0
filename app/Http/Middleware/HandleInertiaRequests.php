@@ -29,7 +29,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $settings = \Illuminate\Support\Facades\Cache::rememberForever('system_settings', function () {
+        $settings = \Illuminate\Support\Facades\Cache::rememberForever('system_settings_v2', function () {
             $dbSettings = \App\Models\SystemSetting::first();
             if ($dbSettings) {
                 return [

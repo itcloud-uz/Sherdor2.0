@@ -12,6 +12,9 @@ Route::get('/user', function (Request $request) {
 Route::post('/v1/face-recognition/log', [FaceRecognitionController::class, 'log'])->name('api.face.log');
 Route::post('/v1/hardware/event', [\App\Http\Controllers\Api\HardwareEventController::class, 'logEvent'])->name('api.hardware.event');
 
+// Omnichannel Lead Generation
+Route::post('/leads', [\App\Http\Controllers\Api\LeadController::class, 'store'])->name('api.leads.store');
+
 // Telegram Bot API Endpoints
 Route::middleware([\App\Http\Middleware\BotApiMiddleware::class])->prefix('bot/v1')->group(function () {
     Route::post('/verify-user', [\App\Http\Controllers\Api\BotApiController::class, 'verifyUser']);

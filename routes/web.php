@@ -24,6 +24,11 @@ Route::get('/', function () {
 Route::get('/receipt/verify/{hash}', [\App\Http\Controllers\Public\PublicReceiptController::class, 'verify'])->name('public.receipt.verify');
 Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicReceiptController::class, 'authenticate'])->name('public.receipt.auth');
 
+// Public Lead Form (Landing Page)
+Route::get('/promo/offers', function () {
+    return Inertia::render('Public/LeadForm');
+})->name('promo.offers');
+
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm');

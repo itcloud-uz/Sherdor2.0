@@ -15,9 +15,27 @@ const props = defineProps({
 const isProcessing = ref(false);
 
 const showCreateClientModal = ref(false);
+const showCreateLeadModal = ref(false);
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
 const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
+const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true });
+
+function submitNewLead() {
+    isProcessing.value = true;
+    axios.post(route('api.leads.store'), newLeadForm.value)
+        .then(() => {
+            showCreateLeadModal.value = false;
+            newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
+            router.reload({ preserveScroll: true });
+        })
+        .catch(error => {
+            alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+        })
+        .finally(() => {
+            isProcessing.value = false;
+        });
+}
 
 function openCreateClientModal() {
     isEditingClient.value = false;
@@ -375,7 +393,12 @@ function openQuickSmsModal(lead) {
                  @dragover.prevent @drop="dropLead('new', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_new') }}</h3>
-                    <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-cyan">{{ leadsByStatus.new.length }}</span>
+                    <div class="flex items-center gap-2">
+                        <button @click="showCreateLeadModal = true" class="px-2 py-0.5 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                            + Yangi Lid
+                        </button>
+                        <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-cyan">{{ leadsByStatus.new.length }}</span>
+                    </div>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                     <div v-for="lead in leadsByStatus.new" :key="lead.id" 
@@ -993,6 +1016,34 @@ function openQuickSmsModal(lead) {
                 </form>
             </div>
         </div>
+
+        <!-- CREATE LEAD MODAL -->
+        <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all">
+            <div class="glass-panel w-full max-w-md rounded-2xl border border-neon-cyan/30 shadow-[0_0_50px_rgba(0,240,255,0.1)] overflow-hidden">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
+                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow">Yangi Lid Qo'shish</h2>
+                    <button @click="showCreateLeadModal = false" class="text-text-muted hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <form @submit.prevent="submitNewLead" class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Ism / Familiya</label>
+                            <input v-model="newLeadForm.full_name" required type="text" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: Azizbek">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Telefon Raqam</label>
+                            <input v-model="newLeadForm.phone" required type="tel" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
+                        </div>
+                        <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50">
+                            {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL: QUICK SMS -->
         <QuickSmsModal v-model:show="showQuickSmsModal" :lead="activeLead" @sent="router.reload()" />
 

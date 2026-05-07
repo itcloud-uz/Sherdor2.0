@@ -104,10 +104,10 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-white/50 text-shadow-glow flex items-center gap-3">
                     <span class="text-4xl drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]">🌌</span> {{ $t('global_dashboard') }}
                 </h1>
-                <p class="text-xs font-mono text-text-muted uppercase tracking-widest mt-2">SHER-DOR COMMAND CENTER</p>
+                <p class="text-xs font-mono text-text-muted uppercase tracking-widest mt-2">{{ $t('dashboard_title_center') }}</p>
             </div>
             <div class="text-right">
-                <p class="text-[10px] font-mono text-neon-green animate-pulse">SYSTEM OPTIMAL • ALL NODES ACTIVE</p>
+                <p class="text-[10px] font-mono text-neon-green animate-pulse">{{ $t('system_optimal') }}</p>
             </div>
         </div>
 
@@ -122,28 +122,28 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-green relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Sof Balans (Kompaniya)</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('net_balance_company') }}</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">
                     {{ $currency(netBalance) }}
                 </h2>
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-yellow relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Kredit Balans (Kassa)</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('credit_balance_cash') }}</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(252,238,9,0.4)]">
                     {{ $currency(creditBalance) }}
                 </h2>
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-red relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Umumiy Qarzlar</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_debts') }}</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
                     {{ $currency(totalLiabilities || 0) }}
                 </h2>
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-magenta relative overflow-hidden group flex flex-col justify-center">
                 <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">HR: Ishchilar (Bugun)</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('hr_workers_today') }}</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(176,38,255,0.4)] flex gap-4">
                     <span class="text-neon-green" title="Kelganlar">{{ attendanceStats?.present || 0 }}</span>
                     <span class="text-text-muted">/</span>
@@ -156,25 +156,25 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <!-- WIDGET 2: Financial Breakdown (Moved UP for visibility) -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px] flex flex-col">
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-neon-magenta"></span> Moliyaviy Oqim (Kirim/Chiqim/Qarzlar)
+                    <span class="w-2 h-2 rounded-full bg-neon-magenta"></span> {{ $t('financial_flow_title') }}
                 </h3>
                 <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6 text-xs font-mono">
                     <div>
-                        <p class="text-neon-cyan mb-2 font-bold flex justify-between"><span>KIRIM MANBALARI</span> <span>{{ $currency(totalRevenue) }}</span></p>
+                        <p class="text-neon-cyan mb-2 font-bold flex justify-between"><span>{{ $t('income_sources') }}</span> <span>{{ $currency(totalRevenue) }}</span></p>
                         <div v-for="(amount, source) in incomeBySource" :key="source" class="flex justify-between border-b border-white/5 py-1">
                             <span class="text-text-muted uppercase">{{ source }}</span>
                             <span class="text-white">{{ $currency(amount) }}</span>
                         </div>
                     </div>
                     <div>
-                        <p class="text-neon-red mb-2 font-bold flex justify-between"><span>CHIQIM MANZILLARI</span> <span>{{ $currency(totalExpenses) }}</span></p>
+                        <p class="text-neon-red mb-2 font-bold flex justify-between"><span>{{ $t('expense_destinations') }}</span> <span>{{ $currency(totalExpenses) }}</span></p>
                         <div v-for="(amount, source) in expensesBySource" :key="source" class="flex justify-between border-b border-white/5 py-1">
                             <span class="text-text-muted uppercase">{{ source }}</span>
                             <span class="text-white">{{ $currency(amount) }}</span>
                         </div>
                     </div>
                     <div v-if="activeLiabilities && activeLiabilities.length > 0">
-                        <p class="text-neon-yellow mb-2 font-bold flex justify-between"><span>FAOL QARZLAR (TO'LANMAGAN)</span> <span>{{ $currency(totalLiabilities) }}</span></p>
+                        <p class="text-neon-yellow mb-2 font-bold flex justify-between"><span>{{ $t('active_debts_unpaid') }}</span> <span>{{ $currency(totalLiabilities) }}</span></p>
                         <div v-for="liability in activeLiabilities" :key="liability.name" class="flex justify-between border-b border-white/5 py-1">
                             <span class="text-text-muted uppercase">{{ liability.name }}</span>
                             <span class="text-white">{{ $currency(liability.remaining) }}</span>
@@ -213,9 +213,9 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 
                 <div class="bg-black/80 px-4 py-2 border-b border-neon-yellow/20 flex justify-between items-center z-10">
                     <span class="text-[10px] font-mono text-neon-yellow uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> SYSTEM ALERTS
+                        <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> {{ $t('system_alerts') }}
                     </span>
-                    <span class="text-[10px] font-mono text-gray-500">Live</span>
+                    <span class="text-[10px] font-mono text-gray-500">{{ $t('live') }}</span>
                 </div>
 
                 <div class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 z-10">
@@ -224,7 +224,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         <p class="text-xs font-mono">{{ alert.message }}</p>
                     </div>
                     <div v-if="!systemAlerts || systemAlerts.length === 0" class="text-center py-8 text-xs font-mono text-neon-green/50">
-                        Hamma tizimlar a'lo darajada. Bildirishnomalar yo'q.
+                        {{ $t('all_systems_good') }}
                     </div>
                 </div>
             </div>
@@ -248,7 +248,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         </p>
                     </div>
                     <div v-if="recentActivities.length === 0" class="text-center py-8 text-xs font-mono text-gray-500">
-                        No recent activities.
+                        {{ $t('no_recent_activities') }}
                     </div>
                 </div>
             </div>
@@ -257,28 +257,28 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
         <!-- NEW SECTION: MARKETING & LEAD ANALYTICS -->
         <div class="mt-12 mb-8">
             <h3 class="text-xl font-bold text-white mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] uppercase tracking-widest flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-neon-cyan animate-pulse"></span> Sotuv Voronkasi va Trafik Tahlili
+                <span class="w-3 h-3 rounded-full bg-neon-cyan animate-pulse"></span> {{ $t('sales_funnel_traffic') }}
             </h3>
             
             <!-- Lead Metrics Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div class="glass-card p-5 border-l-4 border-neon-cyan relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Jami Lidlar</p>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_leads') }}</p>
                     <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]">
                         {{ leadsMetrics?.total || 0 }}
                     </h2>
                 </div>
                 <div class="glass-card p-5 border-l-4 border-neon-green relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Saralangan (Qualified)</p>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('qualified') }}</p>
                     <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">
                         {{ leadsMetrics?.qualified || 0 }}
                     </h2>
                 </div>
                 <div @click="showLostLeadsModal = true" class="glass-card p-5 border-l-4 border-neon-red relative overflow-hidden group cursor-pointer hover:bg-neon-red/10 transition-colors">
                     <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Yo'qotilgan (Sabablar)</p>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('lost_leads_reasons') }}</p>
                     <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
                         {{ leadsMetrics?.lost || 0 }}
                     </h2>
@@ -290,7 +290,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 <!-- Traffic Source Donut -->
                 <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col items-center h-[400px]">
                     <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 w-full flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Lidlar Manbasi
+                        <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> {{ $t('leads_source') }}
                     </h3>
                     <div class="w-full flex-1 flex items-center justify-center">
                         <VueApexCharts type="donut" width="100%" height="300" :options="leadSourceOptions" :series="leadSourceSeries" />
@@ -300,7 +300,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 <!-- Sales Funnel Bar Chart -->
                 <div class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px]">
                     <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-green"></span> Sotuv Voronkasi
+                        <span class="w-2 h-2 rounded-full bg-neon-green"></span> {{ $t('sales_funnel') }}
                     </h3>
                     <div class="h-80 w-full pt-4">
                         <VueApexCharts type="bar" height="100%" width="100%" :options="leadFunnelOptions" :series="leadFunnelSeries" />
@@ -313,14 +313,14 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
         <div v-if="showLostLeadsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all">
             <div class="glass-panel w-full max-w-2xl rounded-2xl border border-neon-red/30 shadow-[0_0_50px_rgba(255,0,0,0.1)] overflow-hidden flex flex-col max-h-[80vh]">
                 <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
-                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow text-neon-red">Yo'qotilgan Lidlar</h2>
+                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow text-neon-red">{{ $t('lost_leads') }}</h2>
                     <button @click="showLostLeadsModal = false" class="text-text-muted hover:text-white transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
                     <div v-if="!lostLeads || lostLeads.length === 0" class="text-center text-text-muted font-mono text-sm">
-                        Yo'qotilgan lidlar topilmadi.
+                        {{ $t('no_lost_leads_found') }}
                     </div>
                     <div v-else class="space-y-4">
                         <div v-for="lead in lostLeads" :key="lead.id" class="p-4 border border-white/10 rounded-xl bg-black/30 hover:border-neon-red/30 transition-colors">
@@ -330,7 +330,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                             </div>
                             <p class="text-neon-cyan font-mono text-xs mb-3">{{ lead.phone }}</p>
                             <div class="bg-neon-red/10 border border-neon-red/20 p-3 rounded-lg">
-                                <p class="text-[10px] text-neon-red uppercase tracking-widest mb-1">Yo'qotish sababi:</p>
+                                <p class="text-[10px] text-neon-red uppercase tracking-widest mb-1">{{ $t('reason_lost') }}:</p>
                                 <p class="text-sm text-white">{{ lead.reason || 'Sabab ko\'rsatilmagan' }}</p>
                             </div>
                         </div>

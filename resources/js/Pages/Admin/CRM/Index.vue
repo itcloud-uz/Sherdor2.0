@@ -4,6 +4,7 @@ import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
+const { t } = useI18n();
 const props = defineProps({
     leads: Array,
     clients: Array,
@@ -174,7 +175,7 @@ function saveClient() {
 }
 
 function deleteClient(id) {
-    if (confirm("Haqiqatan ham ushbu mijozni o'chirmoqchimisiz?")) {
+    if (confirm(t('confirm_delete_client'))) {
         router.delete(route('admin.crm.clients.delete', id));
     }
 }
@@ -204,7 +205,7 @@ function editContract(contract) {
 }
 
 function deleteContract(id) {
-    if (confirm("Haqiqatan ham ushbu shartnomani o'chirmoqchimisiz?")) {
+    if (confirm(t('confirm_delete_contract'))) {
         router.delete(route('admin.contracts.destroy', id));
     }
 }
@@ -432,10 +433,10 @@ function initiateLeadCall(lead) {
         lead_id: lead.id,
         phone_number: lead.phone
     }).then(response => {
-        alert("Qo'ng'iroq Asterisk orqali amalga oshirilmoqda! Mijoz 'Bog'langanlar' qatoriga o'tdi.");
+        alert(t('asterisk_call_initiated'));
         router.reload({ preserveScroll: true }); // Reload to update kanban board
     }).catch(error => {
-        alert("Qo'ng'iroqni amalga oshirishda xatolik yuz berdi.");
+        alert(t('error_making_call'));
         console.error(error);
     });
 }
@@ -485,7 +486,7 @@ function openQuickSmsModal(lead) {
                     class="flex items-center gap-2 px-4 py-1.5 bg-black/40 border border-white/20 text-neon-cyan hover:bg-neon-cyan hover:text-black rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50 group"
                 >
                     <span class="group-hover:rotate-180 transition-transform duration-500 inline-block">🔄</span> 
-                    YANGILASH (LIVE)
+                    {{ $t('refresh_live') }}
                 </button>
             </div>
         </div>
@@ -665,7 +666,7 @@ function openQuickSmsModal(lead) {
                             <div class="flex-1 min-w-0">
                                 <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.first_name} ${client.last_name}`">
                                     {{ client.first_name }} {{ client.last_name }}
-                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="Import qilingan eski baza">
+                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">
                                         📦 Import
                                     </span>
                                 </h3>
@@ -701,7 +702,7 @@ function openQuickSmsModal(lead) {
                         <div v-if="client.contracts && client.contracts.length > 0">
                             <p class="text-[10px] uppercase font-mono text-text-muted mb-2 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-neon-green"></span>
-                                Faol Xaridlar ({{ client.contracts.length }})
+                                {{ $t('active_purchases') }} ({{ client.contracts.length }})
                             </p>
                             <div class="space-y-2 max-h-32 overflow-y-auto pr-1 hide-scrollbar">
                                 <div v-for="contract in client.contracts" :key="contract.id" class="p-2 rounded bg-neon-green/5 border border-neon-green/20 flex justify-between items-center text-xs font-mono cursor-pointer hover:bg-neon-green/10 transition-colors" @click="openScheduleModal(contract)">
@@ -713,7 +714,7 @@ function openQuickSmsModal(lead) {
                             </div>
                         </div>
                         <div v-else class="text-center p-3 rounded-lg border border-dashed border-white/10 bg-black/20">
-                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Xaridlar mavjud emas</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('no_purchases') }}</p>
                         </div>
                     </div>
                 </div>
@@ -769,7 +770,7 @@ function openQuickSmsModal(lead) {
                                 </div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-1">
-                                <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="Import qilingan eski baza">📦 Import</span>
+                                <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">📦 Import</span>
                                 <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white/80 whitespace-nowrap">{{ contract.term_months }} {{ $t('months') }}</span>
                             </div>
                         </div>
@@ -840,8 +841,8 @@ function openQuickSmsModal(lead) {
                                 <p class="text-lg font-mono font-bold text-white shadow-neon-magenta/50">{{ $currency(schedule.expected_amount) }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-[10px] font-mono uppercase text-neon-magenta tracking-wider">Kechikkan</p>
-                                <p class="text-xs font-mono font-bold text-neon-magenta">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} kun</p>
+                                <p class="text-[10px] font-mono uppercase text-neon-magenta tracking-wider">{{ $t('overdue') }}</p>
+                                <p class="text-xs font-mono font-bold text-neon-magenta">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
                             </div>
                         </div>
                     </div>
@@ -896,7 +897,7 @@ function openQuickSmsModal(lead) {
                                 <label class="text-xs font-mono text-text-muted uppercase tracking-widest">{{ $t('daily_penalty_rate') }}</label>
                                 <input type="number" step="0.01" v-model="selectedContract.daily_penalty_rate" class="glass-input w-20 text-center text-neon-cyan font-bold p-1">
                                 <button @click="recalculatePenalty" :disabled="isProcessing" class="px-3 py-1 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50">
-                                    🔄 Hisoblash
+                                    🔄 {{ $t('calculate') }}
                                 </button>
                             </div>
                             <div class="hidden md:block h-8 border-r border-white/10 mx-2"></div>
@@ -918,7 +919,7 @@ function openQuickSmsModal(lead) {
                             <p class="text-lg font-bold text-white font-mono">{{ $currency(selectedContract.down_payment) }}</p>
                         </div>
                         <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
-                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Oylik Grafik To'lovi</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('monthly_schedule_payment') }}</p>
                             <p class="text-lg font-bold text-neon-cyan font-mono">{{ selectedContract.payment_schedules?.length ? $currency(selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
                         </div>
                     </div>
@@ -930,7 +931,7 @@ function openQuickSmsModal(lead) {
                                 <span class="text-neon-cyan text-xl">🤖</span>
                             </div>
                             <div>
-                                <h4 class="text-white font-bold text-sm tracking-widest uppercase">AI Signature Verification</h4>
+                                <h4 class="text-white font-bold text-sm tracking-widest uppercase">{{ $t('ai_signature_verification') }}</h4>
                                 <p class="text-xs font-mono" :class="{
                                     'text-text-muted': !selectedContract.ai_verification_status,
                                     'text-neon-green': selectedContract.ai_verification_status === 'passed',
@@ -981,8 +982,8 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-sm font-mono text-neon-green">
                                         <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                             <input type="number" step="0.01" v-model="editingPaidAmount" class="glass-input w-24 text-white text-xs py-1 px-2">
-                                            <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="px-2 py-1 bg-neon-green/20 text-neon-green text-[10px] rounded hover:bg-neon-green hover:text-black transition-all">Save</button>
-                                            <button @click="editingScheduleId = null" class="px-2 py-1 bg-white/10 text-white text-[10px] rounded hover:bg-white/30 transition-all">Cancel</button>
+                                            <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="px-2 py-1 bg-neon-green/20 text-neon-green text-[10px] rounded hover:bg-neon-green hover:text-black transition-all">{{ $t('save') }}</button>
+                                            <button @click="editingScheduleId = null" class="px-2 py-1 bg-white/10 text-white text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
                                         </div>
                                         <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
                                             {{ $currency(schedule.paid_amount || 0) }}
@@ -1015,11 +1016,11 @@ function openQuickSmsModal(lead) {
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
             <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-cyan/30">
                 <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-cyan/50">
-                    {{ isEditingClient ? 'Mijozni tahrirlash' : $t('add') + ' ' + $t('client') }}
+                    {{ isEditingClient ? t('edit_client') : $t('add') + ' ' + $t('client') }}
                 </h2>
                 <form @submit.prevent="saveClient" class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ro'yxatdan o'tgan sana (Ixtiyoriy)</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
                         <input v-model="clientForm.created_at" type="date" class="glass-input w-full text-neon-cyan" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -1043,16 +1044,16 @@ function openQuickSmsModal(lead) {
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Manzil</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('address') }}</label>
                         <input v-model="clientForm.address" type="text" class="glass-input w-full">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Pasport berilgan sana</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
                             <input v-model="clientForm.passport_issued_date" type="date" class="glass-input w-full">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kim tomonidan berilgan</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('issued_by') }}</label>
                             <input v-model="clientForm.passport_issued_by" type="text" class="glass-input w-full">
                         </div>
                     </div>
@@ -1073,16 +1074,16 @@ function openQuickSmsModal(lead) {
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCreateContractModal = false"></div>
             <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-green/30">
                 <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-green/50">
-                    {{ isEditingContract ? 'Shartnomani tahrirlash' : $t('add') + ' ' + $t('contract') }}
+                    {{ isEditingContract ? t('edit_contract') : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma sanasi (Ixtiyoriy)</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
                             <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma raqami (Ixtiyoriy)</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
                             <input v-model="contractForm.contract_number" type="text" class="glass-input w-full text-neon-green" placeholder="Masalan: SH-001">
                         </div>
                     </div>
@@ -1103,15 +1104,15 @@ function openQuickSmsModal(lead) {
 
                     <!-- Mulk Turi Selection -->
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Mulk turi (Shartnoma shabloni)</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">{{ $t('property_type_template') }}</label>
                         <div class="flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">Uy-joy (Kvartira)</span>
+                                <span class="text-xs text-white">{{ $t('residential_apartment') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">Savdo do'koni</span>
+                                <span class="text-xs text-white">{{ $t('commercial_shop') }}</span>
                             </label>
                         </div>
                     </div>
@@ -1119,52 +1120,52 @@ function openQuickSmsModal(lead) {
                     <!-- Dynamic Unit Details -->
                     <div v-if="selectedUnit" class="grid grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">Obyekt (Blok)</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('object_block') }}</p>
                             <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.building?.name }}</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">Qavat</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('floor') }}</p>
                             <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.number }}</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">Xonalar soni</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('number_of_rooms') }}</p>
                             <p class="text-xs text-white font-bold">{{ selectedUnit.rooms }} xona</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">Umumiy maydoni</p>
+                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('total_area') }}</p>
                             <p class="text-xs text-white font-bold">{{ selectedUnit.area_sqm }} kv.m</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4" v-if="selectedUnit">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kvadrat metri narxi</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }}</label>
                             <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Umumiy narxi (QQS bilan)</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
                             <input v-model="contractForm.total_amount" type="number" step="any" class="glass-input w-full" required>
                         </div>
                     </div>
 
                     <!-- Payment Type Selection -->
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">To'lov turi</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">{{ $t('payment_type') }}</label>
                         <div class="flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">Bir martalik umumiy to'lov</span>
+                                <span class="text-xs text-white">{{ $t('one_time_full_payment') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">Bo'lib to'lash</span>
+                                <span class="text-xs text-white">{{ $t('installment_payment') }}</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Boshlang'ich to'lov</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('down_payment') }}</label>
                             <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
                         </div>
                         <div v-if="contractForm.payment_type === 'installment'">
@@ -1192,11 +1193,11 @@ function openQuickSmsModal(lead) {
                 <div class="p-6">
                     <form @submit.prevent="submitNewLead" class="space-y-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Ism / Familiya</label>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">{{ $t('first_last_name') }}</label>
                             <input v-model="newLeadForm.full_name" required type="text" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: Azizbek">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Telefon Raqam</label>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">{{ $t('phone_number') }}</label>
                             <input v-model="newLeadForm.phone" required type="tel" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
                         </div>
                         <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50">

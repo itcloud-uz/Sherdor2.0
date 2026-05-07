@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Link, usePage, router } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import BackgroundTheme from '@/Components/BackgroundTheme.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
@@ -19,6 +19,20 @@ const navItems = [
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
+
+let refreshInterval = null;
+
+onMounted(() => {
+    refreshInterval = setInterval(() => {
+        router.reload({ preserveState: true, preserveScroll: true });
+    }, 5000);
+});
+
+onUnmounted(() => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
 </script>
 
 <template>

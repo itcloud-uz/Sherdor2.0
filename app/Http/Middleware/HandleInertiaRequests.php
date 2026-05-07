@@ -30,11 +30,21 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $settings = \Illuminate\Support\Facades\Cache::rememberForever('system_settings', function () {
-            return \App\Models\SystemSetting::first() ?? new \App\Models\SystemSetting([
+            $dbSettings = \App\Models\SystemSetting::first();
+            if ($dbSettings) {
+                return [
+                    'logo_path' => $dbSettings->logo_path,
+                    'primary_theme_color' => $dbSettings->primary_theme_color,
+                    'neon_glow_intensity' => $dbSettings->neon_glow_intensity,
+                    'default_currency' => $dbSettings->default_currency,
+                ];
+            }
+            return [
                 'logo_path' => null,
-                'primary_theme_color' => '#00F0FF', // Cyan default
+                'primary_theme_color' => '#00F0FF',
                 'neon_glow_intensity' => '0 0 15px',
-            ]);
+                'default_currency' => 'USD',
+            ];
         });
 
         return [
@@ -43,10 +53,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'branding' => [
-                'logo_path' => $settings->logo_path,
-                'primary_theme_color' => $request->user()?->theme_color ?? $settings->primary_theme_color,
-                'neon_glow_intensity' => $settings->neon_glow_intensity,
-                'default_currency' => $settings->default_currency ?? 'USD',
+                'logo_path' => $settings['logo_path'] ?? null,
+                'primary_theme_color' => $request->user()?->theme_color ?? $settings['primary_theme_color'] ?? '#00F0FF',
+                'neon_glow_intensity' => $settings['neon_glow_intensity'] ?? '0 0 15px',
+                'default_currency' => $settings['default_currency'] ?? 'USD',
             ],
             'locale' => $request->user()?->language ?? session('locale', config('app.locale'))
         ];

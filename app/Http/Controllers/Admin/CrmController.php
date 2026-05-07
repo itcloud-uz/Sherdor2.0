@@ -248,4 +248,24 @@ class CrmController extends Controller
 
         return redirect()->back()->with('message', 'Penya qayta hisoblandi.');
     }
+
+    public function sendWarningSms(Request $request, \App\Models\PaymentSchedule $schedule, EskizService $eskiz)
+    {
+        $contract = $schedule->contract;
+        if (!$contract || !$contract->client || !$contract->client->phone) {
+            return redirect()->back()->withErrors(['message' => 'Mijoz telefon raqami topilmadi.']);
+        }
+
+        $amount = number_format($schedule->expected_amount - $schedule->paid_amount, 2, ',', ' ');
+        $message = "Hurmatli mijoz, sizning shartnomangiz bo'yicha {$amount} so'm to'lov muddati o'tgan. Iltimos to'lovni amalga oshiring.";
+
+        try {
+            $eskiz->sendSms($contract->client->phone, $message, 'warning_sms');
+            $schedule->last_sms_sent_at = now();
+            $schedule->save();
+            return redirect()->back()->with('message', 'Ogohlantiruvchi SMS yuborildi.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['message' => 'SMS yuborishda xatolik: ' . $e->getMessage()]);
+        }
+    }
 }

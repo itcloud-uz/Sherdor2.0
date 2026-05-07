@@ -13,7 +13,8 @@ class PaymentSchedule extends Model
         'due_date',
         'status',
         'remaining_debt',
-        'penalty_for_this_month'
+        'penalty_for_this_month',
+        'last_sms_sent_at'
     ];
 
     public function contract()

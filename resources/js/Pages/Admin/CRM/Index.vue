@@ -73,6 +73,15 @@ function recalculatePenalty() {
     });
 }
 
+function sendWarningSms(scheduleId) {
+    if (!confirm(t('Are you sure you want to send a warning SMS?'))) return;
+    isProcessing.value = true;
+    router.post(route('admin.crm.schedules.send_warning_sms', scheduleId), {}, {
+        onFinish: () => isProcessing.value = false,
+        preserveScroll: true
+    });
+}
+
 function openEditLeadModal(lead) {
     isEditingLead.value = true;
     editingLeadId.value = lead.id;
@@ -849,7 +858,10 @@ function openQuickSmsModal(lead) {
                     </div>
 
                     <div class="mt-auto">
-                        <button class="w-full py-2.5 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta font-bold font-mono text-xs uppercase tracking-widest rounded hover:bg-neon-magenta hover:text-white transition-all shadow-[0_0_10px_rgba(255,0,60,0.3)] flex justify-center items-center gap-2">
+                        <div v-if="schedule.last_sms_sent_at" class="text-center mb-2 text-[10px] font-mono text-neon-cyan">
+                            Oxirgi SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }} {{ new Date(schedule.last_sms_sent_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
+                        </div>
+                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-full py-2.5 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta font-bold font-mono text-xs uppercase tracking-widest rounded hover:bg-neon-magenta hover:text-white transition-all shadow-[0_0_10px_rgba(255,0,60,0.3)] flex justify-center items-center gap-2 disabled:opacity-50">
                             <span>📱</span> {{ $t('send_sms_warning') }}
                         </button>
                     </div>

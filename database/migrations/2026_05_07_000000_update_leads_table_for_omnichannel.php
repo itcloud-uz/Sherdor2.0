@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-            $table->renameColumn('name', 'full_name');
             $table->enum('source', ['manual', 'telegram', 'landing_page'])->default('manual')->after('phone');
         });
     }
@@ -23,7 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-            $table->renameColumn('full_name', 'name');
             $table->dropColumn('source');
         });
     }

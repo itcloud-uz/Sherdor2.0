@@ -60,7 +60,6 @@ const radarSeries = computed(() => [
     props.unitsStatus?.reserved || 0,
     props.unitsStatus?.sold || 0
 ]);
-]);
 
 // Chart 3: Lead Source Donut
 const leadSourceOptions = computed(() => ({

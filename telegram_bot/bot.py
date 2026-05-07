@@ -2,7 +2,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN
-from handlers import start, transaction, approve
+from handlers import lead, transaction, approve
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,7 +11,7 @@ async def main():
     dp = Dispatcher()
 
     # Include routers
-    dp.include_router(start.router)
+    dp.include_router(lead.router)
     dp.include_router(transaction.router)
     dp.include_router(approve.router)
 

@@ -39,7 +39,7 @@ async def _request(method: str, endpoint: str, data: dict = None):
             return {"error": str(e)}, 500
 
 async def verify_user(chat_id: str):
-    data, status = await _request("POST", "/verify-user", {"chat_id": str(chat_id)})
+    data, status = await _request("POST", "/bot/v1/verify-user", {"chat_id": str(chat_id)})
     return data, status
 
 async def send_transaction(chat_id: str, type_: str, amount: float, account_type: str, payment_method: str, category: str, description: str = ""):
@@ -52,14 +52,22 @@ async def send_transaction(chat_id: str, type_: str, amount: float, account_type
         "category": category,
         "description": description
     }
-    return await _request("POST", "/transactions", payload)
+    return await _request("POST", "/bot/v1/transactions", payload)
 
 async def get_pending_transactions():
-    return await _request("GET", "/transactions/pending")
+    return await _request("GET", "/bot/v1/transactions/pending")
 
 async def approve_transaction(chat_id: str, transaction_id: int):
     payload = {
         "chat_id": str(chat_id),
         "transaction_id": transaction_id
     }
-    return await _request("POST", "/transactions/approve", payload)
+    return await _request("POST", "/bot/v1/transactions/approve", payload)
+
+async def send_lead_to_crm(name: str, phone: str):
+    payload = {
+        "full_name": name,
+        "phone": phone,
+        "source": "telegram"
+    }
+    return await _request("POST", "/leads", payload)

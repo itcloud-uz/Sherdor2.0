@@ -12,5 +12,13 @@ def get_main_menu():
             ]
         ],
         resize_keyboard=True,
-        input_field_placeholder="Tanlang..."
+    )
+
+def get_contact_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📱 Raqamni yuborish", request_contact=True)]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
     )

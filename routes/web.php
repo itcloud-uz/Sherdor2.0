@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'updateLead'])->name('crm.leads.update');
     Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyLead'])->name('crm.leads.destroy');
     Route::post('/crm/schedules/{schedule}/pay', [\App\Http\Controllers\Admin\CrmController::class, 'paySchedule'])->name('crm.schedules.pay');
+    Route::post('/crm/contracts/{contract}/recalculate-penalty', [\App\Http\Controllers\Admin\CrmController::class, 'recalculatePenalty'])->name('crm.contracts.recalculate_penalty');
     
     // Leads / Kanban Actions
     Route::post('/crm/leads/{lead}/log-contact', [\App\Http\Controllers\Admin\CrmController::class, 'logContact'])->name('crm.leads.log_contact');

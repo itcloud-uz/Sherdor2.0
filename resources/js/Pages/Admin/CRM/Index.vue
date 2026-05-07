@@ -39,6 +39,29 @@ function saveSchedulePayment(schedule) {
         onSuccess: () => {
             editingScheduleId.value = null;
             isProcessing.value = false;
+            const updatedContract = props.contracts.find(c => c.id === selectedContract.value.id);
+            if (updatedContract) {
+                selectedContract.value = updatedContract;
+            }
+        },
+        onError: () => {
+            isProcessing.value = false;
+        },
+        preserveScroll: true
+    });
+}
+
+function recalculatePenalty() {
+    isProcessing.value = true;
+    router.post(route('crm.contracts.recalculate_penalty', selectedContract.value.id), {
+        daily_penalty_rate: selectedContract.value.daily_penalty_rate
+    }, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            const updatedContract = props.contracts.find(c => c.id === selectedContract.value.id);
+            if (updatedContract) {
+                selectedContract.value = updatedContract;
+            }
         },
         onError: () => {
             isProcessing.value = false;

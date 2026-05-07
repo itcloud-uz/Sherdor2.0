@@ -186,4 +186,36 @@ class CrmController extends Controller
 
         return redirect()->back()->with('message', 'To\'lov muvaffaqiyatli saqlandi va ma\'lumotlar yangilandi.');
     }
+
+    public function recalculatePenalty(Request $request, \App\Models\Contract $contract)
+    {
+        $validated = $request->validate([
+            'daily_penalty_rate' => 'required|numeric|min:0|max:100'
+        ]);
+
+        $contract->daily_penalty_rate = $validated['daily_penalty_rate'];
+        $contract->save();
+
+        $totalPenalty = 0;
+        foreach ($contract->paymentSchedules as $schedule) {
+            if ($schedule->status !== 'paid' && new \DateTime($schedule->due_date) < new \DateTime()) {
+                $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
+                if ($daysOverdue > 0) {
+                    $penalty = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                    $schedule->penalty_for_this_month = $penalty;
+                    $schedule->status = 'overdue';
+                    $schedule->save();
+                    $totalPenalty += $penalty;
+                }
+            } else {
+                $schedule->penalty_for_this_month = 0;
+                $schedule->save();
+            }
+        }
+
+        $contract->total_penalty_accumulated = $totalPenalty;
+        $contract->save();
+
+        return redirect()->back()->with('message', 'Penya qayta hisoblandi.');
+    }
 }

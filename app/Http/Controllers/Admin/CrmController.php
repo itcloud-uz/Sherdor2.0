@@ -174,7 +174,8 @@ class CrmController extends Controller
             if (new \DateTime($schedule->due_date) < new \DateTime()) {
                 $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
                 if ($daysOverdue > 0 && $contract) {
-                    $schedule->penalty_for_this_month = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
+                    $schedule->penalty_for_this_month = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
                 }
             } else {
                 $schedule->penalty_for_this_month = 0;
@@ -186,7 +187,8 @@ class CrmController extends Controller
                 $schedule->status = 'overdue';
                 $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
                 if ($daysOverdue > 0 && $contract) {
-                    $schedule->penalty_for_this_month = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
+                    $schedule->penalty_for_this_month = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
                 }
             } else {
                 $schedule->penalty_for_this_month = 0;
@@ -223,7 +225,8 @@ class CrmController extends Controller
             if ($schedule->status !== 'paid' && new \DateTime($schedule->due_date) < new \DateTime()) {
                 $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
                 if ($daysOverdue > 0) {
-                    $penalty = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
+                    $penalty = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
                     $schedule->penalty_for_this_month = $penalty;
                     $schedule->status = 'overdue';
                     $schedule->save();

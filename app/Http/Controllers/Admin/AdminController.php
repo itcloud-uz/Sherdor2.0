@@ -82,9 +82,8 @@ class AdminController extends Controller
         }
 
         $recentActivities = \App\Models\Transaction::with(['creator', 'approver', 'paymentSchedule.contract.client'])
-            ->where('status', 'pending')
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get();
 
         // 6. Marketing & Lead Analytics

@@ -18,3 +18,8 @@ Route::middleware([\App\Http\Middleware\BotApiMiddleware::class])->prefix('bot/v
     Route::get('/transactions/pending', [\App\Http\Controllers\Api\BotApiController::class, 'getPendingTransactions']);
     Route::post('/transactions/approve', [\App\Http\Controllers\Api\BotApiController::class, 'approveTransaction']);
 });
+
+// Telephony AMI API Endpoints
+Route::middleware(['auth:sanctum'])->prefix('telephony')->group(function () {
+    Route::post('/call', [\App\Http\Controllers\Api\TelephonyController::class, 'triggerCall']);
+});

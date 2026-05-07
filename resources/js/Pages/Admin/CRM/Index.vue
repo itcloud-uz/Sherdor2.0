@@ -317,10 +317,16 @@ function updateLeadStatusAPI(lead, status, reason = null) {
 function initiateLeadCall(lead) {
     if (!confirm(`${lead.phone} raqamiga qo'ng'iroq qilinmoqda... Davom etamizmi?`)) return;
     
-    // Call backend to log and change status to contacted
-    router.post(route('admin.crm.leads.log_contact', lead.id), {}, {
-        preserveScroll: true,
-        onSuccess: () => alert("Qo'ng'iroq qayd etildi va Mijoz 'Bog'langanlar' qatoriga o'tdi.")
+    // Call new API endpoint for Asterisk AMI
+    axios.post('/api/telephony/call', {
+        lead_id: lead.id,
+        phone_number: lead.phone
+    }).then(response => {
+        alert("Qo'ng'iroq Asterisk orqali amalga oshirilmoqda! Mijoz 'Bog'langanlar' qatoriga o'tdi.");
+        router.reload({ preserveScroll: true }); // Reload to update kanban board
+    }).catch(error => {
+        alert("Qo'ng'iroqni amalga oshirishda xatolik yuz berdi.");
+        console.error(error);
     });
 }
 

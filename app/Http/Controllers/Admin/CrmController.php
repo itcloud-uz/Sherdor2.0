@@ -153,4 +153,37 @@ class CrmController extends Controller
         $lead->delete();
         return redirect()->back()->with('message', 'Lid muvaffaqiyatli o\'chirildi.');
     }
+
+    public function paySchedule(Request $request, \App\Models\PaymentSchedule $schedule)
+    {
+        $validated = $request->validate([
+            'paid_amount' => 'required|numeric|min:0'
+        ]);
+
+        $schedule->paid_amount = $validated['paid_amount'];
+        $schedule->remaining_debt = max(0, $schedule->expected_amount - $schedule->paid_amount);
+        
+        if ($schedule->paid_amount >= $schedule->expected_amount) {
+            $schedule->status = 'paid';
+        } elseif ($schedule->paid_amount > 0) {
+            $schedule->status = 'partial';
+        } else {
+            $schedule->status = 'pending';
+            // Also re-evaluate if it's overdue
+            if (new \DateTime($schedule->due_date) < new \DateTime()) {
+                $schedule->status = 'overdue';
+            }
+        }
+        $schedule->save();
+
+        // Update Contract's total paid amount
+        $contract = $schedule->contract;
+        if ($contract) {
+            $totalPaid = $contract->paymentSchedules()->sum('paid_amount');
+            // Assuming we only need to reflect changes on the schedule, but if contract has total_paid field, update it.
+            // Currently, contract doesn't have total_paid field based on schema, but we can return success anyway.
+        }
+
+        return redirect()->back()->with('message', 'To\'lov muvaffaqiyatli saqlandi va ma\'lumotlar yangilandi.');
+    }
 }

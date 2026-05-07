@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'updateLead'])->name('crm.leads.update');
     Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyLead'])->name('crm.leads.destroy');
+    Route::post('/crm/schedules/{schedule}/pay', [\App\Http\Controllers\Admin\CrmController::class, 'paySchedule'])->name('crm.schedules.pay');
     
     // Leads / Kanban Actions
     Route::post('/crm/leads/{lead}/log-contact', [\App\Http\Controllers\Admin\CrmController::class, 'logContact'])->name('crm.leads.log_contact');
@@ -102,8 +103,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         
         // Supplier Payments from Finance
         Route::post('/suppliers/pay', [\App\Http\Controllers\Admin\FinanceController::class, 'paySupplier'])->name('suppliers.pay');
-        Route::post('/categories', [FinanceController::class, 'storeCategory'])->name('categories.store');
-        Route::post('/liabilities', [FinanceController::class, 'storeLiability'])->name('liabilities.store');
+        Route::post('/categories', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCategory'])->name('categories.store');
+        Route::post('/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('liabilities.store');
     });
 
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');

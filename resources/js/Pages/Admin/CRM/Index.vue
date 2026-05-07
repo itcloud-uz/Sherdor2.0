@@ -23,6 +23,30 @@ const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual:
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
 
+const editingScheduleId = ref(null);
+const editingPaidAmount = ref(0);
+
+function editSchedule(schedule) {
+    editingScheduleId.value = schedule.id;
+    editingPaidAmount.value = schedule.paid_amount || 0;
+}
+
+function saveSchedulePayment(schedule) {
+    isProcessing.value = true;
+    router.post(route('crm.schedules.pay', schedule.id), {
+        paid_amount: editingPaidAmount.value
+    }, {
+        onSuccess: () => {
+            editingScheduleId.value = null;
+            isProcessing.value = false;
+        },
+        onError: () => {
+            isProcessing.value = false;
+        },
+        preserveScroll: true
+    });
+}
+
 function openEditLeadModal(lead) {
     isEditingLead.value = true;
     editingLeadId.value = lead.id;
@@ -898,7 +922,17 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-sm font-bold text-white">{{ index + 1 }}</td>
                                     <td class="p-3 text-sm font-mono text-white/80">{{ schedule.due_date }}</td>
                                     <td class="p-3 text-sm font-mono text-neon-cyan">{{ $currency(schedule.expected_amount) }}</td>
-                                    <td class="p-3 text-sm font-mono text-neon-green">{{ $currency(schedule.paid_amount || 0) }}</td>
+                                    <td class="p-3 text-sm font-mono text-neon-green">
+                                        <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
+                                            <input type="number" step="0.01" v-model="editingPaidAmount" class="glass-input w-24 text-white text-xs py-1 px-2">
+                                            <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="px-2 py-1 bg-neon-green/20 text-neon-green text-[10px] rounded hover:bg-neon-green hover:text-black transition-all">Save</button>
+                                            <button @click="editingScheduleId = null" class="px-2 py-1 bg-white/10 text-white text-[10px] rounded hover:bg-white/30 transition-all">Cancel</button>
+                                        </div>
+                                        <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
+                                            {{ $currency(schedule.paid_amount || 0) }}
+                                            <span class="text-[10px] opacity-0 group-hover:opacity-100 text-neon-cyan transition-opacity border border-neon-cyan/50 rounded px-1">✏️</span>
+                                        </div>
+                                    </td>
                                     <td class="p-3 text-sm font-mono text-neon-magenta">{{ $currency(schedule.remaining_debt || 0) }}</td>
                                     <td class="p-3 text-sm font-mono text-neon-magenta">{{ $currency(schedule.penalty_for_this_month || 0) }}</td>
                                     <td class="p-3 text-right">

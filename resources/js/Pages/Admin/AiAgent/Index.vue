@@ -23,7 +23,7 @@
             </div>
 
             <!-- Block Selector -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <!-- Avto-xabar bloki -->
                 <div @click="openRuleModal('auto')" class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A] hover:bg-neon-cyan/5 cursor-pointer transition-all group relative overflow-hidden">
                     <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-cyan/10 blur-[50px] group-hover:bg-neon-cyan/20 transition-all"></div>
@@ -47,6 +47,7 @@
                     <h3 class="text-xl font-display text-neon-yellow mb-2">Aksiya va Rasilka</h3>
                     <p class="text-xs text-text-muted font-mono leading-relaxed">Tashqi bazadan Excel/CSV yuklab, ularga ommaviy reklama va aksiya SMS larini yuborish.</p>
                 </div>
+
             </div>
 
             <!-- Dashboard Content -->
@@ -55,12 +56,16 @@
                 <div class="glass-panel border border-white/10 flex flex-col bg-[#05050A]">
                     <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
                         <h3 class="text-lg font-display text-white">📝 SMS Shablonlar</h3>
-                        <button @click="showTemplateModal = true" class="text-xs text-neon-purple hover:text-white transition-colors font-mono">+ Yangi</button>
+                        <button @click="openTemplateModal" class="text-xs text-neon-purple hover:text-white transition-colors font-mono">+ Yangi</button>
                     </div>
                     <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                        <div v-for="t in templates" :key="t.id" class="p-3 bg-black/40 border border-white/5 rounded-lg">
+                        <div v-for="t in templates" :key="t.id" class="p-3 bg-black/40 border border-white/5 rounded-lg group relative">
+                            <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+                                <button @click="editTemplate(t)" class="text-[10px] bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                <button @click="deleteTemplate(t.id)" class="text-[10px] bg-neon-magenta/10 hover:bg-neon-magenta/30 text-neon-magenta p-1 rounded">🗑️</button>
+                            </div>
                             <div class="text-xs text-white font-bold mb-1">{{ t.name }}</div>
-                            <div class="text-[10px] text-text-muted font-mono line-clamp-2">{{ t.content }}</div>
+                            <div class="text-[10px] text-text-muted font-mono line-clamp-2 pr-8">{{ t.content }}</div>
                         </div>
                     </div>
                 </div>
@@ -71,7 +76,11 @@
                         <h3 class="text-lg font-display text-white">⚙️ Faol Qoidalar</h3>
                     </div>
                     <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                        <div v-for="r in rules" :key="r.id" class="p-3 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between">
+                        <div v-for="r in rules" :key="r.id" class="p-3 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between group relative">
+                            <div class="absolute right-8 top-2 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+                                <button @click="editRule(r)" class="text-[10px] bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                <button @click="deleteRule(r.id)" class="text-[10px] bg-neon-magenta/10 hover:bg-neon-magenta/30 text-neon-magenta p-1 rounded">🗑️</button>
+                            </div>
                             <div>
                                 <div class="text-xs text-white font-bold mb-1">{{ r.name }}</div>
                                 <div class="text-[10px] text-text-muted font-mono">
@@ -197,20 +206,37 @@
                 <h2 class="text-2xl font-display text-neon-yellow mb-4">Aksiya va Ommaviy Rasilka</h2>
                 
                 <div class="space-y-6">
-                    <!-- Upload Section -->
-                    <div class="p-4 border border-dashed border-white/20 rounded-xl bg-white/5 text-center">
-                        <h3 class="text-sm font-mono text-white mb-2">1. Mijozlar Bazasini Yuklash (CSV)</h3>
-                        <p class="text-xs text-text-muted mb-4">Faqat bitta "Telefon Raqam" (998901234567) ustuni bo'lishi kerak.</p>
-                        
-                        <form @submit.prevent="submitUpload" class="flex flex-col items-center gap-3">
-                            <input type="file" @change="uploadForm.file = $event.target.files[0]" accept=".csv" class="block w-full max-w-xs text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer">
-                            <button type="submit" :disabled="uploadForm.processing || !uploadForm.file" class="px-4 py-2 bg-white/10 text-white font-mono text-xs rounded hover:bg-white/20 transition-colors disabled:opacity-50">Yuklash</button>
-                        </form>
-                    </div>
-
                     <!-- Setup Rule Section -->
                     <form @submit.prevent="submitPromoRule" class="space-y-4">
-                        <h3 class="text-sm font-mono text-white">2. Rasilka Rejasini Tuzish</h3>
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-2">Auditoriyani Tanlang</label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <label class="flex items-center gap-2 p-3 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all" :class="{'bg-neon-yellow/10 border-neon-yellow/50': promoRuleForm.audience_type === 'system_clients'}">
+                                    <input type="radio" v-model="promoRuleForm.audience_type" value="system_clients" class="text-neon-yellow focus:ring-neon-yellow bg-black border-white/20">
+                                    <span class="text-xs text-white">Tizimdagi Mijozlar</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all" :class="{'bg-neon-yellow/10 border-neon-yellow/50': promoRuleForm.audience_type === 'upload_file'}">
+                                    <input type="radio" v-model="promoRuleForm.audience_type" value="upload_file" class="text-neon-yellow focus:ring-neon-yellow bg-black border-white/20">
+                                    <span class="text-xs text-white">Fayl Yuklash</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all" :class="{'bg-neon-yellow/10 border-neon-yellow/50': promoRuleForm.audience_type === 'manual_number'}">
+                                    <input type="radio" v-model="promoRuleForm.audience_type" value="manual_number" class="text-neon-yellow focus:ring-neon-yellow bg-black border-white/20">
+                                    <span class="text-xs text-white">Raqam Kiritish</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div v-if="promoRuleForm.audience_type === 'upload_file'" class="p-4 border border-dashed border-white/20 rounded-xl bg-white/5 text-center">
+                            <h3 class="text-sm font-mono text-white mb-2">Mijozlar Bazasini Yuklash (CSV)</h3>
+                            <p class="text-xs text-text-muted mb-4">Faqat bitta "Telefon Raqam" (998901234567) ustuni bo'lishi kerak.</p>
+                            <input type="file" @change="promoRuleForm.file = $event.target.files[0]" accept=".csv" class="mx-auto block w-full max-w-xs text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer">
+                        </div>
+
+                        <div v-if="promoRuleForm.audience_type === 'manual_number'">
+                            <label class="block text-xs font-mono text-text-muted mb-1">Telefon Raqam(lar)</label>
+                            <input v-model="promoRuleForm.manual_phone" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" placeholder="Masalan: 998901234567, 998912345678">
+                        </div>
+
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Rasilka Nomi</label>
                             <input v-model="promoRuleForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required placeholder="Masalan: Yangi Yil Aksiyasi">
@@ -274,9 +300,29 @@ function submitSettings() {
 
 const showTemplateModal = ref(false);
 const templateForm = useForm({
+    id: null,
     name: '',
     content: ''
 });
+
+function openTemplateModal() {
+    templateForm.reset();
+    templateForm.id = null;
+    showTemplateModal.value = true;
+}
+
+function editTemplate(t) {
+    templateForm.id = t.id;
+    templateForm.name = t.name;
+    templateForm.content = t.content;
+    showTemplateModal.value = true;
+}
+
+function deleteTemplate(id) {
+    if (confirm("Rostdan ham o'chirmoqchimisiz?")) {
+        router.delete(route('admin.ai_agents.template.delete', id));
+    }
+}
 
 function submitTemplate() {
     templateForm.post(route('admin.ai_agents.template.save'), {
@@ -290,6 +336,7 @@ function submitTemplate() {
 const showRuleModal = ref(false);
 const ruleType = ref('auto');
 const ruleForm = useForm({
+    id: null,
     name: '',
     event_trigger: '',
     template_id: '',
@@ -298,6 +345,8 @@ const ruleForm = useForm({
 });
 
 function openRuleModal(type) {
+    ruleForm.reset();
+    ruleForm.id = null;
     ruleType.value = type;
     ruleForm.event_trigger = type;
     if (type === 'auto') {
@@ -307,6 +356,35 @@ function openRuleModal(type) {
         ruleForm.schedule_time = '10:00';
     }
     showRuleModal.value = true;
+}
+
+function editRule(r) {
+    if (r.event_trigger === 'promo') {
+        promoRuleForm.id = r.id;
+        promoRuleForm.name = r.name;
+        promoRuleForm.event_trigger = r.event_trigger;
+        promoRuleForm.template_id = r.template_id;
+        promoRuleForm.schedule_time = r.schedule_time;
+        promoRuleForm.schedule_days = r.schedule_days;
+        promoRuleForm.audience_type = r.audience_type;
+        promoRuleForm.manual_phone = r.manual_phone;
+        showPromoModal.value = true;
+    } else {
+        ruleType.value = r.event_trigger;
+        ruleForm.id = r.id;
+        ruleForm.name = r.name;
+        ruleForm.event_trigger = r.event_trigger;
+        ruleForm.template_id = r.template_id;
+        ruleForm.schedule_time = r.schedule_time;
+        ruleForm.schedule_days = r.schedule_days;
+        showRuleModal.value = true;
+    }
+}
+
+function deleteRule(id) {
+    if (confirm("Rostdan ham o'chirmoqchimisiz?")) {
+        router.delete(route('admin.ai_agents.rule.delete', id));
+    }
 }
 
 function submitRule() {
@@ -319,28 +397,22 @@ function submitRule() {
 }
 
 const showPromoModal = ref(false);
-const uploadForm = useForm({
-    file: null
-});
 const promoRuleForm = useForm({
+    id: null,
     name: '',
     event_trigger: 'promo',
     template_id: '',
     schedule_time: '18:00',
-    schedule_days: ''
+    schedule_days: '',
+    audience_type: 'system_clients',
+    manual_phone: '',
+    file: null
 });
 
 function openPromoModal() {
+    promoRuleForm.reset();
+    promoRuleForm.id = null;
     showPromoModal.value = true;
-}
-
-function submitUpload() {
-    uploadForm.post(route('admin.ai_agents.upload'), {
-        onSuccess: () => {
-            uploadForm.reset();
-            alert("Baza muvaffaqiyatli yuklandi!");
-        }
-    });
 }
 
 function submitPromoRule() {
@@ -350,5 +422,10 @@ function submitPromoRule() {
             promoRuleForm.reset();
         }
     });
+}
+
+const showEtlModal = ref(false);
+function openEtlModal() {
+    showEtlModal.value = true;
 }
 </script>

@@ -40,9 +40,15 @@ class CrmController extends Controller
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
+            'created_at' => 'nullable|date'
         ]);
 
-        \App\Models\Client::create($validated);
+        $client = new \App\Models\Client($validated);
+        if (!empty($validated['created_at'])) {
+            $client->created_at = $validated['created_at'];
+        }
+        $client->save();
+
         return redirect()->back()->with('message', 'Client created successfully.');
     }
 
@@ -57,9 +63,15 @@ class CrmController extends Controller
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
+            'created_at' => 'nullable|date'
         ]);
 
-        $client->update($validated);
+        $client->fill($validated);
+        if (!empty($validated['created_at'])) {
+            $client->created_at = $validated['created_at'];
+        }
+        $client->save();
+
         return redirect()->back()->with('message', 'Client updated successfully.');
     }
 

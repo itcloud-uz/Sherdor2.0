@@ -17,9 +17,10 @@ class ContractController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'down_payment' => 'required|numeric|min:0',
             'term_months' => 'required|integer|min:1',
+            'created_at' => 'nullable|date'
         ]);
 
-        $contract = \App\Models\Contract::create([
+        $contract = new \App\Models\Contract([
             'client_id' => $validated['client_id'],
             'unit_id' => $validated['unit_id'],
             'contract_type' => $validated['contract_type'],
@@ -29,8 +30,14 @@ class ContractController extends Controller
             'term_months' => $validated['term_months'],
             'status' => 'draft'
         ]);
+        
+        if (!empty($validated['created_at'])) {
+            $contract->created_at = $validated['created_at'];
+        }
+        $contract->save();
 
         // Note: The ContractObserver will automatically generate PaymentSchedules.
+        // It should use the contract's created_at date for scheduling.
 
         // Also mark unit as reserved
         $unit = \App\Models\Unit::find($validated['unit_id']);
@@ -39,6 +46,38 @@ class ContractController extends Controller
         }
 
         return redirect()->back()->with('message', 'Contract created successfully.');
+    }
+
+    public function update(\Illuminate\Http\Request $request, \App\Models\Contract $contract)
+    {
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'unit_id' => 'required|exists:units,id',
+            'contract_type' => 'required|string|in:residential,commercial',
+            'price_per_sqm' => 'required|numeric|min:0',
+            'total_amount' => 'required|numeric|min:0',
+            'down_payment' => 'required|numeric|min:0',
+            'term_months' => 'required|integer|min:1',
+            'created_at' => 'nullable|date'
+        ]);
+
+        $contract->fill($validated);
+        if (!empty($validated['created_at'])) {
+            $contract->created_at = $validated['created_at'];
+        }
+        $contract->save();
+
+        return redirect()->back()->with('message', 'Contract updated successfully.');
+    }
+
+    public function destroy(\App\Models\Contract $contract)
+    {
+        // Free up the unit if contract is destroyed
+        if ($contract->unit) {
+            $contract->unit->update(['status' => 'available']);
+        }
+        $contract->delete();
+        return redirect()->back()->with('message', 'Contract deleted successfully.');
     }
 
     public function generatePdf(\App\Models\Contract $contract)

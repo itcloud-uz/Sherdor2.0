@@ -66,73 +66,102 @@ class AiAgentController extends Controller
     public function saveTemplate(Request $request)
     {
         $validated = $request->validate([
+            'id' => 'nullable|integer|exists:sms_templates,id',
             'name' => 'required|string|max:255',
             'content' => 'required|string|max:160'
         ]);
 
-        DB::table('sms_templates')->insert([
-            'name' => $validated['name'],
-            'content' => $validated['content'],
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        if (isset($validated['id'])) {
+            DB::table('sms_templates')->where('id', $validated['id'])->update([
+                'name' => $validated['name'],
+                'content' => $validated['content'],
+                'updated_at' => now(),
+            ]);
+        } else {
+            DB::table('sms_templates')->insert([
+                'name' => $validated['name'],
+                'content' => $validated['content'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return redirect()->back()->with('message', 'Shablon saqlandi.');
+    }
+
+    public function deleteTemplate($id)
+    {
+        DB::table('sms_templates')->where('id', $id)->delete();
+        return redirect()->back()->with('message', 'Shablon o\'chirildi.');
     }
 
     public function saveRule(Request $request)
     {
         $validated = $request->validate([
+            'id' => 'nullable|integer|exists:sms_automation_rules,id',
             'name' => 'required|string',
             'event_trigger' => 'required|string', // auto, debtor, promo
             'template_id' => 'required|integer|exists:sms_templates,id',
             'schedule_time' => 'nullable|string', // e.g. 10:00
             'schedule_days' => 'nullable|string', // e.g. 1,3,5
+            'audience_type' => 'nullable|string', // system_clients, upload_file, manual_number
+            'manual_phone' => 'nullable|string',
+            'file' => 'nullable|file|mimes:csv,txt'
         ]);
 
-        DB::table('sms_automation_rules')->insert([
+        $filePath = null;
+        if ($request->hasFile('file') && $validated['audience_type'] === 'upload_file') {
+            $file = $request->file('file');
+            $filePath = $file->store('audiences', 'public');
+            
+            // Read and store in audience_lists for future reference
+            $handle = fopen($file->getRealPath(), 'r');
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (isset($data[0])) {
+                    $phone = preg_replace('/[^0-9]/', '', $data[0]);
+                    if (strlen($phone) >= 9) {
+                        DB::table('audience_lists')->insert([
+                            'phone_number' => $phone,
+                            'first_name' => null,
+                            'last_name' => null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+            fclose($handle);
+        }
+
+        $data = [
             'name' => $validated['name'],
             'event_trigger' => $validated['event_trigger'],
             'template_id' => $validated['template_id'],
             'schedule_time' => $validated['schedule_time'] ?? 'immediate',
             'schedule_days' => $validated['schedule_days'],
-            'created_at' => now(),
+            'audience_type' => $validated['audience_type'] ?? 'all',
+            'manual_phone' => $validated['manual_phone'] ?? null,
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($filePath) {
+            $data['uploaded_file_path'] = $filePath;
+        }
+
+        if (isset($validated['id'])) {
+            DB::table('sms_automation_rules')->where('id', $validated['id'])->update($data);
+        } else {
+            $data['created_at'] = now();
+            DB::table('sms_automation_rules')->insert($data);
+        }
 
         return redirect()->back()->with('message', 'Avtomatlashtirish qoidasi saqlandi.');
     }
 
-    public function uploadAudience(Request $request)
+    public function deleteRule($id)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
-        ]);
-
-        $file = $request->file('file');
-        
-        $handle = fopen($file->getRealPath(), 'r');
-        $count = 0;
-        
-        // Read single column CSV: Phone Number
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            if (isset($data[0])) {
-                $phone = preg_replace('/[^0-9]/', '', $data[0]);
-                if (strlen($phone) >= 9) {
-                    DB::table('audience_lists')->insert([
-                        'phone_number' => $phone,
-                        'first_name' => null,
-                        'last_name' => null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    $count++;
-                }
-            }
-        }
-        fclose($handle);
-
-        return redirect()->back()->with('message', $count . ' ta raqam bazaga yuklandi.');
+        DB::table('sms_automation_rules')->where('id', $id)->delete();
+        return redirect()->back()->with('message', 'Qoida o\'chirildi.');
     }
 
     // Keep chat for legacy or drop it. We'll drop it since it's fully SMS now.

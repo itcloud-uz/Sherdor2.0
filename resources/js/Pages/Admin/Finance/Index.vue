@@ -15,7 +15,8 @@ const props = defineProps({
     suppliers: Array,
     workers: Array,
     machineries: Array,
-    buildings: Array
+    buildings: Array,
+    categories: Array
 });
 
 const activeTab = ref(0);
@@ -31,11 +32,23 @@ const tabs = [
 ];
 
 // Split transactions
-const pendingTransactions = computed(() => props.transactions.filter(t => t.status === 'pending'));
-const historicalTransactions = computed(() => props.transactions.filter(t => t.status !== 'pending'));
+const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
 
-const recentIncomes = computed(() => props.transactions.filter(t => t.type === 'income'));
-const recentExpenses = computed(() => props.transactions.filter(t => t.type === 'expense'));
+const filteredTransactions = computed(() => {
+    let result = props.transactions;
+    if (legacyFilter.value === 'native') {
+        result = result.filter(t => !t.is_legacy);
+    } else if (legacyFilter.value === 'legacy') {
+        result = result.filter(t => t.is_legacy);
+    }
+    return result;
+});
+
+const pendingTransactions = computed(() => filteredTransactions.value.filter(t => t.status === 'pending'));
+const historicalTransactions = computed(() => filteredTransactions.value.filter(t => t.status !== 'pending'));
+
+const recentIncomes = computed(() => historicalTransactions.value.filter(t => t.type === 'income'));
+const recentExpenses = computed(() => historicalTransactions.value.filter(t => t.type === 'expense'));
 
 const showEditTransactionModal = ref(false);
 const editTransactionForm = ref({
@@ -88,12 +101,15 @@ const form = ref({
     machinery_id: '',
     building_id: '',
     supplier_id: '',
-    category: 'Mijoz to\'lovi',
+    category_id: '',
+    category_name: '',
     transaction_date: new Date().toISOString().split('T')[0],
     attachment: null,
     notes: '',
     auto_approve: true
 });
+
+const isNewCategory = ref(false);
 
 function handleFileUpload(e) {
     if (e.target.files.length > 0) {
@@ -134,7 +150,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category: 'Mijoz to\'lovi', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toISOString().split('T')[0], attachment: null, auto_approve: true, notes: '' };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toISOString().split('T')[0], attachment: null, auto_approve: true, notes: '' };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -455,12 +471,21 @@ function submitSupplierPayment() {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Incomes -->
                 <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/20 h-[500px] flex flex-col">
-                    <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Kirimlar (Qayerdan)
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Kirimlar (Qayerdan)
+                        </h3>
+                        <!-- LEGACY FILTERS -->
+                        <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
+                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">Barchasi</button>
+                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">🟢 Yangi</button>
+                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">📦 Import</button>
+                        </div>
+                    </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                        <div v-for="txn in recentIncomes" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2">
-                            <div class="flex justify-between items-start">
+                        <div v-for="txn in recentIncomes" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
+                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                            <div class="flex justify-between items-start mt-2">
                                 <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-cyan">+ {{ $currency(txn.amount) }}</span>
                             </div>
@@ -484,12 +509,21 @@ function submitSupplierPayment() {
 
                 <!-- Expenses -->
                 <div class="glass-panel p-6 rounded-2xl border border-neon-red/20 h-[500px] flex flex-col">
-                    <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-red"></span> Chiqimlar (Qayerga)
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-neon-red"></span> Chiqimlar (Qayerga)
+                        </h3>
+                        <!-- LEGACY FILTERS -->
+                        <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
+                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">Barchasi</button>
+                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">🟢 Yangi</button>
+                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">📦 Import</button>
+                        </div>
+                    </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                        <div v-for="txn in recentExpenses" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2">
-                            <div class="flex justify-between items-start">
+                        <div v-for="txn in recentExpenses" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
+                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                            <div class="flex justify-between items-start mt-2">
                                 <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-red">- {{ $currency(txn.amount) }}</span>
                             </div>
@@ -567,10 +601,13 @@ function submitSupplierPayment() {
                             <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
                         </div>
                         
-                        <div class="z-10">
+                        <div class="z-10 flex items-center gap-3">
                             <h3 class="text-2xl font-bold font-display" :class="txn.type === 'income' ? 'text-neon-cyan' : 'text-neon-red'">
                                 {{ txn.type === 'income' ? '+' : '-' }} {{ $currency(txn.amount) }}
                             </h3>
+                            <span v-if="txn.is_legacy" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                        </div>
+                        <div class="z-10">
                             <p class="text-[10px] uppercase font-bold mt-1" :class="txn.account_type === 'credit' ? 'text-neon-yellow' : 'text-neon-green'">
                                 Hisob: {{ txn.account_type === 'credit' ? 'KREDIT (KASSA)' : 'MAIN (KOMPANIYA)' }}
                             </p>
@@ -675,27 +712,28 @@ function submitSupplierPayment() {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Kategoriya</label>
-                        <select v-model="form.category" class="glass-input w-full text-white bg-black/50">
-                            <template v-if="form.type === 'income'">
-                                <option value="Mijoz to'lovi">Mijoz to'lovi</option>
-                                <option value="Sarmoya (Investitsiya)">Sarmoya (Investitsiya)</option>
-                                <option value="Boshqa daromadlar">Boshqa daromadlar</option>
-                            </template>
-                            <template v-else>
-                                <option value="Oylik maoshlar">Oylik maoshlar</option>
-                                <option value="Ishchi To'lovi (Avans/Oylik)">Ishchi To'lovi (Avans/Oylik)</option>
-                                <option value="Texnika To'lovi">Texnika To'lovi</option>
-                                <option value="Ta'minotchi To'lovi">Ta'minotchi To'lovi</option>
-                                <option value="Obyekt Xarajati">Obyekt Xarajati</option>
-                                <option value="Ofis xarajatlari">Ofis xarajatlari</option>
-                                <option value="Soliq va to'lovlar">Soliq va to'lovlar</option>
-                                <option value="Boshqa xarajatlar">Boshqa xarajatlar</option>
-                            </template>
-                        </select>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-mono text-text-muted">Kategoriya</label>
+                            <label class="text-[10px] text-neon-cyan cursor-pointer flex items-center gap-1">
+                                <input type="checkbox" v-model="isNewCategory" class="rounded bg-black border-white/20 text-neon-cyan focus:ring-neon-cyan">
+                                Yangi Qo'shish
+                            </label>
+                        </div>
+                        
+                        <div v-if="isNewCategory">
+                            <input v-model="form.category_name" type="text" class="glass-input w-full text-white" placeholder="Yangi kategoriya nomini kiriting" required>
+                        </div>
+                        <div v-else>
+                            <select v-model="form.category_id" class="glass-input w-full text-white bg-black/50" required>
+                                <option value="" disabled>-- Tanlang --</option>
+                                <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
+                                    {{ cat.name }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div v-if="form.category === 'Ishchi To\'lovi (Avans/Oylik)'">
+                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Ishchi To\'lovi (Avans/Oylik)'">
                         <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang</label>
                         <select v-model="form.worker_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
@@ -703,7 +741,7 @@ function submitSupplierPayment() {
                         </select>
                     </div>
 
-                    <div v-if="form.category === 'Texnika To\'lovi'">
+                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Texnika To\'lovi'">
                         <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang</label>
                         <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
@@ -711,7 +749,7 @@ function submitSupplierPayment() {
                         </select>
                     </div>
 
-                    <div v-if="form.category === 'Ta\'minotchi To\'lovi'">
+                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Ta\'minotchi To\'lovi'">
                         <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang</label>
                         <select v-model="form.supplier_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
@@ -719,7 +757,7 @@ function submitSupplierPayment() {
                         </select>
                     </div>
 
-                    <div v-if="form.category === 'Obyekt Xarajati' || form.category === 'Qurilish materiallari'">
+                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Obyekt Xarajati' || (isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Qurilish materiallari'">
                         <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang</label>
                         <select v-model="form.building_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>

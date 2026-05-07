@@ -26,7 +26,7 @@ class ContractObserver
 
         // 4. Generate the schedules
         $schedules = [];
-        $startDate = Carbon::now();
+        $startDate = $contract->created_at ? Carbon::parse($contract->created_at) : Carbon::now();
 
         for ($i = 1; $i <= $contract->term_months; $i++) {
             $dueDate = $startDate->copy()->addMonths($i);

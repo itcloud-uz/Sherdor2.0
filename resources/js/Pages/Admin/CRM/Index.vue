@@ -16,7 +16,7 @@ const isProcessing = ref(false);
 const showCreateClientModal = ref(false);
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
-const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '' });
+const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
 
 function openCreateClientModal() {
     isEditingClient.value = false;
@@ -34,9 +34,10 @@ function openEditClientModal(client) {
         passport_series: client.passport_number || client.passport_series, 
         pinfl: client.pinfl, 
         phone: client.phone, 
-        address: client.address, 
-        passport_issued_date: client.passport_issued_date, 
-        passport_issued_by: client.passport_issued_by 
+        address: client.address || '',
+        passport_issued_date: client.passport_issued_date || '',
+        passport_issued_by: client.passport_issued_by || '',
+        created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : ''
     };
     showCreateClientModal.value = true;
 }
@@ -68,20 +69,58 @@ function deleteClient(id) {
     }
 }
 
-// Create Contract Form
+// Create / Edit Contract Form
 const showCreateContractModal = ref(false);
-const contractForm = ref({ client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment' });
+const isEditingContract = ref(false);
+const currentContractId = ref(null);
+const contractForm = ref({ client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' });
+
+function editContract(contract) {
+    isEditingContract.value = true;
+    currentContractId.value = contract.id;
+    contractForm.value = { 
+        client_id: contract.client_id, 
+        unit_id: contract.unit_id, 
+        contract_type: contract.contract_type || 'residential', 
+        price_per_sqm: contract.price_per_sqm, 
+        total_amount: contract.total_amount, 
+        down_payment: contract.down_payment, 
+        term_months: contract.term_months, 
+        payment_type: contract.down_payment == contract.total_amount ? 'full' : 'installment',
+        created_at: contract.created_at ? new Date(contract.created_at).toISOString().slice(0, 10) : ''
+    };
+    showCreateContractModal.value = true;
+}
+
+function deleteContract(id) {
+    if (confirm("Haqiqatan ham ushbu shartnomani o'chirmoqchimisiz?")) {
+        router.delete(route('admin.contracts.destroy', id));
+    }
+}
 
 function createContract() {
     isProcessing.value = true;
-    router.post(route('admin.contracts.store'), contractForm.value, {
-        onSuccess: () => {
-            showCreateContractModal.value = false;
-            contractForm.value = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment' };
-            isProcessing.value = false;
-        },
-        onError: () => isProcessing.value = false
-    });
+    
+    if (isEditingContract.value) {
+        router.put(route('admin.contracts.update', currentContractId.value), contractForm.value, {
+            onSuccess: () => {
+                showCreateContractModal.value = false;
+                isProcessing.value = false;
+                isEditingContract.value = false;
+                currentContractId.value = null;
+            },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.contracts.store'), contractForm.value, {
+            onSuccess: () => {
+                showCreateContractModal.value = false;
+                contractForm.value = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' };
+                isProcessing.value = false;
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
 }
 
 const selectedUnit = computed(() => {
@@ -130,6 +169,7 @@ watch(() => contractForm.value.payment_type, (newType) => {
 
 const activeTab = ref('leads');
 const searchQuery = ref('');
+const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
 
 const leadsByStatus = computed(() => {
     return {
@@ -141,13 +181,21 @@ const leadsByStatus = computed(() => {
 });
 
 const filteredClients = computed(() => {
-    if (!searchQuery.value) return props.clients;
-    const lowerQuery = searchQuery.value.toLowerCase();
-    return props.clients.filter(c => 
-        (c.first_name && c.first_name.toLowerCase().includes(lowerQuery)) ||
-        (c.last_name && c.last_name.toLowerCase().includes(lowerQuery)) ||
-        (c.pinfl && c.pinfl.includes(lowerQuery))
-    );
+    let result = props.clients;
+    
+    if (searchQuery.value) {
+        const lowerQuery = searchQuery.value.toLowerCase();
+        result = result.filter(c => 
+            (c.first_name && c.first_name.toLowerCase().includes(lowerQuery)) ||
+            (c.last_name && c.last_name.toLowerCase().includes(lowerQuery)) ||
+            (c.pinfl && c.pinfl.includes(lowerQuery))
+        );
+    }
+    return result;
+});
+
+const filteredContracts = computed(() => {
+    return props.contracts;
 });
 
 function calculatePaidAmount(contract) {
@@ -230,6 +278,7 @@ function recalculatePenalty() {
         isProcessing.value = false;
     });
 }
+
 </script>
 
 <template>
@@ -324,13 +373,16 @@ function recalculatePenalty() {
 
         <!-- TAB 2: CLIENTS ROSTER -->
         <div v-if="activeTab === 'clients'" class="glass-panel p-6 rounded-2xl min-h-[500px]">
-            <div class="mb-6 flex justify-between items-center">
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-display font-bold text-white">{{ $t('clients_database') }}</h2>
                     <button @click="openCreateClientModal" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
                         + {{ $t('add') }} {{ $t('client') }}
                     </button>
                 </div>
+
+
+
                 <input 
                     v-model="searchQuery" 
                     type="text" 
@@ -352,8 +404,11 @@ function recalculatePenalty() {
                             </div>
                             
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-bold text-white truncate" :title="`${client.first_name} ${client.last_name}`">
+                                <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.first_name} ${client.last_name}`">
                                     {{ client.first_name }} {{ client.last_name }}
+                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="Import qilingan eski baza">
+                                        📦 Import
+                                    </span>
                                 </h3>
                                 <p class="text-xs font-mono text-neon-cyan mt-1 flex items-center gap-1">
                                     <span>📞</span> {{ client.phone || 'N/A' }}
@@ -413,14 +468,16 @@ function recalculatePenalty() {
 
         <!-- TAB 3: SMART CONTRACTS -->
         <div v-if="activeTab === 'contracts'" class="glass-panel p-6 rounded-2xl min-h-[500px]">
-            <div class="mb-6 flex justify-end">
-                <button @click="showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+
+
+                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div 
-                    v-for="contract in contracts" 
+                    v-for="contract in filteredContracts" 
                     :key="contract.id"
                     @click="openScheduleModal(contract)"
                     class="glass-card p-6 border border-white/10 hover:border-neon-green/50 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(57,255,20,0.15)] group relative overflow-hidden flex flex-col h-full justify-between"
@@ -430,6 +487,16 @@ function recalculatePenalty() {
                     
                     <div>
                         <div class="flex justify-between items-start mb-4">
+                            <!-- ACTION BUTTONS (Edit / Delete) -->
+                            <div class="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
+                                <button @click="editContract(contract)" class="p-1.5 bg-neon-blue/20 text-neon-blue rounded hover:bg-neon-blue hover:text-white transition-colors" title="Tahrirlash">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button @click="deleteContract(contract.id)" class="p-1.5 bg-neon-red/20 text-neon-red rounded hover:bg-neon-red hover:text-white transition-colors" title="O'chirish">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                            
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-neon-green/50 flex items-center justify-center text-neon-green font-display font-bold text-sm shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                                     {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
@@ -439,7 +506,8 @@ function recalculatePenalty() {
                                     <p class="text-[10px] font-mono text-neon-cyan mt-0.5">{{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}</p>
                                 </div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex flex-col items-end gap-1">
+                                <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="Import qilingan eski baza">📦 Import</span>
                                 <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white/80 whitespace-nowrap">{{ contract.term_months }} {{ $t('months') }}</span>
                             </div>
                         </div>
@@ -662,6 +730,10 @@ function recalculatePenalty() {
                     {{ isEditingClient ? 'Mijozni tahrirlash' : $t('add') + ' ' + $t('client') }}
                 </h2>
                 <form @submit.prevent="saveClient" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ro'yxatdan o'tgan sana (Ixtiyoriy)</label>
+                        <input v-model="clientForm.created_at" type="date" class="glass-input w-full text-neon-cyan" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('first_name') }}</label>
@@ -713,9 +785,13 @@ function recalculatePenalty() {
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCreateContractModal = false"></div>
             <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-green/30">
                 <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-green/50">
-                    {{ $t('add') }} {{ $t('contract') }}
+                    {{ isEditingContract ? 'Shartnomani tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma sanasi (Ixtiyoriy)</label>
+                        <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
+                    </div>
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('client') }}</label>
                         <select v-model="contractForm.client_id" class="glass-input w-full bg-black/50" required>
@@ -804,7 +880,7 @@ function recalculatePenalty() {
                     </div>
                     <div class="flex justify-end gap-4 mt-8">
                         <button type="button" @click="showCreateContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>
                     </div>
                 </form>
             </div>

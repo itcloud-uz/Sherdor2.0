@@ -46,22 +46,68 @@ class RunPromoSmsJob extends Command
             $template = DB::table('sms_templates')->where('id', $rule->template_id)->first();
             if (!$template) continue;
 
-            // Fetch Audience
-            $audience = DB::table('audience_lists')->get();
-            if ($audience->isEmpty()) continue;
-
-            // Prepare batch messages
             $batchMessages = [];
-            foreach ($audience as $person) {
-                // For promo, we just send the template content as-is 
-                // since the CSV only has phone numbers
-                $msg = $template->content;
+
+            if ($rule->audience_type === 'manual_number' && !empty($rule->manual_phone)) {
+                $phones = explode(',', $rule->manual_phone);
+                foreach ($phones as $p) {
+                    $p = trim($p);
+                    $p = preg_replace('/[^0-9]/', '', $p);
+                    if (strlen($p) >= 9) {
+                        $batchMessages[] = [
+                            'to' => $p,
+                            'text' => $template->content
+                        ];
+                    }
+                }
+            } elseif ($rule->audience_type === 'upload_file') {
+                // Fetch from audience_lists (assuming all audience_lists are from uploaded files for now)
+                // In a real app we might filter by specific upload, but for now we take the whole list
+                $audience = DB::table('audience_lists')->get();
+                foreach ($audience as $person) {
+                    $batchMessages[] = [
+                        'to' => $person->phone_number,
+                        'text' => $template->content
+                    ];
+                }
+            } elseif ($rule->audience_type === 'system_clients') {
+                // Fetch all clients EXCEPT debtors
+                // Find debtor IDs
+                $debtorContracts = \App\Models\Contract::with('paymentSchedules')
+                    ->where('status', 'active')
+                    ->get()
+                    ->filter(function ($contract) {
+                        return $contract->paymentSchedules->contains(function ($payment) {
+                            return $payment->status === 'pending' && \Carbon\Carbon::parse($payment->due_date)->isPast();
+                        });
+                    });
                 
-                $batchMessages[] = [
-                    'to' => $person->phone_number,
-                    'text' => $msg
-                ];
+                $debtorClientIds = $debtorContracts->pluck('client_id')->unique()->toArray();
+
+                $clients = \App\Models\Client::whereNotIn('id', $debtorClientIds)->whereNotNull('phone_number')->get();
+                
+                foreach ($clients as $client) {
+                    // Replace tags if any
+                    $msg = str_replace('[Ism]', $client->first_name ?? '', $template->content);
+                    $msg = str_replace('[Familiya]', $client->last_name ?? '', $msg);
+                    
+                    $batchMessages[] = [
+                        'to' => preg_replace('/[^0-9]/', '', $client->phone_number),
+                        'text' => $msg
+                    ];
+                }
+            } else {
+                // 'all' or fallback -> send to audience_lists
+                $audience = DB::table('audience_lists')->get();
+                foreach ($audience as $person) {
+                    $batchMessages[] = [
+                        'to' => $person->phone_number,
+                        'text' => $template->content
+                    ];
+                }
             }
+
+            if (empty($batchMessages)) continue;
 
             // Send in chunks of 500
             $chunks = array_chunk($batchMessages, 500);
@@ -78,8 +124,8 @@ class RunPromoSmsJob extends Command
 
             $this->info("Promo SMS Rule '{$rule->name}' executed. Sent {$totalSent} messages in batch.");
             
-            // To prevent spamming if it runs every minute, we might want to disable the rule or log that it ran today.
-            // Simplified: we'll assume it's disabled after running or it's up to the user to manage it.
+            // To prevent spamming, we deactivate it after running once
+            DB::table('sms_automation_rules')->where('id', $rule->id)->update(['is_active' => false]);
         }
     }
 }

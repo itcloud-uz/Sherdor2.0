@@ -29,6 +29,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
     Route::post('/contracts', [\App\Http\Controllers\Admin\ContractController::class, 'store'])->name('contracts.store');
+    Route::put('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'update'])->name('contracts.update');
+    Route::delete('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'destroy'])->name('contracts.destroy');
     Route::post('/contracts/{contract}/update-penalty', [\App\Http\Controllers\Admin\ContractController::class, 'updatePenaltyRate'])->name('contracts.update_penalty');
     
     // Multi-format Contract Exports (Client Ledger)
@@ -74,9 +76,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         
         // Supplier Payments from Finance
         Route::post('/suppliers/pay', [\App\Http\Controllers\Admin\FinanceController::class, 'paySupplier'])->name('suppliers.pay');
+        Route::post('/categories', [FinanceController::class, 'storeCategory'])->name('categories.store');
+        Route::post('/liabilities', [FinanceController::class, 'storeLiability'])->name('liabilities.store');
     });
 
-    Route::post('/finance/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('finance.liabilities.store');
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');
     Route::delete('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyLiability'])->name('finance.liabilities.destroy');
     Route::post('/finance/liabilities/{liability}/payments', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiabilityPayment'])->name('finance.liabilities.payments.store');
@@ -140,8 +143,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/ai-agents/settings', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveSettings'])->name('ai_agents.settings');
     Route::post('/ai-agents/test-sms', [\App\Http\Controllers\Admin\AiAgentController::class, 'testSms'])->name('ai_agents.test_sms');
     Route::post('/ai-agents/template', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveTemplate'])->name('ai_agents.template.save');
+    Route::delete('/ai-agents/template/{id}', [\App\Http\Controllers\Admin\AiAgentController::class, 'deleteTemplate'])->name('ai_agents.template.delete');
     Route::post('/ai-agents/rule', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveRule'])->name('ai_agents.rule.save');
-    Route::post('/ai-agents/upload', [\App\Http\Controllers\Admin\AiAgentController::class, 'uploadAudience'])->name('ai_agents.upload');
+    Route::delete('/ai-agents/rule/{id}', [\App\Http\Controllers\Admin\AiAgentController::class, 'deleteRule'])->name('ai_agents.rule.delete');
+
+
+    // Migration Hub routes removed
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
 

@@ -14,6 +14,16 @@ const props = defineProps({
     payrolls: Array
 });
 
+const filteredWorkers = computed(() => {
+    let result = props.workers || [];
+    return result;
+});
+
+const filteredMachineries = computed(() => {
+    let result = props.machineries || [];
+    return result;
+});
+
 const activeTab = ref(0);
 const isProcessing = ref(false);
 
@@ -732,6 +742,8 @@ function generatePayroll() {
         }
     });
 }
+
+// Decentralized Import Modal
 </script>
 
 <template>
@@ -811,10 +823,13 @@ function generatePayroll() {
 
             <!-- Workers Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                         👷‍♂️ Yollanma Ishchilar
                     </h2>
+                    
+
+
                     <button @click="showWorkerForm = !showWorkerForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
                         {{ showWorkerForm ? '- Yopish' : '+ Ishchi Qo\'shish' }}
                     </button>
@@ -877,7 +892,8 @@ function generatePayroll() {
                 </form>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
-                    <div v-for="w in workers" :key="w.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                    <div v-for="w in filteredWorkers" :key="w.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
+                        <span v-if="w.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
                         <div class="flex items-start gap-3 mb-3">
                             <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
                                 <img v-if="w.photo_path" :src="'/storage/' + w.photo_path" class="w-full h-full object-cover">
@@ -1057,9 +1073,12 @@ function generatePayroll() {
         <div v-if="activeTab === 3" class="max-w-3xl mx-auto animate-[fadeIn_0.5s_ease-out]">
             <!-- Machinery Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5">
-                <h2 class="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
-                    🚜 {{ $t('machinery') }}
-                </h2>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                        🚜 {{ $t('machinery') }}
+                    </h2>
+
+                </div>
                 
                 <form @submit.prevent="addMachinery" class="mb-8 space-y-4 bg-black/30 p-6 rounded-xl border border-white/5">
                     <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest border-b border-white/5 pb-2">{{ $t('add_machinery') }}</h3>
@@ -1100,7 +1119,8 @@ function generatePayroll() {
                 </form>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-                    <div v-for="m in machineries" :key="m.id" class="p-4 border border-white/10 rounded-xl bg-black/40 hover:border-neon-cyan/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all flex flex-col">
+                    <div v-for="m in filteredMachineries" :key="m.id" class="p-4 border border-white/10 rounded-xl bg-black/40 hover:border-neon-cyan/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all flex flex-col relative">
+                        <span v-if="m.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
                         
                         <!-- VIEW MODE -->
                         <div v-if="editMachineryId !== m.id" class="flex flex-col h-full justify-between">
@@ -1940,8 +1960,8 @@ function generatePayroll() {
             </div>
             </div>
         </div>
-        </div>
 
+        </div>
     </AdminLayout>
 </template>
 

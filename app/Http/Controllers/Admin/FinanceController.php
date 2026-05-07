@@ -22,6 +22,7 @@ class FinanceController extends Controller
             'balance' => $balance,
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
+            'categories' => \App\Models\TransactionCategory::all(),
             'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', 'active')->get(),
             'financialLiabilities' => \App\Models\FinancialLiability::with('payments')->latest()->get(),
             'suppliers' => \App\Models\Supplier::latest()->get(),
@@ -41,7 +42,8 @@ class FinanceController extends Controller
             'account_type' => 'required|in:main,credit',
             'contract_id' => 'nullable|exists:contracts,id',
             'notes' => 'nullable|string',
-            'category' => 'nullable|string',
+            'category_id' => 'nullable|exists:transaction_categories,id',
+            'category_name' => 'nullable|string',
             'transaction_date' => 'nullable|date',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'auto_approve' => 'nullable|boolean',
@@ -61,6 +63,15 @@ class FinanceController extends Controller
 
         if (empty($validated['transaction_date'])) {
             $validated['transaction_date'] = now()->toDateString();
+        }
+
+        // Handle category creation on the fly if needed
+        if (empty($validated['category_id']) && !empty($validated['category_name'])) {
+            $cat = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => $validated['category_name']],
+                ['type' => $validated['type']]
+            );
+            $validated['category_id'] = $cat->id;
         }
 
         $requiresConsensus = false;
@@ -261,6 +272,18 @@ class FinanceController extends Controller
         $transaction->delete();
 
         return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli o\'chirildi.');
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|unique:transaction_categories,name',
+            'type' => 'required|in:income,expense,both'
+        ]);
+
+        \App\Models\TransactionCategory::create($validated);
+
+        return redirect()->back()->with('message', 'Kategoriya muvaffaqiyatli qo\'shildi.');
     }
 
     // --- FINANCIAL LIABILITIES ---

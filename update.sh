@@ -22,7 +22,7 @@ npm run build
 echo "------------------------------------------------"
 echo "🧹 5. Keshlar tozalanib, papkalarga ruxsat berilmoqda..."
 # Bu yerda sudo so'ralishi mumkin
-sudo php artisan optimize:clear
+sudo php artisan optimize
 sudo chown -R www-data:www-data storage bootstrap/cache
 
 echo "------------------------------------------------"

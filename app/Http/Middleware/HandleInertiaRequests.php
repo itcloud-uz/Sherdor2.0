@@ -29,11 +29,13 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $settings = \App\Models\SystemSetting::first() ?? new \App\Models\SystemSetting([
-            'logo_path' => null,
-            'primary_theme_color' => '#00F0FF', // Cyan default
-            'neon_glow_intensity' => '0 0 15px',
-        ]);
+        $settings = \Illuminate\Support\Facades\Cache::rememberForever('system_settings', function () {
+            return \App\Models\SystemSetting::first() ?? new \App\Models\SystemSetting([
+                'logo_path' => null,
+                'primary_theme_color' => '#00F0FF', // Cyan default
+                'neon_glow_intensity' => '0 0 15px',
+            ]);
+        });
 
         return [
             ...parent::share($request),

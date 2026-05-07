@@ -14,6 +14,8 @@ class SystemSettingObserver
      */
     public function saved(SystemSetting $setting)
     {
+        \Illuminate\Support\Facades\Cache::forget('system_settings');
+        
         // Check if any SIP related fields were modified
         if ($setting->wasChanged(['asterisk_sip_host', 'asterisk_sip_username', 'asterisk_sip_password', 'asterisk_port'])) {
             $this->generateAsteriskTrunk($setting);

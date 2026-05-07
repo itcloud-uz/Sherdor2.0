@@ -8,10 +8,12 @@ use Inertia\Inertia;
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
-        if ($user->hasRole('Partner')) {
-            return redirect()->route('partner');
+        if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
+            return redirect()->route('admin.dashboard');
         } elseif ($user->hasRole('Operator')) {
             return redirect()->route('operator');
+        } elseif ($user->hasRole('Partner')) {
+            return redirect()->route('partner');
         }
         return redirect()->route('admin.dashboard');
     }

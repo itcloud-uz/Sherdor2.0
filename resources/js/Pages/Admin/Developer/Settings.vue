@@ -119,7 +119,9 @@ function lockSettings() {
                         </form>
                     </div>
                 </div>
-            </            <!-- UNLOCKED STATE -->
+            </div>
+
+            <!-- UNLOCKED STATE -->
             <div v-else class="space-y-6">
                 <!-- TOP ACTION BAR -->
                 <div class="glass-panel p-4 rounded-xl border border-white/10 flex justify-between items-center shadow-lg bg-black/20 backdrop-blur-md">

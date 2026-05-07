@@ -43,9 +43,9 @@ class AdminController extends Controller
         // 3. HR Stats (Attendance)
         $today = \Carbon\Carbon::today();
         $attendanceStats = [
-            'present' => \App\Models\AttendanceLog::whereDate('date', $today)->where('status', 'present')->count(),
-            'absent' => \App\Models\AttendanceLog::whereDate('date', $today)->where('status', 'absent')->count(),
-            'total_workers' => \App\Models\Worker::where('status', 'active')->count()
+            'present' => \App\Models\AttendanceLog::whereDate('created_at', $today)->where('type', 'present')->count(),
+            'absent' => \App\Models\AttendanceLog::whereDate('created_at', $today)->where('type', 'absent')->count(),
+            'total_workers' => \App\Models\Worker::count()
         ];
 
         // 4. Financial Liabilities (Qarzlar)

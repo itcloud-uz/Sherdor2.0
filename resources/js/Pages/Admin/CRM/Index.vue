@@ -33,7 +33,7 @@ function editSchedule(schedule) {
 
 function saveSchedulePayment(schedule) {
     isProcessing.value = true;
-    router.post(route('crm.schedules.pay', schedule.id), {
+    router.post(route('admin.crm.schedules.pay', schedule.id), {
         paid_amount: editingPaidAmount.value
     }, {
         onSuccess: (page) => {
@@ -54,7 +54,7 @@ function saveSchedulePayment(schedule) {
 
 function recalculatePenalty() {
     isProcessing.value = true;
-    router.post(route('crm.contracts.recalculate_penalty', selectedContract.value.id), {
+    router.post(route('admin.crm.contracts.recalculate_penalty', selectedContract.value.id), {
         daily_penalty_rate: selectedContract.value.daily_penalty_rate
     }, {
         onSuccess: (page) => {

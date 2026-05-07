@@ -103,7 +103,7 @@ const form = ref({
     supplier_id: '',
     category_id: '',
     category_name: '',
-    transaction_date: new Date().toISOString().split('T')[0],
+    transaction_date: new Date().toLocaleString('sv').slice(0,16),
     attachment: null,
     notes: '',
     auto_approve: true
@@ -150,7 +150,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toISOString().split('T')[0], attachment: null, auto_approve: true, notes: '' };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '' };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -714,10 +714,9 @@ function submitSupplierPayment() {
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <label class="block text-xs font-mono text-text-muted">Kategoriya</label>
-                            <label class="text-[10px] text-neon-cyan cursor-pointer flex items-center gap-1">
-                                <input type="checkbox" v-model="isNewCategory" class="rounded bg-black border-white/20 text-neon-cyan focus:ring-neon-cyan">
-                                Yangi Qo'shish
-                            </label>
+                            <button type="button" @click="isNewCategory = !isNewCategory" class="text-[10px] uppercase font-bold text-neon-cyan hover:text-white transition-colors border border-neon-cyan/50 px-2 py-1 rounded">
+                                {{ isNewCategory ? 'Ro\'yxatdan tanlash' : '+ Yangi Qo\'shish' }}
+                            </button>
                         </div>
                         
                         <div v-if="isNewCategory">
@@ -725,7 +724,7 @@ function submitSupplierPayment() {
                         </div>
                         <div v-else>
                             <select v-model="form.category_id" class="glass-input w-full text-white bg-black/50" required>
-                                <option value="" disabled>-- Tanlang --</option>
+                                <option value="" disabled>-- Kategoriya tanlang --</option>
                                 <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
                                     {{ cat.name }}
                                 </option>
@@ -791,8 +790,8 @@ function submitSupplierPayment() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Tranzaksiya Sanasi</label>
-                            <input v-model="form.transaction_date" type="date" required class="glass-input w-full text-white bg-black/50 [color-scheme:dark]">
+                            <label class="block text-xs font-mono text-text-muted mb-1">Tranzaksiya Sanasi va Vaqti</label>
+                            <input v-model="form.transaction_date" type="datetime-local" required class="glass-input w-full text-white bg-black/50 [color-scheme:dark]">
                         </div>
                     </div>
 

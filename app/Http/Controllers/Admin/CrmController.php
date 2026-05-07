@@ -134,4 +134,24 @@ class CrmController extends Controller
             return redirect()->back()->withErrors(['message' => 'SMS yuborishda xatolik: ' . $e->getMessage()]);
         }
     }
+
+    public function updateLead(Request $request, Lead $lead)
+    {
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+        ]);
+
+        $lead->full_name = $validated['full_name'];
+        $lead->phone = $validated['phone'];
+        $lead->save();
+
+        return redirect()->back()->with('message', 'Lid ma\'lumotlari yangilandi.');
+    }
+
+    public function destroyLead(Lead $lead)
+    {
+        $lead->delete();
+        return redirect()->back()->with('message', 'Lid muvaffaqiyatli o\'chirildi.');
+    }
 }

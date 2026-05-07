@@ -20,21 +20,64 @@ const isEditingClient = ref(false);
 const editingClientId = ref(null);
 const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
 const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true });
+const isEditingLead = ref(false);
+const editingLeadId = ref(null);
+
+function openEditLeadModal(lead) {
+    isEditingLead.value = true;
+    editingLeadId.value = lead.id;
+    newLeadForm.value = { 
+        full_name: lead.full_name, 
+        phone: lead.phone, 
+        source: lead.source || 'manual', 
+        is_manual: lead.source === 'manual' 
+    };
+    showCreateLeadModal.value = true;
+}
+
+function openCreateLeadModal() {
+    isEditingLead.value = false;
+    editingLeadId.value = null;
+    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
+    showCreateLeadModal.value = true;
+}
 
 function submitNewLead() {
     isProcessing.value = true;
-    axios.post(route('api.leads.store'), newLeadForm.value)
-        .then(() => {
-            showCreateLeadModal.value = false;
-            newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
-            router.reload({ preserveScroll: true });
-        })
-        .catch(error => {
-            alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
-        })
-        .finally(() => {
-            isProcessing.value = false;
+    if (isEditingLead.value) {
+        axios.put(route('admin.crm.leads.update', editingLeadId.value), newLeadForm.value)
+            .then(() => {
+                showCreateLeadModal.value = false;
+                router.reload({ preserveScroll: true });
+            })
+            .catch(error => {
+                alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+            })
+            .finally(() => {
+                isProcessing.value = false;
+            });
+    } else {
+        axios.post(route('api.leads.store'), newLeadForm.value)
+            .then(() => {
+                showCreateLeadModal.value = false;
+                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
+                router.reload({ preserveScroll: true });
+            })
+            .catch(error => {
+                alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+            })
+            .finally(() => {
+                isProcessing.value = false;
+            });
+    }
+}
+
+function deleteLead(id) {
+    if (confirm("Haqiqatan ham ushbu lidni o'chirmoqchimisiz?")) {
+        router.delete(route('admin.crm.leads.destroy', id), {
+            preserveScroll: true
         });
+    }
 }
 
 function openCreateClientModal() {
@@ -394,7 +437,7 @@ function openQuickSmsModal(lead) {
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_new') }}</h3>
                     <div class="flex items-center gap-2">
-                        <button @click="showCreateLeadModal = true" class="px-2 py-0.5 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                        <button @click="openCreateLeadModal" class="px-2 py-0.5 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
                             + Yangi Lid
                         </button>
                         <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-cyan">{{ leadsByStatus.new.length }}</span>
@@ -408,12 +451,18 @@ function openQuickSmsModal(lead) {
                         <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
                         
                         <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
                                 📞
                             </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
+                            </button>
+                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                                ✏️
+                            </button>
+                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                                🗑️
                             </button>
                         </div>
                     </div>
@@ -435,12 +484,18 @@ function openQuickSmsModal(lead) {
                         <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
                         
                         <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
                                 📞
                             </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
+                            </button>
+                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                                ✏️
+                            </button>
+                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                                🗑️
                             </button>
                         </div>
                     </div>
@@ -462,12 +517,18 @@ function openQuickSmsModal(lead) {
                         <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
                         
                         <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
                                 📞
                             </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
+                            </button>
+                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                                ✏️
+                            </button>
+                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                                🗑️
                             </button>
                         </div>
                     </div>
@@ -489,12 +550,18 @@ function openQuickSmsModal(lead) {
                         <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
                         
                         <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
                                 📞
                             </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
+                            </button>
+                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                                ✏️
+                            </button>
+                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                                🗑️
                             </button>
                         </div>
                     </div>
@@ -1021,7 +1088,7 @@ function openQuickSmsModal(lead) {
         <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all">
             <div class="glass-panel w-full max-w-md rounded-2xl border border-neon-cyan/30 shadow-[0_0_50px_rgba(0,240,255,0.1)] overflow-hidden">
                 <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
-                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow">Yangi Lid Qo'shish</h2>
+                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow">{{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}</h2>
                     <button @click="showCreateLeadModal = false" class="text-text-muted hover:text-white transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>

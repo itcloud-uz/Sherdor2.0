@@ -43,6 +43,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
+    Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'updateLead'])->name('crm.leads.update');
+    Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyLead'])->name('crm.leads.destroy');
     
     // Leads / Kanban Actions
     Route::post('/crm/leads/{lead}/log-contact', [\App\Http\Controllers\Admin\CrmController::class, 'logContact'])->name('crm.leads.log_contact');

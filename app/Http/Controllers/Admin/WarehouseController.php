@@ -119,8 +119,8 @@ class WarehouseController extends Controller
             return back()->with('error', 'Yuborish uchun hujjat mavjud emas');
         }
 
-        $token = env('TELEGRAM_BOT_TOKEN');
-        $chatId = env('TELEGRAM_CHAT_ID');
+        $token = env('PIN_BOT_TOKEN');
+        $chatId = env('PIN_CHAT_ID');
 
         if (!$token || !$chatId) {
             return back()->with('error', 'Telegram Bot sozlamalari (.env) kiritilmagan');

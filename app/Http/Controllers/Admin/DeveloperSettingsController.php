@@ -50,6 +50,12 @@ class DeveloperSettingsController extends Controller
                 'asterisk_port' => $systemSettings->asterisk_port,
                 'has_password' => !empty($systemSettings->asterisk_sip_password),
             ] : null,
+            'promoSettings' => $systemSettings ? [
+                'promo_title' => $systemSettings->promo_title,
+                'promo_subtitle' => $systemSettings->promo_subtitle,
+                'promo_description' => $systemSettings->promo_description,
+                'promo_image' => $systemSettings->promo_image,
+            ] : null,
         ]);
     }
 
@@ -177,5 +183,33 @@ class DeveloperSettingsController extends Controller
         $settings->save();
 
         return back()->with('success', 'IP Telefoniya sozlamalari saqlandi va Asterisk uchun yangilandi!');
+    }
+
+    public function updatePromoSettings(Request $request)
+    {
+        if (!Session::get('developer_unlocked', false)) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'promo_title' => 'nullable|string|max:255',
+            'promo_subtitle' => 'nullable|string|max:255',
+            'promo_description' => 'nullable|string',
+            'promo_image' => 'nullable|image|max:5120', // Max 5MB
+        ]);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
+        $settings->promo_title = $validated['promo_title'];
+        $settings->promo_subtitle = $validated['promo_subtitle'];
+        $settings->promo_description = $validated['promo_description'];
+        
+        if ($request->hasFile('promo_image')) {
+            $path = $request->file('promo_image')->store('promo', 'public');
+            $settings->promo_image = $path;
+        }
+        
+        $settings->save();
+
+        return back()->with('success', 'Promo Sayt sozlamalari muvaffaqiyatli saqlandi!');
     }
 }

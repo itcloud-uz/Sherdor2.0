@@ -17,6 +17,10 @@ class SystemSetting extends Model
         'asterisk_sip_host',
         'asterisk_sip_username',
         'asterisk_sip_password',
-        'asterisk_port'
+        'asterisk_port',
+        'promo_title',
+        'promo_subtitle',
+        'promo_description',
+        'promo_image'
     ];
 }

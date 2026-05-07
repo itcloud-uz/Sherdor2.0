@@ -8,6 +8,7 @@ const props = defineProps({
     apiKeys: Array,
     users: Array,
     sipSettings: Object,
+    promoSettings: Object,
 });
 
 const isProcessing = ref(false);
@@ -27,6 +28,22 @@ const otpForm = useForm({
 const keyForm = useForm({
     name: ''
 });
+
+const promoForm = useForm({
+    promo_title: props.promoSettings?.promo_title || '',
+    promo_subtitle: props.promoSettings?.promo_subtitle || '',
+    promo_description: props.promoSettings?.promo_description || '',
+    promo_image: null,
+});
+const promoImagePreview = ref(props.promoSettings?.promo_image ? '/storage/' + props.promoSettings.promo_image : null);
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+        promoForm.promo_image = file;
+        promoImagePreview.value = URL.createObjectURL(file);
+    }
+}
 
 function requestOtp() {
     isProcessing.value = true;
@@ -77,6 +94,16 @@ function updateSipSettings() {
             sipForm.asterisk_sip_password = ''; // clear after save
             isProcessing.value = false;
         },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function updatePromoSettings() {
+    isProcessing.value = true;
+    promoForm.post(route('admin.developer.promo.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => isProcessing.value = false,
         onError: () => isProcessing.value = false
     });
 }
@@ -297,6 +324,76 @@ function lockSettings() {
                             <button type="submit" :disabled="isProcessing" class="px-8 py-4 bg-neon-purple/10 text-neon-purple border border-neon-purple/50 text-sm font-bold font-mono uppercase tracking-widest rounded-xl hover:bg-neon-purple hover:text-white transition-all disabled:opacity-50 flex items-center gap-3 shadow-[0_0_20px_rgba(157,0,255,0.1)] hover:shadow-[0_0_30px_rgba(157,0,255,0.4)]">
                                 <span v-if="isProcessing" class="animate-spin">🔄</span>
                                 💾 Konfiguratsiyani Saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- PROMO SITE CMS BLOCK -->
+                <div class="glass-panel p-8 rounded-3xl border border-neon-magenta/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-xl hover:border-neon-magenta/40 transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-magenta via-neon-red to-white"></div>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <h2 class="text-2xl font-display font-bold text-white flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-neon-magenta/10 flex items-center justify-center border border-neon-magenta/30">
+                                <span class="text-neon-magenta drop-shadow-[0_0_8px_rgba(255,0,255,0.5)]">🌐</span>
+                            </div>
+                            Promo Sayt Boshqaruvi
+                        </h2>
+                        <span class="px-4 py-1.5 bg-neon-magenta/10 text-neon-magenta border border-neon-magenta/30 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full shadow-[0_0_10px_rgba(255,0,255,0.2)]">CMS</span>
+                    </div>
+
+                    <p class="text-sm font-mono text-text-muted mb-8 leading-relaxed max-w-3xl">Ochiq reklama sahifasini boshqarish uchun shu yerdan foydalaning. Matnlar va Asosiy Rasmni yuklaganingizda, public sahifa darhol o'zgaradi.</p>
+
+                    <form @submit.prevent="updatePromoSettings" class="bg-black/30 p-6 sm:p-8 rounded-2xl border border-white/5 shadow-inner">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-mono text-white/50 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                        <span class="text-neon-magenta">📝</span> Sarlavha (Title)
+                                    </label>
+                                    <input v-model="promoForm.promo_title" type="text" class="glass-input w-full focus:border-neon-magenta focus:ring-neon-magenta py-3 font-mono" placeholder="Masalan: Maxsus Taklif!">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-[10px] font-mono text-white/50 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                        <span class="text-neon-magenta">🏷️</span> Qisqacha ta'rif (Subtitle)
+                                    </label>
+                                    <input v-model="promoForm.promo_subtitle" type="text" class="glass-input w-full focus:border-neon-magenta focus:ring-neon-magenta py-3 font-mono" placeholder="Masalan: Yangi uylar haqida...">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-mono text-white/50 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                        <span class="text-neon-magenta">📄</span> Uy haqida ma'lumot (Description)
+                                    </label>
+                                    <textarea v-model="promoForm.promo_description" rows="5" class="glass-input w-full focus:border-neon-magenta focus:ring-neon-magenta py-3 font-mono resize-none custom-scrollbar" placeholder="Sotuvdagi uylar, infratuzilma yoki maxsus narxlar haqida yozing..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <label class="block text-[10px] font-mono text-white/50 uppercase tracking-widest flex items-center gap-2">
+                                    <span class="text-neon-magenta">🖼️</span> Asosiy Rasm (Promo Image)
+                                </label>
+                                <div class="w-full h-64 border-2 border-dashed border-white/20 rounded-xl bg-black/40 flex flex-col items-center justify-center relative overflow-hidden group hover:border-neon-magenta/50 transition-colors">
+                                    <input type="file" @change="handleImageUpload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                    <template v-if="promoImagePreview">
+                                        <img :src="promoImagePreview" class="w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity">
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            <span class="bg-black/80 px-4 py-2 rounded-lg text-neon-magenta font-mono text-xs uppercase tracking-widest">Rasmni Almashtirish</span>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="text-4xl mb-2 opacity-50">📸</span>
+                                        <span class="text-text-muted font-mono text-xs uppercase tracking-widest">Rasm yuklash uchun shu yerga bosing</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end mt-8 pt-6 border-t border-white/5">
+                            <button type="submit" :disabled="isProcessing" class="px-8 py-4 bg-neon-magenta/10 text-neon-magenta border border-neon-magenta/50 text-sm font-bold font-mono uppercase tracking-widest rounded-xl hover:bg-neon-magenta hover:text-white transition-all disabled:opacity-50 flex items-center gap-3 shadow-[0_0_20px_rgba(255,0,255,0.1)] hover:shadow-[0_0_30px_rgba(255,0,255,0.4)]">
+                                <span v-if="isProcessing" class="animate-spin">🔄</span>
+                                💾 CMS Sozlamalarini Saqlash
                             </button>
                         </div>
                     </form>

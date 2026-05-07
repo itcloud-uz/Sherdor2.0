@@ -26,7 +26,15 @@ Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicR
 
 // Public Lead Form (Landing Page)
 Route::get('/promo/offers', function () {
-    return Inertia::render('Public/LeadForm');
+    $settings = \App\Models\SystemSetting::first();
+    return Inertia::render('Public/LeadForm', [
+        'promoSettings' => $settings ? [
+            'promo_title' => $settings->promo_title,
+            'promo_subtitle' => $settings->promo_subtitle,
+            'promo_description' => $settings->promo_description,
+            'promo_image' => $settings->promo_image,
+        ] : null,
+    ]);
 })->name('promo.offers');
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
@@ -73,6 +81,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/developer/keys', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'generateKey'])->name('developer.keys.store');
     Route::delete('/developer/keys/{id}', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'revokeKey'])->name('developer.keys.destroy');
     Route::post('/developer/sip', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateSipSettings'])->name('developer.sip.update');
+    Route::post('/developer/promo', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updatePromoSettings'])->name('developer.promo.update');
     Route::put('/developer/users/{id}/chat-id', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateUserChatId'])->name('developer.users.update_chat_id');
 
     Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');

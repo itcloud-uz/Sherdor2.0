@@ -183,7 +183,7 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' });
+const contractForm = ref({ client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' });
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -191,6 +191,7 @@ function editContract(contract) {
     contractForm.value = { 
         client_id: contract.client_id, 
         unit_id: contract.unit_id, 
+        contract_number: contract.contract_number || '',
         contract_type: contract.contract_type || 'residential', 
         price_per_sqm: contract.price_per_sqm, 
         total_amount: contract.total_amount, 
@@ -225,7 +226,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' };
+                contractForm.value = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -761,7 +762,10 @@ function openQuickSmsModal(lead) {
                                 </div>
                                 <div>
                                     <h3 class="text-sm font-bold text-white group-hover:text-neon-green transition-colors">{{ contract.client?.first_name }} {{ contract.client?.last_name }}</h3>
-                                    <p class="text-[10px] font-mono text-neon-cyan mt-0.5">{{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}</p>
+                                    <p class="text-[10px] font-mono text-neon-cyan mt-0.5">
+                                        <span class="text-white/70">{{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}</span>
+                                        | {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
+                                    </p>
                                 </div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-1">
@@ -861,7 +865,7 @@ function openQuickSmsModal(lead) {
                 <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
                     <div>
                         <h2 class="text-2xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow">{{ $t('client_personal_ledger') }} <span class="text-xs text-neon-cyan ml-2">{{ $t('akt_sverka') }}</span></h2>
-                        <p class="text-sm text-text-muted font-mono mt-1">Contract #{{ selectedContract.id.toString().padStart(5, '0') }} • {{ selectedContract.client?.first_name }} {{ selectedContract.client?.last_name }} • Unit {{ selectedContract.unit?.unit_number || 'N/A' }}</p>
+                        <p class="text-sm text-text-muted font-mono mt-1">Contract #{{ selectedContract.contract_number || selectedContract.id.toString().padStart(5, '0') }} • {{ selectedContract.client?.first_name }} {{ selectedContract.client?.last_name }} • Unit {{ selectedContract.unit?.unit_number || 'N/A' }}</p>
                     </div>
                     <button @click="showModal = false" class="text-text-muted hover:text-white transition-colors">
                         <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -1072,9 +1076,15 @@ function openQuickSmsModal(lead) {
                     {{ isEditingContract ? 'Shartnomani tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma sanasi (Ixtiyoriy)</label>
-                        <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma sanasi (Ixtiyoriy)</label>
+                            <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shartnoma raqami (Ixtiyoriy)</label>
+                            <input v-model="contractForm.contract_number" type="text" class="glass-input w-full text-neon-green" placeholder="Masalan: SH-001">
+                        </div>
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('client') }}</label>

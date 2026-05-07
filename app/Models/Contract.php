@@ -20,7 +20,8 @@ class Contract extends Model
         'ai_verification_status',
         'ai_verification_logs',
         'daily_penalty_rate',
-        'total_penalty_accumulated'
+        'total_penalty_accumulated',
+        'contract_number'
     ];
 
     protected $casts = [

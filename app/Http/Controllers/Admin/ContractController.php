@@ -17,7 +17,8 @@ class ContractController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'down_payment' => 'required|numeric|min:0',
             'term_months' => 'required|integer|min:1',
-            'created_at' => 'nullable|date'
+            'created_at' => 'nullable|date',
+            'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number'
         ]);
 
         $contract = new \App\Models\Contract([
@@ -28,6 +29,7 @@ class ContractController extends Controller
             'total_amount' => $validated['total_amount'],
             'down_payment' => $validated['down_payment'],
             'term_months' => $validated['term_months'],
+            'contract_number' => $validated['contract_number'] ?? null,
             'status' => 'draft'
         ]);
         
@@ -58,7 +60,8 @@ class ContractController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'down_payment' => 'required|numeric|min:0',
             'term_months' => 'required|integer|min:1',
-            'created_at' => 'nullable|date'
+            'created_at' => 'nullable|date',
+            'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number,' . $contract->id
         ]);
 
         $contract->fill($validated);

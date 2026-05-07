@@ -159,7 +159,7 @@ const updateThemeStyle = (style) => {
 
                         <!-- Financials Tab -->
                         <div v-show="activeTab === 'financial'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                            <h3 class="text-neon-cyan font-display text-xl tracking-widest uppercase border-b border-white/10 pb-4 mb-6">Financial Defaults</h3>
+                            <h3 class="text-neon-cyan font-display text-xl tracking-widest uppercase border-b border-white/10 pb-4 mb-6">{{ $t('financial_defaults') }}</h3>
                             
                             <div class="space-y-6">
                                 <div>
@@ -202,13 +202,13 @@ const updateThemeStyle = (style) => {
                                     <span v-else class="text-3xl">👤</span>
                                 </div>
                                 <div class="flex-1">
-                                    <label class="block text-xs font-mono text-text-muted uppercase mb-2">Avatar yuklash</label>
+                                    <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('upload_avatar') }}</label>
                                     <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">F.I.SH</label>
+                                <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('full_name_abbr') }}</label>
                                 <input type="text" v-model="profileForm.name" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.name" class="text-neon-red text-xs mt-1">{{ profileForm.errors.name }}</div>
                             </div>
@@ -244,7 +244,7 @@ const updateThemeStyle = (style) => {
                     <div v-show="activeTab === 'profile'" class="space-y-8 mt-12 animate-[fadeIn_0.5s_ease-out]">
                         <!-- Global Mavzu (Theme Style) -->
                         <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
-                            <h2 class="text-xl font-display font-bold text-white mb-6">Global Dizayn Mavzusi</h2>
+                            <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('global_design_theme') }}</h2>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
                                     <span class="text-3xl">🍏</span>
@@ -302,7 +302,7 @@ const updateThemeStyle = (style) => {
                                     :class="profileForm.language === 'uz' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
                                 >
                                     <span class="text-2xl">🇺🇿</span>
-                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'uz' ? 'text-neon-primary font-bold' : 'text-text-muted'">O'zbek</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'uz' ? 'text-neon-primary font-bold' : 'text-text-muted'">{{ $t('uzbek') }}</span>
                                 </button>
                                 
                                 <button 
@@ -312,7 +312,7 @@ const updateThemeStyle = (style) => {
                                     :class="profileForm.language === 'ru' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
                                 >
                                     <span class="text-2xl">🇷🇺</span>
-                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'ru' ? 'text-neon-primary font-bold' : 'text-text-muted'">Русский</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'ru' ? 'text-neon-primary font-bold' : 'text-text-muted'">{{ $t('russian') }}</span>
                                 </button>
 
                                 <button 
@@ -322,7 +322,7 @@ const updateThemeStyle = (style) => {
                                     :class="profileForm.language === 'en' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'"
                                 >
                                     <span class="text-2xl">🇬🇧</span>
-                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'en' ? 'text-neon-primary font-bold' : 'text-text-muted'">English</span>
+                                    <span class="font-mono text-xs uppercase" :class="profileForm.language === 'en' ? 'text-neon-primary font-bold' : 'text-text-muted'">{{ $t('english') }}</span>
                                 </button>
                             </div>
                         </div>

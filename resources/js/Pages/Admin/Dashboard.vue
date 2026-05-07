@@ -5,6 +5,7 @@ import { ref, computed, nextTick } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import axios from 'axios';
 
+const { t } = useI18n();
 const props = defineProps({
     totalRevenue: [Number, String],
     totalExpenses: [Number, String],
@@ -41,8 +42,8 @@ const cashFlowOptions = {
     legend: { labels: { colors: '#fff' } }
 };
 const cashFlowSeries = [
-    { name: 'Income Trend', data: [15000, 25000, 20000, props.totalRevenue / 10 || 30000, props.totalRevenue / 5 || 40000, props.totalRevenue || 50000] },
-    { name: 'Expense Trend', data: [8000, 15000, 10000, props.totalExpenses / 10 || 15000, props.totalExpenses / 5 || 20000, props.totalExpenses || 25000] }
+    { name: t('income'), data: [15000, 25000, 20000, props.totalRevenue / 10 || 30000, props.totalRevenue / 5 || 40000, props.totalRevenue || 50000] },
+    { name: t('expense'), data: [8000, 15000, 10000, props.totalExpenses / 10 || 15000, props.totalExpenses / 5 || 20000, props.totalExpenses || 25000] }
 ];
 
 // Chart 2: Facility Radar

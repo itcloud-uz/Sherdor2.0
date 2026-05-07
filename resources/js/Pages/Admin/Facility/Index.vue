@@ -5,6 +5,7 @@ import { ref, computed } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
 
+const { t } = useI18n();
 const props = defineProps({
     buildings: Array
 });
@@ -892,7 +893,7 @@ const progressSeries = computed(() => {
                         <input type="file" @input="floorForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer border border-white/10 rounded bg-black/50">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingFloor" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">O'chirish</button>
+                        <button type="button" v-if="isEditingFloor" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
                         <button type="button" @click="showAddFloorModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="floorForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors disabled:opacity-50">{{ isEditingFloor ? "Saqlash" : "Qo'shish" }}</button>
                     </div>
@@ -977,7 +978,7 @@ const progressSeries = computed(() => {
                         <input v-model="unitForm.svg_polygon" type="text" placeholder="e.g. 100,100 200,100 200,200 100,200" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all text-xs font-mono text-text-muted">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingUnit" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">O'chirish</button>
+                        <button type="button" v-if="isEditingUnit" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
                         <button type="button" @click="showAddUnitModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-neon-cyan text-black font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(0,240,255,0.3)] disabled:opacity-50">{{ isEditingUnit ? "Saqlash" : "Qo'shish" }}</button>
                     </div>

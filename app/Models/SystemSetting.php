@@ -13,6 +13,10 @@ class SystemSetting extends Model
         'neon_glow_intensity',
         'default_currency',
         'tax_rate',
-        'default_penalty_rate'
+        'default_penalty_rate',
+        'asterisk_sip_host',
+        'asterisk_sip_username',
+        'asterisk_sip_password',
+        'asterisk_port'
     ];
 }

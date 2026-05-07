@@ -48,6 +48,13 @@
                     <p class="text-xs text-text-muted font-mono leading-relaxed">Tashqi bazadan Excel/CSV yuklab, ularga ommaviy reklama va aksiya SMS larini yuborish.</p>
                 </div>
 
+                <!-- IP Telefoniya bloki -->
+                <div @click="showTelephonyModal = true" class="glass-panel p-6 border border-neon-purple/30 bg-[#05050A] hover:bg-neon-purple/5 cursor-pointer transition-all group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-purple/10 blur-[50px] group-hover:bg-neon-purple/20 transition-all"></div>
+                    <div class="text-4xl mb-4">📞</div>
+                    <h3 class="text-xl font-display text-neon-purple mb-2">IP Telefoniya</h3>
+                    <p class="text-xs text-text-muted font-mono leading-relaxed">Mijozlar bilan qo'ng'iroqlarni yozib olish, avtomatik qo'ng'iroq qilish (robot-koll) va statistika tahlili tizimi.</p>
+                </div>
             </div>
 
             <!-- Dashboard Content -->
@@ -267,6 +274,9 @@
             </div>
         </Modal>
 
+        <!-- Telephony Command Center Modal -->
+        <TelephonyModal v-model:show="showTelephonyModal" />
+
     </AdminLayout>
 </template>
 
@@ -275,6 +285,7 @@ import { ref } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import TelephonyModal from '@/Components/TelephonyModal.vue';
 
 const props = defineProps({
     templates: Array,
@@ -423,6 +434,8 @@ function submitPromoRule() {
         }
     });
 }
+
+const showTelephonyModal = ref(false);
 
 const showEtlModal = ref(false);
 function openEtlModal() {

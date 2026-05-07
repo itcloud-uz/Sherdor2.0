@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use App\Models\HardwareApiKey;
+use App\Models\SystemSetting;
 
 class DeveloperSettingsController extends Controller
 {
@@ -31,10 +32,18 @@ class DeveloperSettingsController extends Controller
             });
         }
 
+        $systemSettings = SystemSetting::first();
+
         return Inertia::render('Admin/Developer/Settings', [
             'isUnlocked' => $isUnlocked,
             'apiKeys' => $keys,
             'users' => $users,
+            'sipSettings' => $systemSettings ? [
+                'asterisk_sip_host' => $systemSettings->asterisk_sip_host,
+                'asterisk_sip_username' => $systemSettings->asterisk_sip_username,
+                'asterisk_port' => $systemSettings->asterisk_port,
+                'has_password' => !empty($systemSettings->asterisk_sip_password),
+            ] : null,
         ]);
     }
 
@@ -135,5 +144,32 @@ class DeveloperSettingsController extends Controller
         $key->delete(); // Or just $key->update(['is_active' => false]); but user said 'o'chirib olishi'
 
         return back()->with('success', 'API Kalit o\'chirildi!');
+    }
+
+    public function updateSipSettings(Request $request)
+    {
+        if (!Session::get('developer_unlocked', false)) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'asterisk_sip_host' => 'nullable|string|max:255',
+            'asterisk_sip_username' => 'nullable|string|max:255',
+            'asterisk_sip_password' => 'nullable|string|max:255',
+            'asterisk_port' => 'nullable|integer',
+        ]);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
+        $settings->asterisk_sip_host = $validated['asterisk_sip_host'];
+        $settings->asterisk_sip_username = $validated['asterisk_sip_username'];
+        $settings->asterisk_port = $validated['asterisk_port'] ?? 5060;
+        
+        if (!empty($validated['asterisk_sip_password'])) {
+            $settings->asterisk_sip_password = encrypt($validated['asterisk_sip_password']);
+        }
+        
+        $settings->save();
+
+        return back()->with('success', 'IP Telefoniya sozlamalari saqlandi va Asterisk uchun yangilandi!');
     }
 }

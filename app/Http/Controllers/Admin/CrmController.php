@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\Contract;
+use App\Models\CallLog;
+use App\Services\EskizService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CrmController extends Controller
@@ -79,5 +82,56 @@ class CrmController extends Controller
     {
         $client->delete();
         return redirect()->back()->with('message', 'Client deleted successfully.');
+    }
+
+    public function logContact(Request $request, Lead $lead)
+    {
+        // Mock a CallLog entry
+        CallLog::create([
+            'client_id' => null,
+            'worker_id' => auth()->id(),
+            'phone_number' => $lead->phone,
+            'type' => 'outbound',
+            'status' => 'answered',
+            'duration_seconds' => rand(30, 120),
+        ]);
+
+        $lead->status = 'contacted';
+        $lead->save();
+
+        return redirect()->back()->with('message', 'Bog\'lanildi va status yangilandi.');
+    }
+
+    public function updateLeadStatus(Request $request, Lead $lead)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:new,contacted,qualified,lost',
+            'reason' => 'nullable|string'
+        ]);
+
+        $lead->status = $validated['status'];
+        // Assuming we add a notes or reason column later, or just log it
+        // if ($validated['status'] === 'lost' && $validated['reason']) {
+        //     $lead->notes = $validated['reason'];
+        // }
+        $lead->save();
+
+        return redirect()->back()->with('message', 'Status yangilandi.');
+    }
+
+    public function quickSms(Request $request, Lead $lead, EskizService $eskiz)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000'
+        ]);
+
+        try {
+            $eskiz->sendSms($lead->phone, $validated['message'], 'quick_sms');
+            $lead->status = 'contacted';
+            $lead->save();
+            return redirect()->back()->with('message', 'SMS yuborildi va status yangilandi.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['message' => 'SMS yuborishda xatolik: ' . $e->getMessage()]);
+        }
     }
 }

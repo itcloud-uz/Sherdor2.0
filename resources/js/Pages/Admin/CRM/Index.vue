@@ -1,5 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
@@ -279,6 +280,55 @@ function recalculatePenalty() {
     });
 }
 
+// KANBAN DRAG & DROP AND ACTIONS
+const draggedLead = ref(null);
+const showQuickSmsModal = ref(false);
+const activeLead = ref(null);
+
+function dragStart(lead, event) {
+    draggedLead.value = lead;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', lead.id);
+}
+
+function dropLead(status, event) {
+    if (!draggedLead.value) return;
+    const lead = draggedLead.value;
+    
+    if (lead.status === status) return; // No change
+
+    if (status === 'lost') {
+        const reason = prompt("Rad etish sababini kiriting (ixtiyoriy):");
+        if (reason !== null) {
+            updateLeadStatusAPI(lead, status, reason);
+        }
+    } else {
+        updateLeadStatusAPI(lead, status);
+    }
+    draggedLead.value = null;
+}
+
+function updateLeadStatusAPI(lead, status, reason = null) {
+    router.post(route('admin.crm.leads.update_status', lead.id), { status, reason }, {
+        preserveScroll: true
+    });
+}
+
+function initiateLeadCall(lead) {
+    if (!confirm(`${lead.phone} raqamiga qo'ng'iroq qilinmoqda... Davom etamizmi?`)) return;
+    
+    // Call backend to log and change status to contacted
+    router.post(route('admin.crm.leads.log_contact', lead.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => alert("Qo'ng'iroq qayd etildi va Mijoz 'Bog'langanlar' qatoriga o'tdi.")
+    });
+}
+
+function openQuickSmsModal(lead) {
+    activeLead.value = lead;
+    showQuickSmsModal.value = true;
+}
+
 </script>
 
 <template>
@@ -315,57 +365,109 @@ function recalculatePenalty() {
         <!-- TAB 1: LEADS KANBAN -->
         <div v-if="activeTab === 'leads'" class="flex gap-4 h-full min-h-[600px] overflow-x-auto pb-4">
             <!-- New Column -->
-            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#00F0FF]">
+            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#00F0FF]"
+                 @dragover.prevent @drop="dropLead('new', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_new') }}</h3>
                     <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-cyan">{{ leadsByStatus.new.length }}</span>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2">
-                    <div v-for="lead in leadsByStatus.new" :key="lead.id" class="glass-card p-4 border border-white/5 hover:border-[#00F0FF]/50 cursor-pointer transition-all hover:-translate-y-1">
-                        <h4 class="text-sm font-bold text-white">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-text-muted font-mono mt-1">{{ lead.phone }}</p>
+                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    <div v-for="lead in leadsByStatus.new" :key="lead.id" 
+                         draggable="true" @dragstart="dragStart(lead, $event)"
+                         class="glass-card p-4 border border-white/5 hover:border-[#00F0FF]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                        <h4 class="text-sm font-bold text-white mb-1">{{ lead.full_name }}</h4>
+                        <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
+                        
+                        <!-- Action Bar -->
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                                📞
+                            </button>
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                                💬
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Contacted Column -->
-            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FCEE09]">
+            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FCEE09]"
+                 @dragover.prevent @drop="dropLead('contacted', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_contacted') }}</h3>
                     <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-yellow">{{ leadsByStatus.contacted.length }}</span>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2">
-                    <div v-for="lead in leadsByStatus.contacted" :key="lead.id" class="glass-card p-4 border border-white/5 hover:border-[#FCEE09]/50 cursor-pointer transition-all hover:-translate-y-1">
-                        <h4 class="text-sm font-bold text-white">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-text-muted font-mono mt-1">{{ lead.phone }}</p>
+                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    <div v-for="lead in leadsByStatus.contacted" :key="lead.id" 
+                         draggable="true" @dragstart="dragStart(lead, $event)"
+                         class="glass-card p-4 border border-white/5 hover:border-[#FCEE09]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                        <h4 class="text-sm font-bold text-white mb-1">{{ lead.full_name }}</h4>
+                        <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
+                        
+                        <!-- Action Bar -->
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                                📞
+                            </button>
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                                💬
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Qualified Column -->
-            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#39FF14]">
+            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#39FF14]"
+                 @dragover.prevent @drop="dropLead('qualified', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_qualified') }}</h3>
                     <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-green">{{ leadsByStatus.qualified.length }}</span>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2">
-                    <div v-for="lead in leadsByStatus.qualified" :key="lead.id" class="glass-card p-4 border border-white/5 hover:border-[#39FF14]/50 cursor-pointer transition-all hover:-translate-y-1">
-                        <h4 class="text-sm font-bold text-white">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-text-muted font-mono mt-1">{{ lead.phone }}</p>
+                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    <div v-for="lead in leadsByStatus.qualified" :key="lead.id" 
+                         draggable="true" @dragstart="dragStart(lead, $event)"
+                         class="glass-card p-4 border border-white/5 hover:border-[#39FF14]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                        <h4 class="text-sm font-bold text-white mb-1">{{ lead.full_name }}</h4>
+                        <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
+                        
+                        <!-- Action Bar -->
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                                📞
+                            </button>
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                                💬
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Lost Column -->
-            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FF003C]">
+            <div class="flex-1 min-w-[250px] glass-panel rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FF003C]"
+                 @dragover.prevent @drop="dropLead('lost', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
                     <h3 class="text-sm font-bold uppercase text-white tracking-widest">{{ $t('lead_lost') }}</h3>
                     <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-neon-magenta">{{ leadsByStatus.lost.length }}</span>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2">
-                    <div v-for="lead in leadsByStatus.lost" :key="lead.id" class="glass-card p-4 border border-white/5 hover:border-[#FF003C]/50 cursor-pointer transition-all hover:-translate-y-1">
-                        <h4 class="text-sm font-bold text-white">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-text-muted font-mono mt-1">{{ lead.phone }}</p>
+                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    <div v-for="lead in leadsByStatus.lost" :key="lead.id" 
+                         draggable="true" @dragstart="dragStart(lead, $event)"
+                         class="glass-card p-4 border border-white/5 hover:border-[#FF003C]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                        <h4 class="text-sm font-bold text-white mb-1">{{ lead.full_name }}</h4>
+                        <p class="text-xs text-text-muted font-mono mb-8">{{ lead.phone }}</p>
+                        
+                        <!-- Action Bar -->
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-2 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)]" title="Qo'ng'iroq qilish">
+                                📞
+                            </button>
+                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)]" title="SMS Yuborish">
+                                💬
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -885,5 +987,8 @@ function recalculatePenalty() {
                 </form>
             </div>
         </div>
+        <!-- MODAL: QUICK SMS -->
+        <QuickSmsModal v-model:show="showQuickSmsModal" :lead="activeLead" @sent="router.reload()" />
+
     </AdminLayout>
 </template>

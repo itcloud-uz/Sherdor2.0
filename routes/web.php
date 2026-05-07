@@ -28,6 +28,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
+    
+    // Leads / Kanban Actions
+    Route::post('/crm/leads/{lead}/log-contact', [\App\Http\Controllers\Admin\CrmController::class, 'logContact'])->name('crm.leads.log_contact');
+    Route::post('/crm/leads/{lead}/update-status', [\App\Http\Controllers\Admin\CrmController::class, 'updateLeadStatus'])->name('crm.leads.update_status');
+    Route::post('/crm/leads/{lead}/quick-sms', [\App\Http\Controllers\Admin\CrmController::class, 'quickSms'])->name('crm.leads.quick_sms');
+
     Route::post('/contracts', [\App\Http\Controllers\Admin\ContractController::class, 'store'])->name('contracts.store');
     Route::put('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'update'])->name('contracts.update');
     Route::delete('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'destroy'])->name('contracts.destroy');
@@ -58,6 +64,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/developer/otp/verify', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'verifyOtp'])->name('developer.otp.verify');
     Route::post('/developer/keys', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'generateKey'])->name('developer.keys.store');
     Route::delete('/developer/keys/{id}', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'revokeKey'])->name('developer.keys.destroy');
+    Route::post('/developer/sip', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateSipSettings'])->name('developer.sip.update');
     Route::put('/developer/users/{id}/chat-id', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateUserChatId'])->name('developer.users.update_chat_id');
 
     Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');
@@ -146,6 +153,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('/ai-agents/template/{id}', [\App\Http\Controllers\Admin\AiAgentController::class, 'deleteTemplate'])->name('ai_agents.template.delete');
     Route::post('/ai-agents/rule', [\App\Http\Controllers\Admin\AiAgentController::class, 'saveRule'])->name('ai_agents.rule.save');
     Route::delete('/ai-agents/rule/{id}', [\App\Http\Controllers\Admin\AiAgentController::class, 'deleteRule'])->name('ai_agents.rule.delete');
+    
+    // Telephony
+    Route::get('/telephony/logs', [\App\Http\Controllers\Admin\AiAgentController::class, 'getTelephonyLogs'])->name('telephony.logs');
 
 
     // Migration Hub routes removed

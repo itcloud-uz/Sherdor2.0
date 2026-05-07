@@ -7,9 +7,18 @@ const props = defineProps({
     isUnlocked: Boolean,
     apiKeys: Array,
     users: Array,
+    sipSettings: Object,
 });
 
 const isProcessing = ref(false);
+const showSipPassword = ref(false);
+
+const sipForm = useForm({
+    asterisk_sip_host: props.sipSettings?.asterisk_sip_host || '',
+    asterisk_sip_username: props.sipSettings?.asterisk_sip_username || '',
+    asterisk_sip_password: '',
+    asterisk_port: props.sipSettings?.asterisk_port || 5060,
+});
 
 const otpForm = useForm({
     otp: ''
@@ -57,6 +66,18 @@ function updateChatId(user) {
         onFinish: () => {
             isProcessing.value = false;
         }
+    });
+}
+
+function updateSipSettings() {
+    isProcessing.value = true;
+    sipForm.post(route('admin.developer.sip.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            sipForm.asterisk_sip_password = ''; // clear after save
+            isProcessing.value = false;
+        },
+        onError: () => isProcessing.value = false
     });
 }
 </script>
@@ -176,6 +197,56 @@ function updateChatId(user) {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- SIP SETTINGS BLOCK -->
+                <div class="glass-panel p-6 rounded-2xl border border-neon-purple/30 relative overflow-hidden mt-8">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple via-neon-magenta to-white"></div>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-display font-bold text-white flex items-center gap-3">
+                            <span class="text-neon-purple">📞</span> IP Telefoniya (Asterisk/SIP) Sozlamalari
+                        </h2>
+                    </div>
+                    <p class="text-sm font-mono text-text-muted mb-8">Bu bo'lim orqali Tizimni istalgan VoIP provayderga (Uztelecom, EastTelecom va h.k.) ulashingiz mumkin. Asterisk ushbu ma'lumotlarni o'qiydi.</p>
+
+                    <form @submit.prevent="updateSipSettings" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">SIP Server / Provayder IP manzili</label>
+                                <input v-model="sipForm.asterisk_sip_host" type="text" class="glass-input w-full focus:border-neon-purple focus:ring-neon-purple" placeholder="masalan: 10.10.10.1">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">SIP Raqam (Username)</label>
+                                <input v-model="sipForm.asterisk_sip_username" type="text" class="glass-input w-full focus:border-neon-purple focus:ring-neon-purple" placeholder="masalan: 998711234567">
+                            </div>
+                            
+                            <div class="relative">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">
+                                    SIP Parol <span v-if="sipSettings?.has_password" class="text-neon-green ml-2">(Maxfiy saqlangan)</span>
+                                </label>
+                                <div class="relative">
+                                    <input :type="showSipPassword ? 'text' : 'password'" v-model="sipForm.asterisk_sip_password" class="glass-input w-full pr-10 focus:border-neon-purple focus:ring-neon-purple" placeholder="Yangi parol kiritish uchun...">
+                                    <button type="button" @click="showSipPassword = !showSipPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors">
+                                        <span v-if="showSipPassword">👁️</span>
+                                        <span v-else>👁️‍🗨️</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">Port (Odatda 5060)</label>
+                                <input v-model="sipForm.asterisk_port" type="number" class="glass-input w-full focus:border-neon-purple focus:ring-neon-purple" placeholder="5060">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" :disabled="isProcessing" class="px-6 py-3 bg-neon-purple/20 text-neon-purple border border-neon-purple/50 text-xs font-bold font-mono uppercase tracking-widest rounded-lg hover:bg-neon-purple hover:text-white transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(157,0,255,0.2)]">
+                                <span v-if="isProcessing" class="animate-spin">🔄</span>
+                                💾 Saqlash va Serverni Yangilash
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
             </div>

@@ -164,5 +164,9 @@ class AiAgentController extends Controller
         return redirect()->back()->with('message', 'Qoida o\'chirildi.');
     }
 
-    // Keep chat for legacy or drop it. We'll drop it since it's fully SMS now.
+    public function getTelephonyLogs()
+    {
+        $logs = \App\Models\CallLog::orderByDesc('created_at')->take(50)->get();
+        return response()->json($logs);
+    }
 }

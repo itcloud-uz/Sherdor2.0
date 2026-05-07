@@ -36,12 +36,13 @@ function saveSchedulePayment(schedule) {
     router.post(route('crm.schedules.pay', schedule.id), {
         paid_amount: editingPaidAmount.value
     }, {
-        onSuccess: () => {
+        onSuccess: (page) => {
             editingScheduleId.value = null;
             isProcessing.value = false;
-            const updatedContract = props.contracts.find(c => c.id === selectedContract.value.id);
+            const updatedContract = page.props.contracts.find(c => c.id === selectedContract.value.id);
             if (updatedContract) {
-                selectedContract.value = updatedContract;
+                // Deep clone to avoid mutating props directly when v-model changes
+                selectedContract.value = JSON.parse(JSON.stringify(updatedContract));
             }
         },
         onError: () => {
@@ -56,11 +57,11 @@ function recalculatePenalty() {
     router.post(route('crm.contracts.recalculate_penalty', selectedContract.value.id), {
         daily_penalty_rate: selectedContract.value.daily_penalty_rate
     }, {
-        onSuccess: () => {
+        onSuccess: (page) => {
             isProcessing.value = false;
-            const updatedContract = props.contracts.find(c => c.id === selectedContract.value.id);
+            const updatedContract = page.props.contracts.find(c => c.id === selectedContract.value.id);
             if (updatedContract) {
-                selectedContract.value = updatedContract;
+                selectedContract.value = JSON.parse(JSON.stringify(updatedContract));
             }
         },
         onError: () => {
@@ -329,8 +330,24 @@ const selectedContract = ref(null);
 const showModal = ref(false);
 
 function openScheduleModal(contract) {
-    selectedContract.value = contract;
+    selectedContract.value = JSON.parse(JSON.stringify(contract));
     showModal.value = true;
+}
+
+function refreshData() {
+    isProcessing.value = true;
+    router.reload({
+        only: ['leads', 'clients', 'contracts', 'overdueSchedules'],
+        onSuccess: (page) => {
+            isProcessing.value = false;
+            if (selectedContract.value) {
+                const updated = page.props.contracts.find(c => c.id === selectedContract.value.id);
+                if (updated) selectedContract.value = JSON.parse(JSON.stringify(updated));
+            }
+        },
+        onError: () => isProcessing.value = false,
+        preserveScroll: true
+    });
 }
 
 const fileInput = ref(null);
@@ -458,6 +475,18 @@ function openQuickSmsModal(lead) {
             >
                 {{ $t('overdue_radar') }} <span v-if="overdueSchedules.length > 0" class="ml-2 px-2 py-0.5 bg-neon-magenta text-white rounded-full text-xs animate-pulse">{{ overdueSchedules.length }}</span>
             </button>
+            
+            <!-- Global Refresh Button -->
+            <div class="ml-auto pl-4 border-l border-white/10 flex items-center">
+                <button 
+                    @click="refreshData" 
+                    :disabled="isProcessing"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-black/40 border border-white/20 text-neon-cyan hover:bg-neon-cyan hover:text-black rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50 group"
+                >
+                    <span class="group-hover:rotate-180 transition-transform duration-500 inline-block">🔄</span> 
+                    YANGILASH (LIVE)
+                </button>
+            </div>
         </div>
 
         <!-- TAB 1: LEADS KANBAN -->

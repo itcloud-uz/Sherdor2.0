@@ -103,8 +103,7 @@ function updatePromoSettings() {
     promoForm.post(route('admin.developer.promo.update'), {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: () => isProcessing.value = false,
-        onError: () => isProcessing.value = false
+        onFinish: () => isProcessing.value = false
     });
 }
 

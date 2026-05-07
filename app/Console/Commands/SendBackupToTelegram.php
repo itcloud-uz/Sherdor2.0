@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage; // Kesh va fayllar uchun super radar
+
+class SendBackupToTelegram extends Command
+{
+    protected $signature = 'backup:send';
+    protected $description = 'Eng oxirgi zaxira faylini Telegramga jo\'natadi';
+
+    public function handle()
+    {
+        $token = env('BACKUP_BOT_TOKEN');
+        $chatId = env('BACKUP_CHAT_ID');
+
+        if (!$token || !$chatId) {
+            $this->error('Telegram sozlamalari topilmadi! (.env faylini tekshiring)');
+            return;
+        }
+
+        $this->info("Zaxira fayli qidirilmoqda...");
+
+        // Storage dagi BARCHA fayllarni (ichki papkalardagilarini ham) ro'yxatga olamiz
+        $allFiles = Storage::disk('local')->allFiles();
+        
+        // Ularning ichidan faqat .zip qisqartmali fayllarni ajratib olamiz
+        $zipFiles = array_filter($allFiles, function ($file) {
+            return str_ends_with($file, '.zip');
+        });
+
+        if (empty($zipFiles)) {
+            $this->error('Zaxira fayli umuman topilmadi!');
+            return;
+        }
+
+        // Topilgan .zip fayllarni vaqti bo'yicha saralaymiz (eng yangisi 1-o'ringa chiqadi)
+        usort($zipFiles, function($a, $b) {
+            return Storage::disk('local')->lastModified($b) - Storage::disk('local')->lastModified($a);
+        });
+
+        // Eng yangi faylning mutlaq (to'liq) manzilini olamiz
+        $latestBackupPath = Storage::disk('local')->path($zipFiles[0]);
+
+        $this->info("Jo'natilmoqda: " . basename($latestBackupPath));
+
+        // Telegram API orqali faylni sizga jo'natamiz
+        $response = Http::attach(
+            'document', file_get_contents($latestBackupPath), basename($latestBackupPath)
+        )->post("https://api.telegram.org/bot{$token}/sendDocument", [
+            'chat_id' => $chatId,
+            'caption' => "✅ Sherdor ERP: Baza zaxirasi saqlandi!\n📅 Sana: " . now()->format('Y-m-d H:i:s')
+        ]);
+
+        if ($response->successful()) {
+            $this->info('Telegramga muvaffaqiyatli jo\'natildi! Omad!');
+        } else {
+            $this->error('Telegramga jo\'natishda xatolik yuz berdi: ' . $response->body());
+        }
+    }
+}

@@ -1062,7 +1062,7 @@ function submitSupplierPayment() {
                 </div>
 
                 <div class="flex flex-col items-center border-t border-dashed border-gray-300 pt-6">
-                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://127.0.0.1:8000/receipt/verify/' + receiptData.receipt_hash" width="100" height="100" alt="QR Code" class="mb-2">
+                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(route('public.receipt.verify', receiptData.receipt_hash))" width="100" height="100" alt="QR Code" class="mb-2">
                     <p class="text-[10px] font-mono mt-2 tracking-widest">{{ receiptData.receipt_hash }}</p>
                 </div>
 

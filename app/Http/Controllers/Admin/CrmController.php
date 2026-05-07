@@ -110,10 +110,9 @@ class CrmController extends Controller
         ]);
 
         $lead->status = $validated['status'];
-        // Assuming we add a notes or reason column later, or just log it
-        // if ($validated['status'] === 'lost' && $validated['reason']) {
-        //     $lead->notes = $validated['reason'];
-        // }
+        if ($validated['status'] === 'lost' && !empty($validated['reason'])) {
+            $lead->reason = $validated['reason'];
+        }
         $lead->save();
 
         return redirect()->back()->with('message', 'Status yangilandi.');

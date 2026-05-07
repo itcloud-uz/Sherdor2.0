@@ -108,6 +108,9 @@ class AdminController extends Controller
             ['name' => 'Saralangan', 'data' => [$leadsMetrics['qualified']]],
         ];
 
+        // Lost leads for modal
+        $lostLeads = \App\Models\Lead::where('status', 'lost')->select('id', 'full_name', 'phone', 'reason', 'updated_at')->get();
+
         return Inertia::render('Admin/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalExpenses' => $totalExpenses,
@@ -125,6 +128,7 @@ class AdminController extends Controller
             'leadsMetrics' => $leadsMetrics,
             'leadsBySource' => $leadsBySource,
             'leadsFunnel' => $leadsFunnel,
+            'lostLeads' => $lostLeads,
         ]);
     }
 }

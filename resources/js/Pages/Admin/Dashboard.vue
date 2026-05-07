@@ -21,8 +21,11 @@ const props = defineProps({
     systemAlerts: Array,
     leadsMetrics: Object,
     leadsBySource: Object,
-    leadsFunnel: Array
+    leadsFunnel: Array,
+    lostLeads: Array
 });
+
+const showLostLeadsModal = ref(false);
 
 // Chart 1: Cash Flow Area
 const cashFlowOptions = {
@@ -273,9 +276,9 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         {{ leadsMetrics?.qualified || 0 }}
                     </h2>
                 </div>
-                <div class="glass-card p-5 border-l-4 border-neon-red relative overflow-hidden group">
+                <div @click="showLostLeadsModal = true" class="glass-card p-5 border-l-4 border-neon-red relative overflow-hidden group cursor-pointer hover:bg-neon-red/10 transition-colors">
                     <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Yo'qotilgan</p>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Yo'qotilgan (Sabablar)</p>
                     <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
                         {{ leadsMetrics?.lost || 0 }}
                     </h2>
@@ -301,6 +304,36 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                     </h3>
                     <div class="h-80 w-full pt-4">
                         <VueApexCharts type="bar" height="100%" width="100%" :options="leadFunnelOptions" :series="leadFunnelSeries" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: LOST LEADS -->
+        <div v-if="showLostLeadsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all">
+            <div class="glass-panel w-full max-w-2xl rounded-2xl border border-neon-red/30 shadow-[0_0_50px_rgba(255,0,0,0.1)] overflow-hidden flex flex-col max-h-[80vh]">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
+                    <h2 class="text-xl font-display font-bold text-white uppercase tracking-widest text-shadow-glow text-neon-red">Yo'qotilgan Lidlar</h2>
+                    <button @click="showLostLeadsModal = false" class="text-text-muted hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                    <div v-if="!lostLeads || lostLeads.length === 0" class="text-center text-text-muted font-mono text-sm">
+                        Yo'qotilgan lidlar topilmadi.
+                    </div>
+                    <div v-else class="space-y-4">
+                        <div v-for="lead in lostLeads" :key="lead.id" class="p-4 border border-white/10 rounded-xl bg-black/30 hover:border-neon-red/30 transition-colors">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-white font-bold">{{ lead.full_name }}</h3>
+                                <span class="text-xs text-text-muted font-mono">{{ new Date(lead.updated_at).toLocaleDateString() }}</span>
+                            </div>
+                            <p class="text-neon-cyan font-mono text-xs mb-3">{{ lead.phone }}</p>
+                            <div class="bg-neon-red/10 border border-neon-red/20 p-3 rounded-lg">
+                                <p class="text-[10px] text-neon-red uppercase tracking-widest mb-1">Yo'qotish sababi:</p>
+                                <p class="text-sm text-white">{{ lead.reason || 'Sabab ko\'rsatilmagan' }}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

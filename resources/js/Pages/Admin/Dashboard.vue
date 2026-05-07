@@ -18,7 +18,10 @@ const props = defineProps({
     attendanceStats: Object,
     totalLiabilities: [Number, String],
     activeLiabilities: Array,
-    systemAlerts: Array
+    systemAlerts: Array,
+    leadsMetrics: Object,
+    leadsBySource: Object,
+    leadsFunnel: Array
 });
 
 // Chart 1: Cash Flow Area
@@ -57,6 +60,36 @@ const radarSeries = computed(() => [
     props.unitsStatus?.reserved || 0,
     props.unitsStatus?.sold || 0
 ]);
+]);
+
+// Chart 3: Lead Source Donut
+const leadSourceOptions = computed(() => ({
+    chart: { type: 'donut', background: 'transparent' },
+    labels: Object.keys(props.leadsBySource || {}).map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+    colors: ['#00F0FF', '#39FF14', '#FCEE09', '#FF003C', '#B026FF'],
+    stroke: { width: 0 },
+    dataLabels: { enabled: false },
+    plotOptions: {
+        pie: { donut: { size: '75%', labels: { show: true, name: { color: '#fff' }, value: { color: '#fff', fontSize: '24px' }, total: { show: true, color: '#aaa', label: 'Manbalar' } } } }
+    },
+    theme: { mode: 'dark' },
+    legend: { position: 'bottom', labels: { colors: '#fff' } }
+}));
+const leadSourceSeries = computed(() => Object.values(props.leadsBySource || {}));
+
+// Chart 4: Sales Funnel (Bar)
+const leadFunnelOptions = computed(() => ({
+    chart: { type: 'bar', toolbar: { show: false }, background: 'transparent' },
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, distributed: true, dataLabels: { position: 'bottom' } } },
+    colors: ['#00F0FF', '#FCEE09', '#39FF14'],
+    dataLabels: { enabled: true, textAnchor: 'start', style: { colors: ['#fff'] }, offsetX: 0, dropShadow: { enabled: true } },
+    xaxis: { categories: (props.leadsFunnel || []).map(item => item.name), labels: { style: { colors: '#777' } } },
+    yaxis: { labels: { style: { colors: '#fff' } } },
+    theme: { mode: 'dark' },
+    grid: { borderColor: '#ffffff05' },
+    legend: { show: false }
+}));
+const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFunnel || []).map(item => item.data[0]) }]);
 
 </script>
 
@@ -214,6 +247,61 @@ const radarSeries = computed(() => [
                     </div>
                     <div v-if="recentActivities.length === 0" class="text-center py-8 text-xs font-mono text-gray-500">
                         No recent activities.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW SECTION: MARKETING & LEAD ANALYTICS -->
+        <div class="mt-12 mb-8">
+            <h3 class="text-xl font-bold text-white mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] uppercase tracking-widest flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-neon-cyan animate-pulse"></span> Sotuv Voronkasi va Trafik Tahlili
+            </h3>
+            
+            <!-- Lead Metrics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="glass-card p-5 border-l-4 border-neon-cyan relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Jami Lidlar</p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+                        {{ leadsMetrics?.total || 0 }}
+                    </h2>
+                </div>
+                <div class="glass-card p-5 border-l-4 border-neon-green relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Saralangan (Qualified)</p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">
+                        {{ leadsMetrics?.qualified || 0 }}
+                    </h2>
+                </div>
+                <div class="glass-card p-5 border-l-4 border-neon-red relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Yo'qotilgan</p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
+                        {{ leadsMetrics?.lost || 0 }}
+                    </h2>
+                </div>
+            </div>
+
+            <!-- Marketing Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Traffic Source Donut -->
+                <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col items-center h-[400px]">
+                    <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 w-full flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Lidlar Manbasi
+                    </h3>
+                    <div class="w-full flex-1 flex items-center justify-center">
+                        <VueApexCharts type="donut" width="100%" height="300" :options="leadSourceOptions" :series="leadSourceSeries" />
+                    </div>
+                </div>
+
+                <!-- Sales Funnel Bar Chart -->
+                <div class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px]">
+                    <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neon-green"></span> Sotuv Voronkasi
+                    </h3>
+                    <div class="h-80 w-full pt-4">
+                        <VueApexCharts type="bar" height="100%" width="100%" :options="leadFunnelOptions" :series="leadFunnelSeries" />
                     </div>
                 </div>
             </div>

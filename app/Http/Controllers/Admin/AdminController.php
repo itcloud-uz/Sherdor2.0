@@ -87,6 +87,27 @@ class AdminController extends Controller
             ->take(5)
             ->get();
 
+        // 6. Marketing & Lead Analytics
+        $leadsMetrics = [
+            'total' => \App\Models\Lead::count(),
+            'new' => \App\Models\Lead::where('status', 'new')->count(),
+            'contacted' => \App\Models\Lead::where('status', 'contacted')->count(),
+            'qualified' => \App\Models\Lead::where('status', 'qualified')->count(),
+            'lost' => \App\Models\Lead::where('status', 'lost')->count(),
+        ];
+
+        // Group by source
+        $leadsBySource = \App\Models\Lead::selectRaw('source, count(*) as count')
+            ->groupBy('source')
+            ->pluck('count', 'source')->toArray();
+
+        // Funnel data
+        $leadsFunnel = [
+            ['name' => 'Yangi', 'data' => [$leadsMetrics['new']]],
+            ['name' => 'Bog\'lanilgan', 'data' => [$leadsMetrics['contacted']]],
+            ['name' => 'Saralangan', 'data' => [$leadsMetrics['qualified']]],
+        ];
+
         return Inertia::render('Admin/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalExpenses' => $totalExpenses,
@@ -100,7 +121,10 @@ class AdminController extends Controller
             'totalLiabilities' => $totalLiabilities,
             'activeLiabilities' => $activeLiabilities,
             'systemAlerts' => $systemAlerts,
-            'recentActivities' => $recentActivities
+            'recentActivities' => $recentActivities,
+            'leadsMetrics' => $leadsMetrics,
+            'leadsBySource' => $leadsBySource,
+            'leadsFunnel' => $leadsFunnel,
         ]);
     }
 }

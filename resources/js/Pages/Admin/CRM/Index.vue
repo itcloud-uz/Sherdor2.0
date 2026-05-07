@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const props = defineProps({

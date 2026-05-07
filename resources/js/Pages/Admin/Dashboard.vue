@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3';
 import { ref, computed, nextTick } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import axios from 'axios';
+import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const props = defineProps({

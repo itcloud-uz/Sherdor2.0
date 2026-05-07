@@ -222,15 +222,20 @@ class CrmController extends Controller
 
         $totalPenalty = 0;
         foreach ($contract->paymentSchedules as $schedule) {
+            $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
+            $schedule->remaining_debt = $unpaidBalance;
+
             if ($schedule->status !== 'paid' && new \DateTime($schedule->due_date) < new \DateTime()) {
                 $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
                 if ($daysOverdue > 0) {
-                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
                     $penalty = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
                     $schedule->penalty_for_this_month = $penalty;
                     $schedule->status = 'overdue';
                     $schedule->save();
                     $totalPenalty += $penalty;
+                } else {
+                    $schedule->penalty_for_this_month = 0;
+                    $schedule->save();
                 }
             } else {
                 $schedule->penalty_for_this_month = 0;

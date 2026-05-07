@@ -370,23 +370,7 @@ function uploadSignature(event) {
     });
 }
 
-function recalculatePenalty() {
-    if (!selectedContract.value) return;
-    
-    isProcessing.value = true;
-    
-    axios.post(`/admin/contracts/${selectedContract.value.id}/update-penalty`, {
-        daily_penalty_rate: selectedContract.value.daily_penalty_rate
-    }).then(response => {
-        // Update local state with recalculated contract data
-        selectedContract.value = response.data.contract;
-        alert(response.data.message);
-    }).catch(error => {
-        alert(error.response?.data?.message || "Xatolik yuz berdi");
-    }).finally(() => {
-        isProcessing.value = false;
-    });
-}
+
 
 // KANBAN DRAG & DROP AND ACTIONS
 const draggedLead = ref(null);
@@ -887,6 +871,22 @@ function openQuickSmsModal(lead) {
                                 <label class="text-xs font-mono text-text-muted uppercase tracking-widest">{{ $t('total_penalty') }}</label>
                                 <span class="text-neon-magenta font-bold font-mono">{{ $currency(selectedContract.total_penalty_accumulated || 0) }}</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- SUMMARY INFO -->
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
+                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('total_amount') }}</p>
+                            <p class="text-lg font-bold text-neon-green font-mono">{{ $currency(selectedContract.total_amount) }}</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
+                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('down_payment') }}</p>
+                            <p class="text-lg font-bold text-white font-mono">{{ $currency(selectedContract.down_payment) }}</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
+                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Oylik Grafik To'lovi</p>
+                            <p class="text-lg font-bold text-neon-cyan font-mono">{{ selectedContract.payment_schedules?.length ? $currency(selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
                         </div>
                     </div>
 

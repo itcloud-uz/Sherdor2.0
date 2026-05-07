@@ -160,24 +160,46 @@ class CrmController extends Controller
             'paid_amount' => 'required|numeric|min:0'
         ]);
 
+        $contract = $schedule->contract;
+        
         $schedule->paid_amount = $validated['paid_amount'];
         $schedule->remaining_debt = max(0, $schedule->expected_amount - $schedule->paid_amount);
         
         if ($schedule->paid_amount >= $schedule->expected_amount) {
             $schedule->status = 'paid';
+            $schedule->penalty_for_this_month = 0; // Clear penalty if paid
         } elseif ($schedule->paid_amount > 0) {
             $schedule->status = 'partial';
+            // Calculate penalty if partial and overdue
+            if (new \DateTime($schedule->due_date) < new \DateTime()) {
+                $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
+                if ($daysOverdue > 0 && $contract) {
+                    $schedule->penalty_for_this_month = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                }
+            } else {
+                $schedule->penalty_for_this_month = 0;
+            }
         } else {
             $schedule->status = 'pending';
-            // Also re-evaluate if it's overdue
+            // Re-evaluate if it's overdue
             if (new \DateTime($schedule->due_date) < new \DateTime()) {
                 $schedule->status = 'overdue';
+                $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
+                if ($daysOverdue > 0 && $contract) {
+                    $schedule->penalty_for_this_month = $daysOverdue * $schedule->expected_amount * ($contract->daily_penalty_rate / 100);
+                }
+            } else {
+                $schedule->penalty_for_this_month = 0;
             }
         }
         $schedule->save();
 
-        // Update Contract's total paid amount
-        $contract = $schedule->contract;
+        if ($contract) {
+            // Update total accumulated penalty
+            $totalPenalty = $contract->paymentSchedules()->sum('penalty_for_this_month');
+            $contract->total_penalty_accumulated = $totalPenalty;
+            $contract->save();
+        }
         if ($contract) {
             $totalPaid = $contract->paymentSchedules()->sum('paid_amount');
             // Assuming we only need to reflect changes on the schedule, but if contract has total_paid field, update it.

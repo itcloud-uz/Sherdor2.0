@@ -78,8 +78,8 @@ class DeveloperSettingsController extends Controller
 
     public function requestOtp()
     {
-        $token = env('PIN_BOT_TOKEN');
-        $chatId = env('PIN_CHAT_ID');
+        $token = env('TELEGRAM_BOT_TOKEN');
+        $chatId = env('TELEGRAM_CHAT_ID');
 
         if (!$token || !$chatId) {
             return back()->withErrors(['otp' => 'Telegram Bot sozlamalari (.env) kiritilmagan!']);

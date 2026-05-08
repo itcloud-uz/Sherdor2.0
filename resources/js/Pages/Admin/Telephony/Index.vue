@@ -12,7 +12,7 @@
                 <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
                 
                 <!-- Holographic background -->
-                <div class="absolute inset-0 bg-[#020508]/90 backdrop-blur-3xl z-0">
+                <div class="absolute inset-0 bg-[#020508]/90 z-0">
                     <!-- Grid pattern -->
                     <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik00MCAwaC00MHY0MGg0MHoiIGZpbGw9Im5vbmUiIC8+Cg08cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMCwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiIC8+Cjwvc3ZnPg==')] opacity-50"></div>
                     <!-- Scanning line animation -->
@@ -44,7 +44,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-1 p-1 bg-black/20">
                     
                     <!-- LEFT COLUMN: The Phone Dialer (Pragmata Style) -->
-                    <div class="col-span-1 lg:col-span-4 bg-black/60 border border-white/5 p-6 relative overflow-hidden backdrop-blur-md">
+                    <div class="col-span-1 lg:col-span-4 bg-black/60 border border-white/5 p-6 relative overflow-hidden">
                         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-neon-cyan/5 to-transparent opacity-20"></div>
                         
                         <div class="text-center mb-6 relative z-10">
@@ -97,8 +97,8 @@
                     <div class="col-span-1 lg:col-span-8 flex flex-col gap-1">
                         
                         <!-- Auto-Operator Hologram Panel -->
-                        <div class="bg-black/60 border border-white/5 p-6 relative overflow-hidden backdrop-blur-md">
-                            <div class="absolute right-0 top-0 w-64 h-64 bg-neon-purple/10 blur-[80px] pointer-events-none"></div>
+                        <div class="bg-black/60 border border-white/5 p-6 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-64 h-64 bg-neon-purple/5 blur-2xl pointer-events-none rounded-full"></div>
                             
                             <h3 class="text-sm font-mono text-neon-purple uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 bg-neon-purple block"></span>
@@ -149,7 +149,7 @@
                         </div>
 
                         <!-- Call Logs Panel -->
-                        <div class="bg-black/60 border border-white/5 p-0 flex-1 relative overflow-hidden backdrop-blur-md flex flex-col h-80 lg:h-auto">
+                        <div class="bg-black/60 border border-white/5 p-0 flex-1 relative overflow-hidden flex flex-col h-80 lg:h-auto">
                             <div class="p-4 border-b border-white/10 bg-[#050B14]/80 flex justify-between items-center z-10">
                                 <h3 class="text-sm font-mono text-white/70 uppercase tracking-widest flex items-center gap-2">
                                     <span class="w-1.5 h-1.5 bg-white/50 block"></span>

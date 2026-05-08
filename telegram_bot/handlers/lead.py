@@ -10,6 +10,7 @@ router = Router()
 
 @router.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
+    await state.clear()
     chat_id = str(message.chat.id)
     
     # Verify user with Laravel API

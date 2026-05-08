@@ -12,13 +12,19 @@
                     </h1>
                     <p class="text-xs text-text-muted font-mono mt-2">Avtomatlashtirilgan xabarnomalar va Rasilka markazi</p>
                 </div>
-                <div class="flex gap-4">
+                <div class="flex items-center gap-4">
+                    <div v-if="isConnected" class="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 border border-neon-green/30 text-neon-green rounded text-xs font-mono">
+                        <span class="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_5px_#39FF14] animate-pulse"></span>
+                        Ulangan (Online)
+                    </div>
+                    <div v-else class="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-500 rounded text-xs font-mono">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        Ulanmagan (Xatolik)
+                    </div>
+
                     <button @click="showSettingsModal = true" class="px-4 py-2 bg-black/50 border border-white/20 text-white font-mono text-xs rounded shadow-[0_0_10px_rgba(255,255,255,0.1)] hover:border-white transition-all">
                         ⚙️ Eskiz.uz Sozlamalari
                     </button>
-                    <div class="px-4 py-2 bg-black/50 border border-neon-cyan/50 text-neon-cyan font-mono text-xs rounded shadow-[0_0_10px_rgba(0,240,255,0.1)]">
-                        Hisobingiz: <b>{{ settings?.current_balance ?? 0 }} so'm</b>
-                    </div>
                 </div>
             </div>
 
@@ -128,11 +134,13 @@
                 <form @submit.prevent="submitSettings" class="space-y-4">
                     <div>
                         <label class="block text-xs font-mono text-text-muted mb-1">Email (Login)</label>
-                        <input v-model="settingsForm.email" type="email" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required>
+                        <input v-model="settingsForm.email" type="email" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" :class="{'border-red-500': settingsForm.errors.email}" required>
+                        <div v-if="settingsForm.errors.email" class="text-red-500 text-xs mt-1 font-bold bg-red-500/10 p-2 rounded">{{ settingsForm.errors.email }}</div>
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted mb-1">Parol</label>
-                        <input v-model="settingsForm.password" type="password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all">
+                        <input v-model="settingsForm.password" type="password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" :class="{'border-red-500': settingsForm.errors.password}">
+                        <div v-if="settingsForm.errors.password" class="text-red-500 text-xs mt-1">{{ settingsForm.errors.password }}</div>
                         <p class="text-[10px] text-text-muted mt-1">* Parolni faqat o'zgartirmoqchi bo'lsangiz kiriting.</p>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
@@ -292,7 +300,8 @@ const props = defineProps({
     rules: Array,
     campaigns: Array,
     settings: Object,
-    logs: Array
+    logs: Array,
+    isConnected: Boolean
 });
 
 const showSettingsModal = ref(false);

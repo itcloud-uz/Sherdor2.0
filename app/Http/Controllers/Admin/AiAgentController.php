@@ -17,14 +17,22 @@ class AiAgentController extends Controller
         $rules = DB::table('sms_automation_rules')->get();
         $campaigns = DB::table('sms_campaigns')->orderByDesc('id')->take(10)->get();
         $settings = DB::table('eskiz_settings')->first();
-        $logs = SmsLog::with('client')->orderByDesc('id')->take(50)->get();
+        $isConnected = false;
+        
+        if ($settings && $settings->bearer_token) {
+            $res = \Illuminate\Support\Facades\Http::withToken($settings->bearer_token)->get('https://notify.eskiz.uz/api/auth/user');
+            if ($res->successful()) {
+                $isConnected = true;
+            }
+        }
 
         return Inertia::render('Admin/AiAgent/Index', [
             'templates' => $templates,
             'rules' => $rules,
             'campaigns' => $campaigns,
             'settings' => $settings,
-            'logs' => $logs
+            'logs' => $logs,
+            'isConnected' => $isConnected
         ]);
     }
 
@@ -32,20 +40,39 @@ class AiAgentController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => 'nullable|string',
         ]);
 
-        DB::table('eskiz_settings')->updateOrInsert(
-            ['id' => 1],
-            [
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'bearer_token' => null, // Reset token to force new login
-                'token_expires_at' => null,
-            ]
-        );
+        $settings = DB::table('eskiz_settings')->first();
+        $password = $validated['password'] ?? ($settings->password ?? null);
 
-        return redirect()->back()->with('message', 'Eskiz API sozlamalari saqlandi.');
+        if (!$password) {
+            return redirect()->back()->withErrors(['password' => 'Parol kiritilishi shart']);
+        }
+
+        $response = \Illuminate\Support\Facades\Http::post('https://notify.eskiz.uz/api/auth/login', [
+            'email' => $validated['email'],
+            'password' => $password,
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            $token = $data['data']['token'];
+            
+            DB::table('eskiz_settings')->updateOrInsert(
+                ['id' => 1],
+                [
+                    'email' => $validated['email'],
+                    'password' => $password,
+                    'bearer_token' => $token,
+                    'token_expires_at' => now()->addDays(29),
+                ]
+            );
+
+            return redirect()->back()->with('message', 'Eskiz API sozlamalari saqlandi va MUVAFAQIYATLI ulandi!');
+        } else {
+            return redirect()->back()->withErrors(['email' => 'Eskiz tizimiga ulanib bo\'lmadi: Login yoki parol xato!']);
+        }
     }
 
     public function testSms(Request $request, EskizService $eskiz)

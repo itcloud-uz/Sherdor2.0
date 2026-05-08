@@ -22,6 +22,9 @@
                         Ulanmagan (Xatolik)
                     </div>
 
+                    <button v-if="isConnected" @click="showTestSmsModal = true" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple/50 text-neon-purple font-mono text-xs rounded shadow-[0_0_10px_rgba(188,19,254,0.2)] hover:bg-neon-purple/40 transition-all">
+                        📲 Test SMS Yuborish
+                    </button>
                     <button @click="showSettingsModal = true" class="px-4 py-2 bg-black/50 border border-white/20 text-white font-mono text-xs rounded shadow-[0_0_10px_rgba(255,255,255,0.1)] hover:border-white transition-all">
                         ⚙️ Eskiz.uz Sozlamalari
                     </button>
@@ -146,6 +149,31 @@
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showSettingsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
                         <button type="submit" :disabled="settingsForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Test SMS Modal -->
+        <Modal :show="showTestSmsModal" @close="showTestSmsModal = false">
+            <div class="glass-panel p-6 border border-neon-purple/30 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-neon-purple mb-4">Test SMS Yuborish</h2>
+                <form @submit.prevent="submitTestSms" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Telefon Raqam</label>
+                        <input v-model="testSmsForm.phone" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all" placeholder="Masalan: 998901234567" required>
+                        <p class="text-[10px] text-text-muted mt-1">Sms yuboriladigan raqamni kiritng.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Xabar Matni</label>
+                        <textarea v-model="testSmsForm.message" rows="3" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all" placeholder="Test xabari..." required></textarea>
+                    </div>
+                    <div v-if="testSmsForm.errors.error" class="text-red-500 text-xs mt-2 font-bold bg-red-500/10 p-2 rounded">
+                        Xatolik: {{ testSmsForm.errors.error }}
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="showTestSmsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="testSmsForm.processing" class="px-4 py-2 bg-neon-purple text-white font-bold font-mono text-xs rounded hover:bg-neon-purple/80 transition-colors">Yuborish</button>
                     </div>
                 </form>
             </div>
@@ -314,6 +342,21 @@ function submitSettings() {
     settingsForm.post(route('admin.ai_agents.settings'), {
         onSuccess: () => {
             showSettingsModal.value = false;
+        }
+    });
+}
+
+const showTestSmsModal = ref(false);
+const testSmsForm = useForm({
+    phone: '',
+    message: 'Salom, bu Sher-Dor ERP tizimidan test xabar!'
+});
+
+function submitTestSms() {
+    testSmsForm.post(route('admin.ai_agents.test_sms'), {
+        onSuccess: () => {
+            showTestSmsModal.value = false;
+            testSmsForm.reset('phone');
         }
     });
 }

@@ -177,7 +177,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('/ai-agents/rule/{id}', [\App\Http\Controllers\Admin\AiAgentController::class, 'deleteRule'])->name('ai_agents.rule.delete');
     
     // Telephony
-    Route::get('/telephony/logs', [\App\Http\Controllers\Admin\AiAgentController::class, 'getTelephonyLogs'])->name('telephony.logs');
+    Route::get('/telephony', [\App\Http\Controllers\Admin\TelephonyController::class, 'index'])->name('telephony.index');
+    Route::get('/telephony/logs', [\App\Http\Controllers\Admin\TelephonyController::class, 'getLogs'])->name('telephony.logs');
 
 
     // Migration Hub routes removed

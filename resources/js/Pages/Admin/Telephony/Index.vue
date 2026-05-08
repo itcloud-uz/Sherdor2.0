@@ -1,45 +1,44 @@
 <template>
-    <Modal :show="show" @close="closeModal" maxWidth="5xl">
-        <div class="relative bg-transparent overflow-hidden rounded-2xl group">
-            <!-- Sci-Fi Corner Borders -->
-            <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
-            <div class="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
-            <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
-            <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
+    <AdminLayout>
+        <Head title="IP Telefoniya" />
+        
+        <div class="p-6 h-screen flex flex-col bg-[#020508] overflow-y-auto custom-scrollbar">
             
-            <!-- Holographic background -->
-            <div class="absolute inset-0 bg-[#020508]/90 backdrop-blur-3xl z-0">
-                <!-- Grid pattern -->
-                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik00MCAwaC00MHY0MGg0MHoiIGZpbGw9Im5vbmUiIC8+Cg08cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMCwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiIC8+Cjwvc3ZnPg==')] opacity-50"></div>
-                <!-- Scanning line animation -->
-                <div class="absolute top-0 left-0 w-full h-1 bg-neon-cyan/30 shadow-[0_0_20px_#00f0ff] z-10 animate-[scan_3s_ease-in-out_infinite]"></div>
-            </div>
+            <div class="relative bg-transparent overflow-hidden rounded-2xl group flex-1">
+                <!-- Sci-Fi Corner Borders -->
+                <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
+                <div class="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
+                <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
+                <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
+                
+                <!-- Holographic background -->
+                <div class="absolute inset-0 bg-[#020508]/90 backdrop-blur-3xl z-0">
+                    <!-- Grid pattern -->
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik00MCAwaC00MHY0MGg0MHoiIGZpbGw9Im5vbmUiIC8+Cg08cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMCwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiIC8+Cjwvc3ZnPg==')] opacity-50"></div>
+                    <!-- Scanning line animation -->
+                    <div class="absolute top-0 left-0 w-full h-1 bg-neon-cyan/30 shadow-[0_0_20px_#00f0ff] z-10 animate-[scan_3s_ease-in-out_infinite]"></div>
+                </div>
 
-            <div class="relative z-10 p-1">
-                <!-- Header / Top Bar -->
-                <div class="flex justify-between items-center px-6 py-4 border-b border-neon-cyan/20 bg-black/40">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-neon-cyan/10 border border-neon-cyan/50 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-                            <svg class="w-5 h-5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-display font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
-                                IP <span class="text-neon-cyan">TELEFONIYA</span>
-                            </h2>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
-                                <p class="text-[9px] text-neon-cyan font-mono tracking-widest">SECURE COM-LINK ESTABLISHED // SYS.VER 9.0.2</p>
+                <div class="relative z-10 p-1 h-full flex flex-col">
+                    <!-- Header / Top Bar -->
+                    <div class="flex justify-between items-center px-6 py-4 border-b border-neon-cyan/20 bg-black/40">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-neon-cyan/10 border border-neon-cyan/50 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+                                <svg class="w-5 h-5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-display font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
+                                    IP <span class="text-neon-cyan">TELEFONIYA</span>
+                                </h2>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
+                                    <p class="text-[9px] text-neon-cyan font-mono tracking-widest">SECURE COM-LINK ESTABLISHED // SYS.VER 9.0.2</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <button @click="closeModal" class="w-8 h-8 flex items-center justify-center text-neon-cyan hover:bg-neon-cyan/20 rounded border border-transparent hover:border-neon-cyan transition-all">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
 
                 <!-- Main Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-1 p-1 bg-black/20">
@@ -211,23 +210,15 @@
                 </div>
             </div>
         </div>
-    </Modal>
+    </div>
+    </AdminLayout>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import Modal from '@/Components/Modal.vue';
+import { ref, onMounted } from 'vue';
+import { Head } from '@inertiajs/vue3';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import axios from 'axios';
-
-const props = defineProps({
-    show: Boolean
-});
-
-const emit = defineEmits(['update:show']);
-
-function closeModal() {
-    emit('update:show', false);
-}
 
 const dialerPhone = ref('');
 const isCalling = ref(false);
@@ -250,10 +241,8 @@ async function fetchLogs() {
     }
 }
 
-watch(() => props.show, (newVal) => {
-    if (newVal) {
-        fetchLogs();
-    }
+onMounted(() => {
+    fetchLogs();
 });
 
 function makeCall() {

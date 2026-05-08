@@ -79,7 +79,7 @@ async def process_amount(message: Message, state: FSMContext):
     action_text = "QAYSI HISOBGA tushmoqda?" if type_ == 'income' else "QAYSI HISOBDAN chiqyapti?"
     await message.answer(f"Summa qabul qilindi: {amount:,.2f}\n\nPul {action_text}", reply_markup=get_account_keyboard())
 
-@router.callback_query(TransactionState.waiting_for_account, F.data.startswith("acc_"))
+@router.callback_query(F.data.startswith("acc_"))
 async def process_account(callback: CallbackQuery, state: FSMContext):
     acc_map = {
         "acc_main": "main",
@@ -99,10 +99,15 @@ async def process_account(callback: CallbackQuery, state: FSMContext):
         "acc_debt": "Umumiy Qarzlar"
     }
     
-    await callback.message.edit_text(callback.message.html_text + f"\n\nTanlandi: <b>{acc_names.get(callback.data)}</b>", parse_mode="HTML")
+    try:
+        await callback.message.edit_text(callback.message.html_text + f"\n\nTanlandi: <b>{acc_names.get(callback.data)}</b>", parse_mode="HTML")
+    except Exception:
+        pass
+        
+    await callback.answer()
     await callback.message.answer("Pul qaysi turda qabul qilindi/sarflandi?", reply_markup=get_payment_keyboard())
 
-@router.callback_query(TransactionState.waiting_for_payment_method, F.data.startswith("pay_"))
+@router.callback_query(F.data.startswith("pay_"))
 async def process_payment_method(callback: CallbackQuery, state: FSMContext):
     pay_map = {
         "pay_cash": "cash",
@@ -113,7 +118,7 @@ async def process_payment_method(callback: CallbackQuery, state: FSMContext):
     await state.update_data(payment_method=payment_method)
     
     data = await state.get_data()
-    type_ = data.get("transaction_type")
+    type_ = data.get("transaction_type", "income")
     
     await state.set_state(TransactionState.waiting_for_category)
     
@@ -124,11 +129,18 @@ async def process_payment_method(callback: CallbackQuery, state: FSMContext):
     }
     
     action_text = "Pul QAYERDAN kelyapti?" if type_ == 'income' else "Pul NIMA MAQSADDA sarflanyapti?"
-    await callback.message.edit_text(callback.message.html_text + f"\n\nTo'lov turi: <b>{pay_names.get(callback.data)}</b>", parse_mode="HTML")
+    
+    try:
+        await callback.message.edit_text(callback.message.html_text + f"\n\nTo'lov turi: <b>{pay_names.get(callback.data)}</b>", parse_mode="HTML")
+    except Exception:
+        pass
+        
+    await callback.answer()
     await callback.message.answer(action_text, reply_markup=get_category_keyboard(type_))
 
-@router.callback_query(TransactionState.waiting_for_category, F.data.startswith("cat_"))
+@router.callback_query(F.data.startswith("cat_"))
 async def process_category_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     category = callback.data.replace("cat_", "")
     await _handle_category(callback.message, category, state, is_callback=True)
 

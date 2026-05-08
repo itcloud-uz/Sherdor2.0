@@ -15,7 +15,7 @@ class TransactionExportController extends Controller
         $transaction->load(['creator', 'approver', 'paymentSchedule.contract.client', 'paymentSchedule.contract.unit']);
 
         // Fetch QR Code via API
-        $qrCodeUrl = route('public.receipt.verify', ['hash' => $transaction->receipt_hash]);
+        $qrCodeUrl = config('app.url') . '/receipt/verify/' . $transaction->receipt_hash;
         $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($qrCodeUrl);
 
         $clientName = 'N/A';
@@ -42,7 +42,7 @@ class TransactionExportController extends Controller
         $transaction->load(['creator', 'approver', 'paymentSchedule.contract.client', 'paymentSchedule.contract.unit']);
 
         // Fetch QR Code via API as SVG and encode to base64 to avoid PHP GD dependency
-        $qrCodeUrl = route('public.receipt.verify', ['hash' => $transaction->receipt_hash]);
+        $qrCodeUrl = config('app.url') . '/receipt/verify/' . $transaction->receipt_hash;
         $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=130x130&format=svg&data=' . urlencode($qrCodeUrl);
         $qrSvg = @file_get_contents($qrApiUrl); // Fetch raw SVG string
         

@@ -17,6 +17,7 @@ class AiAgentController extends Controller
         $rules = DB::table('sms_automation_rules')->get();
         $campaigns = DB::table('sms_campaigns')->orderByDesc('id')->take(10)->get();
         $settings = DB::table('eskiz_settings')->first();
+        $logs = SmsLog::with('client')->orderByDesc('id')->take(50)->get();
         $isConnected = false;
         
         if ($settings && $settings->bearer_token) {

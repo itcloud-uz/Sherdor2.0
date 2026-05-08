@@ -99,18 +99,28 @@
                             </h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                                <div>
-                                    <div class="mb-4">
+                                <div class="space-y-4">
+                                    <div>
                                         <label class="block text-xs font-mono text-neon-purple/70 mb-1 tracking-widest uppercase">MAQSADLI GURUHNI TANLANG</label>
                                         <div class="relative">
                                             <select v-model="autoGroup" class="w-full bg-[#050B14] border border-neon-purple/30 rounded text-sm font-mono text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all appearance-none pr-8">
                                                 <option value="debtors">Qarzdorlar (Muddati o'tgan)</option>
-                                                <option value="new_leads">Yangi Mijozlar</option>
+                                                <option value="new_leads">Yangi Mijozlar (Excel'dan)</option>
                                                 <option value="all">Barcha Mijozlar</option>
                                             </select>
                                             <div class="absolute right-3 top-1/2 -translate-y-1/2 text-neon-purple/50 pointer-events-none font-mono text-xs">▼</div>
                                         </div>
                                     </div>
+                                    
+                                    <div v-if="autoGroup === 'new_leads'">
+                                        <label class="block text-xs font-mono text-neon-purple/70 tracking-widest uppercase mb-1">MIJOZLAR BAZASI (EXCEL/CSV)</label>
+                                        <div class="relative w-full border border-neon-purple/30 border-dashed rounded bg-white/5 hover:bg-white/10 transition flex items-center justify-center p-3 cursor-pointer">
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".xlsx,.xls,.csv" @change="handleExcelUpload">
+                                            <span class="text-xs font-mono text-neon-cyan" v-if="!excelFile">+ Excel fayl tanlang</span>
+                                            <span class="text-xs font-mono text-neon-green" v-else>✅ {{ excelFile.name }}</span>
+                                        </div>
+                                    </div>
+                                    
                                     <div>
                                         <div class="flex justify-between items-end mb-1">
                                             <label class="block text-xs font-mono text-neon-purple/70 tracking-widest uppercase">AUDIO FAYLNI TANLANG</label>
@@ -129,12 +139,30 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex flex-col justify-end">
-                                    <button @click="startAutoDialer" :disabled="isAutoDialing" class="w-full py-4 bg-neon-purple/20 hover:bg-neon-purple/40 text-neon-purple font-mono font-bold rounded border border-neon-purple/50 transition-all uppercase tracking-[0.2em] text-xs relative overflow-hidden group">
+                                <div class="flex flex-col justify-between">
+                                    <div class="space-y-4 mb-4">
+                                        <div>
+                                            <label class="block text-xs font-mono text-neon-purple/70 mb-1 tracking-widest uppercase">QO'NG'IROQ VAQTI</label>
+                                            <input type="time" v-model="scheduleTime" class="w-full bg-[#050B14] border border-neon-purple/30 rounded text-sm font-mono text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-mono text-neon-purple/70 mb-2 tracking-widest uppercase">HAFTA KUNLARI</label>
+                                            <div class="flex flex-wrap gap-2">
+                                                <label v-for="(day, index) in ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya']" :key="index" class="cursor-pointer">
+                                                    <input type="checkbox" :value="index + 1" v-model="scheduleDays" class="hidden peer">
+                                                    <div class="w-8 h-8 flex items-center justify-center rounded border border-neon-purple/30 text-xs font-mono text-white/50 peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-neon-purple transition-all hover:bg-white/5">
+                                                        {{ day }}
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button @click="startAutoDialer" :disabled="isAutoDialing || !selectedAudio" class="w-full py-4 bg-neon-purple/20 hover:bg-neon-purple/40 text-neon-purple font-mono font-bold rounded border border-neon-purple/50 transition-all uppercase tracking-[0.2em] text-xs relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed">
                                         <div class="absolute inset-0 bg-neon-purple/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <span class="relative z-10 flex items-center justify-center gap-2">
                                             <span v-if="isAutoDialing" class="animate-pulse">JARAYON BAJARILMOQDA...</span>
-                                            <span v-else>▶ OMMAVIY QO'NG'IROQNI BOSHLASH</span>
+                                            <span v-else>▶ KAMPANIYANI SAQLASH</span>
                                         </span>
                                     </button>
                                 </div>
@@ -230,6 +258,14 @@ const selectedAudio = ref('');
 const availableAudios = ref([]);
 const isUploading = ref(false);
 
+const excelFile = ref(null);
+const scheduleTime = ref('09:00');
+const scheduleDays = ref([1, 2, 3, 4, 5]);
+
+function handleExcelUpload(event) {
+    excelFile.value = event.target.files[0];
+}
+
 const logs = ref([]);
 const loading = ref(false);
 
@@ -299,13 +335,40 @@ function makeCall() {
     }, 2000);
 }
 
-function startAutoDialer() {
+async function startAutoDialer() {
+    if (!selectedAudio.value || !scheduleTime.value || scheduleDays.value.length === 0) {
+        alert("Iltimos, barcha maydonlarni (Audio, Vaqt, Hafta kunlari) to'ldiring.");
+        return;
+    }
+    if (autoGroup.value === 'new_leads' && !excelFile.value) {
+        alert("Iltimos, yangi mijozlar uchun Excel faylni yuklang.");
+        return;
+    }
+
     isAutoDialing.value = true;
-    // Mock action
-    setTimeout(() => {
+    const formData = new FormData();
+    formData.append('target_group', autoGroup.value);
+    formData.append('audio_id', selectedAudio.value);
+    formData.append('schedule_time', scheduleTime.value);
+    scheduleDays.value.forEach(day => {
+        formData.append('schedule_days[]', day);
+    });
+    
+    if (autoGroup.value === 'new_leads' && excelFile.value) {
+        formData.append('excel_file', excelFile.value);
+    }
+
+    try {
+        await axios.post(route('admin.telephony.campaigns.store'), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Avto-qo\'ng\'iroq kampaniyasi muvaffaqiyatli saqlandi va rejalashtirildi!');
+        excelFile.value = null; // reset
+    } catch (error) {
+        console.error("Xatolik yuz berdi:", error);
+        alert("Kampaniyalarni saqlashda xatolik.");
+    } finally {
         isAutoDialing.value = false;
-        alert("Avto-qo'ng'iroq jarayoni boshlandi (Demo)");
-        fetchLogs();
-    }, 1500);
+    }
 }
 </script>

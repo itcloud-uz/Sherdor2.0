@@ -52,4 +52,31 @@ class TelephonyController extends Controller
 
         return redirect()->back()->with('error', 'Fayl yuklashda xatolik');
     }
+    public function storeCampaign(Request $request)
+    {
+        $request->validate([
+            'target_group' => 'required|string',
+            'audio_id' => 'required|exists:telephony_audios,id',
+            'schedule_time' => 'required|date_format:H:i',
+            'schedule_days' => 'required|array',
+            'excel_file' => 'required_if:target_group,new_leads|file|mimes:xlsx,xls,csv'
+        ]);
+
+        $campaign = \App\Models\TelephonyCampaign::create([
+            'target_group' => $request->target_group,
+            'audio_id' => $request->audio_id,
+            'schedule_time' => $request->schedule_time,
+            'schedule_days' => implode(',', $request->schedule_days),
+            'is_active' => true,
+        ]);
+
+        if ($request->target_group === 'new_leads' && $request->hasFile('excel_file')) {
+            \Maatwebsite\Excel\Facades\Excel::import(
+                new \App\Imports\TelephonyLeadsImport($campaign->id), 
+                $request->file('excel_file')
+            );
+        }
+
+        return redirect()->back()->with('success', 'Avto-qo\'ng\'iroq kampaniyasi muvaffaqiyatli saqlandi!');
+    }
 }

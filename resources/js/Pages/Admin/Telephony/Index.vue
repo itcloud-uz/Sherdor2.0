@@ -232,7 +232,7 @@ const loading = ref(false);
 async function fetchLogs() {
     loading.value = true;
     try {
-        const response = await axios.get(route('telephony.logs'));
+        const response = await axios.get(route('admin.telephony.logs'));
         logs.value = response.data;
     } catch (error) {
         console.error("Failed to fetch telephony logs:", error);

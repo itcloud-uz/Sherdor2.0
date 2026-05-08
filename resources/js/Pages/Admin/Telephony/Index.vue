@@ -2,7 +2,7 @@
     <AdminLayout>
         <Head title="IP Telefoniya" />
         
-        <div class="p-6 h-screen flex flex-col bg-[#020508] overflow-y-auto custom-scrollbar">
+        <div class="p-6 h-screen flex flex-col bg-transparent overflow-y-auto custom-scrollbar">
             
             <div class="relative bg-transparent overflow-hidden rounded-2xl group flex-1">
                 <!-- Sci-Fi Corner Borders -->
@@ -11,13 +11,6 @@
                 <div class="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
                 <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-neon-cyan/80 z-20 pointer-events-none opacity-70"></div>
                 
-                <!-- Holographic background -->
-                <div class="absolute inset-0 bg-[#020508]/90 z-0">
-                    <!-- Grid pattern -->
-                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik00MCAwaC00MHY0MGg0MHoiIGZpbGw9Im5vbmUiIC8+Cg08cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMCwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiIC8+Cjwvc3ZnPg==')] opacity-50"></div>
-                    <!-- Scanning line animation -->
-                    <div class="absolute top-0 left-0 w-full h-1 bg-neon-cyan/30 shadow-[0_0_20px_#00f0ff] z-10 animate-[scan_3s_ease-in-out_infinite]"></div>
-                </div>
 
                 <div class="relative z-10 p-1 h-full flex flex-col">
                     <!-- Header / Top Bar -->

@@ -25,6 +25,16 @@ async def start_handler(message: types.Message, state: FSMContext):
             reply_markup=get_main_menu()
         )
     else:
+        # DEBUG: if this is the admin testing, show why it failed
+        if chat_id == "67930401":
+            err_msg = data.get("error", "No error msg provided")
+            await message.answer(f"🛠 DIQQAT! Tizim sizni taniy olmadi.\n\n"
+                                 f"<b>Status Kod:</b> {status}\n"
+                                 f"<b>Xatolik Sababi:</b> {err_msg}\n"
+                                 f"<b>Sizning ID:</b> {chat_id}\n\n"
+                                 f"Bu xabarni skrinshot qilib Dasturchiga (menga) yuboring!", parse_mode="HTML")
+            return
+            
         # Not an employee, so treat as a Lead (customer)
         await message.answer(
             "👋 Assalomu alaykum! Sher-Dor savdo va xizmat ko'rsatish markaziga xush kelibsiz.\n\n"

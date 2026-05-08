@@ -23,4 +23,33 @@ class TelephonyController extends Controller
 
         return response()->json($logs);
     }
+
+    public function getAudios()
+    {
+        $audios = \App\Models\TelephonyAudio::latest()->get();
+        return response()->json($audios);
+    }
+
+    public function uploadAudio(Request $request)
+    {
+        $request->validate([
+            'audio' => 'required|file|mimes:mp3,wav|max:10240', // 10MB max
+            'name' => 'required|string|max:255',
+        ]);
+
+        if ($request->hasFile('audio')) {
+            $file = $request->file('audio');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('telephony_audios', $fileName, 'public');
+
+            \App\Models\TelephonyAudio::create([
+                'name' => $request->name,
+                'file_path' => $path,
+            ]);
+
+            return redirect()->back()->with('success', 'Audio yuklandi');
+        }
+
+        return redirect()->back()->with('error', 'Fayl yuklashda xatolik');
+    }
 }

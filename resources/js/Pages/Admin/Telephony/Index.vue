@@ -34,7 +34,7 @@
                                 </h2>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
-                                    <p class="text-[9px] text-neon-cyan font-mono tracking-widest">SECURE COM-LINK ESTABLISHED // SYS.VER 9.0.2</p>
+                                    <p class="text-xs text-neon-cyan font-mono tracking-widest">XAVFSIZ ALOQA O'RNATILDI // SYS.VER 9.0.2</p>
                                 </div>
                             </div>
                         </div>
@@ -48,13 +48,13 @@
                         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-neon-cyan/5 to-transparent opacity-20"></div>
                         
                         <div class="text-center mb-6 relative z-10">
-                            <h3 class="text-xs font-mono text-neon-cyan uppercase tracking-widest mb-1 border-b border-neon-cyan/30 inline-block pb-1">TERMINAL // DIALER</h3>
+                            <h3 class="text-sm font-mono text-neon-cyan uppercase tracking-widest mb-1 border-b border-neon-cyan/30 inline-block pb-1">RAQAM TERISH TERMINALI</h3>
                         </div>
 
                         <!-- Screen / Number Display -->
                         <div class="bg-[#050B14] border border-neon-cyan/40 rounded-lg p-4 mb-6 shadow-[inset_0_0_20px_rgba(0,240,255,0.1)] relative group">
-                            <div class="absolute top-1 left-2 text-[8px] text-neon-cyan/50 font-mono">TARGET_COORD</div>
-                            <div class="absolute top-1 right-2 text-[8px] text-neon-cyan/50 font-mono">RCV: OK</div>
+                            <div class="absolute top-1 left-2 text-xs text-neon-cyan/50 font-mono">MIJOZ RAQAMI</div>
+                            <div class="absolute top-1 right-2 text-xs text-neon-cyan/50 font-mono">TAYYOR</div>
                             
                             <input v-model="dialerPhone" type="text" placeholder="NUMBER..." class="w-full bg-transparent border-none text-center text-3xl font-mono text-white tracking-[0.2em] focus:ring-0 px-0 pt-4 pb-2" style="text-shadow: 0 0 10px rgba(255,255,255,0.5);">
                             
@@ -88,7 +88,7 @@
                             </button>
                             <button @click="makeCall" :disabled="isCalling || !dialerPhone" class="flex-1 h-14 bg-neon-cyan/20 hover:bg-neon-cyan/40 disabled:bg-white/5 disabled:border-white/10 text-neon-cyan disabled:text-text-muted font-display font-bold rounded-lg border border-neon-cyan/50 disabled:border-transparent transition-all uppercase tracking-wider text-sm flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
                                 <span v-if="isCalling" class="animate-pulse">ULANMOQDA...</span>
-                                <span v-else>INITIATE CALL</span>
+                                <span v-else>QO'NG'IROQ QILISH</span>
                             </button>
                         </div>
                     </div>
@@ -100,15 +100,15 @@
                         <div class="bg-black/60 border border-white/5 p-6 relative overflow-hidden backdrop-blur-md">
                             <div class="absolute right-0 top-0 w-64 h-64 bg-neon-purple/10 blur-[80px] pointer-events-none"></div>
                             
-                            <h3 class="text-xs font-mono text-neon-purple uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <h3 class="text-sm font-mono text-neon-purple uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 bg-neon-purple block"></span>
-                                AUTO-ROBOT_MODULE v1.0
+                                AVTO-ROBOT MODULI v1.0
                             </h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                                 <div>
                                     <div class="mb-4">
-                                        <label class="block text-[9px] font-mono text-neon-purple/70 mb-1 tracking-widest uppercase">Select_Target_Group</label>
+                                        <label class="block text-xs font-mono text-neon-purple/70 mb-1 tracking-widest uppercase">MAQSADLI GURUHNI TANLANG</label>
                                         <div class="relative">
                                             <select v-model="autoGroup" class="w-full bg-[#050B14] border border-neon-purple/30 rounded text-sm font-mono text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all appearance-none pr-8">
                                                 <option value="debtors">Qarzdorlar (Muddati o'tgan)</option>
@@ -119,11 +119,18 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[9px] font-mono text-neon-purple/70 mb-1 tracking-widest uppercase">Audio_Matrix_Pattern</label>
+                                        <div class="flex justify-between items-end mb-1">
+                                            <label class="block text-xs font-mono text-neon-purple/70 tracking-widest uppercase">AUDIO FAYLNI TANLANG</label>
+                                            <label class="cursor-pointer text-[10px] text-neon-cyan hover:text-white transition-colors bg-white/5 px-2 py-0.5 rounded border border-white/10" :class="{'opacity-50 pointer-events-none': isUploading}">
+                                                <span v-if="isUploading">Yuklanmoqda...</span>
+                                                <span v-else>+ Yuklash</span>
+                                                <input type="file" class="hidden" accept=".mp3,.wav" @change="handleFileUpload" :disabled="isUploading">
+                                            </label>
+                                        </div>
                                         <div class="relative">
-                                            <select class="w-full bg-[#050B14] border border-neon-purple/30 rounded text-sm font-mono text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all appearance-none pr-8">
-                                                <option value="1">Qarz haqida qat'iy ogohlantirish (.mp3)</option>
-                                                <option value="2">Aksiya haqida xushxabar (.mp3)</option>
+                                            <select v-model="selectedAudio" class="w-full bg-[#050B14] border border-neon-purple/30 rounded text-sm font-mono text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all appearance-none pr-8">
+                                                <option value="">-- Audio faylni tanlang --</option>
+                                                <option v-for="audio in availableAudios" :key="audio.id" :value="audio.id">{{ audio.name }}</option>
                                             </select>
                                             <div class="absolute right-3 top-1/2 -translate-y-1/2 text-neon-purple/50 pointer-events-none font-mono text-xs">▼</div>
                                         </div>
@@ -133,8 +140,8 @@
                                     <button @click="startAutoDialer" :disabled="isAutoDialing" class="w-full py-4 bg-neon-purple/20 hover:bg-neon-purple/40 text-neon-purple font-mono font-bold rounded border border-neon-purple/50 transition-all uppercase tracking-[0.2em] text-xs relative overflow-hidden group">
                                         <div class="absolute inset-0 bg-neon-purple/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <span class="relative z-10 flex items-center justify-center gap-2">
-                                            <span v-if="isAutoDialing" class="animate-pulse">EXECUTING PROTOCOL...</span>
-                                            <span v-else>▶ EXECUTE MASS DIAL</span>
+                                            <span v-if="isAutoDialing" class="animate-pulse">JARAYON BAJARILMOQDA...</span>
+                                            <span v-else>▶ OMMAVIY QO'NG'IROQNI BOSHLASH</span>
                                         </span>
                                     </button>
                                 </div>
@@ -144,21 +151,21 @@
                         <!-- Call Logs Panel -->
                         <div class="bg-black/60 border border-white/5 p-0 flex-1 relative overflow-hidden backdrop-blur-md flex flex-col h-80 lg:h-auto">
                             <div class="p-4 border-b border-white/10 bg-[#050B14]/80 flex justify-between items-center z-10">
-                                <h3 class="text-xs font-mono text-white/70 uppercase tracking-widest flex items-center gap-2">
+                                <h3 class="text-sm font-mono text-white/70 uppercase tracking-widest flex items-center gap-2">
                                     <span class="w-1.5 h-1.5 bg-white/50 block"></span>
-                                    COMMUNICATION_LOGS
+                                    QO'NG'IROQLAR TARIXI
                                 </h3>
-                                <button @click="fetchLogs" class="text-neon-cyan/70 hover:text-neon-cyan font-mono text-[9px] uppercase tracking-wider border border-neon-cyan/30 px-2 py-1 rounded">
-                                    Fetch Data
+                                <button @click="fetchLogs" class="text-neon-cyan/70 hover:text-neon-cyan font-mono text-xs uppercase tracking-wider border border-neon-cyan/30 px-3 py-1.5 rounded">
+                                    YANGILASH
                                 </button>
                             </div>
                             
                             <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2 z-10">
-                                <div v-if="loading" class="text-center text-neon-cyan/50 text-[10px] py-10 font-mono animate-pulse uppercase tracking-[0.2em]">
-                                    Extracting data matrix...
+                                <div v-if="loading" class="text-center text-neon-cyan/50 text-xs py-10 font-mono animate-pulse uppercase tracking-[0.2em]">
+                                    Ma'lumotlar olinmoqda...
                                 </div>
-                                <div v-else-if="logs.length === 0" class="text-center text-white/30 text-[10px] py-10 font-mono uppercase tracking-[0.2em]">
-                                    No records found in database
+                                <div v-else-if="logs.length === 0" class="text-center text-white/30 text-xs py-10 font-mono uppercase tracking-[0.2em]">
+                                    BAZADA MA'LUMOT TOPILMADI
                                 </div>
                                 
                                 <div v-else v-for="log in logs" :key="log.id" class="p-3 border-l-2 border-r border-y border-white/5 rounded bg-black/40 flex items-center justify-between hover:bg-white/5 hover:border-l-neon-cyan transition-colors group">
@@ -182,13 +189,13 @@
                                     
                                     <div class="flex items-center gap-4">
                                         <div class="text-right hidden sm:block">
-                                            <div class="text-[10px] font-mono text-white/60 tracking-widest uppercase">{{ log.duration_seconds }} SEC</div>
+                                            <div class="text-xs font-mono text-white/60 tracking-widest uppercase">{{ log.duration_seconds }} SONIYA</div>
                                             <div :class="{
                                                 'text-neon-green': log.status === 'answered',
                                                 'text-red-500': log.status === 'missed' || log.status === 'failed',
                                                 'text-neon-yellow': log.status === 'pending'
-                                            }" class="text-[8px] font-mono tracking-widest uppercase font-bold mt-0.5">
-                                                STATUS: {{ log.status }}
+                                            }" class="text-[10px] font-mono tracking-widest uppercase font-bold mt-0.5">
+                                                HOLAT: {{ log.status }}
                                             </div>
                                         </div>
                                         <button v-if="log.status === 'answered' && log.duration_seconds > 0" class="w-8 h-8 rounded border border-neon-cyan/40 bg-neon-cyan/10 flex items-center justify-center hover:bg-neon-cyan/30 hover:border-neon-cyan text-neon-cyan transition-all" title="Eshitish">
@@ -226,8 +233,50 @@ const isCalling = ref(false);
 const autoGroup = ref('debtors');
 const isAutoDialing = ref(false);
 
+const selectedAudio = ref('');
+const availableAudios = ref([]);
+const isUploading = ref(false);
+
 const logs = ref([]);
 const loading = ref(false);
+
+async function fetchAudios() {
+    try {
+        const response = await axios.get(route('admin.telephony.audios.get'));
+        availableAudios.value = response.data;
+    } catch (error) {
+        console.error("Failed to fetch audios:", error);
+    }
+}
+
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("Fayl hajmi 10MB dan oshmasligi kerak!");
+        return;
+    }
+
+    isUploading.value = true;
+    const formData = new FormData();
+    formData.append('audio', file);
+    formData.append('name', file.name);
+
+    try {
+        await axios.post(route('admin.telephony.audios.upload'), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Audio muvaffaqiyatli yuklandi!');
+        await fetchAudios();
+    } catch (error) {
+        console.error('Audio yuklashda xatolik:', error);
+        alert('Audio yuklashda xatolik yuz berdi.');
+    } finally {
+        isUploading.value = false;
+        event.target.value = '';
+    }
+}
 
 async function fetchLogs() {
     loading.value = true;
@@ -243,6 +292,7 @@ async function fetchLogs() {
 
 onMounted(() => {
     fetchLogs();
+    fetchAudios();
 });
 
 function makeCall() {

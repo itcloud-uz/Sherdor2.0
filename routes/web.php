@@ -179,7 +179,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Telephony
     Route::get('/telephony', [\App\Http\Controllers\Admin\TelephonyController::class, 'index'])->name('telephony.index');
     Route::get('/telephony/logs', [\App\Http\Controllers\Admin\TelephonyController::class, 'getLogs'])->name('telephony.logs');
-
+    Route::get('/telephony/audios', [\App\Http\Controllers\Admin\TelephonyController::class, 'getAudios'])->name('telephony.audios.get');
+    Route::post('/telephony/audios', [\App\Http\Controllers\Admin\TelephonyController::class, 'uploadAudio'])->name('telephony.audios.upload');
 
     // Migration Hub routes removed
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');

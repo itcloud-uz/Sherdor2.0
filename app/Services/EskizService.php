@@ -64,7 +64,7 @@ class EskizService
         $response = Http::withToken($token)->post("{$this->baseUrl}/message/sms/send", [
             'mobile_phone' => $cleanPhone,
             'message' => $message,
-            'from' => 'SHER-DOR', // Default sender, can be made dynamic later
+            'from' => '4546', // 4546 is mandatory for test mode. Change to 'SHER-DOR' once contract is signed and approved.
         ]);
 
         $status = 'failed';
@@ -73,18 +73,29 @@ class EskizService
         if ($response->successful()) {
             $status = 'pending'; // or 'sent'
             $uuid = $response->json('id');
+            
+            SmsLog::create([
+                'phone_number' => $cleanPhone,
+                'message' => $message,
+                'eskiz_uuid' => $uuid,
+                'status' => $status,
+                'campaign_type' => $campaignType,
+                'client_id' => $clientId,
+            ]);
+
+            return $response->json();
+        } else {
+            $errorMsg = $response->json('message') ?? 'Noma\'lum xatolik';
+            SmsLog::create([
+                'phone_number' => $cleanPhone,
+                'message' => $message,
+                'eskiz_uuid' => null,
+                'status' => 'failed',
+                'campaign_type' => $campaignType,
+                'client_id' => $clientId,
+            ]);
+            throw new \Exception('Eskiz API xatosi: ' . $errorMsg);
         }
-
-        SmsLog::create([
-            'phone_number' => $cleanPhone,
-            'message' => $message,
-            'eskiz_uuid' => $uuid,
-            'status' => $status,
-            'campaign_type' => $campaignType,
-            'client_id' => $clientId,
-        ]);
-
-        return $response->json();
     }
 
     /**
@@ -119,7 +130,7 @@ class EskizService
 
         $response = Http::withToken($token)->post("{$this->baseUrl}/message/sms/send-batch", [
             'messages' => $formattedMessages,
-            'from' => 'SHER-DOR',
+            'from' => '4546',
             'dispatch_id' => 123 // Optional dispatch logic
         ]);
 

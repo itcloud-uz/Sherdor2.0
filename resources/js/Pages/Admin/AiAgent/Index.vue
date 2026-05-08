@@ -167,6 +167,7 @@
                     <div>
                         <label class="block text-xs font-mono text-text-muted mb-1">Xabar Matni</label>
                         <textarea v-model="testSmsForm.message" rows="3" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all" placeholder="Test xabari..." required></textarea>
+                        <p class="text-[10px] text-neon-yellow mt-1 font-bold">⚠️ DIQQAT: Siz hozir Test rejimidasiz! Shartnoma tuzguningizga qadar FAQAT "Bu Eskiz dan test", "Это тест от Eskiz" yoki "This is test from Eskiz" so'zlaridan birini yubora olasiz. Boshqa so'z yozsangiz xatolik beradi!</p>
                     </div>
                     <div v-if="testSmsForm.errors.error" class="text-red-500 text-xs mt-2 font-bold bg-red-500/10 p-2 rounded">
                         Xatolik: {{ testSmsForm.errors.error }}
@@ -349,7 +350,7 @@ function submitSettings() {
 const showTestSmsModal = ref(false);
 const testSmsForm = useForm({
     phone: '',
-    message: 'Salom, bu Sher-Dor ERP tizimidan test xabar!'
+    message: 'Bu Eskiz dan test'
 });
 
 function submitTestSms() {

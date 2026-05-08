@@ -2,21 +2,35 @@ from aiogram import Router, F, types
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from states import LeadForm
-from keyboards.reply import get_contact_keyboard
-from api_client import send_lead_to_crm
+from keyboards.reply import get_contact_keyboard, get_main_menu
+from api_client import send_lead_to_crm, verify_user
 from aiogram.types import ReplyKeyboardRemove
 
 router = Router()
 
 @router.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
-    # Ask for name
-    await message.answer(
-        "👋 Assalomu alaykum! Sher-Dor savdo va xizmat ko'rsatish markaziga xush kelibsiz.\n\n"
-        "Iltimos, ismingizni kiriting:",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await state.set_state(LeadForm.waiting_for_name)
+    chat_id = str(message.chat.id)
+    
+    # Verify user with Laravel API
+    data, status = await verify_user(chat_id)
+    
+    if status == 200:
+        # This is an employee/admin
+        user_name = data.get('user', {}).get('name', 'Admin')
+        await message.answer(
+            f"Assalomu alaykum, {user_name}! ERP tizimiga xush kelibsiz.\n"
+            "Quyidagi menyudan kerakli amalni tanlang:",
+            reply_markup=get_main_menu()
+        )
+    else:
+        # Not an employee, so treat as a Lead (customer)
+        await message.answer(
+            "👋 Assalomu alaykum! Sher-Dor savdo va xizmat ko'rsatish markaziga xush kelibsiz.\n\n"
+            "Iltimos, ismingizni kiriting:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await state.set_state(LeadForm.waiting_for_name)
 
 @router.message(LeadForm.waiting_for_name)
 async def process_name(message: types.Message, state: FSMContext):

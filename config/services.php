@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'telegram' => [
+        'pin_bot_token' => env('PIN_BOT_TOKEN'),
+        'pin_chat_id' => env('PIN_CHAT_ID'),
+        'backup_bot_token' => env('BACKUP_BOT_TOKEN'),
+        'backup_chat_id' => env('BACKUP_CHAT_ID'),
+        'finance_bot_token' => env('FINANCE_BOT_TOKEN'),
+    ],
+
+    'bot' => [
+        'secret_key' => env('BOT_SECRET_KEY', 'default_secret_key_for_dev'),
+    ],
+
 ];

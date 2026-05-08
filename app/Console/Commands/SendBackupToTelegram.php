@@ -13,8 +13,8 @@ class SendBackupToTelegram extends Command
 
     public function handle()
     {
-        $token = env('BACKUP_BOT_TOKEN');
-        $chatId = env('BACKUP_CHAT_ID');
+        $token = config('services.telegram.backup_bot_token');
+        $chatId = config('services.telegram.backup_chat_id');
 
         if (!$token || !$chatId) {
             $this->error('Telegram sozlamalari topilmadi! (.env faylini tekshiring)');

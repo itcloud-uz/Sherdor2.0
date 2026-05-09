@@ -1423,8 +1423,7 @@ function submitSupplierPayment() {
                     <button @click="showScheduleModal = false" class="px-6 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase font-mono text-xs font-bold transition-all">Yopish</button>
                 </div>
             </div>
-        </div>
-
+    </div>
     </AdminLayout>
 </template>
 

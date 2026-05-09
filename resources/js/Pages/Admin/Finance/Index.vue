@@ -706,11 +706,25 @@ function submitSupplierPayment() {
                             <p class="mb-1"><span class="text-text-muted">Izoh:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
                             <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-text-muted">Mijoz:</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
                             <p><span class="text-text-muted">So'rovchi (Maker):</span> <span class="text-white font-bold">{{ txn.creator?.name }}</span></p>
-                            <p v-if="txn.latitude && txn.longitude" class="mt-2 pt-2 border-t border-white/10">
-                                <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-neon-cyan hover:text-white flex items-center gap-1 transition-colors">
-                                    📍 GPS Lokatsiya ({{ txn.source || 'Noma\'lum' }})
-                                </a>
-                            </p>
+                            
+                            <div class="mt-2 pt-2 border-t border-white/10">
+                                <p class="text-[10px] uppercase font-bold tracking-widest flex items-center gap-1"
+                                   :class="{
+                                       'text-blue-400': txn.source === 'telegram',
+                                       'text-neon-purple': txn.source === 'admin_panel' || !txn.source,
+                                       'text-neon-yellow': txn.source === 'partner_app'
+                                   }">
+                                    <span v-if="txn.source === 'telegram'">✈️ TELEGRAM</span>
+                                    <span v-else-if="txn.source === 'partner_app'">📱 HAMKOR ILOVASI</span>
+                                    <span v-else>💻 ADMIN PANEL (OPERATOR)</span>
+                                </p>
+                                
+                                <p v-if="txn.latitude && txn.longitude" class="mt-1">
+                                    <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-[10px] text-neon-cyan hover:text-white flex items-center gap-1 transition-colors">
+                                        📍 Aniq GPS Lokatsiya
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                         
                         <div class="flex flex-col gap-2 mt-auto z-10 pt-2 border-t border-white/10">

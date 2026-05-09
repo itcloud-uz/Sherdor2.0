@@ -50,7 +50,8 @@ async def send_transaction(chat_id: str, type_: str, amount: float, account_type
         "account_type": account_type,
         "payment_method": payment_method,
         "category": category,
-        "description": description
+        "description": description,
+        "source": "telegram"
     }
     return await _request("POST", "/bot/v1/transactions", payload)
 

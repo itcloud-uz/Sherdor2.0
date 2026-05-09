@@ -48,6 +48,7 @@ class BotApiController extends Controller
             'payment_method' => 'nullable|string',
             'account_type' => 'nullable|string',
             'category' => 'nullable|string',
+            'source' => 'nullable|string'
         ]);
 
         $user = User::where('telegram_chat_id', $request->chat_id)->first();
@@ -66,7 +67,7 @@ class BotApiController extends Controller
             'notes' => $request->description,
             'created_by' => $user->id,
             'status' => 'pending',
-            'source' => 'telegram',
+            'source' => $request->source ?? 'telegram',
             'transaction_date' => now()->toDateString(),
         ]);
 

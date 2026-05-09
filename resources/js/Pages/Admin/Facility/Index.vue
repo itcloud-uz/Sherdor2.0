@@ -483,8 +483,8 @@ const progressSeries = computed(() => {
                         <!-- TAB 1: Interactive Blueprint -->
                         <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
                             <!-- Floor Selector & Add Floor/Unit buttons -->
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/10 overflow-x-auto custom-scrollbar max-w-2xl">
+                            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 w-full">
+                                <div class="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/10 overflow-x-auto custom-scrollbar w-full xl:max-w-2xl">
                                     <button 
                                         v-for="floor in selectedBuilding.floors" 
                                         :key="floor.id"
@@ -496,8 +496,8 @@ const progressSeries = computed(() => {
                                     <button v-if="!selectedBuilding.floors.length" class="px-4 py-2 text-xs font-mono text-text-muted italic">
                                         Qavatlar mavjud emas
                                     </button>
-                                </div>
-                                <div class="flex gap-2 items-center">
+                                </div >
+                                <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
                                     <template v-if="selectedFloor">
                                         <button @click="openEditFloor(selectedFloor)" class="px-2 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
                                             ✏️

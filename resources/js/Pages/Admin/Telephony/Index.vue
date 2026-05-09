@@ -49,7 +49,7 @@
                             <div class="absolute top-1 left-2 text-xs text-neon-cyan/50 font-mono">MIJOZ RAQAMI</div>
                             <div class="absolute top-1 right-2 text-xs text-neon-cyan/50 font-mono">TAYYOR</div>
                             
-                            <input v-model="dialerPhone" type="text" placeholder="NUMBER..." class="w-full bg-transparent border-none text-center text-3xl font-mono text-white tracking-[0.2em] focus:ring-0 px-0 pt-4 pb-2" style="text-shadow: 0 0 10px rgba(255,255,255,0.5);">
+                            <input v-model="dialerPhone" type="text" placeholder="NUMBER..." class="w-full bg-transparent border-none text-center text-2xl sm:text-3xl font-mono text-white tracking-widest sm:tracking-[0.2em] focus:ring-0 px-0 pt-4 pb-2" style="text-shadow: 0 0 10px rgba(255,255,255,0.5);">
                             
                             <!-- Blinking cursor effect fake -->
                             <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-neon-cyan/50 to-transparent mt-2"></div>
@@ -79,7 +79,7 @@
                             <button @click="dialerPhone = dialerPhone.slice(0, -1)" class="w-16 h-14 bg-red-500/10 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-500 flex items-center justify-center transition-all">
                                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
                             </button>
-                            <button @click="makeCall" :disabled="isCalling || !dialerPhone" class="flex-1 h-14 bg-neon-cyan/20 hover:bg-neon-cyan/40 disabled:bg-white/5 disabled:border-white/10 text-neon-cyan disabled:text-text-muted font-display font-bold rounded-lg border border-neon-cyan/50 disabled:border-transparent transition-all uppercase tracking-wider text-sm flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                            <button @click="makeCall" :disabled="isCalling || !dialerPhone" class="flex-1 h-14 bg-neon-cyan/20 hover:bg-neon-cyan/40 disabled:bg-white/5 disabled:border-white/10 text-neon-cyan disabled:text-text-muted font-display font-bold rounded-lg border border-neon-cyan/50 disabled:border-transparent transition-all uppercase tracking-wider text-xs sm:text-sm flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
                                 <span v-if="isCalling" class="animate-pulse">ULANMOQDA...</span>
                                 <span v-else>QO'NG'IROQ QILISH</span>
                             </button>

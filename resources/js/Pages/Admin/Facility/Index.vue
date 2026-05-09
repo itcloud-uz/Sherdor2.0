@@ -468,7 +468,7 @@ const progressSeries = computed(() => {
                             </div>
                         
                         <!-- Tabs -->
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
                             <button @click="activeTab = 'blueprint'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'blueprint' ? 'text-black bg-neon-cyan border-neon-cyan shadow-[0_0_15px_rgba(0,240,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🗺️ {{ $t('blueprint') }}</button>
                             <button @click="activeTab = 'progress'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'progress' ? 'text-black bg-neon-yellow border-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🏗️ {{ $t('progress') }}</button>
                             <button @click="activeTab = 'finances'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'finances' ? 'text-black bg-neon-green border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">💰 {{ $t('finances') }}</button>
@@ -539,12 +539,12 @@ const progressSeries = computed(() => {
                                 <!-- Fallback Mode (HTML Grid) -->
                                 <div v-else-if="selectedFloor && !selectedFloor.blueprint_path" class="w-full h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar relative z-20">
                                     <!-- Residential Section -->
-                                    <div v-if="residentialUnits.length" class="flex items-stretch min-h-[100px]">
-                                        <div class="w-32 shrink-0 border-r-2 border-white/10 pr-6 flex flex-col items-end justify-center py-2 gap-2">
+                                    <div v-if="residentialUnits.length" class="flex flex-col sm:flex-row items-stretch min-h-[100px]">
+                                        <div class="w-full sm:w-32 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-white/10 pb-4 sm:pb-0 pr-0 sm:pr-6 mb-4 sm:mb-0 flex flex-row sm:flex-col items-center sm:items-end justify-start sm:justify-center gap-4 sm:gap-2">
                                             <span class="text-2xl drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">🏠</span>
-                                            <h3 class="text-neon-cyan font-display text-sm tracking-widest uppercase text-right">Xonadonlar</h3>
+                                            <h3 class="text-neon-cyan font-display text-sm tracking-widest uppercase text-left sm:text-right">Xonadonlar</h3>
                                         </div>
-                                        <div class="flex-1 pl-6">
+                                        <div class="flex-1 sm:pl-6">
                                             <div class="flex flex-wrap gap-4">
                                                 <div v-for="unit in residentialUnits" :key="'res-'+unit.id" 
                                                      class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded shadow-lg"
@@ -561,19 +561,19 @@ const progressSeries = computed(() => {
                                     
                                     <!-- Separator -->
                                     <div v-if="residentialUnits.length && commercialUnits.length" class="flex">
-                                        <div class="w-32 shrink-0 border-r-2 border-white/10"></div>
-                                        <div class="flex-1 pl-6 flex items-center">
+                                        <div class="hidden sm:block w-32 shrink-0 border-r-2 border-white/10"></div>
+                                        <div class="flex-1 sm:pl-6 flex items-center">
                                             <div class="h-px w-full bg-white/10 border-b border-dashed border-white/20"></div>
                                         </div>
                                     </div>
 
                                     <!-- Commercial Section -->
-                                    <div v-if="commercialUnits.length" class="flex items-stretch min-h-[100px]">
-                                        <div class="w-32 shrink-0 border-r-2 border-white/10 pr-6 flex flex-col items-end justify-center py-2 gap-2">
+                                    <div v-if="commercialUnits.length" class="flex flex-col sm:flex-row items-stretch min-h-[100px]">
+                                        <div class="w-full sm:w-32 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-white/10 pb-4 sm:pb-0 pr-0 sm:pr-6 mb-4 sm:mb-0 flex flex-row sm:flex-col items-center sm:items-end justify-start sm:justify-center gap-4 sm:gap-2">
                                             <span class="text-2xl drop-shadow-[0_0_10px_rgba(255,0,60,0.5)]">🏬</span>
-                                            <h3 class="text-neon-magenta font-display text-sm tracking-widest uppercase text-right">Do'konlar</h3>
+                                            <h3 class="text-neon-magenta font-display text-sm tracking-widest uppercase text-left sm:text-right">Do'konlar</h3>
                                         </div>
-                                        <div class="flex-1 pl-6">
+                                        <div class="flex-1 sm:pl-6">
                                             <div class="flex flex-wrap gap-4">
                                                 <div v-for="unit in commercialUnits" :key="'com-'+unit.id" 
                                                      class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded shadow-lg"

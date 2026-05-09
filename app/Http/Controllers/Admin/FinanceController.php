@@ -51,6 +51,9 @@ class FinanceController extends Controller
             'machinery_id' => 'nullable|exists:machineries,id',
             'building_id' => 'nullable|exists:buildings,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
+            'source' => 'nullable|string|max:50',
         ]);
 
         $validated['created_by'] = auth()->id();

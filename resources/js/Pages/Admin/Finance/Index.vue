@@ -1,9 +1,24 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, router, Link } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
+
+const gpsCoords = ref({ latitude: null, longitude: null });
+
+onMounted(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                gpsCoords.value.latitude = pos.coords.latitude;
+                gpsCoords.value.longitude = pos.coords.longitude;
+            },
+            (err) => console.warn('GPS Error: ', err),
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    }
+});
 
 const props = defineProps({
     transactions: Array,
@@ -107,7 +122,10 @@ const form = ref({
     transaction_date: new Date().toLocaleString('sv').slice(0,16),
     attachment: null,
     notes: '',
-    auto_approve: true
+    auto_approve: true,
+    latitude: null,
+    longitude: null,
+    source: 'admin_panel'
 });
 
 const transferForm = ref({
@@ -170,11 +188,13 @@ function selectContract(c) {
 
 function submitTransaction() {
     isProcessing.value = true;
+    form.value.latitude = gpsCoords.value.latitude;
+    form.value.longitude = gpsCoords.value.longitude;
     router.post(route('admin.finance.transactions.store'), form.value, {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '' };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel' };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -686,6 +706,11 @@ function submitSupplierPayment() {
                             <p class="mb-1"><span class="text-text-muted">Izoh:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
                             <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-text-muted">Mijoz:</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
                             <p><span class="text-text-muted">So'rovchi (Maker):</span> <span class="text-white font-bold">{{ txn.creator?.name }}</span></p>
+                            <p v-if="txn.latitude && txn.longitude" class="mt-2 pt-2 border-t border-white/10">
+                                <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-neon-cyan hover:text-white flex items-center gap-1 transition-colors">
+                                    📍 GPS Lokatsiya ({{ txn.source || 'Noma\'lum' }})
+                                </a>
+                            </p>
                         </div>
                         
                         <div class="flex flex-col gap-2 mt-auto z-10 pt-2 border-t border-white/10">

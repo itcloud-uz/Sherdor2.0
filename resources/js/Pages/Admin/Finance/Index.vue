@@ -1010,82 +1010,83 @@ function submitSupplierPayment() {
             </div>
         </div>
 
+            <!-- TAB 6: Ichki O'tkazma / Naqdlashtirish -->
+            <div v-if="activeTab === 6" class="max-w-4xl mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
+                <h2 class="text-2xl font-display font-bold text-white mb-2">Ichki O'tkazma / Naqdlashtirish</h2>
+                <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
+
+                <form @submit.prevent="submitTransfer" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Summasi</label>
+                            <input v-model="transferForm.amount" type="number" step="0.01" class="glass-input w-full text-3xl font-display text-white font-bold h-16 bg-black/50" placeholder="0.00" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Komissiya (Foyda) UZS</label>
+                            <input v-model="transferForm.fee_amount" type="number" step="0.01" class="glass-input w-full text-2xl font-display text-neon-yellow font-bold h-16 bg-black/50" placeholder="Masalan: 100000">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 py-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerdan (Yechiladi)</label>
+                            <select v-model="transferForm.from_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
+                                <option value="bank">🏦 Bank (Perechislenie)</option>
+                                <option value="main">💰 Naqd Kassa</option>
+                                <option value="credit">💳 Plastik (Terminal)</option>
+                            </select>
+                        </div>
+
+                        <div class="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-xl mt-6 text-neon-cyan shrink-0 animate-pulse">
+                            🔄
+                        </div>
+
+                        <div class="flex-1">
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerga (Tushadi)</label>
+                            <select v-model="transferForm.to_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
+                                <option value="main">💰 Naqd Kassa</option>
+                                <option value="bank">🏦 Bank (Perechislenie)</option>
+                                <option value="credit">💳 Plastik (Terminal)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Izoh</label>
+                        <textarea v-model="transferForm.notes" rows="3" class="glass-input w-full bg-black/50 text-white" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
+                    </div>
+
+                    <!-- O'tkazma hisob-kitobi xulosasi -->
+                    <div class="glass-card p-4 border border-neon-cyan/20 bg-neon-cyan/5 rounded-xl">
+                        <h3 class="text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Xulosasi</h3>
+                        <div class="space-y-1 font-mono text-sm">
+                            <div class="flex justify-between text-neon-red">
+                                <span>Jami yechiladigan summa:</span>
+                                <span>{{ transferForm.amount ? $currency(transferForm.amount) : '0 UZS' }}</span>
+                            </div>
+                            <div class="flex justify-between text-neon-yellow">
+                                <span>Komissiya (Sizga qoladigan foyda):</span>
+                                <span>{{ transferForm.fee_amount ? $currency(transferForm.fee_amount) : '0 UZS' }}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-white/10 pt-1 mt-1 text-neon-green font-bold text-base">
+                                <span>Manzilga borib tushadigan sof summa:</span>
+                                <span>{{ $currency((transferForm.amount || 0) - (transferForm.fee_amount || 0)) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-6 border-t border-white/10">
+                        <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-neon-cyan text-black font-bold font-mono uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_#00F0FF] transition-all disabled:opacity-50 text-sm">
+                            {{ isProcessing ? 'O\'tkazilmoqda...' : 'Tasdiqlash va O\'tkazish' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             </div>
         </div>
 
-        <!-- TAB 6: Ichki O'tkazma / Naqdlashtirish -->
-        <div v-if="activeTab === 6" class="max-w-4xl mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
-            <h2 class="text-2xl font-display font-bold text-white mb-2">Ichki O'tkazma / Naqdlashtirish</h2>
-            <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
-
-            <form @submit.prevent="submitTransfer" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Summasi</label>
-                        <input v-model="transferForm.amount" type="number" step="0.01" class="glass-input w-full text-3xl font-display text-white font-bold h-16 bg-black/50" placeholder="0.00" required>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Komissiya (Foyda) UZS</label>
-                        <input v-model="transferForm.fee_amount" type="number" step="0.01" class="glass-input w-full text-2xl font-display text-neon-yellow font-bold h-16 bg-black/50" placeholder="Masalan: 100000">
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 py-4">
-                    <div class="flex-1">
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerdan (Yechiladi)</label>
-                        <select v-model="transferForm.from_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
-                            <option value="bank">🏦 Bank (Perechislenie)</option>
-                            <option value="main">💰 Naqd Kassa</option>
-                            <option value="credit">💳 Plastik (Terminal)</option>
-                        </select>
-                    </div>
-
-                    <div class="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-xl mt-6 text-neon-cyan shrink-0 animate-pulse">
-                        🔄
-                    </div>
-
-                    <div class="flex-1">
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerga (Tushadi)</label>
-                        <select v-model="transferForm.to_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
-                            <option value="main">💰 Naqd Kassa</option>
-                            <option value="bank">🏦 Bank (Perechislenie)</option>
-                            <option value="credit">💳 Plastik (Terminal)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-mono text-text-muted uppercase mb-2">Izoh</label>
-                    <textarea v-model="transferForm.notes" rows="3" class="glass-input w-full bg-black/50 text-white" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
-                </div>
-
-                <!-- O'tkazma hisob-kitobi xulosasi -->
-                <div class="glass-card p-4 border border-neon-cyan/20 bg-neon-cyan/5 rounded-xl">
-                    <h3 class="text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Xulosasi</h3>
-                    <div class="space-y-1 font-mono text-sm">
-                        <div class="flex justify-between text-neon-red">
-                            <span>Jami yechiladigan summa:</span>
-                            <span>{{ transferForm.amount ? $currency(transferForm.amount) : '0 UZS' }}</span>
-                        </div>
-                        <div class="flex justify-between text-neon-yellow">
-                            <span>Komissiya (Sizga qoladigan foyda):</span>
-                            <span>{{ transferForm.fee_amount ? $currency(transferForm.fee_amount) : '0 UZS' }}</span>
-                        </div>
-                        <div class="flex justify-between border-t border-white/10 pt-1 mt-1 text-neon-green font-bold text-base">
-                            <span>Manzilga borib tushadigan sof summa:</span>
-                            <span>{{ $currency((transferForm.amount || 0) - (transferForm.fee_amount || 0)) }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-end pt-6 border-t border-white/10">
-                    <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-neon-cyan text-black font-bold font-mono uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_#00F0FF] transition-all disabled:opacity-50 text-sm">
-                        {{ isProcessing ? 'O\'tkazilmoqda...' : 'Tasdiqlash va O\'tkazish' }}
-                    </button>
-                </div>
-            </form>
-        </div>
 
         <!-- Supplier Payment Modal -->
         <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

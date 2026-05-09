@@ -115,6 +115,7 @@ const transferForm = ref({
     from_account: 'bank',
     to_account: 'main',
     fee_amount: '',
+    contract_id: '',
     notes: ''
 });
 
@@ -1016,6 +1017,17 @@ function submitSupplierPayment() {
                 <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
 
                 <form @submit.prevent="submitTransfer" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Mijoz / Shartnomaga bog'lash (Ixtiyoriy)</label>
+                        <select v-model="transferForm.contract_id" class="glass-input w-full bg-black/50 text-white font-bold h-12">
+                            <option value="">Hech qaysi (Faqat Ichki O'tkazma)</option>
+                            <option v-for="c in contracts" :key="c.id" :value="c.id">
+                                {{ c.client?.first_name }} {{ c.client?.last_name }} - {{ c.unit?.unit_number }} (Shartnoma #{{ c.id }})
+                            </option>
+                        </select>
+                        <p class="text-[10px] text-text-muted mt-1 font-mono">Agar mijoz tanlansa, kassadan yechilgan pul (99 mln) mijozning hisobidan (qaytim sifatida) yechiladi va balans to'g'rilanadi.</p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Summasi</label>

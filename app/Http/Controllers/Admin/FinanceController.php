@@ -113,6 +113,7 @@ class FinanceController extends Controller
             'from_account' => 'required|in:main,bank,credit',
             'to_account' => 'required|in:main,bank,credit',
             'fee_amount' => 'nullable|numeric|min:0',
+            'contract_id' => 'nullable|exists:contracts,id',
             'notes' => 'nullable|string',
         ]);
 
@@ -124,67 +125,151 @@ class FinanceController extends Controller
             $amount = $validated['amount'];
             $fee = $validated['fee_amount'] ?? 0;
             $netAmount = $amount - $fee;
-
-            // 1. Asosiy hisobdan to'liq summa yechiladi
-            \App\Models\CompanyBalance::addExpense($amount, $validated['from_account']);
-            
-            // 2. Qabul qiluvchi hisobga sof summa tushadi
-            \App\Models\CompanyBalance::addIncome($netAmount, $validated['to_account']);
+            $contractId = $validated['contract_id'] ?? null;
 
             $transferCategory = \App\Models\TransactionCategory::firstOrCreate(
                 ['name' => 'Ichki O\'tkazma (Naqdlashtirish)'],
                 ['type' => 'transfer', 'description' => 'Hisoblar aro ichki o\'tkazmalar']
             );
 
-            $notes = "O'tkazma: {$validated['from_account']} -> {$validated['to_account']}. " . ($validated['notes'] ?? '');
+            if ($contractId) {
+                // MIJOZ BILAN BOG'LANGAN O'TKAZMA (QAYTIM)
 
-            // Tranzit - Chiqim log (Transfer type)
-            \App\Models\Transaction::create([
-                'type' => 'transfer',
-                'amount' => $amount,
-                'payment_method' => $validated['from_account'] === 'bank' ? 'bank_transfer' : 'cash',
-                'account_type' => $validated['from_account'],
-                'category_id' => $transferCategory->id,
-                'status' => 'approved',
-                'transaction_date' => now(),
-                'notes' => "[Chiqim] " . $notes,
-                'created_by' => auth()->id(),
-            ]);
+                // 1. Asosiy hisobdan to'liq summa yechiladi (Bank)
+                \App\Models\CompanyBalance::addExpense($amount, $validated['from_account']);
+                // 2. Qabul qiluvchi hisobga to'liq summa tranzit bo'lib tushadi (Kassa)
+                \App\Models\CompanyBalance::addIncome($amount, $validated['to_account']);
+                // 3. Qabul qiluvchi hisobdan to'liq summa mijozga qaytim qilinadi (Kassadan)
+                \App\Models\CompanyBalance::addExpense($amount, $validated['to_account']);
+                // 4. Komissiya ushlab qolingan bo'lsa, qabul qiluvchi hisobga foyda bo'lib qaytadi
+                if ($fee > 0) {
+                    \App\Models\CompanyBalance::addIncome($fee, $validated['to_account']);
+                }
 
-            // Tranzit - Kirim log (Transfer type)
-            \App\Models\Transaction::create([
-                'type' => 'transfer',
-                'amount' => $netAmount,
-                'payment_method' => $validated['to_account'] === 'bank' ? 'bank_transfer' : 'cash',
-                'account_type' => $validated['to_account'],
-                'category_id' => $transferCategory->id,
-                'status' => 'approved',
-                'transaction_date' => now(),
-                'notes' => "[Kirim] " . $notes,
-                'created_by' => auth()->id(),
-            ]);
+                $notes = "Shartnoma #{$contractId} qaytim (Naqdlashtirish): {$validated['from_account']} -> {$validated['to_account']}. " . ($validated['notes'] ?? '');
 
-            // Foyda (Komissiya) log - Income type
-            if ($fee > 0) {
-                // Foydani yechilgan hisobga (qayerdan olingan bo'lsa) qaytarib kirim qilamiz
-                \App\Models\CompanyBalance::addIncome($fee, $validated['from_account']);
-
-                $feeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                    ['name' => 'Moliyaviy xizmat / Konvertatsiya daromadi'],
-                    ['type' => 'income', 'description' => 'Konvertatsiya va naqdlashtirish xizmati foydasi']
-                );
-                
+                // Tranzit loglari (faqat informatsion)
                 \App\Models\Transaction::create([
-                    'type' => 'income',
-                    'amount' => $fee,
+                    'type' => 'transfer',
+                    'amount' => $amount,
                     'payment_method' => $validated['from_account'] === 'bank' ? 'bank_transfer' : 'cash',
                     'account_type' => $validated['from_account'],
-                    'category_id' => $feeCategory->id,
+                    'category_id' => $transferCategory->id,
                     'status' => 'approved',
                     'transaction_date' => now(),
-                    'notes' => "Komissiya foydasi: {$validated['from_account']} -> {$validated['to_account']}",
+                    'notes' => "[Chiqim Tranzit] " . $notes,
                     'created_by' => auth()->id(),
                 ]);
+
+                \App\Models\Transaction::create([
+                    'type' => 'transfer',
+                    'amount' => $amount,
+                    'payment_method' => $validated['to_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_type' => $validated['to_account'],
+                    'category_id' => $transferCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => now(),
+                    'notes' => "[Kirim Tranzit] " . $notes,
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Shartnomaga Qaytim (Expense)
+                $refundCategory = \App\Models\TransactionCategory::firstOrCreate(
+                    ['name' => 'Mijozga Qaytim (Vozvrat)'],
+                    ['type' => 'expense', 'description' => 'Mijoz shartnomasidagi ortiqcha to\'lovni qaytarish']
+                );
+
+                \App\Models\Transaction::create([
+                    'type' => 'expense',
+                    'amount' => $amount,
+                    'payment_method' => $validated['to_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_type' => $validated['to_account'],
+                    'category_id' => $refundCategory->id,
+                    'contract_id' => $contractId,
+                    'status' => 'approved',
+                    'transaction_date' => now(),
+                    'notes' => "Mijozga Qaytim (Komissiya ichida): " . ($validated['notes'] ?? ''),
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Komissiya Foydasi
+                if ($fee > 0) {
+                    $feeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Moliyaviy xizmat / Konvertatsiya daromadi'],
+                        ['type' => 'income', 'description' => 'Konvertatsiya va naqdlashtirish xizmati foydasi']
+                    );
+                    
+                    \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $fee,
+                        'payment_method' => $validated['to_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                        'account_type' => $validated['to_account'],
+                        'category_id' => $feeCategory->id,
+                        'status' => 'approved',
+                        'transaction_date' => now(),
+                        'notes' => "Shartnoma #{$contractId} uchun komissiya ushlanmasi",
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+
+            } else {
+                // ODDIY ICHKI O'TKAZMA (Shartnomasiz)
+                
+                // 1. Asosiy hisobdan to'liq summa yechiladi
+                \App\Models\CompanyBalance::addExpense($amount, $validated['from_account']);
+                // 2. Qabul qiluvchi hisobga sof summa tushadi
+                \App\Models\CompanyBalance::addIncome($netAmount, $validated['to_account']);
+
+                $notes = "O'tkazma: {$validated['from_account']} -> {$validated['to_account']}. " . ($validated['notes'] ?? '');
+
+                // Tranzit - Chiqim log (Transfer type)
+                \App\Models\Transaction::create([
+                    'type' => 'transfer',
+                    'amount' => $amount,
+                    'payment_method' => $validated['from_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_type' => $validated['from_account'],
+                    'category_id' => $transferCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => now(),
+                    'notes' => "[Chiqim] " . $notes,
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Tranzit - Kirim log (Transfer type)
+                \App\Models\Transaction::create([
+                    'type' => 'transfer',
+                    'amount' => $netAmount,
+                    'payment_method' => $validated['to_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_type' => $validated['to_account'],
+                    'category_id' => $transferCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => now(),
+                    'notes' => "[Kirim] " . $notes,
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Foyda (Komissiya) log - Income type
+                if ($fee > 0) {
+                    // Foydani yechilgan hisobga (qayerdan olingan bo'lsa) qaytarib kirim qilamiz
+                    \App\Models\CompanyBalance::addIncome($fee, $validated['from_account']);
+
+                    $feeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Moliyaviy xizmat / Konvertatsiya daromadi'],
+                        ['type' => 'income', 'description' => 'Konvertatsiya va naqdlashtirish xizmati foydasi']
+                    );
+                    
+                    \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $fee,
+                        'payment_method' => $validated['from_account'] === 'bank' ? 'bank_transfer' : 'cash',
+                        'account_type' => $validated['from_account'],
+                        'category_id' => $feeCategory->id,
+                        'status' => 'approved',
+                        'transaction_date' => now(),
+                        'notes' => "Komissiya foydasi: {$validated['from_account']} -> {$validated['to_account']}",
+                        'created_by' => auth()->id(),
+                    ]);
+                }
             }
         });
 

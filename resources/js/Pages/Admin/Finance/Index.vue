@@ -1424,6 +1424,7 @@ function submitSupplierPayment() {
                 </div>
             </div>
     </div>
+    </div>
     </AdminLayout>
 </template>
 

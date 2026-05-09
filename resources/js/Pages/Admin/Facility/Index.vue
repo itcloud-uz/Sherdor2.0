@@ -153,7 +153,7 @@ function submitBuilding() {
             }
         });
     } else {
-        buildingForm.post(route('admin.facility.buildings.store'), {
+        buildingForm.transform((data) => data).post(route('admin.facility.buildings.store'), {
             onSuccess: () => {
                 showAddBuildingModal.value = false;
                 buildingForm.reset();
@@ -203,7 +203,7 @@ function submitFloor() {
         });
     } else {
         floorForm.building_id = selectedBuilding.value?.id;
-        floorForm.post(route('admin.facility.floors.store'), {
+        floorForm.transform((data) => data).post(route('admin.facility.floors.store'), {
             onSuccess: () => {
                 showAddFloorModal.value = false;
                 floorForm.reset();
@@ -265,7 +265,7 @@ function submitUnit() {
         });
     } else {
         unitForm.floor_id = selectedFloor.value?.id;
-        unitForm.post(route('admin.facility.units.store'), {
+        unitForm.transform((data) => data).post(route('admin.facility.units.store'), {
             onSuccess: () => {
                 showAddUnitModal.value = false;
                 unitForm.reset();

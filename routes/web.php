@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/suppliers/pay', [\App\Http\Controllers\Admin\FinanceController::class, 'paySupplier'])->name('suppliers.pay');
         Route::post('/categories', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCategory'])->name('categories.store');
         Route::post('/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('liabilities.store');
+        Route::post('/internal-transfer', [\App\Http\Controllers\Admin\FinanceController::class, 'internalTransfer'])->name('internal_transfer');
     });
 
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');

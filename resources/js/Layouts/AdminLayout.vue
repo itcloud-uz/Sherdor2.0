@@ -6,6 +6,7 @@ import BackgroundTheme from '@/Components/BackgroundTheme.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
 
 const page = usePage();
+const isMobileMenuOpen = ref(false);
 
 const navItems = [
     { name: 'dashboard', route: 'admin.dashboard', icon: '⬡' },
@@ -42,8 +43,11 @@ onUnmounted(() => {
             
             <BackgroundTheme />
 
+        <!-- Mobile Overlay -->
+        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"></div>
+
         <!-- Sidebar -->
-        <aside class="w-64 glass-panel border-r border-white/10 flex flex-col z-10 relative">
+        <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-64 h-full glass-panel border-r border-white/10 flex flex-col z-50 transition-transform duration-300">
             <div class="h-20 flex items-center justify-center border-b border-white/5">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center shadow-neon-primary overflow-hidden">
@@ -75,10 +79,15 @@ onUnmounted(() => {
         <!-- Main Content -->
         <main class="flex-1 flex flex-col z-10 h-screen overflow-hidden relative">
             <!-- Top Header -->
-            <header class="h-20 glass-panel border-b border-white/10 flex items-center justify-between px-8 relative z-50">
-                <div>
-                    <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, {{ $page.props.auth.user.name }}</h2>
-                    <p class="text-xs font-mono text-text-muted mt-1">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+            <header class="h-20 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 relative z-30">
+                <div class="flex items-center gap-3">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-2 text-white hover:text-neon-cyan focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <div>
+                        <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, <span class="hidden sm:inline">{{ $page.props.auth.user.name }}</span></h2>
+                        <p class="text-[10px] sm:text-xs font-mono text-text-muted mt-1">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+                    </div>
                 </div>
                 
                 <div class="flex items-center gap-6">

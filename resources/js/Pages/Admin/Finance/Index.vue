@@ -132,7 +132,7 @@ function fillTransferFromRefund(refund) {
 const isNewCategory = ref(false);
 
 const pendingRefunds = computed(() => {
-    return props.transactions.filter(t => t.type === 'refund_request' && t.status === 'pending');
+    return props.transactions.filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
 });
 
 function handleFileUpload(e) {

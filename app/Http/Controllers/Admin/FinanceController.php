@@ -399,11 +399,11 @@ class FinanceController extends Controller
             if ($refundAmount > 0) {
                 $refundCategory = \App\Models\TransactionCategory::firstOrCreate(
                     ['name' => 'Kutayotgan Naqdlashtirish'],
-                    ['type' => 'refund_request', 'description' => 'Mijoz ortiqcha to\'lovni naqd qilib olishi uchun navbat']
+                    ['type' => 'expense', 'description' => 'Mijoz ortiqcha to\'lovni naqd qilib olishi uchun navbat']
                 );
 
                 \App\Models\Transaction::create([
-                    'type' => 'refund_request',
+                    'type' => 'expense',
                     'amount' => $refundAmount,
                     'account_type' => $transaction->account_type,
                     'contract_id' => $transaction->contract_id,

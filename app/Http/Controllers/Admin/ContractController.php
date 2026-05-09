@@ -18,7 +18,9 @@ class ContractController extends Controller
             'down_payment' => 'required|numeric|min:0',
             'term_months' => 'required|integer|min:1',
             'created_at' => 'nullable|date',
-            'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number'
+            'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number',
+            'actual_paid_amount' => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string|in:bank,main,credit'
         ]);
 
         $contract = new \App\Models\Contract([
@@ -41,13 +43,36 @@ class ContractController extends Controller
         // Note: The ContractObserver will automatically generate PaymentSchedules.
         // It should use the contract's created_at date for scheduling.
 
+        // Create transaction if paid amount is provided
+        if (!empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0) {
+            $paymentMethod = $validated['payment_method'] ?? 'bank';
+            
+            // Create a pending transaction for Action Center to approve
+            $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+            );
+
+            \App\Models\Transaction::create([
+                'type' => 'income',
+                'amount' => $validated['actual_paid_amount'],
+                'account_type' => $paymentMethod,
+                'contract_id' => $contract->id,
+                'category_id' => $incomeCategory->id,
+                'status' => 'pending',
+                'transaction_date' => now(),
+                'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+        }
+
         // Also mark unit as reserved
         $unit = \App\Models\Unit::find($validated['unit_id']);
         if ($unit) {
             $unit->update(['status' => 'reserved']);
         }
 
-        return redirect()->back()->with('message', 'Contract created successfully.');
+        return redirect()->back()->with('message', 'Contract created successfully. Agar to\'lov kiritilgan bo\'lsa, Tasdiqlar bo\'limiga tushdi.');
     }
 
     public function update(\Illuminate\Http\Request $request, \App\Models\Contract $contract)

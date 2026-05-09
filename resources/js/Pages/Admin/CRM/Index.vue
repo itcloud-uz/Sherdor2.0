@@ -194,7 +194,7 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' });
+const contractForm = ref({ client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' });
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -208,8 +208,10 @@ function editContract(contract) {
         total_amount: contract.total_amount, 
         down_payment: contract.down_payment, 
         term_months: contract.term_months, 
-        payment_type: contract.down_payment == contract.total_amount ? 'full' : 'installment',
-        created_at: contract.created_at ? new Date(contract.created_at).toISOString().slice(0, 10) : ''
+        payment_type: contract.payment_type || 'installment',
+        created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
+        actual_paid_amount: '',
+        payment_method: 'bank'
     };
     showCreateContractModal.value = true;
 }
@@ -741,7 +743,7 @@ function openQuickSmsModal(lead) {
             <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 
 
-                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
@@ -1186,6 +1188,28 @@ function openQuickSmsModal(lead) {
                             <input v-model="contractForm.term_months" type="number" class="glass-input w-full" required>
                         </div>
                     </div>
+
+                    <div class="pt-4 border-t border-white/10 mt-4">
+                        <h3 class="text-sm font-bold text-neon-cyan uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Haqiqatda qilingan to'lov</label>
+                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="glass-input w-full text-neon-yellow" placeholder="Masalan: 600000000">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Usuli</label>
+                                <select v-model="contractForm.payment_method" class="glass-input w-full bg-black/50">
+                                    <option value="bank">🏦 Bank (Perechislenie)</option>
+                                    <option value="main">💰 Naqd Kassa</option>
+                                    <option value="credit">💳 Plastik / Terminal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p v-if="contractForm.actual_paid_amount > 0" class="text-[10px] text-text-muted mt-2 font-mono">
+                            Moliya bo'limi ushbu to'lovni tasdiqlayotganda ortiqcha summa avtomatik ravishda <strong class="text-neon-yellow">Naqdlashtirish (Qaytim)</strong> navbatiga tushadi.
+                        </p>
+                    </div>
+
                     <div class="flex justify-end gap-4 mt-8">
                         <button type="button" @click="showCreateContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>

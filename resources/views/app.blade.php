@@ -5,6 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        
+        <!-- PWA Meta Tags -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#1e293b">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -25,5 +29,14 @@
             });
         </script>
         @inertia
+        
+        <!-- PWA Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js');
+                });
+            }
+        </script>
     </body>
 </html>

@@ -23,7 +23,7 @@ class FinanceController extends Controller
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
             'categories' => \App\Models\TransactionCategory::all(),
-            'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', 'active')->get(),
+            'contracts' => \App\Models\Contract::with(['client', 'unit'])->whereNotIn('status', ['cancelled', 'completed'])->get(),
             'financialLiabilities' => \App\Models\FinancialLiability::with('payments')->latest()->get(),
             'suppliers' => \App\Models\Supplier::latest()->get(),
             'workers' => \App\Models\Worker::latest()->get(),

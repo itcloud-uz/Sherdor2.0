@@ -239,7 +239,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '' };
+                contractForm.value = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -743,7 +743,7 @@ function openQuickSmsModal(lead) {
             <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 
 
-                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>

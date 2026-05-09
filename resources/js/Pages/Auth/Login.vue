@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
 import GalaxyBackground from '@/Components/GalaxyBackground.vue';
 
 defineProps({
@@ -22,6 +23,31 @@ const submit = () => {
         onFinish: () => form.reset('password'),
     });
 };
+
+const deferredPrompt = ref(null);
+const showInstallButton = ref(false);
+
+onMounted(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt.value = e;
+        // Update UI notify the user they can install the PWA
+        showInstallButton.value = true;
+    });
+});
+
+const installPWA = async () => {
+    if (deferredPrompt.value) {
+        deferredPrompt.value.prompt();
+        const { outcome } = await deferredPrompt.value.userChoice;
+        if (outcome === 'accepted') {
+            showInstallButton.value = false;
+        }
+        deferredPrompt.value = null;
+    }
+};
 </script>
 
 <template>
@@ -32,18 +58,18 @@ const submit = () => {
         <!-- Authentic Galaxy Background -->
         <GalaxyBackground />
 
-        <div class="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out]">
+        <div class="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out] px-2 sm:px-0">
             
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-6 backdrop-blur-xl">
-                    <span class="font-display font-black text-4xl text-black">S</span>
+            <div class="text-center mb-6 sm:mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] sm:rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-4 sm:mb-6 backdrop-blur-xl">
+                    <span class="font-display font-black text-3xl sm:text-4xl text-black">S</span>
                 </div>
-                <h1 class="text-3xl font-display font-bold text-white tracking-widest">{{ $t('sher_dor') }}</h1>
-                <p class="text-gray-400 font-medium text-sm mt-2">Boshqaruv Tizimiga Kirish</p>
+                <h1 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-widest">{{ $t('sher_dor') }}</h1>
+                <p class="text-gray-400 font-medium text-xs sm:text-sm mt-2">Boshqaruv Tizimiga Kirish</p>
             </div>
 
             <!-- Apple Glassmorphism Panel -->
-            <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
+            <div class="bg-white/5 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
                 
                 <div v-if="status" class="mb-6 text-sm font-medium text-green-400 bg-green-400/10 border border-green-400/20 p-3 rounded-xl text-center">
                     {{ status }}
@@ -94,10 +120,10 @@ const submit = () => {
                         </Link>
                     </div>
 
-                    <div class="pt-4">
+                    <div class="pt-2 sm:pt-4 space-y-3 sm:space-y-4">
                         <button
                             type="submit"
-                            class="w-full px-6 py-4 bg-white text-black font-display font-bold text-lg rounded-2xl hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all transform active:scale-95 disabled:opacity-50 flex justify-center items-center gap-3"
+                            class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-white text-black font-display font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all transform active:scale-95 disabled:opacity-50 flex justify-center items-center gap-3"
                             :disabled="form.processing"
                         >
                             <svg v-if="form.processing" class="animate-spin -ml-1 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -106,11 +132,21 @@ const submit = () => {
                             </svg>
                             TIZIMGA KIRISH
                         </button>
+
+                        <button
+                            v-if="showInstallButton"
+                            @click="installPWA"
+                            type="button"
+                            class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-neon-cyan/20 border border-neon-cyan/50 text-neon-cyan font-display font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl hover:bg-neon-cyan/30 shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all transform active:scale-95 flex justify-center items-center gap-3"
+                        >
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            📲 Ilovani O'rnatish
+                        </button>
                     </div>
                 </form>
             </div>
             
-            <div class="text-center mt-8">
+            <div class="text-center mt-6 sm:mt-8">
                 <Link :href="route('landing')" class="text-sm font-medium text-gray-400 hover:text-white transition-colors border-b border-dashed border-white/20 pb-1">
                     ← Asosiy sahifaga qaytish
                 </Link>

@@ -156,8 +156,8 @@ const filteredContracts = computed(() => {
     
     const query = scheduleSearch.value.toLowerCase();
     return props.contracts.filter(c => {
-        const clientName = (c.client?.first_name + ' ' + c.client?.last_name).toLowerCase();
-        const unitNumber = (c.unit?.unit_number || '').toLowerCase();
+        const clientName = String(c.client?.first_name + ' ' + c.client?.last_name).toLowerCase();
+        const unitNumber = String(c.unit?.unit_number || '').toLowerCase();
         return clientName.includes(query) || unitNumber.includes(query);
     });
 });

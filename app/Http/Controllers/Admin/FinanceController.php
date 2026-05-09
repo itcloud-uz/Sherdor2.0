@@ -394,6 +394,10 @@ class FinanceController extends Controller
                     
                     $schedule->save();
                 }
+                
+                if ($remainingAmount > 0) {
+                    $refundAmount += $remainingAmount;
+                }
             }
 
             if ($refundAmount > 0) {

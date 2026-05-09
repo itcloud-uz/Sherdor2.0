@@ -1255,7 +1255,7 @@ function submitSupplierPayment() {
         <!-- CONTRACT APPROVE MODAL -->
         <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Shartnoma To'lovini Taxtimlash</h2>
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Shartnoma To'lovini Taqsimlash</h2>
                 <div class="mb-6 bg-black/50 p-4 rounded-xl border border-white/5 text-sm font-mono text-text-muted">
                     <p>Kiritilgan summa: <strong class="text-neon-cyan text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
                 </div>

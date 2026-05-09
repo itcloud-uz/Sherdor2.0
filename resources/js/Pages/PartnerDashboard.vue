@@ -183,7 +183,7 @@ function vote(voteId, action) {
 
                     <button @click="activeTab = 4" class="flex flex-col items-center justify-center transition-all" :class="activeTab === 4 ? 'text-neon-cyan drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]' : 'text-text-muted hover:text-white'">
                         <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        <span class="text-[8px] font-mono uppercase tracking-wider">Cheklar</span>
+                        <span class="text-[8px] font-mono uppercase tracking-wider">{{ $t('receipts') }}</span>
                     </button>
                 </div>
             </div>
@@ -325,7 +325,7 @@ function vote(voteId, action) {
                 <h3 class="text-xl font-display font-bold text-white mb-6">Yangi Tranzaksiya / Chek</h3>
                 <form @submit.prevent="submitTransaction(); showAddModal = false;" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-1">Turi</label>
+                        <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('type_label') }}</label>
                         <select v-model="txForm.type" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                             <option value="expense">Chiqim (Xarajat)</option>
                             <option value="income">Kirim (Tushum)</option>

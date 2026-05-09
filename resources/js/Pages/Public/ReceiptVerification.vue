@@ -66,7 +66,7 @@ const maskPhone = (phone) => {
                 <!-- Transaction Details -->
                 <div class="space-y-4 mb-8 relative z-10">
                     <div class="p-4 bg-black/40 rounded-xl border border-white/5 flex justify-between items-center">
-                        <span class="text-xs text-text-muted uppercase tracking-widest">To'lov Summasi</span>
+                        <span class="text-xs text-text-muted uppercase tracking-widest">{{ $t('payment_amount_label') }}</span>
                         <span class="text-xl font-bold text-neon-cyan drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">
                             {{ currency(transaction.amount) }}
                         </span>
@@ -78,7 +78,7 @@ const maskPhone = (phone) => {
                             <span class="text-white text-sm uppercase font-bold">{{ transaction.payment_method }}</span>
                         </div>
                         <div class="p-4 bg-black/40 rounded-xl border border-white/5">
-                            <span class="block text-[10px] text-text-muted uppercase mb-1">Sana</span>
+                            <span class="block text-[10px] text-text-muted uppercase mb-1">{{ $t('date_label') }}</span>
                             <span class="text-white text-sm font-bold">{{ new Date(transaction.updated_at).toLocaleDateString() }}</span>
                         </div>
                     </div>

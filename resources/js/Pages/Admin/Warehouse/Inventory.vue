@@ -34,7 +34,7 @@ const formatMoney = (amount) => {
                             <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest bg-black/40">
                                 <th class="p-4 font-medium rounded-tl-xl">Kategoriya</th>
                                 <th class="p-4 font-medium">Mahsulot Nomi</th>
-                                <th class="p-4 font-medium text-right">Qoldiq</th>
+                                <th class="p-4 font-medium text-right">{{ $t('balance_remaining') }}</th>
                                 <th class="p-4 font-medium text-right">O'rtacha Narx</th>
                                 <th class="p-4 font-medium text-right rounded-tr-xl">Umumiy Qiymat</th>
                             </tr>

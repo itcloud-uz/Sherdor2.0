@@ -352,7 +352,7 @@ function formatDate(dateString) {
                         <input v-model="partnerForm.total_invested" type="number" min="0" class="glass-input w-full" required>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showAddPartnerModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
+                        <button type="button" @click="showAddPartnerModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">Qo'shish</button>
                     </div>
                 </form>
@@ -379,8 +379,8 @@ function formatDate(dateString) {
                         <p class="text-[9px] text-text-muted mt-1">Diqqat: Ushbu qiymatni qo'lda o'zgartirish moliyaviy xatolikka olib kelishi mumkin.</p>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showEditPartnerModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">Saqlash</button>
+                        <button type="button" @click="showEditPartnerModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -402,7 +402,7 @@ function formatDate(dateString) {
                         <textarea v-model="advanceForm.notes" rows="2" class="glass-input w-full" placeholder="Masalan: Uy xarajatlari uchun yoki Avans"></textarea>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showAdvanceModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
+                        <button type="button" @click="showAdvanceModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">So'rov yuborish</button>
                     </div>
                 </form>
@@ -442,7 +442,7 @@ function formatDate(dateString) {
                         <p v-if="expenseForm.errors?.attachment" class="text-neon-red text-[10px] mt-1">{{ expenseForm.errors.attachment }}</p>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showExpenseModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
+                        <button type="button" @click="showExpenseModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black rounded uppercase">Tasdiqqa Yuborish</button>
                     </div>
                 </form>
@@ -493,11 +493,11 @@ function formatDate(dateString) {
                             <table class="w-full text-left font-mono text-xs">
                                 <thead class="bg-black/50 text-text-muted uppercase">
                                     <tr>
-                                        <th class="p-3">Sana</th>
+                                        <th class="p-3">{{ $t('date_label') }}</th>
                                         <th class="p-3">Tur</th>
                                         <th class="p-3">Kategoriya</th>
                                         <th class="p-3 text-right">Summa (UZS)</th>
-                                        <th class="p-3">Izoh</th>
+                                        <th class="p-3">{{ $t('notes') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

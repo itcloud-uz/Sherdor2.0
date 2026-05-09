@@ -99,7 +99,7 @@ const formatMoney = (amount) => {
                             <p class="text-lg font-bold text-white font-display">{{ order.supplier?.company_name || order.supplier?.name }}</p>
                         </div>
                         <div>
-                            <h3 class="text-xs font-mono text-text-muted uppercase mb-1">Sana</h3>
+                            <h3 class="text-xs font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</h3>
                             <p class="text-sm font-bold text-white font-mono">{{ order.order_date }}</p>
                         </div>
                         <div>
@@ -232,7 +232,7 @@ const formatMoney = (amount) => {
                     <div class="text-text-muted text-xs font-mono uppercase tracking-widest">Umumiy Qiymat: <span class="text-xl font-bold text-neon-green ml-2">{{ formatMoney(form.items.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0)) }}</span></div>
                     
                     <div class="flex gap-3">
-                        <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">Bekor Qilish</button>
+                        <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
                         <button @click="submit" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-magenta text-black rounded-xl hover:shadow-[0_0_15px_#FF00FF] transition-all disabled:opacity-50">
                             {{ isSubmitting ? 'Saqlanmoqda...' : 'Buyurtmani Yaratish' }}
                         </button>

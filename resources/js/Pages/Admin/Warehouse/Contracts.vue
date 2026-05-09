@@ -127,7 +127,7 @@ const handleFileUpload = async (event) => {
                                 <th class="p-4 font-medium">Ta'minotchi</th>
                                 <th class="p-4 font-medium">Boshlanish</th>
                                 <th class="p-4 font-medium">Tugash</th>
-                                <th class="p-4 font-medium text-right">Summa</th>
+                                <th class="p-4 font-medium text-right">{{ $t('amount') }}</th>
                                 <th class="p-4 font-medium text-right rounded-tr-xl">Status</th>
                             </tr>
                         </thead>
@@ -195,7 +195,7 @@ const handleFileUpload = async (event) => {
                             <input v-model="form.contract_number" type="text" required class="glass-input w-full">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Boshlanish Sanasi</label>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('start_date') }}</label>
                             <input v-model="form.start_date" type="date" required class="glass-input w-full bg-black/50 text-white" style="color-scheme: dark;">
                         </div>
                         <div>
@@ -215,8 +215,8 @@ const handleFileUpload = async (event) => {
                     </div>
                     
                     <div class="pt-4 flex gap-3 justify-end">
-                        <button type="button" @click="showModal = false" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white">Bekor qilish</button>
-                        <button type="submit" class="bg-neon-green text-black font-bold text-sm px-6 py-2 rounded hover:shadow-[0_0_15px_#39FF14] transition-all">Saqlash</button>
+                        <button type="button" @click="showModal = false" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white">{{ $t('cancel') }}</button>
+                        <button type="submit" class="bg-neon-green text-black font-bold text-sm px-6 py-2 rounded hover:shadow-[0_0_15px_#39FF14] transition-all">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>

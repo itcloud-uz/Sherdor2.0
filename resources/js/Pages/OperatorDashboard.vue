@@ -968,7 +968,7 @@ function submitWarehouseRequest() {
                     <thead>
                         <tr class="border-b border-white/10 bg-white/5">
                             <th class="p-4 text-xs font-mono text-text-muted uppercase">Nomi</th>
-                            <th class="p-4 text-xs font-mono text-text-muted uppercase">Qoldiq</th>
+                            <th class="p-4 text-xs font-mono text-text-muted uppercase">{{ $t('balance_remaining') }}</th>
                             <th class="p-4 text-xs font-mono text-text-muted uppercase">Kategoriya</th>
                         </tr>
                     </thead>
@@ -1064,7 +1064,7 @@ function submitWarehouseRequest() {
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Narxi (Soatiga/Hajmiga)</label>
-                            <input v-model="hrForm.rate" type="number" class="glass-input w-full" placeholder="Summa">
+                            <input v-model="hrForm.rate" type="number" class="glass-input w-full" :placeholder="$t('amount')">
                         </div>
                     </div>
                 </div>
@@ -1119,7 +1119,7 @@ function submitWarehouseRequest() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
                             <input v-model="hrForm.date" type="date" class="glass-input w-full bg-black/50 text-white">
                         </div>
                     </div>
@@ -1137,7 +1137,7 @@ function submitWarehouseRequest() {
                 </div>
 
                 <div class="mt-6 flex justify-end gap-3">
-                    <button @click="closeHrModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white transition-colors">Yopish</button>
+                    <button @click="closeHrModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('close_button') }}</button>
                     <button v-if="activeHrModalType !== 'faceid' || !isScanning" @click="submitHrRequest" class="px-6 py-2 text-sm font-bold font-mono bg-neon-cyan text-black rounded hover:shadow-[0_0_15px_#00F0FF] transition-all">
                         {{ activeHrModalType === 'faceid' ? "Avtomat 'Keldi' qilish" : "Tasdiqqa Yuborish" }}
                     </button>
@@ -1258,7 +1258,7 @@ function submitWarehouseRequest() {
                 <input v-model="clientForm.last_name" required type="text" class="glass-input w-full" placeholder="Familiya">
                 <input v-model="clientForm.phone" required type="text" class="glass-input w-full" placeholder="Telefon">
                 <input v-model="clientForm.passport" required type="text" class="glass-input w-full" placeholder="Pasport / JSHSHIR">
-                <button type="submit" class="w-full bg-white/20 text-white font-bold py-2 rounded hover:bg-white/30 transition-colors">Saqlash</button>
+                <button type="submit" class="w-full bg-white/20 text-white font-bold py-2 rounded hover:bg-white/30 transition-colors">{{ $t('save') }}</button>
             </form>
         </div>
     </div>
@@ -1373,13 +1373,13 @@ function submitWarehouseRequest() {
                         <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
                     </div>
                     <div v-if="contractForm.payment_type === 'installment'">
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Muddat (Oy)</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('term_months') }}</label>
                         <input v-model="contractForm.term_months" type="number" class="glass-input w-full" required>
                     </div>
                 </div>
 
                 <div class="flex justify-end gap-4 mt-8">
-                    <button type="button" @click="showContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                    <button type="button" @click="showContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                     <button type="submit" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all">Savdo Hujjatini Yaratish</button>
                 </div>
             </form>
@@ -1439,7 +1439,7 @@ function submitWarehouseRequest() {
                 </div>
 
                 <div class="pt-4 flex gap-3 justify-end">
-                    <button type="button" @click="closeExpenseModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white">Bekor qilish</button>
+                    <button type="button" @click="closeExpenseModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white">{{ $t('cancel') }}</button>
                     <button type="submit" class="bg-neon-red text-white font-bold text-sm px-6 py-2 rounded hover:shadow-[0_0_15px_#FF003C] transition-all">Tasdiqqa Yuborish</button>
                 </div>
             </form>
@@ -1466,7 +1466,7 @@ function submitWarehouseRequest() {
                 </button>
             </div>
             
-            <button @click="closeUnitActionModal" class="w-full mt-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor Qilish</button>
+            <button @click="closeUnitActionModal" class="w-full mt-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
         </div>
     </div>
 
@@ -1477,7 +1477,7 @@ function submitWarehouseRequest() {
             
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-xl font-display font-bold text-white uppercase">Shartnoma Tafsiloti</h2>
-                <button @click="openEditContractModal(selectedContract)" class="bg-white/10 text-white hover:bg-white/20 px-3 py-1 text-xs rounded transition-colors mr-6">Tahrirlash</button>
+                <button @click="openEditContractModal(selectedContract)" class="bg-white/10 text-white hover:bg-white/20 px-3 py-1 text-xs rounded transition-colors mr-6">{{ $t('edit') }}</button>
             </div>
             
             <div v-if="selectedContract" class="space-y-4">
@@ -1563,7 +1563,7 @@ function submitWarehouseRequest() {
                             <input v-model="editContractForm.down_payment" type="number" class="glass-input w-full p-2 text-sm" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Muddat (Oy)</label>
+                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('term_months') }}</label>
                             <input v-model="editContractForm.term_months" type="number" class="glass-input w-full p-2 text-sm" required>
                         </div>
                     </div>
@@ -1593,7 +1593,7 @@ function submitWarehouseRequest() {
                 </div>
                 
                 <div v-if="workerActionForm.type === 'advance' || workerActionForm.type === 'bonus'">
-                    <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Summa</label>
+                    <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('amount') }}</label>
                     <input v-model="workerActionForm.amount" type="number" class="glass-input w-full" placeholder="Summani kiriting" required>
                 </div>
                 

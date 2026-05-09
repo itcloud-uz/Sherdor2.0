@@ -140,8 +140,8 @@
                         <p class="text-[10px] text-text-muted mt-1">* Parolni faqat o'zgartirmoqchi bo'lsangiz kiriting.</p>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showSettingsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="settingsForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors">Saqlash</button>
+                        <button type="button" @click="showSettingsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="settingsForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -166,7 +166,7 @@
                         Xatolik: {{ testSmsForm.errors.error }}
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showTestSmsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
+                        <button type="button" @click="showTestSmsModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="testSmsForm.processing" class="px-4 py-2 bg-neon-purple text-white font-bold font-mono text-xs rounded hover:bg-neon-purple/80 transition-colors">Yuborish</button>
                     </div>
                 </form>
@@ -192,8 +192,8 @@
                         <p v-if="templateForm.content.length > 160" class="text-[10px] text-neon-magenta mt-1 font-bold">Diqqat! SMS 160 belgidan oshdi, u 2 ta SMS bo'lib ketishi mumkin va balansdan 2 barobar ko'p pul yechiladi.</p>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showTemplateModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="templateForm.processing || templateForm.content.length === 0" class="px-4 py-2 bg-neon-purple text-white font-bold font-mono text-xs rounded hover:bg-neon-purple/80 transition-colors">Saqlash</button>
+                        <button type="button" @click="showTemplateModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="templateForm.processing || templateForm.content.length === 0" class="px-4 py-2 bg-neon-purple text-white font-bold font-mono text-xs rounded hover:bg-neon-purple/80 transition-colors">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -230,8 +230,8 @@
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showRuleModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="ruleForm.processing" class="px-4 py-2 text-black font-bold font-mono text-xs rounded hover:opacity-80 transition-all" :class="{'bg-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.4)]': ruleType === 'auto', 'bg-neon-magenta shadow-[0_0_10px_rgba(255,0,60,0.4)]': ruleType === 'debtor'}">Saqlash</button>
+                        <button type="button" @click="showRuleModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="ruleForm.processing" class="px-4 py-2 text-black font-bold font-mono text-xs rounded hover:opacity-80 transition-all" :class="{'bg-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.4)]': ruleType === 'auto', 'bg-neon-magenta shadow-[0_0_10px_rgba(255,0,60,0.4)]': ruleType === 'debtor'}">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -296,7 +296,7 @@
                         </div>
                         
                         <div class="flex justify-end gap-3 mt-6">
-                            <button type="button" @click="showPromoModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">Yopish</button>
+                            <button type="button" @click="showPromoModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('close_button') }}</button>
                             <button type="submit" :disabled="promoRuleForm.processing" class="px-4 py-2 bg-neon-yellow text-black font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(252,238,9,0.3)]">Rasilkani Saqlash</button>
                         </div>
                     </form>

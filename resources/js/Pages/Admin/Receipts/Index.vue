@@ -95,7 +95,7 @@ function formatDate(dateString) {
                                 <span class="text-[10px] text-white">{{ receipt.creator?.name || 'Tizim' }}</span>
                             </div>
                             <div class="text-right">
-                                <span class="block text-[8px] text-text-muted uppercase">Sana</span>
+                                <span class="block text-[8px] text-text-muted uppercase">{{ $t('date_label') }}</span>
                                 <span class="text-[10px] text-neon-cyan">{{ formatDate(receipt.created_at) }}</span>
                             </div>
                         </div>

@@ -38,7 +38,7 @@ const submit = () => {
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-6 backdrop-blur-xl">
                     <span class="font-display font-black text-4xl text-black">S</span>
                 </div>
-                <h1 class="text-3xl font-display font-bold text-white tracking-widest">SHER-DOR</h1>
+                <h1 class="text-3xl font-display font-bold text-white tracking-widest">{{ $t('sher_dor') }}</h1>
                 <p class="text-gray-400 font-medium text-sm mt-2">Boshqaruv Tizimiga Kirish</p>
             </div>
 

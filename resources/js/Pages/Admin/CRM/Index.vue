@@ -678,9 +678,7 @@ function openQuickSmsModal(lead) {
                             <div class="flex-1 min-w-0">
                                 <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.first_name} ${client.last_name}`">
                                     {{ client.first_name }} {{ client.last_name }}
-                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">
-                                        📦 Import
-                                    </span>
+                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
                                 </h3>
                                 <p class="text-xs font-mono text-neon-cyan mt-1 flex items-center gap-1">
                                     <span>📞</span> {{ client.phone || 'N/A' }}
@@ -782,7 +780,7 @@ function openQuickSmsModal(lead) {
                                 </div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-1">
-                                <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">📦 Import</span>
+                                <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
                                 <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white/80 whitespace-nowrap">{{ contract.term_months }} {{ $t('months') }}</span>
                             </div>
                         </div>
@@ -1199,8 +1197,8 @@ function openQuickSmsModal(lead) {
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Usuli</label>
                                 <select v-model="contractForm.payment_method" class="glass-input w-full bg-black/50">
-                                    <option value="bank">🏦 Bank (Perechislenie)</option>
-                                    <option value="main">💰 Naqd Kassa</option>
+                                    <option value="bank">{{ $t('bank_account') }}</option>
+                                    <option value="main">{{ $t('cash_account') }}</option>
                                     <option value="credit">💳 Plastik / Terminal</option>
                                 </select>
                             </div>

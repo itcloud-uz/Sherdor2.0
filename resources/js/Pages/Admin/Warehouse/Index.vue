@@ -43,7 +43,7 @@ const formatMoney = (amount) => {
                 <div class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 flex flex-col items-center justify-center text-center">
                     <span class="text-4xl mb-2 text-neon-yellow">🤝</span>
                     <span class="text-2xl font-bold text-white">{{ stats.active_suppliers }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">Ta'minotchilar</span>
+                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">{{ $t('suppliers') }}</span>
                 </div>
                 <div class="glass-panel p-6 rounded-2xl border border-neon-magenta/30 flex flex-col items-center justify-center text-center">
                     <span class="text-4xl mb-2 text-neon-magenta">⏳</span>
@@ -66,7 +66,7 @@ const formatMoney = (amount) => {
                     <div class="w-16 h-16 mx-auto bg-neon-yellow/10 rounded-full flex items-center justify-center text-3xl group-hover:scale-110 transition-transform mb-4">
                         🏢
                     </div>
-                    <h3 class="text-lg font-bold text-white mb-1 uppercase tracking-widest font-display">Ta'minotchilar</h3>
+                    <h3 class="text-lg font-bold text-white mb-1 uppercase tracking-widest font-display">{{ $t('suppliers') }}</h3>
                     <p class="text-[10px] font-mono text-text-muted uppercase">Kompaniyalar va Ledger</p>
                 </Link>
 
@@ -97,7 +97,7 @@ const formatMoney = (amount) => {
                     <table class="w-full text-left text-sm font-mono">
                         <thead>
                             <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest">
-                                <th class="py-3 font-medium">Sana</th>
+                                <th class="py-3 font-medium">{{ $t('date_label') }}</th>
                                 <th class="py-3 font-medium">Tur</th>
                                 <th class="py-3 font-medium">Mahsulot</th>
                                 <th class="py-3 font-medium text-right">Miqdor</th>
@@ -108,8 +108,8 @@ const formatMoney = (amount) => {
                             <tr v-for="t in recent_transactions" :key="t.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
                                 <td class="py-3 text-text-secondary">{{ new Date(t.created_at).toLocaleString() }}</td>
                                 <td class="py-3">
-                                    <span v-if="t.type === 'in'" class="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-green/20 text-neon-green border-neon-green/30">Kirim</span>
-                                    <span v-else class="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-red/20 text-neon-red border-neon-red/30">Chiqim</span>
+                                    <span v-if="t.type === 'in'" class="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-green/20 text-neon-green border-neon-green/30">{{ $t('income') }}</span>
+                                    <span v-else class="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-red/20 text-neon-red border-neon-red/30">{{ $t('expense') }}</span>
                                 </td>
                                 <td class="py-3 text-white font-bold">{{ t.item?.name }}</td>
                                 <td class="py-3 text-right text-neon-cyan font-bold">{{ t.type === 'in' ? '+' : '-' }}{{ t.quantity }} {{ t.item?.unit }}</td>

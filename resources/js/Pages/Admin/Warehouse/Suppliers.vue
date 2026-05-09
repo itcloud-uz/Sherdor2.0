@@ -118,8 +118,7 @@ const sendToTelegram = (id) => {
                         ←
                     </Link>
                     <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-yellow/50 text-shadow-glow flex items-center gap-3">
-                        <span class="text-neon-yellow">🏢</span> Ta'minotchilar
-                    </h1>
+                        <span class="text-neon-yellow">🏢</span>{{ $t('suppliers') }}</h1>
                 </div>
                 
                 <button @click="openAddModal" class="px-6 py-3 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-yellow hover:text-black transition-all shadow-[0_0_20px_rgba(255,255,0,0.2)]">
@@ -253,7 +252,7 @@ const sendToTelegram = (id) => {
                 </div>
                 
                 <div class="mt-8 flex justify-end gap-3">
-                    <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">Bekor Qilish</button>
+                    <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
                     <button @click="submit" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-yellow text-black rounded-xl hover:shadow-[0_0_15px_#FFFF00] transition-all disabled:opacity-50">
                         {{ isSubmitting ? 'Saqlanmoqda...' : 'Saqlash' }}
                     </button>

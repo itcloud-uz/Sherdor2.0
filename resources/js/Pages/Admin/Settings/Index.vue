@@ -151,9 +151,7 @@ const updateThemeStyle = (style) => {
                             
                             <div class="flex justify-end pt-8 border-t border-white/10">
                                 <button type="submit" :disabled="form.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
-                                    <span v-if="form.processing" class="animate-spin">🌀</span>
-                                    Saqlash
-                                </button>
+                                    <span v-if="form.processing" class="animate-spin">🌀</span>{{ $t('save') }}</button>
                             </div>
                         </div>
 
@@ -184,9 +182,7 @@ const updateThemeStyle = (style) => {
                             
                             <div class="flex justify-end pt-8 border-t border-white/10 mt-6">
                                 <button type="submit" :disabled="form.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
-                                    <span v-if="form.processing" class="animate-spin">🌀</span>
-                                    Saqlash
-                                </button>
+                                    <span v-if="form.processing" class="animate-spin">🌀</span>{{ $t('save') }}</button>
                             </div>
                         </div>
 
@@ -234,9 +230,7 @@ const updateThemeStyle = (style) => {
 
                         <div class="flex justify-end pt-8 border-t border-white/10 mt-6">
                             <button type="submit" :disabled="profileForm.processing" class="px-8 py-3 bg-neon-primary/20 border border-neon-primary text-neon-primary font-bold uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(var(--color-neon-primary-rgb),0.5)] hover:bg-neon-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2">
-                                <span v-if="profileForm.processing" class="animate-spin">🌀</span>
-                                Saqlash
-                            </button>
+                                <span v-if="profileForm.processing" class="animate-spin">🌀</span>{{ $t('save') }}</button>
                         </div>
                     </form>
 

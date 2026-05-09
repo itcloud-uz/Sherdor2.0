@@ -256,9 +256,7 @@ function lockSettings() {
                                         <input v-model="user.telegram_chat_id" type="text" class="glass-input w-full text-white font-mono text-sm pl-10 py-2 border-transparent focus:border-neon-blue bg-transparent" placeholder="Chat ID (masalan: 1412501744)">
                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neon-blue opacity-70">💬</span>
                                     </div>
-                                    <button @click="updateChatId(user)" :disabled="isProcessing" class="px-5 py-2 w-full sm:w-auto bg-neon-blue/10 text-neon-blue border border-neon-blue/50 text-xs font-bold font-mono uppercase tracking-widest rounded-lg hover:bg-neon-blue hover:text-white transition-all disabled:opacity-50 whitespace-nowrap">
-                                        Saqlash
-                                    </button>
+                                    <button @click="updateChatId(user)" :disabled="isProcessing" class="px-5 py-2 w-full sm:w-auto bg-neon-blue/10 text-neon-blue border border-neon-blue/50 text-xs font-bold font-mono uppercase tracking-widest rounded-lg hover:bg-neon-blue hover:text-white transition-all disabled:opacity-50 whitespace-nowrap">{{ $t('save') }}</button>
                                 </div>
                             </div>
                         </div>

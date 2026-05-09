@@ -33,9 +33,7 @@
                 </div>
 
                 <div class="mt-8 flex gap-3">
-                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-black/50 border border-white/20 text-white text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-white/10 transition-all">
-                        Bekor qilish
-                    </button>
+                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-black/50 border border-white/20 text-white text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-white/10 transition-all">{{ $t('cancel') }}</button>
                     <button @click="sendSms" :disabled="isSending || !message.trim()" class="flex-1 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50 flex justify-center items-center gap-2">
                         <span v-if="isSending" class="animate-pulse">Yuborilmoqda...</span>
                         <template v-else>

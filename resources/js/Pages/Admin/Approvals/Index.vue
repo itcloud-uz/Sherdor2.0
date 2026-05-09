@@ -147,7 +147,7 @@ function reject(id) {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-white/10 text-xs font-mono text-text-muted uppercase">
-                                <th class="p-3">Sana</th>
+                                <th class="p-3">{{ $t('date_label') }}</th>
                                 <th class="p-3">Operator</th>
                                 <th class="p-3">Tur</th>
                                 <th class="p-3">Holat</th>
@@ -207,7 +207,7 @@ function reject(id) {
                 </div>
                 
                 <div class="mt-6 flex justify-end gap-3">
-                    <button @click="closeApproveModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white transition-colors">Bekor Qilish</button>
+                    <button @click="closeApproveModal" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
                     <button @click="submitApprove" class="px-6 py-2 text-sm font-bold font-mono bg-neon-cyan text-black rounded hover:shadow-[0_0_15px_#00F0FF] transition-all">Tasdiqlash va Yozish</button>
                 </div>
             </div>

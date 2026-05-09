@@ -57,7 +57,7 @@ const panels = [
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)]">
                     <span class="font-display font-bold text-xl text-white">S</span>
                 </div>
-                <span class="font-display font-bold text-xl tracking-widest text-white">SHER-DOR</span>
+                <span class="font-display font-bold text-xl tracking-widest text-white">{{ $t('sher_dor') }}</span>
             </div>
             <div class="hidden md:flex gap-8 items-center text-sm font-medium tracking-wide text-gray-300">
                 <a href="#panels" class="hover:text-amber-400 transition-colors">Tizim Bo'limlari</a>

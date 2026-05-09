@@ -562,18 +562,17 @@ function submitSupplierPayment() {
                 <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/20 h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Kirimlar (Qayerdan)
-                        </h3>
+                            <span class="w-2 h-2 rounded-full bg-neon-cyan"></span>{{ $t('incomes_from') }}</h3>
                         <!-- LEGACY FILTERS -->
                         <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
-                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">Barchasi</button>
-                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">🟢 Yangi</button>
-                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">📦 Import</button>
+                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">{{ $t('all') }}</button>
+                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">{{ $t('new_native') }}</button>
+                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
                         </div>
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                         <div v-for="txn in recentIncomes" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
-                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                             <div class="flex justify-between items-start mt-2">
                                 <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-cyan">+ {{ $currency(txn.amount) }}</span>
@@ -586,9 +585,9 @@ function submitSupplierPayment() {
                                     {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
                                 </span>
                                 <div class="flex gap-2">
-                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">Tahrirlash</button>
-                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">O'chirish</button>
-                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">Yuklab olish</a>
+                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
+                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
+                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
                                 </div>
                             </div>
                         </div>
@@ -600,18 +599,17 @@ function submitSupplierPayment() {
                 <div class="glass-panel p-6 rounded-2xl border border-neon-red/20 h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-neon-red"></span> Chiqimlar (Qayerga)
-                        </h3>
+                            <span class="w-2 h-2 rounded-full bg-neon-red"></span>{{ $t('expenses_to') }}</h3>
                         <!-- LEGACY FILTERS -->
                         <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
-                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">Barchasi</button>
-                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">🟢 Yangi</button>
-                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">📦 Import</button>
+                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">{{ $t('all') }}</button>
+                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">{{ $t('new_native') }}</button>
+                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
                         </div>
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                         <div v-for="txn in recentExpenses" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
-                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                             <div class="flex justify-between items-start mt-2">
                                 <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-red">- {{ $currency(txn.amount) }}</span>
@@ -624,9 +622,9 @@ function submitSupplierPayment() {
                                     {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
                                 </span>
                                 <div class="flex gap-2">
-                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">Tahrirlash</button>
-                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">O'chirish</button>
-                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">Yuklab olish</a>
+                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
+                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
+                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
                                 </div>
                             </div>
                         </div>
@@ -639,30 +637,28 @@ function submitSupplierPayment() {
             <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                 <div class="glass-panel max-w-md w-full p-6 rounded-2xl relative border border-white/10">
                     <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
-                    <h3 class="text-xl font-display text-white mb-6">Tranzaksiyani Tahrirlash</h3>
+                    <h3 class="text-xl font-display text-white mb-6">{{ $t('edit_transaction') }}</h3>
                     
                     <form @submit.prevent="submitEditTransaction" class="space-y-4">
                         <div>
-                            <label class="block text-text-muted mb-1 text-sm">Summa</label>
+                            <label class="block text-text-muted mb-1 text-sm">{{ $t('amount') }}</label>
                             <input v-model="editTransactionForm.amount" type="number" step="0.01" class="glass-input w-full" required>
                         </div>
                         <div>
-                            <label class="block text-text-muted mb-1 text-sm">Hisob</label>
+                            <label class="block text-text-muted mb-1 text-sm">{{ $t('account') }}</label>
                             <select v-model="editTransactionForm.account_type" class="glass-input w-full" required>
-                                <option value="main">Kompaniya Hisobi (Main)</option>
-                                <option value="credit">Kredit Hisobi (Kassa)</option>
+                                <option value="main">{{ $t('main_account') }}</option>
+                                <option value="credit">{{ $t('credit_account') }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-text-muted mb-1 text-sm">Izoh (Qayerga/Kimdan)</label>
+                            <label class="block text-text-muted mb-1 text-sm">{{ $t('notes_direction') }}</label>
                             <textarea v-model="editTransactionForm.notes" class="glass-input w-full" rows="3"></textarea>
                         </div>
                         
                         <div class="flex justify-end pt-4 gap-4">
-                            <button type="button" @click="showEditTransactionModal = false" class="px-6 py-2 text-text-muted hover:text-white">Bekor qilish</button>
-                            <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200 disabled:opacity-50">
-                                Saqlash
-                            </button>
+                            <button type="button" @click="showEditTransactionModal = false" class="px-6 py-2 text-text-muted hover:text-white">{{ $t('cancel') }}</button>
+                            <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200 disabled:opacity-50">{{ $t('save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -694,7 +690,7 @@ function submitSupplierPayment() {
                             <h3 class="text-2xl font-bold font-display" :class="txn.type === 'income' ? 'text-neon-cyan' : 'text-neon-red'">
                                 {{ txn.type === 'income' ? '+' : '-' }} {{ $currency(txn.amount) }}
                             </h3>
-                            <span v-if="txn.is_legacy" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                            <span v-if="txn.is_legacy" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                         </div>
                         <div class="z-10">
                             <p class="text-[10px] uppercase font-bold mt-1" :class="txn.account_type === 'credit' ? 'text-neon-yellow' : 'text-neon-green'">
@@ -703,9 +699,9 @@ function submitSupplierPayment() {
                         </div>
                         
                         <div class="bg-white/5 p-3 rounded-lg text-xs font-mono text-white/80 z-10">
-                            <p class="mb-1"><span class="text-text-muted">Izoh:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
-                            <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-text-muted">Mijoz:</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
-                            <p><span class="text-text-muted">So'rovchi (Maker):</span> <span class="text-white font-bold">{{ txn.creator?.name }}</span></p>
+                            <p class="mb-1"><span class="text-text-muted">{{ $t('notes_label') }}</span> {{ txn.notes || 'Kiritilmagan' }}</p>
+                            <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-text-muted">{{ $t('client_label') }}</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
+                            <p><span class="text-text-muted">{{ $t('maker_label') }}</span> <span class="text-white font-bold">{{ txn.creator?.name }}</span></p>
                             
                             <div class="mt-2 pt-2 border-t border-white/10">
                                 <p class="text-[10px] uppercase font-bold tracking-widest flex items-center gap-1"
@@ -714,15 +710,13 @@ function submitSupplierPayment() {
                                        'text-neon-purple': txn.source === 'admin_panel' || !txn.source,
                                        'text-neon-yellow': txn.source === 'partner_app'
                                    }">
-                                    <span v-if="txn.source === 'telegram'">✈️ TELEGRAM</span>
-                                    <span v-else-if="txn.source === 'partner_app'">📱 HAMKOR ILOVASI</span>
-                                    <span v-else>💻 ADMIN PANEL (OPERATOR)</span>
+                                    <span v-if="txn.source === 'telegram'">{{ $t('source_telegram') }}</span>
+                                    <span v-else-if="txn.source === 'partner_app'">{{ $t('source_partner_app') }}</span>
+                                    <span v-else>{{ $t('source_admin_panel') }}</span>
                                 </p>
                                 
                                 <p v-if="txn.latitude && txn.longitude" class="mt-1">
-                                    <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-[10px] text-neon-cyan hover:text-white flex items-center gap-1 transition-colors">
-                                        📍 Aniq GPS Lokatsiya
-                                    </a>
+                                    <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-[10px] text-neon-cyan hover:text-white flex items-center gap-1 transition-colors">{{ $t('exact_gps_location') }}</a>
                                 </p>
                             </div>
                         </div>
@@ -734,12 +728,8 @@ function submitSupplierPayment() {
                             </a>
                             
                             <div class="flex gap-2">
-                                <button @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black hover:shadow-[0_0_15px_#39FF14] transition-all rounded disabled:opacity-50">
-                                    ✔️ Tasdiq
-                                </button>
-                                <button @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-red/20 border border-neon-red text-neon-red hover:bg-neon-red hover:text-white hover:shadow-[0_0_15px_#FF0000] transition-all rounded disabled:opacity-50">
-                                    ❌ Rad etish
-                                </button>
+                                <button @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black hover:shadow-[0_0_15px_#39FF14] transition-all rounded disabled:opacity-50">{{ $t('approve_check') }}</button>
+                                <button @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-red/20 border border-neon-red text-neon-red hover:bg-neon-red hover:text-white hover:shadow-[0_0_15px_#FF0000] transition-all rounded disabled:opacity-50">{{ $t('reject_cross') }}</button>
                             </div>
                         </div>
                     </div>
@@ -760,7 +750,7 @@ function submitSupplierPayment() {
                         <th class="pb-3">{{ $t('date') }}</th>
                         <th class="pb-3">{{ $t('type') }}</th>
                         <th class="pb-3">{{ $t('amount') }}</th>
-                        <th class="pb-3">Hisob</th>
+                        <th class="pb-3">{{ $t('account') }}</th>
                         <th class="pb-3">{{ $t('status') }}</th>
                         <th class="pb-3">{{ $t('checker') }}</th>
                         <th class="pb-3 text-right">{{ $t('receipt') }}</th>
@@ -880,7 +870,7 @@ function submitSupplierPayment() {
                     <div>
                         <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
                         <select v-model="form.account_type" class="glass-input w-full text-lg font-bold text-white bg-black/50">
-                            <option value="main">Kompaniya Hisobi (Main)</option>
+                            <option value="main">{{ $t('main_account') }}</option>
                             <option value="credit">Kredit Hisobi (Credit)</option>
                         </select>
                     </div>
@@ -1083,17 +1073,11 @@ function submitSupplierPayment() {
                         </div>
                     </div>
 
-                    <button v-if="s.balance > 0" @click="openSupplierPaymentModal(s)" class="w-full py-3 bg-neon-green/20 border border-neon-green text-neon-green font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-green hover:text-black transition-all">
-                        Qarzni To'lash (Moliya)
-                    </button>
-                    <button v-else-if="s.balance < 0" class="w-full py-3 bg-white/5 border border-white/10 text-white font-bold font-mono text-sm uppercase tracking-widest rounded-xl cursor-not-allowed opacity-50">
-                        Pul qaytarib olish
-                    </button>
+                    <button v-if="s.balance > 0" @click="openSupplierPaymentModal(s)" class="w-full py-3 bg-neon-green/20 border border-neon-green text-neon-green font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-green hover:text-black transition-all">{{ $t('pay_liability') }}</button>
+                    <button v-else-if="s.balance < 0" class="w-full py-3 bg-white/5 border border-white/10 text-white font-bold font-mono text-sm uppercase tracking-widest rounded-xl cursor-not-allowed opacity-50">{{ $t('withdraw_money') }}</button>
                 </div>
                 
-                <div v-if="!suppliers || suppliers.length === 0" class="col-span-full py-12 text-center text-text-muted font-mono text-sm border-dashed border border-white/10 rounded-xl">
-                    Hozircha ta'minotchilar mavjud emas.
-                </div>
+                <div v-if="!suppliers || suppliers.length === 0" class="col-span-full py-12 text-center text-text-muted font-mono text-sm border-dashed border border-white/10 rounded-xl">{{ $t('no_suppliers') }}</div>
             </div>
         </div>
 
@@ -1103,9 +1087,7 @@ function submitSupplierPayment() {
                 <!-- KUTAYOTGAN SO'ROVLAR -->
                 <div v-if="pendingRefunds && pendingRefunds.length > 0" class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 shadow-[0_0_20px_rgba(252,238,9,0.1)]">
                     <h3 class="text-lg font-display font-bold text-white mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span>
-                        Kutayotgan Naqdlashtirish So'rovlari
-                    </h3>
+                        <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span>{{ $t('pending_withdrawals') }}</h3>
                     <div class="space-y-3">
                         <div v-for="refund in pendingRefunds" :key="refund.id" class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5 hover:border-neon-yellow/50 transition-all">
                             <div>
@@ -1114,21 +1096,19 @@ function submitSupplierPayment() {
                             </div>
                             <div class="flex items-center gap-4">
                                 <span class="text-neon-yellow font-bold font-mono">{{ $currency(refund.amount) }}</span>
-                                <button @click="fillTransferFromRefund(refund)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow rounded font-mono text-xs uppercase tracking-widest hover:bg-neon-yellow hover:text-black transition-all">
-                                    Qabul qilish
-                                </button>
+                                <button @click="fillTransferFromRefund(refund)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow rounded font-mono text-xs uppercase tracking-widest hover:bg-neon-yellow hover:text-black transition-all">{{ $t('accept') }}</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
-                    <h2 class="text-2xl font-display font-bold text-white mb-2">Ichki O'tkazma / Naqdlashtirish</h2>
+                    <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('internal_transfer_withdrawal') }}</h2>
                     <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
 
                     <form @submit.prevent="submitTransfer" class="space-y-6">
                     <div>
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Mijoz / Shartnomaga bog'lash (Ixtiyoriy)</label>
+                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('link_client_contract') }}</label>
                         <select v-model="transferForm.contract_id" class="glass-input w-full bg-black/50 text-white font-bold h-12">
                             <option value="">Hech qaysi (Faqat Ichki O'tkazma)</option>
                             <option v-for="c in contracts" :key="c.id" :value="c.id">
@@ -1140,23 +1120,23 @@ function submitSupplierPayment() {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Summasi</label>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('transfer_amount') }}</label>
                             <input v-model="transferForm.amount" type="number" step="0.01" class="glass-input w-full text-3xl font-display text-white font-bold h-16 bg-black/50" placeholder="0.00" required>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Komissiya (Foyda) UZS</label>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('commission_fee') }}</label>
                             <input v-model="transferForm.fee_amount" type="number" step="0.01" class="glass-input w-full text-2xl font-display text-neon-yellow font-bold h-16 bg-black/50" placeholder="Masalan: 100000">
                         </div>
                     </div>
 
                     <div class="flex items-center gap-4 py-4">
                         <div class="flex-1">
-                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerdan (Yechiladi)</label>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('from_account') }}</label>
                             <select v-model="transferForm.from_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
-                                <option value="bank">🏦 Bank (Perechislenie)</option>
-                                <option value="main">💰 Naqd Kassa</option>
-                                <option value="credit">💳 Plastik (Terminal)</option>
+                                <option value="bank">{{ $t('bank_account') }}</option>
+                                <option value="main">{{ $t('cash_account') }}</option>
+                                <option value="credit">{{ $t('card_account') }}</option>
                             </select>
                         </div>
 
@@ -1165,23 +1145,23 @@ function submitSupplierPayment() {
                         </div>
 
                         <div class="flex-1">
-                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">Qayerga (Tushadi)</label>
+                            <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('to_account') }}</label>
                             <select v-model="transferForm.to_account" class="glass-input w-full bg-black/50 text-white font-bold h-12" required>
-                                <option value="main">💰 Naqd Kassa</option>
-                                <option value="bank">🏦 Bank (Perechislenie)</option>
-                                <option value="credit">💳 Plastik (Terminal)</option>
+                                <option value="main">{{ $t('cash_account') }}</option>
+                                <option value="bank">{{ $t('bank_account') }}</option>
+                                <option value="credit">{{ $t('card_account') }}</option>
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">Izoh</label>
+                        <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('notes') }}</label>
                         <textarea v-model="transferForm.notes" rows="3" class="glass-input w-full bg-black/50 text-white" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
                     </div>
 
                     <!-- O'tkazma hisob-kitobi xulosasi -->
                     <div class="glass-card p-4 border border-neon-cyan/20 bg-neon-cyan/5 rounded-xl">
-                        <h3 class="text-xs font-mono text-text-muted uppercase mb-2">O'tkazma Xulosasi</h3>
+                        <h3 class="text-xs font-mono text-text-muted uppercase mb-2">{{ $t('transfer_summary') }}</h3>
                         <div class="space-y-1 font-mono text-sm">
                             <div class="flex justify-between text-neon-red">
                                 <span>Jami yechiladigan summa:</span>
@@ -1218,26 +1198,26 @@ function submitSupplierPayment() {
                 
                 <form @submit.prevent="submitSupplierPayment" class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Summasi (UZS)</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('payment_amount_uzs') }}</label>
                         <input v-model="supplierPaymentForm.amount" type="number" step="0.01" class="glass-input w-full text-2xl font-bold font-mono text-neon-green" required>
                         <p class="text-[10px] text-text-muted mt-1 font-mono">Qarz: {{ $currency(selectedSupplier?.balance || 0) }}</p>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Qaysi Hisobdan Yechiladi?</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('which_account_withdraw') }}</label>
                         <select v-model="supplierPaymentForm.account_type" class="glass-input w-full text-lg text-white" required>
-                            <option value="main">Asosiy Kassa (Main)</option>
-                            <option value="bank">Bank Hisobi</option>
-                            <option value="credit">Kredit Kassa</option>
-                            <option value="debt">Qarz Kassa</option>
+                            <option value="main">{{ $t('main_cash') }}</option>
+                            <option value="bank">{{ $t('bank_account_label') }}</option>
+                            <option value="credit">{{ $t('credit_cash') }}</option>
+                            <option value="debt">{{ $t('liability_cash') }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh</label>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('notes') }}</label>
                         <textarea v-model="supplierPaymentForm.notes" class="glass-input w-full" rows="3" placeholder="Sement uchun to'lov..."></textarea>
                     </div>
                     
                     <div class="flex justify-end pt-4 gap-4 border-t border-white/10 mt-4">
-                        <button type="button" @click="showSupplierPaymentModal = false" class="px-6 py-2 text-text-muted hover:text-white font-mono text-sm">Bekor Qilish</button>
+                        <button type="button" @click="showSupplierPaymentModal = false" class="px-6 py-2 text-text-muted hover:text-white font-mono text-sm">{{ $t('cancel_button') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-green text-black rounded font-bold font-mono text-sm hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50 uppercase tracking-widest">
                             {{ isProcessing ? 'To\'lanmoqda...' : 'To\'lovni Tasdiqlash' }}
                         </button>
@@ -1250,21 +1230,21 @@ function submitSupplierPayment() {
         <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div class="bg-white text-black p-8 rounded border border-gray-300 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.2)]">
                 <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold font-display uppercase tracking-widest">SHER-DOR</h2>
+                    <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
                     <p class="text-xs font-mono text-gray-500">{{ $t('receipt') }}</p>
                 </div>
                 
                 <div class="space-y-2 text-sm font-mono border-y border-dashed border-gray-300 py-4 mb-6">
                     <div class="flex justify-between"><span>{{ $t('date') }}:</span> <span>{{ new Date(receiptData.updated_at).toLocaleDateString() }}</span></div>
                     <div class="flex justify-between" v-if="receiptData.contract?.client || receiptData.paymentSchedule?.contract?.client">
-                        <span>Mijoz:</span> 
+                        <span>{{ $t('client_label') }}</span> 
                         <span class="font-bold text-right">
                             {{ (receiptData.contract || receiptData.paymentSchedule?.contract).client.first_name }} 
                             {{ (receiptData.contract || receiptData.paymentSchedule?.contract).client.last_name }}
                         </span>
                     </div>
                     <div class="flex justify-between" v-if="receiptData.contract?.unit || receiptData.paymentSchedule?.contract?.unit">
-                        <span>Obyekt:</span> 
+                        <span>{{ $t('object_label') }}</span> 
                         <span class="font-bold text-right">
                             {{ (receiptData.contract || receiptData.paymentSchedule?.contract).unit.unit_number }}
                         </span>
@@ -1286,7 +1266,7 @@ function submitSupplierPayment() {
 
                 <div class="mt-8 flex justify-center gap-4">
                     <button @click="showReceiptModal = false" class="px-4 py-2 text-xs border border-gray-400 rounded hover:bg-gray-100 font-mono uppercase">{{ $t('cancel') }}</button>
-                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-black text-white rounded hover:bg-gray-800 font-mono uppercase text-center flex items-center">🖨️ CHOP ETISH</a>
+                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-black text-white rounded hover:bg-gray-800 font-mono uppercase text-center flex items-center">{{ $t('print_button') }}</a>
                 </div>
             </div>
         </div>
@@ -1294,7 +1274,7 @@ function submitSupplierPayment() {
         <!-- CONTRACT APPROVE MODAL -->
         <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Shartnoma To'lovini Taqsimlash</h2>
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('contract_payment_distribution') }}</h2>
                 <div class="mb-6 bg-black/50 p-4 rounded-xl border border-white/5 text-sm font-mono text-text-muted">
                     <p>Kiritilgan summa: <strong class="text-neon-cyan text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
                 </div>
@@ -1310,7 +1290,7 @@ function submitSupplierPayment() {
                         <p class="text-[10px] text-text-muted mt-2">Bu summa "O'tkazmalar" bo'limiga kutayotgan so'rov bo'lib tushadi.</p>
                     </div>
                     <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
-                        <button type="button" @click="showContractApproveModal = false" class="px-6 py-2 text-text-muted hover:text-white font-mono uppercase">Bekor qilish</button>
+                        <button type="button" @click="showContractApproveModal = false" class="px-6 py-2 text-text-muted hover:text-white font-mono uppercase">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-cyan text-black rounded font-bold uppercase tracking-widest hover:shadow-[0_0_15px_#00F0FF] transition-all disabled:opacity-50">
                             {{ isProcessing ? 'Yuklanmoqda...' : 'Tasdiqlash' }}
                         </button>
@@ -1322,65 +1302,65 @@ function submitSupplierPayment() {
         <!-- NEW LIABILITY MODAL -->
         <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Yangi Qarz qo'shish</h2>
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('add_new_liability') }}</h2>
                 <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
                     <div>
-                        <label class="block text-text-muted mb-1">Turi</label>
+                        <label class="block text-text-muted mb-1">{{ $t('type_label') }}</label>
                         <select v-model="liabilityForm.type" class="glass-input w-full">
-                            <option value="bank_loan">Bank Krediti</option>
-                            <option value="supplier_debt">Taminotchi Qarzi</option>
-                            <option value="partner_debt">Hamkor Qarzi</option>
+                            <option value="bank_loan">{{ $t('bank_credit') }}</option>
+                            <option value="supplier_debt">{{ $t('supplier_debt') }}</option>
+                            <option value="partner_debt">{{ $t('partner_debt') }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1">Kreditor Nomi (Bank yoki Taminotchi)</label>
+                        <label class="block text-text-muted mb-1">{{ $t('creditor_name') }}</label>
                         <input v-model="liabilityForm.creditor_name" type="text" class="glass-input w-full" required>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1 text-neon-yellow">Qarz Summasi tushadigan hisob (Majburiy emas)</label>
+                        <label class="block text-text-muted mb-1 text-neon-yellow">{{ $t('liability_receive_account') }}</label>
                         <select v-model="liabilityForm.fund_account" class="glass-input w-full">
                             <option value="">-- Hisobga tushmasin --</option>
-                            <option value="main">Kompaniya Hisobi (Main)</option>
-                            <option value="credit">Kredit Hisobi (Kassa)</option>
+                            <option value="main">{{ $t('main_account') }}</option>
+                            <option value="credit">{{ $t('credit_account') }}</option>
                         </select>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-text-muted mb-1">Umumiy Summa</label>
+                            <label class="block text-text-muted mb-1">{{ $t('total_amount') }}</label>
                             <input v-model="liabilityForm.total_amount" type="number" step="0.01" class="glass-input w-full" required>
                         </div>
                         <div>
-                            <label class="block text-text-muted mb-1">Yillik Foiz (%)</label>
+                            <label class="block text-text-muted mb-1">{{ $t('annual_percentage') }}</label>
                             <input v-model="liabilityForm.interest_rate" type="number" step="0.01" class="glass-input w-full" placeholder="Masalan: 24">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-text-muted mb-1">Muddat (Oy)</label>
+                            <label class="block text-text-muted mb-1">{{ $t('term_months') }}</label>
                             <input v-model="liabilityForm.term_months" type="number" class="glass-input w-full" required>
                         </div>
                         <div>
-                            <label class="block text-text-muted mb-1">Oylik To'lov (Majburiy emas)</label>
+                            <label class="block text-text-muted mb-1">{{ $t('monthly_payment') }}</label>
                             <input v-model="liabilityForm.monthly_payment" type="number" step="0.01" class="glass-input w-full">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-text-muted mb-1">Boshlanish Sanasi</label>
+                            <label class="block text-text-muted mb-1">{{ $t('start_date') }}</label>
                             <input v-model="liabilityForm.start_date" type="date" class="glass-input w-full" required>
                         </div>
                         <div>
-                            <label class="block text-text-muted mb-1">Tugash Sanasi</label>
+                            <label class="block text-text-muted mb-1">{{ $t('end_date') }}</label>
                             <input v-model="liabilityForm.end_date" type="date" class="glass-input w-full">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1">Izoh</label>
+                        <label class="block text-text-muted mb-1">{{ $t('notes') }}</label>
                         <textarea v-model="liabilityForm.description" rows="2" class="glass-input w-full"></textarea>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showLiabilityModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">Saqlash</button>
+                        <button type="button" @click="showLiabilityModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -1389,34 +1369,34 @@ function submitSupplierPayment() {
         <!-- PAYMENT MODAL -->
         <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-green/50 w-full max-w-sm shadow-[0_0_50px_rgba(57,255,20,0.1)]">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Qarz To'lovi</h2>
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('liability_payment') }}</h2>
                 <div class="mb-6 font-mono text-xs">
-                    <p class="text-text-muted mb-1">Kreditor: <span class="text-white">{{ selectedLiability.creditor_name }}</span></p>
-                    <p class="text-text-muted">Qoldiq: <span class="text-neon-green text-sm font-bold">{{ $currency(selectedLiability.total_amount - (selectedLiability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span></p>
+                    <p class="text-text-muted mb-1">{{ $t('creditor_label') }}<span class="text-white">{{ selectedLiability.creditor_name }}</span></p>
+                    <p class="text-text-muted">{{ $t('balance_remaining_label') }}<span class="text-neon-green text-sm font-bold">{{ $currency(selectedLiability.total_amount - (selectedLiability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span></p>
                 </div>
                 <form @submit.prevent="submitPayment" class="space-y-4 font-mono text-xs">
                     <div>
-                        <label class="block text-text-muted mb-1">To'lov Summasi</label>
+                        <label class="block text-text-muted mb-1">{{ $t('payment_amount_label') }}</label>
                         <input v-model="paymentForm.amount" type="number" step="0.01" class="glass-input w-full text-lg" required>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1">Qaysi hisobdan to'lanadi?</label>
+                        <label class="block text-text-muted mb-1">{{ $t('which_account_pay') }}</label>
                         <select v-model="paymentForm.account_type" class="glass-input w-full" required>
-                            <option value="main">Kompaniya Hisobi (Main)</option>
-                            <option value="credit">Kredit Hisobi (Kassa)</option>
+                            <option value="main">{{ $t('main_account') }}</option>
+                            <option value="credit">{{ $t('credit_account') }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1">Sana</label>
+                        <label class="block text-text-muted mb-1">{{ $t('date_label') }}</label>
                         <input v-model="paymentForm.payment_date" type="date" class="glass-input w-full" required>
                     </div>
                     <div>
-                        <label class="block text-text-muted mb-1">Izoh</label>
+                        <label class="block text-text-muted mb-1">{{ $t('notes') }}</label>
                         <textarea v-model="paymentForm.notes" rows="2" class="glass-input w-full"></textarea>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
-                        <button type="button" @click="showPaymentModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black rounded uppercase">To'lash</button>
+                        <button type="button" @click="showPaymentModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black rounded uppercase">{{ $t('pay_button') }}</button>
                     </div>
                 </form>
             </div>
@@ -1427,7 +1407,7 @@ function submitSupplierPayment() {
             <div class="bg-[#111] text-white p-6 rounded-2xl border border-neon-cyan/50 w-full max-w-2xl shadow-[0_0_50px_rgba(0,240,255,0.1)] flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                     <div>
-                        <h2 class="text-xl font-display font-bold uppercase tracking-widest text-neon-cyan">To'lov Grafigi</h2>
+                        <h2 class="text-xl font-display font-bold uppercase tracking-widest text-neon-cyan">{{ $t('payment_schedule_label') }}</h2>
                         <p class="text-[10px] font-mono text-text-muted mt-1">{{ selectedLiabilityForSchedule.creditor_name }} ({{ selectedLiabilityForSchedule.term_months }} oy, {{ selectedLiabilityForSchedule.interest_rate || 0 }}%)</p>
                     </div>
                     <button @click="showScheduleModal = false" class="text-white hover:text-neon-red">✖</button>
@@ -1438,11 +1418,11 @@ function submitSupplierPayment() {
                         <thead class="bg-white/5 sticky top-0 z-10 text-[10px] uppercase text-text-muted">
                             <tr>
                                 <th class="p-3">#</th>
-                                <th class="p-3">Sana</th>
-                                <th class="p-3">Asosiy Qarz</th>
+                                <th class="p-3">{{ $t('date_label') }}</th>
+                                <th class="p-3">{{ $t('main_debt') }}</th>
                                 <th class="p-3">Foiz</th>
-                                <th class="p-3">Jami To'lov</th>
-                                <th class="p-3">Qoldiq</th>
+                                <th class="p-3">{{ $t('total_payment_label') }}</th>
+                                <th class="p-3">{{ $t('balance_remaining') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -1459,7 +1439,7 @@ function submitSupplierPayment() {
                 </div>
                 
                 <div class="mt-4 pt-4 border-t border-white/10 text-right">
-                    <button @click="showScheduleModal = false" class="px-6 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase font-mono text-xs font-bold transition-all">Yopish</button>
+                    <button @click="showScheduleModal = false" class="px-6 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black rounded uppercase font-mono text-xs font-bold transition-all">{{ $t('close_button') }}</button>
                 </div>
             </div>
     </div>

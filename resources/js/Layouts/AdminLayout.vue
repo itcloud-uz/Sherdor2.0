@@ -51,7 +51,7 @@ onUnmounted(() => {
                         <span v-else class="text-neon-primary font-bold text-xl font-display">S</span>
                     </div>
                     <div>
-                        <h1 class="text-sm font-display font-bold tracking-widest text-white">SHER-DOR</h1>
+                        <h1 class="text-sm font-display font-bold tracking-widest text-white">{{ $t('sher_dor') }}</h1>
                         <p class="text-[9px] font-mono text-neon-primary uppercase tracking-[0.2em]">Command Center</p>
                     </div>
                 </div>

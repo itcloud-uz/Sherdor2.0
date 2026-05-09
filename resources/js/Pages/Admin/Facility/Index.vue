@@ -913,7 +913,7 @@ const progressSeries = computed(() => {
                             <input v-model="unitForm.unit_number" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Turi</label>
+                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('type_label') }}</label>
                             <select v-model="unitForm.type" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
                                 <option value="residential">Turar joy (Xonadon)</option>
                                 <option value="commercial">Tijorat (Do'kon)</option>

@@ -473,9 +473,9 @@ function printLedger() {
                 <thead>
                     <tr>
                         <th width="5%">№</th>
-                        <th width="15%">Sana</th>
+                        <th width="15%">{{ $t('date_label') }}</th>
                         <th width="55%">Izoh / Obyekt</th>
-                        <th width="25%" style="text-align: right;">Summa</th>
+                        <th width="25%" style="text-align: right;">{{ $t('amount') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -882,9 +882,7 @@ function generatePayroll() {
                         </div>
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
-                        <button v-if="isWorkerEditMode" type="button" @click="cancelWorkerEdit" class="px-4 py-2 text-text-muted hover:text-white text-[10px] font-mono uppercase transition-colors">
-                            Bekor qilish
-                        </button>
+                        <button v-if="isWorkerEditMode" type="button" @click="cancelWorkerEdit" class="px-4 py-2 text-text-muted hover:text-white text-[10px] font-mono uppercase transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
                             {{ isWorkerEditMode ? 'Saqlash' : 'Qo\'shish' }}
                         </button>
@@ -893,7 +891,7 @@ function generatePayroll() {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
                     <div v-for="w in filteredWorkers" :key="w.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
-                        <span v-if="w.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                        <span v-if="w.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                         <div class="flex items-start gap-3 mb-3">
                             <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
                                 <img v-if="w.photo_path" :src="'/storage/' + w.photo_path" class="w-full h-full object-cover">
@@ -1108,7 +1106,7 @@ function generatePayroll() {
                         </div>
                         <div>
                             <label class="block text-[10px] text-text-muted uppercase mb-1">Narxi (Soatiga / Hajmiga)</label>
-                            <input v-model="machineryForm.cost_per_hour" type="number" class="glass-input text-xs w-full" placeholder="Summa" required>
+                            <input v-model="machineryForm.cost_per_hour" type="number" class="glass-input text-xs w-full" :placeholder="$t('amount')" required>
                         </div>
                     </div>
                     <div class="flex justify-end pt-2">
@@ -1120,7 +1118,7 @@ function generatePayroll() {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                     <div v-for="m in filteredMachineries" :key="m.id" class="p-4 border border-white/10 rounded-xl bg-black/40 hover:border-neon-cyan/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all flex flex-col relative">
-                        <span v-if="m.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">📦 Import</span>
+                        <span v-if="m.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                         
                         <!-- VIEW MODE -->
                         <div v-if="editMachineryId !== m.id" class="flex flex-col h-full justify-between">
@@ -1172,7 +1170,7 @@ function generatePayroll() {
                                 <input v-model="editMachineryForm.cost_per_hour" type="number" class="glass-input text-[10px] flex-1" placeholder="Narxi" required>
                             </div>
                             <div class="flex gap-2 mt-2">
-                                <button type="submit" class="flex-1 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] uppercase font-mono rounded hover:bg-neon-green hover:text-black">Saqlash</button>
+                                <button type="submit" class="flex-1 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] uppercase font-mono rounded hover:bg-neon-green hover:text-black">{{ $t('save') }}</button>
                                 <button type="button" @click="editMachineryId = null" class="flex-1 py-1 bg-white/10 text-white border border-white/20 text-[10px] uppercase font-mono rounded hover:bg-white/20">Bekor</button>
                             </div>
                         </form>
@@ -1298,9 +1296,9 @@ function generatePayroll() {
                         <table class="w-full text-left text-sm font-mono">
                             <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px] sticky top-0 bg-abyss/90 backdrop-blur">
                                 <tr>
-                                    <th class="pb-3">Sana</th>
+                                    <th class="pb-3">{{ $t('date_label') }}</th>
                                     <th class="pb-3">Xodim / Texnika</th>
-                                    <th class="pb-3 text-right">Summa</th>
+                                    <th class="pb-3 text-right">{{ $t('amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1449,7 +1447,7 @@ function generatePayroll() {
                                 <input v-model="workerLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="Ixtiyoriy">
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
                                 <input v-model="workerLogForm.date" type="date" class="glass-input text-xs w-full" required>
                             </div>
                         </div>
@@ -1465,7 +1463,7 @@ function generatePayroll() {
                         <h4 class="text-[10px] font-mono text-neon-green uppercase tracking-widest border-b border-neon-green/30 pb-2">💸 Tranzaksiya Qo'shish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Turi</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('type_label') }}</label>
                                 <select v-model="ledgerForm.type" class="glass-input text-xs w-full bg-black/50" required>
                                     <option value="payment">To'lov (Chiqim)</option>
                                     <option value="advance_payment">Avans (Chiqim)</option>
@@ -1474,24 +1472,22 @@ function generatePayroll() {
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Summa</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('amount') }}</label>
                                 <input v-model="ledgerForm.amount" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
                             </div>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
                                 <input v-model="ledgerForm.date" type="date" class="glass-input text-xs w-full" required>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Izoh</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('notes') }}</label>
                                 <input v-model="ledgerForm.description" type="text" class="glass-input text-xs w-full">
                             </div>
                         </div>
                         <div class="flex justify-end pt-1">
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50">
-                                Saqlash
-                            </button>
+                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50">{{ $t('save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -1501,8 +1497,8 @@ function generatePayroll() {
                         <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex items-center gap-2">
                             <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
                             <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
-                            <button @click="submitEditTx('worker')" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
+                            <button @click="submitEditTx('worker')" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
                             <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
@@ -1531,7 +1527,7 @@ function generatePayroll() {
                             <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
                             <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
                             <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
-                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
                             <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
@@ -1591,7 +1587,7 @@ function generatePayroll() {
                     <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Turi</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('type_label') }}</label>
                             <select v-model="userLedgerForm.type" class="glass-input w-full text-xs bg-black/50" required>
                                 <option value="salary_accrual">Oylik/Ish xaqi hisoblash (Kirim)</option>
                                 <option value="advance_payment">Avans berish (Chiqim)</option>
@@ -1600,24 +1596,22 @@ function generatePayroll() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Summa</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('amount') }}</label>
                             <input v-model="userLedgerForm.amount" type="number" step="0.01" class="glass-input w-full text-xs" required>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Sana</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('date_label') }}</label>
                             <input v-model="userLedgerForm.date" type="date" class="glass-input w-full text-xs" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('notes') }}</label>
                             <input v-model="userLedgerForm.description" type="text" class="glass-input w-full text-xs">
                         </div>
                     </div>
                     <div class="flex justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 font-bold uppercase tracking-widest text-xs rounded hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50">
-                            Saqlash
-                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 font-bold uppercase tracking-widest text-xs rounded hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50">{{ $t('save') }}</button>
                     </div>
                 </form>
 
@@ -1627,8 +1621,8 @@ function generatePayroll() {
                         <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
                             <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
                             <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
-                            <button @click="submitEditTx('user')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">Saqlash</button>
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
+                            <button @click="submitEditTx('user')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">{{ $t('save') }}</button>
                             <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full group">
@@ -1857,7 +1851,7 @@ function generatePayroll() {
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
                                 <input v-model="machineryLogForm.date" type="date" class="glass-input text-xs w-full" required>
                             </div>
                             <div class="flex items-end">
@@ -1873,23 +1867,21 @@ function generatePayroll() {
                         <h4 class="text-[10px] font-mono text-neon-green uppercase tracking-widest border-b border-neon-green/30 pb-2">💸 To'lov Qilish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Summa</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('amount') }}</label>
                                 <input v-model="machineryLedgerForm.amount" type="number" class="glass-input text-xs w-full" placeholder="0.00" required>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Sana</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
                                 <input v-model="machineryLedgerForm.date" type="date" class="glass-input text-xs w-full" required>
                             </div>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Izoh</label>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('notes') }}</label>
                                 <input v-model="machineryLedgerForm.description" type="text" class="glass-input text-xs w-full" placeholder="Masalan: Naqd pul orqali...">
                             </div>
                             <div class="flex items-end">
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50 h-[38px]">
-                                    To'lash
-                                </button>
+                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50 h-[38px]">{{ $t('pay_button') }}</button>
                             </div>
                         </div>
                     </form>
@@ -1900,8 +1892,8 @@ function generatePayroll() {
                         <div v-if="editTxId === tx.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
                             <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
                             <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" placeholder="Izoh">
-                            <button @click="submitEditTx('machinery')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">Saqlash</button>
+                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
+                            <button @click="submitEditTx('machinery')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">{{ $t('save') }}</button>
                             <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
@@ -1926,7 +1918,7 @@ function generatePayroll() {
                             <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
                             <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
                             <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
-                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">Saqlash</button>
+                            <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
                             <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">

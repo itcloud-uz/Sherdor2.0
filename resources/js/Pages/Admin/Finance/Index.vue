@@ -116,10 +116,24 @@ const transferForm = ref({
     to_account: 'main',
     fee_amount: '',
     contract_id: '',
+    refund_request_id: '',
     notes: ''
 });
 
+function fillTransferFromRefund(refund) {
+    transferForm.value.amount = refund.amount;
+    transferForm.value.contract_id = refund.contract_id;
+    transferForm.value.refund_request_id = refund.id;
+    transferForm.value.from_account = refund.account_type || 'bank';
+    transferForm.value.to_account = 'main';
+    transferForm.value.notes = 'Kutayotgan qaytim: ' + refund.notes;
+}
+
 const isNewCategory = ref(false);
+
+const pendingRefunds = computed(() => {
+    return props.transactions.filter(t => t.type === 'refund_request' && t.status === 'pending');
+});
 
 function handleFileUpload(e) {
     if (e.target.files.length > 0) {
@@ -180,9 +194,42 @@ function submitTransfer() {
 }
 
 function approve(id) {
+    const txn = props.transactions.find(t => t.id === id);
+    if (txn && txn.contract_id && txn.type === 'income') {
+        selectedContractTxn.value = txn;
+        contractApproveForm.value.applied_amount = txn.amount;
+        contractApproveForm.value.refund_amount = 0;
+        showContractApproveModal.value = true;
+        return;
+    }
+
     isProcessing.value = true;
     router.post(route('admin.finance.transactions.approve', id), {}, {
         onSuccess: () => isProcessing.value = false,
+        onError: () => isProcessing.value = false
+    });
+}
+
+const showContractApproveModal = ref(false);
+const selectedContractTxn = ref(null);
+const contractApproveForm = ref({
+    applied_amount: 0,
+    refund_amount: 0
+});
+
+watch(() => contractApproveForm.value.applied_amount, (newVal) => {
+    if (selectedContractTxn.value) {
+        contractApproveForm.value.refund_amount = Math.max(0, selectedContractTxn.value.amount - newVal);
+    }
+});
+
+function submitContractApprove() {
+    isProcessing.value = true;
+    router.post(route('admin.finance.transactions.approve', selectedContractTxn.value.id), contractApproveForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showContractApproveModal.value = false;
+        },
         onError: () => isProcessing.value = false
     });
 }
@@ -1012,11 +1059,35 @@ function submitSupplierPayment() {
         </div>
 
             <!-- TAB 6: Ichki O'tkazma / Naqdlashtirish -->
-            <div v-if="activeTab === 6" class="max-w-4xl mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
-                <h2 class="text-2xl font-display font-bold text-white mb-2">Ichki O'tkazma / Naqdlashtirish</h2>
-                <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
+            <div v-if="activeTab === 6" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                
+                <!-- KUTAYOTGAN SO'ROVLAR -->
+                <div v-if="pendingRefunds && pendingRefunds.length > 0" class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 shadow-[0_0_20px_rgba(252,238,9,0.1)]">
+                    <h3 class="text-lg font-display font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span>
+                        Kutayotgan Naqdlashtirish So'rovlari
+                    </h3>
+                    <div class="space-y-3">
+                        <div v-for="refund in pendingRefunds" :key="refund.id" class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5 hover:border-neon-yellow/50 transition-all">
+                            <div>
+                                <p class="text-sm font-bold text-white font-mono">Shartnoma #{{ refund.contract_id }}</p>
+                                <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">{{ refund.notes }}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="text-neon-yellow font-bold font-mono">{{ $currency(refund.amount) }}</span>
+                                <button @click="fillTransferFromRefund(refund)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow rounded font-mono text-xs uppercase tracking-widest hover:bg-neon-yellow hover:text-black transition-all">
+                                    Qabul qilish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <form @submit.prevent="submitTransfer" class="space-y-6">
+                <div class="glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
+                    <h2 class="text-2xl font-display font-bold text-white mb-2">Ichki O'tkazma / Naqdlashtirish</h2>
+                    <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
+
+                    <form @submit.prevent="submitTransfer" class="space-y-6">
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-2">Mijoz / Shartnomaga bog'lash (Ixtiyoriy)</label>
                         <select v-model="transferForm.contract_id" class="glass-input w-full bg-black/50 text-white font-bold h-12">
@@ -1178,6 +1249,34 @@ function submitSupplierPayment() {
                     <button @click="showReceiptModal = false" class="px-4 py-2 text-xs border border-gray-400 rounded hover:bg-gray-100 font-mono uppercase">{{ $t('cancel') }}</button>
                     <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-black text-white rounded hover:bg-gray-800 font-mono uppercase text-center flex items-center">🖨️ CHOP ETISH</a>
                 </div>
+            </div>
+        </div>
+
+        <!-- CONTRACT APPROVE MODAL -->
+        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Shartnoma To'lovini Taxtimlash</h2>
+                <div class="mb-6 bg-black/50 p-4 rounded-xl border border-white/5 text-sm font-mono text-text-muted">
+                    <p>Kiritilgan summa: <strong class="text-neon-cyan text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
+                </div>
+                <form @submit.prevent="submitContractApprove" class="space-y-6 font-mono text-xs">
+                    <div>
+                        <label class="block text-text-muted mb-2 uppercase">Shartnoma Qarziga Yo'naltirish</label>
+                        <input type="number" step="0.01" v-model="contractApproveForm.applied_amount" class="glass-input w-full text-xl font-bold text-white h-12" required max="1000000000000">
+                        <p class="text-[10px] text-text-muted mt-2">Bu summa mijozning to'lov grafigidagi qarzini yopishga ketadi.</p>
+                    </div>
+                    <div>
+                        <label class="block text-text-muted mb-2 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
+                        <input type="number" step="0.01" v-model="contractApproveForm.refund_amount" class="glass-input w-full text-xl font-bold text-neon-yellow h-12 bg-black/50" readonly>
+                        <p class="text-[10px] text-text-muted mt-2">Bu summa "O'tkazmalar" bo'limiga kutayotgan so'rov bo'lib tushadi.</p>
+                    </div>
+                    <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
+                        <button type="button" @click="showContractApproveModal = false" class="px-6 py-2 text-text-muted hover:text-white font-mono uppercase">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-cyan text-black rounded font-bold uppercase tracking-widest hover:shadow-[0_0_15px_#00F0FF] transition-all disabled:opacity-50">
+                            {{ isProcessing ? 'Yuklanmoqda...' : 'Tasdiqlash' }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

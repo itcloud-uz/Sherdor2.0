@@ -114,6 +114,7 @@ class FinanceController extends Controller
             'to_account' => 'required|in:main,bank,credit',
             'fee_amount' => 'nullable|numeric|min:0',
             'contract_id' => 'nullable|exists:contracts,id',
+            'refund_request_id' => 'nullable|exists:transactions,id',
             'notes' => 'nullable|string',
         ]);
 
@@ -131,6 +132,15 @@ class FinanceController extends Controller
                 ['name' => 'Ichki O\'tkazma (Naqdlashtirish)'],
                 ['type' => 'transfer', 'description' => 'Hisoblar aro ichki o\'tkazmalar']
             );
+
+            if (!empty($validated['refund_request_id'])) {
+                $refundTxn = \App\Models\Transaction::find($validated['refund_request_id']);
+                if ($refundTxn && $refundTxn->status === 'pending') {
+                    $refundTxn->status = 'approved';
+                    $refundTxn->approved_by = auth()->id();
+                    $refundTxn->save();
+                }
+            }
 
             if ($contractId) {
                 // MIJOZ BILAN BOG'LANGAN O'TKAZMA (QAYTIM)
@@ -357,28 +367,52 @@ class FinanceController extends Controller
         }
 
         if ($transaction->contract_id && $transaction->type === 'income') {
-            $remainingAmount = $transaction->amount;
-            
-            $schedules = \App\Models\PaymentSchedule::where('contract_id', $transaction->contract_id)
-                ->where('status', 'pending')
-                ->orderBy('due_date', 'asc')
-                ->get();
+            $appliedAmount = $request->input('applied_amount', $transaction->amount);
+            $refundAmount = $transaction->amount - $appliedAmount;
+
+            if ($appliedAmount > 0) {
+                $remainingAmount = $appliedAmount;
                 
-            foreach ($schedules as $schedule) {
-                if ($remainingAmount <= 0) break;
-                
-                $needed = $schedule->expected_amount - $schedule->paid_amount;
-                
-                if ($remainingAmount >= $needed) {
-                    $schedule->paid_amount += $needed;
-                    $schedule->status = 'paid';
-                    $remainingAmount -= $needed;
-                } else {
-                    $schedule->paid_amount += $remainingAmount;
-                    $remainingAmount = 0;
+                $schedules = \App\Models\PaymentSchedule::where('contract_id', $transaction->contract_id)
+                    ->where('status', 'pending')
+                    ->orderBy('due_date', 'asc')
+                    ->get();
+                    
+                foreach ($schedules as $schedule) {
+                    if ($remainingAmount <= 0) break;
+                    
+                    $needed = $schedule->expected_amount - $schedule->paid_amount;
+                    
+                    if ($remainingAmount >= $needed) {
+                        $schedule->paid_amount += $needed;
+                        $schedule->status = 'paid';
+                        $remainingAmount -= $needed;
+                    } else {
+                        $schedule->paid_amount += $remainingAmount;
+                        $remainingAmount = 0;
+                    }
+                    
+                    $schedule->save();
                 }
-                
-                $schedule->save();
+            }
+
+            if ($refundAmount > 0) {
+                $refundCategory = \App\Models\TransactionCategory::firstOrCreate(
+                    ['name' => 'Kutayotgan Naqdlashtirish'],
+                    ['type' => 'refund_request', 'description' => 'Mijoz ortiqcha to\'lovni naqd qilib olishi uchun navbat']
+                );
+
+                \App\Models\Transaction::create([
+                    'type' => 'refund_request',
+                    'amount' => $refundAmount,
+                    'account_type' => $transaction->account_type,
+                    'contract_id' => $transaction->contract_id,
+                    'category_id' => $refundCategory->id,
+                    'status' => 'pending',
+                    'transaction_date' => now(),
+                    'notes' => 'Avtomatik naqdlashtirish navbati (Asosiy TXN: #' . $transaction->id . ')',
+                    'created_by' => auth()->id(),
+                ]);
             }
         }
 

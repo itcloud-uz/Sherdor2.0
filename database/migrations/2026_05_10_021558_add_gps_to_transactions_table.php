@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::table('transactions', function (Blueprint $table) {
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();
-            $table->string('source')->default('admin_panel');
         });
     }
 
@@ -24,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn(['latitude', 'longitude', 'source']);
+            $table->dropColumn(['latitude', 'longitude']);
         });
     }
 };

@@ -38,7 +38,7 @@ const aiLogs = ref([
 <template>
     <Head title="AI Agents & SMS" />
     <AdminLayout>
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 h-[calc(100vh-10rem)]">
+        <div class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 h-[calc(100vh-10rem)]">
             
             <!-- LEFT: Advanced SMS Hub -->
             <div class="xl:col-span-2 flex flex-col gap-6">
@@ -145,7 +145,7 @@ const aiLogs = ref([
 
                             <div class="flex-1 overflow-y-auto">
                                 <h3 class="text-xs font-mono text-text-muted mb-4 uppercase tracking-widest">{{ $t('saved_templates') }}</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div v-for="tpl in templates" :key="tpl.id" class="glass-card p-4 border border-white/10 hover:border-neon-purple/30 group">
                                         <div class="flex justify-between items-start mb-2">
                                             <h4 class="text-sm font-bold text-white">{{ tpl.name }}</h4>
@@ -213,7 +213,7 @@ const aiLogs = ref([
 
                     <!-- TAB 4: Audience & Broadcast -->
                     <div v-if="activeTab === 'audiences'" class="space-y-6 animate-fade-in">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
                             <!-- Mass Broadcast -->
                             <div class="glass-card p-6 border border-neon-green/30 relative overflow-hidden group">
                                 <div class="absolute -right-10 -top-10 w-32 h-32 bg-neon-green/10 blur-[50px] rounded-full group-hover:bg-neon-green/20 transition-colors"></div>

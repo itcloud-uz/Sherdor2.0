@@ -64,7 +64,7 @@ const page = usePage();
         </header>
 
         <!-- Main Content (Full Width) -->
-        <main class="flex-1 overflow-y-auto overflow-x-hidden relative z-0 p-4 sm:p-6 lg:p-8">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden relative z-0 p-4 sm:p-6 lg:p-4 md:p-8">
             <slot />
         </main>
 

@@ -34,7 +34,7 @@ function formatDate(dateString) {
 <template>
     <Head title="Cheklar va Hujjatlar" />
     <AdminLayout>
-        <div class="glass-panel p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
+        <div class="glass-panel p-4 md:p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
             <div class="mb-6 border-b border-white/10 pb-4 flex items-center gap-4">
                 <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-neon-primary/20 border border-white/10 hover:border-neon-primary flex items-center justify-center text-white hover:text-neon-primary transition-all group">
                     <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -59,7 +59,7 @@ function formatDate(dateString) {
             </div>
 
             <!-- Gallery Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div v-for="receipt in groupedReceipts[activeTab]" :key="receipt.id" class="glass-card border border-white/10 hover:border-neon-cyan/50 transition-all rounded-xl overflow-hidden group cursor-pointer" @click="openPreview(receipt.attachment_path)">
                     
                     <!-- Image Area -->

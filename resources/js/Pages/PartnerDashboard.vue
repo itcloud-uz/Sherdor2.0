@@ -198,7 +198,7 @@ function vote(voteId, action) {
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <!-- 1. Total Investment -->
                 <div class="glass-card p-6 border-l-4 border-l-neon-magenta relative overflow-hidden group flex flex-col justify-center">
                     <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>

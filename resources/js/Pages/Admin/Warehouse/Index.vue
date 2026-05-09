@@ -23,7 +23,7 @@ const formatMoney = (amount) => {
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/30 flex flex-col items-center justify-center text-center">
                     <span class="text-4xl mb-2 text-neon-cyan">📋</span>
                     <span class="text-2xl font-bold text-white">{{ stats.total_items }}</span>
@@ -53,7 +53,7 @@ const formatMoney = (amount) => {
             </div>
 
             <!-- Navigation Links -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
                 <Link :href="route('admin.warehouse.inventory')" class="glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-cyan group text-center transition-all">
                     <div class="w-16 h-16 mx-auto bg-neon-cyan/10 rounded-full flex items-center justify-center text-3xl group-hover:scale-110 transition-transform mb-4">
                         📊
@@ -94,7 +94,7 @@ const formatMoney = (amount) => {
                 </h3>
                 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm font-mono">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
                         <thead>
                             <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest">
                                 <th class="py-3 font-medium">{{ $t('date_label') }}</th>

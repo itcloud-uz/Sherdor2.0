@@ -53,7 +53,7 @@ const page = usePage();
         </header>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col z-10 overflow-y-auto relative p-8 max-w-7xl mx-auto w-full">
+        <main class="flex-1 flex flex-col z-10 overflow-y-auto relative p-4 md:p-8 max-w-7xl mx-auto w-full">
             <slot />
         </main>
     </div>

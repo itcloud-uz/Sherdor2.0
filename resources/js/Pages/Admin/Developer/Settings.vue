@@ -120,7 +120,7 @@ function lockSettings() {
             
             <!-- LOCKED STATE -->
             <div v-if="!isUnlocked" class="flex items-center justify-center min-h-[60vh]">
-                <div class="glass-panel p-8 rounded-3xl w-full max-w-md border border-neon-red/30 shadow-[0_0_40px_rgba(255,0,0,0.1)] text-center relative overflow-hidden group">
+                <div class="glass-panel p-4 md:p-8 rounded-3xl w-full max-w-md border border-neon-red/30 shadow-[0_0_40px_rgba(255,0,0,0.1)] text-center relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                     
                     <div class="relative z-10">
@@ -159,9 +159,9 @@ function lockSettings() {
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 gap-8">
                     <!-- API & HARDWARE BLOCK -->
-                    <div class="glass-panel p-8 rounded-3xl border border-neon-green/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-xl hover:border-neon-green/40 transition-colors">
+                    <div class="glass-panel p-4 md:p-8 rounded-3xl border border-neon-green/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-xl hover:border-neon-green/40 transition-colors">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-green via-neon-cyan to-neon-blue"></div>
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -220,7 +220,7 @@ function lockSettings() {
                     </div>
 
                     <!-- TELEGRAM BOT USERS BLOCK -->
-                    <div class="glass-panel p-8 rounded-3xl border border-neon-blue/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-xl hover:border-neon-blue/40 transition-colors">
+                    <div class="glass-panel p-4 md:p-8 rounded-3xl border border-neon-blue/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-xl hover:border-neon-blue/40 transition-colors">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-cyan to-white"></div>
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -264,7 +264,7 @@ function lockSettings() {
                 </div>
 
                 <!-- SIP SETTINGS BLOCK -->
-                <div class="glass-panel p-8 rounded-3xl border border-neon-purple/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-xl hover:border-neon-purple/40 transition-colors">
+                <div class="glass-panel p-4 md:p-8 rounded-3xl border border-neon-purple/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-xl hover:border-neon-purple/40 transition-colors">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple via-neon-magenta to-white"></div>
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -279,8 +279,8 @@ function lockSettings() {
 
                     <p class="text-sm font-mono text-text-muted mb-8 leading-relaxed max-w-3xl">Tizimni korxona PBX serveriga (Asterisk) ulash orqali CRM orqali to'g'ridan-to'g'ri qo'ng'iroqlarni amalga oshirish mumkin. Qatorlardagi PBX sozlamalarini Uztelecom, EastTelecom yoki shaxsiy VoIP provayderingizga moslang.</p>
 
-                    <form @submit.prevent="updateSipSettings" class="bg-black/30 p-6 sm:p-8 rounded-2xl border border-white/5 shadow-inner">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <form @submit.prevent="updateSipSettings" class="bg-black/30 p-6 sm:p-4 md:p-8 rounded-2xl border border-white/5 shadow-inner">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div>
                                 <label class="block text-[10px] font-mono text-white/50 mb-2 uppercase tracking-widest flex items-center gap-2">
                                     <span class="text-neon-purple">🌐</span> SIP Host / IP
@@ -327,7 +327,7 @@ function lockSettings() {
                 </div>
 
                 <!-- PROMO SITE CMS BLOCK -->
-                <div class="glass-panel p-8 rounded-3xl border border-neon-magenta/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-xl hover:border-neon-magenta/40 transition-colors">
+                <div class="glass-panel p-4 md:p-8 rounded-3xl border border-neon-magenta/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-xl hover:border-neon-magenta/40 transition-colors">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-magenta via-neon-red to-white"></div>
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -342,8 +342,8 @@ function lockSettings() {
 
                     <p class="text-sm font-mono text-text-muted mb-8 leading-relaxed max-w-3xl">Ochiq reklama sahifasini boshqarish uchun shu yerdan foydalaning. Matnlar va Asosiy Rasmni yuklaganingizda, public sahifa darhol o'zgaradi.</p>
 
-                    <form @submit.prevent="updatePromoSettings" class="bg-black/30 p-6 sm:p-8 rounded-2xl border border-white/5 shadow-inner">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <form @submit.prevent="updatePromoSettings" class="bg-black/30 p-6 sm:p-4 md:p-8 rounded-2xl border border-white/5 shadow-inner">
+                        <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-[10px] font-mono text-white/50 mb-2 uppercase tracking-widest flex items-center gap-2">

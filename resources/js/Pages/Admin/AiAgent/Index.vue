@@ -32,7 +32,7 @@
             </div>
 
             <!-- Block Selector -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <!-- Avto-xabar bloki -->
                 <div @click="openRuleModal('auto')" class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A] hover:bg-neon-cyan/5 cursor-pointer transition-all group relative overflow-hidden">
                     <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-neon-cyan/10 blur-[50px] group-hover:bg-neon-cyan/20 transition-all"></div>
@@ -60,7 +60,7 @@
             </div>
 
             <!-- Dashboard Content -->
-            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 min-h-0">
                 <!-- Shablonlar Listi -->
                 <div class="glass-panel border border-white/10 flex flex-col bg-[#05050A]">
                     <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
@@ -211,7 +211,7 @@
                         <input v-model="ruleForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: Har Dushanba Eslatma">
                     </div>
                     
-                    <div v-if="ruleType === 'debtor'" class="grid grid-cols-2 gap-4">
+                    <div v-if="ruleType === 'debtor'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Hafta kunlari (masalan: 1,3,5)</label>
                             <input v-model="ruleForm.schedule_days" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" placeholder="1 = Dushanba, 7 = Yakshanba">
@@ -247,7 +247,7 @@
                     <form @submit.prevent="submitPromoRule" class="space-y-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-2">Auditoriyani Tanlang</label>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 <label class="flex items-center gap-2 p-3 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all" :class="{'bg-neon-yellow/10 border-neon-yellow/50': promoRuleForm.audience_type === 'system_clients'}">
                                     <input type="radio" v-model="promoRuleForm.audience_type" value="system_clients" class="text-neon-yellow focus:ring-neon-yellow bg-black border-white/20">
                                     <span class="text-xs text-white">Tizimdagi Mijozlar</span>
@@ -278,7 +278,7 @@
                             <label class="block text-xs font-mono text-text-muted mb-1">Rasilka Nomi</label>
                             <input v-model="promoRuleForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required placeholder="Masalan: Yangi Yil Aksiyasi">
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-mono text-text-muted mb-1">Hafta kunlari (masalan: 1,3,5)</label>
                                 <input v-model="promoRuleForm.schedule_days" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all">

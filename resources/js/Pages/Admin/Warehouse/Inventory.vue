@@ -29,7 +29,7 @@ const formatMoney = (amount) => {
 
             <div class="glass-panel p-6 rounded-2xl border border-white/5">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm font-mono border-collapse">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
                         <thead>
                             <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest bg-black/40">
                                 <th class="p-4 font-medium rounded-tl-xl">Kategoriya</th>

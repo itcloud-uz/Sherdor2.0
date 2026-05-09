@@ -103,7 +103,7 @@ function reject(id) {
             </div>
 
             <!-- PENDING TAB -->
-            <div v-if="activeTab === 'pending'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-if="activeTab === 'pending'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="req in pending" :key="req.id" class="glass-card p-5 rounded-2xl border border-neon-cyan/30 flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-4">
@@ -117,7 +117,7 @@ function reject(id) {
                             <pre v-if="req.type !== 'edit_contract'">{{ JSON.stringify(req.payload, null, 2) }}</pre>
                             <div v-else class="space-y-2">
                                 <p class="text-neon-cyan font-bold mb-1">Taklif etilayotgan o'zgarishlar:</p>
-                                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                                     <div><span class="text-white">Mijoz Ism:</span> {{ req.payload.client_first_name }}</div>
                                     <div><span class="text-white">Familiya:</span> {{ req.payload.client_last_name }}</div>
                                     <div><span class="text-white">Yangi Narx:</span> {{ req.payload.total_amount }}</div>
@@ -144,7 +144,7 @@ function reject(id) {
             <!-- HISTORY TAB -->
             <div v-if="activeTab === 'history'" class="glass-panel p-6 rounded-2xl border border-white/5">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-white/10 text-xs font-mono text-text-muted uppercase">
                                 <th class="p-3">{{ $t('date_label') }}</th>

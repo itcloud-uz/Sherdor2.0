@@ -576,7 +576,7 @@ function submitWarehouseRequest() {
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-24">
             <h2 class="text-xl font-display font-bold text-white tracking-widest uppercase">Tezkor Holat</h2>
             
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="glass-card p-4 rounded-xl border border-white/5">
                     <p class="text-[10px] font-mono text-text-muted uppercase">Sotilgan Uylar</p>
                     <p class="text-2xl font-bold text-neon-cyan mt-1">{{ contracts.length }} <span class="text-xs text-white">ta</span></p>
@@ -746,7 +746,7 @@ function submitWarehouseRequest() {
                                     </div>
                                 </div>
 
-                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-8 rounded-xl bg-black/80 backdrop-blur-md">
+                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-4 md:p-8 rounded-xl bg-black/80 backdrop-blur-md">
                                     [ QAVAT UCHUN XONADONLAR YO'Q ]
                                 </div>
                             </div>
@@ -760,7 +760,7 @@ function submitWarehouseRequest() {
                                         {{ hoveredUnit.unit_number }} 
                                         <span class="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-white">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                     </h4>
-                                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
                                         <span class="text-text-muted">Maydoni:</span>
                                         <span class="text-white text-right">{{ hoveredUnit.area_sqm }} m²</span>
                                         
@@ -841,7 +841,7 @@ function submitWarehouseRequest() {
             <h2 class="text-xl font-display font-bold text-white tracking-widest uppercase">HR va Ish Haqi</h2>
 
             <!-- HR Quick Actions (Blocks) -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button @click="openHrModal('yollanma')" class="glass-card p-4 rounded-xl border border-neon-cyan/20 hover:border-neon-cyan hover:shadow-[0_0_15px_#00F0FF] transition-all flex flex-col items-center justify-center gap-3 group">
                     <div class="w-12 h-12 rounded-full bg-neon-cyan/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">👷</div>
                     <span class="text-xs font-mono font-bold text-white uppercase text-center">Yollanma Ishchilar</span>
@@ -861,7 +861,7 @@ function submitWarehouseRequest() {
             </div>
 
             <!-- Tabel va Jurnallar -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Workers List -->
                 <div class="glass-panel p-6 rounded-2xl border border-white/5">
                     <div class="flex justify-between items-center mb-6">
@@ -964,7 +964,7 @@ function submitWarehouseRequest() {
             </div>
 
             <div class="glass-panel rounded-2xl border border-white/5 overflow-hidden">
-                <table class="w-full text-left border-collapse">
+                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-white/10 bg-white/5">
                             <th class="p-4 text-xs font-mono text-text-muted uppercase">Nomi</th>
@@ -979,7 +979,7 @@ function submitWarehouseRequest() {
                             <td class="p-4 text-xs font-mono text-text-muted">{{ item.category }}</td>
                         </tr>
                         <tr v-if="inventory.length === 0">
-                            <td colspan="3" class="p-8 text-center text-text-muted font-mono text-sm">Ombor bo'sh</td>
+                            <td colspan="3" class="p-4 md:p-8 text-center text-text-muted font-mono text-sm">Ombor bo'sh</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1007,7 +1007,7 @@ function submitWarehouseRequest() {
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kasbi (Vazifasi)</label>
                         <input v-model="hrForm.role" type="text" class="glass-input w-full" placeholder="Suvaqchi / G'isht teruvchi">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ish haqi turi</label>
                             <select v-model="hrForm.type" class="glass-input w-full bg-black/50 text-white">
@@ -1034,7 +1034,7 @@ function submitWarehouseRequest() {
                 </div>
 
                 <div v-if="activeHrModalType === 'texnika'" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Texnika Nomi / Yo'nalishi</label>
                             <input v-model="hrForm.name" type="text" class="glass-input w-full" placeholder="Masalan: Ekskavator">
@@ -1044,7 +1044,7 @@ function submitWarehouseRequest() {
                             <input v-model="hrForm.model" type="text" class="glass-input w-full" placeholder="Kamaz, Samsung...">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Egasi (Arendator)</label>
                             <input v-model="hrForm.owner_name" type="text" class="glass-input w-full" placeholder="Ism yoki Kompaniya">
@@ -1054,7 +1054,7 @@ function submitWarehouseRequest() {
                             <input v-model="hrForm.license_plate" type="text" class="glass-input w-full" placeholder="01 A 123 AA">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">To'lov Turi</label>
                             <select v-model="hrForm.payment_type" class="glass-input w-full bg-black/50 text-white">
@@ -1089,7 +1089,7 @@ function submitWarehouseRequest() {
                 </div>
 
                 <div v-if="activeHrModalType === 'davomat'" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kim uchun (Turi)</label>
                             <select v-model="hrForm.type" class="glass-input w-full bg-black/50 text-white">
@@ -1110,7 +1110,7 @@ function submitWarehouseRequest() {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Bino / Obyekt</label>
                             <select v-model="hrForm.building_id" class="glass-input w-full bg-black/50 text-white">
@@ -1124,7 +1124,7 @@ function submitWarehouseRequest() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ishlagan Soati (Agar soatbay bo'lsa)</label>
                             <input v-model="hrForm.hours_worked" type="number" class="glass-input w-full" placeholder="Masalan: 8">
@@ -1177,7 +1177,7 @@ function submitWarehouseRequest() {
                             <input v-model="warehouseForm.name" required type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Masalan: Sement M400">
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kategoriya</label>
                                 <input v-model="warehouseForm.category" required type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Qurilish">
@@ -1322,7 +1322,7 @@ function submitWarehouseRequest() {
                 </div>
 
                 <!-- Dynamic Unit Details -->
-                <div v-if="selectedUnit" class="grid grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
+                <div v-if="selectedUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
                     <div>
                         <p class="text-[10px] font-mono text-text-muted uppercase">Obyekt (Blok)</p>
                         <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.building?.name || 'Noma\'lum' }}</p>
@@ -1341,7 +1341,7 @@ function submitWarehouseRequest() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4" v-if="selectedUnit">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="selectedUnit">
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kvadrat metri narxi</label>
                         <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full" required>
@@ -1367,7 +1367,7 @@ function submitWarehouseRequest() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div v-if="contractForm.payment_type === 'installment'">
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Boshlang'ich to'lov</label>
                         <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
@@ -1487,7 +1487,7 @@ function submitWarehouseRequest() {
                     <p class="text-xs text-text-muted mt-1">{{ selectedContract.client?.phone }} | {{ selectedContract.client?.passport_number }}</p>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="bg-black/50 p-4 rounded-xl border border-white/10">
                         <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Obyekt</p>
                         <p class="text-sm font-bold text-neon-cyan">Unit #{{ selectedContract.unit?.unit_number }}</p>
@@ -1523,7 +1523,7 @@ function submitWarehouseRequest() {
                 <!-- Client Info -->
                 <div class="p-4 bg-black/40 rounded-xl border border-white/10 space-y-3">
                     <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Mijoz Ma'lumotlari</h3>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ism</label>
                             <input v-model="editContractForm.client_first_name" type="text" class="glass-input w-full p-2 text-sm" required>
@@ -1557,7 +1557,7 @@ function submitWarehouseRequest() {
                             <option value="installment">Bo'lib To'lash</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-3" v-if="editContractForm.payment_type === 'installment'">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" v-if="editContractForm.payment_type === 'installment'">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Boshlang'ich To'lov</label>
                             <input v-model="editContractForm.down_payment" type="number" class="glass-input w-full p-2 text-sm" required>

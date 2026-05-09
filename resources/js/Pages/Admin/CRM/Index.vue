@@ -663,7 +663,7 @@ function openQuickSmsModal(lead) {
                 >
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="client in filteredClients" :key="client.id" class="glass-card p-6 border border-white/10 hover:border-neon-cyan/50 transition-all hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] flex flex-col justify-between h-full group relative overflow-hidden">
                     <!-- Glass highlight -->
                     <div class="absolute -inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 -translate-y-10 group-hover:translate-y-[200px] transition-transform duration-1000 opacity-50"></div>
@@ -697,7 +697,7 @@ function openQuickSmsModal(lead) {
                         </div>
 
                         <!-- ID Details -->
-                        <div class="grid grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
                             <div>
                                 <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('passport') }}</p>
                                 <p class="text-xs font-mono text-white/80 mt-0.5">{{ client.passport_number || client.passport_series || 'N/A' }}</p>
@@ -745,7 +745,7 @@ function openQuickSmsModal(lead) {
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div 
                     v-for="contract in filteredContracts" 
                     :key="contract.id"
@@ -785,7 +785,7 @@ function openQuickSmsModal(lead) {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
                             <div>
                                 <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('down_payment') }}</p>
                                 <p class="text-xs font-mono text-white/80 mt-0.5">{{ $currency(contract.down_payment) }}</p>
@@ -824,7 +824,7 @@ function openQuickSmsModal(lead) {
                 {{ $t('overdue_payments_radar') }}
             </h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div 
                     v-for="schedule in overdueSchedules" 
                     :key="schedule.id"
@@ -922,7 +922,7 @@ function openQuickSmsModal(lead) {
                     </div>
 
                     <!-- SUMMARY INFO -->
-                    <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                         <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
                             <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('total_amount') }}</p>
                             <p class="text-lg font-bold text-neon-green font-mono">{{ $currency(selectedContract.total_amount) }}</p>
@@ -970,7 +970,7 @@ function openQuickSmsModal(lead) {
 
                     <!-- LEDGER TABLE -->
                     <div class="overflow-x-auto rounded-xl border border-white/10">
-                        <table class="w-full text-left border-collapse">
+                        <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-black/60 border-b border-white/10">
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
@@ -1036,7 +1036,7 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
                         <input v-model="clientForm.created_at" type="date" class="glass-input w-full text-neon-cyan" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('first_name') }}</label>
                             <input v-model="clientForm.first_name" type="text" class="glass-input w-full" required>
@@ -1046,7 +1046,7 @@ function openQuickSmsModal(lead) {
                             <input v-model="clientForm.last_name" type="text" class="glass-input w-full" required>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport_series') }}</label>
                             <input v-model="clientForm.passport_series" type="text" class="glass-input w-full">
@@ -1060,7 +1060,7 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('address') }}</label>
                         <input v-model="clientForm.address" type="text" class="glass-input w-full">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
                             <input v-model="clientForm.passport_issued_date" type="date" class="glass-input w-full">
@@ -1090,7 +1090,7 @@ function openQuickSmsModal(lead) {
                     {{ isEditingContract ? t('edit_contract') : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
                             <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
@@ -1131,7 +1131,7 @@ function openQuickSmsModal(lead) {
                     </div>
 
                     <!-- Dynamic Unit Details -->
-                    <div v-if="selectedUnit" class="grid grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
+                    <div v-if="selectedUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
                         <div>
                             <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('object_block') }}</p>
                             <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.building?.name }}</p>
@@ -1150,7 +1150,7 @@ function openQuickSmsModal(lead) {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4" v-if="selectedUnit">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="selectedUnit">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }}</label>
                             <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full" required>
@@ -1176,7 +1176,7 @@ function openQuickSmsModal(lead) {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div v-if="contractForm.payment_type === 'installment'">
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('down_payment') }}</label>
                             <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
@@ -1189,7 +1189,7 @@ function openQuickSmsModal(lead) {
 
                     <div class="pt-4 border-t border-white/10 mt-4">
                         <h3 class="text-sm font-bold text-neon-cyan uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Haqiqatda qilingan to'lov</label>
                                 <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="glass-input w-full text-neon-yellow" placeholder="Masalan: 600000000">

@@ -114,7 +114,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
         </div>
 
         <!-- WIDGET 1: Top Metrics (Extended) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <div class="glass-card p-5 border-b-4 border-neon-cyan relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_revenue') }}</p>
@@ -154,7 +154,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             <!-- WIDGET 2: Financial Breakdown (Moved UP for visibility) -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px] flex flex-col">
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -196,7 +196,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <!-- Facility Radar moved to bottom row -->
             <div class="flex flex-col gap-4">
                 <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col items-center flex-1 h-96">
@@ -263,7 +263,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </h3>
             
             <!-- Lead Metrics Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 <div class="glass-card p-5 border-l-4 border-neon-cyan relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_leads') }}</p>
@@ -288,7 +288,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
 
             <!-- Marketing Charts Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8">
                 <!-- Traffic Source Donut -->
                 <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col items-center h-[400px]">
                     <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 w-full flex items-center gap-2">

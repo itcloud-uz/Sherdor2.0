@@ -477,7 +477,7 @@ function submitSupplierPayment() {
             </h1>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             
             <!-- Sidebar Navigation -->
             <div class="space-y-4">
@@ -530,7 +530,7 @@ function submitSupplierPayment() {
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="glass-card p-6 border-t-4 border-t-neon-green relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p class="text-sm font-mono text-text-muted">{{ $t('total_balance') }}</p>
@@ -557,7 +557,7 @@ function submitSupplierPayment() {
             </div>
 
             <!-- Transaction Lists -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Incomes -->
                 <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/20 h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-4">
@@ -675,7 +675,7 @@ function submitSupplierPayment() {
                     </h2>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-black/40 border border-white/10 hover:border-neon-yellow/50 transition-all flex flex-col gap-4 relative overflow-hidden group">
                         <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         
@@ -744,7 +744,7 @@ function submitSupplierPayment() {
         <!-- TAB 3: Ledger History -->
         <div v-if="activeTab === 2" class="glass-panel p-6 rounded-2xl border border-white/5 animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('ledger_history') }}</h2>
-            <table class="w-full text-left text-sm font-mono">
+            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
                 <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px]">
                     <tr>
                         <th class="pb-3">{{ $t('date') }}</th>
@@ -787,11 +787,11 @@ function submitSupplierPayment() {
         </div>
 
         <!-- TAB 4: Create Transaction -->
-        <div v-if="activeTab === 3" class="max-w-4xl mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 3" class="max-w-4xl mx-auto glass-panel p-4 md:p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_transaction') }}</h2>
             <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_transaction_desc') }}</p>
 
-            <form @submit.prevent="submitTransaction" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form @submit.prevent="submitTransaction" class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
                 <!-- Chap Ustun (Asosiy) -->
                 <div class="space-y-6">
                     <div class="flex gap-4">
@@ -878,7 +878,7 @@ function submitSupplierPayment() {
 
                 <!-- O'ng Ustun (Qo'shimcha) -->
                 <div class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('payment_method') }}</label>
                             <select v-model="form.payment_method" class="glass-input w-full text-white bg-black/50">
@@ -963,7 +963,7 @@ function submitSupplierPayment() {
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Active Liabilities List -->
                 <div v-for="liability in financialLiabilities" :key="liability.id" class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group">
                     <div class="absolute right-0 top-0 p-4 flex gap-2">
@@ -985,7 +985,7 @@ function submitSupplierPayment() {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <div>
                             <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Umumiy Qarz</p>
                             <p class="text-xl text-white font-bold">{{ $currency(liability.total_amount) }}</p>
@@ -1052,7 +1052,7 @@ function submitSupplierPayment() {
                 <h2 class="text-2xl font-display font-bold text-white mb-2">Ta'minotchilar (Qarzlar Ledger)</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -1102,7 +1102,7 @@ function submitSupplierPayment() {
                     </div>
                 </div>
 
-                <div class="glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
+                <div class="glass-panel p-4 md:p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
                     <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('internal_transfer_withdrawal') }}</h2>
                     <p class="text-xs font-mono text-text-muted mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
 
@@ -1118,7 +1118,7 @@ function submitSupplierPayment() {
                         <p class="text-[10px] text-text-muted mt-1 font-mono">Agar mijoz tanlansa, kassadan yechilgan pul (99 mln) mijozning hisobidan (qaytim sifatida) yechiladi va balans to'g'rilanadi.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('transfer_amount') }}</label>
                             <input v-model="transferForm.amount" type="number" step="0.01" class="glass-input w-full text-3xl font-display text-white font-bold h-16 bg-black/50" placeholder="0.00" required>
@@ -1228,7 +1228,7 @@ function submitSupplierPayment() {
 
         <!-- RECEIPT MODAL -->
         <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="bg-white text-black p-8 rounded border border-gray-300 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.2)]">
+            <div class="bg-white text-black p-4 md:p-8 rounded border border-gray-300 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.2)]">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
                     <p class="text-xs font-mono text-gray-500">{{ $t('receipt') }}</p>
@@ -1273,7 +1273,7 @@ function submitSupplierPayment() {
 
         <!-- CONTRACT APPROVE MODAL -->
         <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
+            <div class="bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('contract_payment_distribution') }}</h2>
                 <div class="mb-6 bg-black/50 p-4 rounded-xl border border-white/5 text-sm font-mono text-text-muted">
                     <p>Kiritilgan summa: <strong class="text-neon-cyan text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
@@ -1301,7 +1301,7 @@ function submitSupplierPayment() {
 
         <!-- NEW LIABILITY MODAL -->
         <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
+            <div class="bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-lg shadow-[0_0_50px_rgba(0,240,255,0.1)]">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('add_new_liability') }}</h2>
                 <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
                     <div>
@@ -1324,7 +1324,7 @@ function submitSupplierPayment() {
                             <option value="credit">{{ $t('credit_account') }}</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-text-muted mb-1">{{ $t('total_amount') }}</label>
                             <input v-model="liabilityForm.total_amount" type="number" step="0.01" class="glass-input w-full" required>
@@ -1334,7 +1334,7 @@ function submitSupplierPayment() {
                             <input v-model="liabilityForm.interest_rate" type="number" step="0.01" class="glass-input w-full" placeholder="Masalan: 24">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-text-muted mb-1">{{ $t('term_months') }}</label>
                             <input v-model="liabilityForm.term_months" type="number" class="glass-input w-full" required>
@@ -1344,7 +1344,7 @@ function submitSupplierPayment() {
                             <input v-model="liabilityForm.monthly_payment" type="number" step="0.01" class="glass-input w-full">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-text-muted mb-1">{{ $t('start_date') }}</label>
                             <input v-model="liabilityForm.start_date" type="date" class="glass-input w-full" required>
@@ -1368,7 +1368,7 @@ function submitSupplierPayment() {
 
         <!-- PAYMENT MODAL -->
         <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="bg-[#111] text-white p-8 rounded-2xl border border-neon-green/50 w-full max-w-sm shadow-[0_0_50px_rgba(57,255,20,0.1)]">
+            <div class="bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-neon-green/50 w-full max-w-sm shadow-[0_0_50px_rgba(57,255,20,0.1)]">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">{{ $t('liability_payment') }}</h2>
                 <div class="mb-6 font-mono text-xs">
                     <p class="text-text-muted mb-1">{{ $t('creditor_label') }}<span class="text-white">{{ selectedLiability.creditor_name }}</span></p>
@@ -1414,7 +1414,7 @@ function submitSupplierPayment() {
                 </div>
                 
                 <div class="flex-1 overflow-y-auto custom-scrollbar border border-white/5 rounded-xl">
-                    <table class="w-full text-left font-mono text-xs">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
                         <thead class="bg-white/5 sticky top-0 z-10 text-[10px] uppercase text-text-muted">
                             <tr>
                                 <th class="p-3">#</th>

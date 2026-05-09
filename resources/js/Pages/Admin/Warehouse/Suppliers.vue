@@ -129,7 +129,7 @@ const sendToTelegram = (id) => {
             <!-- Hidden File Input for Document Upload -->
             <input type="file" ref="uploadInput" @change="handleFileUpload" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group relative">
                     <!-- Edit & Delete Buttons -->
                     <div class="absolute top-4 right-4 flex items-center gap-2">
@@ -212,14 +212,14 @@ const sendToTelegram = (id) => {
 
         <!-- Add/Edit Modal -->
         <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div class="glass-panel w-full max-w-xl p-8 rounded-2xl border border-neon-yellow/50 shadow-[0_0_30px_rgba(255,255,0,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="glass-panel w-full max-w-xl p-4 md:p-8 rounded-2xl border border-neon-yellow/50 shadow-[0_0_30px_rgba(255,255,0,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
                 
                 <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">
                     {{ editMode ? "Ta'minotchini Tahrirlash" : "Yangi Ta'minotchi Qo'shish" }}
                 </h3>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="col-span-2">
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kompaniya Nomi</label>
                         <input v-model="form.company_name" type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-yellow transition-colors" placeholder="MCHJ / XK nomi">

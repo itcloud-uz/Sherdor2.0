@@ -69,7 +69,7 @@ const installPWA = async () => {
             </div>
 
             <!-- Apple Glassmorphism Panel -->
-            <div class="bg-white/5 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
+            <div class="bg-white/5 p-6 sm:p-4 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
                 
                 <div v-if="status" class="mb-6 text-sm font-medium text-green-400 bg-green-400/10 border border-green-400/20 p-3 rounded-xl text-center">
                     {{ status }}

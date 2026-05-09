@@ -6,7 +6,7 @@ import { Head } from '@inertiajs/vue3';
 <template>
     <Head title="Admin Dashboard" />
     <AdminLayout>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="glass-card p-6">
                 <h3 class="text-sm font-display text-text-muted">{{ $t('total_revenue') }}</h3>
                 <p class="text-3xl font-mono text-neon-green mt-2">$2,450,000</p>

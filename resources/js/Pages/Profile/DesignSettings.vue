@@ -92,10 +92,10 @@ const updateThemeStyle = (style) => {
             </h1>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-24 md:pb-0">
+        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8 pb-24 md:pb-0">
             
             <!-- Shaxsiy ma'lumotlar -->
-            <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
+            <div class="glass-panel p-6 md:p-4 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-neon-primary/10 blur-[50px] group-hover:bg-neon-primary/20 transition-all pointer-events-none"></div>
                 
                 <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('personal_info') }}</h2>
@@ -151,9 +151,9 @@ const updateThemeStyle = (style) => {
             <!-- Dizayn va Til -->
             <div class="space-y-8">
                 <!-- Global Mavzu (Theme Style) -->
-                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
+                <div class="glass-panel p-6 md:p-4 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group">
                     <h2 class="text-xl font-display font-bold text-white mb-6">Global Dizayn Mavzusi</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
                             <span class="text-3xl">🍏</span>
                             <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'apple_glass' ? 'text-neon-primary font-bold' : 'text-text-muted'">Apple Glass</span>
@@ -182,7 +182,7 @@ const updateThemeStyle = (style) => {
                 </div>
 
                 <!-- Dashboard Rangi -->
-                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group h-min">
+                <div class="glass-panel p-6 md:p-4 md:p-8 rounded-2xl border border-white/5 relative overflow-hidden group h-min">
                     <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('dashboard_theme') }}</h2>
                     <p class="text-xs text-text-muted mb-4 font-mono">{{ $t('choose_theme_color') }}</p>
                     
@@ -201,9 +201,9 @@ const updateThemeStyle = (style) => {
                 </div>
 
                 <!-- Interfeys Tili -->
-                <div class="glass-panel p-6 md:p-8 rounded-2xl border border-white/5 h-min">
+                <div class="glass-panel p-6 md:p-4 md:p-8 rounded-2xl border border-white/5 h-min">
                     <h2 class="text-xl font-display font-bold text-white mb-6">{{ $t('interface_language') }}</h2>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <button 
                             type="button"
                             @click="updateLanguage('uz')"

@@ -756,7 +756,7 @@ function generatePayroll() {
             </h1>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <!-- Sidebar Navigation -->
             <div class="lg:col-span-1 space-y-4">
                 <div class="glass-panel p-4 rounded-2xl flex flex-col gap-2 bg-black/40 border border-white/10">
@@ -774,7 +774,7 @@ function generatePayroll() {
             <!-- Content Area -->
             <div class="lg:col-span-3 min-h-[700px]">
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
-        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                 <div class="flex justify-between items-center mb-6">
@@ -787,7 +787,7 @@ function generatePayroll() {
                 </div>
                 
                 <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-3">
                         <div v-for="user in users" :key="user.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                             <div class="flex items-start gap-3 mb-3">
                                 <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
@@ -837,11 +837,11 @@ function generatePayroll() {
                 
                 <form v-if="showWorkerForm" @submit.prevent="saveWorker" class="mb-6 space-y-4 bg-black/30 p-4 rounded-xl border border-white/5 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
                     <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : 'Yangi Ishchi Qo\'shish' }}</h3>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
                         <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <select v-model="workerForm.role" class="glass-input text-xs text-white bg-black/50">
                             <option value="builder">Quruvchi / Usta</option>
                             <option value="driver">Haydovchi</option>
@@ -866,7 +866,7 @@ function generatePayroll() {
                     </div>
                     <div class="space-y-3 p-3 bg-white/5 rounded-lg border border-white/5">
                         <h4 class="text-[9px] font-mono text-text-muted uppercase tracking-widest border-b border-white/10 pb-1">Biriktirilgan Obyekt (Ixtiyoriy)</h4>
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             <select v-model="workerForm.building_id" class="glass-input text-[10px] text-white bg-black/50" @change="workerForm.floor_id = ''; workerForm.unit_id = ''">
                                 <option value="" disabled selected>Bino</option>
                                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -889,7 +889,7 @@ function generatePayroll() {
                     </div>
                 </form>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
+                <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2 items-start content-start">
                     <div v-for="w in filteredWorkers" :key="w.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
                         <span v-if="w.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                         <div class="flex items-start gap-3 mb-3">
@@ -925,7 +925,7 @@ function generatePayroll() {
             <h2 class="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
                 👁️ {{ $t('biometric_registration') }}
             </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8">
                 <!-- Camera Feed Placeholder -->
                 <div class="glass-card rounded-2xl border border-neon-cyan/50 overflow-hidden relative min-h-[400px] flex items-center justify-center bg-black/80 group">
                     <video ref="videoElement" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0" v-show="isCameraActive"></video>
@@ -1007,7 +1007,7 @@ function generatePayroll() {
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm font-mono">
+                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
                     <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px]">
                         <tr>
                             <th class="pb-3 w-16">Isbot</th>
@@ -1080,7 +1080,7 @@ function generatePayroll() {
                 
                 <form @submit.prevent="addMachinery" class="mb-8 space-y-4 bg-black/30 p-6 rounded-xl border border-white/5">
                     <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest border-b border-white/5 pb-2">{{ $t('add_machinery') }}</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] text-text-muted uppercase mb-1">Texnika Nomi (Yo'nalishi)</label>
                             <input v-model="machineryForm.machinery_type" type="text" class="glass-input text-xs w-full" placeholder="Ekskavator, Kran, Buldozer...">
@@ -1116,7 +1116,7 @@ function generatePayroll() {
                     </div>
                 </form>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                     <div v-for="m in filteredMachineries" :key="m.id" class="p-4 border border-white/10 rounded-xl bg-black/40 hover:border-neon-cyan/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all flex flex-col relative">
                         <span v-if="m.is_legacy" class="absolute top-2 right-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                         
@@ -1184,7 +1184,7 @@ function generatePayroll() {
         <div v-if="activeTab === 4" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
             
             <!-- Existing Work Log Form -->
-            <div class="glass-panel p-8 rounded-2xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,102,255,0.1)]">
+            <div class="glass-panel p-4 md:p-8 rounded-2xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,102,255,0.1)]">
                 <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_work') }}</h2>
                 <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_work_desc') }}</p>
 
@@ -1204,7 +1204,7 @@ function generatePayroll() {
                         </label>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div v-if="logForm.type === 'worker'">
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_worker') }}</label>
                             <select v-model="logForm.worker_id" class="glass-input w-full text-white bg-black/50" required>
@@ -1222,7 +1222,7 @@ function generatePayroll() {
 
                         <div class="space-y-3">
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('building_target') }} ({{ $t('expense_link') }})</label>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 <select v-model="logForm.building_id" class="glass-input w-full text-white bg-black/50" :required="logForm.type === 'worker' || logForm.type === 'machinery'" @change="logForm.floor_id = ''; logForm.unit_id = ''">
                                     <option value="" disabled>-- Bino --</option>
                                     <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -1239,7 +1239,7 @@ function generatePayroll() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('hours_worked') }}</label>
                             <input v-model="logForm.hours_worked" type="number" step="0.5" class="glass-input w-full text-white" placeholder="0.0">
@@ -1273,7 +1273,7 @@ function generatePayroll() {
         <!-- TAB 5: Payroll & Disbursement -->
         <div v-if="activeTab === 5" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             
-            <div class="glass-panel p-8 border border-neon-yellow/30 shadow-[0_0_30px_rgba(252,238,9,0.1)] rounded-2xl text-center relative overflow-hidden group">
+            <div class="glass-panel p-4 md:p-8 border border-neon-yellow/30 shadow-[0_0_30px_rgba(252,238,9,0.1)] rounded-2xl text-center relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-mono text-text-muted uppercase tracking-widest mb-2">{{ $t('total_unpaid_payroll') }}</h3>
                 <h1 class="text-6xl font-display font-bold text-white drop-shadow-[0_0_15px_rgba(252,238,9,0.3)] mb-8">
@@ -1288,12 +1288,12 @@ function generatePayroll() {
                 <p class="text-[10px] font-mono text-gray-500 mt-4">Ushbu tugma barcha ishlarni bitta rasmiy hisobotga (Vekselga) yig'adi va to'lov uchun Kassaga jo'natadi.</p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Unpaid Logs -->
                 <div class="glass-panel p-6 rounded-2xl border border-white/5">
                     <h2 class="text-xl font-display font-bold text-white mb-6">Hisoblanmagan Jurnallar</h2>
                     <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
-                        <table class="w-full text-left text-sm font-mono">
+                        <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
                             <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px] sticky top-0 bg-abyss/90 backdrop-blur">
                                 <tr>
                                     <th class="pb-3">{{ $t('date_label') }}</th>
@@ -1382,7 +1382,7 @@ function generatePayroll() {
                             <option value="Operator">Operator</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('pinfl') }}</label>
                             <input v-model="userForm.pinfl" type="text" class="glass-input w-full">
@@ -1425,7 +1425,7 @@ function generatePayroll() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <!-- Manual Work Log Form -->
                     <form @submit.prevent="saveWorkerLog" class="flex flex-col gap-2 p-4 bg-neon-blue/10 rounded-xl border border-neon-blue/30">
                         <h4 class="text-[10px] font-mono text-neon-blue uppercase tracking-widest border-b border-neon-blue/30 pb-2">➕ Ish Hajmini Kiritish</h4>
@@ -1585,7 +1585,7 @@ function generatePayroll() {
 
                 <form @submit.prevent="saveUserLedgerTransaction" class="mb-8 p-4 bg-black/40 border border-white/5 rounded-xl space-y-4">
                     <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('type_label') }}</label>
                             <select v-model="userLedgerForm.type" class="glass-input w-full text-xs bg-black/50" required>
@@ -1600,7 +1600,7 @@ function generatePayroll() {
                             <input v-model="userLedgerForm.amount" type="number" step="0.01" class="glass-input w-full text-xs" required>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('date_label') }}</label>
                             <input v-model="userLedgerForm.date" type="date" class="glass-input w-full text-xs" required>
@@ -1739,7 +1739,7 @@ function generatePayroll() {
                 </div>
 
                 <div v-else class="w-full space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shaxs Kategoriyasi</label>
                             <select v-model="scannerForm.subject_type" class="glass-input w-full bg-black/50 text-white" @change="scannerForm.subject_id = ''">
@@ -1816,7 +1816,7 @@ function generatePayroll() {
                 <p class="text-[10px] font-mono text-neon-yellow tracking-widest uppercase border-b border-white/10 pb-4 mb-4">
                     Davlat Raqami: {{ activeMachinery?.license_plate || 'N/A' }} | {{ activeMachinery?.payment_type === 'hourly' ? 'Soatbay' : 'Obyom' }}: {{ $currency(activeMachinery?.cost_per_hour) }}
                 </p>
-                <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div class="p-4 bg-white/5 rounded-xl border border-white/10">
                         <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Umumiy Ishlagan (Topilgan)</p>
                         <p class="text-xl font-bold text-white">{{ $currency(machineryLedgerData.total_earned) }}</p>
@@ -1829,7 +1829,7 @@ function generatePayroll() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <!-- Manual Work Log Form -->
                     <form @submit.prevent="saveMachineryLog" class="flex flex-col gap-2 p-4 bg-neon-blue/10 rounded-xl border border-neon-blue/30">
                         <h4 class="text-[10px] font-mono text-neon-blue uppercase tracking-widest border-b border-neon-blue/30 pb-2">➕ Ish Hajmini Kiritish</h4>

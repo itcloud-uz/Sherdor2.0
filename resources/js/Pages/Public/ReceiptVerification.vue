@@ -50,7 +50,7 @@ const maskPhone = (phone) => {
             </div>
 
             <!-- Success State -->
-            <div v-else class="glass-panel p-8 rounded-3xl border border-neon-green/30 shadow-[0_0_50px_rgba(57,255,20,0.15)] animate-[fadeIn_1s_ease-out] relative overflow-hidden group">
+            <div v-else class="glass-panel p-4 md:p-8 rounded-3xl border border-neon-green/30 shadow-[0_0_50px_rgba(57,255,20,0.15)] animate-[fadeIn_1s_ease-out] relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 
                 <!-- Header -->
@@ -72,7 +72,7 @@ const maskPhone = (phone) => {
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="p-4 bg-black/40 rounded-xl border border-white/5">
                             <span class="block text-[10px] text-text-muted uppercase mb-1">To'lov Usuli</span>
                             <span class="text-white text-sm uppercase font-bold">{{ transaction.payment_method }}</span>

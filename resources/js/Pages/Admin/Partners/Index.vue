@@ -238,7 +238,7 @@ function formatDate(dateString) {
 <template>
     <Head title="Partner Hub" />
     <AdminLayout>
-        <div class="glass-panel p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
+        <div class="glass-panel p-4 md:p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                 <div>
                     <h2 class="text-2xl font-display text-white font-bold uppercase tracking-widest">Ta'sischilar Paneli</h2>
@@ -250,7 +250,7 @@ function formatDate(dateString) {
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white/5 border border-white/10 rounded-xl p-6">
                     <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Kompaniyaning jami qiymati</p>
                     <p class="text-3xl font-display font-bold text-white">{{ formatCurrency(companyNetWorth) }} <span class="text-sm">so'm</span></p>
@@ -267,7 +267,7 @@ function formatDate(dateString) {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="partner in partners" :key="partner.id" class="glass-card p-6 border border-white/10 hover:border-neon-cyan/50 transition-all group rounded-2xl relative">
                     <div class="absolute top-4 right-4 text-right flex flex-col items-end gap-2">
                         <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -294,7 +294,7 @@ function formatDate(dateString) {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-white/5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pt-4 border-t border-white/5">
                         <div>
                             <span class="block text-[10px] font-mono text-text-muted uppercase">Jami Sarmoya</span>
                             <span class="text-sm font-mono text-white">{{ formatCurrency(partner.total_invested) }}</span>
@@ -331,7 +331,7 @@ function formatDate(dateString) {
 
         <!-- Add Partner Modal -->
         <div v-if="showAddPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="relative bg-[#111] text-white p-8 rounded-2xl border border-white/20 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+            <div class="relative bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-white/20 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.1)]">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showAddPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Yangi Ta'sischi</h2>
                 <form @submit.prevent="submitPartner" class="space-y-4 font-mono text-xs">
@@ -361,7 +361,7 @@ function formatDate(dateString) {
 
         <!-- Edit Partner Modal -->
         <div v-if="showEditPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="relative bg-[#111] text-white p-8 rounded-2xl border border-white/20 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+            <div class="relative bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-white/20 w-full max-w-sm shadow-[0_0_50px_rgba(255,255,255,0.1)]">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showEditPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Ta'sischi Tahrirlash</h2>
                 <form @submit.prevent="submitEditPartner" class="space-y-4 font-mono text-xs">
@@ -388,7 +388,7 @@ function formatDate(dateString) {
 
         <!-- Advance Modal -->
         <div v-if="showAdvanceModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="relative bg-[#111] text-white p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-sm shadow-[0_0_50px_rgba(0,240,255,0.1)]">
+            <div class="relative bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-neon-cyan/50 w-full max-w-sm shadow-[0_0_50px_rgba(0,240,255,0.1)]">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showAdvanceModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4 text-neon-cyan">Kassadan Pul So'rash</h2>
                 <p class="text-xs font-mono text-text-muted mb-4">Ushbu so'rov darhol kassaga ta'sir qilmaydi. U Moliya markazida ko'rib chiqilib **Tasdiqlangandan so'nggina** pul ajratiladi.</p>
@@ -411,7 +411,7 @@ function formatDate(dateString) {
 
         <!-- Expense Modal -->
         <div v-if="showExpenseModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="relative bg-[#111] text-white p-8 rounded-2xl border border-neon-green/50 w-full max-w-sm shadow-[0_0_50px_rgba(57,255,20,0.1)]">
+            <div class="relative bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-neon-green/50 w-full max-w-sm shadow-[0_0_50px_rgba(57,255,20,0.1)]">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showExpenseModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4 text-neon-green mt-2">Xarajatni Qabul Qilish (Chek)</h2>
                 <p class="text-xs font-mono text-text-muted mb-4">Ushbu chek Moliya markazida tasdiqlangach hisobdorlik balansi qoldig'idan o'chiriladi.</p>
@@ -451,7 +451,7 @@ function formatDate(dateString) {
 
         <!-- Analytics Modal -->
         <div v-if="showAnalyticsModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div class="bg-[#111] text-white p-6 md:p-8 rounded-2xl border border-white/20 w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-[0_0_100px_rgba(255,255,255,0.05)]">
+            <div class="bg-[#111] text-white p-6 md:p-4 md:p-8 rounded-2xl border border-white/20 w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-[0_0_100px_rgba(255,255,255,0.05)]">
                 <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                     <div>
                         <h2 class="text-2xl font-display font-bold uppercase tracking-widest">{{ selectedPartner.user?.name }} — Hisobot va Analitika</h2>
@@ -465,7 +465,7 @@ function formatDate(dateString) {
                 </div>
 
                 <div v-else>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                         <!-- Pie Chart -->
                         <div class="glass-card p-6 border border-white/10 rounded-xl">
                             <h3 class="text-sm font-mono text-text-muted uppercase mb-4 text-center">Xarajatlar Toifasi (Donut)</h3>
@@ -490,7 +490,7 @@ function formatDate(dateString) {
                             <h3 class="text-sm font-mono text-white uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left font-mono text-xs">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
                                 <thead class="bg-black/50 text-text-muted uppercase">
                                     <tr>
                                         <th class="p-3">{{ $t('date_label') }}</th>

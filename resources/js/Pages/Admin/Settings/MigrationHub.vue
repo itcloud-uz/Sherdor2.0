@@ -20,13 +20,13 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 h-full">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8 relative z-10 h-full">
                 <!-- Action Section -->
                 <div class="flex flex-col gap-6">
                     <!-- Category Selector -->
                     <div class="glass-panel border border-neon-purple/30 rounded-3xl p-6 flex flex-col gap-4 bg-[#05050A] shadow-[0_0_15px_rgba(188,19,254,0.1)]">
                         <h3 class="text-xs font-mono text-white uppercase tracking-widest text-neon-purple">Маълумот Турини Танланг</h3>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="crm" class="hidden peer">
                                 <div class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-text-muted font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-white transition-all hover:bg-white/10">
@@ -55,7 +55,7 @@
                     </div>
 
                     <!-- File Chooser Container -->
-                    <div class="glass-panel border border-neon-cyan/30 rounded-3xl p-8 flex flex-col items-center justify-center transition-all bg-[#05050A] shadow-[0_0_20px_rgba(0,240,255,0.1)] hover:border-neon-cyan/80">
+                    <div class="glass-panel border border-neon-cyan/30 rounded-3xl p-4 md:p-8 flex flex-col items-center justify-center transition-all bg-[#05050A] shadow-[0_0_20px_rgba(0,240,255,0.1)] hover:border-neon-cyan/80">
                         <input type="file" ref="fileInput" @change="handleFileSelect" multiple accept=".xlsx,.xls,.docx,.zip" class="hidden">
                         
                         <button @click="$refs.fileInput.click()" class="w-full py-5 bg-neon-cyan/10 border-2 border-neon-cyan text-neon-cyan font-bold font-display text-xl uppercase tracking-widest rounded-2xl hover:bg-neon-cyan hover:text-black hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transition-all flex items-center justify-center gap-4 group">

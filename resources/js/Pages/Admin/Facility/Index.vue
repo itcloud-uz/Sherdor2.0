@@ -399,9 +399,9 @@ const progressSeries = computed(() => {
 <template>
     <Head :title="$t('facility_command_center') || 'Facility Command Center'" />
     <AdminLayout>
-        <div class="flex gap-6 h-[calc(100vh-8rem)]">
+        <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 h-auto lg:h-[calc(100vh-8rem)] min-h-[500px]">
             <!-- Left Side: Building List -->
-            <div class="w-1/4 flex flex-col gap-4">
+            <div class="w-full lg:w-1/4 flex flex-col gap-4">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg font-display text-white">{{ $t('buildings') }}</h3>
                     <button @click="showAddBuildingModal = true" class="px-3 py-1 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan text-[10px] font-mono rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
@@ -437,7 +437,7 @@ const progressSeries = computed(() => {
             </div>
 
             <!-- Right Side: Main Command Center -->
-            <div class="flex-1 flex flex-col glass-panel rounded-2xl overflow-hidden">
+            <div class="w-full lg:flex-1 flex flex-col glass-panel rounded-2xl overflow-hidden min-h-[600px] lg:min-h-0">
                 <div v-if="selectedBuilding" class="flex flex-col h-full">
                     
                     <!-- Header -->
@@ -589,7 +589,7 @@ const progressSeries = computed(() => {
                                     </div>
                                 </div>
 
-                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-8 rounded-xl bg-black/80 backdrop-blur-md">
+                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-4 md:p-8 rounded-xl bg-black/80 backdrop-blur-md">
                                     [ QAVAT UCHUN XONADONLAR YO'Q ]
                                 </div>
                             </div>
@@ -603,7 +603,7 @@ const progressSeries = computed(() => {
                                         {{ hoveredUnit.unit_number }} 
                                         <span class="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-white">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                     </h4>
-                                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
                                         <span class="text-text-muted">Maydoni:</span>
                                         <span class="text-white text-right">{{ hoveredUnit.area_sqm }} m²</span>
                                         
@@ -659,7 +659,7 @@ const progressSeries = computed(() => {
                         <div v-if="activeTab === 'finances'" class="animate-fade-in">
                             <h3 class="text-sm font-mono text-neon-green uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                                 <div class="glass-card p-6 border border-neon-cyan/30 bg-neon-cyan/5">
                                     <h4 class="text-xs font-mono text-text-muted uppercase mb-2">{{ $t('estimated_budget') }}</h4>
                                     <p class="text-4xl font-display font-bold text-neon-cyan tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
@@ -689,7 +689,7 @@ const progressSeries = computed(() => {
                         </div>
 
                         <!-- TAB 4: Analytics -->
-                        <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
                             <div class="glass-card p-6 border border-white/10">
                                 <h3 class="text-sm font-mono text-neon-purple uppercase tracking-widest mb-6">{{ $t('unit_distribution') }}</h3>
                                 <VueApexCharts type="donut" height="300" :options="chartOptions" :series="chartSeries" />
@@ -720,7 +720,7 @@ const progressSeries = computed(() => {
                     </div>
 
                     <!-- Location Fields -->
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shahar</label>
                             <input v-model="buildingForm.city" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
@@ -730,7 +730,7 @@ const progressSeries = computed(() => {
                             <input v-model="buildingForm.district" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Mahalla</label>
                             <input v-model="buildingForm.mahalla" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
@@ -742,7 +742,7 @@ const progressSeries = computed(() => {
                     </div>
 
                     <!-- Block and Corpus Fields -->
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Blok Nomi</label>
                             <input v-model="buildingForm.block_name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: A Blok">
@@ -754,7 +754,7 @@ const progressSeries = computed(() => {
                     </div>
 
                     <!-- Building Details -->
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_floors') }}</label>
                             <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" required>
@@ -769,7 +769,7 @@ const progressSeries = computed(() => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Jami Kvartiralar</label>
                             <input v-model="buildingForm.total_apartments" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
@@ -781,7 +781,7 @@ const progressSeries = computed(() => {
                     </div>
 
                     <!-- Building Dimensions -->
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Uzunligi (m)</label>
                             <input v-model="buildingForm.length_m" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: 45.5">
@@ -804,7 +804,7 @@ const progressSeries = computed(() => {
                     <!-- Auto-Generation Fields (Only when creating) -->
                     <div v-if="!isEditingBuilding" class="p-4 border border-neon-yellow/30 rounded-lg bg-neon-yellow/5">
                         <h4 class="text-xs font-mono text-neon-yellow uppercase mb-3 font-bold tracking-widest">Qavat va Xonalarni Avtomatlashtirilgan Generatsiyasi</h4>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Har qavatdagi xonadonlar (dona)</label>
                                 <input v-model="buildingForm.units_per_floor" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 4">
@@ -814,7 +814,7 @@ const progressSeries = computed(() => {
                                 <input v-model="buildingForm.average_area" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 65">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">O'rtacha narxi (UZS)</label>
                                 <input v-model="buildingForm.average_price" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 500000000">
@@ -853,7 +853,7 @@ const progressSeries = computed(() => {
                         <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('stage_name') }}</label>
                         <input v-model="stageForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required :placeholder="$t('stage_name_placeholder')">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('start_date') }}</label>
                             <input v-model="stageForm.start_date" type="date" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all">
@@ -875,7 +875,7 @@ const progressSeries = computed(() => {
             <div class="glass-panel p-6 border border-white/30 bg-[#05050A]">
                 <h2 class="text-2xl font-display text-white mb-4">{{ isEditingFloor ? "Qavatni Tahrirlash" : "Qavat Qo'shish" }}</h2>
                 <form @submit.prevent="submitFloor" class="space-y-4">
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Qavat Raqami</label>
                             <input v-model="floorForm.floor_number" type="number" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: 1, 2, -1">
@@ -907,7 +907,7 @@ const progressSeries = computed(() => {
             <div class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A]">
                 <h2 class="text-2xl font-display text-neon-cyan mb-4">{{ isEditingUnit ? "Xonadonni Tahrirlash" : "Xonadon / Do'kon Qo'shish" }}</h2>
                 <form @submit.prevent="submitUnit" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Raqami (Masalan: A501)</label>
                             <input v-model="unitForm.unit_number" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
@@ -920,7 +920,7 @@ const progressSeries = computed(() => {
                             </select>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Maydoni (kv.m)</label>
                             <input v-model="unitForm.area_sqm" type="number" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
@@ -932,7 +932,7 @@ const progressSeries = computed(() => {
                     </div>
 
                     <!-- Detailed Attributes -->
-                    <div class="grid grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Xonalar</label>
                             <input v-model="unitForm.rooms_count" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all">
@@ -951,7 +951,7 @@ const progressSeries = computed(() => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Status</label>
                             <select v-model="unitForm.status" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>

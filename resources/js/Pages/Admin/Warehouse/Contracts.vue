@@ -120,7 +120,7 @@ const handleFileUpload = async (event) => {
 
             <div class="glass-panel p-6 rounded-2xl border border-white/5">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm font-mono border-collapse">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
                         <thead>
                             <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest bg-black/40">
                                 <th class="p-4 font-medium rounded-tl-xl">Raqami</th>
@@ -182,7 +182,7 @@ const handleFileUpload = async (event) => {
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ta'minotchi</label>
                             <select v-model="form.supplier_id" required class="glass-input w-full bg-black/50 text-white">

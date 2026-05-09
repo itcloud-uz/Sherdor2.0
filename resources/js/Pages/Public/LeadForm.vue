@@ -57,7 +57,7 @@ const submitLead = async () => {
             <div class="w-full flex flex-col lg:flex-row gap-8 items-stretch justify-center">
                 
                 <!-- PROMO CONTENT SIDE -->
-                <div v-if="promoSettings && (promoSettings.promo_title || promoSettings.promo_image)" class="flex-1 glass-panel p-8 rounded-3xl border border-white/10 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+                <div v-if="promoSettings && (promoSettings.promo_title || promoSettings.promo_image)" class="flex-1 glass-panel p-4 md:p-8 rounded-3xl border border-white/10 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
                     <div class="absolute -top-20 -left-20 w-40 h-40 bg-neon-magenta/20 blur-[60px] rounded-full pointer-events-none"></div>
                     
                     <div class="relative z-10 h-full flex flex-col">
@@ -75,7 +75,7 @@ const submitLead = async () => {
                 </div>
 
                 <!-- LEAD FORM SIDE -->
-                <div class="w-full lg:w-[450px] shrink-0 glass-panel p-8 rounded-3xl border border-white/10 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-center">
+                <div class="w-full lg:w-[450px] shrink-0 glass-panel p-4 md:p-8 rounded-3xl border border-white/10 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-center">
                     <!-- Decorative glow -->
                     <div class="absolute -top-20 -right-20 w-40 h-40 bg-neon-cyan/20 blur-[60px] rounded-full pointer-events-none"></div>
 

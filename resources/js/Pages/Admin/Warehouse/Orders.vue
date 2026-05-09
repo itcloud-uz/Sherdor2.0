@@ -111,7 +111,7 @@ const formatMoney = (amount) => {
                     <div>
                         <h4 class="text-[10px] font-mono text-text-muted uppercase mb-3">Mahsulotlar ro'yxati:</h4>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm font-mono border border-white/5 rounded-lg">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border border-white/5 rounded-lg">
                                 <thead>
                                     <tr class="bg-white/5 text-text-muted text-[10px] uppercase">
                                         <th class="p-2">Mahsulot</th>
@@ -147,12 +147,12 @@ const formatMoney = (amount) => {
 
         <!-- Add Modal -->
         <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div class="glass-panel w-full max-w-4xl p-8 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,255,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="glass-panel w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,255,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
                 
                 <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">Yangi Xarid Buyurtmasi</h3>
                 
-                <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <div class="col-span-3 md:col-span-1">
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ta'minotchi *</label>
                         <select v-model="form.supplier_id" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-magenta transition-colors">

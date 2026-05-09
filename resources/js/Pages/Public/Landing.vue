@@ -104,11 +104,11 @@ const panels = [
                 <p class="text-gray-400 text-lg">Har bir roldagi xodim va hamkor uchun maxsus imkoniyatlar</p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <div 
                     v-for="(panel, idx) in panels" 
                     :key="idx"
-                    class="bg-black/40 p-8 rounded-[2rem] border border-white/10 backdrop-blur-3xl transition-all duration-500 hover:border-white/30 hover:-translate-y-2 group shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                    class="bg-black/40 p-4 md:p-8 rounded-[2rem] border border-white/10 backdrop-blur-3xl transition-all duration-500 hover:border-white/30 hover:-translate-y-2 group shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                 >
                     <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 bg-gradient-to-br border border-white/20 shadow-lg" :class="panel.color">
                         {{ panel.icon }}
@@ -163,7 +163,7 @@ const panels = [
                     <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/20 rounded-full blur-[80px]"></div>
                     <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px]"></div>
                     
-                    <div class="relative z-10 text-center p-8">
+                    <div class="relative z-10 text-center p-4 md:p-8">
                         <div class="inline-flex gap-3 mb-8">
                             <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg">👑</div>
                             <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg">💼</div>
@@ -182,31 +182,31 @@ const panels = [
             <p class="text-gray-400 mb-12 max-w-2xl mx-auto text-lg">Tizim bo'yicha savollaringiz yoki qo'shimcha modullar kerak bo'lsa, Dasturchilar Jamoasi bilan istalgan vaqtda bog'lanishingiz mumkin.</p>
             
             <div class="flex flex-wrap justify-center gap-6 mb-16 max-w-5xl mx-auto">
-                <a href="tel:+998335180005" class="flex flex-col items-center p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-amber-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="tel:+998335180005" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-amber-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl mb-4 shadow-lg">📱</div>
                     <span class="font-bold text-white text-xl">+998 33 518 00 05</span>
                     <span class="text-sm text-gray-400 mt-2">Asosiy Raqam</span>
                 </a>
                 
-                <a href="tel:+998911873730" class="flex flex-col items-center p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-purple-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="tel:+998911873730" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-purple-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-purple-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📞</div>
                     <span class="font-bold text-white text-xl">+998 91 187 37 30</span>
                     <span class="text-sm text-gray-400 mt-2">Qo'shimcha Raqam</span>
                 </a>
                 
-                <a href="mailto:itclouduz@gmail.com" class="flex flex-col items-center p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-red-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="mailto:itclouduz@gmail.com" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-red-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-red-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✉️</div>
                     <span class="font-bold text-white text-xl">itclouduz@gmail.com</span>
                     <span class="text-sm text-gray-400 mt-2">Elektron Pochta</span>
                 </a>
 
-                <a href="https://t.me/ITcloud_me" target="_blank" class="flex flex-col items-center p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="https://t.me/ITcloud_me" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✈️</div>
                     <span class="font-bold text-white text-xl">@ITcloud_me</span>
                     <span class="text-sm text-gray-400 mt-2">Telegram orqali yozish</span>
                 </a>
                 
-                <a href="https://instagram.com/Shodiyor_kholmurodov" target="_blank" class="flex flex-col items-center p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-pink-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="https://instagram.com/Shodiyor_kholmurodov" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-pink-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-600 to-orange-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📷</div>
                     <span class="font-bold text-white text-xl">Shodiyor_kholmurodov</span>
                     <span class="text-sm text-gray-400 mt-2">Instagram sahifa</span>

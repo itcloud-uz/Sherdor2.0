@@ -21,6 +21,7 @@ class SystemSetting extends Model
         'promo_title',
         'promo_subtitle',
         'promo_description',
-        'promo_image'
+        'promo_image',
+        'background_image_path'
     ];
 }

@@ -20,6 +20,7 @@ const form = useForm({
     tax_rate: props.settings?.tax_rate || 12.00,
     default_penalty_rate: props.settings?.default_penalty_rate || 0.10,
     logo: null,
+    background_image: null,
 });
 
 const profileForm = useForm({
@@ -146,6 +147,17 @@ const updateThemeStyle = (style) => {
                                 <div>
                                     <label class="block text-xs font-mono text-text-muted mb-2 uppercase">{{ $t('custom_logo_desc') }}</label>
                                     <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Tizim Orqa Foni (Background Image)</label>
+                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <div v-if="$page.props.branding?.background_image_path" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-white/20">
+                                        <img :src="'/storage/' + $page.props.branding.background_image_path" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                            <span class="text-xs text-white font-mono uppercase tracking-widest">Joriy Orqa Fon</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             

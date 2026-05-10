@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'branding' => [
                 'logo_path' => $settings['logo_path'] ?? null,
+                'background_image_path' => $settings['background_image_path'] ?? null,
                 'primary_theme_color' => $request->user()?->theme_color ?? $settings['primary_theme_color'] ?? '#00F0FF',
                 'neon_glow_intensity' => $settings['neon_glow_intensity'] ?? '0 0 15px',
                 'default_currency' => $settings['default_currency'] ?? 'USD',

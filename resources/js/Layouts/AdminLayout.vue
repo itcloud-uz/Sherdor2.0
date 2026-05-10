@@ -39,7 +39,7 @@ onUnmounted(() => {
 
 <template>
     <ThemeProvider>
-        <div class="min-h-screen bg-transparent text-text-primary flex relative overflow-hidden">
+        <div class="min-h-screen bg-transparent text-text-primary flex relative overflow-hidden bg-cover bg-center bg-no-repeat bg-fixed" :style="$page.props.branding?.background_image_path ? { backgroundImage: 'url(/storage/' + $page.props.branding.background_image_path + ')' } : {}">
             
             <BackgroundTheme />
 

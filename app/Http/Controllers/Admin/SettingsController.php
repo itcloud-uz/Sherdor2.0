@@ -27,6 +27,7 @@ class SettingsController extends Controller
             'tax_rate' => 'nullable|numeric',
             'default_penalty_rate' => 'nullable|numeric',
             'logo' => 'nullable|image|max:2048', // Max 2MB image
+            'background_image' => 'nullable|image|max:10240', // Max 10MB image
         ]);
 
         $settings = SystemSetting::first() ?? new SystemSetting();
@@ -44,6 +45,13 @@ class SettingsController extends Controller
             }
             $path = $request->file('logo')->store('branding', 'public');
             $settings->logo_path = $path;
+        }
+        if ($request->hasFile('background_image')) {
+            if ($settings->background_image_path) {
+                Storage::disk('public')->delete($settings->background_image_path);
+            }
+            $bgPath = $request->file('background_image')->store('branding', 'public');
+            $settings->background_image_path = $bgPath;
         }
 
         $settings->save();

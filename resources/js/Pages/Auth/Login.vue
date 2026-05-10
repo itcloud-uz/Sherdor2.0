@@ -53,7 +53,7 @@ const installPWA = async () => {
 <template>
     <Head title="Tizimga Kirish - Sher-Dor ERP" />
 
-    <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-white/30 selection:text-white font-sans text-white">
+    <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-white/30 selection:text-white font-sans text-white bg-cover bg-center bg-no-repeat bg-fixed" :style="$page.props.branding?.background_image_path ? { backgroundImage: 'url(/storage/' + $page.props.branding.background_image_path + ')' } : {}">
         
         <!-- Authentic Galaxy Background -->
         <GalaxyBackground />

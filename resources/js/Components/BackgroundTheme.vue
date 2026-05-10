@@ -5,12 +5,19 @@ import GalaxyBackground from '@/Components/GalaxyBackground.vue';
 
 const page = usePage();
 const themeStyle = computed(() => page.props.auth?.user?.theme_style || 'apple_glass');
+const customBg = computed(() => page.props.branding?.background_image_path);
 
 </script>
 
 <template>
-    <!-- GALAXY THEME -->
-    <template v-if="themeStyle === 'galaxy'">
+    <!-- CUSTOM BACKGROUND IMAGE OVERLAY -->
+    <template v-if="customBg">
+        <div class="fixed inset-0 pointer-events-none z-0 bg-black/60"></div>
+    </template>
+    
+    <template v-else>
+        <!-- GALAXY THEME -->
+        <template v-if="themeStyle === 'galaxy'">
         <GalaxyBackground />
     </template>
 
@@ -50,15 +57,16 @@ const themeStyle = computed(() => page.props.auth?.user?.theme_style || 'apple_g
         </div>
     </template>
 
-    <!-- ITCLOUD CYBERGLASS -->
-    <template v-else-if="themeStyle === 'itcloud_cyberglass'">
-        <!-- Interactive Galaxy Background -->
-        <GalaxyBackground :interactive="true" />
-        
-        <!-- Apple Glass / Cyberglass overlay -->
-        <div class="fixed inset-0 pointer-events-none z-0">
-            <div class="absolute top-[10%] left-[20%] w-[40%] h-[40%] rounded-full bg-[#00F0FF]/10 blur-[180px]"></div>
-            <div class="absolute bottom-[10%] right-[20%] w-[30%] h-[30%] rounded-full bg-[#B026FF]/10 blur-[180px]"></div>
-        </div>
+        <!-- ITCLOUD CYBERGLASS -->
+        <template v-else-if="themeStyle === 'itcloud_cyberglass'">
+            <!-- Interactive Galaxy Background -->
+            <GalaxyBackground :interactive="true" />
+            
+            <!-- Apple Glass / Cyberglass overlay -->
+            <div class="fixed inset-0 pointer-events-none z-0">
+                <div class="absolute top-[10%] left-[20%] w-[40%] h-[40%] rounded-full bg-[#00F0FF]/10 blur-[180px]"></div>
+                <div class="absolute bottom-[10%] right-[20%] w-[30%] h-[30%] rounded-full bg-[#B026FF]/10 blur-[180px]"></div>
+            </div>
+        </template>
     </template>
 </template>

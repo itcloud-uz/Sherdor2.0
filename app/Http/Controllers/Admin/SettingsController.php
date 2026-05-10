@@ -56,6 +56,8 @@ class SettingsController extends Controller
 
         $settings->save();
 
+        \Illuminate\Support\Facades\Cache::forget('system_settings_v2');
+
         return back()->with('success', 'System settings updated successfully.');
     }
 }

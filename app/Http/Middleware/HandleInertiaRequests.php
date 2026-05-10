@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
             if ($dbSettings) {
                 return [
                     'logo_path' => $dbSettings->logo_path,
+                    'background_image_path' => $dbSettings->background_image_path,
                     'primary_theme_color' => $dbSettings->primary_theme_color,
                     'neon_glow_intensity' => $dbSettings->neon_glow_intensity,
                     'default_currency' => $dbSettings->default_currency,
@@ -41,6 +42,7 @@ class HandleInertiaRequests extends Middleware
             }
             return [
                 'logo_path' => null,
+                'background_image_path' => null,
                 'primary_theme_color' => '#00F0FF',
                 'neon_glow_intensity' => '0 0 15px',
                 'default_currency' => 'USD',

@@ -46,6 +46,11 @@ class CrmController extends Controller
             'created_at' => 'nullable|date'
         ]);
 
+        if (array_key_exists('passport_series', $validated)) {
+            $validated['passport_number'] = $validated['passport_series'];
+            unset($validated['passport_series']);
+        }
+
         $client = new \App\Models\Client($validated);
         if (!empty($validated['created_at'])) {
             $client->created_at = $validated['created_at'];
@@ -68,6 +73,11 @@ class CrmController extends Controller
             'passport_issued_by' => 'nullable|string',
             'created_at' => 'nullable|date'
         ]);
+
+        if (array_key_exists('passport_series', $validated)) {
+            $validated['passport_number'] = $validated['passport_series'];
+            unset($validated['passport_series']);
+        }
 
         $client->fill($validated);
         if (!empty($validated['created_at'])) {

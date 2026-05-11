@@ -31,7 +31,8 @@ const props = defineProps({
     workers: Array,
     machineries: Array,
     buildings: Array,
-    categories: Array
+    categories: Array,
+    clients: Array
 });
 
 const activeTab = ref(0);
@@ -113,6 +114,7 @@ const form = ref({
     payment_method: 'cash',
     account_type: 'main',
     contract_id: '',
+    client_id: '',
     worker_id: '',
     machinery_id: '',
     building_id: '',
@@ -200,7 +202,7 @@ function selectContract(c) {
 }
 
 function submitTransaction() {
-    if (requiresClient.value && !form.value.contract_id) {
+    if (requiresClient.value && !form.value.contract_id && !form.value.client_id) {
         alert("Iltimos, ushbu kategoriya uchun aniq bir Mijoz yoki Shartnomani tanlang (Neyron bog'lama).");
         return;
     }
@@ -212,7 +214,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel' };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel' };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -911,10 +913,16 @@ function submitSupplierPayment() {
                         </div>
                     </div>
 
-                    <div class="relative" v-if="requiresClient || form.type === 'income'">
-                        <label class="block text-xs font-mono text-text-muted mb-1" :class="requiresClient ? 'text-neon-cyan' : ''">
-                            {{ requiresClient ? 'Mijozni / Shartnomani tanlang (Neyron bog\'lama)' : 'Qaysi Shartnomaga (Ixtiyoriy)' }}
-                        </label>
+                    <div v-if="requiresClient">
+                        <label class="block text-xs font-mono text-neon-cyan mb-1">Mijozni Tanlang (Neyron bog'lama)</label>
+                        <select v-model="form.client_id" class="glass-input w-full text-white bg-black/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }} ({{ c.phone }})</option>
+                        </select>
+                    </div>
+
+                    <div class="relative" v-if="!requiresClient && form.type === 'income'">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Qaysi Shartnomaga (Ixtiyoriy)</label>
                         <div class="relative">
                             <input 
                                 v-model="scheduleSearch" 

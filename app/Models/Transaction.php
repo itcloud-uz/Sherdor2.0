@@ -9,8 +9,8 @@ class Transaction extends Model
     protected $fillable = [
         'type', 'amount', 'currency', 'payment_method', 'status',
         'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes',
-        'transaction_hash', 'category', 'category_id', 'transaction_date', 'attachment_path', 'contract_id', 'account_type', 'partner_id', 'source',
-        'worker_id', 'machinery_id', 'building_id', 'supplier_id', 'latitude', 'longitude'
+        'transaction_hash', 'category', 'category_id', 'transaction_date', 'attachment_path', 'contract_id', 'client_id', 'account_type', 'partner_id', 'source',
+        'worker_id', 'machinery_id', 'building_id', 'supplier_id', 'latitude', 'longitude', 'work_category'
     ];
 
     public function creator()

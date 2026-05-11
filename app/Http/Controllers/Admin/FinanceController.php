@@ -42,6 +42,7 @@ class FinanceController extends Controller
             'payment_method' => 'required|in:cash,card,bank_transfer',
             'account_type' => 'required|in:main,credit',
             'contract_id' => 'nullable|exists:contracts,id',
+            'client_id' => 'nullable|exists:clients,id',
             'notes' => 'nullable|string',
             'category_id' => 'nullable|exists:transaction_categories,id',
             'category_name' => 'nullable|string',
@@ -55,6 +56,7 @@ class FinanceController extends Controller
             'latitude' => 'nullable|string',
             'longitude' => 'nullable|string',
             'source' => 'nullable|string|max:50',
+            'work_category' => 'nullable|string|max:255',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -338,6 +340,7 @@ class FinanceController extends Controller
                         'worker_id' => $worker->id,
                         'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
                         'amount' => $transaction->amount,
+                        'work_category' => $transaction->work_category,
                         'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
                         'date' => $transaction->transaction_date ?? now(),
                         'created_at' => now(),

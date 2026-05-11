@@ -193,10 +193,13 @@ class HrController extends Controller
             'unit_id' => 'nullable|exists:units,id',
             'hours_worked' => 'nullable|numeric|min:0',
             'volume_done' => 'nullable|numeric|min:0',
+            'measurement_unit' => 'nullable|string|max:50',
+            'work_category' => 'nullable|string|max:255',
             'date' => 'required|date'
         ]);
 
         $calculatedCost = 0;
+        $rate = 0; // Default to prevent 500 errors
 
         if ($validated['type'] === 'worker') {
             $worker = Worker::find($validated['worker_id']);
@@ -208,6 +211,7 @@ class HrController extends Controller
                 $calculatedCost = ($validated['volume_done'] ?? 0) * $rate;
             } else {
                 $calculatedCost = 0; 
+                $rate = 0;
             }
             $validated['machinery_id'] = null;
         } else {
@@ -217,7 +221,7 @@ class HrController extends Controller
             $validated['worker_id'] = null;
         }
 
-        $validated['rate'] = $rate ?? 0;
+        $validated['rate'] = $rate;
         $validated['calculated_cost'] = $calculatedCost;
         $validated['status'] = 'unpaid';
 
@@ -456,12 +460,33 @@ class HrController extends Controller
 
     public function getWorkerLedger(Worker $worker)
     {
-        // Actually, we can just load transactions natively. But if we need an endpoint:
         $transactions = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('type', '!=', 'salary_accrual')->orderByDesc('date')->get();
         $logs = \App\Models\WorkLog::with('building')->where('type', 'worker')->where('worker_id', $worker->id)->orderByDesc('date')->get();
         
+        $categoryBalances = [];
+
+        // Sum earnings from logs
+        foreach ($logs as $log) {
+            $cat = $log->work_category ?: 'Umumiy';
+            if (!isset($categoryBalances[$cat])) {
+                $categoryBalances[$cat] = 0;
+            }
+            $categoryBalances[$cat] += $log->calculated_cost;
+        }
+
+        // Subtract payments from transactions
+        foreach ($transactions as $t) {
+            $cat = $t->work_category ?: 'Umumiy';
+            if (!isset($categoryBalances[$cat])) {
+                $categoryBalances[$cat] = 0;
+            }
+            // Assuming transactions are deductions (payments out to worker)
+            $categoryBalances[$cat] -= $t->amount;
+        }
+
         return response()->json([
             'balance' => $worker->balance,
+            'category_balances' => $categoryBalances,
             'transactions' => $transactions,
             'logs' => $logs
         ]);
@@ -473,6 +498,7 @@ class HrController extends Controller
             'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
+            'work_category' => 'nullable|string|max:255',
             'date' => 'required|date',
         ]);
 
@@ -482,6 +508,7 @@ class HrController extends Controller
                 'type' => $validated['type'],
                 'amount' => $validated['amount'],
                 'description' => $validated['description'],
+                'work_category' => $validated['work_category'] ?? null,
                 'date' => $validated['date'],
                 'created_at' => now(),
                 'updated_at' => now(),

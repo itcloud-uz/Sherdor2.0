@@ -149,6 +149,19 @@ function fillTransferFromRefund(refund) {
 
 const isNewCategory = ref(false);
 
+const selectedCategoryName = computed(() => {
+    if (isNewCategory.value) return form.value.category_name?.toLowerCase() || '';
+    if (!props.categories) return '';
+    const cat = props.categories.find(c => c.id === form.value.category_id);
+    return cat ? cat.name.toLowerCase() : '';
+});
+
+const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
+const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
+const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qarz qaytarish'));
+const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material'));
+const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz'));
+
 const pendingRefunds = computed(() => {
     return props.transactions.filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
 });
@@ -187,6 +200,11 @@ function selectContract(c) {
 }
 
 function submitTransaction() {
+    if (requiresClient.value && !form.value.contract_id) {
+        alert("Iltimos, ushbu kategoriya uchun aniq bir Mijoz yoki Shartnomani tanlang (Neyron bog'lama).");
+        return;
+    }
+
     isProcessing.value = true;
     form.value.latitude = gpsCoords.value.latitude;
     form.value.longitude = gpsCoords.value.longitude;
@@ -830,32 +848,32 @@ function submitSupplierPayment() {
                         </div>
                     </div>
 
-                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Ishchi To\'lovi (Avans/Oylik)'">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang</label>
+                    <div v-if="requiresWorker">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
                         <select v-model="form.worker_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                         </select>
                     </div>
 
-                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Texnika To\'lovi'">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang</label>
+                    <div v-if="requiresMachinery">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang (Neyron bog'lama)</label>
                         <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
                         </select>
                     </div>
 
-                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Ta\'minotchi To\'lovi'">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang</label>
+                    <div v-if="requiresSupplier">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
                         <select v-model="form.supplier_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
                         </select>
                     </div>
 
-                    <div v-if="(isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Obyekt Xarajati' || (isNewCategory ? form.category_name : categories.find(c => c.id === form.category_id)?.name) === 'Qurilish materiallari'">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang</label>
+                    <div v-if="requiresBuilding">
+                        <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
                         <select v-model="form.building_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -893,8 +911,10 @@ function submitSupplierPayment() {
                         </div>
                     </div>
 
-                    <div class="relative">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Qaysi Shartnomaga (Ixtiyoriy)</label>
+                    <div class="relative" v-if="requiresClient || form.type === 'income'">
+                        <label class="block text-xs font-mono text-text-muted mb-1" :class="requiresClient ? 'text-neon-cyan' : ''">
+                            {{ requiresClient ? 'Mijozni / Shartnomani tanlang (Neyron bog\'lama)' : 'Qaysi Shartnomaga (Ixtiyoriy)' }}
+                        </label>
                         <div class="relative">
                             <input 
                                 v-model="scheduleSearch" 

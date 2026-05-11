@@ -28,7 +28,8 @@ class FinanceController extends Controller
             'suppliers' => \App\Models\Supplier::latest()->get(),
             'workers' => \App\Models\Worker::latest()->get(),
             'machineries' => \App\Models\Machinery::latest()->get(),
-            'buildings' => \App\Models\Building::latest()->get()
+            'buildings' => \App\Models\Building::latest()->get(),
+            'clients' => \App\Models\Client::latest()->get()
         ]);
     }
 

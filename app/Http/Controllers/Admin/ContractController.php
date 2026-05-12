@@ -9,6 +9,10 @@ class ContractController extends Controller
 {
     public function store(\Illuminate\Http\Request $request)
     {
+        if ($request->has('floor') && !is_null($request->floor)) {
+            $request->merge(['floor' => (string) $request->floor]);
+        }
+
         $validated = $request->validate([
             'buyer_type' => 'required|in:client,partner',
             'client_id' => 'required_if:buyer_type,client|nullable|exists:clients,id',
@@ -134,6 +138,10 @@ class ContractController extends Controller
 
     public function update(\Illuminate\Http\Request $request, \App\Models\Contract $contract)
     {
+        if ($request->has('floor') && !is_null($request->floor)) {
+            $request->merge(['floor' => (string) $request->floor]);
+        }
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'unit_id' => 'required|exists:units,id',

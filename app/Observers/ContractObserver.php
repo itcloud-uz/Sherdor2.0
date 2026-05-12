@@ -37,8 +37,8 @@ class ContractObserver
                 'paid_amount' => 0,
                 'due_date' => $dueDate->format('Y-m-d'),
                 'status' => 'pending',
-                'created_at' => $startDate,
-                'updated_at' => $startDate,
+                'created_at' => $startDate->toDateTimeString(),
+                'updated_at' => $startDate->toDateTimeString(),
             ];
         }
 

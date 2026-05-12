@@ -51,7 +51,7 @@ class ContractController extends Controller
         }
         $contract->save();
 
-        $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
+        $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateTimeString() : now()->toDateTimeString();
 
         // If it's a partner, create automatic transaction reducing their accountable balance
         if ($validated['buyer_type'] === 'partner') {

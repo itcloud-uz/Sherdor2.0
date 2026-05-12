@@ -124,11 +124,13 @@ function saveWorker() {
     isProcessing.value = true;
     if (isWorkerEditMode.value) {
         router.post(route('admin.hr.worker.update', workerForm.value.id), workerForm.value, {
+            preserveScroll: true,
             onSuccess: () => { isProcessing.value = false; cancelWorkerEdit(); },
             onError: () => isProcessing.value = false
         });
     } else {
         router.post(route('admin.hr.worker.store'), workerForm.value, {
+            preserveScroll: true,
             onSuccess: () => { isProcessing.value = false; cancelWorkerEdit(); },
             onError: () => isProcessing.value = false
         });
@@ -847,7 +849,7 @@ function generatePayroll() {
                     
 
 
-                    <button @click="showWorkerForm = !showWorkerForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
+                    <button @click="!showWorkerForm ? (cancelWorkerEdit(), showWorkerForm = true) : (showWorkerForm = false)" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
                         {{ showWorkerForm ? '- Yopish' : '+ Ishchi Qo\'shish' }}
                     </button>
                 </div>

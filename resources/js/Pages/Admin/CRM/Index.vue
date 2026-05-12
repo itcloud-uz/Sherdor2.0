@@ -30,7 +30,7 @@ onMounted(() => {
 });
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
-const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
+const clientForm = ref({ first_name: '', last_name: '', middle_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
 const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true });
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
@@ -152,7 +152,7 @@ function deleteLead(id) {
 function openCreateClientModal() {
     isEditingClient.value = false;
     editingClientId.value = null;
-    clientForm.value = { first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '' };
+    clientForm.value = { first_name: '', last_name: '', middle_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' };
     showCreateClientModal.value = true;
 }
 
@@ -162,6 +162,7 @@ function openEditClientModal(client) {
     clientForm.value = { 
         first_name: client.first_name, 
         last_name: client.last_name, 
+        middle_name: client.middle_name || '',
         passport_series: client.passport_number || client.passport_series, 
         pinfl: client.pinfl, 
         phone: client.phone, 
@@ -702,8 +703,8 @@ function openQuickSmsModal(lead) {
                             </div>
                             
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.first_name} ${client.last_name}`">
-                                    {{ client.first_name }} {{ client.last_name }}
+                                <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.last_name} ${client.first_name} ${client.middle_name || ''}`">
+                                    {{ client.last_name }} {{ client.first_name }} {{ client.middle_name || '' }}
                                     <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
                                 </h3>
                                 <p class="text-xs font-mono text-neon-cyan mt-1 flex items-center gap-1">
@@ -1062,7 +1063,7 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
                         <input v-model="clientForm.created_at" type="date" class="glass-input w-full text-neon-cyan" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('first_name') }}</label>
                             <input v-model="clientForm.first_name" type="text" class="glass-input w-full" required>
@@ -1070,6 +1071,10 @@ function openQuickSmsModal(lead) {
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('last_name') }}</label>
                             <input v-model="clientForm.last_name" type="text" class="glass-input w-full" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Otasining ismi</label>
+                            <input v-model="clientForm.middle_name" type="text" class="glass-input w-full">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

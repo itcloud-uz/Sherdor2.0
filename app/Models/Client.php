@@ -9,6 +9,7 @@ class Client extends Model
     protected $fillable = [
         'first_name',
         'last_name',
+        'middle_name',
         'passport_number',
         'pinfl',
         'phone',
@@ -19,7 +20,7 @@ class Client extends Model
 
     public function getFullNameAttribute()
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return trim("{$this->last_name} {$this->first_name} {$this->middle_name}");
     }
 
     public function getPassportSeriesAttribute()

@@ -39,6 +39,7 @@ class CrmController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string',
             'last_name' => 'required|string',
+            'middle_name' => 'nullable|string',
             'passport_series' => 'nullable|string',
             'pinfl' => 'nullable|string',
             'phone' => 'nullable|string',
@@ -67,6 +68,7 @@ class CrmController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string',
             'last_name' => 'required|string',
+            'middle_name' => 'nullable|string',
             'passport_series' => 'nullable|string',
             'pinfl' => 'nullable|string',
             'phone' => 'nullable|string',

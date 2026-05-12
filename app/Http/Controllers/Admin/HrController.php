@@ -71,6 +71,10 @@ class HrController extends Controller
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
         $validated['rate'] = $validated['base_rate'];
 
+        $validated['building_id'] = empty($validated['building_id']) ? null : $validated['building_id'];
+        $validated['floor_id'] = empty($validated['floor_id']) ? null : $validated['floor_id'];
+        $validated['unit_id'] = empty($validated['unit_id']) ? null : $validated['unit_id'];
+
         Worker::create($validated);
         return redirect()->back()->with('message', 'Worker added.');
     }

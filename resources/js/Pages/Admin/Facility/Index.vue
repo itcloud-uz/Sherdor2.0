@@ -100,7 +100,7 @@ watch(() => contractForm.value.total_amount, (newTotal) => {
         
         if (contractForm.value.payment_type === 'full') {
             contractForm.value.down_payment = newTotal;
-            contractForm.value.term_months = 0;
+            contractForm.value.term_months = 1;
         }
     }
 });
@@ -108,7 +108,7 @@ watch(() => contractForm.value.total_amount, (newTotal) => {
 watch(() => contractForm.value.payment_type, (newType) => {
     if (newType === 'full') {
         contractForm.value.down_payment = contractForm.value.total_amount;
-        contractForm.value.term_months = 0;
+        contractForm.value.term_months = 1;
     } else {
         contractForm.value.down_payment = '';
         contractForm.value.term_months = 36;
@@ -117,13 +117,24 @@ watch(() => contractForm.value.payment_type, (newType) => {
 
 function submitContract() {
     isProcessingContract.value = true;
+    
+    // Clear the opposite ID depending on buyer_type
+    if (contractForm.value.buyer_type === 'client') {
+        contractForm.value.partner_id = null;
+    } else {
+        contractForm.value.client_id = null;
+    }
+
     router.post(route('admin.contracts.store'), contractForm.value, {
         onSuccess: () => {
             showSellUnitModal.value = false;
             isProcessingContract.value = false;
             // The server will have updated the unit status, so reload or wait for Inertia.
         },
-        onError: () => isProcessingContract.value = false
+        onError: (errors) => {
+            isProcessingContract.value = false;
+            alert("Xatolik yuz berdi: " + Object.values(errors).join("\n"));
+        }
     });
 }
 

@@ -194,7 +194,7 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' });
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -213,7 +213,9 @@ function editContract(contract) {
         payment_type: contract.payment_type || 'installment',
         created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
         actual_paid_amount: '',
-        payment_method: 'bank'
+        payment_method: 'bank',
+        floor: contract.floor || contract.unit?.floor?.number || '',
+        rooms: contract.rooms || contract.unit?.rooms_count || ''
     };
     showCreateContractModal.value = true;
 }
@@ -248,7 +250,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -270,6 +272,9 @@ watch(() => contractForm.value.unit_id, (newUnitId) => {
             contractForm.value.total_amount = Number(u.price) || 0;
             const area = Number(u.area_sqm) || 0;
             contractForm.value.price_per_sqm = area > 0 ? (contractForm.value.total_amount / area).toFixed(2) : 0;
+            
+            contractForm.value.floor = u.floor?.number || '';
+            contractForm.value.rooms = u.rooms_count || '';
             
             if (contractForm.value.payment_type === 'full') {
                 contractForm.value.down_payment = contractForm.value.total_amount;
@@ -753,7 +758,7 @@ function openQuickSmsModal(lead) {
             <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 
 
-                <button @click="isEditingContract = false; contractForm = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                <button @click="isEditingContract = false; contractForm = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
@@ -1162,21 +1167,17 @@ function openQuickSmsModal(lead) {
 
                     <!-- Dynamic Unit Details -->
                     <div v-if="selectedUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
-                        <div>
+                        <div class="col-span-1 sm:col-span-2">
                             <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('object_block') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.building?.name }}</p>
+                            <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.building?.name || 'Noma\'lum' }} (Maydon: {{ selectedUnit.area_sqm }} kv.m)</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('floor') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedUnit.floor?.number }}</p>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('floor') }}</label>
+                            <input v-model="contractForm.floor" type="text" class="glass-input w-full text-white" placeholder="Qavatni kiriting">
                         </div>
                         <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('number_of_rooms') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedUnit.rooms_count }} xona</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('total_area') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedUnit.area_sqm }} kv.m</p>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
+                            <input v-model="contractForm.rooms" type="number" class="glass-input w-full text-white" placeholder="Xonalar sonini kiriting">
                         </div>
                     </div>
 

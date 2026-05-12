@@ -49,7 +49,7 @@
     <p>
         2.3 Лойиҳа смета ҳужжатлари ва томонларнинг келишувига кўра савдо дўкон <strong>{{ $contract->unit ? $contract->unit->area_sqm : '____' }}</strong> кв.метрдан иборат бўлиб, Ургут шаҳар Дўстлик маҳалласи Навоий кўчаси №83-уй манзилида жойлашган янгидан қурилаётган савдо дўконларнинг 
         <strong>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '____' }}</strong> биноси 
-        <strong>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '____' }}</strong>-қавати, 
+        <strong>{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '____') }}</strong>-қавати, 
         <strong>{{ $contract->unit ? $contract->unit->unit_number : '____' }}</strong>-дўкони. Савдо дўкон майдонининг умумий ҳажми лойиҳа бўйича уйнинг яшашга мўлжалланган хоналар, ёрдамчи хоналар, ёзги хоналар (летние помещения) майдонининг йиғиндисидан иборат. Савдо дўкон тавсифи ушбу шартноманинг ажралмас қисми бўлиб ҳисобланувчи савдо дўкон режа чизмасида келтирилган (1-илова).
     </p>
     <p>2.4 Савдо дўкон қурилиш-монтаж ишларининг таркиби ва кўлами қурилиш тугаллангандан сўнг мулкчиликга «ХАРИДОР» га ўтказилади, тасдиқланган «ОБЪЕКТ» лойиҳасига мос келиши керак.</p>
@@ -79,7 +79,7 @@
         </tr>
         <tr>
             <td>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '___' }}</td>
-            <td>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '___' }}</td>
+            <td>{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '___') }}</td>
             <td>{{ $contract->unit ? $contract->unit->area_sqm : '___' }}</td>
             <td>{{ number_format($contract->price_per_sqm, 2) }}</td>
             <td>{{ number_format($contract->total_amount, 2) }}</td>

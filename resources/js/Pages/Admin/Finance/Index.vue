@@ -41,7 +41,6 @@ const isProcessing = ref(false);
 const tabs = [
     { id: 0, name: 'dashboard', icon: '🏦' },
     { id: 1, name: 'action_center', icon: '⚖️' },
-    { id: 2, name: 'ledger_history', icon: '📜' },
     { id: 3, name: 'create_transaction', icon: '💸' },
     { id: 4, name: 'qarzlar', icon: '📉' },
     { id: 5, name: 'Ta\'minotchilar', icon: '🏢' },
@@ -537,19 +536,8 @@ function submitSupplierPayment() {
                     </div>
                 </button>
                 
-                <!-- Unified Finance Sub-Navigation (Cheklar / Tasdiqlar) -->
+                <!-- Unified Finance Sub-Navigation (Tasdiqlar, Operatsiyalar Tarixi, Cheklar) -->
                 <div class="pt-4 border-t border-white/10 space-y-4">
-                    <Link :href="route('admin.receipts')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-cyan/50 hover:bg-neon-cyan/5">
-                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-cyan flex items-center justify-center text-white group-hover:text-neon-cyan shrink-0 transition-colors">
-                            <span class="text-xl">🧾</span>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-cyan transition-colors">
-                                {{ $t('Cheklar') || 'Cheklar' }}
-                            </h3>
-                        </div>
-                    </Link>
-                    
                     <Link :href="route('admin.approvals')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-yellow/50 hover:bg-neon-yellow/5">
                         <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-yellow flex items-center justify-center text-white group-hover:text-neon-yellow shrink-0 transition-colors">
                             <span class="text-xl">✅</span>
@@ -557,6 +545,34 @@ function submitSupplierPayment() {
                         <div class="text-left">
                             <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-yellow transition-colors">
                                 {{ $t('Tasdiqlar') || 'Tasdiqlar' }}
+                            </h3>
+                        </div>
+                    </Link>
+
+                    <button 
+                        @click="activeTab = 2"
+                        class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group"
+                        :class="activeTab === 2 ? 'border-white bg-white/5' : 'border-white/5 hover:border-white/50 hover:bg-white/5'"
+                    >
+                        <div class="w-10 h-10 rounded-xl bg-black/50 border flex items-center justify-center transition-colors shrink-0"
+                             :class="activeTab === 2 ? 'border-white text-white' : 'border-white/10 group-hover:border-white text-white'">
+                            <span class="text-xl">📜</span>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-display font-bold uppercase tracking-widest text-sm transition-colors"
+                                :class="activeTab === 2 ? 'text-white' : 'text-text-muted group-hover:text-white'">
+                                {{ $t('ledger_history') }}
+                            </h3>
+                        </div>
+                    </button>
+
+                    <Link :href="route('admin.receipts')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-cyan/50 hover:bg-neon-cyan/5">
+                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-cyan flex items-center justify-center text-white group-hover:text-neon-cyan shrink-0 transition-colors">
+                            <span class="text-xl">🧾</span>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-cyan transition-colors">
+                                {{ $t('Cheklar') || 'Cheklar' }}
                             </h3>
                         </div>
                     </Link>

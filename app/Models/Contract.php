@@ -22,7 +22,9 @@ class Contract extends Model
         'daily_penalty_rate',
         'total_penalty_accumulated',
         'contract_number',
-        'partner_id'
+        'partner_id',
+        'floor',
+        'rooms'
     ];
 
     protected $casts = [

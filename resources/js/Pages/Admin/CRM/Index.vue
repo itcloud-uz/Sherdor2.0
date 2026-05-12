@@ -194,13 +194,15 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' });
 
 function editContract(contract) {
     isEditingContract.value = true;
     currentContractId.value = contract.id;
     contractForm.value = { 
-        client_id: contract.client_id, 
+        buyer_type: contract.partner_id ? 'partner' : 'client',
+        partner_id: contract.partner_id || '',
+        client_id: contract.client_id || '', 
         unit_id: contract.unit_id, 
         contract_number: contract.contract_number || '',
         contract_type: contract.contract_type || 'residential', 
@@ -225,6 +227,13 @@ function deleteContract(id) {
 function createContract() {
     isProcessing.value = true;
     
+    // Clear the opposite ID depending on buyer_type
+    if (contractForm.value.buyer_type === 'client') {
+        contractForm.value.partner_id = null;
+    } else {
+        contractForm.value.client_id = null;
+    }
+    
     if (isEditingContract.value) {
         router.put(route('admin.contracts.update', currentContractId.value), contractForm.value, {
             onSuccess: () => {
@@ -239,7 +248,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -255,31 +264,34 @@ const selectedUnit = computed(() => {
 // Update contract amounts when unit changes
 import { watch } from 'vue';
 watch(() => contractForm.value.unit_id, (newUnitId) => {
-    if (newUnitId) {
+    if (newUnitId && !isEditingContract.value) {
         const u = props.units.find(unit => unit.id === newUnitId);
         if (u) {
-            contractForm.value.price_per_sqm = Number(u.price) || 0;
-            const totalPrice = contractForm.value.price_per_sqm * (Number(u.area_sqm) || 0);
-            contractForm.value.total_amount = totalPrice;
+            contractForm.value.total_amount = Number(u.price) || 0;
+            const area = Number(u.area_sqm) || 0;
+            contractForm.value.price_per_sqm = area > 0 ? (contractForm.value.total_amount / area).toFixed(2) : 0;
+            
             if (contractForm.value.payment_type === 'full') {
-                contractForm.value.down_payment = totalPrice;
+                contractForm.value.down_payment = contractForm.value.total_amount;
                 contractForm.value.term_months = 1;
             } else {
-                contractForm.value.down_payment = totalPrice * 0.3; // Default 30%
+                contractForm.value.down_payment = contractForm.value.total_amount * 0.3; // Default 30%
             }
         }
     }
 });
-watch(() => contractForm.value.price_per_sqm, (newPrice) => {
+
+watch(() => contractForm.value.total_amount, (newTotal) => {
     if (contractForm.value.unit_id) {
         const u = props.units.find(unit => unit.id === contractForm.value.unit_id);
         if (u) {
-            const totalPrice = (Number(newPrice) || 0) * (Number(u.area_sqm) || 0);
-            contractForm.value.total_amount = totalPrice;
+            const area = Number(u.area_sqm) || 0;
+            contractForm.value.price_per_sqm = area > 0 ? (Number(newTotal) / area).toFixed(2) : 0;
+            
             if (contractForm.value.payment_type === 'full') {
-                contractForm.value.down_payment = totalPrice;
+                contractForm.value.down_payment = Number(newTotal);
             } else {
-                contractForm.value.down_payment = totalPrice * 0.3;
+                // optional: auto-update down payment if needed
             }
         }
     }
@@ -1101,17 +1113,35 @@ function openQuickSmsModal(lead) {
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('client') }}</label>
-                        <select v-model="contractForm.client_id" class="glass-input w-full bg-black/50" required>
+                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Xaridor Turi</label>
+                        <div class="flex gap-4 mb-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                                <span class="text-xs text-white">Mijoz (Client)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-neon-yellow focus:ring-neon-yellow bg-black/50 border-white/20">
+                                <span class="text-xs text-white text-neon-yellow">Ta'sischi Xaridi (Partner)</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Client Select -->
+                        <select v-if="contractForm.buyer_type === 'client'" v-model="contractForm.client_id" class="glass-input w-full bg-black/50" :required="contractForm.buyer_type === 'client'">
                             <option value="" disabled>{{ $t('select_client') }}</option>
                             <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }}</option>
+                        </select>
+                        
+                        <!-- Partner Select -->
+                        <select v-if="contractForm.buyer_type === 'partner'" v-model="contractForm.partner_id" class="glass-input w-full bg-black/50 border-neon-yellow/50" :required="contractForm.buyer_type === 'partner'">
+                            <option value="" disabled>Ta'sischini tanlang</option>
+                            <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_unit') }}</label>
                         <select v-model="contractForm.unit_id" class="glass-input w-full bg-black/50" required>
                             <option value="" disabled>{{ $t('select_unit') }}</option>
-                            <option v-for="u in units" :key="u.id" :value="u.id">{{ $t('unit') }} {{ u.unit_number }} - {{ u.floor?.building?.name }}</option>
+                            <option v-for="u in units" :key="u.id" :value="u.id">{{ $t('unit') }} {{ u.unit_number }} - {{ u.floor?.building?.name }} (Qavat: {{ u.floor?.number }})</option>
                         </select>
                     </div>
 
@@ -1142,7 +1172,7 @@ function openQuickSmsModal(lead) {
                         </div>
                         <div>
                             <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('number_of_rooms') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedUnit.rooms }} xona</p>
+                            <p class="text-xs text-white font-bold">{{ selectedUnit.rooms_count }} xona</p>
                         </div>
                         <div>
                             <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('total_area') }}</p>
@@ -1152,12 +1182,12 @@ function openQuickSmsModal(lead) {
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="selectedUnit">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }}</label>
-                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full" required>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
+                            <input v-model="contractForm.total_amount" type="number" step="any" class="glass-input w-full text-neon-green font-bold text-lg" required placeholder="Umumiy summani kiriting">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
-                            <input v-model="contractForm.total_amount" type="number" step="any" class="glass-input w-full" required>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
+                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full bg-black/50 opacity-70 cursor-not-allowed" readonly tabindex="-1">
                         </div>
                     </div>
 

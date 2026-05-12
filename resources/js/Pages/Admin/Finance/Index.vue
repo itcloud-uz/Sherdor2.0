@@ -115,6 +115,7 @@ const form = ref({
     account_type: 'main',
     contract_id: '',
     client_id: '',
+    partner_id: '',
     worker_id: '',
     machinery_id: '',
     building_id: '',
@@ -163,6 +164,7 @@ const requiresMachinery = computed(() => selectedCategoryName.value.includes('te
 const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qarz qaytarish'));
 const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material'));
 const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz'));
+const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner'));
 
 const pendingRefunds = computed(() => {
     return props.transactions.filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
@@ -210,11 +212,27 @@ function submitTransaction() {
     isProcessing.value = true;
     form.value.latitude = gpsCoords.value.latitude;
     form.value.longitude = gpsCoords.value.longitude;
+    
+    // Auto-fill target_type and target_id based on requires flags
+    if (requiresPartner.value) {
+        form.value.target_type = 'partner';
+        form.value.target_id = form.value.partner_id;
+    } else if (requiresWorker.value) {
+        form.value.target_type = 'worker';
+        form.value.target_id = form.value.worker_id;
+    } else if (requiresSupplier.value) {
+        form.value.target_type = 'supplier';
+        form.value.target_id = form.value.supplier_id;
+    } else if (requiresClient.value) {
+        form.value.target_type = 'client';
+        form.value.target_id = form.value.client_id;
+    }
+
     router.post(route('admin.finance.transactions.store'), form.value, {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel' };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -855,6 +873,14 @@ function submitSupplierPayment() {
                         <select v-model="form.worker_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                        </select>
+                    </div>
+                    
+                    <div v-if="requiresPartner">
+                        <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
+                        <select v-model="form.partner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
                         </select>
                     </div>
 

@@ -29,7 +29,8 @@ class FinanceController extends Controller
             'workers' => \App\Models\Worker::latest()->get(),
             'machineries' => \App\Models\Machinery::latest()->get(),
             'buildings' => \App\Models\Building::latest()->get(),
-            'clients' => \App\Models\Client::latest()->get()
+            'clients' => \App\Models\Client::latest()->get(),
+            'partners' => \App\Models\Partner::with('user')->latest()->get()
         ]);
     }
 
@@ -57,6 +58,8 @@ class FinanceController extends Controller
             'longitude' => 'nullable|string',
             'source' => 'nullable|string|max:50',
             'work_category' => 'nullable|string|max:255',
+            'target_type' => 'nullable|string|in:partner,supplier,client,worker',
+            'target_id' => 'nullable|integer'
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -475,12 +478,32 @@ class FinanceController extends Controller
 
     public function destroy(Transaction $transaction)
     {
+        // Prevent deleting pending transactions from partners
+        if ($transaction->status === 'pending' && $transaction->partner_id) {
+            return redirect()->back()->withErrors(['error' => 'Hamkor kiritgan so\'rovni o\'chirib bo\'lmaydi! Iltimos, uni Tasdiqlar panelidan "Rad etish" (Reject) qiling.']);
+        }
+
         // Revert balance if approved
         if ($transaction->status === 'approved') {
             if ($transaction->type === 'income') {
                 \App\Models\CompanyBalance::addExpense($transaction->amount, $transaction->account_type);
             } else {
                 \App\Models\CompanyBalance::addIncome($transaction->amount, $transaction->account_type);
+            }
+
+            // Revert Partner Balance
+            if ($transaction->partner_id) {
+                $partner = \App\Models\Partner::find($transaction->partner_id);
+                if ($partner) {
+                    if ($transaction->category === 'Partner Advance') {
+                        // Originally added to accountable balance, so deduct
+                        $partner->accountable_balance -= $transaction->amount;
+                    } else {
+                        // Originally deducted from accountable balance, so add back
+                        $partner->accountable_balance += $transaction->amount;
+                    }
+                    $partner->save();
+                }
             }
         }
 

@@ -16,8 +16,9 @@ class CrmController extends Controller
     {
         $leads = Lead::all();
         $clients = \App\Models\Client::with('contracts.unit.floor.building')->get();
-        $contracts = Contract::with(['client', 'unit', 'paymentSchedules'])->get();
+        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules'])->get();
         $units = \App\Models\Unit::with('floor.building')->get();
+        $partners = \App\Models\Partner::with('user')->get();
         $overdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
                             ->where('status', 'overdue')
                             ->orderBy('due_date', 'asc')
@@ -28,6 +29,7 @@ class CrmController extends Controller
             'clients' => $clients,
             'contracts' => $contracts,
             'units' => $units,
+            'partners' => $partners,
             'overdueSchedules' => $overdueSchedules,
         ]);
     }

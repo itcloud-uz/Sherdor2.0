@@ -10,7 +10,9 @@ class ContractController extends Controller
     public function store(\Illuminate\Http\Request $request)
     {
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
+            'buyer_type' => 'required|in:client,partner',
+            'client_id' => 'required_if:buyer_type,client|nullable|exists:clients,id',
+            'partner_id' => 'required_if:buyer_type,partner|nullable|exists:partners,id',
             'unit_id' => 'required|exists:units,id',
             'contract_type' => 'required|string|in:residential,commercial',
             'price_per_sqm' => 'required|numeric|min:0',
@@ -24,7 +26,8 @@ class ContractController extends Controller
         ]);
 
         $contract = new \App\Models\Contract([
-            'client_id' => $validated['client_id'],
+            'client_id' => $validated['buyer_type'] === 'client' ? $validated['client_id'] : null,
+            'partner_id' => $validated['buyer_type'] === 'partner' ? $validated['partner_id'] : null,
             'unit_id' => $validated['unit_id'],
             'contract_type' => $validated['contract_type'],
             'price_per_sqm' => $validated['price_per_sqm'],
@@ -40,11 +43,53 @@ class ContractController extends Controller
         }
         $contract->save();
 
-        // Note: The ContractObserver will automatically generate PaymentSchedules.
-        // It should use the contract's created_at date for scheduling.
+        // If it's a partner, create automatic transaction reducing their accountable balance
+        if ($validated['buyer_type'] === 'partner') {
+            $partner = \App\Models\Partner::find($validated['partner_id']);
+            if ($partner) {
+                // Ta'sischi ulushidan chiqim
+                $partnerCategory = \App\Models\TransactionCategory::firstOrCreate(
+                    ['name' => 'Ta\'sischi Xaridi (Chiqim)'],
+                    ['type' => 'expense', 'description' => 'Ta\'sischi o\'z ulushidan ob\'yekt xarid qildi']
+                );
+                
+                \App\Models\Transaction::create([
+                    'type' => 'expense',
+                    'amount' => $validated['total_amount'],
+                    'account_type' => 'main',
+                    'contract_id' => $contract->id,
+                    'category_id' => $partnerCategory->id,
+                    'status' => 'approved', // automatic approval for partner buy? Let's make it approved
+                    'transaction_date' => now(),
+                    'notes' => 'Ta\'sischi ob\'yekt xaridi: Unit ID ' . $validated['unit_id'],
+                    'created_by' => auth()->id() ?? 1,
+                    'target_type' => 'partner',
+                    'target_id' => $partner->id
+                ]);
 
-        // Create transaction if paid amount is provided
-        if (!empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0) {
+                // Also record Income to the company
+                $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                    ['name' => 'Ta\'sischi Xaridi (Kirim)'],
+                    ['type' => 'income', 'description' => 'Ta\'sischi ob\'yekt xarididan tushum']
+                );
+                
+                \App\Models\Transaction::create([
+                    'type' => 'income',
+                    'amount' => $validated['total_amount'],
+                    'account_type' => 'main',
+                    'contract_id' => $contract->id,
+                    'category_id' => $incomeCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => now(),
+                    'notes' => 'Ta\'sischi ob\'yekt xaridi (Kompaniya hisobiga): Unit ID ' . $validated['unit_id'],
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+
+                // Reduce partner balance
+                $partner->accountable_balance -= $validated['total_amount'];
+                $partner->save();
+            }
+        } else if (!empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0) {
             $paymentMethod = $validated['payment_method'] ?? 'bank';
             
             // Create a pending transaction for Action Center to approve
@@ -113,8 +158,20 @@ class ContractController extends Controller
         // Ensure relations are loaded
         $contract->load(['client', 'unit', 'paymentSchedules']);
 
+        $locale = app()->getLocale();
+        if (!in_array($locale, ['uz', 'ru', 'en'])) {
+            $locale = 'uz'; // fallback
+        }
+
+        $type = $contract->contract_type ?? 'residential';
+        if (!in_array($type, ['residential', 'commercial'])) {
+            $type = 'residential';
+        }
+        
+        $viewPath = "contracts.{$locale}.{$type}";
+
         // Generate PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.template', compact('contract'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewPath, compact('contract'));
         
         $fileName = 'contract_' . $contract->id . '_' . time() . '.pdf';
         $path = 'contracts/' . $fileName;

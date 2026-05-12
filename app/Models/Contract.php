@@ -21,7 +21,8 @@ class Contract extends Model
         'ai_verification_logs',
         'daily_penalty_rate',
         'total_penalty_accumulated',
-        'contract_number'
+        'contract_number',
+        'partner_id'
     ];
 
     protected $casts = [
@@ -31,6 +32,48 @@ class Contract extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(Partner::class);
+    }
+
+    public function getBuyerAttribute()
+    {
+        if ($this->client_id && $this->client) {
+            return $this->client;
+        }
+
+        if ($this->partner_id && $this->partner && $this->partner->user) {
+            $user = $this->partner->user;
+            // Create a pseudo-client object to prevent template errors
+            return (object)[
+                'first_name' => $user->name,
+                'last_name' => '',
+                'full_name' => $user->name,
+                'address' => 'Ta\'sischi ulushi',
+                'pinfl' => $user->phone ?? '_______',
+                'passport_issued_date' => null,
+                'passport_issued_by' => 'Ta\'sischi',
+                'passport_number' => '_______',
+                'passport_series' => '_______',
+                'phone' => $user->phone ?? '_______',
+            ];
+        }
+
+        return (object)[
+            'first_name' => 'Noma\'lum',
+            'last_name' => '',
+            'full_name' => 'Noma\'lum Xaridor',
+            'address' => '_______',
+            'pinfl' => '_______',
+            'passport_issued_date' => null,
+            'passport_issued_by' => '_______',
+            'passport_number' => '_______',
+            'passport_series' => '_______',
+            'phone' => '_______',
+        ];
     }
 
     public function unit()

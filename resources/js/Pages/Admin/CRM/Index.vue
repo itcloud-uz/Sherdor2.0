@@ -2,7 +2,7 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -18,6 +18,16 @@ const isProcessing = ref(false);
 
 const showCreateClientModal = ref(false);
 const showCreateLeadModal = ref(false);
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preselectUnit = urlParams.get('unit_id');
+    if (preselectUnit) {
+        activeTab.value = 'contracts';
+        contractForm.value.unit_id = Number(preselectUnit);
+        showCreateContractModal.value = true;
+    }
+});
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
 const clientForm = ref({ first_name: '', last_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
@@ -264,7 +274,6 @@ const selectedUnit = computed(() => {
 });
 
 // Update contract amounts when unit changes
-import { watch } from 'vue';
 watch(() => contractForm.value.unit_id, (newUnitId) => {
     if (newUnitId && !isEditingContract.value) {
         const u = props.units.find(unit => unit.id === newUnitId);

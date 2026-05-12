@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
@@ -8,7 +8,9 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const props = defineProps({
-    buildings: Array
+    buildings: Array,
+    clients: Array,
+    partners: Array
 });
 
 const selectedBuilding = ref(props.buildings.length > 0 ? props.buildings[0] : null);
@@ -38,6 +40,92 @@ watch(selectedBuilding, (newBuilding) => {
         selectedFloor.value = null;
     }
 });
+
+const showSellUnitModal = ref(false);
+const isProcessingContract = ref(false);
+const currentSellingUnit = ref(null);
+const contractForm = ref({
+    buyer_type: 'client',
+    partner_id: '',
+    client_id: '',
+    unit_id: '',
+    contract_number: '',
+    contract_type: 'residential',
+    price_per_sqm: '',
+    total_amount: '',
+    down_payment: '',
+    term_months: 36,
+    payment_type: 'installment',
+    created_at: '',
+    actual_paid_amount: '',
+    payment_method: 'bank',
+    floor: '',
+    rooms: ''
+});
+
+function openSellUnit(unit) {
+    currentSellingUnit.value = unit;
+    showAddUnitModal.value = false;
+    
+    contractForm.value = {
+        buyer_type: 'client',
+        partner_id: '',
+        client_id: '',
+        unit_id: unit.id,
+        contract_number: '',
+        contract_type: unit.type === 'commercial' ? 'commercial' : 'residential',
+        price_per_sqm: '',
+        total_amount: unit.price || '',
+        down_payment: '',
+        term_months: 36,
+        payment_type: 'installment',
+        created_at: '',
+        actual_paid_amount: '',
+        payment_method: 'bank',
+        floor: selectedFloor.value?.floor_number || '',
+        rooms: unit.rooms_count || ''
+    };
+    
+    if (unit.price && unit.area_sqm) {
+        contractForm.value.price_per_sqm = (Number(unit.price) / Number(unit.area_sqm)).toFixed(2);
+    }
+    
+    showSellUnitModal.value = true;
+}
+
+watch(() => contractForm.value.total_amount, (newTotal) => {
+    if (currentSellingUnit.value) {
+        const area = Number(currentSellingUnit.value.area_sqm) || 0;
+        contractForm.value.price_per_sqm = area > 0 ? (Number(newTotal) / area).toFixed(2) : 0;
+        
+        if (contractForm.value.payment_type === 'full') {
+            contractForm.value.down_payment = newTotal;
+            contractForm.value.term_months = 0;
+        }
+    }
+});
+
+watch(() => contractForm.value.payment_type, (newType) => {
+    if (newType === 'full') {
+        contractForm.value.down_payment = contractForm.value.total_amount;
+        contractForm.value.term_months = 0;
+    } else {
+        contractForm.value.down_payment = '';
+        contractForm.value.term_months = 36;
+    }
+});
+
+function submitContract() {
+    isProcessingContract.value = true;
+    router.post(route('admin.contracts.store'), contractForm.value, {
+        onSuccess: () => {
+            showSellUnitModal.value = false;
+            isProcessingContract.value = false;
+            // The server will have updated the unit status, so reload or wait for Inertia.
+        },
+        onError: () => isProcessingContract.value = false
+    });
+}
 
 const showAddBuildingModal = ref(false);
 const showAddStageModal = ref(false);
@@ -980,6 +1068,9 @@ const progressSeries = computed(() => {
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" v-if="isEditingUnit" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
+                        <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedFloor.units.find(u => u.id === editingUnitId))" class="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green font-bold font-mono text-xs rounded hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+                            Sotish
+                        </button>
                         <button type="button" @click="showAddUnitModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-neon-cyan text-black font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(0,240,255,0.3)] disabled:opacity-50">{{ isEditingUnit ? "Saqlash" : "Qo'shish" }}</button>
                     </div>
@@ -1001,6 +1092,128 @@ const progressSeries = computed(() => {
                 </div>
             </div>
         </Modal>
+
+        <!-- Sell Unit Modal (Create Contract) -->
+        <div v-if="showSellUnitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showSellUnitModal = false"></div>
+            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-green/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-green/50">
+                    {{ $t('add') }} {{ $t('contract') }}
+                </h2>
+                <form @submit.prevent="submitContract" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
+                            <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
+                            <input v-model="contractForm.contract_number" type="text" class="glass-input w-full text-neon-green" placeholder="Masalan: SH-001">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Xaridor Turi</label>
+                        <div class="flex gap-4 mb-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                                <span class="text-xs text-white">Mijoz (Client)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-neon-yellow focus:ring-neon-yellow bg-black/50 border-white/20">
+                                <span class="text-xs text-white text-neon-yellow">Ta'sischi Xaridi (Partner)</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Client Select -->
+                        <select v-if="contractForm.buyer_type === 'client'" v-model="contractForm.client_id" class="glass-input w-full bg-black/50" :required="contractForm.buyer_type === 'client'">
+                            <option value="" disabled>{{ $t('select_client') }}</option>
+                            <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }}</option>
+                        </select>
+                        
+                        <!-- Partner Select -->
+                        <select v-if="contractForm.buyer_type === 'partner'" v-model="contractForm.partner_id" class="glass-input w-full bg-black/50 border-neon-yellow/50" :required="contractForm.buyer_type === 'partner'">
+                            <option value="" disabled>Ta'sischini tanlang</option>
+                            <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
+                        </select>
+                    </div>
+
+                    <div v-if="currentSellingUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
+                        <div class="col-span-1 sm:col-span-2">
+                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('object_block') }}</p>
+                            <p class="text-xs text-white font-bold">{{ selectedBuilding?.name || 'Noma\'lum' }} (Xonadon: {{ currentSellingUnit.unit_number }}, Maydon: {{ currentSellingUnit.area_sqm }} kv.m)</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('floor') }}</label>
+                            <input v-model="contractForm.floor" type="text" class="glass-input w-full text-white" placeholder="Qavatni kiriting">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
+                            <input v-model="contractForm.rooms" type="number" class="glass-input w-full text-white" placeholder="Xonalar sonini kiriting">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="currentSellingUnit">
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
+                            <input v-model="contractForm.total_amount" type="number" step="any" class="glass-input w-full text-neon-green font-bold text-lg" required placeholder="Umumiy summani kiriting">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik)</label>
+                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full bg-black/50 opacity-70 cursor-not-allowed" readonly tabindex="-1">
+                        </div>
+                    </div>
+
+                    <!-- Payment Type Selection -->
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">{{ $t('payment_type') }}</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                                <span class="text-xs text-white">{{ $t('one_time_full_payment') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                                <span class="text-xs text-white">{{ $t('installment_payment') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div v-if="contractForm.payment_type === 'installment'">
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('down_payment') }}</label>
+                            <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
+                        </div>
+                        <div v-if="contractForm.payment_type === 'installment'">
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('term_months') }}</label>
+                            <input v-model="contractForm.term_months" type="number" class="glass-input w-full" required>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/10 mt-4">
+                        <h3 class="text-sm font-bold text-neon-cyan uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Haqiqatda qilingan to'lov</label>
+                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="glass-input w-full text-neon-yellow" placeholder="Masalan: 600000000">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Usuli</label>
+                                <select v-model="contractForm.payment_method" class="glass-input w-full bg-black/50">
+                                    <option value="bank">{{ $t('bank_account') }}</option>
+                                    <option value="main">{{ $t('cash_account') }}</option>
+                                    <option value="credit">💳 Plastik / Terminal</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-4 mt-8">
+                        <button type="button" @click="showSellUnitModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessingContract" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
     </AdminLayout>
 </template>

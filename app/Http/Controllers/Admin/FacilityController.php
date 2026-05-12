@@ -11,8 +11,13 @@ class FacilityController extends Controller
     public function index()
     {
         $buildings = Building::with(['floors.units', 'stages'])->get();
+        $clients = \App\Models\Client::all();
+        $partners = \App\Models\Partner::with('user')->get();
+
         return Inertia::render('Admin/Facility/Index', [
-            'buildings' => $buildings
+            'buildings' => $buildings,
+            'clients' => $clients,
+            'partners' => $partners
         ]);
     }
 

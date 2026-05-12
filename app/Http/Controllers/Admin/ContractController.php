@@ -47,6 +47,8 @@ class ContractController extends Controller
         }
         $contract->save();
 
+        $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
+
         // If it's a partner, create automatic transaction reducing their accountable balance
         if ($validated['buyer_type'] === 'partner') {
             $partner = \App\Models\Partner::find($validated['partner_id']);
@@ -64,7 +66,9 @@ class ContractController extends Controller
                     'contract_id' => $contract->id,
                     'category_id' => $partnerCategory->id,
                     'status' => 'approved', // automatic approval for partner buy? Let's make it approved
-                    'transaction_date' => now(),
+                    'transaction_date' => $baseDate,
+                    'created_at' => $baseDate,
+                    'updated_at' => $baseDate,
                     'notes' => 'Ta\'sischi ob\'yekt xaridi: Unit ID ' . $validated['unit_id'],
                     'created_by' => auth()->id() ?? 1,
                     'target_type' => 'partner',
@@ -84,7 +88,9 @@ class ContractController extends Controller
                     'contract_id' => $contract->id,
                     'category_id' => $incomeCategory->id,
                     'status' => 'approved',
-                    'transaction_date' => now(),
+                    'transaction_date' => $baseDate,
+                    'created_at' => $baseDate,
+                    'updated_at' => $baseDate,
                     'notes' => 'Ta\'sischi ob\'yekt xaridi (Kompaniya hisobiga): Unit ID ' . $validated['unit_id'],
                     'created_by' => auth()->id() ?? 1,
                 ]);
@@ -109,7 +115,9 @@ class ContractController extends Controller
                 'contract_id' => $contract->id,
                 'category_id' => $incomeCategory->id,
                 'status' => 'pending',
-                'transaction_date' => now(),
+                'transaction_date' => $baseDate,
+                'created_at' => $baseDate,
+                'updated_at' => $baseDate,
                 'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
                 'created_by' => auth()->id() ?? 1,
             ]);

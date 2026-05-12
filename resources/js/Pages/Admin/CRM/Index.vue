@@ -690,7 +690,7 @@ function openQuickSmsModal(lead) {
                 >
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <div v-for="client in filteredClients" :key="client.id" class="glass-card p-6 border border-white/10 hover:border-neon-cyan/50 transition-all hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] flex flex-col justify-between h-full group relative overflow-hidden">
                     <!-- Glass highlight -->
                     <div class="absolute -inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 -translate-y-10 group-hover:translate-y-[200px] transition-transform duration-1000 opacity-50"></div>

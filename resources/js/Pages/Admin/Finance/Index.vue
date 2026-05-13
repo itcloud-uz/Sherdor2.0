@@ -65,6 +65,10 @@ const historicalTransactions = computed(() => filteredTransactions.value.filter(
 
 const recentIncomes = computed(() => historicalTransactions.value.filter(t => t.type === 'income'));
 const recentExpenses = computed(() => historicalTransactions.value.filter(t => t.type === 'expense'));
+const totalApprovedExpenses = computed(() => recentExpenses.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+
+import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
+const showExpensesModal = ref(false);
 
 const showEditTransactionModal = ref(false);
 const editTransactionForm = ref({
@@ -608,6 +612,17 @@ function submitSupplierPayment() {
                         - {{ $currency(pendingExpenses || 0) }}
                     </h2>
                 </div>
+                
+                <div @click="showExpensesModal = true" class="glass-card p-6 border-t-4 border-neon-purple relative overflow-hidden group cursor-pointer hover:bg-neon-purple/5 transition-colors border-white/5 hover:border-neon-purple/30">
+                    <div class="absolute inset-0 bg-neon-purple/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest flex justify-between">
+                        <span>Jami Tasdiqlangan Chiqimlar</span>
+                        <span class="text-neon-purple underline">batafsil</span>
+                    </p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_10px_rgba(176,38,255,0.3)]">
+                        - {{ $currency(totalApprovedExpenses || 0) }}
+                    </h2>
+                </div>
             </div>
 
             <!-- Transaction Lists -->
@@ -654,8 +669,14 @@ function submitSupplierPayment() {
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-neon-red"></span>{{ $t('expenses_to') }}</h3>
-                        <!-- LEGACY FILTERS -->
-                        <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
+                        
+                        <div class="flex items-center gap-4">
+                            <button @click="showExpensesModal = true" class="px-2 py-1 text-[10px] font-mono uppercase bg-neon-purple/20 text-neon-purple border border-neon-purple/50 rounded hover:bg-neon-purple hover:text-white transition-colors flex items-center gap-1 shadow-[0_0_5px_rgba(176,38,255,0.4)]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                Analitika
+                            </button>
+                            <!-- LEGACY FILTERS -->
+                            <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
                             <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">{{ $t('all') }}</button>
                             <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">{{ $t('new_native') }}</button>
                             <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
@@ -1507,7 +1528,10 @@ function submitSupplierPayment() {
                 </div>
             </div>
     </div>
-    </div>
+        </div>
+
+        <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />
+
     </AdminLayout>
 </template>
 

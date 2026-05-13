@@ -28,6 +28,8 @@ const props = defineProps({
 });
 
 const showLostLeadsModal = ref(false);
+import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
+const showExpensesModal = ref(false);
 
 // Chart 1: Cash Flow Area
 const cashFlowOptions = {
@@ -168,8 +170,8 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                             <span class="text-white">{{ $currency(amount) }}</span>
                         </div>
                     </div>
-                    <div>
-                        <p class="text-neon-red mb-2 font-bold flex justify-between"><span>{{ $t('expense_destinations') }}</span> <span>{{ $currency(totalExpenses) }}</span></p>
+                    <div @click="showExpensesModal = true" class="cursor-pointer group hover:bg-white/5 p-2 -mx-2 rounded transition-colors border border-transparent hover:border-white/10">
+                        <p class="text-neon-red mb-2 font-bold flex justify-between group-hover:text-white transition-colors"><span>{{ $t('expense_destinations') }} <span class="text-[10px] text-text-muted ml-2">(batafsil ko'rish)</span></span> <span>{{ $currency(totalExpenses) }}</span></p>
                         <div v-for="(amount, source) in expensesBySource" :key="source" class="flex justify-between border-b border-white/5 py-1">
                             <span class="text-text-muted uppercase">{{ source }}</span>
                             <span class="text-white">{{ $currency(amount) }}</span>
@@ -340,6 +342,8 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 </div>
             </div>
         </div>
+
+        <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />
 
     </AdminLayout>
 </template>

@@ -34,6 +34,28 @@ class FinanceController extends Controller
         ]);
     }
 
+    public function expensesBreakdown()
+    {
+        $expenses = Transaction::with('category')
+            ->where('type', 'expense')
+            ->where('status', 'approved')
+            ->get();
+
+        $grouped = $expenses->groupBy('category_id')->map(function ($txns) {
+            $cat = $txns->first()->category;
+            return [
+                'category_name' => $cat ? $cat->name : 'Noma\'lum',
+                'total' => $txns->sum('amount'),
+                'transactions' => $txns
+            ];
+        })->values();
+
+        return response()->json([
+            'total_expenses' => $expenses->sum('amount'),
+            'categories' => $grouped
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

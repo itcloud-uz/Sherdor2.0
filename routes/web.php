@@ -95,6 +95,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance');
     
     Route::prefix('finance')->name('finance.')->group(function () {
+        Route::get('/expenses-breakdown', [\App\Http\Controllers\Admin\FinanceController::class, 'expensesBreakdown'])->name('expenses.breakdown');
+        Route::get('/expenses-report/export/pdf', [\App\Http\Controllers\Admin\ReportExportController::class, 'exportExpensesReport'])->name('expenses.report.export.pdf');
+
         Route::post('/transactions', [\App\Http\Controllers\Admin\FinanceController::class, 'store'])->name('transactions.store');
         Route::put('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'update'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroy'])->name('transactions.destroy');

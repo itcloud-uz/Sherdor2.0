@@ -93,10 +93,8 @@
                     <td>{{ $index + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y') }}</td>
                     <td>
-                        @if($schedule->transactions && $schedule->transactions->count() > 0)
-                            @foreach($schedule->transactions as $transaction)
-                                <div>{{ \Carbon\Carbon::parse($transaction->transaction_date ?? $transaction->created_at)->format('d.m.Y') }}</div>
-                            @endforeach
+                        @if($schedule->actual_payment_date)
+                            <div>{{ \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') }}</div>
                         @else
                             -
                         @endif

@@ -628,7 +628,7 @@ function submitSupplierPayment() {
                         <div v-for="txn in recentIncomes" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
                             <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                             <div class="flex justify-between items-start mt-2">
-                                <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
+                                <span class="text-xs text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-cyan">+ {{ $currency(txn.amount) }}</span>
                             </div>
                             <div class="text-sm text-white">
@@ -665,7 +665,7 @@ function submitSupplierPayment() {
                         <div v-for="txn in recentExpenses" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
                             <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
                             <div class="flex justify-between items-start mt-2">
-                                <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
+                                <span class="text-xs text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
                                 <span class="text-lg font-bold text-neon-red">- {{ $currency(txn.amount) }}</span>
                             </div>
                             <div class="text-sm text-white">
@@ -737,7 +737,7 @@ function submitSupplierPayment() {
                             <span class="px-2 py-1 rounded text-[10px] uppercase tracking-wider" :class="txn.type === 'income' ? 'bg-neon-cyan/20 text-neon-cyan' : 'bg-neon-red/20 text-neon-red'">
                                 {{ txn.type === 'income' ? 'Kirim' : 'Chiqim' }}
                             </span>
-                            <span class="text-xs text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</span>
+                            <span class="text-xs text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
                         </div>
                         
                         <div class="z-10 flex items-center gap-3">
@@ -812,7 +812,7 @@ function submitSupplierPayment() {
                 </thead>
                 <tbody>
                     <tr v-for="txn in historicalTransactions" :key="txn.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td class="py-4 text-text-muted">{{ new Date(txn.updated_at).toLocaleDateString() }}</td>
+                        <td class="py-4 text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</td>
                         <td class="py-4">
                             <span class="px-2 py-1 rounded text-[10px] uppercase tracking-wider" :class="txn.type === 'income' ? 'bg-neon-cyan/20 text-neon-cyan' : 'bg-neon-red/20 text-neon-red'">
                                 {{ txn.type }}

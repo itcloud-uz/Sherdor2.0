@@ -58,6 +58,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'update'])->name('contracts.update');
     Route::delete('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'destroy'])->name('contracts.destroy');
     Route::post('/contracts/{contract}/update-penalty', [\App\Http\Controllers\Admin\ContractController::class, 'updatePenaltyRate'])->name('contracts.update_penalty');
+    Route::post('/contracts/{contract}/cancel', [\App\Http\Controllers\Admin\ContractController::class, 'cancel'])->name('contracts.cancel');
+    Route::get('/contracts/cancelled', [\App\Http\Controllers\Admin\ContractController::class, 'getCancelledContracts'])->name('contracts.cancelled');
     
     // Multi-format Contract Exports (Client Ledger)
     Route::get('/crm/ledger/{contract}/export/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportPdf'])->name('contracts.export.pdf');

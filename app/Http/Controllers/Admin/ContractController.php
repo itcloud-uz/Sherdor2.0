@@ -299,4 +299,23 @@ class ContractController extends Controller
             'contract' => $contract->load(['client', 'unit', 'paymentSchedules'])
         ]);
     }
+
+    public function cancel(Contract $contract)
+    {
+        $contract->cancelContract();
+
+        return response()->json([
+            'message' => 'Shartnoma bekor qilindi',
+            'contract' => $contract
+        ]);
+    }
+
+    public function getCancelledContracts()
+    {
+        $contracts = Contract::with(['client', 'unit.floor.building'])
+            ->whereIn('status', ['cancelled', 'canceled'])
+            ->get();
+
+        return response()->json($contracts);
+    }
 }

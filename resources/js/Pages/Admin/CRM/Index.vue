@@ -64,6 +64,21 @@ function saveSchedulePayment(schedule) {
     });
 }
 
+const cancelContract = async (id) => {
+    if (!confirm('Haqiqatan ham ushbu shartnomani bekor qilmoqchimisiz? Ushbu amal ob\'yektni yana "sotuvda" holatiga qaytaradi.')) return;
+    
+    isProcessing.value = true;
+    try {
+        await axios.post(route('contracts.cancel', id));
+        showScheduleModal.value = false;
+        router.reload({ only: ['contracts'] });
+    } catch (e) {
+        alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));
+    } finally {
+        isProcessing.value = false;
+    }
+};
+
 function recalculatePenalty() {
     isProcessing.value = true;
     router.post(route('admin.crm.contracts.recalculate_penalty', selectedContract.value.id), {
@@ -889,12 +904,12 @@ function openQuickSmsModal(lead) {
     
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-neon-red/20">
                                 <div>
-                                    <p class="text-[10px] uppercase font-mono text-text-muted">Bosh. to'lov</p>
-                                    <p class="text-xs font-mono text-white/80 mt-0.5">{{ $currency(contract.down_payment) }}</p>
+                                    <p class="text-[10px] uppercase font-mono text-text-muted">Jami To'langan</p>
+                                    <p class="text-xs font-mono text-white/80 mt-0.5">{{ $currency(calculatePaidAmount(contract)) }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-[10px] uppercase font-mono text-text-muted">Umumiy summa</p>
-                                    <p class="text-xs font-mono text-neon-red mt-0.5">{{ $currency(contract.total_amount) }}</p>
+                                    <p class="text-[10px] uppercase font-mono text-text-muted">Qaytarilgan</p>
+                                    <p class="text-xs font-mono text-neon-red mt-0.5">{{ $currency(contract.refunded_amount || 0) }}</p>
                                 </div>
                             </div>
                                             </div>
@@ -991,6 +1006,9 @@ function openQuickSmsModal(lead) {
                             <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                                 📊 Excel
                             </a>
+                            <button @click="cancelContract(selectedContract.id)" :disabled="isProcessing" class="px-4 py-2 bg-neon-red/20 border border-neon-red text-neon-red text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-red hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,0,0.2)] disabled:opacity-50">
+                                🚫 Bekor qilish
+                            </button>
                         </div>
 
                         <div class="glass-card p-3 rounded-xl border border-white/10 flex flex-col md:flex-row items-center gap-4 bg-black/30">
@@ -1010,7 +1028,7 @@ function openQuickSmsModal(lead) {
                     </div>
 
                     <!-- SUMMARY INFO -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
                             <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('total_amount') }}</p>
                             <p class="text-lg font-bold text-neon-green font-mono">{{ $currency(selectedContract.total_amount) }}</p>
@@ -1022,6 +1040,10 @@ function openQuickSmsModal(lead) {
                         <div class="glass-card p-4 rounded-xl border border-white/10 bg-black/30">
                             <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">{{ $t('monthly_schedule_payment') }}</p>
                             <p class="text-lg font-bold text-neon-cyan font-mono">{{ selectedContract.payment_schedules?.length ? $currency(selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
+                        </div>
+                        <div v-if="selectedContract.status === 'cancelled' || selectedContract.refunded_amount > 0" class="glass-card p-4 rounded-xl border border-neon-red/30 bg-black/30">
+                            <p class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-1">Qaytarilgan</p>
+                            <p class="text-lg font-bold text-neon-red font-mono">{{ $currency(selectedContract.refunded_amount || 0) }}</p>
                         </div>
                     </div>
 

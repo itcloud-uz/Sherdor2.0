@@ -23,7 +23,7 @@ class FinanceController extends Controller
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
             'categories' => \App\Models\TransactionCategory::all(),
-            'contracts' => \App\Models\Contract::with(['client', 'unit'])->whereNotIn('status', ['cancelled', 'completed'])->get(),
+            'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->get(),
             'financialLiabilities' => \App\Models\FinancialLiability::with('payments')->latest()->get(),
             'suppliers' => \App\Models\Supplier::latest()->get(),
             'workers' => \App\Models\Worker::latest()->get(),
@@ -452,6 +452,11 @@ class FinanceController extends Controller
                     'notes' => 'Avtomatik naqdlashtirish navbati (Asosiy TXN: #' . $transaction->id . ')',
                     'created_by' => auth()->id(),
                 ]);
+            }
+        } elseif ($transaction->contract_id && $transaction->type === 'expense' && $transaction->category && $transaction->category->name === 'Mijozga pulni qaytarish') {
+            $contract = \App\Models\Contract::find($transaction->contract_id);
+            if ($contract) {
+                $contract->increment('refunded_amount', $transaction->amount);
             }
         }
 

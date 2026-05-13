@@ -123,4 +123,13 @@ class Contract extends Model
             }
         }
     }
+
+    public function cancelContract()
+    {
+        $this->update(['status' => 'cancelled']);
+        
+        if ($this->unit) {
+            $this->unit->update(['status' => 'available']);
+        }
+    }
 }

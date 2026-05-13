@@ -190,10 +190,20 @@ function handleBlur() {
 
 const filteredContracts = computed(() => {
     if (!props.contracts) return [];
-    if (!scheduleSearch.value) return props.contracts;
+    
+    let baseContracts = props.contracts;
+    
+    // Mijozga pulni qaytarish uchun faqat bekor qilingan shartnomalar
+    if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'client_refund') {
+        baseContracts = baseContracts.filter(c => c.status === 'cancelled');
+    } else {
+        baseContracts = baseContracts.filter(c => c.status !== 'cancelled');
+    }
+
+    if (!scheduleSearch.value) return baseContracts;
     
     const query = scheduleSearch.value.toLowerCase();
-    return props.contracts.filter(c => {
+    return baseContracts.filter(c => {
         const clientName = String(c.client?.first_name + ' ' + c.client?.last_name).toLowerCase();
         const unitNumber = String(c.unit?.unit_number || '').toLowerCase();
         return clientName.includes(query) || unitNumber.includes(query);
@@ -1006,6 +1016,7 @@ function submitSupplierPayment() {
                                 </div>
                                 <div class="text-xs text-text-muted flex justify-between mt-1 font-mono">
                                     <span>Uy: {{ c.unit?.unit_number || 'N/A' }}</span>
+                                    <span v-if="c.status === 'cancelled'" class="text-[10px] text-neon-red bg-neon-red/10 px-1 rounded uppercase">Bekor qilingan</span>
                                 </div>
                             </div>
                         </div>

@@ -677,9 +677,10 @@ function submitSupplierPayment() {
                             </button>
                             <!-- LEGACY FILTERS -->
                             <div class="flex bg-black/40 border border-white/10 rounded-lg p-1">
-                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">{{ $t('all') }}</button>
-                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">{{ $t('new_native') }}</button>
-                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
+                                <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-white' : 'text-text-muted hover:text-white']">{{ $t('all') }}</button>
+                                <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' : 'text-text-muted hover:text-white']">{{ $t('new_native') }}</button>
+                                <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
+                            </div>
                         </div>
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">

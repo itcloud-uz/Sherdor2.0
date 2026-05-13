@@ -453,7 +453,7 @@ class FinanceController extends Controller
                     'created_by' => auth()->id(),
                 ]);
             }
-        } elseif ($transaction->contract_id && $transaction->type === 'expense' && $transaction->category && $transaction->category->name === 'Mijozga pulni qaytarish') {
+        } elseif ($transaction->contract_id && $transaction->type === 'expense' && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {
             $contract = \App\Models\Contract::find($transaction->contract_id);
             if ($contract) {
                 $contract->increment('refunded_amount', $transaction->amount);

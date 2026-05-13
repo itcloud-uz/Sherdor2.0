@@ -16,7 +16,7 @@ class CrmController extends Controller
     {
         $leads = Lead::all();
         $clients = \App\Models\Client::with('contracts.unit.floor.building')->get();
-        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules'])->get();
+        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $partners = \App\Models\Partner::with('user')->get();
         $overdueSchedules = \App\Models\PaymentSchedule::with('contract.client')

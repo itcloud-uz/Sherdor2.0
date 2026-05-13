@@ -88,6 +88,11 @@ class Contract extends Model
         return $this->hasMany(PaymentSchedule::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     // --- Strict Financial Pipeline (State Machine) ---
 
     public function generateDraft()

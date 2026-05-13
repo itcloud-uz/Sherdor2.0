@@ -194,7 +194,7 @@ const filteredContracts = computed(() => {
     let baseContracts = props.contracts;
     
     // Mijozga pulni qaytarish uchun faqat bekor qilingan shartnomalar
-    if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'client_refund') {
+    if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'mijozga to\'lov qilish' || selectedCategoryName.value === 'client_refund') {
         baseContracts = baseContracts.filter(c => c.status === 'cancelled');
     } else {
         baseContracts = baseContracts.filter(c => c.status !== 'cancelled');

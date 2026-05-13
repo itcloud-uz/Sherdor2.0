@@ -389,6 +389,13 @@ function getInitials(first, last) {
 const selectedContract = ref(null);
 const showModal = ref(false);
 
+const refundTransactions = computed(() => {
+    if (!selectedContract.value || !selectedContract.value.transactions) return [];
+    return selectedContract.value.transactions.filter(t => 
+        t.category && (t.category.name === 'Mijozga pulni qaytarish' || t.category.name === 'Mijozga to\'lov qilish')
+    );
+});
+
 function openScheduleModal(contract) {
     selectedContract.value = JSON.parse(JSON.stringify(contract));
     showModal.value = true;
@@ -1134,6 +1141,43 @@ function openQuickSmsModal(lead) {
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- REFUNDS LEDGER TABLE -->
+                    <div v-if="(selectedContract.status === 'cancelled' || selectedContract.status === 'canceled') && refundTransactions.length > 0" class="mt-8">
+                        <h3 class="text-sm font-bold text-neon-red uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-neon-red shadow-[0_0_5px_#FF0000]"></span>
+                            Mijozga Qaytarilgan To'lovlar Tarixi
+                        </h3>
+                        <div class="overflow-x-auto rounded-xl border border-neon-red/30">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-neon-red/10 border-b border-neon-red/20">
+                                        <th class="p-3 text-xs font-mono text-neon-red font-normal uppercase tracking-wider">Tranzaksiya ID</th>
+                                        <th class="p-3 text-xs font-mono text-neon-red font-normal uppercase tracking-wider">Sana</th>
+                                        <th class="p-3 text-xs font-mono text-neon-red font-normal uppercase tracking-wider">To'lov Usuli</th>
+                                        <th class="p-3 text-xs font-mono text-neon-red font-normal uppercase tracking-wider">Summa</th>
+                                        <th class="p-3 text-xs font-mono text-neon-red font-normal uppercase tracking-wider">Izoh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr 
+                                        v-for="transaction in refundTransactions" 
+                                        :key="transaction.id" 
+                                        class="border-b border-white/5 bg-black/40 hover:bg-neon-red/5 transition-colors"
+                                    >
+                                        <td class="p-3 text-sm font-mono text-white/80">#{{ transaction.id }}</td>
+                                        <td class="p-3 text-sm font-mono text-white/80">{{ new Date(transaction.created_at).toLocaleString() }}</td>
+                                        <td class="p-3 text-sm font-mono text-white/60 uppercase">
+                                            <span class="px-2 py-0.5 border border-white/20 rounded text-[10px]">{{ transaction.payment_method }}</span>
+                                        </td>
+                                        <td class="p-3 text-sm font-mono font-bold text-neon-red">{{ $currency(transaction.amount) }}</td>
+                                        <td class="p-3 text-sm font-mono text-white/60">{{ transaction.notes || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

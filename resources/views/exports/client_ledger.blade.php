@@ -139,7 +139,39 @@
         </tfoot>
     </table>
 
-    <div class="font-bold text-center" style="margin-top: 50px;">ТОМОНЛАРНИНГ ХУҚУҚИЙ МАНЗИЛЛАРИ ВА БАНК РЕКВИЗИТЛАРИ:</div>
+    @php
+        $refundTransactions = $contract->transactions->filter(function($t) {
+            return $t->category && in_array($t->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish']);
+        });
+    @endphp
+
+    @if(in_array($contract->status, ['cancelled', 'canceled']) && $refundTransactions->count() > 0)
+        <h3 style="margin-top: 30px; font-size: 14px; text-align: left; color: red;">MIJOZGA QAYTARILGAN TO'LOVLAR TARIXI (REFUNDS)</h3>
+        <table class="table" style="margin-top: 10px;">
+            <thead>
+                <tr>
+                    <th>#ID</th>
+                    <th>Sana</th>
+                    <th>To'lov usuli</th>
+                    <th>Summa</th>
+                    <th>Izoh</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($refundTransactions as $transaction)
+                    <tr>
+                        <td>#{{ $transaction->id }}</td>
+                        <td>{{ \Carbon\Carbon::parse($transaction->created_at)->format('d.m.Y H:i') }}</td>
+                        <td style="text-transform: uppercase;">{{ $transaction->payment_method }}</td>
+                        <td style="color: red; font-weight: bold;">{{ number_format($transaction->amount, 2) }}</td>
+                        <td>{{ $transaction->notes }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <div class="font-bold text-center" style="margin-top: 50px;">TOMONLARNING HUQUQIY MANZILLARI VA BANK REKVIZITLARI:</div>
     <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <tr>
             <th width="50%" style="text-align: center; border: 1px solid #000; padding: 8px;">«ХАРИДОР»</th>

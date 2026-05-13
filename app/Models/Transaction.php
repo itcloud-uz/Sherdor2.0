@@ -32,4 +32,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(\App\Models\Contract::class);
     }
+
+    public function category()
+    {
+        return $this->belongsTo(\App\Models\TransactionCategory::class, 'category_id');
+    }
 }

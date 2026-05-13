@@ -203,8 +203,8 @@ function selectContract(c) {
 }
 
 function submitTransaction() {
-    if (requiresClient.value && !form.value.contract_id && !form.value.client_id) {
-        alert("Iltimos, ushbu kategoriya uchun aniq bir Mijoz yoki Shartnomani tanlang (Neyron bog'lama).");
+    if (requiresClient.value && !form.value.contract_id) {
+        alert("Iltimos, ushbu kategoriya uchun aniq bir Mijoz Shartnomasini tanlang (Qidiruv qatoridan).");
         return;
     }
 
@@ -955,16 +955,10 @@ function submitSupplierPayment() {
                         </div>
                     </div>
 
-                    <div v-if="requiresClient">
-                        <label class="block text-xs font-mono text-neon-cyan mb-1">Mijozni Tanlang (Neyron bog'lama)</label>
-                        <select v-model="form.client_id" class="glass-input w-full text-white bg-black/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }} ({{ c.phone }})</option>
-                        </select>
-                    </div>
-
-                    <div class="relative" v-if="!requiresClient && form.type === 'income'">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Qaysi Shartnomaga (Ixtiyoriy)</label>
+                    <div class="relative" v-if="form.type === 'income' || requiresClient">
+                        <label class="block text-xs font-mono mb-1" :class="requiresClient ? 'text-neon-cyan font-bold' : 'text-text-muted'">
+                            Qaysi Shartnomaga <span v-if="requiresClient">* (Qidirib tanlang)</span><span v-else>(Ixtiyoriy)</span>
+                        </label>
                         <div class="relative">
                             <input 
                                 v-model="scheduleSearch" 

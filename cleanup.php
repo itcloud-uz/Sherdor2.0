@@ -5,7 +5,9 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 $target = \App\Models\TransactionCategory::firstOrCreate(['name' => "Mijoz to'lovi"], ['type' => 'income']);
-$duplicates = \App\Models\TransactionCategory::where('name', "Shartnoma to'lovi")->get();
+
+// Search case insensitive or specific names
+$duplicates = \App\Models\TransactionCategory::where('name', 'like', "%Mijoz To'lovi (Shartnoma)%")->get();
 
 foreach($duplicates as $dup) {
     \App\Models\Transaction::where('category_id', $dup->id)->update(['category_id' => $target->id]);

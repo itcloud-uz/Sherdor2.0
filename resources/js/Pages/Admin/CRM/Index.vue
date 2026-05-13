@@ -69,8 +69,8 @@ const cancelContract = async (id) => {
     
     isProcessing.value = true;
     try {
-        await axios.post(route('contracts.cancel', id));
-        showScheduleModal.value = false;
+        await axios.post(route('admin.contracts.cancel', id));
+        showModal.value = false;
         router.reload({ only: ['contracts'] });
     } catch (e) {
         alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));

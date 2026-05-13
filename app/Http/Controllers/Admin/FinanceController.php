@@ -384,7 +384,7 @@ class FinanceController extends Controller
                 $remainingAmount = $appliedAmount;
                 
                 $schedules = \App\Models\PaymentSchedule::where('contract_id', $transaction->contract_id)
-                    ->where('status', 'pending')
+                    ->where('status', '!=', 'paid')
                     ->orderBy('due_date', 'asc')
                     ->get();
                     
@@ -396,9 +396,12 @@ class FinanceController extends Controller
                     if ($remainingAmount >= $needed) {
                         $schedule->paid_amount += $needed;
                         $schedule->status = 'paid';
+                        $schedule->actual_payment_date = $transaction->transaction_date ?? now();
                         $remainingAmount -= $needed;
                     } else {
                         $schedule->paid_amount += $remainingAmount;
+                        $schedule->status = 'partial'; // Ensure partial status is set if not paid
+                        $schedule->actual_payment_date = $transaction->transaction_date ?? now();
                         $remainingAmount = 0;
                     }
                     

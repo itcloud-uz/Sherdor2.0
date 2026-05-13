@@ -1063,6 +1063,7 @@ function openQuickSmsModal(lead) {
                                 <tr class="bg-black/60 border-b border-white/10">
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan Sana</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('expected') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('paid') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('remaining_debt') }}</th>
@@ -1079,6 +1080,9 @@ function openQuickSmsModal(lead) {
                                 >
                                     <td class="p-3 text-sm font-bold text-white">{{ index + 1 }}</td>
                                     <td class="p-3 text-sm font-mono text-white/80">{{ schedule.due_date }}</td>
+                                    <td class="p-3 text-sm font-mono text-white/60">
+                                        {{ schedule.actual_payment_date ? new Date(schedule.actual_payment_date).toLocaleDateString() : '-' }}
+                                    </td>
                                     <td class="p-3 text-sm font-mono text-neon-cyan">{{ $currency(schedule.expected_amount) }}</td>
                                     <td class="p-3 text-sm font-mono text-neon-green">
                                         <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">

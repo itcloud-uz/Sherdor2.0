@@ -131,17 +131,30 @@
         </tfoot>
     </table>
 
-    <table class="info-table" style="margin-top: 50px;">
+    <div class="font-bold text-center" style="margin-top: 50px;">ТОМОНЛАРНИНГ ХУҚУҚИЙ МАНЗИЛЛАРИ ВА БАНК РЕКВИЗИТЛАРИ:</div>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <tr>
-            <td width="50%" class="text-center">
-                <br><br>
-                _______________________<br>
-                <strong>Kompaniya Direktori</strong>
+            <th width="50%" style="text-align: center; border: 1px solid #000; padding: 8px;">«ХАРИДОР»</th>
+            <th width="50%" style="text-align: center; border: 1px solid #000; padding: 8px;">«КОРХОНА»</th>
+        </tr>
+        <tr>
+            <td style="text-align: left; vertical-align: top; border: 1px solid #000; padding: 8px;">
+                <div style="margin-bottom: 5px;"><strong>Ф.И.Ш: {{ $contract->client->full_name }}</strong></div>
+                <div style="margin-bottom: 5px;"><strong>Паспорт серия:</strong> {{ $contract->client->passport_series }}</div>
+                <div style="margin-bottom: 5px;"><strong>Паспорт берилган вақти:</strong> {{ $contract->client->passport_issued_date ? \Carbon\Carbon::parse($contract->client->passport_issued_date)->format('d.m.Y') : '' }}<br>{{ $contract->client->passport_issued_by }} томонидан берилган</div>
+                <div style="margin-bottom: 5px;"><strong>Манзил:</strong> {{ $contract->client->address }}</div>
+                <div style="margin-bottom: 5px;"><strong>ЖШШИР:</strong> {{ $contract->client->pinfl }}</div>
+                <div style="margin-bottom: 5px;"><strong>Телефон:</strong> {{ $contract->client->phone }}</div>
+                <div style="margin-top: 20px;"><strong>Ҳаридор: ______________________</strong></div>
             </td>
-            <td width="50%" class="text-center">
-                <br><br>
-                _______________________<br>
-                <strong>Mijoz Imzosi</strong>
+            <td style="text-align: left; vertical-align: top; border: 1px solid #000; padding: 8px;">
+                <div style="margin-bottom: 5px;"><strong>«Шер-Дор» Хусусий корхонаси</strong></div>
+                <div style="margin-bottom: 5px;"><strong>Манзил:</strong> Ургут туман Дўстлик махалласи Навои-Шох кўчаси №3-уй</div>
+                <div style="margin-bottom: 5px;"><strong>Х/Р:</strong> 2020 8000 6005 5796 1001</div>
+                <div style="margin-bottom: 5px;"><strong>Банк:</strong> АТБ “Агробанк” Ургут туман филиали,</div>
+                <div style="margin-bottom: 5px;"><strong>МФО:</strong> 00300, <strong>ИНН:</strong> 202 162 496</div>
+                <div style="margin-bottom: 5px;"><strong>Телефон:</strong> (97) 708-44-44, (93) 573-29-29</div>
+                <div style="margin-top: 20px;"><strong>Директор: ______________________</strong></div>
             </td>
         </tr>
     </table>

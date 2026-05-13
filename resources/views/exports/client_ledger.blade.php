@@ -68,7 +68,8 @@
         <thead>
             <tr>
                 <th>No.</th>
-                <th>To'lov sanasi</th>
+                <th>Reja sanasi</th>
+                <th>Haqiqiy to'lov sanasi</th>
                 <th>Kutilayotgan summa</th>
                 <th>To'langan summa</th>
                 <th>Qolgan qarz</th>
@@ -91,6 +92,15 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y') }}</td>
+                    <td>
+                        @if($schedule->transactions && $schedule->transactions->count() > 0)
+                            @foreach($schedule->transactions as $transaction)
+                                <div>{{ \Carbon\Carbon::parse($transaction->transaction_date ?? $transaction->created_at)->format('d.m.Y') }}</div>
+                            @endforeach
+                        @else
+                            -
+                        @endif
+                    </td>
                     <td>{{ number_format($schedule->expected_amount, 2) }}</td>
                     <td>{{ number_format($schedule->paid_amount, 2) }}</td>
                     <td>
@@ -121,7 +131,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2" class="text-right font-bold">JAMI:</td>
+                <td colspan="3" class="text-right font-bold">JAMI:</td>
                 <td class="font-bold">{{ number_format($totalExpected, 2) }}</td>
                 <td class="font-bold">{{ number_format($totalPaid, 2) }}</td>
                 <td class="font-bold text-danger">{{ number_format($totalDebt, 2) }}</td>

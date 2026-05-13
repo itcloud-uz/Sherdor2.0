@@ -11,7 +11,7 @@ class LedgerExportController extends Controller
 {
     public function exportPdf(Contract $contract)
     {
-        $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions']);
 
         $pdf = Pdf::loadView('exports.client_ledger', compact('contract'));
         return $pdf->download("ledger_{$contract->id}.pdf");
@@ -19,7 +19,7 @@ class LedgerExportController extends Controller
 
     public function exportDocx(Contract $contract)
     {
-        $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions']);
         
         $headers = [
             "Content-type" => "application/vnd.ms-word",
@@ -31,7 +31,7 @@ class LedgerExportController extends Controller
 
     public function exportXlsx(Contract $contract)
     {
-        $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions']);
         
         $headers = [
             "Content-type" => "application/vnd.ms-excel",

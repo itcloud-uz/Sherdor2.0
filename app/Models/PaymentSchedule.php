@@ -21,4 +21,9 @@ class PaymentSchedule extends Model
     {
         return $this->belongsTo(Contract::class);
     }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'payment_schedule_id');
+    }
 }

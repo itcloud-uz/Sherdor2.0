@@ -121,7 +121,7 @@ const form = ref({
     supplier_id: '',
     category_id: '',
     category_name: '',
-    transaction_date: new Date().toLocaleString('sv').slice(0,16),
+    transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16),
     attachment: null,
     notes: '',
     auto_approve: true,
@@ -231,7 +231,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false

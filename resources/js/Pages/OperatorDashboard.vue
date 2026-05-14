@@ -1154,7 +1154,7 @@ function submitWarehouseRequest() {
                 
                 <h3 class="text-lg font-display font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-3">
                     <span class="text-2xl drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]">📦</span> 
-                    Omborxona Amaliyoti
+                    Taminotchilar Amaliyoti
                 </h3>
                 
                 <form @submit.prevent="submitWarehouseRequest" class="space-y-4">

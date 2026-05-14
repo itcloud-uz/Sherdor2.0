@@ -14,7 +14,7 @@ const navItems = [
     { name: 'facility_manager', route: 'admin.facility', icon: '🏗️' },
     { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
-    { name: 'Omborxona', route: 'admin.warehouse.index', icon: '📦' },
+    { name: 'Taminotchilar', route: 'admin.warehouse.index', icon: '📦' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
     { name: 'ai_agents', route: 'admin.ai_agents', icon: '🤖' },
     { name: 'IP Telefoniya', route: 'admin.telephony.index', icon: '📞' },

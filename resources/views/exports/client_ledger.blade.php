@@ -3,15 +3,16 @@
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #000; }
+        @page { size: A4 landscape; margin: 10mm; }
+        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 10px; line-height: 1.4; color: #000; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; }
-        th, td { border: 1px solid #000; padding: 6px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        .header-title { font-size: 18px; text-transform: uppercase; margin-bottom: 5px; }
-        .header-sub { font-size: 14px; margin-bottom: 20px; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; table-layout: auto; }
+        th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; word-wrap: break-word; }
+        th { background-color: #f2f2f2; font-size: 10px; }
+        .header-title { font-size: 16px; text-transform: uppercase; margin-bottom: 5px; }
+        .header-sub { font-size: 12px; margin-bottom: 15px; color: #555; }
         .info-table { border: none; margin-bottom: 20px; }
         .info-table td { border: none; text-align: left; padding: 4px; }
         .text-danger { color: #d9534f; }
@@ -70,12 +71,12 @@
                 <th>No.</th>
                 <th>Reja sanasi</th>
                 <th>Haqiqiy to'lov sanasi</th>
-                <th>Kutilayotgan summa</th>
+                <th>Kutilayotgan</th>
                 <th>Asl to'lov</th>
-                <th>To'langan summa</th>
+                <th>To'langan</th>
                 <th>To'lov usuli</th>
                 <th>Qolgan qarz</th>
-                <th>Hisoblangan jarima</th>
+                <th>Jarima</th>
                 <th>Holat</th>
             </tr>
         </thead>
@@ -104,7 +105,7 @@
                     <td>{{ number_format($schedule->expected_amount, 2) }}</td>
                     <td>{{ $schedule->original_payment_amount > 0 ? number_format($schedule->original_payment_amount, 2) : '-' }}</td>
                     <td>{{ number_format($schedule->paid_amount, 2) }}</td>
-                    <td style="text-transform: uppercase;">{{ $schedule->payment_method ?: '-' }}</td>
+                    <td style="text-transform: uppercase; font-size: 9px;">{{ $schedule->payment_method ?: '-' }}</td>
                     <td>
                         @if($schedule->remaining_debt > 0)
                             <span class="text-danger">{{ number_format($schedule->remaining_debt, 2) }}</span>

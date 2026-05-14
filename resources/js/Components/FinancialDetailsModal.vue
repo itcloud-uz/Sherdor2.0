@@ -16,10 +16,10 @@ const startDate = ref('');
 const endDate = ref('');
 
 const categoryTitleMap = {
-    'cash': 'БЎЛИМ КАССА - Batafsil',
-    'bank': 'ҲИСОБ РАҚАМ - Batafsil',
-    'credit': 'КРЕДИТ - Batafsil',
-    'overall': 'УМУМИЙ - Batafsil',
+    'cash': 'KASSA - Batafsil',
+    'bank': 'HISOB RAQAM - Batafsil',
+    'credit': 'KREDIT - Batafsil',
+    'overall': 'UMUMIY - Batafsil',
     'financial_flow': 'MOLIYAVIY OQIM - Batafsil'
 };
 

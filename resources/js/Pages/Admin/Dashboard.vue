@@ -131,19 +131,19 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <div @click="openFinancialDetails('cash')" class="glass-card p-6 border-t-4 border-neon-green relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span> БЎЛИМ КАССА
+                    <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span> KASSA
                 </h3>
                 <div class="space-y-3 font-mono text-xs">
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Касса тушум:</span>
+                        <span class="text-text-muted">Kassa tushum:</span>
                         <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.cash?.income || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Касса чиқим:</span>
+                        <span class="text-text-muted">Kassa chiqim:</span>
                         <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.cash?.expense || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-text-muted uppercase tracking-widest">Balans:</span>
                         <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.cash?.balance || 0) }}</span>
                     </div>
                 </div>
@@ -153,19 +153,19 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <div @click="openFinancialDetails('bank')" class="glass-card p-6 border-t-4 border-neon-cyan relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span> ҲИСОБ РАҚАМ
+                    <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span> HISOB RAQAM
                 </h3>
                 <div class="space-y-3 font-mono text-xs">
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Ҳисоб рақам тушум:</span>
+                        <span class="text-text-muted">Hisob raqam tushum:</span>
                         <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.bank?.income || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Ҳисоб рақам чиқим:</span>
+                        <span class="text-text-muted">Hisob raqam chiqim:</span>
                         <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.bank?.expense || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-text-muted uppercase tracking-widest">Balans:</span>
                         <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.bank?.balance || 0) }}</span>
                     </div>
                 </div>
@@ -175,19 +175,19 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <div @click="openFinancialDetails('credit')" class="glass-card p-6 border-t-4 border-neon-yellow relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> КРЕДИТ
+                    <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> KREDIT
                 </h3>
                 <div class="space-y-3 font-mono text-xs">
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Кредит тушум:</span>
+                        <span class="text-text-muted">Kredit tushum:</span>
                         <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.credit?.income || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Кредит чиқим:</span>
+                        <span class="text-text-muted">Kredit chiqim:</span>
                         <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.credit?.expense || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-text-muted uppercase tracking-widest">Balans:</span>
                         <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.credit?.balance || 0) }}</span>
                     </div>
                 </div>
@@ -197,19 +197,19 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <div @click="openFinancialDetails('overall')" class="glass-card p-6 border-t-4 border-neon-magenta relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-neon-magenta animate-pulse"></span> УМУМИЙ
+                    <span class="w-2 h-2 rounded-full bg-neon-magenta animate-pulse"></span> UMUMIY
                 </h3>
                 <div class="space-y-3 font-mono text-xs">
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Умумий тушум:</span>
+                        <span class="text-text-muted">Umumiy tushum:</span>
                         <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.overall?.income || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-text-muted">Умумий чиқим:</span>
+                        <span class="text-text-muted">Umumiy chiqim:</span>
                         <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.overall?.expense || 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-text-muted uppercase tracking-widest">Balans:</span>
                         <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.overall?.balance || 0) }}</span>
                     </div>
                 </div>

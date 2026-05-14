@@ -730,76 +730,73 @@ function openQuickSmsModal(lead) {
                 >
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <div v-for="client in filteredClients" :key="client.id" class="glass-card p-6 border border-white/10 hover:border-neon-cyan/50 transition-all hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] flex flex-col justify-between h-full group relative overflow-hidden">
-                    <!-- Glass highlight -->
-                    <div class="absolute -inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 -translate-y-10 group-hover:translate-y-[200px] transition-transform duration-1000 opacity-50"></div>
-                    
-                    <div>
-                        <div class="flex items-start gap-4 mb-4">
-                            <!-- Circular Avatar -->
-                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-neon-cyan/20 to-neon-blue/20 border border-neon-cyan/50 flex items-center justify-center text-neon-cyan font-display font-bold text-xl shadow-[0_0_10px_rgba(0,240,255,0.2)] shrink-0">
-                                {{ getInitials(client.first_name, client.last_name) }}
-                            </div>
-                            
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-bold text-white truncate flex items-center gap-2" :title="`${client.last_name} ${client.first_name} ${client.middle_name || ''}`">
-                                    {{ client.last_name }} {{ client.first_name }} {{ client.middle_name || '' }}
-                                    <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
-                                </h3>
-                                <p class="text-xs font-mono text-neon-cyan mt-1 flex items-center gap-1">
-                                    <span>📞</span> {{ client.phone || 'N/A' }}
-                                </p>
-                            </div>
-                            
-                            <!-- Action Buttons Dropdown or inline -->
-                            <div class="flex flex-col gap-2 shrink-0">
-                                <button @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-neon-yellow/10 border border-neon-yellow/30 text-neon-yellow flex items-center justify-center hover:bg-neon-yellow hover:text-black transition-colors shadow-[0_0_5px_rgba(252,238,9,0.2)]" title="Tahrirlash">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                </button>
-                                <button @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="O'chirish">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- ID Details -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
-                            <div>
-                                <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('passport') }}</p>
-                                <p class="text-xs font-mono text-white/80 mt-0.5">{{ client.passport_number || client.passport_series || 'N/A' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('pinfl') }}</p>
-                                <p class="text-xs font-mono text-white/80 mt-0.5">{{ client.pinfl || 'N/A' }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Contracts List -->
-                        <div v-if="client.contracts && client.contracts.length > 0">
-                            <p class="text-[10px] uppercase font-mono text-text-muted mb-2 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-neon-green"></span>
-                                {{ $t('active_purchases') }} ({{ client.contracts.length }})
-                            </p>
-                            <div class="space-y-2 max-h-32 overflow-y-auto pr-1 hide-scrollbar">
-                                <div v-for="contract in client.contracts" :key="contract.id" class="p-2 rounded bg-neon-green/5 border border-neon-green/20 flex justify-between items-center text-xs font-mono cursor-pointer hover:bg-neon-green/10 transition-colors" @click="openScheduleModal(contract)">
-                                    <span class="text-white flex items-center gap-1">
-                                        🏠 Unit {{ contract.unit?.unit_number }} <span class="text-text-muted">| Qavat {{ contract.unit?.floor?.number }}</span>
-                                    </span>
-                                    <span class="text-neon-green font-bold">{{ $currency(contract.total_amount) }}</span>
+            <div class="overflow-x-auto rounded-xl border border-white/10">
+                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-black/60 border-b border-white/10">
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Telefon</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Pasport / PINFL</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Shartnomalar</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr 
+                            v-for="client in filteredClients" 
+                            :key="client.id" 
+                            class="border-b border-white/5 hover:bg-white/[0.03] transition-colors group"
+                        >
+                            <td class="p-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-cyan/20 to-neon-blue/20 border border-neon-cyan/50 flex items-center justify-center text-neon-cyan font-display font-bold text-sm shadow-[0_0_10px_rgba(0,240,255,0.2)] shrink-0">
+                                        {{ getInitials(client.first_name, client.last_name) }}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-white group-hover:text-neon-cyan transition-colors" :title="`${client.last_name} ${client.first_name} ${client.middle_name || ''}`">
+                                            {{ client.last_name }} {{ client.first_name }}
+                                        </h3>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-[10px] font-mono text-white/60">{{ client.middle_name || '' }}</span>
+                                            <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div v-else class="text-center p-3 rounded-lg border border-dashed border-white/10 bg-black/20">
-                            <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('no_purchases') }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Empty State -->
-                <div v-if="filteredClients.length === 0" class="col-span-full py-20 text-center text-text-muted font-mono text-sm glass-card border-dashed">
-                    {{ $t('no_clients_found') }}
-                </div>
+                            </td>
+                            <td class="p-3 text-sm font-mono text-neon-cyan">
+                                {{ client.phone || 'N/A' }}
+                            </td>
+                            <td class="p-3 text-sm font-mono text-white/80">
+                                <div>{{ client.passport_number || client.passport_series || 'N/A' }}</div>
+                                <div class="text-[10px] text-text-muted mt-0.5">PINFL: {{ client.pinfl || 'N/A' }}</div>
+                            </td>
+                            <td class="p-3">
+                                <div v-if="client.contracts && client.contracts.length > 0" class="flex flex-col gap-1 max-w-[250px] whitespace-normal">
+                                    <div v-for="contract in client.contracts" :key="contract.id" class="px-2 py-1 rounded bg-neon-green/5 border border-neon-green/20 flex justify-between items-center text-xs font-mono cursor-pointer hover:bg-neon-green/10 transition-colors" @click="openScheduleModal(contract)">
+                                        <span class="text-white truncate" style="max-width: 120px;">🏠 Unit {{ contract.unit?.unit_number }}</span>
+                                        <span class="text-neon-green font-bold ml-2">{{ $currency(contract.total_amount) }}</span>
+                                    </div>
+                                </div>
+                                <span v-else class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('no_purchases') }}</span>
+                            </td>
+                            <td class="p-3 text-right">
+                                <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <button @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-neon-yellow/10 border border-neon-yellow/30 text-neon-yellow flex items-center justify-center hover:bg-neon-yellow hover:text-black transition-colors shadow-[0_0_5px_rgba(252,238,9,0.2)]" title="Tahrirlash">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </button>
+                                    <button @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="O'chirish">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="filteredClients.length === 0">
+                            <td colspan="5" class="py-20 text-center text-text-muted font-mono text-sm border-dashed">
+                                {{ $t('no_clients_found') }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 

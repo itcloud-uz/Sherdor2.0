@@ -775,7 +775,7 @@ function openQuickSmsModal(lead) {
 
         <!-- TAB 2: CLIENTS ROSTER -->
         <div v-if="activeTab === 'clients'" class="glass-panel p-6 rounded-2xl min-h-[500px]">
-            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="sticky top-0 z-20 bg-[#0d1117]/80 backdrop-blur-xl px-6 py-5 -mx-6 -mt-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 shadow-lg rounded-t-2xl">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-display font-bold text-white">{{ $t('clients_database') }}</h2>
                     <button @click="openCreateClientModal" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
@@ -783,13 +783,11 @@ function openQuickSmsModal(lead) {
                     </button>
                 </div>
 
-
-
                 <input 
                     v-model="searchQuery" 
                     type="text" 
                     :placeholder="$t('search_clients_pinfl')" 
-                    class="glass-input w-64 border-neon-cyan/50 focus:border-neon-cyan focus:ring-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.2)] focus:shadow-[0_0_20px_rgba(0,240,255,0.4)]"
+                    class="glass-input w-64 border-neon-cyan/50 focus:border-neon-cyan focus:ring-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.2)] focus:shadow-[0_0_20px_rgba(0,240,255,0.4)] bg-black/50"
                 >
             </div>
 

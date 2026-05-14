@@ -596,7 +596,7 @@ const progressSeries = computed(() => {
                             
                             <!-- Floors List -->
                             <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-6">
-                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border-b border-white/5 bg-black/20 overflow-hidden relative group">
+                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border-b border-white/5 bg-black/20 relative group">
                                     
                                     <!-- Floor Header (Left Side) -->
                                     <div class="w-full xl:w-48 bg-black/40 border-b xl:border-b-0 xl:border-r border-white/5 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-white/5">
@@ -622,7 +622,7 @@ const progressSeries = computed(() => {
                                     </div>
                                     
                                     <!-- Floor Units (Right Side) -->
-                                    <div class="flex-1 p-4 overflow-x-auto custom-scrollbar flex items-center">
+                                    <div class="flex-1 p-4 pb-6 overflow-x-auto custom-scrollbar flex items-center min-h-[140px]">
                                         <!-- Interactive SVG Blueprint Mode for Floor -->
                                         <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-black/40 rounded-lg border border-white/5">
                                             <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
@@ -635,16 +635,16 @@ const progressSeries = computed(() => {
                                         </div>
                                         
                                         <!-- Fallback Grid Mode -->
-                                        <div v-else class="flex gap-3 min-h-[100px]">
+                                        <div v-else class="flex gap-4">
                                             <div v-for="unit in floor.units" :key="'grid-'+unit.id"
-                                                 class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center border-[3px] cursor-pointer transition-transform hover:-translate-y-1 rounded-md shadow-lg shrink-0 relative"
+                                                 class="w-24 h-16 sm:w-28 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-transform hover:-translate-y-1 rounded-md shadow-lg shrink-0 relative"
                                                  :class="getUnitBorderColor(unit.status)"
                                                  :style="{ backgroundColor: getUnitFillColor(unit.status) }"
                                                  @mousemove="(e) => onUnitHover(unit, e)"
                                                  @mouseleave="onUnitLeave"
                                                  @click="openEditUnit(unit)">
                                                 <span class="font-mono text-sm sm:text-base font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
-                                                    {{ unit.unit_number }}
+                                                    {{ unit.type === 'commercial' ? 'D-' : '' }}{{ unit.unit_number }}
                                                 </span>
                                             </div>
                                             <div v-if="!floor.units?.length" class="text-xs font-mono text-text-muted italic flex items-center h-full px-4 border border-dashed border-white/10 rounded-md">

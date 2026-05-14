@@ -173,7 +173,7 @@ class WarehouseController extends Controller
                 'amount' => $validated['amount'],
                 'currency' => 'UZS',
                 'payment_method' => $validated['payment_method'],
-                'status' => 'completed',
+                'status' => 'approved',
                 'supplier_id' => $supplier->id,
                 'transaction_date' => $validated['transaction_date'],
                 'notes' => $validated['notes'],

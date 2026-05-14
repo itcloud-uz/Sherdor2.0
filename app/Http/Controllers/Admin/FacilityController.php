@@ -185,11 +185,12 @@ class FacilityController extends Controller
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
             'name' => 'required|string|max:255',
-            'target_volume' => 'required|numeric|min:0',
+            'target_volume' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
+        $validated['target_volume'] = $validated['target_volume'] ?? 0;
         $validated['progress_percentage'] = 0;
         $validated['current_volume'] = 0;
 

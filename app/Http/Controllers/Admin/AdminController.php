@@ -16,6 +16,52 @@ class AdminController extends Controller
         $netBalance = $balanceRecord->total_balance ?? 0;
         $creditBalance = $balanceRecord->credit_balance ?? 0;
         
+        // NEW DASHBOARD FINANCIAL SUMMARY
+        $cashIncome = \App\Models\Transaction::where('type', 'income')->where('payment_method', 'cash')->where('status', 'approved')->sum('amount');
+        $cashExpense = \App\Models\Transaction::where('type', 'expense')->where('payment_method', 'cash')->where('status', 'approved')->sum('amount');
+        $cashBalance = $cashIncome - $cashExpense;
+
+        $bankIncome = \App\Models\Transaction::where('type', 'income')->whereIn('payment_method', ['card', 'bank_transfer'])->where('status', 'approved')->sum('amount');
+        $bankExpense = \App\Models\Transaction::where('type', 'expense')->whereIn('payment_method', ['card', 'bank_transfer'])->where('status', 'approved')->sum('amount');
+        $bankBalance = $bankIncome - $bankExpense;
+
+        $creditIncome = 0;
+        $creditExpense = 0;
+        if (\Illuminate\Support\Facades\Schema::hasTable('financial_liabilities')) {
+            $creditIncome = \App\Models\FinancialLiability::sum('total_amount'); // Total credits taken
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('liability_payments')) {
+            $creditExpense = \App\Models\LiabilityPayment::where('status', 'paid')->sum('amount'); // Total credits repaid
+        }
+        $crBalance = $creditIncome - $creditExpense;
+
+        $overallIncome = $cashIncome + $bankIncome + $creditIncome;
+        $overallExpense = $cashExpense + $bankExpense + $creditExpense;
+        $overallBalance = $overallIncome - $overallExpense;
+
+        $financialSummary = [
+            'cash' => [
+                'income' => $cashIncome,
+                'expense' => $cashExpense,
+                'balance' => $cashBalance,
+            ],
+            'bank' => [
+                'income' => $bankIncome,
+                'expense' => $bankExpense,
+                'balance' => $bankBalance,
+            ],
+            'credit' => [
+                'income' => $creditIncome,
+                'expense' => $creditExpense,
+                'balance' => $crBalance,
+            ],
+            'overall' => [
+                'income' => $overallIncome,
+                'expense' => $overallExpense,
+                'balance' => $overallBalance,
+            ],
+        ];
+        
         $activeClients = \App\Models\Contract::where('status', 'active')->distinct('client_id')->count('client_id');
 
         $units = \App\Models\Unit::selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status')->toArray();
@@ -128,6 +174,7 @@ class AdminController extends Controller
             'leadsBySource' => $leadsBySource,
             'leadsFunnel' => $leadsFunnel,
             'lostLeads' => $lostLeads,
+            'financialSummary' => $financialSummary,
         ]);
     }
 }

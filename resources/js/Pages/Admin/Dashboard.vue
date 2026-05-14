@@ -24,7 +24,8 @@ const props = defineProps({
     leadsMetrics: Object,
     leadsBySource: Object,
     leadsFunnel: Array,
-    lostLeads: Array
+    lostLeads: Array,
+    financialSummary: Object
 });
 
 const showLostLeadsModal = ref(false);
@@ -115,40 +116,109 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
         </div>
 
-        <!-- WIDGET 1: Top Metrics (Extended) -->
-        <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <div class="glass-card p-5 border-b-4 border-neon-cyan relative overflow-hidden group">
-                <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_revenue') }}</p>
-                <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-                    {{ $currency(totalRevenue) }}
-                </h2>
-            </div>
-            <div class="glass-card p-5 border-b-4 border-neon-green relative overflow-hidden group">
+        <!-- WIDGET 1: Top Financial Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 1. Cash Department -->
+            <div class="glass-card p-6 border-t-4 border-neon-green relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('net_balance_company') }} (Kassa)</p>
-                <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">
-                    {{ $currency(netBalance) }}
-                </h2>
+                <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span> БЎЛИМ КАССА
+                </h3>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Касса тушум:</span>
+                        <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.cash?.income || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Касса чиқим:</span>
+                        <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.cash?.expense || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.cash?.balance || 0) }}</span>
+                    </div>
+                </div>
             </div>
-            <div class="glass-card p-5 border-b-4 border-neon-yellow relative overflow-hidden group">
+
+            <!-- 2. Bank Account -->
+            <div class="glass-card p-6 border-t-4 border-neon-cyan relative overflow-hidden group">
+                <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span> ҲИСОБ РАҚАМ
+                </h3>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Ҳисоб рақам тушум:</span>
+                        <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.bank?.income || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Ҳисоб рақам чиқим:</span>
+                        <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.bank?.expense || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.bank?.balance || 0) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Credit -->
+            <div class="glass-card p-6 border-t-4 border-neon-yellow relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Bank Hisobi</p>
-                <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(252,238,9,0.4)]">
-                    {{ $currency(creditBalance) }}
-                </h2>
+                <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> КРЕДИТ
+                </h3>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Кредит тушум:</span>
+                        <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.credit?.income || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Кредит чиқим:</span>
+                        <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.credit?.expense || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.credit?.balance || 0) }}</span>
+                    </div>
+                </div>
             </div>
-            <div class="glass-card p-5 border-b-4 border-neon-red relative overflow-hidden group">
+
+            <!-- 4. Overall -->
+            <div class="glass-card p-6 border-t-4 border-neon-magenta relative overflow-hidden group">
+                <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-neon-magenta animate-pulse"></span> УМУМИЙ
+                </h3>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Умумий тушум:</span>
+                        <span class="text-neon-green font-bold text-sm">{{ $currency(financialSummary?.overall?.income || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-text-muted">Умумий чиқим:</span>
+                        <span class="text-neon-red font-bold text-sm">{{ $currency(financialSummary?.overall?.expense || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-text-muted uppercase tracking-widest">Баланс:</span>
+                        <span class="text-white font-display font-bold text-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{{ $currency(financialSummary?.overall?.balance || 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div class="glass-card p-4 border-l-4 border-neon-red relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('total_debts') }}</p>
-                <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
+                <h2 class="text-xl font-display font-bold text-white mt-1 drop-shadow-[0_0_15px_rgba(255,0,0,0.4)]">
                     {{ $currency(totalLiabilities || 0) }}
                 </h2>
             </div>
-            <div class="glass-card p-5 border-b-4 border-neon-magenta relative overflow-hidden group flex flex-col justify-center">
+            <div class="glass-card p-4 border-l-4 border-neon-magenta relative overflow-hidden group flex flex-col justify-center">
                 <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('hr_workers_today') }}</p>
-                <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(176,38,255,0.4)] flex gap-4">
+                <h2 class="text-xl font-display font-bold text-white mt-1 drop-shadow-[0_0_15px_rgba(176,38,255,0.4)] flex gap-4">
                     <span class="text-neon-green" title="Kelganlar">{{ attendanceStats?.present || 0 }}</span>
                     <span class="text-text-muted">/</span>
                     <span class="text-neon-red" title="Kelmaganlar">{{ attendanceStats?.absent || 0 }}</span>

@@ -542,7 +542,7 @@ function openQuickSmsModal(lead) {
                 @click="activeTab = 'contracts'"
                 :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'contracts' ? 'text-neon-green border-b-2 border-neon-green bg-white/5' : 'text-text-muted hover:text-white']"
             >
-                {{ $t('smart_contracts') }}
+                Shartnomalar
             </button>
             <button 
                 @click="activeTab = 'canceled'"
@@ -809,72 +809,79 @@ function openQuickSmsModal(lead) {
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div 
-                        v-for="contract in activeContracts" 
-                        :key="contract.id"
-                        @click="openScheduleModal(contract)"
-                        class="glass-card p-6 border border-white/10 hover:border-neon-green/50 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(57,255,20,0.15)] group relative overflow-hidden flex flex-col h-full justify-between"
-                    >
-                        <!-- Glass highlight -->
-                        <div class="absolute -inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 -translate-y-10 group-hover:translate-y-[200px] transition-transform duration-1000 opacity-50"></div>
-                        
-                        <div>
-                            <div class="flex justify-between items-start mb-4">
-                                <!-- ACTION BUTTONS (Edit / Delete) -->
-                                <div class="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
-                                    <button @click="editContract(contract)" class="p-1.5 bg-neon-blue/20 text-neon-blue rounded hover:bg-neon-blue hover:text-white transition-colors" title="Tahrirlash">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                    </button>
-                                    <button @click="deleteContract(contract.id)" class="p-1.5 bg-neon-red/20 text-neon-red rounded hover:bg-neon-red hover:text-white transition-colors" title="O'chirish">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </div>
-                                
+            <div class="overflow-x-auto rounded-xl border border-white/10">
+                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-black/60 border-b border-white/10">
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Shartnoma</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Boshlang'ich to'lov</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Jami Summa</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan (Holati)</th>
+                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr 
+                            v-for="contract in activeContracts" 
+                            :key="contract.id"
+                            @click="openScheduleModal(contract)"
+                            class="border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                        >
+                            <td class="p-3">
+                                <h3 class="text-sm font-bold text-white group-hover:text-neon-green transition-colors">
+                                    {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
+                                </h3>
+                                <p class="text-[10px] font-mono text-neon-cyan mt-0.5">
+                                    {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
+                                </p>
+                            </td>
+                            <td class="p-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-neon-green/50 flex items-center justify-center text-neon-green font-display font-bold text-sm shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-neon-green/50 flex items-center justify-center text-neon-green font-display font-bold text-xs shadow-[0_0_10px_rgba(57,255,20,0.2)] shrink-0">
                                         {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
                                     </div>
                                     <div>
-                                        <h3 class="text-sm font-bold text-white group-hover:text-neon-green transition-colors">{{ contract.client?.first_name }} {{ contract.client?.last_name }}</h3>
-                                        <p class="text-[10px] font-mono text-neon-cyan mt-0.5">
-                                            <span class="text-white/70">{{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}</span>
-                                            | {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
-                                        </p>
+                                        <p class="text-sm text-white">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
+                                        <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
                                     </div>
                                 </div>
-                                <div class="text-right flex flex-col items-end gap-1">
-                                    <span v-if="contract.is_legacy" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
-                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white/80 whitespace-nowrap">{{ contract.term_months }} {{ $t('months') }}</span>
+                            </td>
+                            <td class="p-3 text-sm font-mono text-white/80">
+                                {{ $currency(contract.down_payment) }}
+                            </td>
+                            <td class="p-3 text-sm font-mono text-neon-green font-bold">
+                                {{ $currency(contract.total_amount) }}
+                                <div class="text-[10px] text-text-muted mt-0.5 font-normal">{{ contract.term_months }} {{ $t('months') }}</div>
+                            </td>
+                            <td class="p-3">
+                                <div class="flex flex-col gap-1 w-32">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-mono text-white">{{ $currency(calculatePaidAmount(contract)) }}</span>
+                                        <span class="text-[10px] text-neon-green">{{ calculateProgress(contract).toFixed(0) }}%</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
+                                        <div 
+                                            class="absolute top-0 left-0 bottom-0 bg-neon-green shadow-[0_0_10px_#39FF14] transition-all duration-1000"
+                                            :style="{ width: calculateProgress(contract) + '%' }"
+                                        ></div>
+                                    </div>
                                 </div>
-                            </div>
-    
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-black/30 border border-white/5">
-                                <div>
-                                    <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('down_payment') }}</p>
-                                    <p class="text-xs font-mono text-white/80 mt-0.5">{{ $currency(contract.down_payment) }}</p>
+                            </td>
+                            <td class="p-3 text-right" @click.stop>
+                                <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="Tahrirlash">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    </button>
+                                    <button @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,0,0.2)]" title="O'chirish">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] uppercase font-mono text-text-muted">{{ $t('total_amount') }}</p>
-                                    <p class="text-xs font-mono text-neon-green mt-0.5">{{ $currency(contract.total_amount) }}</p>
-                                </div>
-                            </div>
-                        </div>
-    
-                        <div class="mt-auto">
-                            <div class="flex justify-between items-end mb-1">
-                                <p class="text-[10px] text-neon-green font-mono uppercase">{{ $t('total_paid') }}</p>
-                                <p class="text-xs font-mono text-white">{{ $currency(calculatePaidAmount(contract)) }}</p>
-                            </div>
-                            <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
-                                <div 
-                                    class="absolute top-0 left-0 bottom-0 bg-neon-green shadow-[0_0_10px_#39FF14] transition-all duration-1000"
-                                    :style="{ width: calculateProgress(contract) + '%' }"
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <div v-if="contracts.length === 0" class="text-center py-20 text-text-muted font-mono text-sm border border-dashed border-white/10 rounded-2xl">
                 {{ $t('no_active_contracts') }}
             </div>

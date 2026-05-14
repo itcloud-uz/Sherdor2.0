@@ -64,7 +64,7 @@ class CrmController extends Controller
             'middle_name' => 'nullable|string',
             'passport_series' => 'nullable|string',
             'pinfl' => 'nullable|string',
-            'phone' => 'nullable|string',
+            'phone' => 'required|string', // SQLite column is NOT NULL
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
@@ -76,13 +76,16 @@ class CrmController extends Controller
             unset($validated['passport_series']);
         }
 
-        $client = new \App\Models\Client($validated);
-        if (!empty($validated['created_at'])) {
-            $client->created_at = $validated['created_at'];
+        try {
+            $client = new \App\Models\Client($validated);
+            if (!empty($validated['created_at'])) {
+                $client->created_at = $validated['created_at'];
+            }
+            $client->save();
+            return redirect()->back()->with('message', 'Client created successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['server_error' => $e->getMessage()]);
         }
-        $client->save();
-
-        return redirect()->back()->with('message', 'Client created successfully.');
     }
 
     public function updateClient(\Illuminate\Http\Request $request, \App\Models\Client $client)
@@ -93,7 +96,7 @@ class CrmController extends Controller
             'middle_name' => 'nullable|string',
             'passport_series' => 'nullable|string',
             'pinfl' => 'nullable|string',
-            'phone' => 'nullable|string',
+            'phone' => 'required|string',
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
@@ -105,13 +108,16 @@ class CrmController extends Controller
             unset($validated['passport_series']);
         }
 
-        $client->fill($validated);
-        if (!empty($validated['created_at'])) {
-            $client->created_at = $validated['created_at'];
+        try {
+            $client->fill($validated);
+            if (!empty($validated['created_at'])) {
+                $client->created_at = $validated['created_at'];
+            }
+            $client->save();
+            return redirect()->back()->with('message', 'Client updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['server_error' => $e->getMessage()]);
         }
-        $client->save();
-
-        return redirect()->back()->with('message', 'Client updated successfully.');
     }
 
     public function deleteClient(\App\Models\Client $client)

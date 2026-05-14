@@ -78,13 +78,6 @@ const formatMoney = (amount) => {
                     <p class="text-[10px] font-mono text-text-muted uppercase">Yangi xaridlar va qabullar</p>
                 </Link>
 
-                <Link :href="route('admin.warehouse.contracts')" class="glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green group text-center transition-all">
-                    <div class="w-16 h-16 mx-auto bg-neon-green/10 rounded-full flex items-center justify-center text-3xl group-hover:scale-110 transition-transform mb-4">
-                        📝
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 uppercase tracking-widest font-display">Shartnomalar</h3>
-                    <p class="text-[10px] font-mono text-text-muted uppercase">Huquqiy kelishuvlar</p>
-                </Link>
             </div>
 
             <!-- Recent Transactions -->

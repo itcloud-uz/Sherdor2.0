@@ -8,8 +8,16 @@ const props = defineProps({
 });
 
 const showModal = ref(false);
+const showPaymentModal = ref(false);
 const editMode = ref(false);
 const selectedSupplier = ref(null);
+
+const paymentForm = ref({
+    amount: '',
+    payment_method: 'bank',
+    transaction_date: new Date().toISOString().split('T')[0],
+    notes: ''
+});
 
 const form = ref({
     name: '',
@@ -70,6 +78,28 @@ const deleteSupplier = (id) => {
     if (confirm("Ta'minotchini o'chirishga ishonchingiz komilmi?")) {
         router.delete(route('admin.warehouse.suppliers.destroy', id));
     }
+};
+
+const openPaymentModal = (supplier) => {
+    selectedSupplier.value = supplier;
+    paymentForm.value = {
+        amount: '',
+        payment_method: 'bank',
+        transaction_date: new Date().toISOString().split('T')[0],
+        notes: ''
+    };
+    showPaymentModal.value = true;
+};
+
+const submitPayment = () => {
+    isSubmitting.value = true;
+    router.post(route('admin.warehouse.suppliers.pay', selectedSupplier.value.id), paymentForm.value, {
+        onSuccess: () => {
+            isSubmitting.value = false;
+            showPaymentModal.value = false;
+        },
+        onError: () => { isSubmitting.value = false; }
+    });
 };
 
 const formatMoney = (amount) => {
@@ -133,6 +163,12 @@ const sendToTelegram = (id) => {
                 <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group relative">
                     <!-- Edit & Delete Buttons -->
                     <div class="absolute top-4 right-4 flex items-center gap-2">
+                        <a :href="route('admin.warehouse.suppliers.ledger', s.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
+                            PDF Hisobot
+                        </a>
+                        <button @click="openPaymentModal(s)" class="px-3 py-1 bg-neon-green/20 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="To'lov qilish">
+                            To'lov
+                        </button>
                         <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all" title="Tahrirlash">
                             ✏️
                         </button>
@@ -158,8 +194,8 @@ const sendToTelegram = (id) => {
                             <span class="text-sm font-bold text-white font-mono">{{ s.inn || '-' }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-mono text-text-muted uppercase">Shartnomalar</span>
-                            <span class="text-sm font-bold text-neon-cyan font-mono">{{ s.contracts?.length || 0 }} ta</span>
+                            <span class="text-[10px] font-mono text-text-muted uppercase">Buyurtmalar</span>
+                            <span class="text-sm font-bold text-neon-cyan font-mono">{{ s.orders?.length || 0 }} ta</span>
                         </div>
                     </div>
 
@@ -255,6 +291,50 @@ const sendToTelegram = (id) => {
                     <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
                     <button @click="submit" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-yellow text-black rounded-xl hover:shadow-[0_0_15px_#FFFF00] transition-all disabled:opacity-50">
                         {{ isSubmitting ? 'Saqlanmoqda...' : 'Saqlash' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Modal -->
+        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <div class="glass-panel w-full max-w-md p-4 md:p-8 rounded-2xl border border-neon-green/50 shadow-[0_0_30px_rgba(57,255,20,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
+                
+                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">
+                    To'lov Qilish ({{ selectedSupplier?.company_name || selectedSupplier?.name }})
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Summasi (UZS) *</label>
+                        <input v-model="paymentForm.amount" type="number" step="0.01" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-green transition-colors text-right text-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Turi *</label>
+                        <select v-model="paymentForm.payment_method" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-green transition-colors">
+                            <option value="bank">Bank / Pul o'tkazma</option>
+                            <option value="card">Plastik karta</option>
+                            <option value="cash">Naqd pul</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Sana *</label>
+                        <input v-model="paymentForm.transaction_date" type="date" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-green transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh</label>
+                        <textarea v-model="paymentForm.notes" rows="2" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-green transition-colors"></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-end gap-3">
+                    <button @click="showPaymentModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
+                    <button @click="submitPayment" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-green text-black rounded-xl hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">
+                        {{ isSubmitting ? 'Saqlanmoqda...' : 'To\'lovni Tasdiqlash' }}
                     </button>
                 </div>
             </div>

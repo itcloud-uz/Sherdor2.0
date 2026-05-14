@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\SupplierContract;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -48,7 +49,7 @@ class WarehouseController extends Controller
     public function suppliers()
     {
         return Inertia::render('Admin/Warehouse/Suppliers', [
-            'suppliers' => Supplier::with('contracts')->latest()->get()
+            'suppliers' => Supplier::with(['contracts', 'orders'])->latest()->get()
         ]);
     }
 
@@ -153,68 +154,54 @@ class WarehouseController extends Controller
         return back()->with('error', 'Telegramga yuborishda xatolik: ' . $response->body());
     }
 
-    public function contracts()
-    {
-        return Inertia::render('Admin/Warehouse/Contracts', [
-            'contracts' => SupplierContract::with('supplier')->latest()->get(),
-            'suppliers' => Supplier::all()
-        ]);
-    }
-
-    public function storeContract(Request $request)
+    public function paySupplier(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
-            'contract_number' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date',
-            'total_amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:0',
+            'payment_method' => 'required|string|in:cash,card,bank',
+            'transaction_date' => 'required|date',
             'notes' => 'nullable|string'
         ]);
 
-        SupplierContract::create($validated);
+        DB::transaction(function () use ($validated, $supplier) {
+            // Decrease supplier balance
+            $supplier->decrement('balance', $validated['amount']);
 
-        return back()->with('success', 'Ta\'minot shartnomasi muvaffaqiyatli saqlandi');
+            // Create transaction
+            Transaction::create([
+                'type' => 'expense',
+                'amount' => $validated['amount'],
+                'currency' => 'UZS',
+                'payment_method' => $validated['payment_method'],
+                'status' => 'completed',
+                'supplier_id' => $supplier->id,
+                'transaction_date' => $validated['transaction_date'],
+                'notes' => $validated['notes'],
+                'created_by' => auth()->id()
+            ]);
+        });
+
+        return back()->with('success', 'Ta\'minotchiga to\'lov amalga oshirildi');
     }
 
-    public function scanContract(Request $request)
+    public function supplierLedgerPdf(Supplier $supplier)
     {
-        $request->validate([
-            'document' => 'required|file|mimes:pdf|max:10240'
+        $supplier->load(['orders' => function($q) {
+            $q->where('status', 'delivered')->orderBy('order_date');
+        }]);
+
+        $payments = Transaction::where('supplier_id', $supplier->id)
+                        ->where('type', 'expense')
+                        ->orderBy('transaction_date')
+                        ->get();
+
+        $pdf = Pdf::loadView('exports.supplier_ledger', [
+            'supplier' => $supplier,
+            'orders' => $supplier->orders,
+            'payments' => $payments
         ]);
 
-        $file = $request->file('document');
-        $path = $file->storeAs('temp_scans', 'scan_' . time() . '.pdf', 'local');
-        $absolutePath = storage_path('app/' . $path);
-
-        $scriptPath = base_path('scripts/pdf_text_parser.py');
-        
-        $command = escapeshellcmd("python \"{$scriptPath}\" \"{$absolutePath}\"");
-        $output = shell_exec($command);
-        
-        // Clean up temp file
-        if (file_exists($absolutePath)) {
-            unlink($absolutePath);
-        }
-
-        if (!$output) {
-            return response()->json(['success' => false, 'message' => 'Skript ishga tushmadi.']);
-        }
-
-        $result = json_decode($output, true);
-
-        if (isset($result['status']) && $result['status'] === 'success') {
-            return response()->json([
-                'success' => true,
-                'data' => $result['data'],
-                'is_json' => true
-            ]);
-        }
-
-        return response()->json([
-            'success' => false, 
-            'message' => $result['message'] ?? 'Fayldan ma\'lumot o\'qib bo\'lmadi.'
-        ]);
+        return $pdf->download('Taminotchi_hisoboti_' . $supplier->id . '.pdf');
     }
 
     public function orders()

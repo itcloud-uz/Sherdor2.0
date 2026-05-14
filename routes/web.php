@@ -207,9 +207,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::delete('/suppliers/{supplier}', [\App\Http\Controllers\Admin\WarehouseController::class, 'destroySupplier'])->name('suppliers.destroy');
         Route::post('/suppliers/{supplier}/upload', [\App\Http\Controllers\Admin\WarehouseController::class, 'uploadSupplierDocument'])->name('suppliers.upload');
         Route::post('/suppliers/{supplier}/telegram', [\App\Http\Controllers\Admin\WarehouseController::class, 'sendSupplierDocumentToTelegram'])->name('suppliers.telegram');
-        Route::get('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'contracts'])->name('contracts');
-        Route::post('/contracts', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeContract'])->name('contracts.store');
-        Route::post('/contracts/scan', [\App\Http\Controllers\Admin\WarehouseController::class, 'scanContract'])->name('contracts.scan');
+        Route::post('/suppliers/{supplier}/pay', [\App\Http\Controllers\Admin\WarehouseController::class, 'paySupplier'])->name('suppliers.pay');
+        Route::get('/suppliers/{supplier}/ledger', [\App\Http\Controllers\Admin\WarehouseController::class, 'supplierLedgerPdf'])->name('suppliers.ledger');
         Route::get('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'orders'])->name('orders');
         Route::post('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeOrder'])->name('orders.store');
         Route::put('/orders/{order}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateOrder'])->name('orders.update');

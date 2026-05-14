@@ -5,6 +5,7 @@ import { ref, computed, nextTick } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import axios from 'axios';
 import { useI18n } from 'vue-i18n';
+import FinancialDetailsModal from '@/Components/FinancialDetailsModal.vue';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -31,6 +32,14 @@ const props = defineProps({
 const showLostLeadsModal = ref(false);
 import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 const showExpensesModal = ref(false);
+
+const showFinancialModal = ref(false);
+const activeFinancialCategory = ref('');
+
+const openFinancialDetails = (category) => {
+    activeFinancialCategory.value = category;
+    showFinancialModal.value = true;
+};
 
 // Chart 1: Cash Flow Area
 const cashFlowOptions = {
@@ -119,7 +128,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
         <!-- WIDGET 1: Top Financial Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- 1. Cash Department -->
-            <div class="glass-card p-6 border-t-4 border-neon-green relative overflow-hidden group">
+            <div @click="openFinancialDetails('cash')" class="glass-card p-6 border-t-4 border-neon-green relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span> БЎЛИМ КАССА
@@ -141,7 +150,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
 
             <!-- 2. Bank Account -->
-            <div class="glass-card p-6 border-t-4 border-neon-cyan relative overflow-hidden group">
+            <div @click="openFinancialDetails('bank')" class="glass-card p-6 border-t-4 border-neon-cyan relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span> ҲИСОБ РАҚАМ
@@ -163,7 +172,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
 
             <!-- 3. Credit -->
-            <div class="glass-card p-6 border-t-4 border-neon-yellow relative overflow-hidden group">
+            <div @click="openFinancialDetails('credit')" class="glass-card p-6 border-t-4 border-neon-yellow relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-neon-yellow animate-pulse"></span> КРЕДИТ
@@ -185,7 +194,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
 
             <!-- 4. Overall -->
-            <div class="glass-card p-6 border-t-4 border-neon-magenta relative overflow-hidden group">
+            <div @click="openFinancialDetails('overall')" class="glass-card p-6 border-t-4 border-neon-magenta relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
                 <div class="absolute inset-0 bg-neon-magenta/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-neon-magenta animate-pulse"></span> УМУМИЙ
@@ -228,7 +237,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
 
         <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             <!-- WIDGET 2: Financial Breakdown (Moved UP for visibility) -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px] flex flex-col">
+            <div @click="openFinancialDetails('financial_flow')" class="glass-panel p-6 rounded-2xl border border-white/5 h-[400px] flex flex-col cursor-pointer hover:border-white/20 transition-colors group">
                 <h3 class="text-sm font-display text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-neon-magenta"></span> {{ $t('financial_flow_title') }}
                 </h3>
@@ -415,6 +424,11 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
 
         <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />
 
+        <FinancialDetailsModal 
+            :show="showFinancialModal" 
+            :category="activeFinancialCategory" 
+            @close="showFinancialModal = false" 
+        />
     </AdminLayout>
 </template>
 

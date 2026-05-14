@@ -39,6 +39,7 @@ Route::get('/promo/offers', function () {
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/financial-reports', [\App\Http\Controllers\Admin\FinancialReportController::class, 'index'])->name('financial.reports');
     Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm');
     Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');

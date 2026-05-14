@@ -101,7 +101,7 @@ const applyFilter = () => {
                     </button>
                     <button @click="downloadData" class="flex-1 sm:flex-none px-4 py-2 bg-neon-cyan/20 border border-neon-cyan/50 text-neon-cyan font-mono font-bold text-xs rounded hover:bg-neon-cyan hover:text-black transition-colors shadow-[0_0_10px_rgba(0,240,255,0.2)] flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        Yuklab Olish (CSV)
+                        Yuklab Olish (PDF)
                     </button>
                 </div>
             </div>

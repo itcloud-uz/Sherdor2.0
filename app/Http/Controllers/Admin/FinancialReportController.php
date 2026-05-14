@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\FinancialLiability;
 use App\Models\LiabilityPayment;
 use Illuminate\Support\Facades\Schema;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FinancialReportController extends Controller
 {
@@ -85,7 +86,7 @@ class FinancialReportController extends Controller
         $data = $data->sortByDesc('date')->values();
 
         if ($export) {
-            return $this->exportCsv($data, $category);
+            return $this->exportPdf($data, $category, $startDate, $endDate);
         }
 
         // Return paginated manually if needed, or just all records since it's a filtered report
@@ -94,38 +95,19 @@ class FinancialReportController extends Controller
         ]);
     }
 
-    private function exportCsv($data, $category)
+    private function exportPdf($data, $category, $startDate, $endDate)
     {
-        $fileName = "moliyaviy_hisobot_{$category}_" . date('Y_m_d_H_i') . ".csv";
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+        $fileName = "moliyaviy_hisobot_{$category}_" . date('Y_m_d_H_i') . ".pdf";
+        
+        $pdf = Pdf::loadView('pdf.financial_report', [
+            'data' => $data,
+            'category' => $category,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'companyName' => 'Sher-Dor ERP System',
+            'generatedAt' => now()->format('Y-m-d H:i:s'),
+        ]);
 
-        $columns = ['Sana', 'Tur', 'Kategoriya', 'Miqdor', 'Tafsilot'];
-
-        $callback = function() use($data, $columns) {
-            $file = fopen('php://output', 'w');
-            // Add BOM to fix UTF-8 in Excel
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, $columns);
-
-            foreach ($data as $item) {
-                $row['Sana']  = $item['date'];
-                $row['Tur']    = $item['type'] === 'income' ? 'Tushum' : 'Chiqim';
-                $row['Kategoriya'] = $item['category'];
-                $row['Miqdor']  = $item['amount'];
-                $row['Tafsilot']  = $item['description'];
-
-                fputcsv($file, array($row['Sana'], $row['Tur'], $row['Kategoriya'], $row['Miqdor'], $row['Tafsilot']));
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $pdf->download($fileName);
     }
 }

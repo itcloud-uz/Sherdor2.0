@@ -419,11 +419,13 @@ class FinanceController extends Controller
                         $schedule->paid_amount += $needed;
                         $schedule->status = 'paid';
                         $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                        $schedule->payment_method = $transaction->payment_method;
                         $remainingAmount -= $needed;
                     } else {
                         $schedule->paid_amount += $remainingAmount;
                         $schedule->status = 'partial'; // Ensure partial status is set if not paid
                         $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                        $schedule->payment_method = $transaction->payment_method;
                         $remainingAmount = 0;
                     }
                     

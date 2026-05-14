@@ -171,12 +171,25 @@ class CrmController extends Controller
     public function paySchedule(Request $request, \App\Models\PaymentSchedule $schedule)
     {
         $validated = $request->validate([
-            'paid_amount' => 'required|numeric|min:0'
+            'paid_amount' => 'required|numeric|min:0',
+            'payment_method' => 'nullable|string|in:naqd,bank,karta',
+            'actual_payment_date' => 'nullable|date'
         ]);
 
         $contract = $schedule->contract;
         
         $schedule->paid_amount = $validated['paid_amount'];
+        if (isset($validated['payment_method'])) {
+            $schedule->payment_method = $validated['payment_method'];
+        }
+        
+        if ($schedule->paid_amount > 0) {
+            $schedule->actual_payment_date = $validated['actual_payment_date'] ?? now()->format('Y-m-d');
+        } elseif ($schedule->paid_amount == 0) {
+            $schedule->actual_payment_date = null;
+            $schedule->payment_method = null;
+        }
+
         $schedule->remaining_debt = max(0, $schedule->expected_amount - $schedule->paid_amount);
         
         if ($schedule->paid_amount >= $schedule->expected_amount) {

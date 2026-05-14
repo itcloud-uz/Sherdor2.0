@@ -72,6 +72,7 @@
                 <th>Haqiqiy to'lov sanasi</th>
                 <th>Kutilayotgan summa</th>
                 <th>To'langan summa</th>
+                <th>To'lov usuli</th>
                 <th>Qolgan qarz</th>
                 <th>Hisoblangan jarima</th>
                 <th>Holat</th>
@@ -101,6 +102,7 @@
                     </td>
                     <td>{{ number_format($schedule->expected_amount, 2) }}</td>
                     <td>{{ number_format($schedule->paid_amount, 2) }}</td>
+                    <td style="text-transform: uppercase;">{{ $schedule->payment_method ?: '-' }}</td>
                     <td>
                         @if($schedule->remaining_debt > 0)
                             <span class="text-danger">{{ number_format($schedule->remaining_debt, 2) }}</span>
@@ -132,6 +134,7 @@
                 <td colspan="3" class="text-right font-bold">JAMI:</td>
                 <td class="font-bold">{{ number_format($totalExpected, 2) }}</td>
                 <td class="font-bold">{{ number_format($totalPaid, 2) }}</td>
+                <td></td>
                 <td class="font-bold text-danger">{{ number_format($totalDebt, 2) }}</td>
                 <td class="font-bold text-danger">{{ number_format($contract->total_penalty_accumulated, 2) }}</td>
                 <td></td>

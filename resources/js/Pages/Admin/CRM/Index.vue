@@ -37,16 +37,24 @@ const editingLeadId = ref(null);
 
 const editingScheduleId = ref(null);
 const editingPaidAmount = ref(0);
+const editingPaymentMethod = ref('naqd');
+const editingActualPaymentDate = ref('');
 
 function editSchedule(schedule) {
     editingScheduleId.value = schedule.id;
     editingPaidAmount.value = schedule.paid_amount || 0;
+    editingPaymentMethod.value = schedule.payment_method || 'naqd';
+    editingActualPaymentDate.value = schedule.actual_payment_date 
+        ? schedule.actual_payment_date.substring(0, 10)
+        : new Date().toISOString().split('T')[0];
 }
 
 function saveSchedulePayment(schedule) {
     isProcessing.value = true;
     router.post(route('admin.crm.schedules.pay', schedule.id), {
-        paid_amount: editingPaidAmount.value
+        paid_amount: editingPaidAmount.value,
+        payment_method: editingPaymentMethod.value,
+        actual_payment_date: editingActualPaymentDate.value
     }, {
         onSuccess: (page) => {
             editingScheduleId.value = null;
@@ -1094,7 +1102,8 @@ function openQuickSmsModal(lead) {
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan Sana</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('expected') }}</th>
-                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('paid') }}</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'lov Summasi</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'lov Usuli</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('remaining_debt') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('penalty_accrued') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">{{ $t('status') }}</th>
@@ -1110,7 +1119,12 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-sm font-bold text-white">{{ index + 1 }}</td>
                                     <td class="p-3 text-sm font-mono text-white/80">{{ schedule.due_date }}</td>
                                     <td class="p-3 text-sm font-mono text-white/60">
-                                        {{ schedule.actual_payment_date ? new Date(schedule.actual_payment_date).toLocaleDateString() : '-' }}
+                                        <div v-if="editingScheduleId === schedule.id">
+                                            <input type="date" v-model="editingActualPaymentDate" class="glass-input w-28 text-white text-xs py-1 px-2">
+                                        </div>
+                                        <div v-else>
+                                            {{ schedule.actual_payment_date ? new Date(schedule.actual_payment_date).toLocaleDateString() : '-' }}
+                                        </div>
                                     </td>
                                     <td class="p-3 text-sm font-mono text-neon-cyan">{{ $currency(schedule.expected_amount) }}</td>
                                     <td class="p-3 text-sm font-mono text-neon-green">
@@ -1122,6 +1136,18 @@ function openQuickSmsModal(lead) {
                                         <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
                                             {{ $currency(schedule.paid_amount || 0) }}
                                             <span class="text-[10px] opacity-0 group-hover:opacity-100 text-neon-cyan transition-opacity border border-neon-cyan/50 rounded px-1">✏️</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-sm font-mono text-white/80">
+                                        <div v-if="editingScheduleId === schedule.id">
+                                            <select v-model="editingPaymentMethod" class="glass-input w-20 text-white text-xs py-1 px-2">
+                                                <option value="naqd">Naqd</option>
+                                                <option value="bank">Bank</option>
+                                                <option value="karta">Karta</option>
+                                            </select>
+                                        </div>
+                                        <div v-else class="uppercase text-xs" :class="{'text-neon-cyan': schedule.payment_method === 'bank', 'text-neon-green': schedule.payment_method === 'naqd', 'text-neon-magenta': schedule.payment_method === 'karta'}">
+                                            {{ schedule.payment_method || '-' }}
                                         </div>
                                     </td>
                                     <td class="p-3 text-sm font-mono text-neon-magenta">{{ $currency(schedule.remaining_debt || 0) }}</td>

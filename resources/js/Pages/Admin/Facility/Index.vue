@@ -581,41 +581,11 @@ const progressSeries = computed(() => {
                         
                         <!-- TAB 1: Interactive Blueprint -->
                         <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
-                            <!-- Floor Selector & Add Floor/Unit buttons -->
-                            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 w-full">
-                                <div class="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/10 overflow-x-auto custom-scrollbar w-full xl:max-w-2xl">
-                                    <button 
-                                        v-for="floor in selectedBuilding.floors" 
-                                        :key="floor.id"
-                                        @click="selectedFloor = floor"
-                                        :class="['px-4 py-2 text-xs font-mono font-bold uppercase rounded whitespace-nowrap transition-all', selectedFloor?.id === floor.id ? 'bg-neon-cyan text-black shadow-[0_0_10px_rgba(0,240,255,0.4)]' : 'text-text-muted hover:bg-white/5']"
-                                    >
-                                        {{ floor.floor_number }}-QAVAT
-                                    </button>
-                                    <button v-if="!selectedBuilding.floors.length" class="px-4 py-2 text-xs font-mono text-text-muted italic">
-                                        Qavatlar mavjud emas
-                                    </button>
-                                </div >
-                                <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
-                                    <template v-if="selectedFloor">
-                                        <button @click="openEditFloor(selectedFloor)" class="px-2 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
-                                            ✏️
-                                        </button>
-                                        <button @click="deleteFloor(selectedFloor.id)" class="px-2 py-1.5 bg-neon-magenta/10 border border-neon-magenta/50 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-black transition-all" title="Qavatni o'chirish">
-                                            🗑️
-                                        </button>
-                                    </template>
-                                    <div class="w-px h-6 bg-white/20 mx-1"></div>
-                                    <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
-                                        + QAVAT
-                                    </button>
-                                    <button v-if="selectedFloor" @click="showAddUnitModal = true; isEditingUnit = false" class="px-3 py-1.5 bg-neon-cyan/10 border border-neon-cyan text-neon-cyan text-[10px] font-mono rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_5px_rgba(0,240,255,0.2)]">
-                                        + XONADON/DO'KON
-                                    </button>
-                                    <button v-if="selectedFloor?.blueprint_path" @click="showBlueprintModal = true" class="px-3 py-1.5 bg-neon-purple/10 border border-neon-purple text-neon-purple text-[10px] font-mono rounded hover:bg-neon-purple hover:text-black transition-all shadow-[0_0_5px_rgba(176,38,255,0.2)]">
-                                        🗺️ CHIZMANI KO'RISH
-                                    </button>
-                                </div>
+                            <!-- Header Actions -->
+                            <div class="flex justify-end items-center gap-4 mb-4 w-full">
+                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                    + QAVAT
+                                </button>
                             </div>
 
                             <div class="flex gap-4 text-[10px] font-mono mb-4 bg-black/40 p-2 rounded-lg inline-flex w-max border border-white/10">
@@ -624,72 +594,66 @@ const progressSeries = computed(() => {
                                 <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-neon-magenta/30 border border-neon-magenta shadow-[0_0_5px_#FF003C]"></span> {{ $t('sold') }}</span>
                             </div>
                             
-                            <div class="flex-1 relative border border-white/10 rounded-xl overflow-hidden bg-black/50 group flex items-start p-6">
-                                
-                                <!-- Blueprint Mode (SVG) -->
-                                <svg v-if="selectedFloor && selectedFloor.blueprint_path" class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
-                                    <g v-for="(unit, idx) in selectedFloor.units" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-150" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
-                                        <polygon v-if="unit.svg_polygon" :points="unit.svg_polygon" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
-                                        <polygon v-else :points="getFallbackPolygon(unit)" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
-                                        <text v-if="!unit.svg_polygon" :x="getFallbackTextX(unit)" :y="getFallbackTextY(unit)" text-anchor="middle" fill="white" class="font-mono text-sm font-bold pointer-events-none drop-shadow-md">{{ unit.unit_number }}</text>
-                                    </g>
-                                </svg>
-                                
-                                <!-- Fallback Mode (HTML Grid) -->
-                                <div v-else-if="selectedFloor && !selectedFloor.blueprint_path" class="w-full h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar relative z-20">
-                                    <!-- Residential Section -->
-                                    <div v-if="residentialUnits.length" class="flex flex-col sm:flex-row items-stretch min-h-[100px]">
-                                        <div class="w-full sm:w-32 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-white/10 pb-4 sm:pb-0 pr-0 sm:pr-6 mb-4 sm:mb-0 flex flex-row sm:flex-col items-center sm:items-end justify-start sm:justify-center gap-4 sm:gap-2">
-                                            <span class="text-2xl drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">🏠</span>
-                                            <h3 class="text-neon-cyan font-display text-sm tracking-widest uppercase text-left sm:text-right">Xonadonlar</h3>
+                            <!-- Floors List -->
+                            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 pb-6">
+                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border border-white/10 rounded-xl bg-black/50 overflow-hidden relative group">
+                                    
+                                    <!-- Floor Header (Left Side) -->
+                                    <div class="w-full xl:w-56 bg-white/5 border-b xl:border-b-0 xl:border-r border-white/10 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 relative transition-colors hover:bg-white/10">
+                                        <div class="flex items-center gap-3 xl:flex-col xl:items-start xl:gap-1">
+                                            <h3 class="text-2xl font-display font-bold text-white">{{ floor.floor_number }}-qavat</h3>
+                                            <p class="text-[10px] font-mono text-text-muted bg-black/40 px-2 py-0.5 rounded">{{ floor.units?.length || 0 }} ta joy</p>
                                         </div>
-                                        <div class="flex-1 sm:pl-6">
-                                            <div class="flex flex-wrap gap-4">
-                                                <div v-for="unit in residentialUnits" :key="'res-'+unit.id" 
-                                                     class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded shadow-lg"
-                                                     :class="getUnitBorderColor(unit.status)"
-                                                     :style="{ backgroundColor: getUnitFillColor(unit.status) }"
-                                                     @mousemove="(e) => onUnitHover(unit, e)"
-                                                     @mouseleave="onUnitLeave"
-                                                     @click="openEditUnit(unit)">
-                                                    <span class="font-mono text-xs sm:text-sm font-bold pointer-events-none" :class="getUnitTextColor(unit.status)">{{ unit.unit_number }}</span>
-                                                </div>
-                                            </div>
+                                        
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            <button @click="openEditFloor(floor)" class="px-2 py-1 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
+                                                ✏️
+                                            </button>
+                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="px-2 py-1 bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-mono rounded hover:bg-neon-cyan hover:text-black transition-all" title="Xonadon qo'shish">
+                                                + Joy
+                                            </button>
+                                            <button @click="deleteFloor(floor.id)" class="px-2 py-1 bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
+                                                🗑️
+                                            </button>
                                         </div>
                                     </div>
                                     
-                                    <!-- Separator -->
-                                    <div v-if="residentialUnits.length && commercialUnits.length" class="flex">
-                                        <div class="hidden sm:block w-32 shrink-0 border-r-2 border-white/10"></div>
-                                        <div class="flex-1 sm:pl-6 flex items-center">
-                                            <div class="h-px w-full bg-white/10 border-b border-dashed border-white/20"></div>
+                                    <!-- Floor Units (Right Side) -->
+                                    <div class="flex-1 p-4 overflow-x-auto custom-scrollbar flex items-center bg-black/20">
+                                        <!-- Interactive SVG Blueprint Mode for Floor -->
+                                        <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-black/40 rounded-lg border border-white/5">
+                                            <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+                                                <g v-for="(unit, idx) in floor.units" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-150" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
+                                                    <polygon v-if="unit.svg_polygon" :points="unit.svg_polygon" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
+                                                    <polygon v-else :points="getFallbackPolygon(unit)" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
+                                                    <text v-if="!unit.svg_polygon" :x="getFallbackTextX(unit)" :y="getFallbackTextY(unit)" text-anchor="middle" fill="white" class="font-mono text-sm font-bold pointer-events-none drop-shadow-md">{{ unit.unit_number }}</text>
+                                                </g>
+                                            </svg>
                                         </div>
-                                    </div>
-
-                                    <!-- Commercial Section -->
-                                    <div v-if="commercialUnits.length" class="flex flex-col sm:flex-row items-stretch min-h-[100px]">
-                                        <div class="w-full sm:w-32 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-white/10 pb-4 sm:pb-0 pr-0 sm:pr-6 mb-4 sm:mb-0 flex flex-row sm:flex-col items-center sm:items-end justify-start sm:justify-center gap-4 sm:gap-2">
-                                            <span class="text-2xl drop-shadow-[0_0_10px_rgba(255,0,60,0.5)]">🏬</span>
-                                            <h3 class="text-neon-magenta font-display text-sm tracking-widest uppercase text-left sm:text-right">Do'konlar</h3>
-                                        </div>
-                                        <div class="flex-1 sm:pl-6">
-                                            <div class="flex flex-wrap gap-4">
-                                                <div v-for="unit in commercialUnits" :key="'com-'+unit.id" 
-                                                     class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded shadow-lg"
-                                                     :class="getUnitBorderColor(unit.status)"
-                                                     :style="{ backgroundColor: getUnitFillColor(unit.status) }"
-                                                     @mousemove="(e) => onUnitHover(unit, e)"
-                                                     @mouseleave="onUnitLeave"
-                                                     @click="openEditUnit(unit)">
-                                                    <span class="font-mono text-xs sm:text-sm font-bold pointer-events-none" :class="getUnitTextColor(unit.status)">{{ unit.unit_number }}</span>
-                                                </div>
+                                        
+                                        <!-- Fallback Grid Mode -->
+                                        <div v-else class="flex gap-4 min-h-[80px]">
+                                            <div v-for="unit in floor.units" :key="'grid-'+unit.id"
+                                                 class="w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded-xl shadow-lg shrink-0 relative"
+                                                 :class="getUnitBorderColor(unit.status)"
+                                                 :style="{ backgroundColor: getUnitFillColor(unit.status) }"
+                                                 @mousemove="(e) => onUnitHover(unit, e)"
+                                                 @mouseleave="onUnitLeave"
+                                                 @click="openEditUnit(unit)">
+                                                <span class="font-mono text-xs sm:text-sm font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
+                                                    {{ unit.unit_number }}
+                                                </span>
+                                                <span v-if="unit.type === 'commercial'" class="absolute bottom-1 right-1 text-[10px] opacity-50">🏬</span>
+                                            </div>
+                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-text-muted italic flex items-center h-full px-4 border border-dashed border-white/10 rounded-xl">
+                                                Xonadonlar qo'shilmagan
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-4 md:p-8 rounded-xl bg-black/80 backdrop-blur-md">
-                                    [ QAVAT UCHUN XONADONLAR YO'Q ]
+                                
+                                <div v-if="!selectedBuilding.floors?.length" class="text-center py-10 border border-dashed border-white/20 rounded-xl text-text-muted font-mono text-sm bg-black/30">
+                                    Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
                                 </div>
                             </div>
                             

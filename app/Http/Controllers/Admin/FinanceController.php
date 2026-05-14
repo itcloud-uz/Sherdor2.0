@@ -410,24 +410,32 @@ class FinanceController extends Controller
                     ->orderBy('due_date', 'asc')
                     ->get();
                     
+                $isFirst = true;
                 foreach ($schedules as $schedule) {
                     if ($remainingAmount <= 0) break;
                     
                     $needed = $schedule->expected_amount - $schedule->paid_amount;
+                    if ($needed <= 0) continue;
                     
                     if ($remainingAmount >= $needed) {
                         $schedule->paid_amount += $needed;
                         $schedule->status = 'paid';
                         $schedule->actual_payment_date = $transaction->transaction_date ?? now();
                         $schedule->payment_method = $transaction->payment_method;
-                        $schedule->original_payment_amount = $transaction->amount;
+                        if ($isFirst) {
+                            $schedule->original_payment_amount = $transaction->amount;
+                            $isFirst = false;
+                        }
                         $remainingAmount -= $needed;
                     } else {
                         $schedule->paid_amount += $remainingAmount;
                         $schedule->status = 'partial'; // Ensure partial status is set if not paid
                         $schedule->actual_payment_date = $transaction->transaction_date ?? now();
                         $schedule->payment_method = $transaction->payment_method;
-                        $schedule->original_payment_amount = $transaction->amount;
+                        if ($isFirst) {
+                            $schedule->original_payment_amount = $transaction->amount;
+                            $isFirst = false;
+                        }
                         $remainingAmount = 0;
                     }
                     

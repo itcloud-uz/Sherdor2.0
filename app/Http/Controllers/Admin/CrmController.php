@@ -214,7 +214,9 @@ class CrmController extends Controller
             if (isset($validated['payment_method'])) {
                 $s->payment_method = $validated['payment_method'];
             }
-            $s->original_payment_amount = $newPaymentAmount;
+            if ($s->id === $schedule->id) {
+                $s->original_payment_amount = $newPaymentAmount;
+            }
             
             $s->remaining_debt = max(0, $s->expected_amount - $s->paid_amount);
             

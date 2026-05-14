@@ -19,10 +19,31 @@ class CrmController extends Controller
         $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $partners = \App\Models\Partner::with('user')->get();
-        $overdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
+        $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
                             ->where('status', 'overdue')
                             ->orderBy('due_date', 'asc')
                             ->get();
+
+        $overdueSchedules = [];
+        $strictCollectionSchedules = [];
+        $now = now();
+
+        foreach ($allOverdueSchedules as $schedule) {
+            if (!$schedule->contract) {
+                $overdueSchedules[] = $schedule;
+                continue;
+            }
+
+            $contractCreatedAt = \Carbon\Carbon::parse($schedule->contract->created_at);
+            $contractEndDate = $contractCreatedAt->copy()->addMonths($schedule->contract->term_months);
+            $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($now, false);
+
+            if ($now->greaterThan($contractEndDate) || $daysOverdue >= 90) {
+                $strictCollectionSchedules[] = $schedule;
+            } else {
+                $overdueSchedules[] = $schedule;
+            }
+        }
 
         return Inertia::render('Admin/CRM/Index', [
             'leads' => $leads,
@@ -31,6 +52,7 @@ class CrmController extends Controller
             'units' => $units,
             'partners' => $partners,
             'overdueSchedules' => $overdueSchedules,
+            'strictCollectionSchedules' => $strictCollectionSchedules,
         ]);
     }
 

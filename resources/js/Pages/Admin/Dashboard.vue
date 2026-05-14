@@ -126,14 +126,14 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-green relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('net_balance_company') }}</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('net_balance_company') }} (Kassa)</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">
                     {{ $currency(netBalance) }}
                 </h2>
             </div>
             <div class="glass-card p-5 border-b-4 border-neon-yellow relative overflow-hidden group">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ $t('credit_balance_cash') }}</p>
+                <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Bank Hisobi</p>
                 <h2 class="text-2xl font-display font-bold text-white mt-2 drop-shadow-[0_0_15px_rgba(252,238,9,0.4)]">
                     {{ $currency(creditBalance) }}
                 </h2>

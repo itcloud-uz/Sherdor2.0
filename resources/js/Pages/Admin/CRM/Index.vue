@@ -12,6 +12,7 @@ const props = defineProps({
     contracts: Array,
     units: Array,
     overdueSchedules: Array,
+    strictCollectionSchedules: Array,
 });
 
 const isProcessing = ref(false);
@@ -946,51 +947,122 @@ function openQuickSmsModal(lead) {
                 {{ $t('overdue_payments_radar') }}
             </h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div 
-                    v-for="schedule in overdueSchedules" 
-                    :key="schedule.id"
-                    class="glass-card p-6 border border-neon-magenta/40 hover:border-neon-magenta bg-neon-magenta/5 hover:bg-neon-magenta/10 transition-all hover:shadow-[0_0_20px_rgba(255,0,60,0.2)] relative overflow-hidden flex flex-col justify-between group"
-                >
-                    <!-- Warning pulse indicator -->
-                    <div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-neon-magenta animate-ping"></div>
-                    <div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-neon-magenta shadow-[0_0_10px_#FF003C]"></div>
-
-                    <div>
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-neon-magenta/20 border border-neon-magenta/50 flex items-center justify-center text-neon-magenta font-display font-bold text-sm shadow-[0_0_10px_rgba(255,0,60,0.3)]">
-                                ⚠️
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-white">{{ schedule.contract?.client?.first_name }} {{ schedule.contract?.client?.last_name }}</h4>
-                                <p class="text-[10px] font-mono text-neon-magenta mt-0.5">{{ $t('due_date') }}: {{ schedule.due_date }}</p>
-                            </div>
-                        </div>
-
-                        <div class="p-3 rounded-lg bg-black/40 border border-neon-magenta/20 mb-4 flex justify-between items-center">
-                            <div>
-                                <p class="text-[10px] font-mono uppercase text-text-muted tracking-wider">{{ $t('amount_due') }}</p>
-                                <p class="text-lg font-mono font-bold text-white shadow-neon-magenta/50">{{ $currency(schedule.expected_amount) }}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[10px] font-mono uppercase text-neon-magenta tracking-wider">{{ $t('overdue') }}</p>
-                                <p class="text-xs font-mono font-bold text-neon-magenta">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-auto">
-                        <div v-if="schedule.last_sms_sent_at" class="text-center mb-2 text-[10px] font-mono text-neon-cyan">
-                            Oxirgi SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }} {{ new Date(schedule.last_sms_sent_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
-                        </div>
-                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-full py-2.5 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta font-bold font-mono text-xs uppercase tracking-widest rounded hover:bg-neon-magenta hover:text-white transition-all shadow-[0_0_10px_rgba(255,0,60,0.3)] flex justify-center items-center gap-2 disabled:opacity-50">
-                            <span>📱</span> {{ $t('send_sms_warning') }}
-                        </button>
-                    </div>
+            <!-- STRICT COLLECTION -->
+            <div v-if="strictCollectionSchedules && strictCollectionSchedules.length > 0" class="mb-10">
+                <h3 class="text-lg font-bold text-neon-red mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span>🚨</span> Qat'iy Unduruv (Rassrochka)
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-neon-red/30 shadow-[0_0_30px_rgba(255,0,0,0.1)]">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-neon-red/10 border-b border-neon-red/20">
+                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Mijoz</th>
+                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Kechikkan Summa</th>
+                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Muddat</th>
+                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr 
+                                v-for="schedule in strictCollectionSchedules" 
+                                :key="schedule.id"
+                                class="border-b border-neon-red/10 hover:bg-neon-red/5 transition-colors group"
+                            >
+                                <td class="p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-neon-red/20 border border-neon-red/50 flex items-center justify-center text-neon-red font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,0,0.2)]">
+                                            ⚠️
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-white font-bold">{{ schedule.contract?.client?.last_name }} {{ schedule.contract?.client?.first_name }}</p>
+                                            <p class="text-[10px] font-mono text-neon-red mt-0.5">{{ $t('due_date') }}: {{ schedule.due_date }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <p class="text-sm font-mono font-bold text-white">{{ $currency(schedule.expected_amount) }}</p>
+                                </td>
+                                <td class="p-3">
+                                    <p class="text-xs font-mono font-bold text-neon-red">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
+                                </td>
+                                <td class="p-3 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a :href="`tel:${schedule.contract?.client?.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish">
+                                            📞
+                                        </a>
+                                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="SMS Yuborish">
+                                            📱
+                                        </button>
+                                    </div>
+                                    <div v-if="schedule.last_sms_sent_at" class="text-[8px] font-mono text-neon-cyan mt-1">
+                                        SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }}
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                <div v-if="overdueSchedules.length === 0" class="text-center py-20 text-neon-green font-mono text-sm">
-                    {{ $t('no_overdue_payments') }} 🎉
+            <!-- NORMAL OVERDUE -->
+            <div>
+                <h3 class="text-lg font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span>⏳</span> Oddiy Qarzdorlik
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-white/10">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-black/60 border-b border-white/10">
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Kechikkan Summa</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Muddat</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr 
+                                v-for="schedule in overdueSchedules" 
+                                :key="schedule.id"
+                                class="border-b border-white/5 hover:bg-white/[0.03] transition-colors group"
+                            >
+                                <td class="p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-neon-magenta/20 border border-neon-magenta/50 flex items-center justify-center text-neon-magenta font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,60,0.2)]">
+                                            ⏳
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-white font-bold">{{ schedule.contract?.client?.last_name }} {{ schedule.contract?.client?.first_name }}</p>
+                                            <p class="text-[10px] font-mono text-neon-magenta mt-0.5">{{ $t('due_date') }}: {{ schedule.due_date }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <p class="text-sm font-mono font-bold text-white">{{ $currency(schedule.expected_amount) }}</p>
+                                </td>
+                                <td class="p-3">
+                                    <p class="text-xs font-mono font-bold text-neon-magenta">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
+                                </td>
+                                <td class="p-3 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a :href="`tel:${schedule.contract?.client?.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish">
+                                            📞
+                                        </a>
+                                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="SMS Yuborish">
+                                            📱
+                                        </button>
+                                    </div>
+                                    <div v-if="schedule.last_sms_sent_at" class="text-[8px] font-mono text-text-muted mt-1">
+                                        SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="overdueSchedules.length === 0">
+                                <td colspan="4" class="py-10 text-center text-neon-green font-mono text-sm border-dashed">
+                                    {{ $t('no_overdue_payments') }} 🎉
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

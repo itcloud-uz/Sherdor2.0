@@ -598,15 +598,26 @@ function submitSupplierPayment() {
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- KASSA (CASH) -->
                 <div class="glass-card p-6 border-t-4 border-t-neon-green relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-sm font-mono text-text-muted">{{ $t('total_balance') }}</p>
-                    <h2 class="text-4xl font-display font-bold text-white mt-2 drop-shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+                    <p class="text-sm font-mono text-text-muted">{{ $t('total_balance') }} (Kassa)</p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_10px_rgba(57,255,20,0.3)]">
                         {{ $currency(balance?.total_balance || 0) }}
                     </h2>
                 </div>
                 
+                <!-- BANK ACCOUNT (CREDIT) -->
+                <div class="glass-card p-6 border-t-4 border-t-neon-yellow relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="text-sm font-mono text-text-muted uppercase tracking-widest">Bank Hisobi</p>
+                    <h2 class="text-3xl font-display font-bold text-white mt-2 drop-shadow-[0_0_10px_rgba(252,238,9,0.3)]">
+                        {{ $currency(balance?.credit_balance || 0) }}
+                    </h2>
+                </div>
+                
+                <!-- PENDING INCOMES -->
                 <div class="glass-card p-6 border-t-4 border-t-neon-cyan relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p class="text-sm font-mono text-text-muted">{{ $t('pending_incomes') }}</p>
@@ -615,6 +626,7 @@ function submitSupplierPayment() {
                     </h2>
                 </div>
 
+                <!-- PENDING EXPENSES -->
                 <div class="glass-card p-6 border-t-4 border-t-neon-red relative overflow-hidden group">
                     <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p class="text-sm font-mono text-text-muted">{{ $t('pending_expenses') }}</p>

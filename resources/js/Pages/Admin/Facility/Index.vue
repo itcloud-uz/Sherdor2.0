@@ -595,31 +595,34 @@ const progressSeries = computed(() => {
                             </div>
                             
                             <!-- Floors List -->
-                            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 pb-6">
-                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border border-white/10 rounded-xl bg-black/50 overflow-hidden relative group">
+                            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-6">
+                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border-b border-white/5 bg-black/20 overflow-hidden relative group">
                                     
                                     <!-- Floor Header (Left Side) -->
-                                    <div class="w-full xl:w-56 bg-white/5 border-b xl:border-b-0 xl:border-r border-white/10 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 relative transition-colors hover:bg-white/10">
-                                        <div class="flex items-center gap-3 xl:flex-col xl:items-start xl:gap-1">
-                                            <h3 class="text-2xl font-display font-bold text-white">{{ floor.floor_number }}-qavat</h3>
-                                            <p class="text-[10px] font-mono text-text-muted bg-black/40 px-2 py-0.5 rounded">{{ floor.units?.length || 0 }} ta joy</p>
+                                    <div class="w-full xl:w-48 bg-black/40 border-b xl:border-b-0 xl:border-r border-white/5 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-white/5">
+                                        <div class="flex items-center gap-3">
+                                            <h3 class="text-2xl font-display font-bold text-white whitespace-nowrap">{{ floor.floor_number }}-qavat</h3>
+                                            <div class="flex gap-1">
+                                                <span v-if="floor.units?.some(u => u.type === 'commercial')" class="text-xl drop-shadow-[0_0_10px_rgba(255,0,60,0.5)]" title="Do'konlar">🏬</span>
+                                                <span v-if="floor.units?.some(u => u.type === 'residential')" class="text-xl drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]" title="Xonadonlar">🏠</span>
+                                            </div>
                                         </div>
                                         
-                                        <div class="flex flex-wrap gap-2 mt-2">
-                                            <button @click="openEditFloor(floor)" class="px-2 py-1 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
+                                        <div class="flex flex-wrap gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/20 text-white text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
                                                 ✏️
                                             </button>
-                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="px-2 py-1 bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-mono rounded hover:bg-neon-cyan hover:text-black transition-all" title="Xonadon qo'shish">
-                                                + Joy
+                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-xs rounded hover:bg-neon-cyan hover:text-black transition-all" title="Xonadon qo'shish">
+                                                +
                                             </button>
-                                            <button @click="deleteFloor(floor.id)" class="px-2 py-1 bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
+                                            <button @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-xs rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
                                                 🗑️
                                             </button>
                                         </div>
                                     </div>
                                     
                                     <!-- Floor Units (Right Side) -->
-                                    <div class="flex-1 p-4 overflow-x-auto custom-scrollbar flex items-center bg-black/20">
+                                    <div class="flex-1 p-4 overflow-x-auto custom-scrollbar flex items-center">
                                         <!-- Interactive SVG Blueprint Mode for Floor -->
                                         <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-black/40 rounded-lg border border-white/5">
                                             <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
@@ -632,21 +635,20 @@ const progressSeries = computed(() => {
                                         </div>
                                         
                                         <!-- Fallback Grid Mode -->
-                                        <div v-else class="flex gap-4 min-h-[80px]">
+                                        <div v-else class="flex gap-3 min-h-[100px]">
                                             <div v-for="unit in floor.units" :key="'grid-'+unit.id"
-                                                 class="w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center border-2 cursor-pointer transition-all hover:scale-110 hover:brightness-125 rounded-xl shadow-lg shrink-0 relative"
+                                                 class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center border-[3px] cursor-pointer transition-transform hover:-translate-y-1 rounded-md shadow-lg shrink-0 relative"
                                                  :class="getUnitBorderColor(unit.status)"
                                                  :style="{ backgroundColor: getUnitFillColor(unit.status) }"
                                                  @mousemove="(e) => onUnitHover(unit, e)"
                                                  @mouseleave="onUnitLeave"
                                                  @click="openEditUnit(unit)">
-                                                <span class="font-mono text-xs sm:text-sm font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
+                                                <span class="font-mono text-sm sm:text-base font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
                                                     {{ unit.unit_number }}
                                                 </span>
-                                                <span v-if="unit.type === 'commercial'" class="absolute bottom-1 right-1 text-[10px] opacity-50">🏬</span>
                                             </div>
-                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-text-muted italic flex items-center h-full px-4 border border-dashed border-white/10 rounded-xl">
-                                                Xonadonlar qo'shilmagan
+                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-text-muted italic flex items-center h-full px-4 border border-dashed border-white/10 rounded-md">
+                                                Xonadonlar yo'q
                                             </div>
                                         </div>
                                     </div>

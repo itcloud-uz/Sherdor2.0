@@ -15,6 +15,68 @@ const props = defineProps({
     strictCollectionSchedules: Array,
 });
 
+const groupedStrictCollection = computed(() => {
+    if (!props.strictCollectionSchedules) return [];
+    const groups = {};
+    props.strictCollectionSchedules.forEach(schedule => {
+        const clientId = schedule.contract?.client?.id;
+        if (!clientId) return;
+        if (!groups[clientId]) {
+            groups[clientId] = {
+                client: schedule.contract.client,
+                total_amount: 0,
+                schedules: [],
+                max_days: 0,
+                phone: schedule.contract.client.phone,
+                last_sms: null,
+            };
+        }
+        groups[clientId].total_amount += Number(schedule.expected_amount || 0);
+        groups[clientId].schedules.push(schedule);
+        
+        const days = Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24));
+        if (days > groups[clientId].max_days) groups[clientId].max_days = days;
+        if (schedule.last_sms_sent_at) {
+            const smsDate = new Date(schedule.last_sms_sent_at);
+            if (!groups[clientId].last_sms || smsDate > groups[clientId].last_sms) {
+                groups[clientId].last_sms = smsDate;
+            }
+        }
+    });
+    return Object.values(groups);
+});
+
+const groupedOverdueSchedules = computed(() => {
+    if (!props.overdueSchedules) return [];
+    const groups = {};
+    props.overdueSchedules.forEach(schedule => {
+        const clientId = schedule.contract?.client?.id;
+        if (!clientId) return;
+        if (!groups[clientId]) {
+            groups[clientId] = {
+                client: schedule.contract.client,
+                total_amount: 0,
+                schedules: [],
+                max_days: 0,
+                phone: schedule.contract.client.phone,
+                last_sms: null,
+            };
+        }
+        groups[clientId].total_amount += Number(schedule.expected_amount || 0);
+        groups[clientId].schedules.push(schedule);
+        
+        const days = Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24));
+        if (days > groups[clientId].max_days) groups[clientId].max_days = days;
+        if (schedule.last_sms_sent_at) {
+            const smsDate = new Date(schedule.last_sms_sent_at);
+            if (!groups[clientId].last_sms || smsDate > groups[clientId].last_sms) {
+                groups[clientId].last_sms = smsDate;
+            }
+        }
+    });
+    return Object.values(groups);
+});
+
 const isProcessing = ref(false);
 
 const showCreateClientModal = ref(false);
@@ -947,122 +1009,126 @@ function openQuickSmsModal(lead) {
                 {{ $t('overdue_payments_radar') }}
             </h2>
 
-            <!-- STRICT COLLECTION -->
-            <div v-if="strictCollectionSchedules && strictCollectionSchedules.length > 0" class="mb-10">
-                <h3 class="text-lg font-bold text-neon-red mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <span>🚨</span> Qat'iy Unduruv (Rassrochka)
-                </h3>
-                <div class="overflow-x-auto rounded-xl border border-neon-red/30 shadow-[0_0_30px_rgba(255,0,0,0.1)]">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-neon-red/10 border-b border-neon-red/20">
-                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Mijoz</th>
-                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Kechikkan Summa</th>
-                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Muddat</th>
-                                <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider text-right">Amallar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr 
-                                v-for="schedule in strictCollectionSchedules" 
-                                :key="schedule.id"
-                                class="border-b border-neon-red/10 hover:bg-neon-red/5 transition-colors group"
-                            >
-                                <td class="p-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-neon-red/20 border border-neon-red/50 flex items-center justify-center text-neon-red font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,0,0.2)]">
-                                            ⚠️
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <!-- STRICT COLLECTION -->
+                <div v-if="groupedStrictCollection && groupedStrictCollection.length > 0">
+                    <h3 class="text-lg font-bold text-neon-red mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <span>🚨</span> Qat'iy Unduruv (Rassrochka)
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-neon-red/30 shadow-[0_0_30px_rgba(255,0,0,0.1)]">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-neon-red/10 border-b border-neon-red/20">
+                                    <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Mijoz</th>
+                                    <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Kechikkan Summa</th>
+                                    <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider">Muddat</th>
+                                    <th class="p-3 text-xs font-mono text-neon-red font-bold uppercase tracking-wider text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr 
+                                    v-for="group in groupedStrictCollection" 
+                                    :key="group.client?.id"
+                                    class="border-b border-neon-red/10 hover:bg-neon-red/5 transition-colors group cursor-pointer"
+                                    @click="openScheduleModal(group.schedules[0].contract)"
+                                >
+                                    <td class="p-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-neon-red/20 border border-neon-red/50 flex items-center justify-center text-neon-red font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,0,0.2)]">
+                                                ⚠️
+                                            </div>
+                                            <div>
+                                                <p class="text-sm text-white font-bold">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
+                                                <p class="text-[10px] font-mono text-neon-red mt-0.5">{{ group.schedules.length }} ta to'lov kechikkan</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="text-sm text-white font-bold">{{ schedule.contract?.client?.last_name }} {{ schedule.contract?.client?.first_name }}</p>
-                                            <p class="text-[10px] font-mono text-neon-red mt-0.5">{{ $t('due_date') }}: {{ schedule.due_date }}</p>
+                                    </td>
+                                    <td class="p-3">
+                                        <p class="text-sm font-mono font-bold text-white">{{ $currency(group.total_amount) }}</p>
+                                    </td>
+                                    <td class="p-3">
+                                        <p class="text-xs font-mono font-bold text-neon-red">max {{ group.max_days }} {{ $t('days') }}</p>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish" @click.stop>
+                                                📞
+                                            </a>
+                                            <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="SMS Yuborish">
+                                                📱
+                                            </button>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="p-3">
-                                    <p class="text-sm font-mono font-bold text-white">{{ $currency(schedule.expected_amount) }}</p>
-                                </td>
-                                <td class="p-3">
-                                    <p class="text-xs font-mono font-bold text-neon-red">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
-                                </td>
-                                <td class="p-3 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a :href="`tel:${schedule.contract?.client?.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish">
-                                            📞
-                                        </a>
-                                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="SMS Yuborish">
-                                            📱
-                                        </button>
-                                    </div>
-                                    <div v-if="schedule.last_sms_sent_at" class="text-[8px] font-mono text-neon-cyan mt-1">
-                                        SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }}
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                        <div v-if="group.last_sms" class="text-[8px] font-mono text-neon-cyan mt-1">
+                                            SMS: {{ group.last_sms.toLocaleDateString() }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- NORMAL OVERDUE -->
-            <div>
-                <h3 class="text-lg font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <span>⏳</span> Oddiy Qarzdorlik
-                </h3>
-                <div class="overflow-x-auto rounded-xl border border-white/10">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-black/60 border-b border-white/10">
-                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
-                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Kechikkan Summa</th>
-                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Muddat</th>
-                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr 
-                                v-for="schedule in overdueSchedules" 
-                                :key="schedule.id"
-                                class="border-b border-white/5 hover:bg-white/[0.03] transition-colors group"
-                            >
-                                <td class="p-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-neon-magenta/20 border border-neon-magenta/50 flex items-center justify-center text-neon-magenta font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,60,0.2)]">
-                                            ⏳
+                <!-- NORMAL OVERDUE -->
+                <div>
+                    <h3 class="text-lg font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <span>⏳</span> Oddiy Qarzdorlik
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-white/10">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-black/60 border-b border-white/10">
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Kechikkan Summa</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Muddat</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr 
+                                    v-for="group in groupedOverdueSchedules" 
+                                    :key="group.client?.id"
+                                    class="border-b border-white/5 hover:bg-white/[0.03] transition-colors group cursor-pointer"
+                                    @click="openScheduleModal(group.schedules[0].contract)"
+                                >
+                                    <td class="p-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-neon-magenta/20 border border-neon-magenta/50 flex items-center justify-center text-neon-magenta font-display font-bold text-xs shadow-[0_0_10px_rgba(255,0,60,0.2)]">
+                                                ⏳
+                                            </div>
+                                            <div>
+                                                <p class="text-sm text-white font-bold">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
+                                                <p class="text-[10px] font-mono text-neon-magenta mt-0.5">{{ group.schedules.length }} ta to'lov kechikkan</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="text-sm text-white font-bold">{{ schedule.contract?.client?.last_name }} {{ schedule.contract?.client?.first_name }}</p>
-                                            <p class="text-[10px] font-mono text-neon-magenta mt-0.5">{{ $t('due_date') }}: {{ schedule.due_date }}</p>
+                                    </td>
+                                    <td class="p-3">
+                                        <p class="text-sm font-mono font-bold text-white">{{ $currency(group.total_amount) }}</p>
+                                    </td>
+                                    <td class="p-3">
+                                        <p class="text-xs font-mono font-bold text-neon-magenta">max {{ group.max_days }} {{ $t('days') }}</p>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish" @click.stop>
+                                                📞
+                                            </a>
+                                            <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="SMS Yuborish">
+                                                📱
+                                            </button>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="p-3">
-                                    <p class="text-sm font-mono font-bold text-white">{{ $currency(schedule.expected_amount) }}</p>
-                                </td>
-                                <td class="p-3">
-                                    <p class="text-xs font-mono font-bold text-neon-magenta">{{ Math.floor((new Date() - new Date(schedule.due_date)) / (1000 * 60 * 60 * 24)) }} {{ $t('days') }}</p>
-                                </td>
-                                <td class="p-3 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a :href="`tel:${schedule.contract?.client?.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish">
-                                            📞
-                                        </a>
-                                        <button @click="sendWarningSms(schedule.id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="SMS Yuborish">
-                                            📱
-                                        </button>
-                                    </div>
-                                    <div v-if="schedule.last_sms_sent_at" class="text-[8px] font-mono text-text-muted mt-1">
-                                        SMS: {{ new Date(schedule.last_sms_sent_at).toLocaleDateString() }}
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="overdueSchedules.length === 0">
-                                <td colspan="4" class="py-10 text-center text-neon-green font-mono text-sm border-dashed">
-                                    {{ $t('no_overdue_payments') }} 🎉
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                        <div v-if="group.last_sms" class="text-[8px] font-mono text-text-muted mt-1">
+                                            SMS: {{ group.last_sms.toLocaleDateString() }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="groupedOverdueSchedules.length === 0">
+                                    <td colspan="4" class="py-10 text-center text-neon-green font-mono text-sm border-dashed">
+                                        {{ $t('no_overdue_payments') }} 🎉
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

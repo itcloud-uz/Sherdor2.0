@@ -256,10 +256,6 @@ class WarehouseController extends Controller
 
     public function updateOrder(Request $request, PurchaseOrder $order)
     {
-        if ($order->status === 'delivered') {
-            return back()->with('error', 'Qabul qilingan buyurtmani tahrirlab bo\'lmaydi');
-        }
-
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'order_date' => 'required|date',
@@ -271,6 +267,24 @@ class WarehouseController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request, $order) {
+            $isDelivered = $order->status === 'delivered';
+            
+            // Revert previous effects if delivered
+            if ($isDelivered) {
+                $supplier = $order->supplier;
+                $supplier->decrement('balance', $order->total_amount);
+
+                foreach ($order->items as $item) {
+                    $invItem = InventoryItem::where('name', $item->item_name)->first();
+                    if ($invItem) {
+                        $invItem->decrement('quantity', $item->quantity);
+                        InventoryTransaction::where('inventory_item_id', $invItem->id)
+                            ->where('notes', 'Buyurtma orqali kirim (PO: ' . $order->order_number . ')')
+                            ->delete();
+                    }
+                }
+            }
+
             $total_amount = collect($validated['items'])->sum(function ($item) {
                 return $item['quantity'] * $item['unit_price'];
             });
@@ -295,6 +309,39 @@ class WarehouseController extends Controller
                     'total_price' => $item['quantity'] * $item['unit_price'],
                 ]);
             }
+
+            // Re-apply effects if it was delivered
+            if ($isDelivered) {
+                $order->load('items');
+                $newSupplier = Supplier::find($validated['supplier_id']);
+                $newSupplier->increment('balance', $total_amount);
+
+                foreach ($order->items as $item) {
+                    $invItem = InventoryItem::firstOrCreate(
+                        ['name' => $item->item_name],
+                        ['category' => $item->category ?? 'material', 'unit' => $item->unit, 'quantity' => 0, 'average_cost' => 0]
+                    );
+
+                    $oldTotal = $invItem->quantity * $invItem->average_cost;
+                    $newTotal = $item->quantity * $item->unit_price;
+                    $newQuantity = $invItem->quantity + $item->quantity;
+                    $newAverage = $newQuantity > 0 ? ($oldTotal + $newTotal) / $newQuantity : 0;
+
+                    $invItem->update([
+                        'quantity' => $newQuantity,
+                        'average_cost' => $newAverage
+                    ]);
+
+                    InventoryTransaction::create([
+                        'inventory_item_id' => $invItem->id,
+                        'type' => 'in',
+                        'quantity' => $item->quantity,
+                        'cost' => $item->unit_price,
+                        'notes' => 'Buyurtma orqali kirim (PO: ' . $order->order_number . ')',
+                        'user_id' => auth()->id()
+                    ]);
+                }
+            }
         });
 
         return back()->with('success', 'Buyurtma yangilandi');
@@ -302,11 +349,25 @@ class WarehouseController extends Controller
 
     public function destroyOrder(PurchaseOrder $order)
     {
-        if ($order->status === 'delivered') {
-            return back()->with('error', 'Qabul qilingan buyurtmani o\'chirib bo\'lmaydi');
-        }
+        DB::transaction(function () use ($order) {
+            if ($order->status === 'delivered') {
+                $supplier = $order->supplier;
+                $supplier->decrement('balance', $order->total_amount);
 
-        $order->delete();
+                foreach ($order->items as $item) {
+                    $invItem = InventoryItem::where('name', $item->item_name)->first();
+                    if ($invItem) {
+                        $invItem->decrement('quantity', $item->quantity);
+                        InventoryTransaction::where('inventory_item_id', $invItem->id)
+                            ->where('notes', 'Buyurtma orqali kirim (PO: ' . $order->order_number . ')')
+                            ->delete();
+                    }
+                }
+            }
+
+            $order->delete();
+        });
+
         return back()->with('success', 'Buyurtma o\'chirildi');
     }
 

@@ -136,10 +136,10 @@ const formatMoney = (amount) => {
                         <a :href="route('admin.warehouse.orders.pdf', order.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="PDF formatida yuklab olish">
                             PDF
                         </a>
-                        <button v-if="order.status === 'pending'" @click="openEditModal(order)" class="px-3 py-1 bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Tahrirlash">
+                        <button @click="openEditModal(order)" class="px-3 py-1 bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Tahrirlash">
                             ✏️
                         </button>
-                        <button v-if="order.status === 'pending'" @click="deleteOrder(order.id)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="O'chirish">
+                        <button @click="deleteOrder(order.id)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="O'chirish">
                             🗑️
                         </button>
                     </div>

@@ -53,6 +53,9 @@
         .text-right {
             text-align: right !important;
         }
+        .nowrap {
+            white-space: nowrap;
+        }
         .income {
             color: #008000;
             font-weight: bold;
@@ -69,6 +72,13 @@
             border-top: 1px solid #ddd;
             padding-top: 10px;
         }
+        /* Column Widths */
+        .col-index { width: 3%; }
+        .col-date { width: 12%; }
+        .col-category { width: 15%; }
+        .col-type { width: 10%; }
+        .col-desc { width: 40%; }
+        .col-amount { width: 20%; text-align: right; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -103,12 +113,12 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>#</th>
-                <th>Sana</th>
-                <th>Kategoriya</th>
-                <th>Tur</th>
-                <th>Tafsilot (Sabab)</th>
-                <th class="text-right">Miqdor (UZS)</th>
+                <th class="col-index">#</th>
+                <th class="col-date">Sana</th>
+                <th class="col-category">Kategoriya</th>
+                <th class="col-type">Tur</th>
+                <th class="col-desc">Tafsilot (Sabab)</th>
+                <th class="col-amount">Miqdor (UZS)</th>
             </tr>
         </thead>
         <tbody>
@@ -134,7 +144,7 @@
                         @endif
                     </td>
                     <td>{{ $item['description'] }}</td>
-                    <td class="text-right">
+                    <td class="col-amount">
                         @if($item['type'] == 'income')
                             <span class="income">+{{ number_format($item['amount'], 0, '.', ' ') }}</span>
                         @else
@@ -153,20 +163,20 @@
     <div style="margin-top: 20px;">
         <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 60%;"></td>
-                <td style="width: 40%;">
+                <td style="width: 50%;"></td>
+                <td style="width: 50%;">
                     <table class="data-table">
                         <tr>
                             <th>Jami Tushum:</th>
-                            <td class="text-right income">+{{ number_format($totalIncome, 0, '.', ' ') }} UZS</td>
+                            <td class="nowrap text-right income">+{{ number_format($totalIncome, 0, '.', ' ') }} UZS</td>
                         </tr>
                         <tr>
                             <th>Jami Chiqim:</th>
-                            <td class="text-right expense">-{{ number_format($totalExpense, 0, '.', ' ') }} UZS</td>
+                            <td class="nowrap text-right expense">-{{ number_format($totalExpense, 0, '.', ' ') }} UZS</td>
                         </tr>
                         <tr>
                             <th>Qoldiq (Balans):</th>
-                            <td class="text-right" style="font-weight: bold; font-size: 14px;">
+                            <td class="nowrap text-right" style="font-weight: bold; font-size: 14px;">
                                 {{ number_format($totalIncome - $totalExpense, 0, '.', ' ') }} UZS
                             </td>
                         </tr>

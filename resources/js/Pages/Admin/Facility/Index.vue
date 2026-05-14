@@ -41,6 +41,46 @@ watch(selectedBuilding, (newBuilding) => {
     }
 });
 
+const searchFilters = ref({
+    building_id: '',
+    type: '',
+    status: ''
+});
+
+const searchResults = ref(null);
+
+function performSearch() {
+    let results = [];
+    
+    const buildingsToSearch = searchFilters.value.building_id 
+        ? props.buildings.filter(b => b.id === searchFilters.value.building_id)
+        : props.buildings;
+        
+    buildingsToSearch.forEach(b => {
+        if (b.floors) {
+            b.floors.forEach(f => {
+                if (f.units) {
+                    f.units.forEach(u => {
+                        let match = true;
+                        if (searchFilters.value.type && u.type !== searchFilters.value.type) match = false;
+                        if (searchFilters.value.status && u.status !== searchFilters.value.status) match = false;
+                        
+                        if (match) {
+                            results.push({
+                                ...u,
+                                building_name: b.name,
+                                floor_number: f.floor_number
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    searchResults.value = results;
+}
+
 const showSellUnitModal = ref(false);
 const isProcessingContract = ref(false);
 const currentSellingUnit = ref(null);
@@ -569,6 +609,7 @@ const progressSeries = computed(() => {
                         <!-- Tabs -->
                         <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
                             <button @click="activeTab = 'blueprint'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'blueprint' ? 'text-black bg-neon-cyan border-neon-cyan shadow-[0_0_15px_rgba(0,240,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🗺️ {{ $t('blueprint') }}</button>
+                            <button @click="activeTab = 'search'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'search' ? 'text-black bg-white border-white shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🔍 QIDIRUV</button>
                             <button @click="activeTab = 'progress'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'progress' ? 'text-black bg-neon-yellow border-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🏗️ {{ $t('progress') }}</button>
                             <button @click="activeTab = 'finances'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'finances' ? 'text-black bg-neon-green border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">💰 {{ $t('finances') }}</button>
                             <button @click="activeTab = 'analytics'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'analytics' ? 'text-black bg-neon-purple border-neon-purple shadow-[0_0_15px_rgba(176,38,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">📊 {{ $t('analytics') }}</button>
@@ -686,6 +727,74 @@ const progressSeries = computed(() => {
                                     </div>
                                 </div>
                             </Teleport>
+                        </div>
+                        
+                        <!-- TAB: Search -->
+                        <div v-if="activeTab === 'search'" class="animate-fade-in space-y-6">
+                            <div class="glass-card p-6 border border-white/10">
+                                <h3 class="text-sm font-mono text-white uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Obyekt (Bino)</label>
+                                        <select v-model="searchFilters.building_id" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                            <option value="">Barchasi</option>
+                                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Turi</label>
+                                        <select v-model="searchFilters.type" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                            <option value="">Barchasi</option>
+                                            <option value="residential">Turar joy (Uy)</option>
+                                            <option value="commercial">Tijorat (Do'kon)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Holati</label>
+                                        <select v-model="searchFilters.status" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                            <option value="">Barchasi</option>
+                                            <option value="available">Bo'sh</option>
+                                            <option value="reserved">Band qilingan</option>
+                                            <option value="sold">Sotilgan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button @click="performSearch" class="w-full py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-gray-200 transition-colors shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                    Qidirish
+                                </button>
+                            </div>
+                        
+                            <!-- Results -->
+                            <div v-if="searchResults !== null" class="glass-card p-4 border border-white/10">
+                                <h4 class="text-xs font-mono text-text-muted uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm font-mono">
+                                        <thead>
+                                            <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest">
+                                                <th class="py-3 px-2">Bino / Qavat</th>
+                                                <th class="py-3 px-2">Raqam</th>
+                                                <th class="py-3 px-2">Turi</th>
+                                                <th class="py-3 px-2">Holati</th>
+                                                <th class="py-3 px-2">Maydon</th>
+                                                <th class="py-3 px-2 text-right">Narxi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-white/5 hover:bg-white/5">
+                                                <td class="py-3 px-2 text-white">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
+                                                <td class="py-3 px-2 font-bold text-white">{{ unit.unit_number }}</td>
+                                                <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
+                                                <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
+                                                <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
+                                                <td class="py-3 px-2 text-neon-green text-right">{{ $currency(unit.price) }}</td>
+                                            </tr>
+                                            <tr v-if="searchResults.length === 0">
+                                                <td colspan="6" class="py-8 text-center text-text-muted text-xs border border-dashed border-white/10 rounded-xl">Hech narsa topilmadi</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- TAB 2: Construction Progress -->

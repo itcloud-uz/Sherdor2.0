@@ -52,7 +52,7 @@
             <td>{{ number_format($contract->total_amount, 2) }}</td>
         </tr>
         <tr>
-            <td><strong>Jarima stavkasi:</strong></td>
+            <td><strong>To'lanmagan qoldiq summadan penya:</strong></td>
             <td>{{ $contract->daily_penalty_rate }}% kuniga</td>
             <td><strong>Jami jarima:</strong></td>
             <td class="text-danger">{{ number_format($contract->total_penalty_accumulated, 2) }}</td>

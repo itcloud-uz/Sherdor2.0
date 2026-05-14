@@ -71,6 +71,7 @@
                 <th>Reja sanasi</th>
                 <th>Haqiqiy to'lov sanasi</th>
                 <th>Kutilayotgan summa</th>
+                <th>Asl to'lov</th>
                 <th>To'langan summa</th>
                 <th>To'lov usuli</th>
                 <th>Qolgan qarz</th>
@@ -101,6 +102,7 @@
                         @endif
                     </td>
                     <td>{{ number_format($schedule->expected_amount, 2) }}</td>
+                    <td>{{ $schedule->original_payment_amount > 0 ? number_format($schedule->original_payment_amount, 2) : '-' }}</td>
                     <td>{{ number_format($schedule->paid_amount, 2) }}</td>
                     <td style="text-transform: uppercase;">{{ $schedule->payment_method ?: '-' }}</td>
                     <td>
@@ -133,6 +135,7 @@
             <tr>
                 <td colspan="3" class="text-right font-bold">JAMI:</td>
                 <td class="font-bold">{{ number_format($totalExpected, 2) }}</td>
+                <td></td>
                 <td class="font-bold">{{ number_format($totalPaid, 2) }}</td>
                 <td></td>
                 <td class="font-bold text-danger">{{ number_format($totalDebt, 2) }}</td>

@@ -177,65 +177,70 @@ class CrmController extends Controller
         ]);
 
         $contract = $schedule->contract;
-        
-        $schedule->paid_amount = $validated['paid_amount'];
-        if (isset($validated['payment_method'])) {
-            $schedule->payment_method = $validated['payment_method'];
-        }
-        
-        if ($schedule->paid_amount > 0) {
-            $schedule->actual_payment_date = $validated['actual_payment_date'] ?? now()->format('Y-m-d');
-        } elseif ($schedule->paid_amount == 0) {
-            $schedule->actual_payment_date = null;
-            $schedule->payment_method = null;
+        if (!$contract) {
+            return redirect()->back()->withErrors(['message' => 'Shartnoma topilmadi.']);
         }
 
-        $schedule->remaining_debt = max(0, $schedule->expected_amount - $schedule->paid_amount);
-        
-        if ($schedule->paid_amount >= $schedule->expected_amount) {
-            $schedule->status = 'paid';
-            $schedule->penalty_for_this_month = 0; // Clear penalty if paid
-        } elseif ($schedule->paid_amount > 0) {
-            $schedule->status = 'partial';
-            // Calculate penalty if partial and overdue
-            if (new \DateTime($schedule->due_date) < new \DateTime()) {
-                $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
-                if ($daysOverdue > 0 && $contract) {
-                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
-                    $schedule->penalty_for_this_month = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
-                }
+        $newPaymentAmount = $validated['paid_amount'];
+        $remainingAmount = $newPaymentAmount;
+
+        if ($remainingAmount <= 0) {
+            return redirect()->back()->with('message', 'To\'lov summasi 0 dan katta bo\'lishi kerak.');
+        }
+
+        // Get all unpaid schedules for this contract ordered by due_date
+        $schedules = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+            ->where('status', '!=', 'paid')
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        foreach ($schedules as $s) {
+            if ($remainingAmount <= 0) break;
+            
+            $needed = $s->expected_amount - $s->paid_amount;
+            if ($needed <= 0) continue;
+
+            if ($remainingAmount >= $needed) {
+                $s->paid_amount += $needed;
+                $s->status = 'paid';
+                $remainingAmount -= $needed;
             } else {
-                $schedule->penalty_for_this_month = 0;
+                $s->paid_amount += $remainingAmount;
+                $s->status = 'partial';
+                $remainingAmount = 0;
             }
-        } else {
-            $schedule->status = 'pending';
-            // Re-evaluate if it's overdue
-            if (new \DateTime($schedule->due_date) < new \DateTime()) {
-                $schedule->status = 'overdue';
-                $daysOverdue = floor((time() - strtotime($schedule->due_date)) / (60 * 60 * 24));
-                if ($daysOverdue > 0 && $contract) {
-                    $unpaidBalance = max(0, $schedule->expected_amount - $schedule->paid_amount);
-                    $schedule->penalty_for_this_month = $daysOverdue * $unpaidBalance * ($contract->daily_penalty_rate / 100);
-                }
+
+            $s->actual_payment_date = $validated['actual_payment_date'] ?? now()->format('Y-m-d');
+            if (isset($validated['payment_method'])) {
+                $s->payment_method = $validated['payment_method'];
+            }
+            $s->original_payment_amount = $newPaymentAmount;
+            
+            $s->remaining_debt = max(0, $s->expected_amount - $s->paid_amount);
+            
+            if ($s->status === 'paid') {
+                $s->penalty_for_this_month = 0;
             } else {
-                $schedule->penalty_for_this_month = 0;
+                // Re-evaluate penalty if overdue
+                if (new \DateTime($s->due_date) < new \DateTime()) {
+                    $daysOverdue = floor((time() - strtotime($s->due_date)) / (60 * 60 * 24));
+                    if ($daysOverdue > 0) {
+                        $s->penalty_for_this_month = $daysOverdue * $s->remaining_debt * ($contract->daily_penalty_rate / 100);
+                    }
+                } else {
+                    $s->penalty_for_this_month = 0;
+                }
             }
-        }
-        $schedule->save();
-
-        if ($contract) {
-            // Update total accumulated penalty
-            $totalPenalty = $contract->paymentSchedules()->sum('penalty_for_this_month');
-            $contract->total_penalty_accumulated = $totalPenalty;
-            $contract->save();
-        }
-        if ($contract) {
-            $totalPaid = $contract->paymentSchedules()->sum('paid_amount');
-            // Assuming we only need to reflect changes on the schedule, but if contract has total_paid field, update it.
-            // Currently, contract doesn't have total_paid field based on schema, but we can return success anyway.
+            
+            $s->save();
         }
 
-        return redirect()->back()->with('message', 'To\'lov muvaffaqiyatli saqlandi va ma\'lumotlar yangilandi.');
+        // Update total accumulated penalty
+        $totalPenalty = $contract->paymentSchedules()->sum('penalty_for_this_month');
+        $contract->total_penalty_accumulated = $totalPenalty;
+        $contract->save();
+
+        return redirect()->back()->with('message', 'To\'lov muvaffaqiyatli yoyildi va saqlandi.');
     }
 
     public function recalculatePenalty(Request $request, \App\Models\Contract $contract)

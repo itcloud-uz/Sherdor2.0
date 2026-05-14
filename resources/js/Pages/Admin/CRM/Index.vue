@@ -42,7 +42,7 @@ const editingActualPaymentDate = ref('');
 
 function editSchedule(schedule) {
     editingScheduleId.value = schedule.id;
-    editingPaidAmount.value = schedule.paid_amount || 0;
+    editingPaidAmount.value = '';
     editingPaymentMethod.value = schedule.payment_method || 'naqd';
     editingActualPaymentDate.value = schedule.actual_payment_date 
         ? schedule.actual_payment_date.substring(0, 10)
@@ -1102,6 +1102,7 @@ function openQuickSmsModal(lead) {
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan Sana</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('expected') }}</th>
+                                    <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Asl To'lov</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'lov Summasi</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'lov Usuli</th>
                                     <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">{{ $t('remaining_debt') }}</th>
@@ -1127,6 +1128,9 @@ function openQuickSmsModal(lead) {
                                         </div>
                                     </td>
                                     <td class="p-3 text-sm font-mono text-neon-cyan">{{ $currency(schedule.expected_amount) }}</td>
+                                    <td class="p-3 text-sm font-mono text-white/80">
+                                        {{ schedule.original_payment_amount > 0 ? $currency(schedule.original_payment_amount) : '-' }}
+                                    </td>
                                     <td class="p-3 text-sm font-mono text-neon-green">
                                         <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                             <input type="number" step="0.01" v-model="editingPaidAmount" class="glass-input w-24 text-white text-xs py-1 px-2">

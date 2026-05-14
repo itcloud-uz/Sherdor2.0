@@ -16,7 +16,8 @@ class PaymentSchedule extends Model
         'penalty_for_this_month',
         'last_sms_sent_at',
         'payment_method',
-        'actual_payment_date'
+        'actual_payment_date',
+        'original_payment_amount'
     ];
 
     public function contract()

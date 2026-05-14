@@ -212,6 +212,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/contracts/scan', [\App\Http\Controllers\Admin\WarehouseController::class, 'scanContract'])->name('contracts.scan');
         Route::get('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'orders'])->name('orders');
         Route::post('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeOrder'])->name('orders.store');
+        Route::put('/orders/{order}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateOrder'])->name('orders.update');
+        Route::delete('/orders/{order}', [\App\Http\Controllers\Admin\WarehouseController::class, 'destroyOrder'])->name('orders.destroy');
+        Route::get('/orders/{order}/pdf', [\App\Http\Controllers\Admin\WarehouseController::class, 'downloadOrderPdf'])->name('orders.pdf');
         Route::post('/orders/{order}/receive', [\App\Http\Controllers\Admin\WarehouseController::class, 'receiveOrder'])->name('orders.receive');
     });
 });

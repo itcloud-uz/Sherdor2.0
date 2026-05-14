@@ -21,6 +21,39 @@ const form = ref({
 });
 
 const isSubmitting = ref(false);
+const isEditing = ref(false);
+const editingId = ref(null);
+
+function openAddModal() {
+    isEditing.value = false;
+    editingId.value = null;
+    form.value = {
+        supplier_id: '',
+        order_date: new Date().toISOString().split('T')[0],
+        expected_delivery_date: '',
+        notes: '',
+        items: [{ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 }]
+    };
+    showModal.value = true;
+}
+
+function openEditModal(order) {
+    isEditing.value = true;
+    editingId.value = order.id;
+    form.value = {
+        supplier_id: order.supplier_id,
+        order_date: order.order_date,
+        expected_delivery_date: order.expected_delivery_date || '',
+        notes: order.notes || '',
+        items: order.items.map(i => ({
+            item_name: i.item_name,
+            unit: i.unit,
+            quantity: i.quantity,
+            unit_price: i.unit_price
+        }))
+    };
+    showModal.value = true;
+}
 
 function addItem() {
     form.value.items.push({ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 });
@@ -34,22 +67,34 @@ function removeItem(index) {
 
 function submit() {
     isSubmitting.value = true;
-    router.post(route('admin.warehouse.orders.store'), form.value, {
-        onSuccess: () => {
-            isSubmitting.value = false;
-            showModal.value = false;
-            form.value = {
-                supplier_id: '',
-                order_date: new Date().toISOString().split('T')[0],
-                expected_delivery_date: '',
-                notes: '',
-                items: [{ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 }]
-            };
-        },
-        onError: () => {
-            isSubmitting.value = false;
-        }
-    });
+    
+    if (isEditing.value) {
+        router.put(route('admin.warehouse.orders.update', editingId.value), form.value, {
+            onSuccess: () => {
+                isSubmitting.value = false;
+                showModal.value = false;
+            },
+            onError: () => {
+                isSubmitting.value = false;
+            }
+        });
+    } else {
+        router.post(route('admin.warehouse.orders.store'), form.value, {
+            onSuccess: () => {
+                isSubmitting.value = false;
+                showModal.value = false;
+            },
+            onError: () => {
+                isSubmitting.value = false;
+            }
+        });
+    }
+}
+
+function deleteOrder(id) {
+    if (confirm("Bu xarid buyurtmasini o'chirmoqchimisiz?")) {
+        router.delete(route('admin.warehouse.orders.destroy', id));
+    }
 }
 
 function receiveOrder(id) {
@@ -77,16 +122,26 @@ const formatMoney = (amount) => {
                     </h1>
                 </div>
                 
-                <button @click="showModal = true" class="px-6 py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-magenta hover:text-black transition-all shadow-[0_0_20px_rgba(255,0,255,0.2)]">
+                <button @click="openAddModal" class="px-6 py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-magenta hover:text-black transition-all shadow-[0_0_20px_rgba(255,0,255,0.2)]">
                     + Yangi Xarid
                 </button>
             </div>
 
             <div class="grid grid-cols-1 gap-6">
                 <div v-for="order in orders" :key="order.id" class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 p-4">
+                    <div class="absolute top-0 right-0 p-4 flex gap-2">
                         <span v-if="order.status === 'pending'" class="px-3 py-1 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 text-[10px] font-mono tracking-widest uppercase rounded">Kutilmoqda</span>
                         <span v-if="order.status === 'delivered'" class="px-3 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] font-mono tracking-widest uppercase rounded">Qabul Qilindi</span>
+                        
+                        <a :href="route('admin.warehouse.orders.pdf', order.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="PDF formatida yuklab olish">
+                            PDF
+                        </a>
+                        <button v-if="order.status === 'pending'" @click="openEditModal(order)" class="px-3 py-1 bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Tahrirlash">
+                            ✏️
+                        </button>
+                        <button v-if="order.status === 'pending'" @click="deleteOrder(order.id)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="O'chirish">
+                            🗑️
+                        </button>
                     </div>
 
                     <div class="flex gap-8 mb-6 border-b border-white/5 pb-6">
@@ -150,7 +205,7 @@ const formatMoney = (amount) => {
             <div class="glass-panel w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,255,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
                 
-                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">Yangi Xarid Buyurtmasi</h3>
+                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">{{ isEditing ? 'Xarid Buyurtmasini Tahrirlash' : 'Yangi Xarid Buyurtmasi' }}</h3>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <div class="col-span-3 md:col-span-1">
@@ -234,7 +289,7 @@ const formatMoney = (amount) => {
                     <div class="flex gap-3">
                         <button @click="showModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
                         <button @click="submit" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-magenta text-black rounded-xl hover:shadow-[0_0_15px_#FF00FF] transition-all disabled:opacity-50">
-                            {{ isSubmitting ? 'Saqlanmoqda...' : 'Buyurtmani Yaratish' }}
+                            {{ isSubmitting ? 'Saqlanmoqda...' : (isEditing ? 'Saqlash' : 'Buyurtmani Yaratish') }}
                         </button>
                     </div>
                 </div>

@@ -12,6 +12,7 @@ use App\Models\SupplierContract;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class WarehouseController extends Controller
 {
@@ -264,6 +265,71 @@ class WarehouseController extends Controller
         });
 
         return back()->with('success', 'Buyurtma rasmiylashtirildi');
+    }
+
+    public function updateOrder(Request $request, PurchaseOrder $order)
+    {
+        if ($order->status === 'delivered') {
+            return back()->with('error', 'Qabul qilingan buyurtmani tahrirlab bo\'lmaydi');
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'order_date' => 'required|date',
+            'items' => 'required|array',
+            'items.*.item_name' => 'required|string',
+            'items.*.quantity' => 'required|numeric',
+            'items.*.unit_price' => 'required|numeric',
+            'items.*.unit' => 'required|string',
+        ]);
+
+        DB::transaction(function () use ($validated, $request, $order) {
+            $total_amount = collect($validated['items'])->sum(function ($item) {
+                return $item['quantity'] * $item['unit_price'];
+            });
+
+            $order->update([
+                'supplier_id' => $validated['supplier_id'],
+                'order_date' => $validated['order_date'],
+                'expected_delivery_date' => $request->expected_delivery_date,
+                'total_amount' => $total_amount,
+                'notes' => $request->notes,
+            ]);
+
+            // Sync items
+            $order->items()->delete();
+            foreach ($validated['items'] as $item) {
+                PurchaseOrderItem::create([
+                    'purchase_order_id' => $order->id,
+                    'item_name' => $item['item_name'],
+                    'unit' => $item['unit'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total_price' => $item['quantity'] * $item['unit_price'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Buyurtma yangilandi');
+    }
+
+    public function destroyOrder(PurchaseOrder $order)
+    {
+        if ($order->status === 'delivered') {
+            return back()->with('error', 'Qabul qilingan buyurtmani o\'chirib bo\'lmaydi');
+        }
+
+        $order->delete();
+        return back()->with('success', 'Buyurtma o\'chirildi');
+    }
+
+    public function downloadOrderPdf(PurchaseOrder $order)
+    {
+        $order->load(['supplier', 'items']);
+        
+        $pdf = Pdf::loadView('exports.purchase_order', ['order' => $order]);
+        
+        return $pdf->download('PO-' . $order->order_number . '.pdf');
     }
 
     public function receiveOrder($id)

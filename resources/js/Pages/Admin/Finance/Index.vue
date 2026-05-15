@@ -61,7 +61,7 @@ const isAdmin = computed(() => {
 });
 
 const filteredTransactions = computed(() => {
-    let result = props.transactions;
+    let result = props.transactions || [];
     if (legacyFilter.value === 'native') {
         result = result.filter(t => !t.is_legacy);
     } else if (legacyFilter.value === 'legacy') {
@@ -70,12 +70,12 @@ const filteredTransactions = computed(() => {
     return result;
 });
 
-const pendingTransactions = computed(() => filteredTransactions.value.filter(t => t.status === 'pending'));
-const historicalTransactions = computed(() => filteredTransactions.value.filter(t => t.status !== 'pending'));
+const pendingTransactions = computed(() => (filteredTransactions.value || []).filter(t => t.status === 'pending'));
+const historicalTransactions = computed(() => (filteredTransactions.value || []).filter(t => t.status !== 'pending'));
 
-const recentIncomes = computed(() => historicalTransactions.value.filter(t => t.type === 'income'));
-const recentExpenses = computed(() => historicalTransactions.value.filter(t => t.type === 'expense'));
-const totalApprovedExpenses = computed(() => recentExpenses.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+const recentIncomes = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'income'));
+const recentExpenses = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'expense'));
+const totalApprovedExpenses = computed(() => (recentExpenses.value || []).reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
 
 import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 const showExpensesModal = ref(false);
@@ -180,7 +180,7 @@ const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz
 const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner'));
 
 const pendingRefunds = computed(() => {
-    return props.transactions.filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
+    return (props.transactions || []).filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
 });
 
 function handleFileUpload(e) {
@@ -201,7 +201,7 @@ function handleBlur() {
 const filteredContracts = computed(() => {
     if (!props.contracts) return [];
     
-    let baseContracts = props.contracts;
+    let baseContracts = props.contracts || [];
     
     // Mijozga pulni qaytarish uchun faqat bekor qilingan shartnomalar
     if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'mijozga to\'lov qilish' || selectedCategoryName.value === 'client_refund') {
@@ -275,7 +275,7 @@ function submitTransfer() {
 }
 
 function approve(id) {
-    const txn = props.transactions.find(t => t.id === id);
+    const txn = (props.transactions || []).find(t => t.id === id);
     if (txn && txn.contract_id && txn.type === 'income') {
         selectedContractTxn.value = txn;
         contractApproveForm.value.applied_amount = txn.amount;

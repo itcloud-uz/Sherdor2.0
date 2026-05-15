@@ -25,7 +25,7 @@ const navItems = [
 const filteredNavItems = computed(() => {
     const rawRoles = page.props.auth.user.roles || [];
     const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
-    const isAdmin = roles.includes('Super Admin') || roles.includes('Admin');
+    const isAdmin = roles.includes('Super_Admin') || roles.includes('Admin');
     const isPartner = roles.includes('Partner');
     const isOperator = roles.includes('Operator');
 

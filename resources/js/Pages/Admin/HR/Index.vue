@@ -11,8 +11,14 @@ const props = defineProps({
     buildings: Array,
     unpaidLogs: Array,
     unpaidTotal: [Number, String],
-    payrolls: Array
+    payrolls: Array,
+    auth: Object
 });
+
+const isAdmin = computed(() => {
+    return props.auth?.user?.roles?.some(r => r.name === 'Admin' || r.name === 'Super_Admin') || false;
+});
+
 
 const filteredWorkers = computed(() => {
     let result = props.workers || [];

@@ -445,6 +445,44 @@ const activeContracts = computed(() => {
     return (props.contracts || []).filter(c => c.status !== 'canceled' && c.status !== 'cancelled');
 });
 
+const contractSearchQuery = ref('');
+
+const groupedContracts = computed(() => {
+    let contracts = (props.contracts || []).filter(c => c.status !== 'canceled' && c.status !== 'cancelled');
+    
+    if (contractSearchQuery.value) {
+        const query = contractSearchQuery.value.toLowerCase();
+        contracts = contracts.filter(c => {
+            const clientFirstName = (c.client?.first_name || '').toLowerCase();
+            const clientLastName = (c.client?.last_name || '').toLowerCase();
+            const clientFullName = `${clientFirstName} ${clientLastName}`;
+            const contractNumber = (c.contract_number || '').toLowerCase();
+            const unitNumber = (c.unit?.unit_number || '').toString().toLowerCase();
+            return clientFirstName.includes(query) || 
+                   clientLastName.includes(query) || 
+                   clientFullName.includes(query) || 
+                   contractNumber.includes(query) || 
+                   unitNumber.includes(query);
+        });
+    }
+
+    const groups = {};
+    contracts.forEach(c => {
+        const blockName = c.unit?.floor?.building?.name || "Boshqa (Biriktirilmagan)";
+        if (!groups[blockName]) {
+            groups[blockName] = [];
+        }
+        groups[blockName].push(c);
+    });
+
+    const sortedGroups = {};
+    Object.keys(groups).sort().forEach(key => {
+        sortedGroups[key] = groups[key];
+    });
+
+    return sortedGroups;
+});
+
 const canceledContracts = computed(() => {
     return (props.contracts || []).filter(c => c.status === 'canceled' || c.status === 'cancelled');
 });
@@ -875,86 +913,97 @@ function openQuickSmsModal(lead) {
         <!-- TAB 3: SMART CONTRACTS -->
         <div v-if="activeTab === 'contracts'" class="glass-panel p-6 rounded-2xl min-h-[500px]">
             <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-
+                <input 
+                    v-model="contractSearchQuery" 
+                    type="text" 
+                    :placeholder="$t('search') + '...'" 
+                    class="glass-input w-64 border-neon-green/50 focus:border-neon-green focus:ring-neon-green shadow-[0_0_10px_rgba(57,255,20,0.2)] focus:shadow-[0_0_20px_rgba(57,255,20,0.4)] bg-black/50"
+                >
 
                 <button @click="isEditingContract = false; contractForm = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' }; showCreateContractModal = true" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
                     + {{ $t('add') }} {{ $t('contract') }}
                 </button>
             </div>
-            <div class="overflow-x-auto rounded-xl border border-white/10">
-                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-black/60 border-b border-white/10">
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Shartnoma</th>
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Boshlang'ich to'lov</th>
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Jami Summa</th>
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan (Holati)</th>
-                            <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr 
-                            v-for="contract in activeContracts" 
-                            :key="contract.id"
-                            @click="openScheduleModal(contract)"
-                            class="border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
-                        >
-                            <td class="p-3">
-                                <h3 class="text-sm font-bold text-white group-hover:text-neon-green transition-colors">
-                                    {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
-                                </h3>
-                                <p class="text-[10px] font-mono text-neon-cyan mt-0.5">
-                                    {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
-                                </p>
-                            </td>
-                            <td class="p-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-neon-green/50 flex items-center justify-center text-neon-green font-display font-bold text-xs shadow-[0_0_10px_rgba(57,255,20,0.2)] shrink-0">
-                                        {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+            
+            <div v-for="(contracts, blockName) in groupedContracts" :key="blockName" class="mb-8">
+                <h3 class="text-lg font-bold text-neon-green mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span>🏢</span> {{ blockName }}
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-white/10">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-black/60 border-b border-white/10">
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Shartnoma</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Mijoz</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Boshlang'ich to'lov</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">Jami Summa</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider">To'langan (Holati)</th>
+                                <th class="p-3 text-xs font-mono text-text-muted font-normal uppercase tracking-wider text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr 
+                                v-for="contract in contracts" 
+                                :key="contract.id"
+                                @click="openScheduleModal(contract)"
+                                class="border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                            >
+                                <td class="p-3">
+                                    <h3 class="text-sm font-bold text-white group-hover:text-neon-green transition-colors">
+                                        {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
+                                    </h3>
+                                    <p class="text-[10px] font-mono text-neon-cyan mt-0.5">
+                                        {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
+                                    </p>
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-neon-green/50 flex items-center justify-center text-neon-green font-display font-bold text-xs shadow-[0_0_10px_rgba(57,255,20,0.2)] shrink-0">
+                                            {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-white">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
+                                            <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm text-white">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
-                                        <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                </td>
+                                <td class="p-3 text-sm font-mono text-white/80">
+                                    {{ $currency(contract.down_payment) }}
+                                </td>
+                                <td class="p-3 text-sm font-mono text-neon-green font-bold">
+                                    {{ $currency(contract.total_amount) }}
+                                    <div class="text-[10px] text-text-muted mt-0.5 font-normal">{{ contract.term_months }} {{ $t('months') }}</div>
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex flex-col gap-1 w-32">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-mono text-white">{{ $currency(calculatePaidAmount(contract)) }}</span>
+                                            <span class="text-[10px] text-neon-green">{{ calculateProgress(contract).toFixed(0) }}%</span>
+                                        </div>
+                                        <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
+                                            <div 
+                                                class="absolute top-0 left-0 bottom-0 bg-neon-green shadow-[0_0_10px_#39FF14] transition-all duration-1000"
+                                                :style="{ width: calculateProgress(contract) + '%' }"
+                                            ></div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="p-3 text-sm font-mono text-white/80">
-                                {{ $currency(contract.down_payment) }}
-                            </td>
-                            <td class="p-3 text-sm font-mono text-neon-green font-bold">
-                                {{ $currency(contract.total_amount) }}
-                                <div class="text-[10px] text-text-muted mt-0.5 font-normal">{{ contract.term_months }} {{ $t('months') }}</div>
-                            </td>
-                            <td class="p-3">
-                                <div class="flex flex-col gap-1 w-32">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-xs font-mono text-white">{{ $currency(calculatePaidAmount(contract)) }}</span>
-                                        <span class="text-[10px] text-neon-green">{{ calculateProgress(contract).toFixed(0) }}%</span>
+                                </td>
+                                <td class="p-3 text-right" @click.stop>
+                                    <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="Tahrirlash">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
+                                        <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,0,0.2)]" title="O'chirish">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
                                     </div>
-                                    <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
-                                        <div 
-                                            class="absolute top-0 left-0 bottom-0 bg-neon-green shadow-[0_0_10px_#39FF14] transition-all duration-1000"
-                                            :style="{ width: calculateProgress(contract) + '%' }"
-                                        ></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-3 text-right" @click.stop>
-                                <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="Tahrirlash">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                    </button>
-                                    <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,0,0.2)]" title="O'chirish">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div v-if="contracts.length === 0" class="text-center py-20 text-text-muted font-mono text-sm border border-dashed border-white/10 rounded-2xl">
+            <div v-if="Object.keys(groupedContracts).length === 0" class="text-center py-20 text-text-muted font-mono text-sm border border-dashed border-white/10 rounded-2xl">
                 {{ $t('no_active_contracts') }}
             </div>
         </div>

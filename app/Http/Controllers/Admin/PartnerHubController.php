@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use App\Models\ExpenseApproval;
+use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,7 +30,8 @@ class PartnerHubController extends Controller
             'partners' => $partners,
             'users' => $users,
             'companyNetWorth' => \App\Models\CompanyBalance::first()->total_balance ?? 0,
-            'netProfit' => $netProfit
+            'netProfit' => $netProfit,
+            'fixedAssets' => FixedAsset::with('partner.user')->get()
         ]);
     }
 
@@ -129,5 +131,45 @@ class PartnerHubController extends Controller
     {
         $transactions = $partner->transactions()->orderBy('created_at', 'desc')->get();
         return response()->json($transactions);
+    }
+
+    public function storeAsset(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'purchase_date' => 'required|date',
+            'purchase_cost' => 'required|numeric|min:0',
+            'service_life_months' => 'required|integer|min:1',
+            'status' => 'required|in:active,sold,retired',
+            'description' => 'nullable|string',
+            'partner_id' => 'nullable|exists:partners,id'
+        ]);
+
+        FixedAsset::create($validated);
+        return redirect()->back()->with('message', 'Assosiy vosita qo\'shildi.');
+    }
+
+    public function updateAsset(Request $request, FixedAsset $asset)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'purchase_date' => 'required|date',
+            'purchase_cost' => 'required|numeric|min:0',
+            'service_life_months' => 'required|integer|min:1',
+            'status' => 'required|in:active,sold,retired',
+            'description' => 'nullable|string',
+            'partner_id' => 'nullable|exists:partners,id'
+        ]);
+
+        $asset->update($validated);
+        return redirect()->back()->with('message', 'Assosiy vosita ma\'lumotlari yangilandi.');
+    }
+
+    public function destroyAsset(FixedAsset $asset)
+    {
+        $asset->delete();
+        return redirect()->back()->with('message', 'Assosiy vosita o\'chirildi.');
     }
 }

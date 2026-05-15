@@ -9,8 +9,11 @@ const props = defineProps({
     partners: Array,
     users: Array,
     companyNetWorth: Number,
-    netProfit: Number
+    netProfit: Number,
+    fixedAssets: Array
 });
+
+const activeTab = ref('partners'); // 'partners' or 'assets'
 
 const isProcessing = ref(false);
 
@@ -150,6 +153,76 @@ async function openAnalytics(partner) {
     }
 }
 
+// Asset Management
+const showAssetModal = ref(false);
+const isEditingAsset = ref(false);
+const currentAssetId = ref(null);
+const assetForm = useForm({
+    name: '',
+    type: 'construction_equipment',
+    purchase_date: '',
+    purchase_cost: '',
+    service_life_months: 60,
+    status: 'active',
+    description: '',
+    partner_id: ''
+});
+
+function openAddAssetModal() {
+    isEditingAsset.value = false;
+    currentAssetId.value = null;
+    assetForm.reset();
+    assetForm.purchase_date = new Date().toISOString().split('T')[0];
+    showAssetModal.value = true;
+}
+
+function openEditAssetModal(asset) {
+    isEditingAsset.value = true;
+    currentAssetId.value = asset.id;
+    assetForm.name = asset.name;
+    assetForm.type = asset.type;
+    assetForm.purchase_date = asset.purchase_date.substring(0, 10);
+    assetForm.purchase_cost = asset.purchase_cost;
+    assetForm.service_life_months = asset.service_life_months;
+    assetForm.status = asset.status;
+    assetForm.description = asset.description;
+    assetForm.partner_id = asset.partner_id || '';
+    showAssetModal.value = true;
+}
+
+function submitAsset() {
+    isProcessing.value = true;
+    if (isEditingAsset.value) {
+        assetForm.put(route('admin.partners.assets.update', currentAssetId.value), {
+            onSuccess: () => {
+                showAssetModal.value = false;
+                isProcessing.value = false;
+            },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        assetForm.post(route('admin.partners.assets.store'), {
+            onSuccess: () => {
+                showAssetModal.value = false;
+                isProcessing.value = false;
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function deleteAsset(id) {
+    if (confirm("Ushbu assosiy vositani o'chirishga ishonchingiz komilmi?")) {
+        router.delete(route('admin.partners.assets.destroy', id));
+    }
+}
+
+function calculateServiceMonths(purchaseDate) {
+    const start = new Date(purchaseDate);
+    const now = new Date();
+    return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+}
+
 // Charts Data Computations
 const pieChartOptions = computed(() => {
     return {
@@ -242,10 +315,35 @@ function formatDate(dateString) {
             <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                 <div>
                     <h2 class="text-2xl font-display text-white font-bold uppercase tracking-widest">Ta'sischilar Paneli</h2>
-                    <p class="text-[10px] font-mono text-text-muted mt-1">Sarmoyadorlarni va ularning hisobdorligini boshqarish</p>
+                    <p class="text-[10px] font-mono text-text-muted mt-1">Sarmoyadorlarni va kompaniya aktivlarini boshqarish</p>
                 </div>
-                <button @click="showAddPartnerModal = true" class="px-4 py-2 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan text-xs font-mono font-bold rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
-                    + TA'SISCHI QO'SHISH
+                <div class="flex gap-4">
+                    <button v-if="activeTab === 'partners'" @click="showAddPartnerModal = true" class="px-4 py-2 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan text-xs font-mono font-bold rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                        + TA'SISCHI QO'SHISH
+                    </button>
+                    <button v-if="activeTab === 'assets'" @click="openAddAssetModal" class="px-4 py-2 bg-neon-green/10 border border-neon-green/50 text-neon-green text-xs font-mono font-bold rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                        + ASSOSIY VOSITA QO'SHISH
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-4 mb-8 border-b border-white/5 pb-px">
+                <button 
+                    @click="activeTab = 'partners'"
+                    class="pb-4 px-2 text-xs font-mono font-bold tracking-widest transition-all relative"
+                    :class="activeTab === 'partners' ? 'text-neon-cyan' : 'text-text-muted hover:text-white'"
+                >
+                    TA'SISCHILAR
+                    <div v-if="activeTab === 'partners'" class="absolute bottom-0 left-0 w-full h-0.5 bg-neon-cyan shadow-[0_0_10px_#00f0ff]"></div>
+                </button>
+                <button 
+                    @click="activeTab = 'assets'"
+                    class="pb-4 px-2 text-xs font-mono font-bold tracking-widest transition-all relative"
+                    :class="activeTab === 'assets' ? 'text-neon-green' : 'text-text-muted hover:text-white'"
+                >
+                    ASSOSIY VOSITALAR
+                    <div v-if="activeTab === 'assets'" class="absolute bottom-0 left-0 w-full h-0.5 bg-neon-green shadow-[0_0_10px_#39ff14]"></div>
                 </button>
             </div>
 
@@ -267,8 +365,10 @@ function formatDate(dateString) {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Partners View -->
+            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-[fadeIn_0.3s_ease-out]">
                 <div v-for="partner in partners" :key="partner.id" class="glass-card p-6 border border-white/10 hover:border-neon-cyan/50 transition-all group rounded-2xl relative">
+                    <!-- ... existing partner card content ... -->
                     <div class="absolute top-4 right-4 text-right flex flex-col items-end gap-2">
                         <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button @click="openEditPartnerModal(partner)" class="text-neon-cyan hover:text-white" title="Tahrirlash">
@@ -325,6 +425,93 @@ function formatDate(dateString) {
 
                 <div v-if="partners.length === 0" class="col-span-full text-center py-16 border border-dashed border-white/10 rounded-2xl text-text-muted font-mono text-sm">
                     Tizimda ta'sischilar yo'q.
+                </div>
+            </div>
+
+            <!-- Fixed Assets View -->
+            <div v-if="activeTab === 'assets'" class="animate-[fadeIn_0.3s_ease-out]">
+                <div class="glass-card border border-white/10 rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left font-mono text-xs">
+                            <thead class="bg-black/50 text-text-muted uppercase">
+                                <tr>
+                                    <th class="p-4 border-b border-white/10">Nomi</th>
+                                    <th class="p-4 border-b border-white/10">Turi</th>
+                                    <th class="p-4 border-b border-white/10">Sotib olingan</th>
+                                    <th class="p-4 border-b border-white/10">Narxi</th>
+                                    <th class="p-4 border-b border-white/10">Xizmat muddati</th>
+                                    <th class="p-4 border-b border-white/10">Holati</th>
+                                    <th class="p-4 border-b border-white/10 text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <tr v-for="asset in fixedAssets" :key="asset.id" class="hover:bg-white/5 transition-colors">
+                                    <td class="p-4">
+                                        <div class="font-bold text-white">{{ asset.name }}</div>
+                                        <div class="text-[9px] text-text-muted truncate max-w-[200px]">{{ asset.description || 'Izoh yo\'q' }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded-full bg-white/5 text-white border border-white/10 text-[9px]">
+                                            {{ 
+                                                asset.type === 'construction_equipment' ? 'Qurilish vositasi' : 
+                                                asset.type === 'office_furniture' ? 'Ofis buyumi' : 
+                                                asset.type === 'light_structure' ? 'Yengil konsturuksiya' : asset.type 
+                                            }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-text-muted">
+                                        {{ formatDate(asset.purchase_date).split(' ')[0] }}
+                                    </td>
+                                    <td class="p-4 font-bold text-white">
+                                        {{ formatCurrency(asset.purchase_cost) }} UZS
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col gap-1">
+                                            <div class="flex justify-between text-[9px]">
+                                                <span>{{ calculateServiceMonths(asset.purchase_date) }} oy</span>
+                                                <span class="text-text-muted">Max: {{ asset.service_life_months }} oy</span>
+                                            </div>
+                                            <div class="w-24 h-1 bg-white/10 rounded-full overflow-hidden">
+                                                <div 
+                                                    class="h-full rounded-full transition-all"
+                                                    :class="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months ? 'bg-neon-red shadow-[0_0_5px_#ff003c]' : 'bg-neon-green shadow-[0_0_5px_#39ff14]'"
+                                                    :style="{ width: Math.min((calculateServiceMonths(asset.purchase_date) / asset.service_life_months) * 100, 100) + '%' }"
+                                                ></div>
+                                            </div>
+                                            <div v-if="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months" class="text-[8px] text-neon-red animate-pulse">XIZMAT MUDDATI TUGAGAN</div>
+                                            <div v-else class="text-[8px] text-neon-green">XIZMAT QILYAPTI</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span 
+                                            class="px-2 py-0.5 rounded text-[9px] font-bold"
+                                            :class="{
+                                                'bg-neon-green/10 text-neon-green border border-neon-green/30': asset.status === 'active',
+                                                'bg-neon-red/10 text-neon-red border border-neon-red/30': asset.status === 'sold',
+                                                'bg-white/10 text-white border border-white/30': asset.status === 'retired',
+                                            }"
+                                        >
+                                            {{ asset.status.toUpperCase() }}
+                                        </span>
+                                        <div v-if="asset.partner" class="text-[8px] text-text-muted mt-1">Hamkor: {{ asset.partner.user?.name }}</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <button @click="openEditAssetModal(asset)" class="text-neon-cyan hover:scale-110 transition-transform">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            </button>
+                                            <button @click="deleteAsset(asset.id)" class="text-neon-red hover:scale-110 transition-transform">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="fixedAssets.length === 0">
+                                    <td colspan="7" class="p-12 text-center text-text-muted font-mono italic">Assosiy vositalar ro'yxati bo'sh.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -524,7 +711,77 @@ function formatDate(dateString) {
             </div>
         </div>
 
+        <!-- Asset Modal -->
+        <div v-if="showAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="relative bg-[#111] text-white p-4 md:p-8 rounded-2xl border border-white/20 w-full max-w-lg shadow-[0_0_50px_rgba(255,255,255,0.1)] max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showAssetModal = false">✖</button>
+                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
+                    {{ isEditingAsset ? 'Assosiy Vosita Tahrirlash' : 'Yangi Assosiy Vosita' }}
+                </h2>
+                
+                <form @submit.prevent="submitAsset" class="space-y-4 font-mono text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-text-muted mb-1">Nomi / Model</label>
+                            <input v-model="assetForm.name" type="text" class="glass-input w-full" placeholder="Masalan: Beton qorgich, Ofis stoli..." required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-text-muted mb-1">Turi</label>
+                            <select v-model="assetForm.type" class="glass-input w-full bg-black/50" required>
+                                <option value="construction_equipment">Qurilish vositasi</option>
+                                <option value="office_furniture">Ofis buyumi</option>
+                                <option value="light_structure">Yengil konsturuksiya</option>
+                                <option value="other">Boshqa</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-text-muted mb-1">Holati</label>
+                            <select v-model="assetForm.status" class="glass-input w-full bg-black/50" required>
+                                <option value="active">Ishlatilmoqda (Aktiv)</option>
+                                <option value="sold">Sotilgan</option>
+                                <option value="retired">Ishdan chiqqan</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-text-muted mb-1">Sotib olingan sana</label>
+                            <input v-model="assetForm.purchase_date" type="date" class="glass-input w-full" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-text-muted mb-1">Sotib olish narxi (UZS)</label>
+                            <input v-model="assetForm.purchase_cost" type="number" step="0.01" class="glass-input w-full" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-text-muted mb-1">Xizmat muddati (oylarda)</label>
+                            <input v-model="assetForm.service_life_months" type="number" class="glass-input w-full" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-text-muted mb-1">Mas'ul Hamkor (Taqsimot)</label>
+                            <select v-model="assetForm.partner_id" class="glass-input w-full bg-black/50">
+                                <option value="">Kompaniya (Umumiy)</option>
+                                <option v-for="partner in partners" :key="partner.id" :value="partner.id">{{ partner.user?.name }}</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-text-muted mb-1">Qisqacha izoh</label>
+                            <textarea v-model="assetForm.description" rows="3" class="glass-input w-full" placeholder="Texnik holati yoki boshqa ma'lumotlar..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-4 pt-4 border-t border-white/10 mt-6">
+                        <button type="button" @click="showAssetModal = false" class="px-4 py-2 hover:bg-white/10 rounded uppercase">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black rounded uppercase">
+                            {{ isEditingAsset ? 'Yangilash' : 'Saqlash' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </AdminLayout>
 </template>
-
-

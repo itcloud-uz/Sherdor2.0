@@ -127,6 +127,11 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/partners/{partner}/expense', [\App\Http\Controllers\Admin\PartnerHubController::class, 'reportExpense'])->name('partners.expense');
     Route::get('/partners/{partner}/ledger', [\App\Http\Controllers\Admin\PartnerHubController::class, 'getPartnerLedger'])->name('partners.ledger');
     
+    // Fixed Assets / Assosiy Vositalar
+    Route::post('/partners/assets', [\App\Http\Controllers\Admin\PartnerHubController::class, 'storeAsset'])->name('partners.assets.store');
+    Route::put('/partners/assets/{asset}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'updateAsset'])->name('partners.assets.update');
+    Route::delete('/partners/assets/{asset}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'destroyAsset'])->name('partners.assets.destroy');
+    
     // Approvals / Tasdiqlar
     Route::get('/approvals', [\App\Http\Controllers\Admin\ApprovalController::class, 'index'])->name('approvals');
     Route::post('/approvals/{approval}/approve', [\App\Http\Controllers\Admin\ApprovalController::class, 'approve'])->name('approvals.approve');

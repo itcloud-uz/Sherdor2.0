@@ -148,6 +148,40 @@ function submitOrder() {
     });
 }
 
+const getLedger = (supplier) => {
+    let ledger = [];
+    
+    if (supplier.orders) {
+        supplier.orders.forEach(o => {
+            ledger.push({
+                type: 'order',
+                id: o.id,
+                date: o.order_date,
+                number: o.order_number,
+                amount: o.total_amount,
+                status: o.status,
+                items: o.items
+            });
+        });
+    }
+    
+    if (supplier.transactions) {
+        supplier.transactions.forEach(t => {
+            ledger.push({
+                type: 'payment',
+                id: t.id,
+                date: t.transaction_date,
+                number: 'To\'lov: ' + t.payment_method.toUpperCase(),
+                amount: t.amount,
+                notes: t.notes
+            });
+        });
+    }
+    
+    // Sort by date ascending (newest at the bottom)
+    return ledger.sort((a, b) => new Date(a.date) - new Date(b.date));
+};
+
 const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS' }).format(amount);
 };
@@ -284,37 +318,48 @@ const sendToTelegram = (id) => {
                         </div>
                     </div>
 
-                    <!-- Orders Table -->
+                    <!-- Ledger Table -->
                     <div class="pt-4 border-t border-white/10 mt-4">
-                        <h4 class="text-[10px] font-mono text-text-muted uppercase mb-3">Buyurtmalar Tarixi:</h4>
-                        <div class="overflow-x-auto">
+                        <h4 class="text-[10px] font-mono text-text-muted uppercase mb-3">Umumiy Hisob-kitob (Akt Sверка):</h4>
+                        <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border border-white/5 rounded-lg">
-                                <thead>
+                                <thead class="sticky top-0 bg-black z-10">
                                     <tr class="bg-white/5 text-text-muted text-[10px] uppercase">
-                                        <th class="p-2">#</th>
                                         <th class="p-2">Sana</th>
-                                        <th class="p-2">Jami</th>
-                                        <th class="p-2">Holati</th>
-                                        <th class="p-2 text-right">Mahsulotlar</th>
+                                        <th class="p-2">Hujjat</th>
+                                        <th class="p-2">Kategoriya / Izoh</th>
+                                        <th class="p-2 text-right">Qarz (Kirim)</th>
+                                        <th class="p-2 text-right">To'lov (Chiqim)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="order in s.orders" :key="order.id" class="border-t border-white/5">
-                                        <td class="p-2 text-neon-cyan">{{ order.order_number }}</td>
-                                        <td class="p-2 text-white">{{ order.order_date }}</td>
-                                        <td class="p-2 text-neon-green font-bold">{{ formatMoney(order.total_amount) }}</td>
+                                    <tr v-for="(item, idx) in getLedger(s)" :key="idx" class="border-t border-white/5" :class="item.type === 'payment' ? 'bg-neon-green/5' : ''">
+                                        <td class="p-2 text-white">{{ item.date }}</td>
                                         <td class="p-2">
-                                            <span v-if="order.status === 'pending'" class="text-neon-yellow">Kutilmoqda</span>
-                                            <span v-else-if="order.status === 'delivered'" class="text-neon-green">Qabul qilindi</span>
+                                            <span v-if="item.type === 'order'" class="text-neon-cyan">{{ item.number }}</span>
+                                            <span v-else class="text-neon-green">{{ item.number }}</span>
                                         </td>
-                                        <td class="p-2 text-right text-text-secondary text-xs">
-                                            <span v-for="(item, idx) in order.items" :key="idx" class="block">
-                                                {{ item.item_name }} ({{ item.quantity }} {{ item.unit }})
+                                        <td class="p-2">
+                                            <span v-if="item.type === 'order'" class="text-xs text-text-secondary">
+                                                Buyurtma ({{ item.status === 'delivered' ? 'Qabul qilingan' : 'Kutilmoqda' }})<br>
+                                                <span v-for="i in item.items" :key="i.id" class="text-[9px] block">{{ i.item_name }} ({{ i.quantity }} {{ i.unit }})</span>
+                                            </span>
+                                            <span v-else class="text-xs text-neon-green/80">
+                                                To'lov qaydi<br>
+                                                <span class="text-[9px] block text-text-muted">{{ item.notes || 'Izohsiz' }}</span>
                                             </span>
                                         </td>
+                                        <td class="p-2 text-right text-neon-red font-bold">
+                                            <span v-if="item.type === 'order'">{{ formatMoney(item.amount) }}</span>
+                                            <span v-else>-</span>
+                                        </td>
+                                        <td class="p-2 text-right text-neon-green font-bold">
+                                            <span v-if="item.type === 'payment'">{{ formatMoney(item.amount) }}</span>
+                                            <span v-else>-</span>
+                                        </td>
                                     </tr>
-                                    <tr v-if="!s.orders || s.orders.length === 0">
-                                        <td colspan="5" class="p-4 text-center text-xs text-text-muted">Hozircha buyurtmalar yo'q</td>
+                                    <tr v-if="getLedger(s).length === 0">
+                                        <td colspan="5" class="p-4 text-center text-xs text-text-muted">Hozircha hisob-kitoblar yo'q</td>
                                     </tr>
                                 </tbody>
                             </table>

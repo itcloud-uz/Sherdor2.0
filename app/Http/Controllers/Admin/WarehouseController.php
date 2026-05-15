@@ -51,6 +51,8 @@ class WarehouseController extends Controller
         return Inertia::render('Admin/Warehouse/Suppliers', [
             'suppliers' => Supplier::with(['contracts', 'orders' => function($q) {
                 $q->with('items')->oldest();
+            }, 'transactions' => function($q) {
+                $q->where('type', 'expense')->oldest();
             }])->latest()->get(),
             'inventory_items' => InventoryItem::all()
         ]);

@@ -5,6 +5,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
     suppliers: Array,
+    inventory_items: Array,
 });
 
 const showModal = ref(false);
@@ -17,6 +18,17 @@ const paymentForm = ref({
     payment_method: 'bank',
     transaction_date: new Date().toISOString().split('T')[0],
     notes: ''
+});
+
+const showOrderModal = ref(false);
+const orderForm = ref({
+    supplier_id: '',
+    order_date: new Date().toISOString().split('T')[0],
+    expected_delivery_date: '',
+    notes: '',
+    items: [
+        { item_name: '', unit: 'dona', quantity: 1, unit_price: 0 }
+    ]
 });
 
 const form = ref({
@@ -102,6 +114,40 @@ const submitPayment = () => {
     });
 };
 
+function openAddOrderModal(supplier) {
+    orderForm.value = {
+        supplier_id: supplier.id,
+        order_date: new Date().toISOString().split('T')[0],
+        expected_delivery_date: '',
+        notes: '',
+        items: [{ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 }]
+    };
+    showOrderModal.value = true;
+}
+
+function addOrderItem() {
+    orderForm.value.items.push({ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 });
+}
+
+function removeOrderItem(index) {
+    if (orderForm.value.items.length > 1) {
+        orderForm.value.items.splice(index, 1);
+    }
+}
+
+function submitOrder() {
+    isSubmitting.value = true;
+    router.post(route('admin.warehouse.orders.store'), orderForm.value, {
+        onSuccess: () => {
+            isSubmitting.value = false;
+            showOrderModal.value = false;
+        },
+        onError: () => {
+            isSubmitting.value = false;
+        }
+    });
+}
+
 const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS' }).format(amount);
 };
@@ -166,6 +212,9 @@ const sendToTelegram = (id) => {
                         <a :href="route('admin.warehouse.suppliers.ledger', s.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
                             PDF Hisobot
                         </a>
+                        <button @click="openAddOrderModal(s)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Yangi Buyurtma">
+                            + Buyurtma
+                        </button>
                         <button @click="openPaymentModal(s)" class="px-3 py-1 bg-neon-green/20 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="To'lov qilish">
                             To'lov
                         </button>
@@ -235,6 +284,43 @@ const sendToTelegram = (id) => {
                             <button @click="triggerUpload(s.id)" class="text-center text-[10px] font-mono text-text-muted hover:text-white transition-colors">
                                 Yangilash
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Orders Table -->
+                    <div class="pt-4 border-t border-white/10 mt-4">
+                        <h4 class="text-[10px] font-mono text-text-muted uppercase mb-3">Buyurtmalar Tarixi:</h4>
+                        <div class="overflow-x-auto">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border border-white/5 rounded-lg">
+                                <thead>
+                                    <tr class="bg-white/5 text-text-muted text-[10px] uppercase">
+                                        <th class="p-2">#</th>
+                                        <th class="p-2">Sana</th>
+                                        <th class="p-2">Jami</th>
+                                        <th class="p-2">Holati</th>
+                                        <th class="p-2 text-right">Mahsulotlar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="order in s.orders" :key="order.id" class="border-t border-white/5">
+                                        <td class="p-2 text-neon-cyan">{{ order.order_number }}</td>
+                                        <td class="p-2 text-white">{{ order.order_date }}</td>
+                                        <td class="p-2 text-neon-green font-bold">{{ formatMoney(order.total_amount) }}</td>
+                                        <td class="p-2">
+                                            <span v-if="order.status === 'pending'" class="text-neon-yellow">Kutilmoqda</span>
+                                            <span v-else-if="order.status === 'delivered'" class="text-neon-green">Qabul qilindi</span>
+                                        </td>
+                                        <td class="p-2 text-right text-text-secondary text-xs">
+                                            <span v-for="(item, idx) in order.items" :key="idx" class="block">
+                                                {{ item.item_name }} ({{ item.quantity }} {{ item.unit }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!s.orders || s.orders.length === 0">
+                                        <td colspan="5" class="p-4 text-center text-xs text-text-muted">Hozircha buyurtmalar yo'q</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -336,6 +422,94 @@ const sendToTelegram = (id) => {
                     <button @click="submitPayment" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-green text-black rounded-xl hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">
                         {{ isSubmitting ? 'Saqlanmoqda...' : 'To\'lovni Tasdiqlash' }}
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Order Modal -->
+        <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <div class="glass-panel w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,255,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button @click="showOrderModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
+                
+                <h3 class="text-xl font-display font-bold text-white uppercase tracking-widest mb-6">Yangi Buyurtma (PO)</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Buyurtma Sanasi *</label>
+                        <input v-model="orderForm.order_date" type="date" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-magenta transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kutilyotgan Kelish Sanasi</label>
+                        <input v-model="orderForm.expected_delivery_date" type="date" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-magenta transition-colors">
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-[10px] font-mono text-text-muted uppercase">Mahsulotlar Ro'yxati</h4>
+                        <button @click="addOrderItem" class="text-xs font-mono text-neon-cyan hover:text-white">+ Mahsulot Qo'shish</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div v-for="(item, idx) in orderForm.items" :key="idx" class="flex flex-wrap gap-3 items-start bg-white/5 p-3 rounded-xl border border-white/5 relative">
+                            <button v-if="orderForm.items.length > 1" @click="removeOrderItem(idx)" class="absolute top-2 right-2 text-neon-red/50 hover:text-neon-red">✕</button>
+                            
+                            <div class="flex-1 min-w-[150px]">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Nomi *</label>
+                                <input v-model="item.item_name" type="text" list="inventory_list" required class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" placeholder="Sement, Armatura...">
+                                <datalist id="inventory_list">
+                                    <option v-for="inv in inventory_items" :key="inv.id" :value="inv.name"></option>
+                                </datalist>
+                            </div>
+                            
+                            <div class="w-24">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">O'lchov</label>
+                                <select v-model="item.unit" class="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-2 text-white text-sm">
+                                    <option value="dona">Dona</option>
+                                    <option value="kg">Kg</option>
+                                    <option value="tonna">Tonna</option>
+                                    <option value="metr">Metr</option>
+                                    <option value="m2">M²</option>
+                                    <option value="m3">M³</option>
+                                    <option value="qop">Qop</option>
+                                    <option value="litr">Litr</option>
+                                    <option value="komplekt">Komplekt</option>
+                                </select>
+                            </div>
+
+                            <div class="w-24">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Soni *</label>
+                                <input v-model="item.quantity" type="number" step="0.01" required class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm text-right">
+                            </div>
+
+                            <div class="w-32">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Narxi (UZS) *</label>
+                                <input v-model="item.unit_price" type="number" required class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm text-right">
+                            </div>
+                            
+                            <div class="w-full sm:w-auto pt-6 text-right sm:pr-6">
+                                <span class="text-xs font-bold text-white font-mono">{{ formatMoney((item.quantity * item.unit_price) || 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Qo'shimcha Izoh</label>
+                    <textarea v-model="orderForm.notes" rows="2" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-magenta transition-colors" placeholder="Ixtiyoriy..."></textarea>
+                </div>
+                
+                <div class="flex justify-between items-center border-t border-white/10 pt-6">
+                    <div class="text-text-muted text-xs font-mono uppercase tracking-widest">Umumiy Qiymat: <span class="text-xl font-bold text-neon-green ml-2">{{ formatMoney(orderForm.items.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0)) }}</span></div>
+                    
+                    <div class="flex gap-3">
+                        <button @click="showOrderModal = false" class="px-6 py-3 text-sm font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel_button') }}</button>
+                        <button @click="submitOrder" :disabled="isSubmitting" class="px-8 py-3 text-sm font-bold font-mono bg-neon-magenta text-black rounded-xl hover:shadow-[0_0_15px_#FF00FF] transition-all disabled:opacity-50">
+                            {{ isSubmitting ? 'Saqlanmoqda...' : 'Buyurtmani Yaratish' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

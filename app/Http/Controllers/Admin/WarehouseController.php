@@ -49,7 +49,10 @@ class WarehouseController extends Controller
     public function suppliers()
     {
         return Inertia::render('Admin/Warehouse/Suppliers', [
-            'suppliers' => Supplier::with(['contracts', 'orders'])->latest()->get()
+            'suppliers' => Supplier::with(['contracts', 'orders' => function($q) {
+                $q->with('items')->oldest();
+            }])->latest()->get(),
+            'inventory_items' => InventoryItem::all()
         ]);
     }
 

@@ -22,35 +22,7 @@ const formatMoney = (amount) => {
                 </h1>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/30 flex flex-col items-center justify-center text-center">
-                    <span class="text-4xl mb-2 text-neon-cyan">📋</span>
-                    <span class="text-2xl font-bold text-white">{{ stats.total_items }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">Xil Mahsulotlar</span>
-                </div>
-                <div class="glass-panel p-6 rounded-2xl border border-neon-green/30 flex flex-col items-center justify-center text-center">
-                    <span class="text-4xl mb-2 text-neon-green">💰</span>
-                    <span class="text-xl font-bold text-neon-green">{{ formatMoney(stats.total_value) }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">Umumiy Qiymat</span>
-                </div>
-                <div class="glass-panel p-6 rounded-2xl border border-neon-red/30 flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer">
-                    <div v-if="stats.low_stock > 0" class="absolute top-0 w-full h-1 bg-neon-red shadow-[0_0_10px_#FF003C] animate-pulse"></div>
-                    <span class="text-4xl mb-2 text-neon-red group-hover:scale-110 transition-transform">⚠️</span>
-                    <span class="text-2xl font-bold text-white">{{ stats.low_stock }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">Tugayotganlar</span>
-                </div>
-                <div class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 flex flex-col items-center justify-center text-center">
-                    <span class="text-4xl mb-2 text-neon-yellow">🤝</span>
-                    <span class="text-2xl font-bold text-white">{{ stats.active_suppliers }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">{{ $t('suppliers') }}</span>
-                </div>
-                <div class="glass-panel p-6 rounded-2xl border border-neon-magenta/30 flex flex-col items-center justify-center text-center">
-                    <span class="text-4xl mb-2 text-neon-magenta">⏳</span>
-                    <span class="text-2xl font-bold text-white">{{ stats.pending_orders }}</span>
-                    <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest mt-1">Kutilyotgan Buyurtmalar</span>
-                </div>
-            </div>
+
 
             <!-- Navigation Links -->
             <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">

@@ -234,6 +234,7 @@ class WarehouseController extends Controller
             'order_date' => 'required|date',
             'items' => 'required|array',
             'items.*.item_name' => 'required|string',
+            'items.*.size' => 'nullable|string',
             'items.*.quantity' => 'required|numeric',
             'items.*.unit_price' => 'required|numeric',
             'items.*.unit' => 'required|string',
@@ -257,6 +258,7 @@ class WarehouseController extends Controller
                 PurchaseOrderItem::create([
                     'purchase_order_id' => $order->id,
                     'item_name' => $item['item_name'],
+                    'size' => $item['size'] ?? null,
                     'unit' => $item['unit'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
@@ -275,6 +277,7 @@ class WarehouseController extends Controller
             'order_date' => 'required|date',
             'items' => 'required|array',
             'items.*.item_name' => 'required|string',
+            'items.*.size' => 'nullable|string',
             'items.*.quantity' => 'required|numeric',
             'items.*.unit_price' => 'required|numeric',
             'items.*.unit' => 'required|string',
@@ -317,6 +320,7 @@ class WarehouseController extends Controller
                 PurchaseOrderItem::create([
                     'purchase_order_id' => $order->id,
                     'item_name' => $item['item_name'],
+                    'size' => $item['size'] ?? null,
                     'unit' => $item['unit'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],

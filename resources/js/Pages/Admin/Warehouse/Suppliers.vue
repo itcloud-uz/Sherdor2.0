@@ -121,13 +121,13 @@ function openAddOrderModal(supplier) {
         order_date: new Date().toISOString().split('T')[0],
         expected_delivery_date: '',
         notes: '',
-        items: [{ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 }]
+        items: [{ item_name: '', size: '', unit: 'dona', quantity: 1, unit_price: 0 }]
     };
     showOrderModal.value = true;
 }
 
 function addOrderItem() {
-    orderForm.value.items.push({ item_name: '', unit: 'dona', quantity: 1, unit_price: 0 });
+    orderForm.value.items.push({ item_name: '', size: '', unit: 'dona', quantity: 1, unit_price: 0 });
 }
 
 function removeOrderItem(index) {
@@ -194,6 +194,7 @@ const getGroupedItems = (supplier) => {
                     }
                     grouped[name].push({
                         date: o.order_date,
+                        size: i.size,
                         unit: i.unit,
                         quantity: i.quantity,
                         unit_price: i.unit_price,
@@ -398,7 +399,7 @@ const sendToTelegram = (id) => {
                         <h4 class="text-xs font-mono text-white uppercase tracking-widest mb-4">Umumiy Hisob-kitob:</h4>
                         
                         <!-- Products Tables by Category -->
-                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                        <div class="grid grid-cols-1 gap-6 mb-8">
                             <div v-for="(items, category) in getGroupedItems(selectedSupplierView)" :key="category" class="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
                                 <h5 class="text-center bg-black/60 py-2 border-b border-white/10 text-[10px] font-bold uppercase tracking-widest text-neon-cyan">{{ category }}</h5>
                                 <div class="overflow-x-auto">
@@ -407,6 +408,7 @@ const sendToTelegram = (id) => {
                                             <tr>
                                                 <th class="p-2 border-b border-r border-white/10 text-center">№</th>
                                                 <th class="p-2 border-b border-r border-white/10">Sana</th>
+                                                <th class="p-2 border-b border-r border-white/10">O'lcham</th>
                                                 <th class="p-2 border-b border-r border-white/10">O'lchov</th>
                                                 <th class="p-2 border-b border-r border-white/10 text-right">Miqdor</th>
                                                 <th class="p-2 border-b border-r border-white/10 text-right">Narxi</th>
@@ -417,6 +419,7 @@ const sendToTelegram = (id) => {
                                             <tr v-for="(item, idx) in items" :key="idx" class="border-b border-white/5 hover:bg-white/5">
                                                 <td class="p-2 border-r border-white/5 text-center text-text-secondary">{{ idx + 1 }}</td>
                                                 <td class="p-2 border-r border-white/5 text-white">{{ item.date }}</td>
+                                                <td class="p-2 border-r border-white/5 text-neon-yellow">{{ item.size || '-' }}</td>
                                                 <td class="p-2 border-r border-white/5 text-text-muted">{{ item.unit }}</td>
                                                 <td class="p-2 border-r border-white/5 text-right font-bold text-white">{{ item.quantity }}</td>
                                                 <td class="p-2 border-r border-white/5 text-right">{{ formatMoney(item.unit_price) }}</td>
@@ -425,7 +428,7 @@ const sendToTelegram = (id) => {
                                         </tbody>
                                         <tfoot>
                                             <tr class="bg-black/40">
-                                                <td colspan="5" class="p-2 text-right font-bold border-r border-white/10">Jami ({{ category }}):</td>
+                                                <td colspan="6" class="p-2 text-right font-bold border-r border-white/10">Jami ({{ category }}):</td>
                                                 <td class="p-2 text-right font-bold text-neon-red">{{ formatMoney(items.reduce((acc, curr) => acc + curr.total_price, 0)) }}</td>
                                             </tr>
                                         </tfoot>
@@ -584,6 +587,11 @@ const sendToTelegram = (id) => {
                                 <datalist id="inventory_list">
                                     <option v-for="inv in inventory_items" :key="inv.id" :value="inv.name"></option>
                                 </datalist>
+                            </div>
+                            
+                            <div class="w-24">
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">O'lcham</label>
+                                <input v-model="item.size" type="text" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" placeholder="d20, 10x10...">
                             </div>
                             
                             <div class="w-24">

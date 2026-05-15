@@ -52,6 +52,7 @@
                 }
                 $groupedItems[$name]->push([
                     'date' => $o->order_date,
+                    'size' => $i->size,
                     'unit' => $i->unit,
                     'qty' => $i->quantity,
                     'price' => $i->unit_price,
@@ -61,58 +62,49 @@
         }
     @endphp
 
-    <table width="100%" style="margin-bottom: 20px;">
-        <tr>
-            @forelse($groupedItems as $category => $items)
-            <td width="50%" valign="top" style="padding: 5px;">
-                <h3 style="text-align: center; font-size: 14px; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 3px;">{{ $category }}</h3>
-                <table class="items-table" style="font-size: 10px;">
-                    <thead>
-                        <tr>
-                            <th>№</th>
-                            <th>Номи</th>
-                            <th>Сана</th>
-                            <th>Ўлчов</th>
-                            <th>Дона/Miqdor</th>
-                            <th>Нархи</th>
-                            <th>Жами нархи</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php $sum = 0; @endphp
-                        @foreach($items as $index => $item)
-                        @php $sum += $item['total']; @endphp
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $category }}</td>
-                            <td>{{ date('d.m.Y', strtotime($item['date'])) }}</td>
-                            <td>{{ $item['unit'] }}</td>
-                            <td>{{ $item['qty'] }}</td>
-                            <td>{{ number_format($item['price'], 0, '.', ' ') }}</td>
-                            <td>{{ number_format($item['total'], 0, '.', ' ') }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="6" class="text-right total">Jami ({{ $category }}):</td>
-                            <td class="total text-red">{{ number_format($sum, 0, '.', ' ') }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </td>
-            @if($loop->iteration % 2 == 0)
-                </tr><tr>
-            @endif
-            @empty
-            <td>
-                <p style="text-align: center; color: #777;">Hozircha mahsulotlar qabul qilinmagan.</p>
-            </td>
-            @endforelse
-        </tr>
-    </table>
+    @forelse($groupedItems as $category => $items)
+        <h3 style="text-align: center; font-size: 14px; margin-top: 20px; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 3px;">{{ $category }}</h3>
+        <table class="items-table" style="font-size: 10px;">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Номи</th>
+                    <th>Сана</th>
+                    <th>O'lcham</th>
+                    <th>Ўлчов</th>
+                    <th>Дона/Miqdor</th>
+                    <th>Нархи</th>
+                    <th>Жами нархи</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $sum = 0; @endphp
+                @foreach($items as $index => $item)
+                @php $sum += $item['total']; @endphp
+                <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td>{{ $category }}</td>
+                    <td>{{ date('d.m.Y', strtotime($item['date'])) }}</td>
+                    <td>{{ $item['size'] ?: '-' }}</td>
+                    <td>{{ $item['unit'] }}</td>
+                    <td>{{ $item['qty'] }}</td>
+                    <td>{{ number_format($item['price'], 0, '.', ' ') }}</td>
+                    <td>{{ number_format($item['total'], 0, '.', ' ') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7" class="text-right total">Jami ({{ $category }}):</td>
+                    <td class="total text-red">{{ number_format($sum, 0, '.', ' ') }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    @empty
+        <p style="text-align: center; color: #777;">Hozircha mahsulotlar qabul qilinmagan.</p>
+    @endforelse
 
-    <h3 style="margin-bottom: 5px; font-size: 14px; border-bottom: 2px solid #000; padding-bottom: 3px;">To'lovlar Tarixi (Chiqim)</h3>
+    <h3 style="margin-top: 30px; margin-bottom: 5px; font-size: 14px; border-bottom: 2px solid #000; padding-bottom: 3px;">To'lovlar Tarixi (Chiqim)</h3>
     <table class="items-table" style="font-size: 10px;">
         <thead>
             <tr>

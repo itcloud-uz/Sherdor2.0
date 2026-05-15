@@ -238,10 +238,7 @@ const sendToTelegram = (id) => {
                             <span class="text-[10px] font-mono text-text-muted uppercase">Telefon</span>
                             <span class="text-sm font-bold text-white font-mono">{{ s.phone || '-' }}</span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-mono text-text-muted uppercase">STIR (INN)</span>
-                            <span class="text-sm font-bold text-white font-mono">{{ s.inn || '-' }}</span>
-                        </div>
+
                         <div class="flex justify-between items-center">
                             <span class="text-[10px] font-mono text-text-muted uppercase">Buyurtmalar</span>
                             <span class="text-sm font-bold text-neon-cyan font-mono">{{ s.orders?.length || 0 }} ta</span>
@@ -357,20 +354,7 @@ const sendToTelegram = (id) => {
                         <input v-model="form.phone" type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-yellow transition-colors" placeholder="+998 90 123 45 67">
                     </div>
 
-                    <div class="col-span-2 md:col-span-1">
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">STIR (INN)</label>
-                        <input v-model="form.inn" type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-yellow transition-colors" placeholder="9 xonali raqam">
-                    </div>
 
-                    <div class="col-span-2 md:col-span-1">
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">MFO</label>
-                        <input v-model="form.mfo" type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-yellow transition-colors" placeholder="Bank kodi">
-                    </div>
-
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Bank Hisob Raqami</label>
-                        <input v-model="form.bank_account" type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-yellow transition-colors" placeholder="2020 8000 ...">
-                    </div>
                 </div>
                 
                 <div class="mt-8 flex justify-end gap-3">

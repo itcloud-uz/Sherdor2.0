@@ -22,7 +22,7 @@ const isAdmin = computed(() => {
     return roles.includes('Super_Admin') || roles.includes('Admin');
 });
 
-const selectedBuilding = ref(props.buildings.length > 0 ? props.buildings[0] : null);
+const selectedBuilding = ref(props.buildings?.length > 0 ? props.buildings[0] : null);
 const selectedFloor = ref(selectedBuilding.value?.floors?.length > 0 ? selectedBuilding.value.floors[0] : null);
 const activeTab = ref('blueprint');
 

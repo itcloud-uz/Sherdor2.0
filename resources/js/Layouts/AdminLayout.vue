@@ -109,7 +109,7 @@ onUnmounted(() => {
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
                     <div>
-                        <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, <span class="hidden sm:inline">{{ $page.props.auth.user.name }}</span></h2>
+                        <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, <span class="hidden sm:inline">{{ $page.props.auth?.user?.name }}</span></h2>
                         <p class="text-[10px] sm:text-xs font-mono text-text-muted mt-1">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
                     </div>
                 </div>
@@ -119,12 +119,12 @@ onUnmounted(() => {
                     <div class="relative group">
                         <button class="flex items-center gap-3 p-2 pr-4 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10 cursor-default">
                             <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 overflow-hidden shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]">
-                                <img v-if="$page.props.auth.user.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
-                                <span v-else class="text-xs font-bold text-white">{{ $page.props.auth.user.name.charAt(0) }}</span>
+                                <img v-if="$page.props.auth?.user?.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
+                                <span v-else class="text-xs font-bold text-white">{{ $page.props.auth?.user?.name?.charAt(0) }}</span>
                             </div>
                             <div class="text-left hidden sm:block">
-                                <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth.user.name }}</p>
-                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth.user.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
+                                <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth?.user?.name }}</p>
+                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth?.user?.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
                             </div>
                         </button>
 

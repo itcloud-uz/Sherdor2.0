@@ -131,7 +131,7 @@ function saveSchedulePayment(schedule) {
         onSuccess: (page) => {
             editingScheduleId.value = null;
             isProcessing.value = false;
-            const updatedContract = page.props.contracts.find(c => c.id === selectedContract.value.id);
+            const updatedContract = (page.props.contracts || []).find(c => c.id === selectedContract.value.id);
             if (updatedContract) {
                 // Deep clone to avoid mutating props directly when v-model changes
                 selectedContract.value = JSON.parse(JSON.stringify(updatedContract));
@@ -166,7 +166,7 @@ function recalculatePenalty() {
     }, {
         onSuccess: (page) => {
             isProcessing.value = false;
-            const updatedContract = page.props.contracts.find(c => c.id === selectedContract.value.id);
+            const updatedContract = (page.props.contracts || []).find(c => c.id === selectedContract.value.id);
             if (updatedContract) {
                 selectedContract.value = JSON.parse(JSON.stringify(updatedContract));
             }

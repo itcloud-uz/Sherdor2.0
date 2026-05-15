@@ -23,7 +23,10 @@ const navItems = [
 ];
 
 const filteredNavItems = computed(() => {
-    const rawRoles = page.props.auth.user.roles || [];
+    const user = page.props.auth?.user;
+    if (!user) return [];
+    
+    const rawRoles = user.roles || [];
     const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
     const isAdmin = roles.includes('Super_Admin') || roles.includes('Admin');
     const isPartner = roles.includes('Partner');
@@ -47,9 +50,8 @@ const filteredNavItems = computed(() => {
 let refreshInterval = null;
 
 onMounted(() => {
-    refreshInterval = setInterval(() => {
-        router.reload({ preserveState: true, preserveScroll: true });
-    }, 5000);
+    // Auto-refresh removed for performance optimization.
+    // If live updates are needed, consider using WebSockets or targeted data refreshing.
 });
 
 onUnmounted(() => {

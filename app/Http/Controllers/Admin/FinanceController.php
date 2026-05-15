@@ -11,7 +11,7 @@ class FinanceController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['creator', 'approver', 'contract.client', 'contract.unit'])->latest()->get();
+        $transactions = Transaction::with(['creator', 'approver', 'contract.client', 'contract.unit'])->latest()->limit(500)->get();
         $balance = \App\Models\CompanyBalance::firstOrCreate([]);
         
         $pendingIncomes = Transaction::where('status', 'pending')->where('type', 'income')->sum('amount');
@@ -23,13 +23,13 @@ class FinanceController extends Controller
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
             'categories' => \App\Models\TransactionCategory::all(),
-            'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->get(),
+            'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get(),
             'financialLiabilities' => \App\Models\FinancialLiability::with('payments')->latest()->get(),
             'suppliers' => \App\Models\Supplier::latest()->get(),
             'workers' => \App\Models\Worker::latest()->get(),
             'machineries' => \App\Models\Machinery::latest()->get(),
             'buildings' => \App\Models\Building::latest()->get(),
-            'clients' => \App\Models\Client::latest()->get(),
+            'clients' => \App\Models\Client::latest()->limit(500)->get(),
             'partners' => \App\Models\Partner::with('user')->latest()->get()
         ]);
     }

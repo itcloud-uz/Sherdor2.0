@@ -14,14 +14,15 @@ class CrmController extends Controller
 {
     public function index()
     {
-        $leads = Lead::all();
-        $clients = \App\Models\Client::with('contracts.unit.floor.building')->get();
-        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->get();
+        $leads = Lead::latest()->limit(500)->get();
+        $clients = \App\Models\Client::with('contracts.unit.floor.building')->latest()->limit(500)->get();
+        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $partners = \App\Models\Partner::with('user')->get();
         $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
                             ->where('status', 'overdue')
                             ->orderBy('due_date', 'asc')
+                            ->limit(500)
                             ->get();
 
         $overdueSchedules = [];

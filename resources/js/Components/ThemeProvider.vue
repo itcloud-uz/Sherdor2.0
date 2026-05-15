@@ -11,19 +11,17 @@ function hexToRgb(hex) {
 
 watchEffect(() => {
     if (page.props.branding) {
-        const color = page.props.branding.primary_theme_color;
-        const glow = page.props.branding.neon_glow_intensity;
+        const color = page.props.branding.primary_theme_color || '#00F0FF';
+        const glow = page.props.branding.neon_glow_intensity || '0 0 15px';
         const rgb = hexToRgb(color);
         
         document.documentElement.style.setProperty('--color-neon-primary', color);
-        // We use rgba for the shadow to add 30% opacity (0.3 = ~76 in hex, or just rgba)
         document.documentElement.style.setProperty('--shadow-neon-primary', `${glow} rgba(${rgb}, 0.3)`);
     }
 
-    if (page.props.auth?.user?.theme_style) {
-        document.documentElement.classList.remove('theme-apple_glass', 'theme-galaxy', 'theme-cyberpunk', 'theme-minimalist');
-        document.documentElement.classList.add(`theme-${page.props.auth.user.theme_style}`);
-    }
+    const themeStyle = page.props.auth?.user?.theme_style || 'apple_glass';
+    document.documentElement.classList.remove('theme-apple_glass', 'theme-galaxy', 'theme-cyberpunk', 'theme-minimalist', 'theme-gold', 'theme-itcloud_cyberglass');
+    document.documentElement.classList.add(`theme-${themeStyle}`);
 });
 </script>
 <template>

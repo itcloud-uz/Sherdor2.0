@@ -25,9 +25,9 @@ onMounted(() => {
     canvas.width = width;
     canvas.height = height;
 
-    const numStars = 1500;
+    const numStars = 800;
     const stars = [];
-    const colors = ['#FFD700', '#8A2BE2', '#FF0000', '#FFFFFF', '#FFD700']; // Gold, Purple, Red, White
+    const colors = ['#00F0FF', '#B026FF', '#FFD700', '#FFFFFF']; // Cyan, Purple, Gold, White
 
     // Initialize stars
     for (let i = 0; i < numStars; i++) {
@@ -114,9 +114,6 @@ onMounted(() => {
                 ctx.globalAlpha = opacity > 1 ? 1 : opacity;
                 ctx.fill();
                 
-                // Subtle colored glow
-                ctx.shadowBlur = size * 4;
-                ctx.shadowColor = star.color;
                 ctx.globalAlpha = 1.0; // reset
             }
         }

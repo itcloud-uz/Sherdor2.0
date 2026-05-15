@@ -23,9 +23,9 @@ class HrController extends Controller
             'workers' => Worker::all(),
             'machineries' => Machinery::all(),
             'buildings' => Building::with('floors.units')->get(),
-            'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->get(),
+            'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get(),
             'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
-            'payrolls' => Payroll::with('transaction')->latest()->get()
+            'payrolls' => Payroll::with('transaction')->latest()->limit(500)->get()
         ]);
     }
 

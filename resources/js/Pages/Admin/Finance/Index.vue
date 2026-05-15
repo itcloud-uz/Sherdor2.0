@@ -51,7 +51,9 @@ const tabs = [
 const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
 
 const isAdmin = computed(() => {
-    const rawRoles = page.props.auth.user.roles || [];
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    const rawRoles = user.roles || [];
     const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
     return roles.includes('Super_Admin') || roles.includes('Admin');
 });

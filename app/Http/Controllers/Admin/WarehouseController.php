@@ -192,7 +192,7 @@ class WarehouseController extends Controller
     public function supplierLedgerPdf(Supplier $supplier)
     {
         $supplier->load(['orders' => function($q) {
-            $q->where('status', 'delivered')->orderBy('order_date');
+            $q->where('status', 'delivered')->with('items')->orderBy('order_date');
         }]);
 
         $payments = Transaction::where('supplier_id', $supplier->id)
@@ -200,13 +200,22 @@ class WarehouseController extends Controller
                         ->orderBy('transaction_date')
                         ->get();
 
+        // Convert to landscape for wide tables
         $pdf = Pdf::loadView('exports.supplier_ledger', [
             'supplier' => $supplier,
             'orders' => $supplier->orders,
             'payments' => $payments
-        ]);
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('Taminotchi_hisoboti_' . $supplier->id . '.pdf');
+    }
+
+    public function supplierLedgerExcel(Supplier $supplier)
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\SupplierLedgerExport($supplier),
+            'Taminotchi_hisoboti_' . $supplier->id . '.xlsx'
+        );
     }
 
     public function orders()

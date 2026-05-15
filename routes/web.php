@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/suppliers/{supplier}/telegram', [\App\Http\Controllers\Admin\WarehouseController::class, 'sendSupplierDocumentToTelegram'])->name('suppliers.telegram');
         Route::post('/suppliers/{supplier}/pay', [\App\Http\Controllers\Admin\WarehouseController::class, 'paySupplier'])->name('suppliers.pay');
         Route::get('/suppliers/{supplier}/ledger', [\App\Http\Controllers\Admin\WarehouseController::class, 'supplierLedgerPdf'])->name('suppliers.ledger');
+        Route::get('/suppliers/{supplier}/ledger/excel', [\App\Http\Controllers\Admin\WarehouseController::class, 'supplierLedgerExcel'])->name('suppliers.ledger.excel');
         Route::get('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'orders'])->name('orders');
         Route::post('/orders', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeOrder'])->name('orders.store');
         Route::put('/orders/{order}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateOrder'])->name('orders.update');

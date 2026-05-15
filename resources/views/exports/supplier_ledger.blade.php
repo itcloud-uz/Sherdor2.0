@@ -43,69 +43,105 @@
     </table>
 
     @php
-        $ledger = collect();
+        $groupedItems = collect();
         foreach($orders as $o) {
-            $ledger->push([
-                'date' => $o->order_date,
-                'type' => 'order',
-                'doc' => 'PO: ' . $o->order_number,
-                'debit' => 0,
-                'credit' => $o->total_amount,
-                'notes' => 'Buyurtma ('.($o->status == 'delivered' ? 'Qabul qilingan' : 'Kutilmoqda').')'
-            ]);
+            foreach($o->items as $i) {
+                $name = strtoupper($i->item_name);
+                if(!isset($groupedItems[$name])) {
+                    $groupedItems[$name] = collect();
+                }
+                $groupedItems[$name]->push([
+                    'date' => $o->order_date,
+                    'unit' => $i->unit,
+                    'qty' => $i->quantity,
+                    'price' => $i->unit_price,
+                    'total' => $i->total_price,
+                ]);
+            }
         }
-        foreach($payments as $p) {
-            $ledger->push([
-                'date' => $p->transaction_date,
-                'type' => 'payment',
-                'doc' => 'To\'lov: ' . ucfirst($p->payment_method),
-                'debit' => $p->amount,
-                'credit' => 0,
-                'notes' => $p->notes ?: 'Izohsiz'
-            ]);
-        }
-        $ledger = $ledger->sortBy('date')->values();
-        $running_balance = 0;
     @endphp
 
-    <h3 style="margin-bottom: 5px;">Umumiy Hisob-kitob (Akt Sверка)</h3>
-    <table class="items-table">
+    <table width="100%" style="margin-bottom: 20px;">
+        <tr>
+            @forelse($groupedItems as $category => $items)
+            <td width="50%" valign="top" style="padding: 5px;">
+                <h3 style="text-align: center; font-size: 14px; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 3px;">{{ $category }}</h3>
+                <table class="items-table" style="font-size: 10px;">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Номи</th>
+                            <th>Сана</th>
+                            <th>Ўлчов</th>
+                            <th>Дона/Miqdor</th>
+                            <th>Нархи</th>
+                            <th>Жами нархи</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $sum = 0; @endphp
+                        @foreach($items as $index => $item)
+                        @php $sum += $item['total']; @endphp
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $category }}</td>
+                            <td>{{ date('d.m.Y', strtotime($item['date'])) }}</td>
+                            <td>{{ $item['unit'] }}</td>
+                            <td>{{ $item['qty'] }}</td>
+                            <td>{{ number_format($item['price'], 0, '.', ' ') }}</td>
+                            <td>{{ number_format($item['total'], 0, '.', ' ') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" class="text-right total">Jami ({{ $category }}):</td>
+                            <td class="total text-red">{{ number_format($sum, 0, '.', ' ') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </td>
+            @if($loop->iteration % 2 == 0)
+                </tr><tr>
+            @endif
+            @empty
+            <td>
+                <p style="text-align: center; color: #777;">Hozircha mahsulotlar qabul qilinmagan.</p>
+            </td>
+            @endforelse
+        </tr>
+    </table>
+
+    <h3 style="margin-bottom: 5px; font-size: 14px; border-bottom: 2px solid #000; padding-bottom: 3px;">To'lovlar Tarixi (Chiqim)</h3>
+    <table class="items-table" style="font-size: 10px;">
         <thead>
             <tr>
                 <th>Sana</th>
-                <th>Hujjat turi / Izoh</th>
-                <th class="text-right">Kirim (Qarzimiz)</th>
-                <th class="text-right">To'lov (Chiqim)</th>
-                <th class="text-right">Qoldiq</th>
+                <th>To'lov Turi</th>
+                <th>Izoh</th>
+                <th class="text-right">Summa</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($ledger as $item)
-            @php
-                $running_balance += ($item['credit'] - $item['debit']);
-            @endphp
+            @php $total_payment = 0; @endphp
+            @forelse($payments as $p)
+            @php $total_payment += $p->amount; @endphp
             <tr>
-                <td>{{ $item['date'] }}</td>
-                <td>
-                    <strong>{{ $item['doc'] }}</strong><br>
-                    <span style="font-size: 10px; color: #555;">{{ $item['notes'] }}</span>
-                </td>
-                <td class="text-right text-red">{{ $item['credit'] > 0 ? number_format($item['credit'], 2, '.', ' ') : '-' }}</td>
-                <td class="text-right text-green">{{ $item['debit'] > 0 ? number_format($item['debit'], 2, '.', ' ') : '-' }}</td>
-                <td class="text-right font-bold">{{ number_format($running_balance, 2, '.', ' ') }}</td>
+                <td>{{ date('d.m.Y', strtotime($p->transaction_date)) }}</td>
+                <td>{{ ucfirst($p->payment_method) }}</td>
+                <td>{{ $p->notes ?: '-' }}</td>
+                <td class="text-right text-green font-bold">{{ number_format($p->amount, 0, '.', ' ') }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="text-center">Hisob-kitob ma'lumotlari topilmadi.</td>
+                <td colspan="4" class="text-center">To'lovlar topilmadi.</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2" class="text-right total">Yakuniy Jami:</td>
-                <td class="text-right total text-red">{{ number_format($ledger->sum('credit'), 2, '.', ' ') }}</td>
-                <td class="text-right total text-green">{{ number_format($ledger->sum('debit'), 2, '.', ' ') }}</td>
-                <td class="text-right total {{ $running_balance > 0 ? 'text-red' : 'text-green' }}">{{ number_format(abs($running_balance), 2, '.', ' ') }}</td>
+                <td colspan="3" class="text-right total">Jami To'lovlar:</td>
+                <td class="text-right total text-green">{{ number_format($total_payment, 0, '.', ' ') }}</td>
             </tr>
         </tfoot>
     </table>

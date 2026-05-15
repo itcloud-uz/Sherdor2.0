@@ -172,15 +172,42 @@ const getLedger = (supplier) => {
                 type: 'payment',
                 id: t.id,
                 date: t.transaction_date,
-                number: 'To\'lov: ' + t.payment_method.toUpperCase(),
+                number: t.payment_method,
                 amount: t.amount,
                 notes: t.notes
             });
         });
     }
     
-    // Sort by date ascending (newest at the bottom)
     return ledger.sort((a, b) => new Date(a.date) - new Date(b.date));
+};
+
+const getGroupedItems = (supplier) => {
+    let grouped = {};
+    if (supplier.orders) {
+        supplier.orders.filter(o => o.status === 'delivered').forEach(o => {
+            if (o.items) {
+                o.items.forEach(i => {
+                    let name = (i.item_name || '').toUpperCase();
+                    if (!grouped[name]) {
+                        grouped[name] = [];
+                    }
+                    grouped[name].push({
+                        date: o.order_date,
+                        unit: i.unit,
+                        quantity: i.quantity,
+                        unit_price: i.unit_price,
+                        total_price: i.total_price || (i.quantity * i.unit_price)
+                    });
+                });
+            }
+        });
+    }
+    return grouped;
+};
+
+const getPayments = (supplier) => {
+    return supplier.transactions ? supplier.transactions.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date)) : [];
 };
 
 const formatMoney = (amount) => {
@@ -297,7 +324,10 @@ const sendToTelegram = (id) => {
                     <!-- Edit & Delete Buttons -->
                     <div class="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2">
                         <a :href="route('admin.warehouse.suppliers.ledger', selectedSupplierView.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
-                            PDF Hisobot
+                            PDF
+                        </a>
+                        <a :href="route('admin.warehouse.suppliers.ledger.excel', selectedSupplierView.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (Excel) yuklab olish">
+                            EXCEL
                         </a>
                         <button @click="openAddOrderModal(selectedSupplierView)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Yangi Buyurtma">
                             + Buyurtma
@@ -363,48 +393,71 @@ const sendToTelegram = (id) => {
                         </div>
                     </div>
 
-                    <!-- Ledger Table -->
+                    <!-- Grouped Ledger Table -->
                     <div class="pt-8 border-t border-white/10 mt-6">
-                        <h4 class="text-xs font-mono text-white uppercase tracking-widest mb-4">Umumiy Hisob-kitob (Akt Sверка):</h4>
-                        <div class="overflow-x-auto max-h-[500px] custom-scrollbar bg-black/20 rounded-xl border border-white/5">
-                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
-                                <thead class="sticky top-0 bg-black/90 backdrop-blur z-10">
+                        <h4 class="text-xs font-mono text-white uppercase tracking-widest mb-4">Umumiy Hisob-kitob:</h4>
+                        
+                        <!-- Products Tables by Category -->
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                            <div v-for="(items, category) in getGroupedItems(selectedSupplierView)" :key="category" class="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                                <h5 class="text-center bg-black/60 py-2 border-b border-white/10 text-[10px] font-bold uppercase tracking-widest text-neon-cyan">{{ category }}</h5>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-[10px] font-mono border-collapse">
+                                        <thead class="bg-white/5 text-text-muted">
+                                            <tr>
+                                                <th class="p-2 border-b border-r border-white/10 text-center">№</th>
+                                                <th class="p-2 border-b border-r border-white/10">Sana</th>
+                                                <th class="p-2 border-b border-r border-white/10">O'lchov</th>
+                                                <th class="p-2 border-b border-r border-white/10 text-right">Miqdor</th>
+                                                <th class="p-2 border-b border-r border-white/10 text-right">Narxi</th>
+                                                <th class="p-2 border-b border-white/10 text-right">Jami</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in items" :key="idx" class="border-b border-white/5 hover:bg-white/5">
+                                                <td class="p-2 border-r border-white/5 text-center text-text-secondary">{{ idx + 1 }}</td>
+                                                <td class="p-2 border-r border-white/5 text-white">{{ item.date }}</td>
+                                                <td class="p-2 border-r border-white/5 text-text-muted">{{ item.unit }}</td>
+                                                <td class="p-2 border-r border-white/5 text-right font-bold text-white">{{ item.quantity }}</td>
+                                                <td class="p-2 border-r border-white/5 text-right">{{ formatMoney(item.unit_price) }}</td>
+                                                <td class="p-2 text-right font-bold text-neon-cyan">{{ formatMoney(item.total_price) }}</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="bg-black/40">
+                                                <td colspan="5" class="p-2 text-right font-bold border-r border-white/10">Jami ({{ category }}):</td>
+                                                <td class="p-2 text-right font-bold text-neon-red">{{ formatMoney(items.reduce((acc, curr) => acc + curr.total_price, 0)) }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            <div v-if="Object.keys(getGroupedItems(selectedSupplierView)).length === 0" class="col-span-full p-8 text-center text-xs text-text-muted border border-dashed border-white/10 rounded-xl">
+                                Hozircha mahsulotlar qabul qilinmagan.
+                            </div>
+                        </div>
+
+                        <!-- Payments Table -->
+                        <h4 class="text-xs font-mono text-white uppercase tracking-widest mb-4">To'lovlar Tarixi (Chiqim):</h4>
+                        <div class="overflow-x-auto bg-black/20 rounded-xl border border-white/5">
+                            <table class="w-full text-left text-sm font-mono border-collapse">
+                                <thead class="bg-black/90 backdrop-blur">
                                     <tr class="text-text-muted text-[10px] uppercase border-b border-white/10">
                                         <th class="p-3">Sana</th>
-                                        <th class="p-3">Hujjat</th>
-                                        <th class="p-3">Kategoriya / Izoh</th>
-                                        <th class="p-3 text-right">Qarz (Kirim)</th>
-                                        <th class="p-3 text-right">To'lov (Chiqim)</th>
+                                        <th class="p-3">To'lov Turi</th>
+                                        <th class="p-3">Izoh</th>
+                                        <th class="p-3 text-right">Summa</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(item, idx) in getLedger(selectedSupplierView)" :key="idx" class="border-b border-white/5 hover:bg-white/5 transition-colors" :class="item.type === 'payment' ? 'bg-neon-green/5' : ''">
-                                        <td class="p-3 text-white">{{ item.date }}</td>
-                                        <td class="p-3">
-                                            <span v-if="item.type === 'order'" class="text-neon-cyan font-bold">{{ item.number }}</span>
-                                            <span v-else class="text-neon-green font-bold">{{ item.number }}</span>
-                                        </td>
-                                        <td class="p-3">
-                                            <span v-if="item.type === 'order'" class="text-xs text-text-secondary">
-                                                Buyurtma ({{ item.status === 'delivered' ? 'Qabul qilingan' : 'Kutilmoqda' }})<br>
-                                                <span v-for="i in item.items" :key="i.id" class="text-[9px] block mt-1 text-white/70">- {{ i.item_name }} ({{ i.quantity }} {{ i.unit }})</span>
-                                            </span>
-                                            <span v-else class="text-xs text-neon-green/80">
-                                                To'lov qaydi<br>
-                                                <span class="text-[9px] block text-text-muted mt-1">{{ item.notes || 'Izohsiz' }}</span>
-                                            </span>
-                                        </td>
-                                        <td class="p-3 text-right text-neon-red font-bold">
-                                            <span v-if="item.type === 'order'">{{ formatMoney(item.amount) }}</span>
-                                            <span v-else>-</span>
-                                        </td>
-                                        <td class="p-3 text-right text-neon-green font-bold">
-                                            <span v-if="item.type === 'payment'">{{ formatMoney(item.amount) }}</span>
-                                            <span v-else>-</span>
-                                        </td>
+                                    <tr v-for="p in getPayments(selectedSupplierView)" :key="p.id" class="border-b border-white/5 hover:bg-white/5 bg-neon-green/5 transition-colors">
+                                        <td class="p-3 text-white">{{ p.transaction_date }}</td>
+                                        <td class="p-3 text-neon-green uppercase text-xs">{{ p.payment_method }}</td>
+                                        <td class="p-3 text-text-secondary text-xs">{{ p.notes || '-' }}</td>
+                                        <td class="p-3 text-right text-neon-green font-bold">{{ formatMoney(p.amount) }}</td>
                                     </tr>
-                                    <tr v-if="getLedger(selectedSupplierView).length === 0">
-                                        <td colspan="5" class="p-8 text-center text-xs text-text-muted">Hozircha hisob-kitoblar yo'q</td>
+                                    <tr v-if="getPayments(selectedSupplierView).length === 0">
+                                        <td colspan="4" class="p-6 text-center text-xs text-text-muted">To'lovlar topilmadi.</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -50,6 +50,12 @@ const tabs = [
 // Split transactions
 const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
 
+const isAdmin = computed(() => {
+    const rawRoles = page.props.auth.user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
+    return roles.includes('Super Admin') || roles.includes('Admin');
+});
+
 const filteredTransactions = computed(() => {
     let result = props.transactions;
     if (legacyFilter.value === 'native') {

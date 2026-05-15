@@ -17,7 +17,8 @@ const props = defineProps({
 });
 
 const isAdmin = computed(() => {
-    const roles = page.props.auth.user.roles || [];
+    const rawRoles = page.props.auth.user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
     return roles.includes('Super Admin') || roles.includes('Admin');
 });
 

@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm, router, Link } from '@inertiajs/vue3';
+import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
@@ -11,6 +11,13 @@ const props = defineProps({
     buildings: Array,
     clients: Array,
     partners: Array
+});
+
+const page = usePage();
+const isAdmin = computed(() => {
+    const rawRoles = page.props.auth.user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
+    return roles.includes('Super Admin') || roles.includes('Admin');
 });
 
 const selectedBuilding = ref(props.buildings.length > 0 ? props.buildings[0] : null);
@@ -601,7 +608,7 @@ const progressSeries = computed(() => {
                                 <button @click="openEditBuilding" class="px-3 py-1 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
                                     ✏️ Tahrirlash
                                 </button>
-                                <button @click="deleteBuilding" class="px-3 py-1 bg-neon-magenta/10 border border-neon-magenta/50 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,60,0.2)]">
+                                <button v-if="isAdmin" @click="deleteBuilding" class="px-3 py-1 bg-neon-magenta/10 border border-neon-magenta/50 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,60,0.2)]">
                                     🗑️ O'chirish
                                 </button>
                             </div>
@@ -656,7 +663,7 @@ const progressSeries = computed(() => {
                                             <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-xs rounded hover:bg-neon-cyan hover:text-black transition-all" title="Xonadon qo'shish">
                                                 +
                                             </button>
-                                            <button @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-xs rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
+                                            <button v-if="isAdmin" @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-xs rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
                                                 🗑️
                                             </button>
                                         </div>
@@ -1068,7 +1075,7 @@ const progressSeries = computed(() => {
                         <input type="file" @input="floorForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer border border-white/10 rounded bg-black/50">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingFloor" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
+                        <button type="button" v-if="isEditingFloor && isAdmin" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
                         <button type="button" @click="showAddFloorModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="floorForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors disabled:opacity-50">{{ isEditingFloor ? "Saqlash" : "Qo'shish" }}</button>
                     </div>
@@ -1153,7 +1160,7 @@ const progressSeries = computed(() => {
                         <input v-model="unitForm.svg_polygon" type="text" placeholder="e.g. 100,100 200,100 200,200 100,200" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all text-xs font-mono text-text-muted">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingUnit" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
+                        <button type="button" v-if="isEditingUnit && isAdmin" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
                         <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedFloor.units.find(u => u.id === editingUnitId))" class="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green font-bold font-mono text-xs rounded hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
                             Sotish
                         </button>

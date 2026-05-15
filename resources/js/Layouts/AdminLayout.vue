@@ -23,7 +23,8 @@ const navItems = [
 ];
 
 const filteredNavItems = computed(() => {
-    const roles = page.props.auth.user.roles || [];
+    const rawRoles = page.props.auth.user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
     const isAdmin = roles.includes('Super Admin') || roles.includes('Admin');
     const isPartner = roles.includes('Partner');
     const isOperator = roles.includes('Operator');
@@ -121,7 +122,7 @@ onUnmounted(() => {
                             </div>
                             <div class="text-left hidden sm:block">
                                 <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth.user.name }}</p>
-                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth.user.roles && $page.props.auth.user.roles.length > 0) ? $page.props.auth.user.roles[0].toUpperCase() : 'USER' }}</p>
+                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth.user.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
                             </div>
                         </button>
 

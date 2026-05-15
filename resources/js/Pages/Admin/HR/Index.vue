@@ -831,8 +831,8 @@ function generatePayroll() {
                                 <p class="text-[10px] font-mono font-bold text-neon-green bg-neon-green/10 px-2 py-0.5 rounded">{{ $currency(user.salary_rate || 0) }}</p>
                                 <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-neon-blue/10 text-neon-blue rounded hover:bg-neon-blue/30 transition-colors" title="Karta">💳</button>
-                                    <button @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                    <button @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
+                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
                         </div>
@@ -930,8 +930,8 @@ function generatePayroll() {
                             <p class="text-[10px] font-mono font-bold" :class="w.balance > 0 ? 'text-neon-green' : (w.balance < 0 ? 'text-neon-red' : 'text-text-muted')">B: {{ $currency(w.balance || 0) }}</p>
                             <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                 <button @click="openLedger(w)" class="w-6 h-6 flex items-center justify-center bg-neon-cyan/10 text-neon-cyan rounded hover:bg-neon-cyan/30 transition-colors" title="Ledger">📋</button>
-                                <button @click="openWorkerEdit(w)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                <button @click="deleteWorker(w.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
+                                <button v-if="isAdmin" @click="openWorkerEdit(w)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                <button v-if="isAdmin" @click="deleteWorker(w.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                             </div>
                         </div>
                     </div>
@@ -1165,10 +1165,10 @@ function generatePayroll() {
                                     <button @click="openMachineryLedger(m)" class="px-2 py-1 bg-white/5 hover:bg-white/10 text-white text-[10px] font-mono uppercase tracking-widest rounded border border-white/10 transition-colors">
                                         Daftar
                                     </button>
-                                    <button @click="startEditMachinery(m)" class="p-1.5 bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/20 rounded border border-neon-yellow/30 transition-colors" title="Tahrirlash">
+                                    <button v-if="isAdmin" @click="startEditMachinery(m)" class="p-1.5 bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/20 rounded border border-neon-yellow/30 transition-colors" title="Tahrirlash">
                                         ✏️
                                     </button>
-                                    <button @click="deleteMachinery(m.id)" class="p-1.5 bg-neon-red/10 text-neon-red hover:bg-neon-red/20 rounded border border-neon-red/30 transition-colors" title="O'chirish">
+                                    <button v-if="isAdmin" @click="deleteMachinery(m.id)" class="p-1.5 bg-neon-red/10 text-neon-red hover:bg-neon-red/20 rounded border border-neon-red/30 transition-colors" title="O'chirish">
                                         🗑️
                                     </button>
                                 </div>
@@ -1572,8 +1572,8 @@ function generatePayroll() {
                                     <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyTx('worker', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="destroyTx('worker', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
@@ -1606,8 +1606,8 @@ function generatePayroll() {
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
@@ -1696,8 +1696,8 @@ function generatePayroll() {
                                     <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyTx('user', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="destroyTx('user', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>

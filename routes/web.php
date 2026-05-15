@@ -7,14 +7,6 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     if (auth()->check()) {
-        $user = auth()->user();
-        if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->hasRole('Operator')) {
-            return redirect()->route('operator');
-        } elseif ($user->hasRole('Partner')) {
-            return redirect()->route('partner');
-        }
         return redirect()->route('admin.dashboard');
     }
     return Inertia::render('Public/Landing');
@@ -37,7 +29,7 @@ Route::get('/promo/offers', function () {
     ]);
 })->name('promo.offers');
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/financial-reports', [\App\Http\Controllers\Admin\FinancialReportController::class, 'index'])->name('financial.reports');
     Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm');

@@ -676,8 +676,8 @@ function submitSupplierPayment() {
                                     {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
                                 </span>
                                 <div class="flex gap-2">
-                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
-                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
+                                    <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
+                                    <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
                                     <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
                                 </div>
                             </div>
@@ -720,8 +720,8 @@ function submitSupplierPayment() {
                                     {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
                                 </span>
                                 <div class="flex gap-2">
-                                    <button @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
-                                    <button @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
+                                    <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
+                                    <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
                                     <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
                                 </div>
                             </div>
@@ -826,8 +826,8 @@ function submitSupplierPayment() {
                             </a>
                             
                             <div class="flex gap-2">
-                                <button @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black hover:shadow-[0_0_15px_#39FF14] transition-all rounded disabled:opacity-50">{{ $t('approve_check') }}</button>
-                                <button @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-red/20 border border-neon-red text-neon-red hover:bg-neon-red hover:text-white hover:shadow-[0_0_15px_#FF0000] transition-all rounded disabled:opacity-50">{{ $t('reject_cross') }}</button>
+                                <button v-if="isAdmin" @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-green/20 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black hover:shadow-[0_0_15px_#39FF14] transition-all rounded disabled:opacity-50">{{ $t('approve_check') }}</button>
+                                <button v-if="isAdmin" @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-neon-red/20 border border-neon-red text-neon-red hover:bg-neon-red hover:text-white hover:shadow-[0_0_15px_#FF0000] transition-all rounded disabled:opacity-50">{{ $t('reject_cross') }}</button>
                             </div>
                         </div>
                     </div>

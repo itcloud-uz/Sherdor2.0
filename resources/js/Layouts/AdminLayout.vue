@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import BackgroundTheme from '@/Components/BackgroundTheme.vue';
@@ -21,6 +21,27 @@ const navItems = [
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
+
+const filteredNavItems = computed(() => {
+    const roles = page.props.auth.user.roles || [];
+    const isAdmin = roles.includes('Super Admin') || roles.includes('Admin');
+    const isPartner = roles.includes('Partner');
+    const isOperator = roles.includes('Operator');
+
+    return navItems.filter(item => {
+        if (isAdmin) return true;
+        
+        if (isPartner) {
+            return ['dashboard', 'sales_department', 'facility_manager', 'finance_core', 'partner_hub', 'Taminotchilar', 'hr_payroll'].includes(item.name);
+        }
+        
+        if (isOperator) {
+            return ['dashboard', 'sales_department', 'facility_manager', 'finance_core', 'Taminotchilar', 'hr_payroll'].includes(item.name);
+        }
+
+        return false;
+    });
+});
 
 let refreshInterval = null;
 
@@ -62,7 +83,7 @@ onUnmounted(() => {
             </div>
 
             <nav class="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-                <template v-for="item in navItems" :key="item.name">
+                <template v-for="item in filteredNavItems" :key="item.name">
                     <Link
                         :href="route(item.route)"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group hover:bg-white/5 border border-transparent hover:border-white/10"
@@ -100,7 +121,7 @@ onUnmounted(() => {
                             </div>
                             <div class="text-left hidden sm:block">
                                 <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth.user.name }}</p>
-                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">SUPER ADMIN</p>
+                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth.user.roles && $page.props.auth.user.roles.length > 0) ? $page.props.auth.user.roles[0].toUpperCase() : 'USER' }}</p>
                             </div>
                         </button>
 

@@ -1,11 +1,12 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+const page = usePage();
 const props = defineProps({
     leads: Array,
     clients: Array,
@@ -13,6 +14,11 @@ const props = defineProps({
     units: Array,
     overdueSchedules: Array,
     strictCollectionSchedules: Array,
+});
+
+const isAdmin = computed(() => {
+    const roles = page.props.auth.user.roles || [];
+    return roles.includes('Super Admin') || roles.includes('Admin');
 });
 
 const groupedStrictCollection = computed(() => {
@@ -662,10 +668,10 @@ function openQuickSmsModal(lead) {
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
                             </button>
-                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
                                 ✏️
                             </button>
-                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
                                 🗑️
                             </button>
                         </div>
@@ -695,10 +701,10 @@ function openQuickSmsModal(lead) {
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
                             </button>
-                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
                                 ✏️
                             </button>
-                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
                                 🗑️
                             </button>
                         </div>
@@ -728,10 +734,10 @@ function openQuickSmsModal(lead) {
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
                             </button>
-                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
                                 ✏️
                             </button>
-                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
                                 🗑️
                             </button>
                         </div>
@@ -761,10 +767,10 @@ function openQuickSmsModal(lead) {
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
                                 💬
                             </button>
-                            <button @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
+                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
                                 ✏️
                             </button>
-                            <button @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
+                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
                                 🗑️
                             </button>
                         </div>
@@ -842,10 +848,10 @@ function openQuickSmsModal(lead) {
                             </td>
                             <td class="p-3 text-right">
                                 <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <button @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-neon-yellow/10 border border-neon-yellow/30 text-neon-yellow flex items-center justify-center hover:bg-neon-yellow hover:text-black transition-colors shadow-[0_0_5px_rgba(252,238,9,0.2)]" title="Tahrirlash">
+                                    <button v-if="isAdmin" @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-neon-yellow/10 border border-neon-yellow/30 text-neon-yellow flex items-center justify-center hover:bg-neon-yellow hover:text-black transition-colors shadow-[0_0_5px_rgba(252,238,9,0.2)]" title="Tahrirlash">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </button>
-                                    <button @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="O'chirish">
+                                    <button v-if="isAdmin" @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="O'chirish">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>
@@ -934,7 +940,7 @@ function openQuickSmsModal(lead) {
                                     <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="Tahrirlash">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </button>
-                                    <button @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,0,0.2)]" title="O'chirish">
+                                    <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,0,0.2)]" title="O'chirish">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>

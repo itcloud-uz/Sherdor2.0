@@ -18,7 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo('/login');
-        $middleware->redirectUsersTo('/partner-panel');
+        $middleware->redirectUsersTo('/');
+
+        $middleware->alias([
+            'role.restrictions' => \App\Http\Middleware\RoleRestrictionsMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

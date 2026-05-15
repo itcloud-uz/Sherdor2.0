@@ -19,6 +19,12 @@ watchEffect(() => {
         document.documentElement.style.setProperty('--shadow-neon-primary', `${glow} rgba(${rgb}, 0.3)`);
     }
 
+    if (page.props.auth?.user) {
+        const user = page.props.auth.user;
+        document.documentElement.style.setProperty('--label-font-size', (user.label_font_size || 12) + 'px');
+        document.documentElement.style.setProperty('--label-color', user.label_color || '#CCCCCC');
+    }
+
     const themeStyle = page.props.auth?.user?.theme_style || 'apple_glass';
     document.documentElement.classList.remove('theme-apple_glass', 'theme-galaxy', 'theme-cyberpunk', 'theme-minimalist', 'theme-gold', 'theme-itcloud_cyberglass');
     document.documentElement.classList.add(`theme-${themeStyle}`);

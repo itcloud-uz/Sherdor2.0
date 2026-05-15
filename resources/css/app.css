@@ -37,4 +37,16 @@
     @apply bg-black/50 border border-white/10 rounded-xl px-4 py-2 placeholder:text-text-muted focus:outline-none transition-all;
     color: theme('colors.text-primary');
   }
+
+  /* Dynamic Label Styling - Global Override from User Settings */
+  label, .label-text {
+    font-size: var(--label-font-size, 12px) !important;
+    color: var(--label-color, rgba(255, 255, 255, 0.7)) !important;
+    transition: all 0.3s ease;
+  }
+
+  .text-text-muted {
+    color: var(--label-color, rgba(255, 255, 255, 0.4));
+    transition: color 0.3s ease;
+  }
 }

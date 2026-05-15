@@ -10,6 +10,7 @@ const page = usePage();
 const props = defineProps({
     leads: Array,
     clients: Array,
+    latestClientId: Number,
     contracts: Array,
     units: Array,
     overdueSchedules: Array,
@@ -828,6 +829,7 @@ function openQuickSmsModal(lead) {
                                         </h3>
                                         <div class="flex items-center gap-2 mt-0.5">
                                             <span class="text-[10px] font-mono text-white/60">{{ client.middle_name || '' }}</span>
+                                            <span v-if="client.id === latestClientId" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-green/20 text-neon-green border border-neon-green/50 uppercase animate-pulse shadow-[0_0_8px_#39FF14]" title="Oxirgi qo'shilgan mijoz">Oxirgi qo'shilgan</span>
                                             <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
                                         </div>
                                     </div>

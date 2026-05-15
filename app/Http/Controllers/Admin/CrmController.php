@@ -16,6 +16,7 @@ class CrmController extends Controller
     {
         $leads = Lead::latest()->limit(500)->get();
         $clients = \App\Models\Client::with('contracts.unit.floor.building')->oldest()->limit(500)->get();
+        $latestClientId = \App\Models\Client::latest()->first()?->id;
         $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $partners = \App\Models\Partner::with('user')->get();
@@ -49,6 +50,7 @@ class CrmController extends Controller
         return Inertia::render('Admin/CRM/Index', [
             'leads' => $leads,
             'clients' => $clients,
+            'latestClientId' => $latestClientId,
             'contracts' => $contracts,
             'units' => $units,
             'partners' => $partners,

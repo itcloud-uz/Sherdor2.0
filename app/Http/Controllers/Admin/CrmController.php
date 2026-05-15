@@ -15,8 +15,8 @@ class CrmController extends Controller
     public function index()
     {
         $leads = Lead::latest()->limit(500)->get();
-        $clients = \App\Models\Client::with('contracts.unit.floor.building')->oldest()->limit(500)->get();
-        $latestClientId = \App\Models\Client::latest()->first()?->id;
+        $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
+        $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
         $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
         $units = \App\Models\Unit::with('floor.building')->get();
         $partners = \App\Models\Partner::with('user')->get();

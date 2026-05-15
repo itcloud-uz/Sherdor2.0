@@ -12,6 +12,7 @@ const showModal = ref(false);
 const showPaymentModal = ref(false);
 const editMode = ref(false);
 const selectedSupplier = ref(null);
+const selectedSupplierView = ref(null);
 
 const paymentForm = ref({
     amount: '',
@@ -239,137 +240,176 @@ const sendToTelegram = (id) => {
             <!-- Hidden File Input for Document Upload -->
             <input type="file" ref="uploadInput" @change="handleFileUpload" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="s in suppliers" :key="s.id" class="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-yellow/50 transition-all group relative">
+            <!-- Master View: Table -->
+            <div v-if="!selectedSupplierView" class="glass-panel p-1 rounded-2xl border border-white/10 relative overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm font-mono border-collapse">
+                        <thead>
+                            <tr class="bg-black/40 text-text-muted text-[10px] uppercase tracking-widest border-b border-white/10">
+                                <th class="p-4 rounded-tl-xl">Kompaniya / Vakil</th>
+                                <th class="p-4">Telefon</th>
+                                <th class="p-4">Buyurtmalar</th>
+                                <th class="p-4 text-right">Balans</th>
+                                <th class="p-4 text-center rounded-tr-xl">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="s in suppliers" :key="s.id" @click="selectedSupplierView = s" class="border-b border-white/5 hover:bg-white/5 transition-all cursor-pointer group">
+                                <td class="p-4">
+                                    <div class="font-bold text-white font-display group-hover:text-neon-yellow transition-colors">{{ s.company_name || s.name }}</div>
+                                    <div class="text-[10px] text-text-muted uppercase mt-1">{{ s.name }}</div>
+                                </td>
+                                <td class="p-4 text-white">{{ s.phone || '-' }}</td>
+                                <td class="p-4 text-neon-cyan">{{ s.orders?.length || 0 }} ta</td>
+                                <td class="p-4 text-right">
+                                    <span class="block font-bold" :class="s.balance > 0 ? 'text-neon-red' : (s.balance < 0 ? 'text-neon-green' : 'text-white')">
+                                        {{ formatMoney(Math.abs(s.balance)) }}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-center" @click.stop>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all" title="Tahrirlash">
+                                            ✏️
+                                        </button>
+                                        <button @click="deleteSupplier(s.id)" class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all" title="O'chirish">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="suppliers.length === 0">
+                                <td colspan="5" class="p-12 text-center text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-xl">
+                                    Hozircha ta'minotchilar yo'q.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detail View -->
+            <div v-else class="animate-[fadeIn_0.3s_ease-out]">
+                <button @click="selectedSupplierView = null" class="mb-6 flex items-center gap-2 text-text-muted hover:text-neon-yellow transition-colors font-mono text-xs uppercase tracking-widest">
+                    <span>←</span> Ortga qaytish
+                </button>
+                
+                <div class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 relative shadow-[0_0_40px_rgba(255,255,0,0.05)]">
                     <!-- Edit & Delete Buttons -->
-                    <div class="absolute top-4 right-4 flex items-center gap-2">
-                        <a :href="route('admin.warehouse.suppliers.ledger', s.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
+                    <div class="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2">
+                        <a :href="route('admin.warehouse.suppliers.ledger', selectedSupplierView.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-white/20 text-white hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
                             PDF Hisobot
                         </a>
-                        <button @click="openAddOrderModal(s)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Yangi Buyurtma">
+                        <button @click="openAddOrderModal(selectedSupplierView)" class="px-3 py-1 bg-neon-magenta/20 border border-neon-magenta/30 text-neon-magenta hover:bg-neon-magenta hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Yangi Buyurtma">
                             + Buyurtma
                         </button>
-                        <button @click="openPaymentModal(s)" class="px-3 py-1 bg-neon-green/20 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="To'lov qilish">
+                        <button @click="openPaymentModal(selectedSupplierView)" class="px-3 py-1 bg-neon-green/20 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="To'lov qilish">
                             To'lov
-                        </button>
-                        <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all" title="Tahrirlash">
-                            ✏️
-                        </button>
-                        <button @click="deleteSupplier(s.id)" class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all" title="O'chirish">
-                            🗑️
                         </button>
                     </div>
 
-                    <div class="flex justify-between items-start mb-4 pr-20">
+                    <div class="flex justify-between items-start mb-6 pr-20 mt-8 md:mt-0">
                         <div>
-                            <h3 class="text-xl font-bold text-white font-display">{{ s.company_name || s.name }}</h3>
-                            <p class="text-[10px] font-mono text-text-muted uppercase mt-1">Vakil: {{ s.name }}</p>
+                            <h3 class="text-3xl font-bold text-white font-display">{{ selectedSupplierView.company_name || selectedSupplierView.name }}</h3>
+                            <p class="text-[12px] font-mono text-neon-yellow uppercase mt-1 tracking-widest">Vakil: {{ selectedSupplierView.name }}</p>
                         </div>
                     </div>
                     
-                    <div class="space-y-2 mb-4 bg-black/40 p-4 rounded-xl border border-white/5">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-mono text-text-muted uppercase">Telefon</span>
-                            <span class="text-sm font-bold text-white font-mono">{{ s.phone || '-' }}</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                            <span class="text-[10px] font-mono text-text-muted uppercase mb-1">Telefon</span>
+                            <span class="text-sm font-bold text-white font-mono">{{ selectedSupplierView.phone || '-' }}</span>
                         </div>
-
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-mono text-text-muted uppercase">Buyurtmalar</span>
-                            <span class="text-sm font-bold text-neon-cyan font-mono">{{ s.orders?.length || 0 }} ta</span>
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                            <span class="text-[10px] font-mono text-text-muted uppercase mb-1">Buyurtmalar</span>
+                            <span class="text-sm font-bold text-neon-cyan font-mono">{{ selectedSupplierView.orders?.length || 0 }} ta</span>
                         </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-white/10 flex justify-between items-center mb-4">
-                        <span class="text-[10px] font-mono text-text-muted uppercase">Joriy Balans</span>
-                        <div class="text-right">
-                            <span class="block text-lg font-bold font-mono" :class="s.balance > 0 ? 'text-neon-red' : (s.balance < 0 ? 'text-neon-green' : 'text-white')">
-                                {{ formatMoney(Math.abs(s.balance)) }}
-                            </span>
-                            <span class="text-[10px] font-mono uppercase tracking-widest" :class="s.balance > 0 ? 'text-neon-red/70' : (s.balance < 0 ? 'text-neon-green/70' : 'text-text-muted')">
-                                {{ s.balance > 0 ? 'Qarzimiz bor' : (s.balance < 0 ? 'Haqimiz bor' : 'Nol') }}
-                            </span>
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                            <span class="text-[10px] font-mono text-text-muted uppercase mb-1">Joriy Balans</span>
+                            <div class="text-left">
+                                <span class="block text-xl font-bold font-mono" :class="selectedSupplierView.balance > 0 ? 'text-neon-red' : (selectedSupplierView.balance < 0 ? 'text-neon-green' : 'text-white')">
+                                    {{ formatMoney(Math.abs(selectedSupplierView.balance)) }}
+                                </span>
+                                <span class="text-[10px] font-mono uppercase tracking-widest" :class="selectedSupplierView.balance > 0 ? 'text-neon-red/70' : (selectedSupplierView.balance < 0 ? 'text-neon-green/70' : 'text-text-muted')">
+                                    {{ selectedSupplierView.balance > 0 ? 'Qarzimiz bor' : (selectedSupplierView.balance < 0 ? 'Haqimiz bor' : 'Nol') }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Document Attachment Section -->
                     <div class="pt-4 border-t border-white/10">
-                        <div v-if="!s.document_path" class="flex items-center justify-center">
-                            <button @click="triggerUpload(s.id)" class="w-full py-2 bg-white/5 border border-dashed border-white/20 text-text-muted hover:text-white hover:border-white/50 text-[10px] font-mono uppercase tracking-widest rounded transition-all">
-                                📎 Hujjat Yuklash
+                        <div v-if="!selectedSupplierView.document_path" class="flex items-center justify-start max-w-sm">
+                            <button @click="triggerUpload(selectedSupplierView.id)" class="w-full py-3 bg-white/5 border border-dashed border-white/20 text-text-muted hover:text-white hover:border-white/50 text-[10px] font-mono uppercase tracking-widest rounded transition-all">
+                                📎 Hujjat Biriktirish
                             </button>
                         </div>
-                        <div v-else class="flex flex-col gap-2">
-                            <div class="flex justify-between items-center bg-neon-cyan/5 border border-neon-cyan/20 p-2 rounded">
+                        <div v-else class="flex flex-col gap-2 max-w-sm">
+                            <div class="flex justify-between items-center bg-neon-cyan/5 border border-neon-cyan/20 p-3 rounded-xl">
                                 <span class="text-[10px] font-mono text-neon-cyan uppercase flex items-center gap-2">
                                     📄 Hujjat biriktirilgan
                                 </span>
                                 <div class="flex items-center gap-2">
-                                    <a :href="'/storage/' + s.document_path" target="_blank" class="w-6 h-6 rounded bg-neon-cyan/20 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-black transition-all" title="Yuklab olish">
+                                    <a :href="'/storage/' + selectedSupplierView.document_path" target="_blank" class="w-8 h-8 rounded bg-neon-cyan/20 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-black transition-all" title="Yuklab olish">
                                         ⬇️
                                     </a>
-                                    <button @click="sendToTelegram(s.id)" class="w-6 h-6 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all" title="Telegramga yuborish">
+                                    <button @click="sendToTelegram(selectedSupplierView.id)" class="w-8 h-8 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all" title="Telegramga yuborish">
                                         ✈️
                                     </button>
                                 </div>
                             </div>
-                            <button @click="triggerUpload(s.id)" class="text-center text-[10px] font-mono text-text-muted hover:text-white transition-colors">
+                            <button @click="triggerUpload(selectedSupplierView.id)" class="text-left text-[10px] font-mono text-text-muted hover:text-white transition-colors ml-1">
                                 Yangilash
                             </button>
                         </div>
                     </div>
 
                     <!-- Ledger Table -->
-                    <div class="pt-4 border-t border-white/10 mt-4">
-                        <h4 class="text-[10px] font-mono text-text-muted uppercase mb-3">Umumiy Hisob-kitob (Akt Sверка):</h4>
-                        <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
-                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border border-white/5 rounded-lg">
-                                <thead class="sticky top-0 bg-black z-10">
-                                    <tr class="bg-white/5 text-text-muted text-[10px] uppercase">
-                                        <th class="p-2">Sana</th>
-                                        <th class="p-2">Hujjat</th>
-                                        <th class="p-2">Kategoriya / Izoh</th>
-                                        <th class="p-2 text-right">Qarz (Kirim)</th>
-                                        <th class="p-2 text-right">To'lov (Chiqim)</th>
+                    <div class="pt-8 border-t border-white/10 mt-6">
+                        <h4 class="text-xs font-mono text-white uppercase tracking-widest mb-4">Umumiy Hisob-kitob (Akt Sверка):</h4>
+                        <div class="overflow-x-auto max-h-[500px] custom-scrollbar bg-black/20 rounded-xl border border-white/5">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
+                                <thead class="sticky top-0 bg-black/90 backdrop-blur z-10">
+                                    <tr class="text-text-muted text-[10px] uppercase border-b border-white/10">
+                                        <th class="p-3">Sana</th>
+                                        <th class="p-3">Hujjat</th>
+                                        <th class="p-3">Kategoriya / Izoh</th>
+                                        <th class="p-3 text-right">Qarz (Kirim)</th>
+                                        <th class="p-3 text-right">To'lov (Chiqim)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(item, idx) in getLedger(s)" :key="idx" class="border-t border-white/5" :class="item.type === 'payment' ? 'bg-neon-green/5' : ''">
-                                        <td class="p-2 text-white">{{ item.date }}</td>
-                                        <td class="p-2">
-                                            <span v-if="item.type === 'order'" class="text-neon-cyan">{{ item.number }}</span>
-                                            <span v-else class="text-neon-green">{{ item.number }}</span>
+                                    <tr v-for="(item, idx) in getLedger(selectedSupplierView)" :key="idx" class="border-b border-white/5 hover:bg-white/5 transition-colors" :class="item.type === 'payment' ? 'bg-neon-green/5' : ''">
+                                        <td class="p-3 text-white">{{ item.date }}</td>
+                                        <td class="p-3">
+                                            <span v-if="item.type === 'order'" class="text-neon-cyan font-bold">{{ item.number }}</span>
+                                            <span v-else class="text-neon-green font-bold">{{ item.number }}</span>
                                         </td>
-                                        <td class="p-2">
+                                        <td class="p-3">
                                             <span v-if="item.type === 'order'" class="text-xs text-text-secondary">
                                                 Buyurtma ({{ item.status === 'delivered' ? 'Qabul qilingan' : 'Kutilmoqda' }})<br>
-                                                <span v-for="i in item.items" :key="i.id" class="text-[9px] block">{{ i.item_name }} ({{ i.quantity }} {{ i.unit }})</span>
+                                                <span v-for="i in item.items" :key="i.id" class="text-[9px] block mt-1 text-white/70">- {{ i.item_name }} ({{ i.quantity }} {{ i.unit }})</span>
                                             </span>
                                             <span v-else class="text-xs text-neon-green/80">
                                                 To'lov qaydi<br>
-                                                <span class="text-[9px] block text-text-muted">{{ item.notes || 'Izohsiz' }}</span>
+                                                <span class="text-[9px] block text-text-muted mt-1">{{ item.notes || 'Izohsiz' }}</span>
                                             </span>
                                         </td>
-                                        <td class="p-2 text-right text-neon-red font-bold">
+                                        <td class="p-3 text-right text-neon-red font-bold">
                                             <span v-if="item.type === 'order'">{{ formatMoney(item.amount) }}</span>
                                             <span v-else>-</span>
                                         </td>
-                                        <td class="p-2 text-right text-neon-green font-bold">
+                                        <td class="p-3 text-right text-neon-green font-bold">
                                             <span v-if="item.type === 'payment'">{{ formatMoney(item.amount) }}</span>
                                             <span v-else>-</span>
                                         </td>
                                     </tr>
-                                    <tr v-if="getLedger(s).length === 0">
-                                        <td colspan="5" class="p-4 text-center text-xs text-text-muted">Hozircha hisob-kitoblar yo'q</td>
+                                    <tr v-if="getLedger(selectedSupplierView).length === 0">
+                                        <td colspan="5" class="p-8 text-center text-xs text-text-muted">Hozircha hisob-kitoblar yo'q</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
-                </div>
-
-                <div v-if="suppliers.length === 0" class="col-span-full py-12 text-center text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-2xl glass-panel">
-                    Hozircha ta'minotchilar yo'q.
                 </div>
             </div>
         </div>

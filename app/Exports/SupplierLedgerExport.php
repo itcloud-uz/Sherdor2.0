@@ -30,7 +30,7 @@ class SupplierLedgerExport implements FromView, ShouldAutoSize, WithStyles
                         ->orderBy('transaction_date')
                         ->get();
 
-        return view('exports.supplier_ledger', [
+        return view('exports.supplier_ledger_excel', [
             'supplier' => $this->supplier,
             'orders' => $this->supplier->orders,
             'payments' => $payments

@@ -163,4 +163,116 @@ class TransactionExportController extends Controller
         $pdf = Pdf::loadHTML($html);
         return $pdf->download('tranzaksiya_' . $transaction->receipt_hash . '.pdf');
     }
+
+    public function exportCategoryPdf(Request $request, $categoryName)
+    {
+        $transactions = Transaction::whereHas('category', function($q) use ($categoryName) {
+            $q->where('name', $categoryName);
+        })->where('status', 'approved')->with(['creator', 'approver'])->latest()->get();
+
+        $totalIncome = $transactions->where('type', 'income')->sum('amount');
+        $totalExpense = $transactions->where('type', 'expense')->sum('amount');
+
+        $html = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Kategoriya Hisoboti - ' . htmlspecialchars($categoryName) . '</title>
+            <style>
+                body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #333; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                .title { font-size: 20px; font-weight: bold; text-transform: uppercase; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th { background-color: #f4f4f4; }
+                .summary { font-size: 14px; font-weight: bold; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">Hisobot: ' . htmlspecialchars($categoryName) . '</div>
+                <div>Sana: ' . now()->format('d.m.Y H:i') . '</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sana</th>
+                        <th>Turi</th>
+                        <th>Summa (UZS)</th>
+                        <th>Hisob</th>
+                        <th>Yaratuvchi</th>
+                        <th>Tasdiqlovchi</th>
+                        <th>Izoh</th>
+                    </tr>
+                </thead>
+                <tbody>';
+        
+        foreach ($transactions as $t) {
+            $html .= '<tr>
+                <td>' . Carbon::parse($t->transaction_date ?: $t->updated_at)->format('d.m.Y H:i') . '</td>
+                <td>' . strtoupper($t->type) . '</td>
+                <td>' . number_format($t->amount, 0, '.', ' ') . '</td>
+                <td>' . strtoupper($t->account_type) . '</td>
+                <td>' . ($t->creator->name ?? 'N/A') . '</td>
+                <td>' . ($t->approver->name ?? 'N/A') . '</td>
+                <td>' . htmlspecialchars($t->notes) . '</td>
+            </tr>';
+        }
+
+        $html .= '</tbody>
+            </table>
+            <div class="summary">
+                <p>Kirim (Jami): ' . number_format($totalIncome, 0, '.', ' ') . ' UZS</p>
+                <p>Chiqim (Jami): ' . number_format($totalExpense, 0, '.', ' ') . ' UZS</p>
+            </div>
+        </body>
+        </html>';
+
+        $pdf = Pdf::loadHTML($html);
+        return $pdf->download('hisobot_' . \Str::slug($categoryName) . '.pdf');
+    }
+
+    public function exportCategoryExcel(Request $request, $categoryName)
+    {
+        $transactions = Transaction::whereHas('category', function($q) use ($categoryName) {
+            $q->where('name', $categoryName);
+        })->where('status', 'approved')->with(['creator', 'approver'])->latest()->get();
+
+        $filename = 'hisobot_' . \Str::slug($categoryName) . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Sana', 'Turi', 'Summa (UZS)', 'Hisob', 'Yaratuvchi', 'Tasdiqlovchi', 'Izoh'];
+
+        $callback = function() use($transactions, $columns) {
+            $file = fopen('php://output', 'w');
+            // Add BOM to fix UTF-8 in Excel
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, $columns, ';');
+
+            foreach ($transactions as $t) {
+                $row = [
+                    Carbon::parse($t->transaction_date ?: $t->updated_at)->format('d.m.Y H:i'),
+                    strtoupper($t->type),
+                    $t->amount,
+                    strtoupper($t->account_type),
+                    $t->creator->name ?? 'N/A',
+                    $t->approver->name ?? 'N/A',
+                    $t->notes
+                ];
+                fputcsv($file, $row, ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

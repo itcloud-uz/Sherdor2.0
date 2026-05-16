@@ -30,7 +30,8 @@ class FinanceController extends Controller
             'machineries' => \App\Models\Machinery::latest()->get(),
             'buildings' => \App\Models\Building::latest()->get(),
             'clients' => \App\Models\Client::latest()->limit(500)->get(),
-            'partners' => \App\Models\Partner::with('user')->latest()->get()
+            'partners' => \App\Models\Partner::with('user')->latest()->get(),
+            'fixedAssets' => \App\Models\FixedAsset::latest()->get()
         ]);
     }
 
@@ -396,6 +397,16 @@ class FinanceController extends Controller
                     $supplier->increment('balance', $supplierAmount);
                 }
             }
+            if ($transaction->fixed_asset_id && $transaction->type === 'expense') {
+                $partners = \App\Models\Partner::all();
+                if ($partners->count() > 0) {
+                    $splitAmount = $transaction->amount / $partners->count();
+                    foreach ($partners as $p) {
+                        $p->accountable_balance += $splitAmount;
+                        $p->save();
+                    }
+                }
+            }
         }
 
         if ($transaction->contract_id && $transaction->type === 'income') {
@@ -538,13 +549,50 @@ class FinanceController extends Controller
                 $partner = \App\Models\Partner::find($transaction->partner_id);
                 if ($partner) {
                     if ($transaction->category === 'Partner Advance') {
-                        // Originally added to accountable balance, so deduct
                         $partner->accountable_balance -= $transaction->amount;
                     } else {
-                        // Originally deducted from accountable balance, so add back
                         $partner->accountable_balance += $transaction->amount;
                     }
                     $partner->save();
+                }
+            }
+
+            // Revert Fixed Asset Splits
+            if ($transaction->fixed_asset_id && $transaction->type === 'expense') {
+                $partners = \App\Models\Partner::all();
+                if ($partners->count() > 0) {
+                    $splitAmount = $transaction->amount / $partners->count();
+                    foreach ($partners as $p) {
+                        $p->accountable_balance -= $splitAmount;
+                        $p->save();
+                    }
+                }
+            }
+
+            // Revert CRM Contract Payment Schedules
+            if ($transaction->contract_id && $transaction->type === 'income') {
+                $amountToRevert = $transaction->amount;
+                $schedules = \App\Models\PaymentSchedule::where('contract_id', $transaction->contract_id)
+                    ->where('paid_amount', '>', 0)
+                    ->orderBy('due_date', 'desc')
+                    ->get();
+
+                foreach ($schedules as $schedule) {
+                    if ($amountToRevert <= 0) break;
+                    
+                    if ($schedule->paid_amount <= $amountToRevert) {
+                        $amountToRevert -= $schedule->paid_amount;
+                        $schedule->paid_amount = 0;
+                        $schedule->status = 'pending';
+                        $schedule->actual_payment_date = null;
+                        $schedule->payment_method = null;
+                        $schedule->original_payment_amount = null;
+                    } else {
+                        $schedule->paid_amount -= $amountToRevert;
+                        $schedule->status = 'partial';
+                        $amountToRevert = 0;
+                    }
+                    $schedule->save();
                 }
             }
         }

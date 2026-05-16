@@ -16,7 +16,6 @@ return new class extends Migration
             ['name' => 'Sarmoya (Investitsiya)', 'type' => 'income'],
             ['name' => 'Qarz tushumi', 'type' => 'income'],
             ['name' => 'Boshqa daromadlar', 'type' => 'income'],
-            ['name' => 'Oylik maoshlar', 'type' => 'expense'],
             ['name' => 'Ishchi To\'lovi (Avans/Oylik)', 'type' => 'expense'],
             ['name' => 'Texnika To\'lovi', 'type' => 'expense'],
             ['name' => 'Ta\'minotchi To\'lovi', 'type' => 'expense'],
@@ -25,7 +24,7 @@ return new class extends Migration
             ['name' => 'Ofis xarajatlari', 'type' => 'expense'],
             ['name' => 'Soliq va to\'lovlar', 'type' => 'expense'],
             ['name' => 'Qarz qaytarish', 'type' => 'expense'],
-            ['name' => 'Ijara', 'type' => 'expense'],
+            ['name' => 'Asosiy vositalar', 'type' => 'expense'],
             ['name' => 'Boshqa xarajatlar', 'type' => 'expense']
         ];
 

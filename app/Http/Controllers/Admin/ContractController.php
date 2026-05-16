@@ -112,19 +112,21 @@ class ContractController extends Controller
                 ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
             );
 
-            \App\Models\Transaction::create([
+            $transaction = \App\Models\Transaction::create([
                 'type' => 'income',
                 'amount' => $validated['actual_paid_amount'],
                 'account_type' => $paymentMethod,
                 'contract_id' => $contract->id,
                 'category_id' => $incomeCategory->id,
-                'status' => 'pending',
+                'status' => 'approved',
                 'transaction_date' => $baseDate,
                 'created_at' => $baseDate,
                 'updated_at' => $baseDate,
                 'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
                 'created_by' => auth()->id() ?? 1,
             ]);
+
+            \App\Models\CompanyBalance::addIncome($validated['actual_paid_amount'], $paymentMethod);
         }
 
         // Also mark unit as reserved

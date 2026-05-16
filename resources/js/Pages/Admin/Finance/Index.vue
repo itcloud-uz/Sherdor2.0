@@ -34,7 +34,8 @@ const props = defineProps({
     machineries: Array,
     buildings: Array,
     categories: Array,
-    clients: Array
+    clients: Array,
+    fixedAssets: Array
 });
 
 const activeTab = ref(0);
@@ -46,7 +47,8 @@ const tabs = [
     { id: 3, name: 'create_transaction', icon: '💸' },
     { id: 4, name: 'qarzlar', icon: '📉' },
     { id: 5, name: 'Ta\'minotchilar', icon: '🏢' },
-    { id: 6, name: 'O\'tkazmalar', icon: '🔄' }
+    { id: 6, name: 'O\'tkazmalar', icon: '🔄' },
+    { id: 7, name: 'Hisobot (Kategoriya)', icon: '📊' }
 ];
 
 // Split transactions
@@ -133,6 +135,7 @@ const form = ref({
     machinery_id: '',
     building_id: '',
     supplier_id: '',
+    fixed_asset_id: '',
     category_id: '',
     category_name: '',
     transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16),
@@ -178,6 +181,7 @@ const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\
 const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material'));
 const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz'));
 const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner'));
+const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
 const pendingRefunds = computed(() => {
     return (props.transactions || []).filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
@@ -255,7 +259,7 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -526,6 +530,35 @@ function submitSupplierPayment() {
         onError: () => isProcessing.value = false
     });
 }
+const categoriesSummary = computed(() => {
+    if (!props.transactions) return [];
+    
+    const approvedTxns = props.transactions.filter(t => t.status === 'approved');
+    const groups = {};
+    
+    approvedTxns.forEach(t => {
+        const catName = t.category?.name || 'Noma\'lum';
+        if (!groups[catName]) {
+            groups[catName] = {
+                name: catName,
+                total_income: 0,
+                total_expense: 0,
+                transactions: []
+            };
+        }
+        
+        if (t.type === 'income') {
+            groups[catName].total_income += parseFloat(t.amount);
+        } else if (t.type === 'expense') {
+            groups[catName].total_expense += parseFloat(t.amount);
+        }
+        
+        groups[catName].transactions.push(t);
+    });
+    
+    return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
+});
+
 </script>
 
 <template>
@@ -954,6 +987,14 @@ function submitSupplierPayment() {
                         </select>
                     </div>
 
+                    <div v-if="requiresFixedAsset">
+                        <label class="block text-xs font-mono text-text-muted mb-1 text-neon-cyan">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
+                        <select v-model="form.fixed_asset_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="f in fixedAssets" :key="f.id" :value="f.id">{{ f.name }} ({{ f.type }})</option>
+                        </select>
+                    </div>
+
                     <div v-if="requiresMachinery">
                         <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang (Neyron bog'lama)</label>
                         <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
@@ -1308,6 +1349,41 @@ function submitSupplierPayment() {
             </div>
         </div>
 
+
+            <!-- TAB 7: Kategoriya Hisoboti -->
+            <div v-if="activeTab === 7" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-display font-bold text-white mb-2">Hisobotlar (Kategoriya bo'yicha)</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div v-for="cat in categoriesSummary" :key="cat.name" class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold text-white font-display uppercase tracking-widest">{{ cat.name }}</h3>
+                            <div class="flex gap-2">
+                                <a :href="route('admin.finance.transactions.export.category.excel', { category: cat.name })" target="_blank" class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded text-[10px] font-mono hover:bg-green-500 hover:text-white transition-colors">EXCEL</a>
+                                <a :href="route('admin.finance.transactions.export.category.pdf', { category: cat.name })" target="_blank" class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/50 rounded text-[10px] font-mono hover:bg-red-500 hover:text-white transition-colors">PDF</a>
+                            </div>
+                        </div>
+                        <div class="space-y-2 font-mono text-sm">
+                            <div class="flex justify-between text-neon-cyan" v-if="cat.total_income > 0">
+                                <span>Kirim (Jami):</span>
+                                <span>{{ $currency(cat.total_income) }}</span>
+                            </div>
+                            <div class="flex justify-between text-neon-red" v-if="cat.total_expense > 0">
+                                <span>Chiqim (Jami):</span>
+                                <span>{{ $currency(cat.total_expense) }}</span>
+                            </div>
+                            <div class="text-xs text-text-muted mt-2 pt-2 border-t border-white/10">
+                                Tranzaksiyalar soni: {{ cat.transactions.length }} ta
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="categoriesSummary.length === 0" class="py-12 text-center text-text-muted font-mono text-sm border-dashed border border-white/10 rounded-xl">
+                    Hozircha hisobot mavjud emas.
+                </div>
+            </div>
 
         <!-- Supplier Payment Modal -->
         <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

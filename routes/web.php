@@ -113,6 +113,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/finance/liabilities/{liability}/payments', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiabilityPayment'])->name('finance.liabilities.payments.store');
     
     Route::get('/finance/transactions/{transaction}/export/pdf', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportPdf'])->name('finance.transactions.export.pdf');
+    Route::get('/finance/category-export/{category}/excel', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportCategoryExcel'])->name('finance.transactions.export.category.excel');
+    Route::get('/finance/category-export/{category}/pdf', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportCategoryPdf'])->name('finance.transactions.export.category.pdf');
     
     // Liability Exports
     Route::get('/finance/liabilities/{liability}/export/pdf', [\App\Http\Controllers\Admin\LiabilityExportController::class, 'exportPdf'])->name('finance.liabilities.export.pdf');

@@ -387,6 +387,8 @@ function createContract() {
 const selectedUnit = computed(() => {
     if (!contractForm.value.unit_id) return null;
     return props.units.find(u => u.id === contractForm.value.unit_id);
+});
+
 const unitSearchQuery = ref('');
 const showUnitDropdown = ref(false);
 

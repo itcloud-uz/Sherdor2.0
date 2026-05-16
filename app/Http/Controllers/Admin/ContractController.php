@@ -48,8 +48,11 @@ class ContractController extends Controller
         
         if (!empty($validated['created_at'])) {
             $contract->created_at = $validated['created_at'];
+            $contract->updated_at = $validated['created_at'];
+            $contract->timestamps = false; // Disable timestamps for this specific insert
         }
         $contract->save();
+        $contract->timestamps = true;
 
         $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateTimeString() : now()->toDateTimeString();
 
@@ -319,5 +322,18 @@ class ContractController extends Controller
             ->get();
 
         return response()->json($contracts);
+    }
+
+    public function forceActivate(Contract $contract)
+    {
+        $contract->update(['status' => 'active', 'ai_verification_status' => 'passed']);
+        if ($contract->unit) {
+            $contract->unit->update(['status' => 'sold']);
+        }
+
+        return response()->json([
+            'message' => 'Shartnoma qo\'lda aktivlashtirildi va sotildi deb belgilandi.',
+            'contract' => $contract
+        ]);
     }
 }

@@ -160,6 +160,25 @@ const cancelContract = async (id) => {
     }
 };
 
+const forceActivateContract = async () => {
+    if (!confirm("Haqiqatan ham ushbu shartnomani qo'lda 'Sotildi' holatiga o'tkazmoqchimisiz?")) return;
+    
+    isProcessing.value = true;
+    try {
+        await axios.post(route('admin.contracts.force_activate', selectedContract.value.id));
+        router.reload({ only: ['contracts'] });
+        
+        // Update local state to reflect changes instantly
+        selectedContract.value.status = 'active';
+        selectedContract.value.ai_verification_status = 'passed';
+        
+    } catch (e) {
+        alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));
+    } finally {
+        isProcessing.value = false;
+    }
+};
+
 function recalculatePenalty() {
     isProcessing.value = true;
     router.post(route('admin.crm.contracts.recalculate_penalty', selectedContract.value.id), {
@@ -675,7 +694,7 @@ function openQuickSmsModal(lead) {
                     :disabled="isProcessing"
                     class="flex items-center gap-2 px-4 py-1.5 bg-black/40 border border-white/20 text-neon-cyan hover:bg-neon-cyan hover:text-black rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50 group"
                 >
-                    <span class="group-hover:rotate-180 transition-transform duration-500 inline-block">🔄</span> 
+                    <span class="group-hover:rotate-180 transition-transform duration-500 inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span> 
                     {{ $t('refresh_live') }}
                 </button>
             </div>
@@ -705,16 +724,16 @@ function openQuickSmsModal(lead) {
                         <!-- Action Bar -->
                         <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
-                                📞
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             </button>
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
-                                💬
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
-                                ✏️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
-                                🗑️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
                     </div>
@@ -738,16 +757,16 @@ function openQuickSmsModal(lead) {
                         <!-- Action Bar -->
                         <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
-                                📞
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             </button>
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
-                                💬
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
-                                ✏️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
-                                🗑️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
                     </div>
@@ -771,16 +790,16 @@ function openQuickSmsModal(lead) {
                         <!-- Action Bar -->
                         <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
-                                📞
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             </button>
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
-                                💬
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
-                                ✏️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
-                                🗑️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
                     </div>
@@ -804,16 +823,16 @@ function openQuickSmsModal(lead) {
                         <!-- Action Bar -->
                         <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-white/10 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-green/10 text-neon-green hover:bg-neon-green/30 border border-neon-green/20 transition-colors shadow-[0_0_5px_rgba(57,255,20,0.1)] text-xs" title="Qo'ng'iroq qilish">
-                                📞
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             </button>
                             <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-cyan/10 text-neon-cyan hover:bg-neon-cyan/30 border border-neon-cyan/20 transition-colors shadow-[0_0_5px_rgba(0,240,255,0.1)] text-xs" title="SMS Yuborish">
-                                💬
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/30 border border-neon-yellow/20 transition-colors shadow-[0_0_5px_rgba(252,238,9,0.1)] text-xs" title="Tahrirlash">
-                                ✏️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-neon-red/10 text-neon-red hover:bg-neon-red/30 border border-neon-red/20 transition-colors shadow-[0_0_5px_rgba(255,0,60,0.1)] text-xs" title="O'chirish">
-                                🗑️
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
                     </div>
@@ -827,10 +846,10 @@ function openQuickSmsModal(lead) {
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-display font-bold text-white">{{ $t('clients_database') }}</h2>
                     <a :href="route('admin.crm.export.clients.excel')" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
-                        📊 EXCEL
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> EXCEL
                     </a>
                     <a :href="route('admin.crm.export.clients.pdf')" target="_blank" class="px-4 py-2 bg-neon-red/20 border border-neon-red text-neon-red text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-red hover:text-white transition-all shadow-[0_0_10px_rgba(255,0,0,0.2)]">
-                        📄 PDF
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> PDF
                     </a>
                     <button @click="openCreateClientModal" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
                         + {{ $t('add') }} {{ $t('client') }}
@@ -1116,7 +1135,7 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish" @click.stop>
-                                                📞
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                             </a>
                                             <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta flex items-center justify-center hover:bg-neon-magenta hover:text-white transition-colors shadow-[0_0_5px_rgba(255,0,60,0.2)]" title="SMS Yuborish">
                                                 📱
@@ -1174,7 +1193,7 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_5px_rgba(57,255,20,0.2)]" title="Qo'ng'iroq qilish" @click.stop>
-                                                📞
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                             </a>
                                             <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan flex items-center justify-center hover:bg-neon-cyan hover:text-white transition-colors shadow-[0_0_5px_rgba(0,240,255,0.2)]" title="SMS Yuborish">
                                                 📱
@@ -1216,16 +1235,16 @@ function openQuickSmsModal(lead) {
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div class="flex items-center gap-3">
                             <a :href="`/admin/crm/ledger/${selectedContract.id}/export/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-red/20 border border-neon-red text-neon-red text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-red hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,60,0.2)]">
-                                📄 PDF
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> PDF
                             </a>
                             <a :href="`/admin/crm/contracts/${selectedContract.id}/export-doc/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple text-neon-purple text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-purple hover:text-black transition-all shadow-[0_0_10px_rgba(176,38,255,0.2)]">
-                                📄 Shartnoma
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Shartnoma
                             </a>
                             <a :href="`/admin/crm/ledger/${selectedContract.id}/export/docx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-blue/20 border border-neon-blue text-neon-blue text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_10px_rgba(0,102,255,0.2)]">
                                 📝 Word
                             </a>
                             <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
-                                📊 Excel
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Excel
                             </a>
                             <button @click="cancelContract(selectedContract.id)" :disabled="isProcessing" class="px-4 py-2 bg-neon-red/20 border border-neon-red text-neon-red text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-red hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,0,0.2)] disabled:opacity-50">
                                 🚫 Bekor qilish
@@ -1237,7 +1256,7 @@ function openQuickSmsModal(lead) {
                                 <label class="text-xs font-mono text-text-muted uppercase tracking-widest">{{ $t('daily_penalty_rate') }}</label>
                                 <input type="number" step="0.01" v-model="selectedContract.daily_penalty_rate" class="glass-input w-20 text-center text-neon-cyan font-bold p-1">
                                 <button @click="recalculatePenalty" :disabled="isProcessing" class="px-3 py-1 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50">
-                                    🔄 {{ $t('calculate') }}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> {{ $t('calculate') }}
                                 </button>
                             </div>
                             <div class="hidden md:block h-8 border-r border-white/10 mx-2"></div>
@@ -1272,7 +1291,7 @@ function openQuickSmsModal(lead) {
                     <div class="glass-card p-4 rounded-xl border border-neon-cyan/20 mb-8 bg-black/40 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 rounded-full bg-neon-cyan/20 border border-neon-cyan flex items-center justify-center">
-                                <span class="text-neon-cyan text-xl">🤖</span>
+                                <span class="text-neon-cyan text-xl"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg></span>
                             </div>
                             <div>
                                 <h4 class="text-white font-bold text-sm tracking-widest uppercase">{{ $t('ai_signature_verification') }}</h4>
@@ -1294,7 +1313,10 @@ function openQuickSmsModal(lead) {
                             
                             <input type="file" ref="fileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png" @change="uploadSignature">
                             <button @click="fileInput.click()" :disabled="isProcessing" class="px-6 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold text-xs uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50">
-                                📤 Yuklash
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Yuklash
+                            </button>
+                            <button v-if="selectedContract.status !== 'active'" @click="forceActivateContract" :disabled="isProcessing" class="px-6 py-2 bg-neon-green/20 border border-neon-green text-neon-green font-bold text-xs uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)] disabled:opacity-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sotildi qilish
                             </button>
                         </div>
                     </div>
@@ -1345,7 +1367,7 @@ function openQuickSmsModal(lead) {
                                         </div>
                                         <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
                                             {{ $currency(schedule.paid_amount || 0) }}
-                                            <span class="text-[10px] opacity-0 group-hover:opacity-100 text-neon-cyan transition-opacity border border-neon-cyan/50 rounded px-1">✏️</span>
+                                            <span class="text-[10px] opacity-0 group-hover:opacity-100 text-neon-cyan transition-opacity border border-neon-cyan/50 rounded px-1"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
                                         </div>
                                     </td>
                                     <td class="p-3 text-sm font-mono text-white/80">

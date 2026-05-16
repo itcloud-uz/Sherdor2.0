@@ -21,7 +21,7 @@
 
     <div class="title">
         ҲИССАДОРЛИК ШАРТЛАРИ АСОСИДА УЙ-ЖОЙ ҚУРИШ<br>
-        ШАРТНОМАСИ № {{ $contract->id }}
+        ШАРТНОМАСИ № {{ $contract->contract_number ?: str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}
     </div>
 
     <table style="border: none; margin-bottom: 15px;">

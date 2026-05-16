@@ -31,7 +31,7 @@
             <td width="15%"><strong>Mijoz F.I.Sh:</strong></td>
             <td width="35%">{{ $contract->client->full_name }}</td>
             <td width="20%"><strong>Shartnoma ID:</strong></td>
-            <td width="30%">#{{ str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</td>
+            <td width="30%">{{ $contract->contract_number ?: '#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</td>
         </tr>
         <tr>
             <td><strong>Telefon:</strong></td>

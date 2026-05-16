@@ -90,6 +90,63 @@ function performSearch() {
     searchResults.value = results;
 }
 
+function downloadUnitsCSV() {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return;
+    
+    const headers = ['Bino nomi', 'Qavat', 'Raqami', 'Turi', 'Maydoni (m2)', 'Xonalar', 'Narxi', 'Statusi'];
+    let csvContent = "\uFEFF" + headers.join(';') + "\r\n";
+    
+    const sortedFloors = [...selectedBuilding.value.floors].sort((a, b) => a.floor_number - b.floor_number);
+    
+    sortedFloors.forEach(floor => {
+        if (!floor.units) return;
+        
+        const sortedUnits = [...floor.units].sort((a, b) => {
+            const numA = String(a.unit_number).replace(/\D/g, '');
+            const numB = String(b.unit_number).replace(/\D/g, '');
+            return (Number(numA) || 0) - (Number(numB) || 0);
+        });
+        
+        sortedUnits.forEach(unit => {
+            const buildingName = selectedBuilding.value.name;
+            const floorNum = floor.floor_number;
+            const unitType = unit.type === 'commercial' ? "Do'kon" : 'Xonadon';
+            const unitNumber = (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D-') ? 'D-' : '') + unit.unit_number;
+            const area = unit.area_sqm || 0;
+            const rooms = unit.rooms_count || 1;
+            const price = unit.price || 0;
+            
+            let statusLabel = unit.status;
+            if (statusLabel === 'available') statusLabel = "Bo'sh";
+            else if (statusLabel === 'reserved') statusLabel = 'Band qilingan';
+            else if (statusLabel === 'sold') statusLabel = 'Sotilgan';
+            
+            const row = [
+                `"${buildingName}"`,
+                `"${floorNum}-qavat"`,
+                `"${unitNumber}"`,
+                `"${unitType}"`,
+                `"${area}"`,
+                `"${rooms}"`,
+                `"${price}"`,
+                `"${statusLabel}"`
+            ];
+            
+            csvContent += row.join(';') + "\r\n";
+        });
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${selectedBuilding.value.name}_obyektlar_holati.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 const showSellUnitModal = ref(false);
 const isProcessingContract = ref(false);
 const currentSellingUnit = ref(null);
@@ -633,6 +690,10 @@ const progressSeries = computed(() => {
                         <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
                             <!-- Header Actions -->
                             <div class="flex justify-end items-center gap-4 mb-4 w-full">
+                                <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-neon-green/10 border border-neon-green/30 text-neon-green text-[10px] font-mono rounded hover:bg-neon-green hover:text-black transition-all flex items-center gap-2 shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    EXCEL YUKLAB OLISH
+                                </button>
                                 <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
                                     + QAVAT
                                 </button>

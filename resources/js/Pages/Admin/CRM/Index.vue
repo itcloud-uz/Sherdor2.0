@@ -387,22 +387,45 @@ function createContract() {
 const selectedUnit = computed(() => {
     if (!contractForm.value.unit_id) return null;
     return props.units.find(u => u.id === contractForm.value.unit_id);
-});
-
 const unitSearchQuery = ref('');
 const showUnitDropdown = ref(false);
+
+function formatUnitDisplay(u) {
+    const isCommercial = u.type === 'commercial';
+    const typeLabel = isCommercial ? "Do'kon" : 'Xonadon';
+    const prefix = isCommercial && !String(u.unit_number).startsWith('D-') ? 'D-' : '';
+    return `${typeLabel} ${prefix}${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number !== undefined && u.floor?.floor_number !== null ? u.floor.floor_number : ''})`;
+}
+
 const filteredUnits = computed(() => {
-    if (!unitSearchQuery.value) return props.units;
-    const q = unitSearchQuery.value.toLowerCase();
-    return props.units.filter(u => {
-        const text = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
-        return text.toLowerCase().includes(q);
+    let result = props.units;
+    
+    // Search filtering
+    if (unitSearchQuery.value) {
+        const q = unitSearchQuery.value.toLowerCase();
+        result = result.filter(u => {
+            const text = formatUnitDisplay(u);
+            return text.toLowerCase().includes(q);
+        });
+    }
+    
+    // Sort by floor_number, then unit_number
+    return [...result].sort((a, b) => {
+        const floorA = a.floor?.floor_number || 0;
+        const floorB = b.floor?.floor_number || 0;
+        if (floorA !== floorB) {
+            return floorA - floorB;
+        }
+        // If same floor, sort by unit number
+        const numA = String(a.unit_number).replace(/\D/g, '');
+        const numB = String(b.unit_number).replace(/\D/g, '');
+        return (Number(numA) || 0) - (Number(numB) || 0);
     });
 });
 
 function selectUnit(u) {
     contractForm.value.unit_id = u.id;
-    unitSearchQuery.value = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
+    unitSearchQuery.value = formatUnitDisplay(u);
     showUnitDropdown.value = false;
 }
 
@@ -410,7 +433,7 @@ watch(() => contractForm.value.unit_id, (newVal) => {
     if (newVal) {
         const u = props.units.find(un => un.id === newVal);
         if (u) {
-            unitSearchQuery.value = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
+            unitSearchQuery.value = formatUnitDisplay(u);
         }
     } else {
         unitSearchQuery.value = '';
@@ -1597,7 +1620,7 @@ function openQuickSmsModal(lead) {
                                 @mousedown.prevent="selectUnit(u)"
                                 class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-sm text-white transition-colors"
                             >
-                                {{ $t('unit') }} {{ u.unit_number }} - {{ u.floor?.building?.name || '' }} (Qavat: {{ u.floor?.floor_number || '' }})
+                                {{ formatUnitDisplay(u) }}
                             </div>
                             <div v-if="filteredUnits.length === 0" class="px-4 py-2 text-sm text-text-muted italic">
                                 Xonadon topilmadi...

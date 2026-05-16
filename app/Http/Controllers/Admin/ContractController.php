@@ -106,7 +106,7 @@ class ContractController extends Controller
                 $partner->accountable_balance -= $validated['total_amount'];
                 $partner->save();
             }
-        } else if (!empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0) {
+        } else if (!empty($validated['down_payment']) && $validated['down_payment'] > 0) {
             $paymentMethod = $validated['payment_method'] ?? 'bank';
             
             // Create a pending transaction for Action Center to approve
@@ -117,7 +117,7 @@ class ContractController extends Controller
 
             $transaction = \App\Models\Transaction::create([
                 'type' => 'income',
-                'amount' => $validated['actual_paid_amount'],
+                'amount' => $validated['down_payment'],
                 'account_type' => $paymentMethod,
                 'contract_id' => $contract->id,
                 'category_id' => $incomeCategory->id,
@@ -125,11 +125,11 @@ class ContractController extends Controller
                 'transaction_date' => $baseDate,
                 'created_at' => $baseDate,
                 'updated_at' => $baseDate,
-                'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
+                'notes' => 'Shartnoma yaratish paytidagi boshlang\'ich to\'lov (' . $paymentMethod . ')',
                 'created_by' => auth()->id() ?? 1,
             ]);
 
-            \App\Models\CompanyBalance::addIncome($validated['actual_paid_amount'], $paymentMethod);
+            \App\Models\CompanyBalance::addIncome($validated['down_payment'], $paymentMethod);
         }
 
         // Also mark unit as reserved
@@ -305,7 +305,7 @@ class ContractController extends Controller
         ]);
     }
 
-    public function cancel(Contract $contract)
+    public function cancel(\App\Models\Contract $contract)
     {
         $contract->cancelContract();
 
@@ -324,7 +324,7 @@ class ContractController extends Controller
         return response()->json($contracts);
     }
 
-    public function forceActivate(Contract $contract)
+    public function forceActivate(\App\Models\Contract $contract)
     {
         $contract->update(['status' => 'active', 'ai_verification_status' => 'passed']);
         if ($contract->unit) {

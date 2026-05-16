@@ -340,7 +340,7 @@ function editContract(contract) {
         created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
         actual_paid_amount: '',
         payment_method: 'bank',
-        floor: contract.floor || contract.unit?.floor?.number || '',
+        floor: contract.floor || contract.unit?.floor?.floor_number || '',
         rooms: contract.rooms || contract.unit?.rooms_count || ''
     };
     showCreateContractModal.value = true;
@@ -389,6 +389,34 @@ const selectedUnit = computed(() => {
     return props.units.find(u => u.id === contractForm.value.unit_id);
 });
 
+const unitSearchQuery = ref('');
+const showUnitDropdown = ref(false);
+const filteredUnits = computed(() => {
+    if (!unitSearchQuery.value) return props.units;
+    const q = unitSearchQuery.value.toLowerCase();
+    return props.units.filter(u => {
+        const text = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
+        return text.toLowerCase().includes(q);
+    });
+});
+
+function selectUnit(u) {
+    contractForm.value.unit_id = u.id;
+    unitSearchQuery.value = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
+    showUnitDropdown.value = false;
+}
+
+watch(() => contractForm.value.unit_id, (newVal) => {
+    if (newVal) {
+        const u = props.units.find(un => un.id === newVal);
+        if (u) {
+            unitSearchQuery.value = `Unit ${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number || ''})`;
+        }
+    } else {
+        unitSearchQuery.value = '';
+    }
+});
+
 // Update contract amounts when unit changes
 watch(() => contractForm.value.unit_id, (newUnitId) => {
     if (newUnitId && !isEditingContract.value) {
@@ -398,7 +426,7 @@ watch(() => contractForm.value.unit_id, (newUnitId) => {
             const area = Number(u.area_sqm) || 0;
             contractForm.value.price_per_sqm = area > 0 ? (contractForm.value.total_amount / area).toFixed(2) : 0;
             
-            contractForm.value.floor = u.floor?.number || '';
+            contractForm.value.floor = u.floor?.floor_number || '';
             contractForm.value.rooms = u.rooms_count || '';
             
             if (contractForm.value.payment_type === 'full') {
@@ -1545,12 +1573,36 @@ function openQuickSmsModal(lead) {
                             <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="relative">
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_unit') }}</label>
-                        <select v-model="contractForm.unit_id" class="glass-input w-full bg-black/50" required>
-                            <option value="" disabled>{{ $t('select_unit') }}</option>
-                            <option v-for="u in units" :key="u.id" :value="u.id">{{ $t('unit') }} {{ u.unit_number }} - {{ u.floor?.building?.name }} (Qavat: {{ u.floor?.number }})</option>
-                        </select>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                v-model="unitSearchQuery" 
+                                @focus="showUnitDropdown = true"
+                                @blur="showUnitDropdown = false"
+                                class="glass-input w-full bg-black/50 pr-8" 
+                                placeholder="Xonadonni qidiring (masalan: A503)..."
+                                required
+                            >
+                            <input type="hidden" v-model="contractForm.unit_id">
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                            </div>
+                        </div>
+                        <div v-if="showUnitDropdown" class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-black/90 border border-white/20 rounded-lg shadow-xl backdrop-blur-xl">
+                            <div 
+                                v-for="u in filteredUnits" 
+                                :key="u.id" 
+                                @mousedown.prevent="selectUnit(u)"
+                                class="px-4 py-2 hover:bg-neon-cyan/20 cursor-pointer text-sm text-white transition-colors"
+                            >
+                                {{ $t('unit') }} {{ u.unit_number }} - {{ u.floor?.building?.name || '' }} (Qavat: {{ u.floor?.floor_number || '' }})
+                            </div>
+                            <div v-if="filteredUnits.length === 0" class="px-4 py-2 text-sm text-text-muted italic">
+                                Xonadon topilmadi...
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Mulk Turi Selection -->

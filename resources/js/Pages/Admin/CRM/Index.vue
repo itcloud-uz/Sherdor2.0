@@ -826,6 +826,12 @@ function openQuickSmsModal(lead) {
             <div class="sticky top-0 z-20 bg-[#0d1117]/80 backdrop-blur-xl px-6 py-5 -mx-6 -mt-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 shadow-lg rounded-t-2xl">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-display font-bold text-white">{{ $t('clients_database') }}</h2>
+                    <a :href="route('admin.crm.export.clients.excel')" class="px-4 py-2 bg-neon-green/20 border border-neon-green text-neon-green text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                        📊 EXCEL
+                    </a>
+                    <a :href="route('admin.crm.export.clients.pdf')" target="_blank" class="px-4 py-2 bg-neon-red/20 border border-neon-red text-neon-red text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-red hover:text-white transition-all shadow-[0_0_10px_rgba(255,0,0,0.2)]">
+                        📄 PDF
+                    </a>
                     <button @click="openCreateClientModal" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
                         + {{ $t('add') }} {{ $t('client') }}
                     </button>

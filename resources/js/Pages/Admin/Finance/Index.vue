@@ -35,6 +35,7 @@ const props = defineProps({
     buildings: Array,
     categories: Array,
     clients: Array,
+    partners: Array,
     fixedAssets: Array
 });
 

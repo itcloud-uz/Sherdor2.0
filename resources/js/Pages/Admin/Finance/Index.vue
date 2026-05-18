@@ -36,7 +36,9 @@ const props = defineProps({
     categories: Array,
     clients: Array,
     partners: Array,
-    fixedAssets: Array
+    fixedAssets: Array,
+    brigades: Array,
+    machineOwners: Array
 });
 
 const activeTab = ref(0);
@@ -133,7 +135,9 @@ const form = ref({
     client_id: '',
     partner_id: '',
     worker_id: '',
+    brigade_id: '',
     machinery_id: '',
+    machine_owner_id: '',
     building_id: '',
     supplier_id: '',
     fixed_asset_id: '',
@@ -176,6 +180,8 @@ const selectedCategoryName = computed(() => {
     return cat ? cat.name.toLowerCase() : '';
 });
 
+const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma'));
+const requiresMachineOwner = computed(() => selectedCategoryName.value.includes('texnika') || selectedCategoryName.value.includes('arendator'));
 const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
 const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
 const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qarz qaytarish'));
@@ -245,6 +251,12 @@ function submitTransaction() {
     if (requiresPartner.value || form.value.account_type === 'partner') {
         form.value.target_type = 'partner';
         form.value.target_id = form.value.partner_id;
+        } else if (requiresMachineOwner.value) {
+        form.value.target_type = 'machine_owner';
+        form.value.target_id = form.value.machine_owner_id;
+    } else if (requiresBrigade.value) {
+        form.value.target_type = 'brigade';
+        form.value.target_id = form.value.brigade_id;
     } else if (requiresWorker.value) {
         form.value.target_type = 'worker';
         form.value.target_id = form.value.worker_id;
@@ -260,7 +272,9 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '', partner_id: '', machinery_id: '', building_id: '', supplier_id: '', fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
+            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '',
+    brigade_id: '', partner_id: '', machinery_id: '',
+    machine_owner_id: '', building_id: '', supplier_id: '', fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false

@@ -21,7 +21,9 @@ class HrController extends Controller
             'users' => \App\Models\User::with('roles')->get(),
             'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
             'workers' => Worker::all(),
+            'brigades' => \App\Models\Brigade::with('workers')->get(),
             'machineries' => Machinery::all(),
+            'machineOwners' => \App\Models\MachineOwner::with('machineries')->get(),
             'buildings' => Building::with('floors.units')->get(),
             'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get(),
             'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
@@ -66,6 +68,7 @@ class HrController extends Controller
             'building_id' => 'nullable|exists:buildings,id',
             'floor_id' => 'nullable|exists:floors,id',
             'unit_id' => 'nullable|exists:units,id',
+            'brigade_id' => 'nullable|exists:brigades,id'
         ]);
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
@@ -74,16 +77,77 @@ class HrController extends Controller
         $validated['building_id'] = empty($validated['building_id']) ? null : $validated['building_id'];
         $validated['floor_id'] = empty($validated['floor_id']) ? null : $validated['floor_id'];
         $validated['unit_id'] = empty($validated['unit_id']) ? null : $validated['unit_id'];
+        $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
 
         Worker::create($validated);
         return redirect()->back()->with('message', 'Worker added.');
+    }
+
+    public function storeMachineOwner(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+        ]);
+        \App\Models\MachineOwner::create($validated);
+        return redirect()->back()->with('message', 'Texnika egasi qo\'shildi.');
+    }
+
+    public function updateMachineOwner(Request $request, \App\Models\MachineOwner $machineOwner)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+        ]);
+        $machineOwner->update($validated);
+        return redirect()->back()->with('message', 'Texnika egasi yangilandi.');
+    }
+
+    public function deleteMachineOwner(\App\Models\MachineOwner $machineOwner)
+    {
+        if ($machineOwner->balance != 0) {
+            return redirect()->back()->with('error', 'Balansda pul qoldig\'i mavjud bo\'lgan egasini o\'chirib bo\'lmaydi.');
+        }
+        $machineOwner->delete();
+        return redirect()->back()->with('message', 'Texnika egasi o\'chirildi.');
+    }
+
+    public function storeBrigade(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'foreman_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+        ]);
+        \App\Models\Brigade::create($validated);
+        return redirect()->back()->with('message', 'Brigada qo\'shildi.');
+    }
+
+    public function updateBrigade(Request $request, \App\Models\Brigade $brigade)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'foreman_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+        ]);
+        $brigade->update($validated);
+        return redirect()->back()->with('message', 'Brigada yangilandi.');
+    }
+
+    public function deleteBrigade(\App\Models\Brigade $brigade)
+    {
+        if ($brigade->balance != 0) {
+            return redirect()->back()->with('error', 'Balansda pul qoldig\'i mavjud bo\'lgan brigadani o\'chirib bo\'lmaydi.');
+        }
+        $brigade->delete();
+        return redirect()->back()->with('message', 'Brigada o\'chirildi.');
     }
 
     public function storeMachinery(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'owner_name' => 'nullable|string',
+            'machine_owner_id' => 'required|exists:machine_owners,id',
             'machinery_type' => 'nullable|string',
             'payment_type' => 'required|in:hourly,volume',
             'license_plate' => 'nullable|string',
@@ -98,7 +162,7 @@ class HrController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'owner_name' => 'nullable|string',
+            'machine_owner_id' => 'required|exists:machine_owners,id',
             'machinery_type' => 'nullable|string',
             'payment_type' => 'required|in:hourly,volume',
             'license_plate' => 'nullable|string',
@@ -232,38 +296,39 @@ class HrController extends Controller
         DB::transaction(function () use ($validated, $calculatedCost) {
             $log = WorkLog::create($validated);
             
-            // Accrue salary to worker's ledger
+            // Accrue salary to worker's ledger or Brigade's ledger
             if ($validated['type'] === 'worker' && $calculatedCost > 0) {
                 $worker = Worker::find($validated['worker_id']);
                 
-                DB::table('worker_transactions')->insert([
-                    'worker_id' => $worker->id,
-                    'type' => 'salary_accrual',
-                    'amount' => $calculatedCost,
-                    'description' => 'Ish xajmi kiritildi: Building #' . $validated['building_id'],
-                    'date' => $validated['date'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                
-                $worker->increment('balance', $calculatedCost);
+                // If worker belongs to a Brigade, credit the Brigade. Otherwise, credit the Worker.
+                if ($worker->brigade_id) {
+                    $brigade = \App\Models\Brigade::find($worker->brigade_id);
+                    $brigade->increment('balance', $calculatedCost);
+                    
+                    // Optional: You could log this into a brigade_transactions table if needed.
+                    // For now, we will just update the balance as requested.
+                } else {
+                    DB::table('worker_transactions')->insert([
+                        'worker_id' => $worker->id,
+                        'type' => 'salary_accrual',
+                        'amount' => $calculatedCost,
+                        'description' => 'Ish xajmi kiritildi: Building #' . $validated['building_id'],
+                        'date' => $validated['date'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $worker->increment('balance', $calculatedCost);
+                }
             }
 
-            // Accrue salary to machinery ledger
+            // Accrue salary to machinery owner's ledger
             if ($validated['type'] === 'machinery' && $calculatedCost > 0) {
                 $machinery = Machinery::find($validated['machinery_id']);
-                
-                DB::table('machinery_transactions')->insert([
-                    'machinery_id' => $machinery->id,
-                    'type' => 'salary_accrual',
-                    'amount' => $calculatedCost,
-                    'description' => 'Texnika ish xajmi kiritildi: Building #' . $validated['building_id'],
-                    'date' => $validated['date'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                
-                $machinery->increment('balance', $calculatedCost);
+                if ($machinery->machine_owner_id) {
+                    $owner = \App\Models\MachineOwner::find($machinery->machine_owner_id);
+                    $owner->increment('balance', $calculatedCost);
+                    // Could also log to machine_owner_transactions here.
+                }
             }
 
             // Automate construction progress tracking based on expenses and volume
@@ -578,17 +643,19 @@ class HrController extends Controller
             if ($delta != 0) {
                 if ($log->type === 'worker') {
                     $worker = Worker::find($log->worker_id);
-                    $worker->increment('balance', $delta);
-                    $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $oldCost)->where('date', $log->getOriginal('date'))->where('type', 'salary_accrual')->first();
-                    if ($tx) {
-                        DB::table('worker_transactions')->where('id', $tx->id)->update(['amount' => $newCost, 'date' => $validated['date']]);
+                    if ($worker->brigade_id) {
+                        \App\Models\Brigade::where('id', $worker->brigade_id)->increment('balance', $delta);
+                    } else {
+                        $worker->increment('balance', $delta);
+                        $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $oldCost)->where('date', $log->getOriginal('date'))->where('type', 'salary_accrual')->first();
+                        if ($tx) {
+                            DB::table('worker_transactions')->where('id', $tx->id)->update(['amount' => $newCost, 'date' => $validated['date']]);
+                        }
                     }
                 } else {
                     $machinery = Machinery::find($log->machinery_id);
-                    $machinery->increment('balance', $delta);
-                    $tx = DB::table('machinery_transactions')->where('machinery_id', $machinery->id)->where('amount', $oldCost)->where('date', $log->getOriginal('date'))->where('type', 'salary_accrual')->first();
-                    if ($tx) {
-                        DB::table('machinery_transactions')->where('id', $tx->id)->update(['amount' => $newCost, 'date' => $validated['date']]);
+                    if ($machinery->machine_owner_id) {
+                        \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->increment('balance', $delta);
                     }
                 }
                 
@@ -609,17 +676,19 @@ class HrController extends Controller
             
             if ($log->type === 'worker') {
                 $worker = Worker::find($log->worker_id);
-                $worker->decrement('balance', $cost);
-                $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $cost)->where('date', $log->date)->where('type', 'salary_accrual')->first();
-                if ($tx) {
-                    DB::table('worker_transactions')->where('id', $tx->id)->delete();
+                if ($worker->brigade_id) {
+                    \App\Models\Brigade::where('id', $worker->brigade_id)->decrement('balance', $cost);
+                } else {
+                    $worker->decrement('balance', $cost);
+                    $tx = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('amount', $cost)->where('date', $log->date)->where('type', 'salary_accrual')->first();
+                    if ($tx) {
+                        DB::table('worker_transactions')->where('id', $tx->id)->delete();
+                    }
                 }
             } else {
                 $machinery = Machinery::find($log->machinery_id);
-                $machinery->decrement('balance', $cost);
-                $tx = DB::table('machinery_transactions')->where('machinery_id', $machinery->id)->where('amount', $cost)->where('date', $log->date)->where('type', 'salary_accrual')->first();
-                if ($tx) {
-                    DB::table('machinery_transactions')->where('id', $tx->id)->delete();
+                if ($machinery->machine_owner_id) {
+                    \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->decrement('balance', $cost);
                 }
             }
             

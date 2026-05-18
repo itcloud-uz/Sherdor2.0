@@ -8,7 +8,7 @@ class Machinery extends Model
 {
     protected $fillable = [
         'name', 'license_plate', 'cost_per_hour',
-        'owner_name', 'machinery_type', 'payment_type', 'balance'
+        'machine_owner_id', 'machinery_type', 'payment_type'
     ];
 
     public function workLogs()
@@ -19,5 +19,10 @@ class Machinery extends Model
     public function transactions()
     {
         return $this->hasMany(MachineryTransaction::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(MachineOwner::class, 'machine_owner_id');
     }
 }

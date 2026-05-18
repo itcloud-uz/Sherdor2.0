@@ -31,7 +31,9 @@ class FinanceController extends Controller
             'buildings' => \App\Models\Building::latest()->get(),
             'clients' => \App\Models\Client::latest()->limit(500)->get(),
             'partners' => \App\Models\Partner::with('user')->latest()->get(),
-            'fixedAssets' => \App\Models\FixedAsset::latest()->get()
+            'fixedAssets' => \App\Models\FixedAsset::latest()->get(),
+            'brigades' => \App\Models\Brigade::latest()->get(),
+            'machineOwners' => \App\Models\MachineOwner::latest()->get(),
         ]);
     }
 
@@ -69,7 +71,7 @@ class FinanceController extends Controller
             'client_id' => 'nullable|exists:clients,id',
             'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
-            'category_id' => 'nullable|exists:transaction_categories,id',
+            'category_id' => 'required|exists:transaction_categories,id',
             'category_name' => 'nullable|string',
             'transaction_date' => 'nullable|date',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
@@ -82,7 +84,7 @@ class FinanceController extends Controller
             'longitude' => 'nullable|string',
             'source' => 'nullable|string|max:50',
             'work_category' => 'nullable|string|max:255',
-            'target_type' => 'nullable|string|in:partner,supplier,client,worker',
+            'target_type' => 'nullable|string|in:partner,supplier,client,worker,brigade,machine_owner',
             'target_id' => 'nullable|integer'
         ]);
 
@@ -433,6 +435,11 @@ class FinanceController extends Controller
                 $supplier->increment('balance', $supplierAmount);
             }
         }
+
+        if (!empty($transaction->target_type) && !empty($transaction->target_id)) {
+            $this->updateTargetBalance($transaction->target_type, $transaction->target_id, $transaction->amount, $transaction->type);
+        }
+
         if ($transaction->fixed_asset_id && $transaction->type === 'expense') {
             $partners = \App\Models\Partner::all();
             if ($partners->count() > 0) {
@@ -519,6 +526,41 @@ class FinanceController extends Controller
         }
 
         return redirect()->back()->with('message', 'Transaction approved.');
+    }
+
+    private function updateTargetBalance($type, $id, $amount, $txnType)
+    {
+        if ($type === 'supplier') {
+            $supplier = \App\Models\Supplier::find($id);
+            if ($supplier) {
+                $txnType === 'income' ? $supplier->increment('balance', $amount) : $supplier->decrement('balance', $amount);
+            }
+        } elseif ($type === 'client') {
+            $client = \App\Models\Client::find($id);
+            if ($client) {
+                $txnType === 'income' ? $client->decrement('debt_balance', $amount) : $client->increment('debt_balance', $amount);
+            }
+        } elseif ($type === 'partner') {
+            $partner = \App\Models\Partner::find($id);
+            if ($partner) {
+                $txnType === 'income' ? $partner->increment('invested_amount', $amount) : $partner->increment('withdrawn_amount', $amount);
+            }
+        } elseif ($type === 'worker') {
+            $worker = \App\Models\Worker::find($id);
+            if ($worker) {
+                $txnType === 'expense' ? $worker->decrement('balance', $amount) : null;
+            }
+        } elseif ($type === 'brigade') {
+            $brigade = \App\Models\Brigade::find($id);
+            if ($brigade) {
+                $txnType === 'expense' ? $brigade->decrement('balance', $amount) : null;
+            }
+        } elseif ($type === 'machine_owner') {
+            $owner = \App\Models\MachineOwner::find($id);
+            if ($owner) {
+                $txnType === 'expense' ? $owner->decrement('balance', $amount) : null;
+            }
+        }
     }
 
     public function rejectTransaction(Transaction $transaction)

@@ -1,6 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -430,6 +431,20 @@ function selectUnit(u) {
     unitSearchQuery.value = formatUnitDisplay(u);
     showUnitDropdown.value = false;
 }
+
+const clientsOptions = computed(() => {
+    return props.clients.map(c => ({
+        label: `${c.first_name} ${c.last_name || ''}`.trim(),
+        value: c.id
+    }));
+});
+
+const partnersOptions = computed(() => {
+    return (props.partners || []).map(p => ({
+        label: `${p.user?.name} (Ulush: ${p.investment_share_percentage}%)`,
+        value: p.id
+    }));
+});
 
 watch(() => contractForm.value.unit_id, (newVal) => {
     if (newVal) {
@@ -1587,16 +1602,22 @@ function openQuickSmsModal(lead) {
                         </div>
                         
                         <!-- Client Select -->
-                        <select v-if="contractForm.buyer_type === 'client'" v-model="contractForm.client_id" class="glass-input w-full bg-black/50" :required="contractForm.buyer_type === 'client'">
-                            <option value="" disabled>{{ $t('select_client') }}</option>
-                            <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }}</option>
-                        </select>
+                        <SearchableSelect 
+                            v-if="contractForm.buyer_type === 'client'" 
+                            v-model="contractForm.client_id" 
+                            :options="clientsOptions" 
+                            placeholder="Mijozni tanlang" 
+                            :required="contractForm.buyer_type === 'client'"
+                        />
                         
                         <!-- Partner Select -->
-                        <select v-if="contractForm.buyer_type === 'partner'" v-model="contractForm.partner_id" class="glass-input w-full bg-black/50 border-neon-yellow/50" :required="contractForm.buyer_type === 'partner'">
-                            <option value="" disabled>Ta'sischini tanlang</option>
-                            <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
-                        </select>
+                        <SearchableSelect 
+                            v-if="contractForm.buyer_type === 'partner'" 
+                            v-model="contractForm.partner_id" 
+                            :options="partnersOptions" 
+                            placeholder="Ta'sischini tanlang" 
+                            :required="contractForm.buyer_type === 'partner'"
+                        />
                     </div>
                     <div class="relative">
                         <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_unit') }}</label>

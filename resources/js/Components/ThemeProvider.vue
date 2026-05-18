@@ -23,6 +23,8 @@ watchEffect(() => {
         const user = page.props.auth.user;
         document.documentElement.style.setProperty('--label-font-size', (user.label_font_size || 12) + 'px');
         document.documentElement.style.setProperty('--label-color', user.label_color || '#CCCCCC');
+        document.documentElement.style.setProperty('--dropdown-bg-color', user.dropdown_bg_color || '#111111');
+        document.documentElement.style.setProperty('--dropdown-text-color', user.dropdown_text_color || '#ffffff');
     }
 
     const themeStyle = page.props.auth?.user?.theme_style || 'apple_glass';

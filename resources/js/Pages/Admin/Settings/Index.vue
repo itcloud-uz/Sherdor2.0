@@ -33,6 +33,8 @@ const profileForm = useForm({
     theme_style: user.theme_style || 'apple_glass',
     label_font_size: user.label_font_size || 12,
     label_color: user.label_color || '#CCCCCC',
+    dropdown_bg_color: user.dropdown_bg_color || '#111111',
+    dropdown_text_color: user.dropdown_text_color || '#ffffff',
     avatar: null,
 });
 
@@ -92,6 +94,8 @@ const updateThemeStyle = (style) => {
 const updateLabelSettings = () => {
     document.documentElement.style.setProperty('--label-font-size', profileForm.label_font_size + 'px');
     document.documentElement.style.setProperty('--label-color', profileForm.label_color);
+    document.documentElement.style.setProperty('--dropdown-bg-color', profileForm.dropdown_bg_color);
+    document.documentElement.style.setProperty('--dropdown-text-color', profileForm.dropdown_text_color);
     // Debounced submit would be better but let's stick to the current pattern
     submitProfile();
 };
@@ -307,6 +311,24 @@ const updateLabelSettings = () => {
                                     <div class="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl p-2 transition-all focus-within:border-neon-primary">
                                         <input v-model="profileForm.label_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
                                         <input v-model="profileForm.label_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-white flex-1 font-mono focus:ring-0 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Ro'yxat orqa foni (Dropdown BG)</label>
+                                    <div class="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                        <input v-model="profileForm.dropdown_bg_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                                        <input v-model="profileForm.dropdown_bg_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-white flex-1 font-mono focus:ring-0 text-sm">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-mono text-text-muted mb-2 uppercase">Ro'yxat matn rangi (Dropdown Text)</label>
+                                    <div class="flex items-center gap-4 bg-black/40 border border-white/10 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                        <input v-model="profileForm.dropdown_text_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                                        <input v-model="profileForm.dropdown_text_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-white flex-1 font-mono focus:ring-0 text-sm">
                                     </div>
                                 </div>
                             </div>

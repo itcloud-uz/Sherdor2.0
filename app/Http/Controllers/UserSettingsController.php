@@ -41,6 +41,8 @@ class UserSettingsController extends Controller
             'theme_style' => ['nullable', 'string', 'in:apple_glass,galaxy,cyberpunk,minimalist,gold,itcloud_cyberglass'],
             'label_font_size' => ['nullable', 'integer', 'min:8', 'max:24'],
             'label_color' => ['nullable', 'string', 'max:20'],
+            'dropdown_bg_color' => ['nullable', 'string', 'max:20'],
+            'dropdown_text_color' => ['nullable', 'string', 'max:20'],
         ]);
 
         if ($request->filled('password')) {

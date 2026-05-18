@@ -147,7 +147,8 @@ class HrController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'machine_owner_id' => 'required|exists:machine_owners,id',
+                        'machine_owner_id' => 'required|exists:machine_owners,id',
+            'driver_name' => 'nullable|string',
             'machinery_type' => 'nullable|string',
             'payment_type' => 'required|in:hourly,volume',
             'license_plate' => 'nullable|string',
@@ -162,7 +163,8 @@ class HrController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'machine_owner_id' => 'required|exists:machine_owners,id',
+                        'machine_owner_id' => 'required|exists:machine_owners,id',
+            'driver_name' => 'nullable|string',
             'machinery_type' => 'nullable|string',
             'payment_type' => 'required|in:hourly,volume',
             'license_plate' => 'nullable|string',
@@ -262,8 +264,10 @@ class HrController extends Controller
             'hours_worked' => 'nullable|numeric|min:0',
             'volume_done' => 'nullable|numeric|min:0',
             'measurement_unit' => 'nullable|string|max:50',
-            'work_category' => 'nullable|string|max:255',
-            'date' => 'required|date'
+                        'work_category' => 'nullable|string|max:255',
+            'date' => 'required|date',
+            'custom_rate' => 'nullable|numeric|min:0',
+            'deductions' => 'nullable|numeric|min:0'
         ]);
 
         $calculatedCost = 0;

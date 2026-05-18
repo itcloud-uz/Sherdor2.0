@@ -8,7 +8,7 @@ class Machinery extends Model
 {
     protected $fillable = [
         'name', 'license_plate', 'cost_per_hour',
-        'machine_owner_id', 'machinery_type', 'payment_type'
+        'machine_owner_id', 'machinery_type', 'payment_type', 'driver_name'
     ];
 
     public function workLogs()

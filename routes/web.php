@@ -143,6 +143,15 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/approvals/{approval}/reject', [\App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
 
     Route::get('/hr', [\App\Http\Controllers\Admin\HrController::class, 'index'])->name('hr');
+    
+    // Brigades & Machine Owners
+    Route::post('/hr/brigades', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigade'])->name('hr.brigade.store');
+    Route::put('/hr/brigades/{brigade}', [\App\Http\Controllers\Admin\HrController::class, 'updateBrigade'])->name('hr.brigade.update');
+    Route::delete('/hr/brigades/{brigade}', [\App\Http\Controllers\Admin\HrController::class, 'deleteBrigade'])->name('hr.brigade.destroy');
+    
+    Route::post('/hr/machine-owners', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineOwner'])->name('hr.machine_owner.store');
+    Route::put('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'updateMachineOwner'])->name('hr.machine_owner.update');
+    Route::delete('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'deleteMachineOwner'])->name('hr.machine_owner.destroy');
     Route::post('/hr/worker', [\App\Http\Controllers\Admin\HrController::class, 'storeWorker'])->name('hr.worker.store');
     Route::post('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'updateWorker'])->name('hr.worker.update');
     Route::delete('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'deleteWorker'])->name('hr.worker.destroy');

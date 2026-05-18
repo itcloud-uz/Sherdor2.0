@@ -343,18 +343,18 @@ function saveUserLedgerTransaction() {
 }
 
 const showMachineryForm = ref(false);
-const machineryForm = ref({ name: '', owner_name: '', machinery_type: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
+const machineryForm = ref({ name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
 
 function addMachinery() {
     isProcessing.value = true;
     router.post(route('admin.hr.machinery.store'), machineryForm.value, {
-        onSuccess: () => { isProcessing.value = false; machineryForm.value = { name: '', owner_name: '', machinery_type: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' }; },
+        onSuccess: () => { isProcessing.value = false; machineryForm.value = { name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' }; },
         onError: () => isProcessing.value = false
     });
 }
 
 const editMachineryId = ref(null);
-const editMachineryForm = useForm({ name: '', owner_name: '', machinery_type: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
+const editMachineryForm = useForm({ name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
 
 function startEditMachinery(m) {
     editMachineryId.value = m.id;
@@ -1298,6 +1298,11 @@ function generatePayroll() {
                                 <label class="block text-[10px] text-text-muted uppercase mb-1">Turi (Yo'nalishi)</label>
                                 <input v-if="editMachineryId" v-model="editMachineryForm.machinery_type" type="text" class="glass-input text-xs w-full" placeholder="Kran, Buldozer...">
                                 <input v-else v-model="machineryForm.machinery_type" type="text" class="glass-input text-xs w-full" placeholder="Kran, Buldozer...">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-text-muted uppercase mb-1">Haydovchi Ismi (ixtiyoriy)</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.driver_name" type="text" class="glass-input text-xs w-full" placeholder="Eshmatov Toshmat">
+                                <input v-else v-model="machineryForm.driver_name" type="text" class="glass-input text-xs w-full" placeholder="Eshmatov Toshmat">
                             </div>
                             <div>
                                 <label class="block text-[10px] text-text-muted uppercase mb-1">Model / Rusumi</label>

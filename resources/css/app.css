@@ -45,6 +45,21 @@
     transition: all 0.3s ease;
   }
 
+  /* Global Dropdown (Select) Fixes */
+  select {
+    color-scheme: dark;
+  }
+  
+  select option {
+    background-color: var(--dropdown-bg-color, #111111) !important;
+    color: var(--dropdown-text-color, #ffffff) !important;
+  }
+  
+  select optgroup {
+    background-color: var(--dropdown-bg-color, #111111) !important;
+    color: var(--dropdown-text-color, #ffffff) !important;
+  }
+
   .text-text-muted {
     color: var(--label-color, rgba(255, 255, 255, 0.4));
     transition: color 0.3s ease;

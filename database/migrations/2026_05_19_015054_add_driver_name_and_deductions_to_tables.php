@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('machineries', function (Blueprint $table) {
-            $table->string('driver_name')->nullable()->after('name');
+            if (!Schema::hasColumn('machineries', 'driver_name')) {
+                $table->string('driver_name')->nullable()->after('name');
+            }
         });
 
         Schema::table('work_logs', function (Blueprint $table) {
-            $table->decimal('deductions', 15, 2)->default(0)->after('total_cost');
+            if (!Schema::hasColumn('work_logs', 'deductions')) {
+                $table->decimal('deductions', 15, 2)->default(0)->after('calculated_cost');
+            }
         });
     }
 

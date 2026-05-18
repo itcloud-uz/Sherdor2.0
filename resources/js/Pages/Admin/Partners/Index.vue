@@ -139,18 +139,57 @@ const showAnalyticsModal = ref(false);
 const transactions = ref([]);
 const analyticsLoading = ref(false);
 
-async function openAnalytics(partner) {
-    selectedPartner.value = partner;
-    showAnalyticsModal.value = true;
+const ledgerDateFrom = ref('');
+const ledgerDateTo = ref('');
+
+async function fetchLedger() {
+    if (!selectedPartner.value) return;
     analyticsLoading.value = true;
     try {
-        const response = await axios.get(route('admin.partners.ledger', partner.id));
+        const response = await axios.get(route('admin.partners.ledger', selectedPartner.value.id), {
+            params: {
+                from_date: ledgerDateFrom.value,
+                to_date: ledgerDateTo.value
+            }
+        });
         transactions.value = response.data;
     } catch (e) {
         console.error("Ledger fetch failed", e);
     } finally {
         analyticsLoading.value = false;
     }
+}
+
+async function openAnalytics(partner) {
+    selectedPartner.value = partner;
+    showAnalyticsModal.value = true;
+    ledgerDateFrom.value = '';
+    ledgerDateTo.value = '';
+    await fetchLedger();
+}
+
+function exportLedgerCSV() {
+    if (transactions.value.length === 0) return;
+    const headers = ['Sana', 'Tur', 'Kategoriya', 'Summa', 'Izoh'];
+    const rows = transactions.value.map(t => {
+        const type = t.type === 'income' ? 'Kirim' : 'Chiqim';
+        return [
+            formatDate(t.created_at),
+            type,
+            t.category || '-',
+            t.amount,
+            `"${(t.notes || '-').replace(/"/g, '""')}"`
+        ].join(',');
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Tasischi_Hisoboti_${selectedPartner.value?.user?.name}_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Asset Management
@@ -402,6 +441,21 @@ function formatDate(dateString) {
                         <div class="text-right">
                             <span class="block text-[10px] font-mono text-neon-red uppercase">Bo'ynidagi qarz</span>
                             <span class="text-sm font-mono text-neon-red font-bold">{{ formatCurrency(partner.accountable_balance) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <div class="p-2 bg-neon-cyan/5 border border-neon-cyan/20 rounded text-center cursor-pointer hover:bg-neon-cyan/10 transition-colors" @click="openAnalytics(partner)">
+                            <span class="block text-[9px] font-mono text-text-muted uppercase">Kassa Tushumi</span>
+                            <span class="text-xs font-bold text-neon-cyan">{{ formatCurrency(partner.kassa_tushumi) }}</span>
+                        </div>
+                        <div class="p-2 bg-neon-red/5 border border-neon-red/20 rounded text-center cursor-pointer hover:bg-neon-red/10 transition-colors" @click="openAnalytics(partner)">
+                            <span class="block text-[9px] font-mono text-text-muted uppercase">Kassa Chiqimi</span>
+                            <span class="text-xs font-bold text-neon-red">{{ formatCurrency(partner.kassa_chiqimi) }}</span>
+                        </div>
+                        <div class="p-2 bg-white/5 border border-white/20 rounded text-center cursor-pointer hover:bg-white/10 transition-colors" @click="openAnalytics(partner)">
+                            <span class="block text-[9px] font-mono text-text-muted uppercase">Balans</span>
+                            <span class="text-xs font-bold text-white">{{ formatCurrency(partner.accountable_balance) }}</span>
                         </div>
                     </div>
                     
@@ -673,8 +727,18 @@ function formatDate(dateString) {
 
                     <!-- Ledger Table -->
                     <div class="glass-card border border-white/10 rounded-xl overflow-hidden">
-                        <div class="p-4 border-b border-white/10 bg-white/5">
+                        <div class="p-4 border-b border-white/10 bg-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                             <h3 class="text-sm font-mono text-white uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <input type="date" v-model="ledgerDateFrom" class="glass-input text-xs w-32 bg-black/50 [color-scheme:dark]">
+                                <span class="text-text-muted">-</span>
+                                <input type="date" v-model="ledgerDateTo" class="glass-input text-xs w-32 bg-black/50 [color-scheme:dark]">
+                                <button @click="fetchLedger" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 hover:bg-neon-cyan hover:text-black rounded text-xs font-bold uppercase transition-colors">Filtr</button>
+                                <button @click="exportLedgerCSV" class="px-3 py-1.5 bg-neon-green/20 text-neon-green border border-neon-green/50 hover:bg-neon-green hover:text-black rounded text-xs font-bold uppercase transition-colors flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    Yuklab olish (CSV)
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
@@ -691,11 +755,11 @@ function formatDate(dateString) {
                                     <tr v-for="t in transactions" :key="t.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
                                         <td class="p-3">{{ formatDate(t.created_at) }}</td>
                                         <td class="p-3">
-                                            <span v-if="t.notes && t.notes.includes('Avans')" class="text-neon-cyan px-2 py-1 bg-neon-cyan/10 rounded">AVANS (OLDI)</span>
-                                            <span v-else class="text-neon-red px-2 py-1 bg-neon-red/10 rounded">XARAJAT (CHEK)</span>
+                                            <span v-if="t.type === 'income'" class="text-neon-cyan px-2 py-1 bg-neon-cyan/10 rounded">KIRIM (TUSHUM)</span>
+                                            <span v-else class="text-neon-red px-2 py-1 bg-neon-red/10 rounded">CHIQIM (XARAJAT)</span>
                                         </td>
                                         <td class="p-3">{{ t.category || '-' }}</td>
-                                        <td class="p-3 text-right font-bold" :class="(t.notes && t.notes.includes('Avans')) ? 'text-neon-cyan' : 'text-neon-red'">
+                                        <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-neon-cyan' : 'text-neon-red'">
                                             {{ formatCurrency(t.amount) }}
                                         </td>
                                         <td class="p-3 text-text-muted max-w-xs truncate" :title="t.notes">{{ t.notes || '-' }}</td>

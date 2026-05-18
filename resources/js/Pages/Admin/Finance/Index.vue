@@ -241,7 +241,7 @@ function submitTransaction() {
     form.value.longitude = gpsCoords.value.longitude;
     
     // Auto-fill target_type and target_id based on requires flags
-    if (requiresPartner.value) {
+    if (requiresPartner.value || form.value.account_type === 'partner') {
         form.value.target_type = 'partner';
         form.value.target_id = form.value.partner_id;
     } else if (requiresWorker.value) {
@@ -979,9 +979,9 @@ const categoriesSummary = computed(() => {
                         </select>
                     </div>
                     
-                    <div v-if="requiresPartner">
+                    <div v-if="requiresPartner || form.account_type === 'partner'">
                         <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
-                        <select v-model="form.partner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50" required>
+                        <select v-model="form.partner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50" :required="requiresPartner || form.account_type === 'partner'">
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
                         </select>
@@ -1028,7 +1028,9 @@ const categoriesSummary = computed(() => {
                         <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
                         <select v-model="form.account_type" class="glass-input w-full text-lg font-bold text-white bg-black/50">
                             <option value="main">{{ $t('main_account') }}</option>
+                            <option value="bank">Bank Hisobi (Bank)</option>
                             <option value="credit">Kredit Hisobi (Credit)</option>
+                            <option value="partner">Ta'sischi Hisobi (Partner)</option>
                         </select>
                     </div>
                 </div>

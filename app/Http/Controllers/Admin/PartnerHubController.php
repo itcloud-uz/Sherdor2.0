@@ -14,6 +14,19 @@ class PartnerHubController extends Controller
     public function index()
     {
         $partners = Partner::with('user')->get();
+        foreach ($partners as $partner) {
+            $partner->kassa_tushumi = \App\Models\Transaction::where('account_type', 'partner')
+                ->where('partner_id', $partner->id)
+                ->where('status', 'approved')
+                ->where('type', 'income')
+                ->sum('amount');
+            
+            $partner->kassa_chiqimi = \App\Models\Transaction::where('account_type', 'partner')
+                ->where('partner_id', $partner->id)
+                ->where('status', 'approved')
+                ->where('type', 'expense')
+                ->sum('amount');
+        }
         $users = \App\Models\User::all(); // Assuming admin can add any user as partner
         
         // Calculate Net Profit
@@ -127,9 +140,19 @@ class PartnerHubController extends Controller
         return redirect()->back()->with('message', 'Chek yuklandi va tasdiqlash uchun yuborildi.');
     }
 
-    public function getPartnerLedger(Partner $partner)
+    public function getPartnerLedger(Request $request, Partner $partner)
     {
-        $transactions = $partner->transactions()->orderBy('created_at', 'desc')->get();
+        $query = $partner->transactions();
+
+        if ($request->filled('from_date')) {
+            $query->where('created_at', '>=', $request->from_date . ' 00:00:00');
+        }
+        
+        if ($request->filled('to_date')) {
+            $query->where('created_at', '<=', $request->to_date . ' 23:59:59');
+        }
+
+        $transactions = $query->orderBy('created_at', 'desc')->get();
         return response()->json($transactions);
     }
 

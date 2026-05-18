@@ -64,9 +64,10 @@ class FinanceController extends Controller
             'amount' => 'required|numeric|min:0',
             'currency' => 'nullable|string',
             'payment_method' => 'required|in:cash,card,bank_transfer',
-            'account_type' => 'required|in:main,credit',
+            'account_type' => 'required|in:main,bank,credit,partner',
             'contract_id' => 'nullable|exists:contracts,id',
             'client_id' => 'nullable|exists:clients,id',
+            'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
             'category_id' => 'nullable|exists:transaction_categories,id',
             'category_name' => 'nullable|string',
@@ -357,78 +358,88 @@ class FinanceController extends Controller
             ]);
         }
 
-        // Partner Transaction Logic
-        if ($transaction->partner_id) {
-            $partner = \App\Models\Partner::find($transaction->partner_id);
-            if ($partner) {
-                if ($transaction->category === 'Partner Advance') {
-                    // Pul kassadan chiqadi va hamkor bo'yniga tushadi
-                    \App\Models\CompanyBalance::addExpense($transaction->amount, $transaction->account_type);
-                    $partner->accountable_balance += $transaction->amount;
-                    $partner->save();
+        // 1. Account Logic (Where the money comes from / goes to)
+        if ($transaction->account_type === 'partner' && $transaction->partner_id) {
+            $accountPartner = \App\Models\Partner::find($transaction->partner_id);
+            if ($accountPartner) {
+                if ($transaction->type === 'income') {
+                    // Pul ta'sischi kassasiga kirdi
+                    $accountPartner->accountable_balance += $transaction->amount;
                 } else {
-                    // Hamkor chek topshirdi, kassaga ta'sir qilmaydi, faqat qarzi kamayadi
-                    $partner->accountable_balance -= $transaction->amount;
-                    $partner->save();
+                    // Pul ta'sischi kassasidan chiqdi
+                    $accountPartner->accountable_balance -= $transaction->amount;
                 }
+                $accountPartner->save();
             }
         } else {
-            // Normal Company Transaction
+            // Normal Company Transaction (Main, Bank, Credit)
             if ($transaction->type === 'income') {
                 \App\Models\CompanyBalance::addIncome($transaction->amount, $transaction->account_type);
             } else {
                 \App\Models\CompanyBalance::addExpense($transaction->amount, $transaction->account_type);
             }
+        }
 
-            // Specific target updates
-            if ($transaction->worker_id) {
-                $worker = \App\Models\Worker::find($transaction->worker_id);
-                if ($worker) {
-                    $workerAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
-                    $worker->increment('balance', $workerAmount);
-                    \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
-                        'worker_id' => $worker->id,
-                        'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
-                        'amount' => $transaction->amount,
-                        'work_category' => $transaction->work_category,
-                        'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
-                        'date' => $transaction->transaction_date ?? now(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+        // 2. Target Logic (Who is being paid / who is paying)
+        if ($transaction->partner_id && $transaction->account_type !== 'partner') {
+            $targetPartner = \App\Models\Partner::find($transaction->partner_id);
+            if ($targetPartner) {
+                if ($transaction->category === 'Partner Advance') {
+                    $targetPartner->accountable_balance += $transaction->amount;
+                } else {
+                    $targetPartner->accountable_balance -= $transaction->amount;
                 }
+                $targetPartner->save();
             }
-            if ($transaction->machinery_id) {
-                $machinery = \App\Models\Machinery::find($transaction->machinery_id);
-                if ($machinery) {
-                    $machineryAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
-                    $machinery->increment('balance', $machineryAmount);
-                    \Illuminate\Support\Facades\DB::table('machinery_transactions')->insert([
-                        'machinery_id' => $machinery->id,
-                        'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
-                        'amount' => $transaction->amount,
-                        'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
-                        'date' => $transaction->transaction_date ?? now(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+        }
+
+        if ($transaction->worker_id) {
+            $worker = \App\Models\Worker::find($transaction->worker_id);
+            if ($worker) {
+                $workerAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                $worker->increment('balance', $workerAmount);
+                \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                    'worker_id' => $worker->id,
+                    'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
+                    'amount' => $transaction->amount,
+                    'work_category' => $transaction->work_category,
+                    'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
+                    'date' => $transaction->transaction_date ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
-            if ($transaction->supplier_id) {
-                $supplier = \App\Models\Supplier::find($transaction->supplier_id);
-                if ($supplier) {
-                    $supplierAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
-                    $supplier->increment('balance', $supplierAmount);
-                }
+        }
+        if ($transaction->machinery_id) {
+            $machinery = \App\Models\Machinery::find($transaction->machinery_id);
+            if ($machinery) {
+                $machineryAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                $machinery->increment('balance', $machineryAmount);
+                \Illuminate\Support\Facades\DB::table('machinery_transactions')->insert([
+                    'machinery_id' => $machinery->id,
+                    'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
+                    'amount' => $transaction->amount,
+                    'description' => "Moliya: " . ($transaction->notes ?? $transaction->category),
+                    'date' => $transaction->transaction_date ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
-            if ($transaction->fixed_asset_id && $transaction->type === 'expense') {
-                $partners = \App\Models\Partner::all();
-                if ($partners->count() > 0) {
-                    $splitAmount = $transaction->amount / $partners->count();
-                    foreach ($partners as $p) {
-                        $p->accountable_balance += $splitAmount;
-                        $p->save();
-                    }
+        }
+        if ($transaction->supplier_id) {
+            $supplier = \App\Models\Supplier::find($transaction->supplier_id);
+            if ($supplier) {
+                $supplierAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
+                $supplier->increment('balance', $supplierAmount);
+            }
+        }
+        if ($transaction->fixed_asset_id && $transaction->type === 'expense') {
+            $partners = \App\Models\Partner::all();
+            if ($partners->count() > 0) {
+                $splitAmount = $transaction->amount / $partners->count();
+                foreach ($partners as $p) {
+                    $p->accountable_balance += $splitAmount;
+                    $p->save();
                 }
             }
         }

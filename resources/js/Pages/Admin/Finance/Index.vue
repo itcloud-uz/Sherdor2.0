@@ -1346,10 +1346,6 @@ const categoriesSummary = computed(() => {
                 </form>
             </div>
 
-            </div>
-        </div>
-
-
             <!-- TAB 7: Kategoriya Hisoboti -->
             <div v-if="activeTab === 7" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
                 <div class="flex justify-between items-center mb-6">
@@ -1384,6 +1380,8 @@ const categoriesSummary = computed(() => {
                     Hozircha hisobot mavjud emas.
                 </div>
             </div>
+        </div>
+    </div>
 
         <!-- Supplier Payment Modal -->
         <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

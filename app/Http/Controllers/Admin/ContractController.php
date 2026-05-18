@@ -106,30 +106,34 @@ class ContractController extends Controller
                 $partner->accountable_balance -= $validated['total_amount'];
                 $partner->save();
             }
-        } else if (!empty($validated['down_payment']) && $validated['down_payment'] > 0) {
-            $paymentMethod = $validated['payment_method'] ?? 'bank';
+        } else {
+            $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
+                             ? $validated['actual_paid_amount'] 
+                             : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0);
             
-            // Create a pending transaction for Action Center to approve
-            $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                ['name' => 'Mijoz To\'lovi (Shartnoma)'],
-                ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
-            );
+            if ($paymentAmount > 0) {
+                $paymentMethod = $validated['payment_method'] ?? 'bank';
+                
+                // Create a pending transaction for Action Center to approve
+                $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                    ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                    ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+                );
 
-            $transaction = \App\Models\Transaction::create([
-                'type' => 'income',
-                'amount' => $validated['down_payment'],
-                'account_type' => $paymentMethod,
-                'contract_id' => $contract->id,
-                'category_id' => $incomeCategory->id,
-                'status' => 'approved',
-                'transaction_date' => $baseDate,
-                'created_at' => $baseDate,
-                'updated_at' => $baseDate,
-                'notes' => 'Shartnoma yaratish paytidagi boshlang\'ich to\'lov (' . $paymentMethod . ')',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-
-            \App\Models\CompanyBalance::addIncome($validated['down_payment'], $paymentMethod);
+                $transaction = \App\Models\Transaction::create([
+                    'type' => 'income',
+                    'amount' => $paymentAmount,
+                    'account_type' => $paymentMethod,
+                    'contract_id' => $contract->id,
+                    'category_id' => $incomeCategory->id,
+                    'status' => 'pending',
+                    'transaction_date' => $baseDate,
+                    'created_at' => $baseDate,
+                    'updated_at' => $baseDate,
+                    'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
         }
 
         // Also mark unit as reserved

@@ -328,10 +328,34 @@ class FinanceController extends Controller
             return response()->json(['error' => 'Transaction requires partner consensus and cannot be approved manually.'], 403);
         }
 
+        $validated = $request->validate([
+            'applied_amount' => 'nullable|numeric|min:0',
+            'refund_amount' => 'nullable|numeric|min:0',
+        ]);
+
         $transaction->status = 'approved';
         $transaction->approved_by = auth()->id();
         $transaction->receipt_hash = 'TXN-' . strtoupper(uniqid()) . '-' . $transaction->id;
         $transaction->save();
+
+        if (!empty($validated['refund_amount']) && $validated['refund_amount'] > 0) {
+            $pendingCategory = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => 'Kutayotgan Naqdlashtirish'],
+                ['type' => 'transfer', 'description' => 'Shartnomadan ortib qolgan va mijozga qaytarilishi kerak bo\'lgan summa']
+            );
+
+            \App\Models\Transaction::create([
+                'type' => 'transfer',
+                'amount' => $validated['refund_amount'],
+                'account_type' => $transaction->account_type,
+                'contract_id' => $transaction->contract_id,
+                'category_id' => $pendingCategory->id,
+                'status' => 'pending',
+                'transaction_date' => now(),
+                'notes' => 'Shartnoma to\'lovidan ortgan summa (Qaytim uchun)',
+                'created_by' => auth()->id()
+            ]);
+        }
 
         // Partner Transaction Logic
         if ($transaction->partner_id) {

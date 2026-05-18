@@ -531,6 +531,40 @@ function submitSupplierPayment() {
         onError: () => isProcessing.value = false
     });
 }
+
+// Edit Supplier (specifically balance)
+const showEditSupplierModal = ref(false);
+const editSupplierForm = useForm({
+    id: '',
+    name: '',
+    company_name: '',
+    balance: 0
+});
+
+function openEditSupplierModal(supplier) {
+    editSupplierForm.id = supplier.id;
+    editSupplierForm.name = supplier.name;
+    editSupplierForm.company_name = supplier.company_name;
+    editSupplierForm.balance = supplier.balance;
+    showEditSupplierModal.value = true;
+}
+
+function submitEditSupplier() {
+    isProcessing.value = true;
+    editSupplierForm.put(route('admin.warehouse.suppliers.update', editSupplierForm.id), {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showEditSupplierModal.value = false;
+        },
+        onError: () => isProcessing.value = false
+    });
+}
+
+function deleteSupplier(id) {
+    if (confirm("Ta'minotchini o'chirishni tasdiqlaysizmi?")) {
+        router.delete(route('admin.warehouse.suppliers.destroy', id));
+    }
+}
 const categoriesSummary = computed(() => {
     if (!props.transactions) return [];
     
@@ -1222,6 +1256,14 @@ const categoriesSummary = computed(() => {
                             <h3 class="text-xl font-bold text-white font-display">{{ s.company_name || s.name }}</h3>
                             <p class="text-[10px] font-mono text-text-muted uppercase mt-1">Vakil: {{ s.name }}</p>
                         </div>
+                        <div class="flex items-center gap-2">
+                            <button @click="openEditSupplierModal(s)" class="text-neon-cyan hover:scale-110 transition-transform" title="Tahrirlash">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button @click="deleteSupplier(s.id)" class="text-neon-red hover:scale-110 transition-transform" title="O'chirish">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="pt-4 border-t border-white/10 flex justify-between items-center mb-6">
@@ -1385,6 +1427,34 @@ const categoriesSummary = computed(() => {
             </div>
         </div>
     </div>
+
+        <!-- Edit Supplier Modal -->
+        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="glass-panel max-w-md w-full p-6 rounded-2xl relative border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)]">
+                <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
+                <h3 class="text-xl font-display font-bold text-white mb-6 uppercase tracking-widest">Tahrirlash: {{ editSupplierForm.company_name || editSupplierForm.name }}</h3>
+                
+                <form @submit.prevent="submitEditSupplier" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kompaniya nomi</label>
+                        <input v-model="editSupplierForm.company_name" type="text" class="glass-input w-full text-sm font-bold text-white" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Vakil F.I.O</label>
+                        <input v-model="editSupplierForm.name" type="text" class="glass-input w-full text-sm text-white" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Joriy Balans (UZS)</label>
+                        <input v-model="editSupplierForm.balance" type="number" step="0.01" class="glass-input w-full text-lg font-bold font-mono text-neon-cyan" required>
+                        <p class="text-[10px] text-neon-yellow mt-1 font-mono">Diqqat: Balansni qo'lda o'zgartirish faqat to'lov bekor qilinganda yoki boshqa zarurat tug'ilganda amalga oshirilishi kerak!</p>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-white/10 mt-6">
+                        <button type="submit" :disabled="isProcessing" class="w-full py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-neon-cyan hover:text-black transition-all">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Supplier Payment Modal -->
         <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

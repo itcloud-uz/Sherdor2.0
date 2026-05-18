@@ -84,6 +84,7 @@ class WarehouseController extends Controller
             'address' => 'nullable|string',
             'bank_account' => 'nullable|string',
             'mfo' => 'nullable|string',
+            'balance' => 'nullable|numeric'
         ]);
 
         $supplier->update($validated);
@@ -92,10 +93,6 @@ class WarehouseController extends Controller
 
     public function destroySupplier(Supplier $supplier)
     {
-        if ($supplier->balance != 0) {
-            return back()->with('error', 'Balansida mablag\' bo\'lgan ta\'minotchini o\'chirib bo\'lmaydi');
-        }
-        
         $supplier->delete();
         return back()->with('success', 'Ta\'minotchi o\'chirildi');
     }

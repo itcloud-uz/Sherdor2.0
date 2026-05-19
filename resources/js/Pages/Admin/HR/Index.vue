@@ -354,13 +354,14 @@ function addMachinery() {
 }
 
 const editMachineryId = ref(null);
-const editMachineryForm = useForm({ name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
+const editMachineryForm = useForm({ name: '', machine_owner_id: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
 
 function startEditMachinery(m) {
     editMachineryId.value = m.id;
     editMachineryForm.name = m.name;
-    editMachineryForm.owner_name = m.owner_name;
+    editMachineryForm.machine_owner_id = m.machine_owner_id;
     editMachineryForm.machinery_type = m.machinery_type;
+    editMachineryForm.driver_name = m.driver_name;
     editMachineryForm.payment_type = m.payment_type;
     editMachineryForm.license_plate = m.license_plate;
     editMachineryForm.cost_per_hour = m.cost_per_hour;

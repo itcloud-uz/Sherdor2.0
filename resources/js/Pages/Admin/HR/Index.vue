@@ -1159,7 +1159,7 @@ function exportOwnerPdf(id) {
             </div>
 
             <!-- Workers Column -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+            <div id="workers-column" class="glass-panel relative p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                         👷‍♂️ Yollanma Ishchilar & Brigadalar
@@ -1244,14 +1244,15 @@ function exportOwnerPdf(id) {
                 </div>
 
                 <!-- Hidden Worker Form for reuse -->
-                <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <Teleport v-if="showWorkerForm" :to="workerForm.role === 'guard' ? '#guards-column' : '#workers-column'">
+                <div class="absolute inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
                     <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
                         <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
                             <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
-                            <select v-model="workerForm.brigade_id" class="glass-input text-xs bg-black/50 text-white" required>
+                            <select v-if="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="glass-input text-xs bg-black/50 text-white">
                                 <option value="" disabled>-- Brigada --</option>
                                 <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
                             </select>
@@ -1311,9 +1312,10 @@ function exportOwnerPdf(id) {
                         </div>
                     </form>
                 </div>
+                </Teleport>
             </div>
                   <!-- Qorovullar -->
-                  <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+                  <div id="guards-column" class="glass-panel relative p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                       <div class="flex justify-between items-center mb-6">
                           <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                               🛡️ Qorovullar

@@ -668,53 +668,73 @@ const categoriesSummary = computed(() => {
             </h1>
         </div>
 
-        <div class="flex gap-4">
-            
-            <!-- Sidebar Navigation (Slim, Icon-only) -->
-            <div class="w-[60px] shrink-0 flex flex-col gap-2 bg-black/40 border border-white/5 rounded-2xl p-2 py-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                <button 
-                    v-for="tab in tabs" :key="tab.id"
-                    @click="activeTab = tab.id"
-                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
-                    :class="activeTab === tab.id ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
-                >
-                    <span class="text-xl">{{ tab.icon }}</span>
-                    <!-- Tooltip -->
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t(tab.name) }}]
-                    </div>
-                </button>
-                
-                <div class="h-px w-8 bg-white/20 mx-auto my-2"></div>
-                
-                <Link :href="route('admin.approvals')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
-                    <span class="text-xl">✅</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t('Tasdiqlar') || 'Tasdiqlar' }}]
-                    </div>
-                </Link>
-                
-                <button 
-                    @click="activeTab = 2"
-                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
-                    :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
-                >
-                    <span class="text-xl">📜</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t('ledger_history') }}]
-                    </div>
-                </button>
-                
-                <Link :href="route('admin.receipts')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/5">
-                    <span class="text-xl">🧾</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-cyan/50 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
-                        [{{ $t('Cheklar') || 'Cheklar' }}]
-                    </div>
-                </Link>
-            </div>
+        <!-- Top Navigation (2 rows, 5 tabs each) -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 bg-black/40 border border-white/5 rounded-2xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <!-- 1. BOSHQARUV -->
+            <button @click="activeTab = 0" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 0 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">🏦</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Boshqaruv</span>
+            </button>
 
+            <!-- 2. HARAKATLAR -->
+            <button @click="activeTab = 1" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 1 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">⚖️</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Harakatlar</span>
+            </button>
+
+            <!-- 3. TRANZAKS. -->
+            <button @click="activeTab = 3" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 3 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">⚡</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Tranzaks.</span>
+            </button>
+
+            <!-- 4. QARZLAR -->
+            <button @click="activeTab = 4" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 4 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">📉</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Qarzlar</span>
+            </button>
+
+            <!-- 5. TA'MINOTCHILAR -->
+            <button @click="activeTab = 5" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 5 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">📦</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Ta'minotchilar</span>
+            </button>
+
+            <!-- 6. O'TKAZMALAR -->
+            <button @click="activeTab = 6" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 6 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">🔄</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">O'tkazmalar</span>
+            </button>
+
+            <!-- 7. HISOBOT -->
+            <button @click="activeTab = 7" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 7 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">📊</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Hisobot</span>
+            </button>
+
+            <!-- 8. TASDIQLAR -->
+            <Link :href="route('admin.approvals')" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <span class="text-2xl mb-2">✅</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Tasdiqlar</span>
+            </Link>
+
+            <!-- 9. OPERATS. -->
+            <button @click="activeTab = 2" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all" :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'">
+                <span class="text-2xl mb-2">📋</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Operats.</span>
+            </button>
+
+            <!-- 10. CHEKLAR -->
+            <Link :href="route('admin.receipts')" class="flex flex-col items-center justify-center p-3 rounded-xl border-b-2 transition-all border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <span class="text-2xl mb-2">🧾</span>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-center">Cheklar</span>
+            </Link>
+        </div>
+
+        <div class="flex flex-col w-full">
+            
             <!-- Content Area -->
-            <div class="flex-1 w-[calc(100%-76px)] overflow-x-hidden">
+            <div class="w-full overflow-x-hidden">
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">

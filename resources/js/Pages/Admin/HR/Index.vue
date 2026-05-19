@@ -413,7 +413,7 @@ const machineryLedgerForm = ref({ amount: '', description: '', date: new Date().
 const machineryLogForm = ref({ building_id: '', volume: '', custom_rate: '', date: new Date().toISOString().split('T')[0] });
 
 const editLogId = ref(null);
-const editLogForm = ref({ hours_worked: '', volume_done: '', custom_rate: '', date: '' });
+const editLogForm = ref({ hours_worked: '', volume_done: '', custom_rate: '', date: '', description: '' });
 const editTxId = ref(null);
 const editTxForm = ref({ amount: '', description: '', date: '' });
 
@@ -422,6 +422,7 @@ function startEditLog(log) {
     editLogForm.value.hours_worked = log.hours_worked || '';
     editLogForm.value.volume_done = log.volume_done || '';
     editLogForm.value.custom_rate = log.rate || '';
+    editLogForm.value.description = log.description || '';
     editLogForm.value.date = log.date ? log.date.split('T')[0] : '';
 }
 
@@ -853,6 +854,7 @@ function submitLog() {
             logForm.value.hours_worked = '';
             logForm.value.volume_done = '';
             logForm.value.custom_rate = '';
+            logForm.value.description = '';
             logForm.value.date = new Date().toISOString().split('T')[0];
         },
         onError: () => isProcessing.value = false
@@ -1520,6 +1522,11 @@ function generatePayroll() {
                         </div>
                     </div>
 
+                    <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'" class="mt-4">
+                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh (Ixtiyoriy)</label>
+                        <input v-model="logForm.description" type="text" class="glass-input w-full text-white" placeholder="Qo'shimcha ma'lumot yoki sabab...">
+                    </div>
+
                     <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'" class="mt-8 bg-black/40 p-4 rounded-xl border border-neon-blue/20 flex justify-between items-center">
                         <span class="text-xs font-mono text-text-muted uppercase tracking-widest">{{ $t('calculated_cost_preview') }}:</span>
                         <span class="text-2xl font-display font-bold text-neon-blue">{{ $currency(logPreviewCost) }}</span>
@@ -1826,6 +1833,7 @@ function generatePayroll() {
                         <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
                             <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
                             <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.description" type="text" class="glass-input text-xs w-32" placeholder="Izoh">
                             <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
                             <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
                             <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
@@ -1836,6 +1844,7 @@ function generatePayroll() {
                                 <p class="text-[10px] font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
                                     Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                    <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                 </p>
                             </div>
                             <div class="flex items-center gap-4">
@@ -2217,6 +2226,7 @@ function generatePayroll() {
                         <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
                             <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
                             <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.description" type="text" class="glass-input text-xs w-32" placeholder="Izoh">
                             <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
                             <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
                             <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
@@ -2227,6 +2237,7 @@ function generatePayroll() {
                                 <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
                                     Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                    <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                 </p>
                             </div>
                             <div class="flex items-center gap-4">

@@ -313,7 +313,8 @@ class HrController extends Controller
                         'work_category' => 'nullable|string|max:255',
             'date' => 'required|date',
             'custom_rate' => 'nullable|numeric|min:0',
-            'deductions' => 'nullable|numeric|min:0'
+            'deductions' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string'
         ]);
 
         $deductions = (float) $request->input('deductions', 0);
@@ -344,6 +345,7 @@ class HrController extends Controller
         $validated['calculated_cost'] = $calculatedCost;
         $validated['deductions'] = $deductions;
         $validated['status'] = 'unpaid';
+        $validated['description'] = $request->input('description');
         unset($validated['custom_rate']);
 
         DB::transaction(function () use ($validated, $calculatedCost) {
@@ -713,7 +715,8 @@ class HrController extends Controller
             'volume_done' => 'nullable|numeric|min:0',
             'date' => 'required|date',
             'custom_rate' => 'nullable|numeric|min:0',
-            'deductions' => 'nullable|numeric|min:0'
+            'deductions' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string'
         ]);
 
         $oldCost = $log->calculated_cost;
@@ -745,7 +748,8 @@ class HrController extends Controller
                 'rate' => $rate ?? 0,
                 'calculated_cost' => $newCost,
                 'deductions' => $deductions,
-                'date' => $validated['date']
+                'date' => $validated['date'],
+                'description' => $validated['description'] ?? null
             ]);
 
             if ($delta != 0) {

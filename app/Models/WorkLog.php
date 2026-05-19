@@ -8,7 +8,7 @@ class WorkLog extends Model
 {
     protected $fillable = [
         'type', 'worker_id', 'machinery_id', 'building_id', 'floor_id', 'unit_id', 'hours_worked', 
-        'volume_done', 'measurement_unit', 'work_category', 'rate', 'calculated_cost', 'deductions', 'date', 'payroll_id', 'status'
+        'volume_done', 'measurement_unit', 'work_category', 'rate', 'calculated_cost', 'deductions', 'date', 'payroll_id', 'status', 'description'
     ];
 
     public function worker()

@@ -543,7 +543,7 @@ async function openOwnerLedger(owner) {
         showOwnerLedgerModal.value = true;
     } catch(err) {
         console.error(err);
-        alert('Ma\'lumotlarni yuklashda xatolik!');
+        alert("Ma\'lumotlarni yuklashda xatolik!");
     }
 }
 
@@ -556,7 +556,7 @@ async function openMachineryLedger(m) {
         showMachineryLedgerModal.value = true;
     } catch(err) {
         console.error(err);
-        alert('Ma'lumotlarni yuklashda xatolik!');
+        alert("Ma'lumotlarni yuklashda xatolik!");
     }
 }
 

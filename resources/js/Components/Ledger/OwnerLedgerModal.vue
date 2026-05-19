@@ -4,30 +4,27 @@ import axios from 'axios';
 
 const props = defineProps({
     show: Boolean,
-    ownerId: [Number, String] // Changed from owner to ownerId
+    ownerId: [Number, String],
+    inline: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['close', 'exportPdf']);
 
 const form = ref({
     amount: '',
+    discount: '0',
     date: new Date().toISOString().split('T')[0],
+    account_type: 'main',
+    payment_method: 'cash',
     description: '',
-    accrual_amount: '',
+    
+    accrual_name: '',
+    accrual_qty: '',
+    accrual_price: '',
     accrual_date: new Date().toISOString().split('T')[0],
     accrual_description: ''
 });
 
-const showInlineRow = ref(false);
-const inlineForm = ref({
-    date: new Date().toISOString().split('T')[0],
-    name: '',
-    qty: '',
-    price: '',
-    cash: '',
-    card: '',
-    other: ''
-});
 const isSubmitting = ref(false);
 
 const ledgerData = ref({ balance: 0, items: [] });
@@ -141,80 +138,56 @@ async function submitTransaction(payload) {
 }
 
 function submitPayment() {
-    submitTransaction({ type: 'payment', amount: form.value.amount, date: form.value.date, description: form.value.description });
+    if (!form.value.description) {
+        alert("Izoh kiritish majburiy!");
+        return;
+    }
+    submitTransaction({ 
+        type: 'payment', 
+        amount: form.value.amount, 
+        discount: form.value.discount || 0,
+        account_type: form.value.account_type,
+        payment_method: form.value.payment_method,
+        date: form.value.date, 
+        description: form.value.description 
+    });
     form.value.amount = '';
+    form.value.discount = '0';
     form.value.description = '';
 }
 
 function submitAccrual() {
-    submitTransaction({ type: 'salary_accrual', amount: form.value.accrual_amount, date: form.value.accrual_date, description: form.value.accrual_description });
-    form.value.accrual_amount = '';
+    let q = Number(form.value.accrual_qty) || 0;
+    let p = Number(form.value.accrual_price) || 0;
+    let total = q * p;
+    if (total <= 0) {
+        alert("Soni va narxi kiritilmagan yoki 0");
+        return;
+    }
+    let desc = form.value.accrual_name ? `${form.value.accrual_name} (${q} x ${p})` : `Bajarilgan ish (${q} x ${p})`;
+    if (form.value.accrual_description) {
+        desc += ` - ${form.value.accrual_description}`;
+    }
+    
+    submitTransaction({ 
+        type: 'salary_accrual', 
+        amount: total, 
+        date: form.value.accrual_date, 
+        description: desc 
+    });
+    form.value.accrual_name = '';
+    form.value.accrual_qty = '';
+    form.value.accrual_price = '';
     form.value.accrual_description = '';
 }
 
-async function saveInlineForm() {
-    isSubmitting.value = true;
-    try {
-        let workTotal = (Number(inlineForm.value.qty) || 0) * (Number(inlineForm.value.price) || 0);
-        
-        if (workTotal > 0) {
-            await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
-                type: 'salary_accrual',
-                amount: workTotal,
-                date: inlineForm.value.date,
-                description: inlineForm.value.name ? `${inlineForm.value.name} (${inlineForm.value.qty} x ${inlineForm.value.price})` : `Bajarilgan ish (${inlineForm.value.qty} x ${inlineForm.value.price})`
-            });
-        }
-        if (Number(inlineForm.value.cash) > 0) {
-             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
-                type: 'payment',
-                amount: inlineForm.value.cash,
-                date: inlineForm.value.date,
-                description: `Naqd: ${inlineForm.value.name || "To'lov"}`
-             });
-        }
-        if (Number(inlineForm.value.card) > 0) {
-             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
-                type: 'payment',
-                amount: inlineForm.value.card,
-                date: inlineForm.value.date,
-                description: `Karta: ${inlineForm.value.name || "To'lov"}`
-             });
-        }
-        if (Number(inlineForm.value.other) > 0) {
-             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
-                type: 'payment',
-                amount: inlineForm.value.other,
-                date: inlineForm.value.date,
-                description: `Boshqa: ${inlineForm.value.name || "To'lov"}`
-             });
-        }
-        
-        await fetchData(); // refresh the table
-        showInlineRow.value = false;
-        // reset form
-        inlineForm.value = {
-            date: new Date().toISOString().split('T')[0],
-            name: '',
-            qty: '',
-            price: '',
-            cash: '',
-            card: '',
-            other: ''
-        };
-    } catch(e) {
-        console.error(e);
-        alert("Xatolik!");
-    } finally {
-        isSubmitting.value = false;
-    }
-}
+
 </script>
 
 <template>
-    <div v-if="show" class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
-        <div class="relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[80vw] max-w-[1100px] max-h-[85vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+    <div v-if="show" :class="inline ? 'w-full mt-4 animate-[fadeIn_0.3s_ease-out]' : 'fixed inset-0 z-[9999] flex items-center justify-center p-4'">
+        <div v-if="!inline" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
+        <div :class="inline ? 'glass-panel bg-abyss/40 border border-white/10 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[80vw] max-w-[1100px] max-h-[85vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
             
             <div class="flex justify-between items-center mb-6 relative z-10">
                 <button @click="$emit('exportPdf', owner?.id)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 rounded-lg hover:bg-neon-yellow hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
@@ -223,8 +196,11 @@ async function saveInlineForm() {
                 <h2 class="text-2xl font-display font-bold text-white tracking-widest uppercase text-shadow-glow">
                     {{ owner?.name }} <span class="text-neon-yellow opacity-80">- Texnikalar Jurnali</span>
                 </h2>
-                <button @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-neon-red/20 text-white hover:text-neon-red transition-colors border border-white/10 hover:border-neon-red/50">
+                <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-neon-red/20 text-white hover:text-neon-red transition-colors border border-white/10 hover:border-neon-red/50">
                     ✕
+                </button>
+                <button v-else @click="close" class="px-4 py-2 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded-lg hover:bg-neon-red hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
+                    Yopish
                 </button>
             </div>
             
@@ -232,9 +208,7 @@ async function saveInlineForm() {
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
                     <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th class="p-4 border-r border-white/5 w-16 min-w-[64px] text-center">
-                                <button @click="showInlineRow = !showInlineRow" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[11px] hover:bg-neon-green hover:text-black transition-colors" title="Qator qo'shish">➕</button>
-                            </th>
+                            <th class="p-4 border-r border-white/5 w-16 min-w-[64px] text-center text-text-muted">№</th>
                             <th class="p-4 border-r border-white/5 w-[130px] min-w-[130px]">Sana</th>
                             <th class="p-4 border-r border-white/5 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
                             <th class="p-4 border-r border-white/5 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
@@ -253,45 +227,7 @@ async function saveInlineForm() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5 text-white/90">
-                        <tr v-if="showInlineRow" class="bg-neon-yellow/10 border-b border-neon-yellow/30">
-                            <td class="p-2 border-r border-white/5 text-center text-neon-yellow">➕</td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="date" v-model="inlineForm.date" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow [color-scheme:dark]" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="text" v-model="inlineForm.name" placeholder="Nomi" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.qty" placeholder="0" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow text-center" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.price" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow text-right" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.cash" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.card" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
-                            </td>
-                            <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.other" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
-                            </td>
-                            <td class="p-2 text-center flex flex-col gap-1 items-end">
-                                <div class="text-[11px] text-neon-yellow font-bold" title="Bajarilgan ish summasi">
-                                    B: {{ ((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)).toLocaleString() }}
-                                </div>
-                                <div class="text-[11px] text-neon-green font-bold" title="To'langan summa">
-                                    T: {{ (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)).toLocaleString() }}
-                                </div>
-                                <div class="text-[11px] font-bold" :class="((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)) > 0 ? 'text-neon-red' : 'text-neon-cyan'" title="Qoldiq">
-                                    Q: {{ (((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other))).toLocaleString() }}
-                                </div>
-                                <div class="flex gap-1 mt-1 justify-end">
-                                    <button @click="saveInlineForm" :disabled="isSubmitting" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[11px] hover:bg-neon-green hover:text-black">✅ Saqlash</button>
-                                    <button @click="showInlineRow = false" :disabled="isSubmitting" class="px-2 py-1 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded text-[11px] hover:bg-neon-red hover:text-black">❌</button>
-                                </div>
-                            </td>
-                        </tr>
+
                         <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover:bg-white/5 transition-colors group">
                             <td class="p-3 border-r border-white/5 text-center text-text-muted">{{ idx + 1 }}</td>
                             <td class="p-3 border-r border-white/5">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>
@@ -329,49 +265,87 @@ async function saveInlineForm() {
             <div class="glass-card p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
                 <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse"></span>Bajarilgan Ish Kiritish (Qarz Yozish)
+                    <span class="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse"></span>🔴 Bajarilgan Ish Kiritish (Qarz Yozish)
                 </h3>
-                <form @submit.prevent="submitAccrual" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Summa (so'm)</label>
-                        <input v-model="form.accrual_amount" type="number" step="1000" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="Masalan: 1000000" />
-                    </div>
+                <form @submit.prevent="submitAccrual" class="grid grid-cols-1 md:grid-cols-6 gap-4 relative z-10">
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Sana</label>
                         <input v-model="form.accrual_date" type="date" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Nomi</label>
+                        <input v-model="form.accrual_name" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="Nomi" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Soni</label>
+                        <input v-model="form.accrual_qty" type="number" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="0" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Narxi</label>
+                        <input v-model="form.accrual_price" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="0" />
+                    </div>
                     <div class="md:col-span-2 flex gap-4 items-end">
                         <div class="flex-grow">
                             <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh (Ixtiyoriy)</label>
-                            <input v-model="form.accrual_description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" placeholder="Masalan: Qazish ishlari uchun..." />
+                            <input v-model="form.accrual_description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" placeholder="Qo'shimcha izoh..." />
                         </div>
-                        <button type="submit" class="h-10 px-6 bg-neon-red/20 border border-neon-red text-neon-red font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-red hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(255,51,102,0.2)]">
+                        <div class="flex flex-col gap-1 items-end">
+                            <span class="text-[10px] text-text-muted font-mono uppercase">Jami:</span>
+                            <span class="text-sm font-bold text-neon-red whitespace-nowrap">{{ ((Number(form.accrual_qty)||0) * (Number(form.accrual_price)||0)).toLocaleString() }}</span>
+                        </div>
+                        <button type="submit" class="h-10 px-4 bg-neon-red/20 border border-neon-red text-neon-red font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-red hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(255,51,102,0.2)]">
                             Qo'shish
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="glass-card p-6 border-t-4 border-t-neon-yellow relative overflow-hidden">
-                <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-[10px] font-mono text-neon-yellow uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-neon-yellow animate-pulse"></span>Kassa amaliyoti (To'lov qilish)
+            <!-- BOTTOM FORM: Kassa Amaliyoti -->
+            <div class="glass-card p-6 border-t-4 border-t-neon-green relative overflow-hidden">
+                <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-[10px] font-mono text-neon-green uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span>🔵 Kassa amaliyoti (To'lov qilish)
                 </h3>
                 <form @submit.prevent="submitPayment" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
                     <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Hisob</label>
+                        <select v-model="form.account_type" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required>
+                            <option value="main">Kompaniya Hisobi (Main)</option>
+                            <option value="bank">Bank Hisobi (Bank)</option>
+                            <option value="credit">Kredit Hisobi (Credit)</option>
+                            <option value="partner">Ta'sischi Hisobi (Partner)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">To'lov Usuli</label>
+                        <select v-model="form.payment_method" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required>
+                            <option value="cash">Naqd Pul</option>
+                            <option value="card">Plastik Karta</option>
+                            <option value="bank_transfer">Bank O'tkazmasi</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Summa (so'm)</label>
-                        <input v-model="form.amount" type="number" step="1000" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-yellow outline-none" required placeholder="Masalan: 1000000" />
+                        <input v-model="form.amount" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required placeholder="0" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1" title="Ixtiyoriy">Texnika Xarajati / Chegirma</label>
+                        <input v-model="form.discount" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Sana</label>
                         <input v-model="form.date" type="date" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
-                    <div class="md:col-span-2 flex gap-4 items-end">
+                    <div class="md:col-span-3 flex gap-4 items-end">
                         <div class="flex-grow">
-                            <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh (Ixtiyoriy)</label>
-                            <input v-model="form.description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-yellow outline-none" placeholder="Masalan: Ekskavator to'lovi..." />
+                            <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh / Maqsad <span class="text-neon-red">*</span></label>
+                            <input v-model="form.description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required placeholder="Nima uchun to'lov qilinmoqda?" />
                         </div>
-                        <button type="submit" class="h-10 px-6 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-yellow hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(252,238,9,0.2)]">
+                        <div class="flex flex-col gap-1 items-end">
+                            <span class="text-[10px] text-text-muted font-mono uppercase">Jami yechiladi:</span>
+                            <span class="text-sm font-bold text-neon-green whitespace-nowrap">{{ (Number(form.amount || 0) + Number(form.discount || 0)).toLocaleString() }}</span>
+                        </div>
+                        <button type="submit" class="h-10 px-6 bg-neon-green/20 border border-neon-green text-neon-green font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-green hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(0,255,100,0.2)]">
                             Saqlash
                         </button>
                     </div>

@@ -266,28 +266,95 @@ class HrController extends Controller
             'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
-            'date' => 'nullable|date'
+            'date' => 'nullable|date',
+            'discount' => 'nullable|numeric|min:0',
+            'account_type' => 'nullable|string|in:main,bank,credit,partner',
+            'payment_method' => 'nullable|string|in:cash,card,bank_transfer',
         ]);
 
         if (empty($validated['date'])) {
             $validated['date'] = now()->toDateString();
         }
 
-        DB::transaction(function () use ($owner, $validated) {
-            \App\Models\MachineOwnerTransaction::create([
-                'machine_owner_id' => $owner->id,
-                'type' => $validated['type'],
-                'amount' => $validated['amount'],
-                'description' => $validated['description'],
-                'date' => $validated['date']
-            ]);
+        $amount = (float) $validated['amount'];
+        $discount = (float) ($validated['discount'] ?? 0);
+        $totalPayment = $amount + $discount;
 
-            if ($validated['type'] === 'salary_accrual') {
-                $owner->increment('balance', $validated['amount']);
+        DB::transaction(function () use ($owner, $validated, $amount, $discount, $totalPayment) {
+            if ($validated['type'] === 'payment') {
+                // Owner balansi umumiy summa + chegirma qiymatiga kamayadi
+                $owner->decrement('balance', $totalPayment);
+
+                // 1. Asosiy to'lov (Summa)
+                \App\Models\MachineOwnerTransaction::create([
+                    'machine_owner_id' => $owner->id,
+                    'type' => 'payment',
+                    'amount' => $amount,
+                    'description' => $validated['description'] ?? 'To\'lov',
+                    'date' => $validated['date']
+                ]);
+
+                \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
+
+                // Moliya markazi uchun asosiy to'lov tranzaksiyasini yaratish
+                $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Texnika To\'lovi'], ['type' => 'expense']);
+                \App\Models\Transaction::create([
+                    'type' => 'expense',
+                    'amount' => $amount,
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'account_type' => $validated['account_type'] ?? 'main',
+                    'category_id' => $cat->id,
+                    'category_name' => $cat->name,
+                    'status' => 'approved',
+                    'notes' => $validated['description'] ?? 'Texnika egasiga to\'lov',
+                    'transaction_date' => $validated['date'],
+                    'created_by' => auth()->id(),
+                    'target_type' => 'machine_owner',
+                    'target_id' => $owner->id,
+                ]);
+
+                // 2. Chegirma (Texnika xarajati)
+                if ($discount > 0) {
+                    \App\Models\MachineOwnerTransaction::create([
+                        'machine_owner_id' => $owner->id,
+                        'type' => 'payment',
+                        'amount' => $discount,
+                        'description' => 'Texnika xarajati (Chegirma)',
+                        'date' => $validated['date']
+                    ]);
+
+                    \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
+
+                    $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Texnika xarajati (chegirma)'], ['type' => 'expense']);
+                    \App\Models\Transaction::create([
+                        'type' => 'expense',
+                        'amount' => $discount,
+                        'payment_method' => $validated['payment_method'] ?? 'cash',
+                        'account_type' => $validated['account_type'] ?? 'main',
+                        'category_id' => $discountCat->id,
+                        'category_name' => $discountCat->name,
+                        'status' => 'approved',
+                        'notes' => 'Texnika xarajati (chegirma)',
+                        'transaction_date' => $validated['date'],
+                        'created_by' => auth()->id(),
+                        'target_type' => 'machine_owner',
+                        'target_id' => $owner->id,
+                    ]);
+                }
             } else {
-                $owner->decrement('balance', $validated['amount']);
-                if ($validated['type'] === 'payment') {
-                    \App\Models\CompanyBalance::addExpense($validated['amount']);
+                // Qarz yoki jarima qo'shilganda
+                \App\Models\MachineOwnerTransaction::create([
+                    'machine_owner_id' => $owner->id,
+                    'type' => $validated['type'],
+                    'amount' => $amount,
+                    'description' => $validated['description'],
+                    'date' => $validated['date']
+                ]);
+
+                if ($validated['type'] === 'salary_accrual') {
+                    $owner->increment('balance', $amount);
+                } else {
+                    $owner->decrement('balance', $amount);
                 }
             }
         });
@@ -1028,24 +1095,89 @@ class HrController extends Controller
             'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'discount' => 'nullable|numeric|min:0',
+            'account_type' => 'nullable|string|in:main,bank,credit,partner',
+            'payment_method' => 'nullable|string|in:cash,card,bank_transfer',
         ]);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($brigade, $validated) {
-            \App\Models\BrigadeTransaction::create([
-                'brigade_id' => $brigade->id,
-                'type' => $validated['type'],
-                'amount' => $validated['amount'],
-                'description' => $validated['description'],
-                'date' => $validated['date']
-            ]);
+        $amount = (float) $validated['amount'];
+        $discount = (float) ($validated['discount'] ?? 0);
+        $totalPayment = $amount + $discount;
 
-            if ($validated['type'] === 'salary_accrual') {
-                $brigade->increment('balance', $validated['amount']);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($brigade, $validated, $amount, $discount, $totalPayment) {
+            if ($validated['type'] === 'payment') {
+                $brigade->decrement('balance', $totalPayment);
+
+                // 1. Asosiy to'lov
+                \App\Models\BrigadeTransaction::create([
+                    'brigade_id' => $brigade->id,
+                    'type' => 'payment',
+                    'amount' => $amount,
+                    'description' => $validated['description'] ?? 'To\'lov',
+                    'date' => $validated['date']
+                ]);
+
+                \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
+
+                // Moliya markazi uchun asosiy to'lov tranzaksiyasi
+                $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Brigada To\'lovi'], ['type' => 'expense']);
+                \App\Models\Transaction::create([
+                    'type' => 'expense',
+                    'amount' => $amount,
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'account_type' => $validated['account_type'] ?? 'main',
+                    'category_id' => $cat->id,
+                    'category_name' => $cat->name,
+                    'status' => 'approved',
+                    'notes' => $validated['description'] ?? 'Brigada to\'lovi',
+                    'transaction_date' => $validated['date'],
+                    'created_by' => auth()->id(),
+                    'target_type' => 'brigade',
+                    'target_id' => $brigade->id,
+                ]);
+
+                // 2. Chegirma
+                if ($discount > 0) {
+                    \App\Models\BrigadeTransaction::create([
+                        'brigade_id' => $brigade->id,
+                        'type' => 'payment',
+                        'amount' => $discount,
+                        'description' => 'Brigada xarajati (Chegirma)',
+                        'date' => $validated['date']
+                    ]);
+
+                    \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
+
+                    $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Brigada xarajati (chegirma)'], ['type' => 'expense']);
+                    \App\Models\Transaction::create([
+                        'type' => 'expense',
+                        'amount' => $discount,
+                        'payment_method' => $validated['payment_method'] ?? 'cash',
+                        'account_type' => $validated['account_type'] ?? 'main',
+                        'category_id' => $discountCat->id,
+                        'category_name' => $discountCat->name,
+                        'status' => 'approved',
+                        'notes' => 'Brigada xarajati (chegirma)',
+                        'transaction_date' => $validated['date'],
+                        'created_by' => auth()->id(),
+                        'target_type' => 'brigade',
+                        'target_id' => $brigade->id,
+                    ]);
+                }
             } else {
-                $brigade->decrement('balance', $validated['amount']);
-                if ($validated['type'] === 'payment') {
-                    \App\Models\CompanyBalance::addExpense($validated['amount']);
+                \App\Models\BrigadeTransaction::create([
+                    'brigade_id' => $brigade->id,
+                    'type' => $validated['type'],
+                    'amount' => $amount,
+                    'description' => $validated['description'],
+                    'date' => $validated['date']
+                ]);
+
+                if ($validated['type'] === 'salary_accrual') {
+                    $brigade->increment('balance', $amount);
+                } else {
+                    $brigade->decrement('balance', $amount);
                 }
             }
         });

@@ -241,6 +241,8 @@ function selectContract(c) {
 
 const showOwnerLedger = ref(false);
 const showBrigadeLedger = ref(false);
+const showOwnerLedgerInline = ref(false);
+const showBrigadeLedgerInline = ref(false);
 const selectedOwnerId = ref(null);
 const selectedBrigadeId = ref(null);
 
@@ -1047,20 +1049,33 @@ const categoriesSummary = computed(() => {
                         </select>
                     </div>
 
-                    <div v-if="requiresBrigade">
-                        <label class="block text-xs font-mono mb-1 text-neon-cyan">YOKI Brigadani Tanlang (Yollanma)</label>
-                        <select v-model="form.brigade_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50">
-                            <option value="">-- Brigadani Tanlash --</option>
-                            <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                    </div>
-                    
-                    <div v-if="requiresBrigade && form.brigade_id" class="p-6 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl flex items-center justify-between mt-4">
-                        <div>
-                            <h4 class="text-neon-cyan font-bold uppercase tracking-widest text-sm">Brigada Jurnali</h4>
-                            <p class="text-text-muted text-[10px] font-mono mt-1">Bu toifa bo'yicha to'lovlarni to'g'ridan-to'g'ri maxsus jurnal orqali amalga oshiring.</p>
+                    <div v-if="requiresBrigade" class="p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl mt-4">
+                        <h3 class="text-neon-cyan font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                            👷 BRIGADA MA'LUMOTLARI
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-mono mb-1 text-neon-cyan">Brigada</label>
+                                <select v-model="form.brigade_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50">
+                                    <option value="">-- Tanlang --</option>
+                                    <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                </select>
+                            </div>
+                            
+                            <div v-if="form.brigade_id" class="mt-6 border-t border-neon-cyan/20 pt-4">
+                                <button v-if="!showBrigadeLedgerInline" type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                                    💡 BRIGADA JURNALI
+                                </button>
+                                
+                                <BrigadeLedgerModal 
+                                    v-if="showBrigadeLedgerInline"
+                                    :show="true" 
+                                    :inline="true" 
+                                    :brigadeId="form.brigade_id" 
+                                    @close="showBrigadeLedgerInline = false" 
+                                />
+                            </div>
                         </div>
-                        <button type="button" @click.prevent="openBrigadeLedgerFromFinance(form.brigade_id)" class="px-6 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-[10px] rounded hover:bg-white hover:text-black transition-colors shadow-[0_0_15px_rgba(0,255,255,0.3)]">Jurnalni Ochiq</button>
                     </div>
 
                     
@@ -1080,29 +1095,41 @@ const categoriesSummary = computed(() => {
                         </select>
                     </div>
 
-                    
-                    <div v-if="requiresMachineOwner">
-                        <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika Egasini Tanlang (Pul to'lash uchun)</label>
-                        <select v-model="form.machine_owner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
-                            <option value="">-- Egasini Tanlash --</option>
-                            <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                        </select>
-                    </div>
-                    
-                    <div v-if="requiresMachineOwner && form.machine_owner_id" class="p-6 bg-neon-yellow/10 border border-neon-yellow/30 rounded-xl flex items-center justify-between mt-4">
-                        <div>
-                            <h4 class="text-neon-yellow font-bold uppercase tracking-widest text-sm">Texnika Egasi Jurnali</h4>
-                            <p class="text-text-muted text-[10px] font-mono mt-1">Bu toifa bo'yicha to'lovlarni to'g'ridan-to'g'ri maxsus jurnal orqali amalga oshiring.</p>
-                        </div>
-                        <button type="button" @click.prevent="openOwnerLedgerFromFinance(form.machine_owner_id)" class="px-6 py-2 bg-neon-yellow text-black font-bold uppercase tracking-widest text-[10px] rounded hover:bg-white hover:text-black transition-colors shadow-[0_0_15px_rgba(252,238,9,0.3)]">Jurnalni Ochiq</button>
-                    </div>
+                    <div v-if="requiresMachineOwner" class="p-6 bg-neon-yellow/5 border border-neon-yellow/30 rounded-xl mt-4">
+                        <h3 class="text-neon-yellow font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                            🔧 TEXNIKA TO'LOVI MA'LUMOTLARI
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika Egasi</label>
+                                <select v-model="form.machine_owner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
+                                    <option value="">-- Tanlang --</option>
+                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika</label>
+                                <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
+                                    <option value="" disabled>-- Tanlang --</option>
+                                    <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
+                                </select>
+                            </div>
 
-<div v-if="requiresMachinery">
-                        <label class="block text-xs font-mono text-text-muted mb-1">(Ixtiyoriy) Aynan qaysi texnika?</label>
-                        <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
-                        </select>
+                            <div v-if="form.machine_owner_id" class="mt-6 border-t border-neon-yellow/20 pt-4">
+                                <button v-if="!showOwnerLedgerInline" type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full py-3 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                                    💡 TEXNIKA EGASI JURNALI
+                                </button>
+                                
+                                <OwnerLedgerModal 
+                                    v-if="showOwnerLedgerInline"
+                                    :show="true" 
+                                    :inline="true" 
+                                    :ownerId="form.machine_owner_id" 
+                                    @close="showOwnerLedgerInline = false" 
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div v-if="requiresSupplier">

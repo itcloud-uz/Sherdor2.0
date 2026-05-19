@@ -214,7 +214,7 @@ async function saveInlineForm() {
 <template>
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="close"></div>
-        <div class="relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+        <div class="relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[95vw] max-w-none min-h-[80vh] max-h-[95vh] overflow-y-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]">
             
             <div class="flex justify-between items-center mb-6 relative z-10">
                 <button @click="$emit('exportPdf', owner?.id)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 rounded-lg hover:bg-neon-yellow hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
@@ -228,27 +228,27 @@ async function saveInlineForm() {
                 </button>
             </div>
             
-            <div class="flex-1 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl bg-black/40 mb-6">
-                <table class="w-full text-left text-sm font-mono whitespace-nowrap">
-                    <thead class="bg-white/5 border-b border-white/10 text-[10px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
+            <div class="flex-1 custom-scrollbar border border-white/10 rounded-xl bg-black/40 mb-6">
+                <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
+                    <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th class="p-4 border-r border-white/5 w-16 text-center">
-                                <button @click="showInlineRow = !showInlineRow" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[10px] hover:bg-neon-green hover:text-black transition-colors" title="Qator qo'shish">➕</button>
+                            <th class="p-4 border-r border-white/5 w-16 min-w-[64px] text-center">
+                                <button @click="showInlineRow = !showInlineRow" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[11px] hover:bg-neon-green hover:text-black transition-colors" title="Qator qo'shish">➕</button>
                             </th>
-                            <th class="p-4 border-r border-white/5 w-32">Sana</th>
+                            <th class="p-4 border-r border-white/5 w-[130px] min-w-[130px]">Sana</th>
                             <th class="p-4 border-r border-white/5 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
                             <th class="p-4 border-r border-white/5 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
-                            <th class="p-4 w-32 text-right">Qoldiq</th>
+                            <th class="p-4 w-[130px] min-w-[130px] text-right">Qoldiq</th>
                         </tr>
-                        <tr class="border-t border-white/5 text-[9px] bg-black/20">
+                        <tr class="border-t border-white/5 text-[11px] bg-black/20">
                             <th class="border-r border-white/5 p-2"></th>
                             <th class="border-r border-white/5 p-2"></th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow">Nomi</th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow">Soni</th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow">Narxi</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green">Naqd</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green">Karta</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green">Boshqa</th>
+                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[180px] min-w-[180px]">Nomi</th>
+                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[80px] min-w-[80px]">Soni</th>
+                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[120px] min-w-[120px]">Narxi</th>
+                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Naqd</th>
+                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Karta</th>
+                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Boshqa</th>
                             <th class="p-2"></th>
                         </tr>
                     </thead>
@@ -256,39 +256,39 @@ async function saveInlineForm() {
                         <tr v-if="showInlineRow" class="bg-neon-yellow/10 border-b border-neon-yellow/30">
                             <td class="p-2 border-r border-white/5 text-center text-neon-yellow">➕</td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="date" v-model="inlineForm.date" class="w-full bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow [color-scheme:dark]" />
+                                <input type="date" v-model="inlineForm.date" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow [color-scheme:dark]" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="text" v-model="inlineForm.name" placeholder="Nomi" class="w-24 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow" />
+                                <input type="text" v-model="inlineForm.name" placeholder="Nomi" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.qty" placeholder="0" class="w-12 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow text-center" />
+                                <input type="number" v-model="inlineForm.qty" placeholder="0" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow text-center" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.price" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow text-right" />
+                                <input type="number" v-model="inlineForm.price" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-yellow text-right" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.cash" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                                <input type="number" v-model="inlineForm.cash" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.card" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                                <input type="number" v-model="inlineForm.card" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
                             </td>
                             <td class="p-2 border-r border-white/5">
-                                <input type="number" v-model="inlineForm.other" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                                <input type="number" v-model="inlineForm.other" placeholder="0" step="100" class="w-full bg-black/50 text-white text-[13px] border border-white/10 rounded px-2 py-2 outline-none focus:border-neon-green text-right" />
                             </td>
                             <td class="p-2 text-center flex flex-col gap-1 items-end">
-                                <div class="text-[9px] text-neon-yellow font-bold" title="Bajarilgan ish summasi">
+                                <div class="text-[11px] text-neon-yellow font-bold" title="Bajarilgan ish summasi">
                                     B: {{ ((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)).toLocaleString() }}
                                 </div>
-                                <div class="text-[9px] text-neon-green font-bold" title="To'langan summa">
+                                <div class="text-[11px] text-neon-green font-bold" title="To'langan summa">
                                     T: {{ (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)).toLocaleString() }}
                                 </div>
-                                <div class="text-[9px] font-bold" :class="((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)) > 0 ? 'text-neon-red' : 'text-neon-cyan'" title="Qoldiq">
+                                <div class="text-[11px] font-bold" :class="((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)) > 0 ? 'text-neon-red' : 'text-neon-cyan'" title="Qoldiq">
                                     Q: {{ (((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other))).toLocaleString() }}
                                 </div>
                                 <div class="flex gap-1 mt-1 justify-end">
-                                    <button @click="saveInlineForm" :disabled="isSubmitting" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[9px] hover:bg-neon-green hover:text-black">✅ Saqlash</button>
-                                    <button @click="showInlineRow = false" :disabled="isSubmitting" class="px-2 py-1 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded text-[9px] hover:bg-neon-red hover:text-black">❌</button>
+                                    <button @click="saveInlineForm" :disabled="isSubmitting" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[11px] hover:bg-neon-green hover:text-black">✅ Saqlash</button>
+                                    <button @click="showInlineRow = false" :disabled="isSubmitting" class="px-2 py-1 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded text-[11px] hover:bg-neon-red hover:text-black">❌</button>
                                 </div>
                             </td>
                         </tr>
@@ -297,7 +297,7 @@ async function saveInlineForm() {
                             <td class="p-3 border-r border-white/5">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>
                             
                             <!-- Bajarilgan ish (Agar transaction_type qarz (expense) bo'lsa) -->
-                            <td class="p-3 border-r border-white/5 text-xs">{{ item.is_work ? item.desc : '' }}</td>
+                            <td class="p-3 border-r border-white/5 text-[13px] whitespace-normal">{{ item.is_work ? item.desc : '' }}</td>
                             <td class="p-3 border-r border-white/5 text-center">{{ item.is_work ? item.qty : '' }}</td>
                             <td class="p-3 border-r border-white/5 text-right font-bold text-neon-yellow">{{ item.is_work ? item.amount : '' }}</td>
                             

@@ -2061,7 +2061,7 @@ function generatePayroll() {
 
                     <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
                     <p class="text-[10px] font-mono text-neon-cyan tracking-widest uppercase mt-1">
-                        {{ activeLog.subject_type?.split('\').pop() || 'Unidentified' }}
+                        {{ activeLog.subject_type?.split(String.fromCharCode(92)).pop() || 'Unidentified' }}
                         <span v-if="activeLog.subject?.license_plate"> • {{ activeLog.subject.license_plate }}</span>
                     </p>
                 </div>

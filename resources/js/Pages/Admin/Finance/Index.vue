@@ -1054,13 +1054,14 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- TAB 4: Create Transaction -->
-        <div v-if="activeTab === 3" class="w-full max-w-[680px] mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 3" class="w-full max-w-[780px] mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_transaction') }}</h2>
             <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_transaction_desc') }}</p>
 
-            <form @submit.prevent="submitTransaction" class="flex flex-col gap-6">
+            <form @submit.prevent="submitTransaction" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                <div class="flex gap-4">
+                <!-- TYPE (Full width) -->
+                <div class="col-span-1 md:col-span-2 flex gap-4">
                     <label class="flex-1 cursor-pointer">
                         <input type="radio" v-model="form.type" value="income" class="hidden peer">
                         <div class="text-center p-4 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all">
@@ -1075,6 +1076,7 @@ const categoriesSummary = computed(() => {
                     </label>
                 </div>
 
+                <!-- CATEGORY (Half width) -->
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-xs font-mono text-text-muted">Kategoriya</label>
@@ -1096,7 +1098,14 @@ const categoriesSummary = computed(() => {
                     </div>
                 </div>
 
-                <div v-if="requiresWorker">
+                <!-- AMOUNT (Half width) -->
+                <div v-show="!requiresMachineOwner && !requiresBrigade">
+                    <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
+                    <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
+                </div>
+
+                <!-- DYNAMIC FIELDS (Full width) -->
+                <div v-if="requiresWorker" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
                     <select v-model="form.worker_id" class="glass-input w-full h-12 text-white bg-black/50" required>
                         <option value="" disabled>-- Tanlang --</option>
@@ -1104,7 +1113,7 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <div v-if="requiresBrigade" class="p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl">
+                <div v-if="requiresBrigade" class="col-span-1 md:col-span-2 p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl">
                     <h3 class="text-neon-cyan font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
                         👷 BRIGADA MA'LUMOTLARI
                     </h3>
@@ -1133,7 +1142,7 @@ const categoriesSummary = computed(() => {
                     </div>
                 </div>
 
-                <div v-if="requiresPartner || form.account_type === 'partner'">
+                <div v-if="requiresPartner || form.account_type === 'partner'" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
                     <select v-model="form.partner_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-yellow/50" :required="requiresPartner || form.account_type === 'partner'">
                         <option value="" disabled>-- Tanlang --</option>
@@ -1141,7 +1150,7 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <div v-if="requiresFixedAsset">
+                <div v-if="requiresFixedAsset" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-text-muted mb-1 text-neon-cyan">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
                     <select v-model="form.fixed_asset_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-cyan/50" required>
                         <option value="" disabled>-- Tanlang --</option>
@@ -1149,7 +1158,7 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <div v-if="requiresMachineOwner" class="p-6 bg-neon-yellow/5 border border-neon-yellow/30 rounded-xl">
+                <div v-if="requiresMachineOwner" class="col-span-1 md:col-span-2 p-6 bg-neon-yellow/5 border border-neon-yellow/30 rounded-xl">
                     <h3 class="text-neon-yellow font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
                         🔧 TEXNIKA TO'LOVI MA'LUMOTLARI
                     </h3>
@@ -1186,7 +1195,7 @@ const categoriesSummary = computed(() => {
                     </div>
                 </div>
 
-                <div v-if="requiresSupplier">
+                <div v-if="requiresSupplier" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
                     <select v-model="form.supplier_id" class="glass-input w-full h-12 text-white bg-black/50" required>
                         <option value="" disabled>-- Tanlang --</option>
@@ -1194,7 +1203,7 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <div v-if="requiresBuilding">
+                <div v-if="requiresBuilding" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
                     <select v-model="form.building_id" class="glass-input w-full h-12 text-white bg-black/50" required>
                         <option value="" disabled>-- Tanlang --</option>
@@ -1202,98 +1211,98 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <div v-show="!requiresMachineOwner && !requiresBrigade" class="flex flex-col gap-6">
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
-                        <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
-                    </div>
+                <!-- ACCOUNT (Half width) -->
+                <div v-show="!requiresMachineOwner && !requiresBrigade">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
+                    <select v-model="form.account_type" class="glass-input w-full h-12 text-base font-bold text-white bg-black/50">
+                        <option value="main">{{ $t('main_account') }}</option>
+                        <option value="bank">Bank Hisobi (Bank)</option>
+                        <option value="credit">Kredit Hisobi (Credit)</option>
+                        <option value="partner">Ta'sischi Hisobi (Partner)</option>
+                    </select>
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
-                        <select v-model="form.account_type" class="glass-input w-full h-12 text-base font-bold text-white bg-black/50">
-                            <option value="main">{{ $t('main_account') }}</option>
-                            <option value="bank">Bank Hisobi (Bank)</option>
-                            <option value="credit">Kredit Hisobi (Credit)</option>
-                            <option value="partner">Ta'sischi Hisobi (Partner)</option>
-                        </select>
-                    </div>
+                <!-- PAYMENT METHOD (Half width) -->
+                <div v-show="!requiresMachineOwner && !requiresBrigade">
+                    <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('payment_method') }}</label>
+                    <select v-model="form.payment_method" class="glass-input w-full h-12 text-white bg-black/50">
+                        <option value="cash">{{ $t('cash') }}</option>
+                        <option value="card">{{ $t('card') }}</option>
+                        <option value="bank_transfer">{{ $t('bank_transfer') }}</option>
+                    </select>
+                </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('payment_method') }}</label>
-                            <select v-model="form.payment_method" class="glass-input w-full h-12 text-white bg-black/50">
-                                <option value="cash">{{ $t('cash') }}</option>
-                                <option value="card">{{ $t('card') }}</option>
-                                <option value="bank_transfer">{{ $t('bank_transfer') }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Sana va Vaqt</label>
-                            <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-white bg-black/50 [color-scheme:dark]">
-                        </div>
-                    </div>
+                <!-- DATE (Half width) -->
+                <div v-show="!requiresMachineOwner && !requiresBrigade">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Sana va Vaqt</label>
+                    <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-white bg-black/50 [color-scheme:dark]">
+                </div>
 
-                    <div class="relative" v-if="form.type === 'income' || requiresClient">
-                        <label class="block text-xs font-mono mb-1" :class="requiresClient ? 'text-neon-cyan font-bold' : 'text-text-muted'">
-                            Qaysi Shartnomaga <span v-if="requiresClient">* (Qidirib tanlang)</span><span v-else>(Ixtiyoriy)</span>
-                        </label>
-                        <div class="relative">
-                            <input 
-                                v-model="scheduleSearch" 
-                                @focus="showScheduleDropdown = true" 
-                                @blur="handleBlur"
-                                type="text" 
-                                class="glass-input w-full h-12 text-white bg-black/50" 
-                                placeholder="Ism yoki Kvartira bo'yicha qidiring..."
-                            >
-                            <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-neon-red text-xl leading-none">&times;</button>
-                        </div>
-                        
-                        <div v-if="showScheduleDropdown && filteredContracts.length > 0" class="absolute z-50 w-full mt-1 bg-[#111] border border-white/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
-                            <div 
-                                v-for="c in filteredContracts" 
-                                :key="c.id" 
-                                @mousedown.prevent="selectContract(c)"
-                                class="p-3 hover:bg-neon-cyan/20 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
-                            >
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="font-bold text-white">{{ c.client?.first_name }} {{ c.client?.last_name }}</span>
-                                    <span class="text-neon-cyan">{{ $currency(c.total_amount) }}</span>
-                                </div>
-                                <div class="text-xs text-text-muted flex justify-between mt-1 font-mono">
-                                    <span>Uy: {{ c.unit?.unit_number || 'N/A' }}</span>
-                                    <span v-if="c.status === 'cancelled'" class="text-[10px] text-neon-red bg-neon-red/10 px-1 rounded uppercase">Bekor qilingan</span>
-                                </div>
+                <!-- FILE (Half width) -->
+                <div>
+                    <label class="block text-xs font-mono text-text-muted mb-1">Hujjat / Chek biriktirish (Ixtiyoriy)</label>
+                    <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="glass-input w-full h-12 text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-cyan/20 file:text-neon-cyan hover:file:bg-neon-cyan/30 pt-[10px]">
+                </div>
+
+                <!-- CONTRACT (Full width conditionally) -->
+                <div class="col-span-1 md:col-span-2 relative" v-if="form.type === 'income' || requiresClient">
+                    <label class="block text-xs font-mono mb-1" :class="requiresClient ? 'text-neon-cyan font-bold' : 'text-text-muted'">
+                        Qaysi Shartnomaga <span v-if="requiresClient">* (Qidirib tanlang)</span><span v-else>(Ixtiyoriy)</span>
+                    </label>
+                    <div class="relative">
+                        <input 
+                            v-model="scheduleSearch" 
+                            @focus="showScheduleDropdown = true" 
+                            @blur="handleBlur"
+                            type="text" 
+                            class="glass-input w-full h-12 text-white bg-black/50" 
+                            placeholder="Ism yoki Kvartira bo'yicha qidiring..."
+                        >
+                        <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-neon-red text-xl leading-none">&times;</button>
+                    </div>
+                    
+                    <div v-if="showScheduleDropdown && filteredContracts.length > 0" class="absolute z-50 w-full mt-1 bg-[#111] border border-white/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                        <div 
+                            v-for="c in filteredContracts" 
+                            :key="c.id" 
+                            @mousedown.prevent="selectContract(c)"
+                            class="p-3 hover:bg-neon-cyan/20 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
+                        >
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-white">{{ c.client?.first_name }} {{ c.client?.last_name }}</span>
+                                <span class="text-neon-cyan">{{ $currency(c.total_amount) }}</span>
+                            </div>
+                            <div class="text-xs text-text-muted flex justify-between mt-1 font-mono">
+                                <span>Uy: {{ c.unit?.unit_number || 'N/A' }}</span>
+                                <span v-if="c.status === 'cancelled'" class="text-[10px] text-neon-red bg-neon-red/10 px-1 rounded uppercase">Bekor qilingan</span>
                             </div>
                         </div>
-                        <div v-else-if="showScheduleDropdown && scheduleSearch" class="absolute z-50 w-full mt-1 bg-[#111] border border-white/20 rounded-xl p-4 text-center text-sm text-text-muted">
-                            Natija topilmadi
-                        </div>
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Hujjat / Chek biriktirish (Ixtiyoriy)</label>
-                        <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="glass-input w-full h-12 text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-cyan/20 file:text-neon-cyan hover:file:bg-neon-cyan/30 pt-[10px]">
+                    <div v-else-if="showScheduleDropdown && scheduleSearch" class="absolute z-50 w-full mt-1 bg-[#111] border border-white/20 rounded-xl p-4 text-center text-sm text-text-muted">
+                        Natija topilmadi
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Izohlar</label>
-                        <textarea v-model="form.notes" rows="3" class="glass-input w-full text-white bg-black/50" placeholder="Maqsad va tafsilotlar..."></textarea>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-black/30">
-                        <span class="text-sm font-mono text-white">Avtomatik tasdiqlash</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" v-model="form.auto_approve" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green"></div>
-                        </label>
-                    </div>
-
-                    <button type="submit" :disabled="isProcessing" class="w-full h-12 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
-                        <span v-if="isProcessing">Yuklanmoqda...</span>
-                        <span v-else>{{ form.auto_approve ? "Tasdiqlash va Saqlash" : "Tasdiqlashga Yuborish" }}</span>
-                    </button>
                 </div>
+
+                <!-- NOTES (Full width) -->
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Izohlar</label>
+                    <textarea v-model="form.notes" rows="3" class="glass-input w-full text-white bg-black/50 pt-3" placeholder="Maqsad va tafsilotlar..."></textarea>
+                </div>
+
+                <!-- AUTO APPROVE (Full width) -->
+                <div class="col-span-1 md:col-span-2 flex items-center justify-between p-4 rounded-xl border border-white/10 bg-black/30">
+                    <span class="text-sm font-mono text-white">Avtomatik tasdiqlash</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="form.auto_approve" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green"></div>
+                    </label>
+                </div>
+
+                <!-- SUBMIT (Full width) -->
+                <button type="submit" :disabled="isProcessing" class="col-span-1 md:col-span-2 w-full h-12 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
+                    <span v-if="isProcessing">Yuklanmoqda...</span>
+                    <span v-else>{{ form.auto_approve ? "Tasdiqlash va Saqlash" : "Tasdiqlashga Yuborish" }}</span>
+                </button>
             </form>
         </div>
 

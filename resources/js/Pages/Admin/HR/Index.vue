@@ -178,7 +178,7 @@ function deleteUser(id) {
 
 
 // TAB 1 Forms
-const workerForm = ref({ id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '' });
+const workerForm = ref({ id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '', start_date: '', backdated_salaries: [] });
 const isWorkerEditMode = ref(false);
 const showWorkerForm = ref(false);
 
@@ -201,10 +201,39 @@ function openWorkerEdit(w) {
     // Scroll to form (optional) or just populate it
 }
 
+
+function generateBackdatedFields() {
+    if (!workerForm.value.start_date || workerForm.value.role !== 'guard') return;
+    const start = new Date(workerForm.value.start_date);
+    const now = new Date();
+    workerForm.value.backdated_salaries = [];
+    
+    let current = new Date(start.getFullYear(), start.getMonth(), 1);
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    while (current < currentMonth) {
+        const monthStr = current.getFullYear() + '-' + String(current.getMonth() + 1).padStart(2, '0');
+        workerForm.value.backdated_salaries.push({
+            month: monthStr,
+            salary: workerForm.value.base_rate || ''
+        });
+        current.setMonth(current.getMonth() + 1);
+    }
+}
+
+const showGuardHistoryModal = ref(false);
+const activeGuardHistory = ref(null);
+
+function viewGuardHistory(guard) {
+    activeGuardHistory.value = guard;
+    showGuardHistoryModal.value = true;
+}
+
+
 function cancelWorkerEdit() {
     isWorkerEditMode.value = false;
     showWorkerForm.value = false;
-    workerForm.value = { id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '' };
+    workerForm.value = { id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '', start_date: '', backdated_salaries: [] };
 }
 
 function saveWorker() {
@@ -882,7 +911,7 @@ function generatePayroll() {
             <!-- Content Area -->
             <div class="lg:col-span-3 min-h-[700px]">
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
-        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-3 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                 <div class="flex justify-between items-center mb-6">
@@ -1042,6 +1071,21 @@ function generatePayroll() {
                                 <option value="reys">Reys</option>
                             </select>
                             <input v-model="workerForm.base_rate" type="number" class="glass-input text-xs" placeholder="Narxi (Stavka)" required>
+
+                            <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-3 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ishga kirgan sanasi (Sana o'zgarishi bilanoq, o'tgan oylar kiritiladi)</label>
+                                    <input type="date" v-model="workerForm.start_date" @change="generateBackdatedFields" class="glass-input text-xs w-full">
+                                </div>
+                                <div v-if="workerForm.backdated_salaries && workerForm.backdated_salaries.length > 0" class="space-y-2 mt-2">
+                                    <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Oylar Maoshini Kiritish</h4>
+                                    <div v-for="(entry, idx) in workerForm.backdated_salaries" :key="idx" class="flex gap-2 items-center">
+                                        <span class="text-xs font-mono text-text-muted w-24">{{ entry.month }}</span>
+                                        <input type="number" v-model="entry.salary" class="glass-input text-xs flex-1" placeholder="Shu oy uchun qilingan to'lov yoki oylik" required>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                         <div class="flex justify-end gap-3 mt-4">
                             <button type="button" @click="cancelWorkerEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
@@ -1050,6 +1094,44 @@ function generatePayroll() {
                     </form>
                 </div>
             </div>
+        </div>
+
+        
+            <!-- Qorovullar -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                        🛡️ Qorovullar
+                    </h2>
+                    <button @click="openWorkerEdit({ role: 'guard', salary_type: 'fixed_monthly' })" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                        + Qorovul
+                    </button>
+                </div>
+                
+                <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
+                                    <span class="text-lg">🛡️</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-sm font-bold text-white truncate">{{ g.name }}</h3>
+                                    <p class="text-[10px] font-mono text-text-muted mt-1 uppercase">Oylik: {{ $currency(g.base_rate) }} so'm</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
+                                <button @click="viewGuardHistory(g)" class="text-[10px] font-mono text-neon-cyan hover:text-white transition-colors uppercase tracking-widest">Maosh Tarixi</button>
+                                <div class="flex gap-2">
+                                    <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-xs text-white" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded-full bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-xs text-neon-red" title="O'chirish">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- TAB 1: FACE-ID HUB -->
@@ -2156,6 +2238,46 @@ function generatePayroll() {
 
         </div>
     </AdminLayout>
+
+        <!-- Guard Salary History Modal -->
+        <div v-if="showGuardHistoryModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showGuardHistoryModal = false"></div>
+            <div class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-2xl w-full shadow-[0_0_50px_rgba(0,255,255,0.1)]">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-display font-bold text-white flex items-center gap-2">
+                        🛡️ {{ activeGuardHistory?.name }} - Maosh Tarixi
+                    </h2>
+                    <button @click="showGuardHistoryModal = false" class="text-text-muted hover:text-white transition-colors">
+                        ✕
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="text-neon-cyan bg-black/50 border-b border-white/10">
+                            <tr>
+                                <th class="p-3 font-normal uppercase tracking-widest">Sana</th>
+                                <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Miqdori</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover:bg-white/5 transition-colors">
+                                <td class="p-3 text-white">{{ new Date(hist.effective_date).toLocaleDateString() }}</td>
+                                <td class="p-3 text-neon-cyan text-right font-bold">{{ $currency(hist.salary) }} so'm</td>
+                            </tr>
+                            <tr v-if="!activeGuardHistory?.salary_histories || activeGuardHistory.salary_histories.length === 0">
+                                <td colspan="2" class="p-6 text-center text-text-muted">Tarix mavjud emas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 bg-white/10 text-white font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
+                </div>
+            </div>
+        </div>
+
 </template>
 
 <style>

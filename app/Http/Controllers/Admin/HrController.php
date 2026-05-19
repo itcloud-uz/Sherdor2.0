@@ -20,7 +20,7 @@ class HrController extends Controller
         return Inertia::render('Admin/HR/Index', [
             'users' => \App\Models\User::with('roles')->get(),
             'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
-            'workers' => Worker::with('brigade')->get(),
+            'workers' => Worker::with(['brigade', 'salaryHistories'])->get(),
             'brigades' => \App\Models\Brigade::with('workers')->get(),
             'machineries' => Machinery::all(),
             'machineOwners' => \App\Models\MachineOwner::with('machineries')->get(),
@@ -79,7 +79,38 @@ class HrController extends Controller
         $validated['unit_id'] = empty($validated['unit_id']) ? null : $validated['unit_id'];
         $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
 
-        Worker::create($validated);
+        \Illuminate\Support\Facades\DB::transaction(function() use ($validated, $request) {
+            $worker = Worker::create($validated);
+            
+            if ($worker->role === 'guard' && $worker->salary_type === 'fixed_monthly') {
+                $startDate = $request->input('start_date', now()->toDateString());
+                \App\Models\WorkerSalaryHistory::create([
+                    'worker_id' => $worker->id,
+                    'salary' => $worker->base_rate,
+                    'effective_date' => $startDate
+                ]);
+
+                $backdated = $request->input('backdated_salaries', []);
+                if (!empty($backdated)) {
+                    foreach ($backdated as $entry) {
+                        if (empty($entry['month']) || empty($entry['salary'])) continue;
+                        $month = $entry['month'];
+                        $amount = $entry['salary'];
+                        \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                            'worker_id' => $worker->id,
+                            'type' => 'salary_accrual',
+                            'amount' => $amount,
+                            'description' => "Maosh ($month) - Qorovul",
+                            'date' => $month . '-01',
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                        $worker->increment('balance', $amount);
+                    }
+                }
+            }
+        });
+
         return redirect()->back()->with('message', 'Worker added.');
     }
 
@@ -492,7 +523,21 @@ class HrController extends Controller
         $validated['rate'] = $validated['base_rate'];
         $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
 
-        $worker->update($validated);
+        \Illuminate\Support\Facades\DB::transaction(function() use ($worker, $validated, $request) {
+            $oldRate = $worker->base_rate;
+            $worker->update($validated);
+            
+            if ($worker->role === 'guard' && $worker->salary_type === 'fixed_monthly') {
+                if ((float)$oldRate !== (float)$worker->base_rate) {
+                    \App\Models\WorkerSalaryHistory::create([
+                        'worker_id' => $worker->id,
+                        'salary' => $worker->base_rate,
+                        'effective_date' => $request->input('effective_date', now()->toDateString())
+                    ]);
+                }
+            }
+        });
+
         return redirect()->back()->with('message', 'Xodim ma\'lumotlari yangilandi.');
     }
 

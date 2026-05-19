@@ -17,4 +17,9 @@ class Worker extends Model
     public function floor() { return $this->belongsTo(Floor::class); }
     public function unit() { return $this->belongsTo(Unit::class); }
     public function brigade() { return $this->belongsTo(Brigade::class); }
+
+    public function salaryHistories()
+    {
+        return $this->hasMany(WorkerSalaryHistory::class)->orderBy('effective_date', 'desc');
+    }
 }

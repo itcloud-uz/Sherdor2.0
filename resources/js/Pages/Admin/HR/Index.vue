@@ -1017,12 +1017,12 @@ function generatePayroll() {
                     </h2>
                     
                     <button @click="showBrigadeForm = !showBrigadeForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
-                        {{ showBrigadeForm ? '- Yopish' : '+ Brigada Qo'shish' }}
+                        {{ showBrigadeForm ? '- Yopish' : "+ Brigada Qo'shish" }}
                     </button>
                 </div>
 
                 <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-black/30 p-4 rounded-xl border border-white/5 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : 'Yangi Brigada Qo'shish' }}</h3>
+                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input v-model="brigadeForm.name" type="text" class="glass-input text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
                         <input v-model="brigadeForm.foreman_name" type="text" class="glass-input text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
@@ -1030,7 +1030,7 @@ function generatePayroll() {
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isBrigadeEditMode ? 'Saqlash' : 'Qo'shish' }}
+                            {{ isBrigadeEditMode ? 'Saqlash' : \"Qo'shish\" }}
                         </button>
                     </div>
                 </form>
@@ -1093,7 +1093,7 @@ function generatePayroll() {
                 <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
                     <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : 'Yangi Ishchi Qo'shish' }}</h3>
+                        <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : \"Yangi Ishchi Qo'shish\" }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
                             <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
@@ -1354,7 +1354,7 @@ function generatePayroll() {
                         🚜 Og'ir Texnika va Egaslari (Arendatorlar)
                     </h2>
                     <button @click="showOwnerForm = !showOwnerForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
-                        {{ showOwnerForm ? '- Yopish' : '+ Texnika Egasi Qo'shish' }}
+                        {{ showOwnerForm ? '- Yopish' : \"+ Texnika Egasi Qo'shish\" }}
                     </button>
                 </div>
 
@@ -1366,7 +1366,7 @@ function generatePayroll() {
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isOwnerEditMode ? 'Saqlash' : 'Qo'shish' }}
+                            {{ isOwnerEditMode ? 'Saqlash' : \"Qo'shish\" }}
                         </button>
                     </div>
                 </form>
@@ -1435,7 +1435,7 @@ function generatePayroll() {
                 <div v-if="showMachineryForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryForm = false; editMachineryId = null"></div>
                     <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : 'Yangi Texnika Qo'shish' }}</h3>
+                        <h3 class="text-lg font-bold text-white uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : \"Yangi Texnika Qo'shish\" }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[10px] text-text-muted uppercase mb-1">Egasi (Tanlang)</label>
@@ -1680,7 +1680,7 @@ function generatePayroll() {
                                 </div>
                                 <p class="text-lg text-white font-bold">{{ $currency(payroll.total_amount) }}</p>
                                 <p class="text-[10px] font-mono mt-1 uppercase" :class="payroll.status === 'paid' ? 'text-neon-green' : 'text-neon-yellow'">
-                                    Status: {{ payroll.status === 'paid' ? 'To'langan' : 'Shakllantirildi (Hisobot)' }}
+                                    Status: {{ payroll.status === 'paid' ? \"To'langan\" : 'Shakllantirildi (Hisobot)' }}
                                 </p>
                             </div>
                             <div class="text-right flex gap-2">
@@ -1932,7 +1932,7 @@ function generatePayroll() {
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
                                         :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
-                                        {{ log.status === 'unpaid' ? 'To'lanmagan' : 'To'langan' }}
+                                        {{ log.status === 'unpaid' ? \"To'lanmagan\" : \"To'langan\" }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2424,7 +2424,7 @@ function generatePayroll() {
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
                                         :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
-                                        {{ log.status === 'unpaid' ? 'To'lanmagan' : 'To'langan' }}
+                                        {{ log.status === 'unpaid' ? \"To'lanmagan\" : \"To'langan\" }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

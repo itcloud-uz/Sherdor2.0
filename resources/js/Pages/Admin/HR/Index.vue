@@ -1307,7 +1307,7 @@ function generatePayroll() {
                             </td>
                             <td class="py-3 text-white font-bold">{{ new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }} <span class="text-text-muted text-[10px] block">{{ new Date(log.timestamp).toLocaleDateString() }}</span></td>
                             <td class="py-3">
-                                <p class="text-white font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || 'Noma'lum' }}</p>
+                                <p class="text-white font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || "Noma'lum" }}</p>
                                 <p v-if="log.subject?.license_plate" class="text-neon-cyan text-[10px] tracking-widest">{{ log.subject.license_plate }}</p>
                             </td>
                             <td class="py-3">
@@ -1920,7 +1920,7 @@ function generatePayroll() {
                             <div>
                                 <p class="text-[10px] font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || 'Noma'lum' }}
+                                    Obyekt: {{ log.building?.name || "Noma'lum" }}
                                     <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                     <span v-if="log.deductions" class="text-neon-yellow block mt-1">Ushlanma: {{ log.deductions }} so'm</span>
                                 </p>
@@ -2059,7 +2059,7 @@ function generatePayroll() {
                         <span v-else class="text-4xl w-full h-full flex items-center justify-center bg-white/5">N/A</span>
                     </div>
 
-                    <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || 'Noma'lum Shaxs' }}</h2>
+                    <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
                     <p class="text-[10px] font-mono text-neon-cyan tracking-widest uppercase mt-1">
                         {{ activeLog.subject_type?.split('\').pop() || 'Unidentified' }}
                         <span v-if="activeLog.subject?.license_plate"> • {{ activeLog.subject.license_plate }}</span>
@@ -2415,7 +2415,7 @@ function generatePayroll() {
                             <div>
                                 <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || 'Noma'lum' }}
+                                    Obyekt: {{ log.building?.name || "Noma'lum" }}
                                     <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                     <span v-if="log.deductions" class="text-neon-yellow block mt-1">Chegirma / Xarajat: {{ log.deductions }} so'm</span>
                                 </p>

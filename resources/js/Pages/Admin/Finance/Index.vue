@@ -1054,188 +1054,182 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- TAB 4: Create Transaction -->
-        <div v-if="activeTab === 3" class="w-full glass-panel p-4 md:p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 3" class="w-full max-w-[680px] mx-auto glass-panel p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_transaction') }}</h2>
             <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_transaction_desc') }}</p>
 
-            <form @submit.prevent="submitTransaction" class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
-                <!-- Chap Ustun (Asosiy) -->
-                <div class="space-y-6">
-                    <div class="flex gap-4">
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="form.type" value="income" class="hidden peer">
-                            <div class="text-center p-4 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all">
-                                📥 {{ $t('income') }}
-                            </div>
-                        </label>
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="form.type" value="expense" class="hidden peer">
-                            <div class="text-center p-4 rounded-xl border border-white/10 peer-checked:border-neon-red peer-checked:bg-neon-red/10 peer-checked:text-neon-red text-text-muted transition-all">
-                                📤 {{ $t('expense') }}
-                            </div>
-                        </label>
-                    </div>
+            <form @submit.prevent="submitTransaction" class="flex flex-col gap-6">
+                
+                <div class="flex gap-4">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" v-model="form.type" value="income" class="hidden peer">
+                        <div class="text-center p-4 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all">
+                            📥 {{ $t('income') }}
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" v-model="form.type" value="expense" class="hidden peer">
+                        <div class="text-center p-4 rounded-xl border border-white/10 peer-checked:border-neon-red peer-checked:bg-neon-red/10 peer-checked:text-neon-red text-text-muted transition-all">
+                            📤 {{ $t('expense') }}
+                        </div>
+                    </label>
+                </div>
 
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-mono text-text-muted">Kategoriya</label>
-                            <button type="button" @click="isNewCategory = !isNewCategory" class="text-[10px] uppercase font-bold text-neon-cyan hover:text-white transition-colors border border-neon-cyan/50 px-2 py-1 rounded">
-                                {{ isNewCategory ? 'Ro\'yxatdan tanlash' : '+ Yangi Qo\'shish' }}
-                            </button>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-mono text-text-muted">Kategoriya</label>
+                        <button type="button" @click="isNewCategory = !isNewCategory" class="text-[10px] uppercase font-bold text-neon-cyan hover:text-white transition-colors border border-neon-cyan/50 px-2 py-1 rounded">
+                            {{ isNewCategory ? 'Ro\'yxatdan tanlash' : '+ Yangi Qo\'shish' }}
+                        </button>
+                    </div>
+                    
+                    <div v-if="isNewCategory">
+                        <input v-model="form.category_name" type="text" class="glass-input w-full h-12 text-white" placeholder="Yangi kategoriya nomini kiriting" required>
+                    </div>
+                    <div v-else>
+                        <select v-model="form.category_id" class="glass-input w-full h-12 text-white bg-black/50" required>
+                            <option value="" disabled>-- Kategoriya tanlang --</option>
+                            <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
+                                {{ cat.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div v-if="requiresWorker">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
+                    <select v-model="form.worker_id" class="glass-input w-full h-12 text-white bg-black/50" required>
+                        <option value="" disabled>-- Tanlang --</option>
+                        <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                    </select>
+                </div>
+
+                <div v-if="requiresBrigade" class="p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl">
+                    <h3 class="text-neon-cyan font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                        👷 BRIGADA MA'LUMOTLARI
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-mono mb-1 text-neon-cyan">Brigada</label>
+                            <select v-model="form.brigade_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-cyan/50">
+                                <option value="">-- Tanlang --</option>
+                                <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
                         </div>
                         
-                        <div v-if="isNewCategory">
-                            <input v-model="form.category_name" type="text" class="glass-input w-full text-white" placeholder="Yangi kategoriya nomini kiriting" required>
-                        </div>
-                        <div v-else>
-                            <select v-model="form.category_id" class="glass-input w-full text-white bg-black/50" required>
-                                <option value="" disabled>-- Kategoriya tanlang --</option>
-                                <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
-                                    {{ cat.name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div v-if="requiresWorker">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
-                        <select v-model="form.worker_id" class="glass-input w-full text-white bg-black/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
-                        </select>
-                    </div>
-
-                    <div v-if="requiresBrigade" class="p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl mt-4">
-                        <h3 class="text-neon-cyan font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                            👷 BRIGADA MA'LUMOTLARI
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-mono mb-1 text-neon-cyan">Brigada</label>
-                                <select v-model="form.brigade_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50">
-                                    <option value="">-- Tanlang --</option>
-                                    <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
-                                </select>
-                            </div>
+                        <div v-if="form.brigade_id" class="mt-6 border-t border-neon-cyan/20 pt-4">
+                            <button v-if="!showBrigadeLedgerInline" type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                                💡 BRIGADA JURNALI
+                            </button>
                             
-                            <div v-if="form.brigade_id" class="mt-6 border-t border-neon-cyan/20 pt-4">
-                                <button v-if="!showBrigadeLedgerInline" type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
-                                    💡 BRIGADA JURNALI
-                                </button>
-                                
-                                <BrigadeLedgerModal 
-                                    v-if="showBrigadeLedgerInline"
-                                    :show="true" 
-                                    :inline="true" 
-                                    :brigadeId="form.brigade_id" 
-                                    @close="showBrigadeLedgerInline = false" 
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    
-                    <div v-if="requiresPartner || form.account_type === 'partner'">
-                        <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
-                        <select v-model="form.partner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50" :required="requiresPartner || form.account_type === 'partner'">
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
-                        </select>
-                    </div>
-
-                    <div v-if="requiresFixedAsset">
-                        <label class="block text-xs font-mono text-text-muted mb-1 text-neon-cyan">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
-                        <select v-model="form.fixed_asset_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="f in fixedAssets" :key="f.id" :value="f.id">{{ f.name }} ({{ f.type }})</option>
-                        </select>
-                    </div>
-
-                    <div v-if="requiresMachineOwner" class="p-6 bg-neon-yellow/5 border border-neon-yellow/30 rounded-xl mt-4">
-                        <h3 class="text-neon-yellow font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                            🔧 TEXNIKA TO'LOVI MA'LUMOTLARI
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika Egasi</label>
-                                <select v-model="form.machine_owner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
-                                    <option value="">-- Tanlang --</option>
-                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika</label>
-                                <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
-                                    <option value="" disabled>-- Tanlang --</option>
-                                    <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
-                                </select>
-                            </div>
-
-                            <div v-if="form.machine_owner_id" class="mt-6 border-t border-neon-yellow/20 pt-4">
-                                <button v-if="!showOwnerLedgerInline" type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full py-3 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
-                                    💡 TEXNIKA EGASI JURNALI
-                                </button>
-                                
-                                <OwnerLedgerModal 
-                                    v-if="showOwnerLedgerInline"
-                                    :show="true" 
-                                    :inline="true" 
-                                    :ownerId="form.machine_owner_id" 
-                                    @close="showOwnerLedgerInline = false" 
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="requiresSupplier">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
-                        <select v-model="form.supplier_id" class="glass-input w-full text-white bg-black/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
-                        </select>
-                    </div>
-
-                    <div v-if="requiresBuilding">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
-                        <select v-model="form.building_id" class="glass-input w-full text-white bg-black/50" required>
-                            <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                    </div>
-
-                    <div v-show="!requiresMachineOwner && !requiresBrigade">
-                        <div class="mb-6">
-                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
-                            <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full text-3xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
-                            <select v-model="form.account_type" class="glass-input w-full text-lg font-bold text-white bg-black/50">
-                                <option value="main">{{ $t('main_account') }}</option>
-                                <option value="bank">Bank Hisobi (Bank)</option>
-                                <option value="credit">Kredit Hisobi (Credit)</option>
-                                <option value="partner">Ta'sischi Hisobi (Partner)</option>
-                            </select>
+                            <BrigadeLedgerModal 
+                                v-if="showBrigadeLedgerInline"
+                                :show="true" 
+                                :inline="true" 
+                                :brigadeId="form.brigade_id" 
+                                @close="showBrigadeLedgerInline = false" 
+                            />
                         </div>
                     </div>
                 </div>
 
-                <!-- O'ng Ustun (Qo'shimcha) -->
-                <div class="space-y-6" v-show="!requiresMachineOwner && !requiresBrigade">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div v-if="requiresPartner || form.account_type === 'partner'">
+                    <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
+                    <select v-model="form.partner_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-yellow/50" :required="requiresPartner || form.account_type === 'partner'">
+                        <option value="" disabled>-- Tanlang --</option>
+                        <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
+                    </select>
+                </div>
+
+                <div v-if="requiresFixedAsset">
+                    <label class="block text-xs font-mono text-text-muted mb-1 text-neon-cyan">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
+                    <select v-model="form.fixed_asset_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-cyan/50" required>
+                        <option value="" disabled>-- Tanlang --</option>
+                        <option v-for="f in fixedAssets" :key="f.id" :value="f.id">{{ f.name }} ({{ f.type }})</option>
+                    </select>
+                </div>
+
+                <div v-if="requiresMachineOwner" class="p-6 bg-neon-yellow/5 border border-neon-yellow/30 rounded-xl">
+                    <h3 class="text-neon-yellow font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                        🔧 TEXNIKA TO'LOVI MA'LUMOTLARI
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika Egasi</label>
+                            <select v-model="form.machine_owner_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-yellow/50">
+                                <option value="">-- Tanlang --</option>
+                                <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika</label>
+                            <select v-model="form.machinery_id" class="glass-input w-full h-12 text-white bg-black/50 border-neon-yellow/50">
+                                <option value="" disabled>-- Tanlang --</option>
+                                <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
+                            </select>
+                        </div>
+
+                        <div v-if="form.machine_owner_id" class="mt-6 border-t border-neon-yellow/20 pt-4">
+                            <button v-if="!showOwnerLedgerInline" type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full h-12 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                                💡 TEXNIKA EGASI JURNALI
+                            </button>
+                            
+                            <OwnerLedgerModal 
+                                v-if="showOwnerLedgerInline"
+                                :show="true" 
+                                :inline="true" 
+                                :ownerId="form.machine_owner_id" 
+                                @close="showOwnerLedgerInline = false" 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="requiresSupplier">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
+                    <select v-model="form.supplier_id" class="glass-input w-full h-12 text-white bg-black/50" required>
+                        <option value="" disabled>-- Tanlang --</option>
+                        <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
+                    </select>
+                </div>
+
+                <div v-if="requiresBuilding">
+                    <label class="block text-xs font-mono text-text-muted mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
+                    <select v-model="form.building_id" class="glass-input w-full h-12 text-white bg-black/50" required>
+                        <option value="" disabled>-- Tanlang --</option>
+                        <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                    </select>
+                </div>
+
+                <div v-show="!requiresMachineOwner && !requiresBrigade" class="flex flex-col gap-6">
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
+                        <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
+                        <select v-model="form.account_type" class="glass-input w-full h-12 text-base font-bold text-white bg-black/50">
+                            <option value="main">{{ $t('main_account') }}</option>
+                            <option value="bank">Bank Hisobi (Bank)</option>
+                            <option value="credit">Kredit Hisobi (Credit)</option>
+                            <option value="partner">Ta'sischi Hisobi (Partner)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('payment_method') }}</label>
-                            <select v-model="form.payment_method" class="glass-input w-full text-white bg-black/50">
+                            <select v-model="form.payment_method" class="glass-input w-full h-12 text-white bg-black/50">
                                 <option value="cash">{{ $t('cash') }}</option>
                                 <option value="card">{{ $t('card') }}</option>
                                 <option value="bank_transfer">{{ $t('bank_transfer') }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Tranzaksiya Sanasi va Vaqti</label>
-                            <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full text-white bg-black/50 [color-scheme:dark]">
+                            <label class="block text-xs font-mono text-text-muted mb-1">Sana va Vaqt</label>
+                            <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full h-12 text-white bg-black/50 [color-scheme:dark]">
                         </div>
                     </div>
 
@@ -1249,7 +1243,7 @@ const categoriesSummary = computed(() => {
                                 @focus="showScheduleDropdown = true" 
                                 @blur="handleBlur"
                                 type="text" 
-                                class="glass-input w-full text-white bg-black/50" 
+                                class="glass-input w-full h-12 text-white bg-black/50" 
                                 placeholder="Ism yoki Kvartira bo'yicha qidiring..."
                             >
                             <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-neon-red text-xl leading-none">&times;</button>
@@ -1279,7 +1273,7 @@ const categoriesSummary = computed(() => {
 
                     <div>
                         <label class="block text-xs font-mono text-text-muted mb-1">Hujjat / Chek biriktirish (Ixtiyoriy)</label>
-                        <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="glass-input w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-cyan/20 file:text-neon-cyan hover:file:bg-neon-cyan/30">
+                        <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="glass-input w-full h-12 text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-cyan/20 file:text-neon-cyan hover:file:bg-neon-cyan/30 pt-[10px]">
                     </div>
 
                     <div>
@@ -1295,7 +1289,7 @@ const categoriesSummary = computed(() => {
                         </label>
                     </div>
 
-                    <button type="submit" :disabled="isProcessing" v-show="!requiresMachineOwner && !requiresBrigade" class="w-full py-4 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
+                    <button type="submit" :disabled="isProcessing" class="w-full h-12 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
                         <span v-if="isProcessing">Yuklanmoqda...</span>
                         <span v-else>{{ form.auto_approve ? "Tasdiqlash va Saqlash" : "Tasdiqlashga Yuborish" }}</span>
                     </button>

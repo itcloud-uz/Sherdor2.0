@@ -1120,14 +1120,13 @@ const categoriesSummary = computed(() => {
                     </select>
 
                     <div v-if="form.worker_id && isGuardSelected" class="mt-6 border-t border-neon-cyan/20 pt-4">
-                        <button v-if="!showGuardLedgerInline" type="button" @click.prevent="showGuardLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                        <button type="button" @click.prevent="showGuardLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
                             💡 QOROVUL JURNALI
                         </button>
                         
                         <GuardLedgerModal 
-                            v-if="showGuardLedgerInline"
-                            :show="true" 
-                            :inline="true" 
+                            :show="showGuardLedgerInline" 
+                            :inline="false" 
                             :guardId="form.worker_id" 
                             @close="showGuardLedgerInline = false" 
                         />
@@ -1148,14 +1147,13 @@ const categoriesSummary = computed(() => {
                         </div>
                         
                         <div v-if="form.brigade_id" class="mt-6 border-t border-neon-cyan/20 pt-4">
-                            <button v-if="!showBrigadeLedgerInline" type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                            <button type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
                                 💡 BRIGADA JURNALI
                             </button>
                             
                             <BrigadeLedgerModal 
-                                v-if="showBrigadeLedgerInline"
-                                :show="true" 
-                                :inline="true" 
+                                :show="showBrigadeLedgerInline" 
+                                :inline="false" 
                                 :brigadeId="form.brigade_id" 
                                 @close="showBrigadeLedgerInline = false" 
                             />
@@ -1201,14 +1199,13 @@ const categoriesSummary = computed(() => {
                         </div>
 
                         <div v-if="form.machine_owner_id" class="mt-6 border-t border-neon-yellow/20 pt-4">
-                            <button v-if="!showOwnerLedgerInline" type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full h-12 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                            <button type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full h-12 bg-neon-yellow/20 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
                                 💡 TEXNIKA EGASI JURNALI
                             </button>
                             
                             <OwnerLedgerModal 
-                                v-if="showOwnerLedgerInline"
-                                :show="true" 
-                                :inline="true" 
+                                :show="showOwnerLedgerInline" 
+                                :inline="false" 
                                 :ownerId="form.machine_owner_id" 
                                 @close="showOwnerLedgerInline = false" 
                             />

@@ -185,9 +185,10 @@ function submitAccrual() {
 </script>
 
 <template>
-    <div v-if="show" :class="inline ? 'w-full mt-4 animate-[fadeIn_0.3s_ease-out]' : 'fixed inset-0 z-[9999] flex items-center justify-center p-4'">
+    <Teleport to="body" :disabled="inline">
+        <div v-if="show" :class="inline ? 'w-full mt-4 animate-[fadeIn_0.3s_ease-out]' : 'fixed inset-0 z-[9999] flex items-center justify-center p-4'">
         <div v-if="!inline" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
-        <div :class="inline ? 'glass-panel bg-abyss/40 border border-white/10 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[80vw] max-w-[1100px] max-h-[85vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
+        <div :class="inline ? 'glass-panel bg-abyss/40 border border-white/10 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
             
             <div class="flex justify-between items-center mb-6 relative z-10">
                 <button @click="$emit('exportPdf', owner?.id)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 rounded-lg hover:bg-neon-yellow hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
@@ -351,7 +352,7 @@ function submitAccrual() {
                     </div>
                 </form>
             </div>
-            
         </div>
     </div>
+    </Teleport>
 </template>

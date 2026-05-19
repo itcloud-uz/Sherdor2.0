@@ -1463,12 +1463,23 @@ function generatePayroll() {
                                 <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                             </select>
                         </div>
-                        <div v-if="logForm.type === 'machinery'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_machinery') }}</label>
-                            <select v-model="logForm.machinery_id" class="glass-input w-full text-white bg-black/50" required>
-                                <option value="" disabled>-- {{ $t('select') }} --</option>
-                                <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }}</option>
-                            </select>
+                        <div v-if="logForm.type === 'machinery'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Texnika Egasi (Ixtiyoriy)</label>
+                                <select v-model="logForm.machine_owner_id" @change="logForm.machinery_id = ''" class="glass-input w-full text-white bg-black/50">
+                                    <option value="">-- Barcha Texnikalar --</option>
+                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">
+                                        {{ o.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_machinery') }}</label>
+                                <select v-model="logForm.machinery_id" class="glass-input w-full text-white bg-black/50" required>
+                                    <option value="" disabled>-- {{ $t('select') }} --</option>
+                                    <option v-for="m in filteredMachineries" :key="m.id" :value="m.id">{{ m.name }}</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="space-y-3">
@@ -1492,7 +1503,7 @@ function generatePayroll() {
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('hours_worked') }}</label>
+                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ logForm.type === 'machinery' ? 'Ish Hajmi / Qatnov / Soat' : $t('hours_worked') }}</label>
                             <input v-model="logForm.hours_worked" type="number" step="0.5" class="glass-input w-full text-white" placeholder="0.0">
                         </div>
                         <div v-if="logForm.type === 'worker'">

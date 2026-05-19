@@ -37,7 +37,7 @@ watch(() => props.show, (newVal) => {
 async function fetchData() {
     isLoading.value = true;
     try {
-        const response = await axios.get(route('admin.hr.guard.ledger', props.guardId));
+        const response = await axios.get(route('admin.hr.guard.transactions', props.guardId));
         const data = response.data;
         guard.value = data.guard || { name: 'Qorovul' }; // default fallback
         
@@ -95,7 +95,7 @@ function close() {
 
 async function submitTransaction(payload) {
     try {
-        await axios.post(route('admin.hr.guard.transactions.store', props.guardId), payload);
+        await axios.post(route('admin.hr.guard.transaction.store', props.guardId), payload);
         fetchData();
     } catch(e) {
         console.error(e);

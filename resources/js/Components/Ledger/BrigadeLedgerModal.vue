@@ -41,7 +41,7 @@ watch(() => props.show, (newVal) => {
 async function fetchData() {
     isLoading.value = true;
     try {
-        const response = await axios.get(route('admin.hr.brigade.ledger', props.brigadeId));
+        const response = await axios.get(route('admin.hr.brigade.transactions', props.brigadeId));
         const data = response.data;
         brigade.value = data.brigade;
         
@@ -114,7 +114,7 @@ function close() {
 
 async function submitTransaction(payload) {
     try {
-        await axios.post(route('admin.hr.brigade.transactions.store', props.brigadeId), payload);
+        await axios.post(route('admin.hr.brigade.transaction.store', props.brigadeId), payload);
         fetchData();
     } catch(e) {
         console.error(e);

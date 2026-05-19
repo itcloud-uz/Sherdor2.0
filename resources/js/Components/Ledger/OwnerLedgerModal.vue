@@ -40,7 +40,7 @@ watch(() => props.show, (newVal) => {
 async function fetchData() {
     isLoading.value = true;
     try {
-        const response = await axios.get(route('admin.hr.owner.ledger', props.ownerId));
+        const response = await axios.get(route('admin.hr.owner.transactions', props.ownerId));
         const data = response.data;
         owner.value = data.owner;
         
@@ -129,7 +129,7 @@ function close() {
 
 async function submitTransaction(payload) {
     try {
-        await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), payload);
+        await axios.post(route('admin.hr.owner.transaction.store', props.ownerId), payload);
         fetchData();
     } catch(e) {
         console.error(e);

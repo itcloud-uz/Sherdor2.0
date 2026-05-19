@@ -1132,7 +1132,7 @@ function generatePayroll() {
                 </div>
             </div>
 
-        </div>
+        
 
         <!-- TAB 1: FACE-ID HUB -->
         <div v-if="activeTab === 1" class="glass-panel p-6 rounded-2xl border border-white/5 animate-[fadeIn_0.5s_ease-out]">

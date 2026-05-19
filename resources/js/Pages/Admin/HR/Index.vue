@@ -2512,19 +2512,15 @@ function exportOwnerPdf(id) {
 
         <BrigadeLedgerModal 
             :show="showBrigadeLedgerModal"
-            :brigade="activeBrigadeForLedger"
-            :ledgerData="brigadeLedgerData"
+            :brigade-id="activeBrigadeForLedger?.id"
             @close="showBrigadeLedgerModal = false"
-            @submitTransaction="submitBrigadeLedgerFromEvent"
             @exportPdf="exportBrigadePdf"
         />
 
         <OwnerLedgerModal 
             :show="showOwnerLedgerModal"
-            :owner="activeOwnerForLedger"
-            :ledgerData="ownerLedgerData"
+            :owner-id="activeOwnerForLedger?.id"
             @close="showOwnerLedgerModal = false"
-            @submitTransaction="submitOwnerLedgerFromEvent"
             @exportPdf="exportOwnerPdf"
         />
 

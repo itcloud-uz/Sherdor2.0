@@ -155,6 +155,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/hr/machine-owners', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineOwner'])->name('hr.machine_owner.store');
     Route::put('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'updateMachineOwner'])->name('hr.machine_owner.update');
     Route::delete('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'deleteMachineOwner'])->name('hr.machine_owner.destroy');
+    Route::post('/hr/machine-owners/{owner}/transactions', [\App\Http\Controllers\Admin\HrController::class, 'storeOwnerTransaction'])->name('hr.machine-owners.ledger.store');
     Route::post('/hr/worker', [\App\Http\Controllers\Admin\HrController::class, 'storeWorker'])->name('hr.worker.store');
     Route::post('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'updateWorker'])->name('hr.worker.update');
     Route::delete('/hr/workers/{worker}', [\App\Http\Controllers\Admin\HrController::class, 'deleteWorker'])->name('hr.worker.destroy');

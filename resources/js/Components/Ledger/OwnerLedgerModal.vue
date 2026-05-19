@@ -1,31 +1,143 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
     show: Boolean,
-    owner: Object,
-    ledgerData: {
-        type: Object,
-        default: () => ({ balance: 0, items: [] })
-    }
+    ownerId: [Number, String] // Changed from owner to ownerId
 });
 
-const emit = defineEmits(['close', 'submitTransaction', 'exportPdf']);
+const emit = defineEmits(['close', 'exportPdf']);
 
 const form = ref({
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    description: ''
+    description: '',
+    accrual_amount: '',
+    accrual_date: new Date().toISOString().split('T')[0],
+    accrual_description: ''
 });
+
+const ledgerData = ref({ balance: 0, items: [] });
+const owner = ref(null);
+const isLoading = ref(false);
+
+watch(() => props.show, (newVal) => {
+    if (newVal && props.ownerId) {
+        fetchData();
+    }
+});
+
+async function fetchData() {
+    isLoading.value = true;
+    try {
+        const response = await axios.get(route('admin.hr.owner.ledger', props.ownerId));
+        const data = response.data;
+        owner.value = data.owner;
+        
+        let allItems = [];
+        let runningBalance = 0;
+
+        if(data.logs) {
+            data.logs.forEach(l => {
+                allItems.push({
+                    type: 'log',
+                    date: l.date,
+                    created_at: l.created_at,
+                    is_work: true,
+                    desc: l.description || (l.building ? `Obyekt: ${l.building.name}` : 'Ish'),
+                    qty: l.hours_worked || l.volume_done,
+                    amount: l.calculated_cost,
+                    item: l
+                });
+            });
+        }
+        if(data.transactions) {
+            data.transactions.forEach(t => {
+                allItems.push({
+                    type: 'tx',
+                    date: t.date,
+                    created_at: t.created_at,
+                    is_payment: true,
+                    account_type: t.account_type || 'main',
+                    amount: t.amount,
+                    item: t
+                });
+            });
+        }
+        
+        if (data.owner_transactions) {
+            data.owner_transactions.forEach(t => {
+                let isWork = t.type === 'salary_accrual';
+                let isPayment = t.type !== 'salary_accrual';
+                allItems.push({
+                    type: 'owner_tx',
+                    date: t.date,
+                    created_at: t.created_at,
+                    is_work: isWork,
+                    is_payment: isPayment,
+                    account_type: 'main',
+                    desc: t.description || (isWork ? 'Qarz yozish' : 'To\'lov'),
+                    qty: '',
+                    amount: t.amount,
+                    item: t
+                });
+            });
+        }
+        
+        // Sort chronologically ascending to calculate running balance
+        allItems.sort((a, b) => {
+            let d1 = new Date(a.date);
+            let d2 = new Date(b.date);
+            if (d1.getTime() !== d2.getTime()) return d1 - d2;
+            return new Date(a.created_at) - new Date(b.created_at);
+        });
+
+        allItems.forEach(item => {
+            if (item.is_work) runningBalance += Number(item.amount);
+            if (item.is_payment) runningBalance -= Number(item.amount);
+            item.running_balance = runningBalance;
+        });
+        
+        // Sort descending for display
+        allItems.reverse();
+
+        ledgerData.value = {
+            balance: data.balance,
+            items: allItems
+        };
+    } catch (e) {
+        console.error(e);
+        alert("Ma'lumotlarni yuklashda xatolik");
+    } finally {
+        isLoading.value = false;
+    }
+}
 
 function close() {
     emit('close');
 }
 
-function submit() {
-    emit('submitTransaction', { ...form.value, target_id: props.owner?.id });
+async function submitTransaction(payload) {
+    try {
+        await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), payload);
+        fetchData();
+    } catch(e) {
+        console.error(e);
+        alert("Tranzaksiyani saqlashda xatolik!");
+    }
+}
+
+function submitPayment() {
+    submitTransaction({ type: 'payment', amount: form.value.amount, date: form.value.date, description: form.value.description });
     form.value.amount = '';
     form.value.description = '';
+}
+
+function submitAccrual() {
+    submitTransaction({ type: 'salary_accrual', amount: form.value.accrual_amount, date: form.value.accrual_date, description: form.value.accrual_description });
+    form.value.accrual_amount = '';
+    form.value.accrual_description = '';
 }
 </script>
 
@@ -102,12 +214,39 @@ function submit() {
                 </span>
             </div>
 
+            <!-- TOP FORM: Bajarilgan Ish Kiritish -->
+            <div class="glass-card p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
+                <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse"></span>Bajarilgan Ish Kiritish (Qarz Yozish)
+                </h3>
+                <form @submit.prevent="submitAccrual" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Summa (so'm)</label>
+                        <input v-model="form.accrual_amount" type="number" step="1000" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="Masalan: 1000000" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Sana</label>
+                        <input v-model="form.accrual_date" type="date" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 [color-scheme:dark] outline-none" required />
+                    </div>
+                    <div class="md:col-span-2 flex gap-4 items-end">
+                        <div class="flex-grow">
+                            <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh (Ixtiyoriy)</label>
+                            <input v-model="form.accrual_description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" placeholder="Masalan: Qazish ishlari uchun..." />
+                        </div>
+                        <button type="submit" class="h-10 px-6 bg-neon-red/20 border border-neon-red text-neon-red font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-red hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(255,51,102,0.2)]">
+                            Qo'shish
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div class="glass-card p-6 border-t-4 border-t-neon-yellow relative overflow-hidden">
                 <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-[10px] font-mono text-neon-yellow uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-neon-yellow animate-pulse"></span>Kassa amaliyoti (To'lov qilish)
                 </h3>
-                <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
+                <form @submit.prevent="submitPayment" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Summa (so'm)</label>
                         <input v-model="form.amount" type="number" step="1000" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-yellow outline-none" required placeholder="Masalan: 1000000" />

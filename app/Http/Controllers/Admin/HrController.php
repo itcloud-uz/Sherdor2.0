@@ -247,12 +247,52 @@ class HrController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
+        $ownerTransactions = \App\Models\MachineOwnerTransaction::where('machine_owner_id', $ownerId)
+            ->orderBy('date', 'desc')
+            ->get();
+
         return response()->json([
             'owner' => $owner,
             'balance' => $owner->balance,
             'logs' => $logs,
-            'transactions' => $transactions
+            'transactions' => $transactions,
+            'owner_transactions' => $ownerTransactions
         ]);
+    }
+
+    public function storeOwnerTransaction(Request $request, \App\Models\MachineOwner $owner)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string',
+            'date' => 'nullable|date'
+        ]);
+
+        if (empty($validated['date'])) {
+            $validated['date'] = now()->toDateString();
+        }
+
+        DB::transaction(function () use ($owner, $validated) {
+            \App\Models\MachineOwnerTransaction::create([
+                'machine_owner_id' => $owner->id,
+                'type' => $validated['type'],
+                'amount' => $validated['amount'],
+                'description' => $validated['description'],
+                'date' => $validated['date']
+            ]);
+
+            if ($validated['type'] === 'salary_accrual') {
+                $owner->increment('balance', $validated['amount']);
+            } else {
+                $owner->decrement('balance', $validated['amount']);
+                if ($validated['type'] === 'payment') {
+                    \App\Models\CompanyBalance::addExpense($validated['amount']);
+                }
+            }
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya saqlandi.');
     }
 
     public function getMachineryLedger(Machinery $machinery)

@@ -1035,6 +1035,14 @@ const categoriesSummary = computed(() => {
                             <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
                     </div>
+                    
+                    <div v-if="requiresBrigade && form.brigade_id" class="p-6 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl flex items-center justify-between mt-4">
+                        <div>
+                            <h4 class="text-neon-cyan font-bold uppercase tracking-widest text-sm">Brigada Jurnali</h4>
+                            <p class="text-text-muted text-[10px] font-mono mt-1">Bu toifa bo'yicha to'lovlarni to'g'ridan-to'g'ri maxsus jurnal orqali amalga oshiring.</p>
+                        </div>
+                        <button type="button" @click.prevent="openBrigadeLedgerFromFinance(form.brigade_id)" class="px-6 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-[10px] rounded hover:bg-white hover:text-black transition-colors shadow-[0_0_15px_rgba(0,255,255,0.3)]">Jurnalni Ochiq</button>
+                    </div>
 
                     
                     <div v-if="requiresPartner || form.account_type === 'partner'">
@@ -1060,6 +1068,14 @@ const categoriesSummary = computed(() => {
                             <option value="">-- Egasini Tanlash --</option>
                             <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
                         </select>
+                    </div>
+                    
+                    <div v-if="requiresMachineOwner && form.machine_owner_id" class="p-6 bg-neon-yellow/10 border border-neon-yellow/30 rounded-xl flex items-center justify-between mt-4">
+                        <div>
+                            <h4 class="text-neon-yellow font-bold uppercase tracking-widest text-sm">Texnika Egasi Jurnali</h4>
+                            <p class="text-text-muted text-[10px] font-mono mt-1">Bu toifa bo'yicha to'lovlarni to'g'ridan-to'g'ri maxsus jurnal orqali amalga oshiring.</p>
+                        </div>
+                        <button type="button" @click.prevent="openOwnerLedgerFromFinance(form.machine_owner_id)" class="px-6 py-2 bg-neon-yellow text-black font-bold uppercase tracking-widest text-[10px] rounded hover:bg-white hover:text-black transition-colors shadow-[0_0_15px_rgba(252,238,9,0.3)]">Jurnalni Ochiq</button>
                     </div>
 
 <div v-if="requiresMachinery">

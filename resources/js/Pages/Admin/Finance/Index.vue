@@ -668,53 +668,40 @@ const categoriesSummary = computed(() => {
             </h1>
         </div>
 
-        <div class="flex gap-4">
+        <div class="flex flex-col gap-4">
             
-            <!-- Sidebar Navigation (Slim, Icon-only) -->
-            <div class="w-[60px] shrink-0 flex flex-col gap-2 bg-black/40 border border-white/5 rounded-2xl p-2 py-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <!-- Horizontal Navigation Panel -->
+            <div class="flex flex-wrap items-center gap-2 p-2 bg-black/30 border border-white/5 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                 <button 
                     v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
-                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
-                    :class="activeTab === tab.id ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-all whitespace-nowrap"
+                    :class="activeTab === tab.id ? 'bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 shadow-[0_0_15px_rgba(252,238,9,0.2)]' : 'border border-transparent text-text-muted hover:text-white hover:bg-white/5'"
                 >
-                    <span class="text-xl">{{ tab.icon }}</span>
-                    <!-- Tooltip -->
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t(tab.name) }}]
-                    </div>
+                    <span class="text-base">{{ tab.icon }}</span> {{ $t(tab.name) }}
                 </button>
                 
-                <div class="h-px w-8 bg-white/20 mx-auto my-2"></div>
+                <div class="w-px h-6 bg-white/20 mx-1 hidden sm:block"></div>
                 
-                <Link :href="route('admin.approvals')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
-                    <span class="text-xl">✅</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t('Tasdiqlar') || 'Tasdiqlar' }}]
-                    </div>
+                <Link :href="route('admin.approvals')" class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest text-text-muted hover:text-neon-yellow hover:bg-white/5 border border-transparent transition-all whitespace-nowrap">
+                    <span class="text-base">✅</span> Tasdiqlar
                 </Link>
                 
                 <button 
                     @click="activeTab = 2"
-                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
-                    :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-all whitespace-nowrap"
+                    :class="activeTab === 2 ? 'bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 shadow-[0_0_15px_rgba(252,238,9,0.2)]' : 'border border-transparent text-text-muted hover:text-white hover:bg-white/5'"
                 >
-                    <span class="text-xl">📜</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
-                        [{{ $t('ledger_history') }}]
-                    </div>
+                    <span class="text-base">📜</span> Jurnal
                 </button>
                 
-                <Link :href="route('admin.receipts')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/5">
-                    <span class="text-xl">🧾</span>
-                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-cyan/50 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
-                        [{{ $t('Cheklar') || 'Cheklar' }}]
-                    </div>
+                <Link :href="route('admin.receipts')" class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest text-text-muted hover:text-neon-cyan hover:bg-white/5 border border-transparent transition-all whitespace-nowrap">
+                    <span class="text-base">🧾</span> Cheklar
                 </Link>
             </div>
 
             <!-- Content Area -->
-            <div class="flex-1 w-[calc(100%-76px)] overflow-x-hidden">
+            <div class="w-full overflow-x-hidden">
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">

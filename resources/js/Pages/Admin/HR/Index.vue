@@ -75,7 +75,7 @@ function saveBrigade() {
 }
 
 function deleteBrigade(id) {
-    if (confirm('Brigadani o\'chirmoqchimisiz?')) {
+    if (confirm('Brigadani o'chirmoqchimisiz?')) {
         router.delete(route('admin.hr.brigade.destroy', id));
     }
 }
@@ -113,7 +113,7 @@ function saveOwner() {
 }
 
 function deleteOwner(id) {
-    if (confirm('Texnika egasini o\'chirmoqchimisiz?')) {
+    if (confirm('Texnika egasini o'chirmoqchimisiz?')) {
         router.delete(route('admin.hr.machine_owner.destroy', id));
     }
 }
@@ -168,7 +168,7 @@ function saveUser() {
 }
 
 function deleteUser(id) {
-    if(!confirm('Haqiqatan ham ushbu foydalanuvchini o\'chirmoqchimisiz?')) return;
+    if(!confirm('Haqiqatan ham ushbu foydalanuvchini o'chirmoqchimisiz?')) return;
     router.delete(route('admin.hr.users.delete', id));
 }
 
@@ -246,7 +246,7 @@ function saveWorker() {
 }
 
 function deleteWorker(id) {
-    if (confirm('Haqiqatan ham ushbu xodimni o\'chirmoqchimisiz?')) {
+    if (confirm('Haqiqatan ham ushbu xodimni o'chirmoqchimisiz?')) {
         router.delete(route('admin.hr.worker.destroy', id));
     }
 }
@@ -401,7 +401,7 @@ function updateMachinery() {
 }
 
 function deleteMachinery(id) {
-    if(confirm('Ushbu texnikani haqiqatan ham o\'chirasizmi?')) {
+    if(confirm('Ushbu texnikani haqiqatan ham o'chirasizmi?')) {
         router.delete(route('admin.hr.machinery.destroy', id));
     }
 }
@@ -503,14 +503,14 @@ function destroyTx(type, id) {
 async function openOwnerLedger(owner) {
     activeOwnerForLedger.value = owner;
     try {
-        const response = await fetch(route(\'admin.hr.owner.ledger\', owner.id));
+        const response = await fetch(route('admin.hr.owner.ledger', owner.id));
         const data = await response.json();
         
         let allItems = [];
         if(data.logs) {
             data.logs.forEach(l => {
                 allItems.push({
-                    type: \'log\',
+                    type: 'log',
                     date: l.date,
                     created_at: l.created_at,
                     item: l
@@ -520,7 +520,7 @@ async function openOwnerLedger(owner) {
         if(data.transactions) {
             data.transactions.forEach(t => {
                 allItems.push({
-                    type: \'tx\',
+                    type: 'tx',
                     date: t.date,
                     created_at: t.created_at,
                     item: t
@@ -543,7 +543,7 @@ async function openOwnerLedger(owner) {
         showOwnerLedgerModal.value = true;
     } catch(err) {
         console.error(err);
-        alert(\'Ma\\'lumotlarni yuklashda xatolik!\');
+        alert('Ma\'lumotlarni yuklashda xatolik!');
     }
 }
 
@@ -556,7 +556,7 @@ async function openMachineryLedger(m) {
         showMachineryLedgerModal.value = true;
     } catch(err) {
         console.error(err);
-        alert('Ma\'lumotlarni yuklashda xatolik!');
+        alert('Ma'lumotlarni yuklashda xatolik!');
     }
 }
 
@@ -608,7 +608,7 @@ function printLedger() {
     // Combine logs and transactions
     const items = [];
     data.logs.forEach(l => {
-        items.push({ date: new Date(l.date), desc: `Ish (Obyekt: ${l.building?.name || 'Noma\'lum'}) - ${l.hours_worked || l.volume_done} ${m.payment_type==='hourly'?'soat':'hajm'}`, amount: `- ${l.calculated_cost}` });
+        items.push({ date: new Date(l.date), desc: `Ish (Obyekt: ${l.building?.name || 'Noma'lum'}) - ${l.hours_worked || l.volume_done} ${m.payment_type==='hourly'?'soat':'hajm'}`, amount: `- ${l.calculated_cost}` });
     });
     data.transactions.forEach(t => {
         items.push({ date: new Date(t.date), desc: `To'lov: ${t.description || 'Izohsiz'}`, amount: `+ ${t.amount}` });
@@ -647,7 +647,7 @@ function printLedger() {
             
             <div class="summary">
                 <div>TEXNIKA: ${m.machinery_type || ''} ${m.name} (${m.license_plate || 'Raqamsiz'})</div>
-                <div>EGASI (Arendator): ${m.owner_name || 'Noma\'lum'}</div>
+                <div>EGASI (Arendator): ${m.owner_name || 'Noma'lum'}</div>
                 <div style="margin-top:10px;">Jami Ishlagan Summa: ${data.total_earned}</div>
                 <div style="color: red;">To'lanmagan Qoldiq Qarz: ${data.unpaid_balance}</div>
             </div>
@@ -697,7 +697,7 @@ function exportToExcel() {
     let csv = 'Sana,Izoh,Summa\n';
     
     data.logs.forEach(l => {
-        csv += `${new Date(l.date).toLocaleDateString()},Ish - ${l.building?.name || 'Noma\'lum'},-${l.calculated_cost}\n`;
+        csv += `${new Date(l.date).toLocaleDateString()},Ish - ${l.building?.name || 'Noma'lum'},-${l.calculated_cost}\n`;
     });
     data.transactions.forEach(t => {
         csv += `${new Date(t.date).toLocaleDateString()},To'lov: ${t.description || ''},+${t.amount}\n`;
@@ -926,7 +926,7 @@ function generatePayroll() {
         },
         onError: () => {
             isProcessing.value = false;
-            alert('Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.');
+            alert('Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.');
         }
     });
 }
@@ -1017,12 +1017,12 @@ function generatePayroll() {
                     </h2>
                     
                     <button @click="showBrigadeForm = !showBrigadeForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
-                        {{ showBrigadeForm ? '- Yopish' : '+ Brigada Qo\'shish' }}
+                        {{ showBrigadeForm ? '- Yopish' : '+ Brigada Qo'shish' }}
                     </button>
                 </div>
 
                 <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-black/30 p-4 rounded-xl border border-white/5 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : 'Yangi Brigada Qo\'shish' }}</h3>
+                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : 'Yangi Brigada Qo'shish' }}</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input v-model="brigadeForm.name" type="text" class="glass-input text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
                         <input v-model="brigadeForm.foreman_name" type="text" class="glass-input text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
@@ -1030,7 +1030,7 @@ function generatePayroll() {
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isBrigadeEditMode ? 'Saqlash' : 'Qo\'shish' }}
+                            {{ isBrigadeEditMode ? 'Saqlash' : 'Qo'shish' }}
                         </button>
                     </div>
                 </form>
@@ -1093,7 +1093,7 @@ function generatePayroll() {
                 <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
                     <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : 'Yangi Ishchi Qo\'shish' }}</h3>
+                        <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : 'Yangi Ishchi Qo'shish' }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
                             <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
@@ -1307,7 +1307,7 @@ function generatePayroll() {
                             </td>
                             <td class="py-3 text-white font-bold">{{ new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }} <span class="text-text-muted text-[10px] block">{{ new Date(log.timestamp).toLocaleDateString() }}</span></td>
                             <td class="py-3">
-                                <p class="text-white font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || 'Noma\'lum' }}</p>
+                                <p class="text-white font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || 'Noma'lum' }}</p>
                                 <p v-if="log.subject?.license_plate" class="text-neon-cyan text-[10px] tracking-widest">{{ log.subject.license_plate }}</p>
                             </td>
                             <td class="py-3">
@@ -1354,7 +1354,7 @@ function generatePayroll() {
                         🚜 Og'ir Texnika va Egaslari (Arendatorlar)
                     </h2>
                     <button @click="showOwnerForm = !showOwnerForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
-                        {{ showOwnerForm ? '- Yopish' : '+ Texnika Egasi Qo\'shish' }}
+                        {{ showOwnerForm ? '- Yopish' : '+ Texnika Egasi Qo'shish' }}
                     </button>
                 </div>
 
@@ -1366,7 +1366,7 @@ function generatePayroll() {
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isOwnerEditMode ? 'Saqlash' : 'Qo\'shish' }}
+                            {{ isOwnerEditMode ? 'Saqlash' : 'Qo'shish' }}
                         </button>
                     </div>
                 </form>
@@ -1435,7 +1435,7 @@ function generatePayroll() {
                 <div v-if="showMachineryForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryForm = false; editMachineryId = null"></div>
                     <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : 'Yangi Texnika Qo\'shish' }}</h3>
+                        <h3 class="text-lg font-bold text-white uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : 'Yangi Texnika Qo'shish' }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[10px] text-text-muted uppercase mb-1">Egasi (Tanlang)</label>
@@ -1680,7 +1680,7 @@ function generatePayroll() {
                                 </div>
                                 <p class="text-lg text-white font-bold">{{ $currency(payroll.total_amount) }}</p>
                                 <p class="text-[10px] font-mono mt-1 uppercase" :class="payroll.status === 'paid' ? 'text-neon-green' : 'text-neon-yellow'">
-                                    Status: {{ payroll.status === 'paid' ? 'To\'langan' : 'Shakllantirildi (Hisobot)' }}
+                                    Status: {{ payroll.status === 'paid' ? 'To'langan' : 'Shakllantirildi (Hisobot)' }}
                                 </p>
                             </div>
                             <div class="text-right flex gap-2">
@@ -1920,7 +1920,7 @@ function generatePayroll() {
                             <div>
                                 <p class="text-[10px] font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                    Obyekt: {{ log.building?.name || 'Noma'lum' }}
                                     <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                     <span v-if="log.deductions" class="text-neon-yellow block mt-1">Ushlanma: {{ log.deductions }} so'm</span>
                                 </p>
@@ -1932,7 +1932,7 @@ function generatePayroll() {
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
                                         :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
-                                        {{ log.status === 'unpaid' ? 'To\'lanmagan' : 'To\'langan' }}
+                                        {{ log.status === 'unpaid' ? 'To'lanmagan' : 'To'langan' }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2059,9 +2059,9 @@ function generatePayroll() {
                         <span v-else class="text-4xl w-full h-full flex items-center justify-center bg-white/5">N/A</span>
                     </div>
 
-                    <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || 'Noma\'lum Shaxs' }}</h2>
+                    <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || 'Noma'lum Shaxs' }}</h2>
                     <p class="text-[10px] font-mono text-neon-cyan tracking-widest uppercase mt-1">
-                        {{ activeLog.subject_type?.split('\\').pop() || 'Unidentified' }}
+                        {{ activeLog.subject_type?.split('\').pop() || 'Unidentified' }}
                         <span v-if="activeLog.subject?.license_plate"> • {{ activeLog.subject.license_plate }}</span>
                     </p>
                 </div>
@@ -2412,7 +2412,7 @@ function generatePayroll() {
                             <div>
                                 <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
                                 <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || 'Noma\'lum' }}
+                                    Obyekt: {{ log.building?.name || 'Noma'lum' }}
                                     <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
                                     <span v-if="log.deductions" class="text-neon-yellow block mt-1">Chegirma / Xarajat: {{ log.deductions }} so'm</span>
                                 </p>
@@ -2424,7 +2424,7 @@ function generatePayroll() {
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
                                         :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
-                                        {{ log.status === 'unpaid' ? 'To\'lanmagan' : 'To\'langan' }}
+                                        {{ log.status === 'unpaid' ? 'To'lanmagan' : 'To'langan' }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

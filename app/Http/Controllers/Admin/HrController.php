@@ -1190,4 +1190,124 @@ class HrController extends Controller
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\BrigadeLedgerExport($brigade), 'brigada_jurnali_' . $brigade->name . '_' . date('Y_m_d') . '.xlsx');
     }
 
+    // --- GUARD LEDGER LOGIC ---
+    public function getGuardLedger(\App\Models\Worker $guard)
+    {
+        try {
+            $transactions = \Illuminate\Support\Facades\DB::table('worker_transactions')
+                                ->where('worker_id', $guard->id)
+                                ->orderBy('date', 'desc')
+                                ->get();
+                                
+            return response()->json([
+                'balance' => $guard->balance,
+                'transactions' => $transactions,
+                'guard' => $guard
+            ]);
+        } catch (\Throwable $e) {
+            return response("Xatolik xabari: " . $e->getMessage() . " | Qatorda: " . $e->getLine(), 500);
+        }
+    }
+
+    public function storeGuardTransaction(\Illuminate\Http\Request $request, \App\Models\Worker $guard)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:salary_accrual,advance_payment,penalty,payment',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+            'discount' => 'nullable|numeric|min:0',
+            'account_type' => 'nullable|string|in:main,bank,credit,partner',
+            'payment_method' => 'nullable|string|in:cash,card,bank_transfer',
+        ]);
+
+        $amount = (float) $validated['amount'];
+        $discount = (float) ($validated['discount'] ?? 0);
+        $totalPayment = $amount + $discount;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($guard, $validated, $amount, $discount, $totalPayment) {
+            if ($validated['type'] === 'payment') {
+                $guard->decrement('balance', $totalPayment);
+
+                // 1. Asosiy to'lov
+                \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                    'worker_id' => $guard->id,
+                    'type' => 'payment',
+                    'amount' => $amount,
+                    'description' => $validated['description'] ?? 'To\'lov',
+                    'date' => $validated['date'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
+
+                // Moliya markazi uchun asosiy to'lov tranzaksiyasi
+                $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Qorovul To\'lovi'], ['type' => 'expense']);
+                \App\Models\Transaction::create([
+                    'type' => 'expense',
+                    'amount' => $amount,
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'account_type' => $validated['account_type'] ?? 'main',
+                    'category_id' => $cat->id,
+                    'category_name' => $cat->name,
+                    'status' => 'approved',
+                    'notes' => ($validated['description'] ?? 'Qorovul to\'lovi') . "\nQorovul: " . $guard->name,
+                    'transaction_date' => $validated['date'],
+                    'created_by' => auth()->id(),
+                    'target_type' => 'worker',
+                    'target_id' => $guard->id,
+                ]);
+
+                // 2. Chegirma
+                if ($discount > 0) {
+                    \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                        'worker_id' => $guard->id,
+                        'type' => 'payment',
+                        'amount' => $discount,
+                        'description' => 'Chegirma',
+                        'date' => $validated['date'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
+
+                    $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Qorovul xarajati (chegirma)'], ['type' => 'expense']);
+                    \App\Models\Transaction::create([
+                        'type' => 'expense',
+                        'amount' => $discount,
+                        'payment_method' => $validated['payment_method'] ?? 'cash',
+                        'account_type' => $validated['account_type'] ?? 'main',
+                        'category_id' => $discountCat->id,
+                        'category_name' => $discountCat->name,
+                        'status' => 'approved',
+                        'notes' => 'Qorovul xarajati (chegirma)',
+                        'transaction_date' => $validated['date'],
+                        'created_by' => auth()->id(),
+                        'target_type' => 'worker',
+                        'target_id' => $guard->id,
+                    ]);
+                }
+            } else {
+                \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                    'worker_id' => $guard->id,
+                    'type' => $validated['type'],
+                    'amount' => $amount,
+                    'description' => $validated['description'],
+                    'date' => $validated['date'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                if ($validated['type'] === 'salary_accrual') {
+                    $guard->increment('balance', $amount);
+                } else {
+                    $guard->decrement('balance', $amount);
+                }
+            }
+        });
+
+        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
+    }
 }

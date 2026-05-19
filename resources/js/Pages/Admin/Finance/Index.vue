@@ -6,6 +6,7 @@ import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
 import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
 import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
+import GuardLedgerModal from '@/Components/Ledger/GuardLedgerModal.vue';
 
 const page = usePage();
 
@@ -205,6 +206,11 @@ const selectedCategoryName = computed(() => {
 const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma') || selectedCategoryName.value.includes('ishchi'));
 const requiresMachineOwner = computed(() => selectedCategoryName.value.includes('texnika') || selectedCategoryName.value.includes('arendator'));
 const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
+const isGuardSelected = computed(() => {
+    if (!form.value.worker_id) return false;
+    const w = props.workers?.find(x => x.id === form.value.worker_id);
+    return w && w.role === 'guard';
+});
 const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
 const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qarz qaytarish'));
 const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material'));
@@ -262,6 +268,7 @@ function selectContract(c) {
 const showOwnerLedger = ref(false);
 const showBrigadeLedger = ref(false);
 const showOwnerLedgerInline = ref(false);
+const showGuardLedgerInline = ref(false);
 const showBrigadeLedgerInline = ref(false);
 const selectedOwnerId = ref(null);
 const selectedBrigadeId = ref(null);
@@ -1111,6 +1118,20 @@ const categoriesSummary = computed(() => {
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                     </select>
+
+                    <div v-if="form.worker_id && isGuardSelected" class="mt-6 border-t border-neon-cyan/20 pt-4">
+                        <button v-if="!showGuardLedgerInline" type="button" @click.prevent="showGuardLedgerInline = true" class="w-full h-12 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
+                            💡 QOROVUL JURNALI
+                        </button>
+                        
+                        <GuardLedgerModal 
+                            v-if="showGuardLedgerInline"
+                            :show="true" 
+                            :inline="true" 
+                            :guardId="form.worker_id" 
+                            @close="showGuardLedgerInline = false" 
+                        />
+                    </div>
                 </div>
 
                 <div v-if="requiresBrigade" class="col-span-1 md:col-span-2 p-6 bg-neon-cyan/5 border border-neon-cyan/30 rounded-xl">

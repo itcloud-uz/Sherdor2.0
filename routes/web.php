@@ -163,6 +163,10 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/hr/worker/{worker}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getWorkerLedger'])->name('hr.worker.ledger');
     Route::post('/hr/worker/{worker}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeWorkerTransaction'])->name('hr.worker.transaction.store');
     
+    // Guard Ledger
+    Route::get('/hr/guard/{guard}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getGuardLedger'])->name('admin.hr.guard.ledger');
+    Route::post('/hr/guard/{guard}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeGuardTransaction'])->name('admin.hr.guard.transactions.store');
+    
     Route::post('/hr/users', [\App\Http\Controllers\Admin\HrController::class, 'storeUser'])->name('hr.users.store');
     Route::post('/hr/users/{user}', [\App\Http\Controllers\Admin\HrController::class, 'updateUser'])->name('hr.users.update');
     Route::delete('/hr/users/{user}', [\App\Http\Controllers\Admin\HrController::class, 'deleteUser'])->name('hr.users.delete');

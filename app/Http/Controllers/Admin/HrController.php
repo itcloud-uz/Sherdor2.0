@@ -961,22 +961,26 @@ class HrController extends Controller
     // --- BRIGADE LEDGER LOGIC ---
     public function getBrigadeLedger(\App\Models\Brigade $brigade)
     {
-        $workerIds = $brigade->workers()->pluck('id')->toArray();
-        $logs = \App\Models\WorkLog::with(['building', 'machinery'])
-                    ->where('type', 'worker')
-                    ->whereIn('worker_id', $workerIds)
-                    ->orderBy('date', 'desc')
-                    ->get();
-                    
-        $transactions = \App\Models\BrigadeTransaction::where('brigade_id', $brigade->id)
-                            ->orderBy('date', 'desc')
-                            ->get();
-                            
-        return response()->json([
-            'balance' => $brigade->balance,
-            'logs' => $logs,
-            'transactions' => $transactions
-        ]);
+        try {
+            $workerIds = $brigade->workers()->pluck('id')->toArray();
+            $logs = \App\Models\WorkLog::with(['building', 'machinery'])
+                        ->where('type', 'worker')
+                        ->whereIn('worker_id', $workerIds)
+                        ->orderBy('date', 'desc')
+                        ->get();
+                        
+            $transactions = \App\Models\BrigadeTransaction::where('brigade_id', $brigade->id)
+                                ->orderBy('date', 'desc')
+                                ->get();
+                                
+            return response()->json([
+                'balance' => $brigade->balance,
+                'logs' => $logs,
+                'transactions' => $transactions
+            ]);
+        } catch (\Throwable $e) {
+            return response("Xatolik xabari: " . $e->getMessage() . " | Qatorda: " . $e->getLine(), 500);
+        }
     }
 
     public function storeBrigadeTransaction(\Illuminate\Http\Request $request, \App\Models\Brigade $brigade)

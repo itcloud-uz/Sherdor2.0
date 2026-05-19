@@ -1302,6 +1302,11 @@ class HrController extends Controller
 
                 if ($validated['type'] === 'salary_accrual') {
                     $guard->increment('balance', $amount);
+                    \App\Models\WorkerSalaryHistory::create([
+                        'worker_id' => $guard->id,
+                        'salary' => $amount,
+                        'effective_date' => $validated['date']
+                    ]);
                 } else {
                     $guard->decrement('balance', $amount);
                 }

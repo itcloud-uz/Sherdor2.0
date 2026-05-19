@@ -1159,7 +1159,7 @@ function exportOwnerPdf(id) {
             </div>
 
             <!-- Workers Column -->
-            <div id="workers-column" class="glass-panel relative p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                         👷‍♂️ Yollanma Ishchilar & Brigadalar
@@ -1244,78 +1244,78 @@ function exportOwnerPdf(id) {
                 </div>
 
                 <!-- Hidden Worker Form for reuse -->
-                <Teleport v-if="showWorkerForm" :to="workerForm.role === 'guard' ? '#guards-column' : '#workers-column'">
-                <div class="absolute inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
-                    <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
-                            <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
-                            <select v-if="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="glass-input text-xs bg-black/50 text-white">
-                                <option value="" disabled>-- Brigada --</option>
-                                <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
-                            </select>
-                            <select v-model="workerForm.role" class="glass-input text-xs bg-black/50 text-white">
-                                <option value="builder">Quruvchi / Usta</option>
-                                <option value="driver">Haydovchi</option>
-                                <option value="guard">Qorovul</option>
-                                <option value="office">Boshqa</option>
-                            </select>
-                            <select v-model="workerForm.salary_type" class="glass-input text-xs bg-black/50 text-white">
-                                <option value="piece_rate">Ishbay</option>
-                                <option value="hourly">Soatbay</option>
-                                <option value="fixed_monthly">Oylik Maosh</option>
-                            </select>
-                            <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="glass-input text-xs bg-black/50 text-white">
-                                <option value="dona">Dona</option>
-                                <option value="kv_m">Kvadrat Metr</option>
-                                <option value="kub_m">Kub Metr</option>
-                                <option value="metr">Metr</option>
-                                <option value="soat">Soat</option>
-                                <option value="kun">Kun</option>
-                                <option value="reys">Reys</option>
-                            </select>
-                            <input v-model="workerForm.base_rate" type="number" class="glass-input text-xs" placeholder="Narxi (Stavka)" required>
+                <Teleport to="body">
+                    <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
+                        <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
+                            <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
+                                <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
+                                <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="glass-input text-xs bg-black/50 text-white" :required="workerForm.role !== 'guard'">
+                                    <option value="" disabled>-- Brigada --</option>
+                                    <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
+                                </select>
+                                <select v-model="workerForm.role" class="glass-input text-xs bg-black/50 text-white">
+                                    <option value="builder">Quruvchi / Usta</option>
+                                    <option value="driver">Haydovchi</option>
+                                    <option value="guard">Qorovul</option>
+                                    <option value="office">Boshqa</option>
+                                </select>
+                                <select v-model="workerForm.salary_type" class="glass-input text-xs bg-black/50 text-white">
+                                    <option value="piece_rate">Ishbay</option>
+                                    <option value="hourly">Soatbay</option>
+                                    <option value="fixed_monthly">Oylik Maosh</option>
+                                </select>
+                                <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="glass-input text-xs bg-black/50 text-white">
+                                    <option value="dona">Dona</option>
+                                    <option value="kv_m">Kvadrat Metr</option>
+                                    <option value="kub_m">Kub Metr</option>
+                                    <option value="metr">Metr</option>
+                                    <option value="soat">Soat</option>
+                                    <option value="kun">Kun</option>
+                                    <option value="reys">Reys</option>
+                                </select>
+                                <input v-model="workerForm.base_rate" type="number" class="glass-input text-xs" placeholder="Narxi (Stavka)" required>
 
-                            <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                    <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded hover:bg-neon-cyan hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
-                                </div>
-                                <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
-                                    <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-black/30 p-3 rounded-lg border border-white/5 relative group">
-                                        <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-neon-red text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-[0_0_10px_rgba(255,0,0,0.5)]">✕</button>
-                                        <div class="flex-1">
-                                            <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Dan (Oy/Yil)</label>
-                                            <input type="month" v-model="period.start_month" class="glass-input text-xs w-full bg-black/50" required>
-                                        </div>
-                                        <div class="flex-1">
-                                            <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                            <input type="month" v-model="period.end_month" class="glass-input text-xs w-full bg-black/50" required>
-                                        </div>
-                                        <div class="flex-1">
-                                            <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Oylik Miqdori</label>
-                                            <input type="number" v-model="period.salary" class="glass-input text-xs w-full bg-black/50" placeholder="Summa" required>
+                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                                    <div class="flex justify-between items-center">
+                                        <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                        <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded hover:bg-neon-cyan hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                    </div>
+                                    <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
+                                        <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-black/30 p-3 rounded-lg border border-white/5 relative group">
+                                            <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-neon-red text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-[0_0_10px_rgba(255,0,0,0.5)]">✕</button>
+                                            <div class="flex-1">
+                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                <input type="month" v-model="period.start_month" class="glass-input text-xs w-full bg-black/50" required>
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                <input type="month" v-model="period.end_month" class="glass-input text-xs w-full bg-black/50" required>
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Oylik Miqdori</label>
+                                                <input type="number" v-model="period.salary" class="glass-input text-xs w-full bg-black/50" placeholder="Summa" required>
+                                            </div>
                                         </div>
                                     </div>
+                                    <div v-else class="text-center text-[10px] font-mono text-text-muted p-4 border border-dashed border-white/10 rounded-lg">
+                                        O'tgan davrlar kiritilmagan.
+                                    </div>
                                 </div>
-                                <div v-else class="text-center text-[10px] font-mono text-text-muted p-4 border border-dashed border-white/10 rounded-lg">
-                                    O'tgan davrlar kiritilmagan.
-                                </div>
-                            </div>
 
-                        </div>
-                        <div class="flex justify-end gap-3 mt-4">
-                            <button type="button" @click="cancelWorkerEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
-                        </div>
-                    </form>
-                </div>
+                            </div>
+                            <div class="flex justify-end gap-3 mt-4">
+                                <button type="button" @click="cancelWorkerEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
+                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
+                            </div>
+                        </form>
+                    </div>
                 </Teleport>
             </div>
                   <!-- Qorovullar -->
-                  <div id="guards-column" class="glass-panel relative p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+                  <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                       <div class="flex justify-between items-center mb-6">
                           <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                               🛡️ Qorovullar

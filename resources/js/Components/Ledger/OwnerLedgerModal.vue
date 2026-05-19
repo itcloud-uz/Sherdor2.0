@@ -18,6 +18,18 @@ const form = ref({
     accrual_description: ''
 });
 
+const showInlineRow = ref(false);
+const inlineForm = ref({
+    date: new Date().toISOString().split('T')[0],
+    name: '',
+    qty: '',
+    price: '',
+    cash: '',
+    card: '',
+    other: ''
+});
+const isSubmitting = ref(false);
+
 const ledgerData = ref({ balance: 0, items: [] });
 const owner = ref(null);
 const isLoading = ref(false);
@@ -139,6 +151,64 @@ function submitAccrual() {
     form.value.accrual_amount = '';
     form.value.accrual_description = '';
 }
+
+async function saveInlineForm() {
+    isSubmitting.value = true;
+    try {
+        let workTotal = (Number(inlineForm.value.qty) || 0) * (Number(inlineForm.value.price) || 0);
+        
+        if (workTotal > 0) {
+            await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
+                type: 'salary_accrual',
+                amount: workTotal,
+                date: inlineForm.value.date,
+                description: inlineForm.value.name ? `${inlineForm.value.name} (${inlineForm.value.qty} x ${inlineForm.value.price})` : `Bajarilgan ish (${inlineForm.value.qty} x ${inlineForm.value.price})`
+            });
+        }
+        if (Number(inlineForm.value.cash) > 0) {
+             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
+                type: 'payment',
+                amount: inlineForm.value.cash,
+                date: inlineForm.value.date,
+                description: `Naqd: ${inlineForm.value.name || "To'lov"}`
+             });
+        }
+        if (Number(inlineForm.value.card) > 0) {
+             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
+                type: 'payment',
+                amount: inlineForm.value.card,
+                date: inlineForm.value.date,
+                description: `Karta: ${inlineForm.value.name || "To'lov"}`
+             });
+        }
+        if (Number(inlineForm.value.other) > 0) {
+             await axios.post(route('admin.hr.machine-owners.ledger.store', props.ownerId), {
+                type: 'payment',
+                amount: inlineForm.value.other,
+                date: inlineForm.value.date,
+                description: `Boshqa: ${inlineForm.value.name || "To'lov"}`
+             });
+        }
+        
+        await fetchData(); // refresh the table
+        showInlineRow.value = false;
+        // reset form
+        inlineForm.value = {
+            date: new Date().toISOString().split('T')[0],
+            name: '',
+            qty: '',
+            price: '',
+            cash: '',
+            card: '',
+            other: ''
+        };
+    } catch(e) {
+        console.error(e);
+        alert("Xatolik!");
+    } finally {
+        isSubmitting.value = false;
+    }
+}
 </script>
 
 <template>
@@ -162,7 +232,9 @@ function submitAccrual() {
                 <table class="w-full text-left text-sm font-mono whitespace-nowrap">
                     <thead class="bg-white/5 border-b border-white/10 text-[10px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th class="p-4 border-r border-white/5 w-16 text-center">№</th>
+                            <th class="p-4 border-r border-white/5 w-16 text-center">
+                                <button @click="showInlineRow = !showInlineRow" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[10px] hover:bg-neon-green hover:text-black transition-colors" title="Qator qo'shish">➕</button>
+                            </th>
                             <th class="p-4 border-r border-white/5 w-32">Sana</th>
                             <th class="p-4 border-r border-white/5 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
                             <th class="p-4 border-r border-white/5 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
@@ -181,6 +253,45 @@ function submitAccrual() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5 text-white/90">
+                        <tr v-if="showInlineRow" class="bg-neon-yellow/10 border-b border-neon-yellow/30">
+                            <td class="p-2 border-r border-white/5 text-center text-neon-yellow">➕</td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="date" v-model="inlineForm.date" class="w-full bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow [color-scheme:dark]" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="text" v-model="inlineForm.name" placeholder="Nomi" class="w-24 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="number" v-model="inlineForm.qty" placeholder="0" class="w-12 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow text-center" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="number" v-model="inlineForm.price" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-yellow text-right" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="number" v-model="inlineForm.cash" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="number" v-model="inlineForm.card" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                            </td>
+                            <td class="p-2 border-r border-white/5">
+                                <input type="number" v-model="inlineForm.other" placeholder="0" step="100" class="w-16 bg-black/50 text-white text-[10px] border border-white/10 rounded px-1 py-1 outline-none focus:border-neon-green text-right" />
+                            </td>
+                            <td class="p-2 text-center flex flex-col gap-1 items-end">
+                                <div class="text-[9px] text-neon-yellow font-bold" title="Bajarilgan ish summasi">
+                                    B: {{ ((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)).toLocaleString() }}
+                                </div>
+                                <div class="text-[9px] text-neon-green font-bold" title="To'langan summa">
+                                    T: {{ (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)).toLocaleString() }}
+                                </div>
+                                <div class="text-[9px] font-bold" :class="((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other)) > 0 ? 'text-neon-red' : 'text-neon-cyan'" title="Qoldiq">
+                                    Q: {{ (((Number(inlineForm.qty) || 0) * (Number(inlineForm.price) || 0)) - (Number(inlineForm.cash) + Number(inlineForm.card) + Number(inlineForm.other))).toLocaleString() }}
+                                </div>
+                                <div class="flex gap-1 mt-1 justify-end">
+                                    <button @click="saveInlineForm" :disabled="isSubmitting" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[9px] hover:bg-neon-green hover:text-black">✅ Saqlash</button>
+                                    <button @click="showInlineRow = false" :disabled="isSubmitting" class="px-2 py-1 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded text-[9px] hover:bg-neon-red hover:text-black">❌</button>
+                                </div>
+                            </td>
+                        </tr>
                         <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover:bg-white/5 transition-colors group">
                             <td class="p-3 border-r border-white/5 text-center text-text-muted">{{ idx + 1 }}</td>
                             <td class="p-3 border-r border-white/5">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>

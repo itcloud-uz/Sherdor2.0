@@ -409,7 +409,7 @@ function deleteMachinery(id) {
 const showOwnerLedgerModal = ref(false);
 const ownerLedgerData = ref({ balance: 0, logs: [], transactions: [] });
 const activeOwnerForLedger = ref(null);
-const ownerLedgerForm = ref({ amount: \'\', description: \'\', date: new Date().toISOString().split(\'T\')[0] });
+const ownerLedgerForm = ref({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
 
 const showMachineryLedgerModal = ref(false);
 const machineryLedgerData = ref({ logs: [], transactions: [], total_earned: 0, unpaid_balance: 0 });

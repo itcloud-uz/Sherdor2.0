@@ -227,6 +227,29 @@ class HrController extends Controller
         return redirect()->back()->with('message', 'Texnika o\'chirildi.');
     }
 
+    public function getOwnerLedger($ownerId)
+    {
+        $owner = \App\Models\MachineOwner::with('machineries')->findOrFail($ownerId);
+        $machineryIds = $owner->machineries->pluck('id');
+
+        $logs = WorkLog::with(['building', 'machinery'])
+            ->whereIn('machinery_id', $machineryIds)
+            ->orderBy('date', 'desc')
+            ->get();
+
+        $transactions = \App\Models\MachineryTransaction::with('machinery')
+            ->whereIn('machinery_id', $machineryIds)
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return response()->json([
+            'owner' => $owner,
+            'balance' => $owner->balance,
+            'logs' => $logs,
+            'transactions' => $transactions
+        ]);
+    }
+
     public function getMachineryLedger(Machinery $machinery)
     {
         $logs = WorkLog::with(['building'])->where('machinery_id', $machinery->id)->orderBy('date', 'desc')->get();
@@ -261,6 +284,9 @@ class HrController extends Controller
             ]);
 
             $machinery->decrement('balance', $validated['amount']);
+            if ($machinery->machine_owner_id) {
+                \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->decrement('balance', $validated['amount']);
+            }
 
             // Deduct from company balance
             \App\Models\CompanyBalance::addExpense($validated['amount']);
@@ -857,8 +883,14 @@ class HrController extends Controller
                     $machinery = Machinery::find($tx->machinery_id);
                     if ($tx->type === 'salary_accrual') {
                         $machinery->increment('balance', $delta);
+                        if ($machinery->machine_owner_id) {
+                            \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->increment('balance', $delta);
+                        }
                     } else {
                         $machinery->decrement('balance', $delta);
+                        if ($machinery->machine_owner_id) {
+                            \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->decrement('balance', $delta);
+                        }
                         if ($tx->type === 'payment') \App\Models\CompanyBalance::addExpense($delta);
                     }
                 } elseif ($type === 'user') {
@@ -895,8 +927,14 @@ class HrController extends Controller
                 $machinery = Machinery::find($tx->machinery_id);
                 if ($tx->type === 'salary_accrual') {
                     $machinery->decrement('balance', $tx->amount);
+                    if ($machinery->machine_owner_id) {
+                        \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->decrement('balance', $tx->amount);
+                    }
                 } else {
                     $machinery->increment('balance', $tx->amount);
+                    if ($machinery->machine_owner_id) {
+                        \App\Models\MachineOwner::where('id', $machinery->machine_owner_id)->increment('balance', $tx->amount);
+                    }
                     if ($tx->type === 'payment') \App\Models\CompanyBalance::addIncome($tx->amount);
                 }
             } elseif ($type === 'user') {

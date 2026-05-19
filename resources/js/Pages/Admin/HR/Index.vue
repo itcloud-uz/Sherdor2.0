@@ -406,6 +406,11 @@ function deleteMachinery(id) {
     }
 }
 
+const showOwnerLedgerModal = ref(false);
+const ownerLedgerData = ref({ balance: 0, logs: [], transactions: [] });
+const activeOwnerForLedger = ref(null);
+const ownerLedgerForm = ref({ amount: \'\', description: \'\', date: new Date().toISOString().split(\'T\')[0] });
+
 const showMachineryLedgerModal = ref(false);
 const machineryLedgerData = ref({ logs: [], transactions: [], total_earned: 0, unpaid_balance: 0 });
 const activeMachinery = ref(null);
@@ -494,6 +499,53 @@ function destroyTx(type, id) {
     });
 }
 
+
+async function openOwnerLedger(owner) {
+    activeOwnerForLedger.value = owner;
+    try {
+        const response = await fetch(route(\'admin.hr.owner.ledger\', owner.id));
+        const data = await response.json();
+        
+        let allItems = [];
+        if(data.logs) {
+            data.logs.forEach(l => {
+                allItems.push({
+                    type: \'log\',
+                    date: l.date,
+                    created_at: l.created_at,
+                    item: l
+                });
+            });
+        }
+        if(data.transactions) {
+            data.transactions.forEach(t => {
+                allItems.push({
+                    type: \'tx\',
+                    date: t.date,
+                    created_at: t.created_at,
+                    item: t
+                });
+            });
+        }
+        
+        allItems.sort((a, b) => {
+            let d1 = new Date(a.date);
+            let d2 = new Date(b.date);
+            if (d1.getTime() !== d2.getTime()) return d1 - d2;
+            return new Date(a.created_at) - new Date(b.created_at);
+        });
+        
+        ownerLedgerData.value = {
+            balance: data.balance,
+            items: allItems,
+            owner: data.owner
+        };
+        showOwnerLedgerModal.value = true;
+    } catch(err) {
+        console.error(err);
+        alert(\'Ma\\'lumotlarni yuklashda xatolik!\');
+    }
+}
 
 async function openMachineryLedger(m) {
     activeMachinery.value = m;
@@ -1331,6 +1383,9 @@ function generatePayroll() {
                                 <p class="text-[10px] font-mono text-text-muted mt-1">{{ owner.phone }}</p>
                             </div>
                             <div class="flex items-center gap-4">
+                                <button @click.stop="openOwnerLedger(owner)" class="px-3 py-1 bg-neon-yellow/20 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded border border-neon-yellow/30 hover:bg-neon-yellow hover:text-black transition-colors flex items-center gap-2">
+                                    <span>📊</span> Xisobot (Jurnal)
+                                </button>
                                 <div class="text-right">
                                     <p class="text-[10px] font-mono text-text-muted uppercase mb-0.5">Umumiy Balans (Haqi)</p>
                                     <p class="text-sm font-bold" :class="owner.balance > 0 ? 'text-neon-red' : (owner.balance < 0 ? 'text-neon-green' : 'text-white')">{{ $currency(owner.balance || 0) }}</p>
@@ -2128,6 +2183,103 @@ function generatePayroll() {
         </div>
 
         <!-- MODAL: MACHINERY LEDGER -->
+        
+        <!-- Owner Ledger Modal (Excel Layout) -->
+        <div v-if="showOwnerLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showOwnerLedgerModal = false"></div>
+            <div class="relative bg-[#a1c4fd] text-black border-2 border-black p-4 rounded max-w-7xl w-full max-h-[90vh] overflow-y-auto font-sans shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-center w-full uppercase tracking-wider">{{ activeOwnerForLedger?.name }}</h2>
+                    <button @click="showOwnerLedgerModal = false" class="absolute right-4 top-4 text-red-600 hover:text-red-800 font-bold text-xl">✕</button>
+                </div>
+                
+                <div class="overflow-x-auto border-2 border-black bg-white">
+                    <table class="w-full text-sm border-collapse border-2 border-black min-w-[800px]">
+                        <thead>
+                            <tr class="bg-[#fff2cc]">
+                                <th rowspan="2" class="border border-black p-2 w-10 text-center">№</th>
+                                <th rowspan="2" class="border border-black p-2 w-24 text-center">Сана</th>
+                                <th colspan="4" class="border border-black p-2 text-center uppercase font-bold tracking-wider">БАЖАРИЛГАН ИШЛАР</th>
+                                <th colspan="2" class="border border-black p-2 text-center uppercase font-bold tracking-wider">ТЎЛАНДИ</th>
+                                <th rowspan="2" class="border border-black p-2 w-32 text-center font-bold">Қолдиқ</th>
+                            </tr>
+                            <tr class="bg-[#fff2cc]">
+                                <th class="border border-black p-2 text-center font-bold">Номи</th>
+                                <th class="border border-black p-2 w-20 text-center font-bold">Сони<br><span class="text-[10px] font-normal">(соат,рейси)</span></th>
+                                <th class="border border-black p-2 w-28 text-center font-bold">Нархи<br><span class="text-[10px] font-normal">(соат,рейси)</span></th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">Жами нархи</th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">Тўланди</th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">Саларка<br>олиб бердик</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(row, i) in ownerLedgerData.items" :key="i" class="hover:bg-blue-50">
+                                <td class="border border-black p-1 text-center font-bold">{{ i + 1 }}</td>
+                                <td class="border border-black p-1 text-center">{{ new Date(row.date).toLocaleDateString('ru-RU') }}</td>
+                                
+                                <td class="border border-black p-1 pl-2">
+                                    <template v-if="row.type === 'log'">
+                                        {{ row.item.machinery?.name }} <span class="text-xs text-gray-500">({{ row.item.building?.name }})</span>
+                                    </template>
+                                    <template v-else>
+                                        Пул кўчирмаси / Тўлов
+                                    </template>
+                                </td>
+                                
+                                <td class="border border-black p-1 text-center">
+                                    {{ row.type === 'log' ? (row.item.hours_worked || row.item.volume_done || '1') : '' }}
+                                </td>
+                                
+                                <td class="border border-black p-1 text-right pr-2">
+                                    {{ row.type === 'log' ? $currency(row.item.rate || 0).replace('UZS', '') : '' }}
+                                </td>
+                                
+                                <td class="border border-black p-1 text-right pr-2">
+                                    {{ row.type === 'log' ? $currency((row.item.calculated_cost + (row.item.deductions || 0)) || 0).replace('UZS', '') : '' }}
+                                </td>
+                                
+                                <td class="border border-black p-1 text-right pr-2">
+                                    {{ row.type === 'tx' ? $currency(row.item.amount || 0).replace('UZS', '') : '' }}
+                                </td>
+                                
+                                <td class="border border-black p-1 text-right pr-2">
+                                    {{ (row.type === 'log' && row.item.deductions > 0) ? $currency(row.item.deductions).replace('UZS', '') : '' }}
+                                </td>
+                                
+                                <td class="border border-black p-1 text-right pr-2 font-mono">
+                                    <template v-if="row.type === 'log'">
+                                        {{ row.item.calculated_cost > 0 ? '- ' : '' }}{{ $currency(Math.abs(row.item.calculated_cost)).replace('UZS', '') }}
+                                    </template>
+                                    <template v-else>
+                                        {{ $currency(row.item.amount).replace('UZS', '') }}
+                                    </template>
+                                </td>
+                            </tr>
+                            
+                            <!-- JAMI ROW -->
+                            <tr class="font-bold bg-white">
+                                <td colspan="3" class="border border-black p-2 text-center uppercase">ЖАМИ</td>
+                                <td class="border border-black p-2"></td>
+                                <td class="border border-black p-2 text-right pr-2"></td>
+                                <td class="border border-black p-2 text-right pr-2">
+                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'log').reduce((acc, curr) => acc + (parseFloat(curr.item.calculated_cost) + parseFloat(curr.item.deductions || 0)), 0) || 0).replace('UZS', '') }}
+                                </td>
+                                <td class="border border-black p-2 text-right pr-2">
+                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'tx').reduce((acc, curr) => acc + parseFloat(curr.item.amount || 0), 0) || 0).replace('UZS', '') }}
+                                </td>
+                                <td class="border border-black p-2 text-right pr-2">
+                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'log').reduce((acc, curr) => acc + parseFloat(curr.item.deductions || 0), 0) || 0).replace('UZS', '') }}
+                                </td>
+                                <td class="border border-black p-2 text-right pr-2" :class="ownerLedgerData.balance < 0 ? 'text-green-600' : 'text-red-600'">
+                                    {{ ownerLedgerData.balance <= 0 ? '+ ' : '- ' }}{{ $currency(Math.abs(ownerLedgerData.balance)).replace('UZS', '') }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div v-if="showMachineryLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryLedgerModal = false"></div>
             <div class="relative glass-panel p-6 rounded-2xl w-full max-w-4xl border border-neon-yellow/30 shadow-[0_0_40px_rgba(255,255,0,0.1)] flex flex-col max-h-[90vh]">

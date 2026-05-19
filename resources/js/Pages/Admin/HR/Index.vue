@@ -911,7 +911,7 @@ function generatePayroll() {
             <!-- Content Area -->
             <div class="lg:col-span-3 min-h-[700px]">
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
-        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-3 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-2 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->
             <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
                 <div class="flex justify-between items-center mb-6">
@@ -1097,8 +1097,8 @@ function generatePayroll() {
         </div>
 
         
-            <!-- Qorovullar -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+            <!-- Qorovullar (Table View) -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col mt-8 animate-[fadeIn_0.6s_ease-out]">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                         🛡️ Qorovullar
@@ -1108,29 +1108,42 @@ function generatePayroll() {
                     </button>
                 </div>
                 
-                <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
-                    <div class="grid grid-cols-1 gap-3">
-                        <div v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                            <div class="flex items-start gap-3 mb-3">
-                                <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
-                                    <span class="text-lg">🛡️</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="text-sm font-bold text-white truncate">{{ g.name }}</h3>
-                                    <p class="text-[10px] font-mono text-text-muted mt-1 uppercase">Oylik: {{ $currency(g.base_rate) }} so'm</p>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
-                                <button @click="viewGuardHistory(g)" class="text-[10px] font-mono text-neon-cyan hover:text-white transition-colors uppercase tracking-widest">Maosh Tarixi</button>
-                                <div class="flex gap-2">
-                                    <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-xs text-white" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded-full bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-xs text-neon-red" title="O'chirish">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="text-neon-cyan bg-black/50 border-b border-white/10">
+                            <tr>
+                                <th class="p-4 font-normal uppercase tracking-widest">#</th>
+                                <th class="p-4 font-normal uppercase tracking-widest">F.I.SH</th>
+                                <th class="p-4 font-normal uppercase tracking-widest">Telefon</th>
+                                <th class="p-4 font-normal uppercase tracking-widest">Oylik Maoshi</th>
+                                <th class="p-4 font-normal uppercase tracking-widest text-right">Harakatlar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <tr v-for="(g, index) in workers.filter(w => w.role === 'guard')" :key="g.id" class="hover:bg-white/5 transition-colors">
+                                <td class="p-4 text-text-muted">{{ index + 1 }}</td>
+                                <td class="p-4 text-white font-bold flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center shrink-0">🛡️</div>
+                                    {{ g.name }}
+                                </td>
+                                <td class="p-4 text-text-muted">{{ g.phone || '-' }}</td>
+                                <td class="p-4 text-neon-cyan font-bold">{{ $currency(g.base_rate) }} so'm</td>
+                                <td class="p-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button @click="viewGuardHistory(g)" class="px-3 py-1 bg-white/5 text-neon-cyan border border-white/10 rounded hover:bg-white/20 transition-colors uppercase tracking-widest text-[10px]">Maosh Tarixi</button>
+                                        <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
+                                        <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-neon-red" title="O'chirish">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="workers.filter(w => w.role === 'guard').length === 0">
+                                <td colspan="5" class="p-8 text-center text-text-muted">Hech qanday qorovul topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+            
 
         
 

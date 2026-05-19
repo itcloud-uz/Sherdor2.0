@@ -27,10 +27,7 @@ const filteredWorkers = computed(() => {
     return result;
 });
 
-const filteredMachineries = computed(() => {
-    let result = props.machineries || [];
-    return result;
-});
+
 
 const activeTab = ref(0);
 const isProcessing = ref(false);

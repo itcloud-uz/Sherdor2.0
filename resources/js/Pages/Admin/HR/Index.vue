@@ -196,7 +196,8 @@ function openWorkerEdit(w) {
         brigade_id: w.brigade_id || '',
         building_id: w.building_id || '',
         floor_id: w.floor_id || '',
-        unit_id: w.unit_id || ''
+        unit_id: w.unit_id || '',
+        salary_periods: []
     };
     // Scroll to form (optional) or just populate it
 }

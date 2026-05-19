@@ -550,6 +550,40 @@ class HrController extends Controller
                         'effective_date' => $request->input('effective_date', now()->toDateString())
                     ]);
                 }
+                
+                $salaryPeriods = $request->input('salary_periods', []);
+                if (!empty($salaryPeriods)) {
+                    foreach ($salaryPeriods as $period) {
+                        if (empty($period['start_month']) || empty($period['end_month']) || empty($period['salary'])) continue;
+                        
+                        $start = \Carbon\Carbon::createFromFormat('Y-m', $period['start_month'])->startOfMonth();
+                        $end = \Carbon\Carbon::createFromFormat('Y-m', $period['end_month'])->startOfMonth();
+                        $amount = $period['salary'];
+                        
+                        // Log history for the start of the period
+                        \App\Models\WorkerSalaryHistory::create([
+                            'worker_id' => $worker->id,
+                            'salary' => $amount,
+                            'effective_date' => $start->toDateString()
+                        ]);
+
+                        $current = $start->copy();
+                        while ($current->lte($end)) {
+                            $monthStr = $current->format('Y-m');
+                            \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                                'worker_id' => $worker->id,
+                                'type' => 'salary_accrual',
+                                'amount' => $amount,
+                                'description' => "Maosh ($monthStr) - Qorovul (Davr bo'yicha)",
+                                'date' => $current->toDateString(),
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                            $worker->increment('balance', $amount);
+                            $current->addMonth();
+                        }
+                    }
+                }
             }
         });
 

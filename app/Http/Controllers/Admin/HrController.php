@@ -964,7 +964,6 @@ class HrController extends Controller
         try {
             $workerIds = $brigade->workers()->pluck('id')->toArray();
             $logs = \App\Models\WorkLog::with(['building', 'machinery'])
-                        ->where('type', 'worker')
                         ->whereIn('worker_id', $workerIds)
                         ->orderBy('date', 'desc')
                         ->get();

@@ -26,7 +26,6 @@ class BrigadeLedgerExport implements FromView, ShouldAutoSize, WithStyles
         $workerIds = $brigade->workers->pluck('id');
 
         $logs = WorkLog::with(['building', 'worker'])
-            ->where('type', 'worker')
             ->whereIn('worker_id', $workerIds)
             ->orderBy('date', 'asc')
             ->get();

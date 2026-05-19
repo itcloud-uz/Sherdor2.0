@@ -641,73 +641,40 @@ const categoriesSummary = computed(() => {
             </h1>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="w-full">
             
-            <!-- Sidebar Navigation -->
-            <div class="space-y-4">
+            <!-- Horizontal Tabs Navigation -->
+            <div class="w-full border-b border-white/10 mb-6 overflow-x-auto custom-scrollbar flex items-center gap-1 pb-2">
                 <button 
                     v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
-                    class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group"
-                    :class="activeTab === tab.id ? 'border-neon-primary bg-white/5' : 'border-white/5 hover:border-white/20 hover:bg-black/40'"
+                    class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2"
+                    :class="activeTab === tab.id ? 'border-neon-yellow text-neon-yellow shadow-[0_2px_10px_-3px_rgba(252,238,9,0.4)]' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
                 >
-                    <div class="w-10 h-10 rounded-xl bg-black/50 border flex items-center justify-center transition-colors shrink-0"
-                         :class="activeTab === tab.id ? 'border-neon-primary text-neon-primary' : 'border-white/10 group-hover:border-white/30 text-white'">
-                        <span class="text-xl">{{ tab.icon }}</span>
-                    </div>
-                    <div class="text-left">
-                        <h3 class="font-display font-bold uppercase tracking-widest text-sm transition-colors"
-                            :class="activeTab === tab.id ? 'text-neon-primary' : 'text-white'">
-                            {{ $t(tab.name) }}
-                        </h3>
-                    </div>
+                    <span class="text-base">{{ tab.icon }}</span> {{ $t(tab.name) }}
                 </button>
                 
-                <!-- Unified Finance Sub-Navigation (Tasdiqlar, Operatsiyalar Tarixi, Cheklar) -->
-                <div class="pt-4 border-t border-white/10 space-y-4">
-                    <Link :href="route('admin.approvals')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-yellow/50 hover:bg-neon-yellow/5">
-                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-yellow flex items-center justify-center text-white group-hover:text-neon-yellow shrink-0 transition-colors">
-                            <span class="text-xl">✅</span>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-yellow transition-colors">
-                                {{ $t('Tasdiqlar') || 'Tasdiqlar' }}
-                            </h3>
-                        </div>
-                    </Link>
-
-                    <button 
-                        @click="activeTab = 2"
-                        class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group"
-                        :class="activeTab === 2 ? 'border-white bg-white/5' : 'border-white/5 hover:border-white/50 hover:bg-white/5'"
-                    >
-                        <div class="w-10 h-10 rounded-xl bg-black/50 border flex items-center justify-center transition-colors shrink-0"
-                             :class="activeTab === 2 ? 'border-white text-white' : 'border-white/10 group-hover:border-white text-white'">
-                            <span class="text-xl">📜</span>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="font-display font-bold uppercase tracking-widest text-sm transition-colors"
-                                :class="activeTab === 2 ? 'text-white' : 'text-text-muted group-hover:text-white'">
-                                {{ $t('ledger_history') }}
-                            </h3>
-                        </div>
-                    </button>
-
-                    <Link :href="route('admin.receipts')" class="w-full glass-card p-4 rounded-2xl flex items-center gap-4 transition-all group border-white/5 hover:border-neon-cyan/50 hover:bg-neon-cyan/5">
-                        <div class="w-10 h-10 rounded-xl bg-black/50 border border-white/10 group-hover:border-neon-cyan flex items-center justify-center text-white group-hover:text-neon-cyan shrink-0 transition-colors">
-                            <span class="text-xl">🧾</span>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="font-display font-bold uppercase tracking-widest text-sm text-text-muted group-hover:text-neon-cyan transition-colors">
-                                {{ $t('Cheklar') || 'Cheklar' }}
-                            </h3>
-                        </div>
-                    </Link>
-                </div>
+                <div class="h-6 w-px bg-white/20 mx-2 shrink-0"></div>
+                
+                <Link :href="route('admin.approvals')" class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2 border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
+                    <span class="text-base">✅</span> {{ $t('Tasdiqlar') || 'Tasdiqlar' }}
+                </Link>
+                
+                <button 
+                    @click="activeTab = 2"
+                    class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2"
+                    :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_2px_10px_-3px_rgba(252,238,9,0.4)]' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
+                >
+                    <span class="text-base">📜</span> {{ $t('ledger_history') }}
+                </button>
+                
+                <Link :href="route('admin.receipts')" class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2 border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
+                    <span class="text-base">🧾</span> {{ $t('Cheklar') || 'Cheklar' }}
+                </Link>
             </div>
 
             <!-- Content Area -->
-            <div class="lg:col-span-3">
+            <div class="w-full">
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
@@ -998,7 +965,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- TAB 4: Create Transaction -->
-        <div v-if="activeTab === 3" class="max-w-4xl mx-auto glass-panel p-4 md:p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 3" class="w-full glass-panel p-4 md:p-8 rounded-2xl border border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.1)] animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_transaction') }}</h2>
             <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_transaction_desc') }}</p>
 
@@ -1383,7 +1350,7 @@ const categoriesSummary = computed(() => {
         </div>
 
             <!-- TAB 6: Ichki O'tkazma / Naqdlashtirish -->
-            <div v-if="activeTab === 6" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
+            <div v-if="activeTab === 6" class="w-full space-y-6 animate-[fadeIn_0.5s_ease-out]">
                 
                 <!-- KUTAYOTGAN SO'ROVLAR -->
                 <div v-if="pendingRefunds && pendingRefunds.length > 0" class="glass-panel p-6 rounded-2xl border border-neon-yellow/30 shadow-[0_0_20px_rgba(252,238,9,0.1)]">

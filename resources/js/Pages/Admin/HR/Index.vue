@@ -1069,9 +1069,6 @@ function generatePayroll() {
                                 <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-neon-blue/10 text-neon-blue rounded hover:bg-neon-blue/30 transition-colors" title="Karta">💳</button>
                                     <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
-                                        📊 Jurnal
-                                    </button>
 
                                     <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
@@ -1128,6 +1125,7 @@ function generatePayroll() {
                                     <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
                                         📊 Jurnal
                                     </button>
+
 
                                     <button v-if="isAdmin" @click.stop="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
@@ -1263,9 +1261,7 @@ function generatePayroll() {
                                       <div class="flex gap-2">
                                           <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-neon-cyan" title="Maosh Tarixi">📅</button>
                                           <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
-                                        📊 Jurnal
-                                    </button>
+
 
                                           <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-neon-red" title="O'chirish">🗑️</button>
                                       </div>
@@ -1472,9 +1468,6 @@ function generatePayroll() {
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
-                                        📊 Jurnal
-                                    </button>
 
                                     <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>

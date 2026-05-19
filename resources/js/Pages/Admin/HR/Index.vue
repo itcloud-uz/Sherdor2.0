@@ -1463,7 +1463,7 @@ function generatePayroll() {
                                 <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                             </select>
                         </div>
-                        <div v-if="logForm.type === 'machinery'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div v-if="logForm.type === 'machinery'" class="space-y-3">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Texnika Egasi (Ixtiyoriy)</label>
                                 <select v-model="logForm.machine_owner_id" @change="logForm.machinery_id = ''" class="glass-input w-full text-white bg-black/50">

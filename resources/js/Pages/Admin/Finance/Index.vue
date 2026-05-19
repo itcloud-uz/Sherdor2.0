@@ -1068,24 +1068,26 @@ const categoriesSummary = computed(() => {
                         </select>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
-                        <input v-model="form.amount" type="number" required class="glass-input w-full text-3xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
-                    </div>
+                    <div v-show="!requiresMachineOwner && !requiresBrigade">
+                        <div class="mb-6">
+                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('amount') }} (UZS)</label>
+                            <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full text-3xl font-bold font-mono tracking-wider text-neon-cyan" placeholder="0">
+                        </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
-                        <select v-model="form.account_type" class="glass-input w-full text-lg font-bold text-white bg-black/50">
-                            <option value="main">{{ $t('main_account') }}</option>
-                            <option value="bank">Bank Hisobi (Bank)</option>
-                            <option value="credit">Kredit Hisobi (Credit)</option>
-                            <option value="partner">Ta'sischi Hisobi (Partner)</option>
-                        </select>
+                        <div>
+                            <label class="block text-xs font-mono text-text-muted mb-1">Hisob (Account)</label>
+                            <select v-model="form.account_type" class="glass-input w-full text-lg font-bold text-white bg-black/50">
+                                <option value="main">{{ $t('main_account') }}</option>
+                                <option value="bank">Bank Hisobi (Bank)</option>
+                                <option value="credit">Kredit Hisobi (Credit)</option>
+                                <option value="partner">Ta'sischi Hisobi (Partner)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 <!-- O'ng Ustun (Qo'shimcha) -->
-                <div class="space-y-6">
+                <div class="space-y-6" v-show="!requiresMachineOwner && !requiresBrigade">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('payment_method') }}</label>
@@ -1097,7 +1099,7 @@ const categoriesSummary = computed(() => {
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-text-muted mb-1">Tranzaksiya Sanasi va Vaqti</label>
-                            <input v-model="form.transaction_date" type="datetime-local" required class="glass-input w-full text-white bg-black/50 [color-scheme:dark]">
+                            <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="glass-input w-full text-white bg-black/50 [color-scheme:dark]">
                         </div>
                     </div>
 
@@ -1157,7 +1159,7 @@ const categoriesSummary = computed(() => {
                         </label>
                     </div>
 
-                    <button type="submit" :disabled="isProcessing" class="w-full py-4 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
+                    <button type="submit" :disabled="isProcessing" v-show="!requiresMachineOwner && !requiresBrigade" class="w-full py-4 text-sm bg-neon-cyan/20 border border-neon-cyan text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
                         <span v-if="isProcessing">Yuklanmoqda...</span>
                         <span v-else>{{ form.auto_approve ? "Tasdiqlash va Saqlash" : "Tasdiqlashga Yuborish" }}</span>
                     </button>

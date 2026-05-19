@@ -2,6 +2,9 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
+import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
+
 
 const props = defineProps({
     users: Array,
@@ -1023,6 +1026,60 @@ function generatePayroll() {
 }
 
 // Decentralized Import Modal
+
+// Handlers for the new Ledger Components
+async function submitBrigadeLedgerFromEvent(payload) {
+    if (!payload.target_id) return;
+    try {
+        const response = await fetch(route('admin.hr.brigade.transactions.store', payload.target_id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            openBrigadeLedger(activeBrigadeForLedger.value); // refresh
+        } else {
+            alert('Tranzaksiyani saqlashda xatolik!');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Tranzaksiyani saqlashda xatolik!');
+    }
+}
+
+function exportBrigadePdf(id) {
+    if (id) window.open(route('admin.hr.brigade.ledger.export', id), '_blank');
+}
+
+async function submitOwnerLedgerFromEvent(payload) {
+    if (!payload.target_id) return;
+    try {
+        const response = await fetch(route('admin.hr.machine-owners.ledger.store', payload.target_id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            openOwnerLedger(activeOwnerForLedger.value); // refresh
+        } else {
+            alert('Tranzaksiyani saqlashda xatolik!');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Tranzaksiyani saqlashda xatolik!');
+    }
+}
+
+function exportOwnerPdf(id) {
+    if (id) window.open(route('admin.hr.owner.ledger.export', id), '_blank');
+}
+
 </script>
 
 <template>
@@ -2285,178 +2342,9 @@ function generatePayroll() {
         <!-- MODAL: MACHINERY LEDGER -->
         
 
-        <!-- Brigade Ledger Modal (Excel Layout) -->
-        <div v-if="showBrigadeLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showBrigadeLedgerModal = false"></div>
-            <div class="relative bg-[#a1c4fd] text-black border-2 border-black p-4 rounded max-w-7xl w-full max-h-[90vh] overflow-y-auto font-sans shadow-2xl animate-[fadeIn_0.3s_ease-out]">
-                <div class="flex justify-between items-center mb-4 relative">
-                    <button @click="window.location.href = route('admin.hr.brigade.ledger.export', activeBrigadeForLedger?.id)" class="absolute left-4 top-4 text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-2 shadow font-bold">
-                        ⬇ Yuklab Olish (Excel)
-                    </button>
-                    <h2 class="text-2xl font-bold text-center w-full uppercase tracking-wider">{{ activeBrigadeForLedger?.name }} - Jurnal</h2>
-                    <button @click="showBrigadeLedgerModal = false" class="absolute right-4 top-4 text-red-600 hover:text-red-800 font-bold text-xl">✖ </button>
-                </div>
-                
-                <div class="overflow-x-auto border-2 border-black bg-white">
-                    <table class="w-full text-left text-sm border-collapse font-medium">
-                        <thead class="bg-[#dcdcdc] border-b-2 border-black sticky top-0 uppercase text-xs">
-                            <tr>
-                                <th class="p-2 border-r border-black w-24">Sana</th>
-                                <th class="p-2 border-r border-black">Asos / Izoh</th>
-                                <th class="p-2 border-r border-black w-32 text-right">Summa</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-400">
-                            <tr v-for="(item, idx) in brigadeLedgerData.items" :key="idx" class="hover:bg-blue-50 transition-colors">
-                                <td class="p-2 border-r border-black">{{ item.date.toISOString().split('T')[0] }}</td>
-                                <td class="p-2 border-r border-black">{{ item.desc }}</td>
-                                <td class="p-2 border-r border-black text-right font-bold" :class="item.amount.startsWith('+') ? 'text-green-700' : 'text-red-700'">
-                                    {{ item.amount }}
-                                </td>
-                            </tr>
-                            <tr v-if="brigadeLedgerData.items.length === 0">
-                                <td colspan="3" class="p-4 text-center text-gray-500 italic">Ma'lumot topilmadi</td>
-                            </tr>
-                        </tbody>
-                        <tfoot class="bg-[#c2e59c] border-t-2 border-black font-bold">
-                            <tr>
-                                <td colspan="2" class="p-2 border-r border-black text-right uppercase tracking-wider">Joriy Qoldiq:</td>
-                                <td class="p-2 text-right text-lg" :class="brigadeLedgerData.balance < 0 ? 'text-red-700' : 'text-green-800'">
-                                    {{ Number(brigadeLedgerData.balance).toLocaleString() }} so'm
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+        
 
-                <div class="mt-6 border-2 border-black p-4 bg-white/50 relative overflow-hidden">
-                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 11px);"></div>
-                    <h3 class="text-sm font-bold uppercase tracking-wider mb-4 border-b-2 border-black inline-block relative z-10">Kassa amaliyoti / Hisob-kitob</h3>
-                    <form @submit.prevent="submitBrigadeLedger" class="flex flex-wrap gap-4 items-end relative z-10">
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-widest font-bold mb-1">Turi</label>
-                            <select v-model="brigadeLedgerForm.type" class="bg-white border border-black p-1 text-sm font-bold outline-none" required>
-                                <option value="payment">To'lov / Avans berish</option>
-                                <option value="salary_accrual">Ish haqi hisoblash (+)</option>
-                                <option value="penalty">Jarima / Ushlanma (-)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-widest font-bold mb-1">Summa (so'm)</label>
-                            <input v-model="brigadeLedgerForm.amount" type="number" step="1000" class="bg-white border border-black p-1 text-sm font-bold outline-none" required placeholder="0" />
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-widest font-bold mb-1">Sana</label>
-                            <input v-model="brigadeLedgerForm.date" type="date" class="bg-white border border-black p-1 text-sm font-bold outline-none" required />
-                        </div>
-                        <div class="flex-grow">
-                            <label class="block text-[10px] uppercase tracking-widest font-bold mb-1">Izoh / Maqsad</label>
-                            <input v-model="brigadeLedgerForm.description" type="text" class="w-full bg-white border border-black p-1 text-sm outline-none" placeholder="Masalan: Obyekt bo'yicha to'lov" />
-                        </div>
-                        <button type="submit" class="bg-black text-white px-4 py-1.5 uppercase tracking-widest font-bold text-sm border-2 border-transparent hover:bg-white hover:text-black hover:border-black transition-all">Yozish</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Owner Ledger Modal (Excel Layout) -->
-        <div v-if="showOwnerLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showOwnerLedgerModal = false"></div>
-            <div class="relative bg-[#a1c4fd] text-black border-2 border-black p-4 rounded max-w-7xl w-full max-h-[90vh] overflow-y-auto font-sans shadow-2xl animate-[fadeIn_0.3s_ease-out]">
-                <div class="flex justify-between items-center mb-4 relative">
-                    <a v-if="activeOwnerForLedger" :href="route('admin.hr.owner.ledger.export', activeOwnerForLedger.id)" target="_blank" class="absolute left-4 top-4 text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-2 shadow font-bold">
-                        ⬇ Yuklab Olish (Excel)
-                    </a>
-                    <h2 class="text-2xl font-bold text-center w-full uppercase tracking-wider">{{ activeOwnerForLedger?.name }}</h2>
-                    <button @click="showOwnerLedgerModal = false" class="absolute right-4 top-4 text-red-600 hover:text-red-800 font-bold text-xl">✕</button>
-                </div>
-                
-                <div class="overflow-x-auto border-2 border-black bg-white">
-                    <table class="w-full text-sm border-collapse border-2 border-black min-w-[800px]">
-                        <thead>
-                            <tr class="bg-[#fff2cc]">
-                                <th rowspan="2" class="border border-black p-2 w-10 text-center">№</th>
-                                <th rowspan="2" class="border border-black p-2 w-24 text-center">Sana</th>
-                                <th colspan="4" class="border border-black p-2 text-center uppercase font-bold tracking-wider">BAJARILGAN ISHLAR</th>
-                                <th colspan="2" class="border border-black p-2 text-center uppercase font-bold tracking-wider">TO'LANDI</th>
-                                <th rowspan="2" class="border border-black p-2 w-32 text-center font-bold">Qoldiq</th>
-                            </tr>
-                            <tr class="bg-[#fff2cc]">
-                                <th class="border border-black p-2 text-center font-bold">Nomi</th>
-                                <th class="border border-black p-2 w-20 text-center font-bold">Soni<br><span class="text-[10px] font-normal">(soat, reysi)</span></th>
-                                <th class="border border-black p-2 w-28 text-center font-bold">Narxi<br><span class="text-[10px] font-normal">(soat, reysi)</span></th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">Jami narxi</th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">To'landi</th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">Salarka<br>olib berdik</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(row, i) in ownerLedgerData.items" :key="i" class="hover:bg-blue-50">
-                                <td class="border border-black p-1 text-center font-bold">{{ i + 1 }}</td>
-                                <td class="border border-black p-1 text-center">{{ new Date(row.date).toLocaleDateString('ru-RU') }}</td>
-                                
-                                <td class="border border-black p-1 pl-2">
-                                    <template v-if="row.type === 'log'">
-                                        {{ row.item.machinery?.name }} <span class="text-xs text-gray-500">({{ row.item.building?.name }})</span>
-                                    </template>
-                                    <template v-else>
-                                        Pul ko'chirmasi / To'lov
-                                    </template>
-                                </td>
-                                
-                                <td class="border border-black p-1 text-center">
-                                    {{ row.type === 'log' ? (row.item.hours_worked || row.item.volume_done || '1') : '' }}
-                                </td>
-                                
-                                <td class="border border-black p-1 text-right pr-2">
-                                    {{ row.type === 'log' ? $currency(row.item.rate || 0).replace('UZS', '') : '' }}
-                                </td>
-                                
-                                <td class="border border-black p-1 text-right pr-2">
-                                    {{ row.type === 'log' ? $currency((row.item.calculated_cost + (row.item.deductions || 0)) || 0).replace('UZS', '') : '' }}
-                                </td>
-                                
-                                <td class="border border-black p-1 text-right pr-2">
-                                    {{ row.type === 'tx' ? $currency(row.item.amount || 0).replace('UZS', '') : '' }}
-                                </td>
-                                
-                                <td class="border border-black p-1 text-right pr-2">
-                                    {{ (row.type === 'log' && row.item.deductions > 0) ? $currency(row.item.deductions).replace('UZS', '') : '' }}
-                                </td>
-                                
-                                <td class="border border-black p-1 text-right pr-2 font-mono">
-                                    <template v-if="row.type === 'log'">
-                                        {{ row.item.calculated_cost > 0 ? '- ' : '' }}{{ $currency(Math.abs(row.item.calculated_cost)).replace('UZS', '') }}
-                                    </template>
-                                    <template v-else>
-                                        {{ $currency(row.item.amount).replace('UZS', '') }}
-                                    </template>
-                                </td>
-                            </tr>
-                            
-                            <!-- JAMI ROW -->
-                            <tr class="font-bold bg-white">
-                                <td colspan="3" class="border border-black p-2 text-center uppercase">JAMI</td>
-                                <td class="border border-black p-2"></td>
-                                <td class="border border-black p-2 text-right pr-2"></td>
-                                <td class="border border-black p-2 text-right pr-2">
-                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'log').reduce((acc, curr) => acc + (parseFloat(curr.item.calculated_cost) + parseFloat(curr.item.deductions || 0)), 0) || 0).replace('UZS', '') }}
-                                </td>
-                                <td class="border border-black p-2 text-right pr-2">
-                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'tx').reduce((acc, curr) => acc + parseFloat(curr.item.amount || 0), 0) || 0).replace('UZS', '') }}
-                                </td>
-                                <td class="border border-black p-2 text-right pr-2">
-                                    {{ $currency(ownerLedgerData.items?.filter(i => i.type === 'log').reduce((acc, curr) => acc + parseFloat(curr.item.deductions || 0), 0) || 0).replace('UZS', '') }}
-                                </td>
-                                <td class="border border-black p-2 text-right pr-2" :class="ownerLedgerData.balance < 0 ? 'text-green-600' : 'text-red-600'">
-                                    {{ ownerLedgerData.balance <= 0 ? '+ ' : '- ' }}{{ $currency(Math.abs(ownerLedgerData.balance)).replace('UZS', '') }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        
 
         <div v-if="showMachineryLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryLedgerModal = false"></div>
@@ -2621,6 +2509,25 @@ function generatePayroll() {
         </div>
 
         </div>
+
+        <BrigadeLedgerModal 
+            :show="showBrigadeLedgerModal"
+            :brigade="activeBrigadeForLedger"
+            :ledgerData="brigadeLedgerData"
+            @close="showBrigadeLedgerModal = false"
+            @submitTransaction="submitBrigadeLedgerFromEvent"
+            @exportPdf="exportBrigadePdf"
+        />
+
+        <OwnerLedgerModal 
+            :show="showOwnerLedgerModal"
+            :owner="activeOwnerForLedger"
+            :ledgerData="ownerLedgerData"
+            @close="showOwnerLedgerModal = false"
+            @submitTransaction="submitOwnerLedgerFromEvent"
+            @exportPdf="exportOwnerPdf"
+        />
+
     </AdminLayout>
 
         <!-- Guard Salary History Modal -->

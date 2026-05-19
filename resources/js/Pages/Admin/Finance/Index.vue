@@ -4,6 +4,8 @@ import { Head, router, Link, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
+import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
+import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
 
 const page = usePage();
 
@@ -235,6 +237,23 @@ function selectContract(c) {
     form.value.contract_id = c.id;
     scheduleSearch.value = `${c.client?.first_name} ${c.client?.last_name} (${c.unit?.unit_number})`;
     showScheduleDropdown.value = false;
+}
+
+const showOwnerLedger = ref(false);
+const showBrigadeLedger = ref(false);
+const selectedOwnerId = ref(null);
+const selectedBrigadeId = ref(null);
+
+function openOwnerLedgerFromFinance(ownerId) {
+    if (!ownerId) return;
+    selectedOwnerId.value = ownerId;
+    showOwnerLedger.value = true;
+}
+
+function openBrigadeLedgerFromFinance(brigadeId) {
+    if (!brigadeId) return;
+    selectedBrigadeId.value = brigadeId;
+    showBrigadeLedger.value = true;
 }
 
 function submitTransaction() {
@@ -1082,7 +1101,7 @@ const categoriesSummary = computed(() => {
                         <label class="block text-xs font-mono text-text-muted mb-1">(Ixtiyoriy) Aynan qaysi texnika?</label>
                         <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
-                            <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
+                            <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
                         </select>
                     </div>
 
@@ -1763,6 +1782,16 @@ const categoriesSummary = computed(() => {
 
         <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />
 
+        <BrigadeLedgerModal 
+            :show="showBrigadeLedger" 
+            :brigade-id="selectedBrigadeId" 
+            @close="showBrigadeLedger = false" 
+        />
+        <OwnerLedgerModal 
+            :show="showOwnerLedger" 
+            :owner-id="selectedOwnerId" 
+            @close="showOwnerLedger = false" 
+        />
     </AdminLayout>
 </template>
 

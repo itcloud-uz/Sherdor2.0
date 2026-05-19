@@ -148,9 +148,9 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/hr/brigades', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigade'])->name('hr.brigade.store');
     Route::put('/hr/brigades/{brigade}', [\App\Http\Controllers\Admin\HrController::class, 'updateBrigade'])->name('hr.brigade.update');
     Route::delete('/hr/brigades/{brigade}', [\App\Http\Controllers\Admin\HrController::class, 'deleteBrigade'])->name('hr.brigade.destroy');
-    Route::get('/hr/brigades/{brigade}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getBrigadeLedger'])->name('admin.hr.brigade.ledger');
-    Route::post('/hr/brigades/{brigade}/transactions', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigadeTransaction'])->name('admin.hr.brigade.transactions.store');
-    Route::get('/hr/brigades/{brigade}/export-ledger', [\App\Http\Controllers\Admin\HrController::class, 'exportBrigadeLedger'])->name('admin.hr.brigade.ledger.export');
+    Route::get('/hr/brigades/{brigade}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getBrigadeLedger'])->name('hr.brigade.ledger');
+    Route::post('/hr/brigades/{brigade}/transactions', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigadeTransaction'])->name('hr.brigade.transactions.store');
+    Route::get('/hr/brigades/{brigade}/export-ledger', [\App\Http\Controllers\Admin\HrController::class, 'exportBrigadeLedger'])->name('hr.brigade.ledger.export');
     
     Route::post('/hr/machine-owners', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineOwner'])->name('hr.machine_owner.store');
     Route::put('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'updateMachineOwner'])->name('hr.machine_owner.update');

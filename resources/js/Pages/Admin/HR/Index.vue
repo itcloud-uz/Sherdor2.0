@@ -74,6 +74,63 @@ function saveBrigade() {
     }
 }
 
+
+async function openBrigadeLedger(brigade) {
+    activeBrigadeForLedger.value = brigade;
+    try {
+        const response = await fetch(route('admin.hr.brigade.ledger', brigade.id));
+        const data = await response.json();
+        
+        // Merge and sort
+        const items = [];
+        data.logs.forEach(l => {
+            const isHourly = l.worker?.salary_type === 'hourly' || true;
+            items.push({ 
+                date: new Date(l.date), 
+                desc: `Ish (Obyekt: ${l.building?.name || "Noma'lum"}) - ${l.hours_worked || l.volume_done} hajm/soat`, 
+                amount: `+ ${l.calculated_cost}` 
+            });
+        });
+        data.transactions.forEach(t => {
+            items.push({ 
+                date: new Date(t.date), 
+                desc: `${t.type === 'salary_accrual' ? 'Kirim' : (t.type === 'penalty' ? 'Ushlanma (Jarima)' : 'To\'lov / Avans')} (${t.description || ''})`, 
+                amount: t.type === 'salary_accrual' ? `+ ${t.amount}` : `- ${t.amount}` 
+            });
+        });
+        
+        items.sort((a, b) => a.date - b.date);
+        
+        brigadeLedgerData.value = {
+            balance: data.balance,
+            items: items
+        };
+        showBrigadeLedgerModal.value = true;
+    } catch(err) {
+        console.error(err);
+        alert("Ma'lumotlarni yuklashda xatolik!");
+    }
+}
+
+function saveBrigadeTransaction() {
+    if (!brigadeLedgerForm.value.amount || !brigadeLedgerForm.value.date || !brigadeLedgerForm.value.type) {
+        alert("Sana, tur va summani kiriting.");
+        return;
+    }
+    router.post(route('admin.hr.brigade.transactions.store', activeBrigadeForLedger.value.id), brigadeLedgerForm.value, {
+        onSuccess: () => {
+            brigadeLedgerForm.value = { amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] };
+            openBrigadeLedger(activeBrigadeForLedger.value); // refresh data
+        }
+    });
+}
+
+function exportBrigadeLedger() {
+    if(activeBrigadeForLedger.value) {
+        window.location.href = route('admin.hr.brigade.ledger.export', activeBrigadeForLedger.value.id);
+    }
+}
+
 function deleteBrigade(id) {
     if (confirm("Brigadani o'chirmoqchimisiz?")) {
         router.delete(route('admin.hr.brigade.destroy', id));
@@ -410,6 +467,12 @@ const showOwnerLedgerModal = ref(false);
 const ownerLedgerData = ref({ balance: 0, logs: [], transactions: [] });
 const activeOwnerForLedger = ref(null);
 const ownerLedgerForm = ref({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+
+
+const showBrigadeLedgerModal = ref(false);
+const activeBrigadeForLedger = ref(null);
+const brigadeLedgerData = ref({ balance: 0, logs: [], transactions: [] });
+const brigadeLedgerForm = ref({ amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] });
 
 const showMachineryLedgerModal = ref(false);
 const machineryLedgerData = ref({ logs: [], transactions: [], total_earned: 0, unpaid_balance: 0 });
@@ -1001,6 +1064,10 @@ function generatePayroll() {
                                 <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-neon-blue/10 text-neon-blue rounded hover:bg-neon-blue/30 transition-colors" title="Karta">💳</button>
                                     <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
+                                        📊 Jurnal
+                                    </button>
+
                                     <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
@@ -1053,6 +1120,10 @@ function generatePayroll() {
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
+                                        📊 Jurnal
+                                    </button>
+
                                     <button v-if="isAdmin" @click.stop="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
@@ -1187,6 +1258,10 @@ function generatePayroll() {
                                       <div class="flex gap-2">
                                           <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-neon-cyan" title="Maosh Tarixi">📅</button>
                                           <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
+                                        📊 Jurnal
+                                    </button>
+
                                           <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-neon-red" title="O'chirish">🗑️</button>
                                       </div>
                                   </div>
@@ -1392,6 +1467,10 @@ function generatePayroll() {
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
+                                        📊 Jurnal
+                                    </button>
+
                                     <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>

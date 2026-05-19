@@ -761,9 +761,9 @@ const categoriesSummary = computed(() => {
             </div>
 
             <!-- Transaction Lists -->
-            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Incomes -->
-                <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/20 h-[500px] flex flex-col">
+                <div class="glass-panel p-4 md:p-6 rounded-2xl border border-neon-cyan/20 h-auto max-h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-neon-cyan"></span>{{ $t('incomes_from') }}</h3>
@@ -827,7 +827,7 @@ const categoriesSummary = computed(() => {
                 </div>
 
                 <!-- Expenses -->
-                <div class="glass-panel p-6 rounded-2xl border border-neon-red/20 h-[500px] flex flex-col">
+                <div class="glass-panel p-4 md:p-6 rounded-2xl border border-neon-red/20 h-auto max-h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-sm font-display text-white uppercase tracking-widest flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-neon-red"></span>{{ $t('expenses_to') }}</h3>

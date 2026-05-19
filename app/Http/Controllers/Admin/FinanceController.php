@@ -11,6 +11,9 @@ class FinanceController extends Controller
 {
     public function index()
     {
+        // Cleanup unwanted categories
+        \App\Models\TransactionCategory::where('name', 'like', '%Farxod%')->delete();
+
         $transactions = Transaction::with(['creator', 'approver', 'contract.client', 'contract.unit'])->latest()->limit(500)->get();
         $balance = \App\Models\CompanyBalance::firstOrCreate([]);
         

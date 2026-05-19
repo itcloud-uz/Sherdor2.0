@@ -183,7 +183,7 @@ const isWorkerEditMode = ref(false);
 const showWorkerForm = ref(false);
 
 function openWorkerEdit(w) {
-    isWorkerEditMode.value = true;
+    isWorkerEditMode.value = !!w.id;
     showWorkerForm.value = true;
     workerForm.value = {
         id: w.id,
@@ -193,6 +193,7 @@ function openWorkerEdit(w) {
         salary_type: w.salary_type || 'piece_rate',
         metric_type: w.metric_type || 'dona',
         base_rate: w.base_rate || w.rate || '',
+        brigade_id: w.brigade_id || '',
         building_id: w.building_id || '',
         floor_id: w.floor_id || '',
         unit_id: w.unit_id || ''
@@ -1100,7 +1101,7 @@ function generatePayroll() {
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ishchini Tanlang</label>
                                 <select v-model="biometricForm.person_id" class="glass-input w-full bg-black/50">
                                     <option value="" disabled selected>-- Ishchi --</option>
-                                    <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                    <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                                 </select>
                             </div>
                             
@@ -1370,7 +1371,7 @@ function generatePayroll() {
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_worker') }}</label>
                             <select v-model="logForm.worker_id" class="glass-input w-full text-white bg-black/50" required>
                                 <option value="" disabled>-- {{ $t('select') }} --</option>
-                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                             </select>
                         </div>
                         <div v-if="logForm.type === 'machinery'">
@@ -1954,7 +1955,7 @@ function generatePayroll() {
                             <!-- Worker -->
                             <select v-if="scannerForm.subject_type === 'Worker'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">
                                 <option value="" disabled selected>-- Tanlang --</option>
-                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                             </select>
                             <!-- User -->
                             <select v-if="scannerForm.subject_type === 'User'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">

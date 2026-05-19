@@ -20,7 +20,7 @@ class HrController extends Controller
         return Inertia::render('Admin/HR/Index', [
             'users' => \App\Models\User::with('roles')->get(),
             'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
-            'workers' => Worker::all(),
+            'workers' => Worker::with('brigade')->get(),
             'brigades' => \App\Models\Brigade::with('workers')->get(),
             'machineries' => Machinery::all(),
             'machineOwners' => \App\Models\MachineOwner::with('machineries')->get(),
@@ -484,11 +484,13 @@ class HrController extends Controller
             'role' => 'required|in:office,builder,driver,guard',
             'salary_type' => 'required|in:fixed_monthly,piece_rate,hourly',
             'metric_type' => 'nullable|string',
-            'base_rate' => 'required|numeric|min:0'
+            'base_rate' => 'required|numeric|min:0',
+            'brigade_id' => 'nullable|exists:brigades,id'
         ]);
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
         $validated['rate'] = $validated['base_rate'];
+        $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
 
         $worker->update($validated);
         return redirect()->back()->with('message', 'Xodim ma\'lumotlari yangilandi.');

@@ -14,7 +14,7 @@ class FinanceController extends Controller
         // Cleanup unwanted categories
         \App\Models\TransactionCategory::where('name', 'like', '%Farxod%')->delete();
 
-        $transactions = Transaction::with(['creator', 'approver', 'contract.client', 'contract.unit'])->latest()->limit(500)->get();
+        $transactions = Transaction::with(['creator', 'approver', 'contract.client', 'contract.unit', 'category'])->latest()->limit(500)->get();
         $balance = \App\Models\CompanyBalance::firstOrCreate([]);
         
         $pendingIncomes = Transaction::where('status', 'pending')->where('type', 'income')->sum('amount');
@@ -48,7 +48,7 @@ class FinanceController extends Controller
             ->get();
 
         $grouped = $expenses->groupBy('category_id')->map(function ($txns) {
-            $cat = $txns->first()->category;
+            $cat = array_key_exists('category', $txns->first()->getRelations()) ? $txns->first()->getRelation('category') : $txns->first()->category()->first();
             return [
                 'category_name' => $cat ? $cat->name : 'Noma\'lum',
                 'total' => $txns->sum('amount'),
@@ -74,7 +74,7 @@ class FinanceController extends Controller
             'client_id' => 'nullable|exists:clients,id',
             'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
-            'category_id' => 'required|exists:transaction_categories,id',
+            'category_id' => 'nullable|exists:transaction_categories,id',
             'category_name' => 'nullable|string',
             'transaction_date' => 'nullable|date',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',

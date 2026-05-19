@@ -352,7 +352,7 @@ class HrController extends Controller
             $log = WorkLog::create($validated);
             
             // Accrue salary to worker's ledger or Brigade's ledger
-            if ($validated['type'] === 'worker' && $calculatedCost > 0) {
+            if ($validated['type'] === 'worker' && $calculatedCost != 0) {
                 $worker = Worker::find($validated['worker_id']);
                 
                 // If worker belongs to a Brigade, credit the Brigade. Otherwise, credit the Worker.
@@ -377,7 +377,7 @@ class HrController extends Controller
             }
 
             // Accrue salary to machinery owner's ledger
-            if ($validated['type'] === 'machinery' && $calculatedCost > 0) {
+            if ($validated['type'] === 'machinery' && $calculatedCost != 0) {
                 $machinery = Machinery::find($validated['machinery_id']);
                 if ($machinery->machine_owner_id) {
                     $owner = \App\Models\MachineOwner::find($machinery->machine_owner_id);
@@ -389,7 +389,8 @@ class HrController extends Controller
             // Automate construction progress tracking based on expenses and volume
             $building = Building::find($validated['building_id']);
             if ($building) {
-                $building->increment('actual_expenses', $calculatedCost);
+                $grossCost = $calculatedCost + $deductions;
+                $building->increment('actual_expenses', $grossCost);
 
                 // Add volume to the active construction stage
                 if (isset($validated['volume_done']) && $validated['volume_done'] > 0) {
@@ -773,7 +774,10 @@ class HrController extends Controller
                 
                 $building = Building::find($log->building_id);
                 if ($building) {
-                    $building->increment('actual_expenses', $delta);
+                    $oldGross = $oldCost + $log->getOriginal('deductions');
+                    $newGross = $newCost + $deductions;
+                    $grossDelta = $newGross - $oldGross;
+                    $building->increment('actual_expenses', $grossDelta);
                 }
             }
         });
@@ -806,7 +810,8 @@ class HrController extends Controller
             
             $building = Building::find($log->building_id);
             if ($building) {
-                $building->decrement('actual_expenses', $cost);
+                $grossCost = $cost + $log->deductions;
+                $building->decrement('actual_expenses', $grossCost);
             }
 
             $log->delete();

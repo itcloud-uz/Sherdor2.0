@@ -79,6 +79,11 @@ async function openBrigadeLedger(brigade) {
     activeBrigadeForLedger.value = brigade;
     try {
         const response = await fetch(route('admin.hr.brigade.ledger', brigade.id));
+        if (!response.ok) {
+            const errText = await response.text();
+            alert("Server xatosi: " + response.status + " - " + errText.substring(0, 100));
+            return;
+        }
         const data = await response.json();
         
         // Merge and sort

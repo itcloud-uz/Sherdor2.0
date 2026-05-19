@@ -75,7 +75,7 @@ function saveBrigade() {
 }
 
 function deleteBrigade(id) {
-    if (confirm('Brigadani o'chirmoqchimisiz?')) {
+    if (confirm("Brigadani o'chirmoqchimisiz?")) {
         router.delete(route('admin.hr.brigade.destroy', id));
     }
 }
@@ -113,7 +113,7 @@ function saveOwner() {
 }
 
 function deleteOwner(id) {
-    if (confirm('Texnika egasini o'chirmoqchimisiz?')) {
+    if (confirm("Texnika egasini o'chirmoqchimisiz?")) {
         router.delete(route('admin.hr.machine_owner.destroy', id));
     }
 }
@@ -168,7 +168,7 @@ function saveUser() {
 }
 
 function deleteUser(id) {
-    if(!confirm('Haqiqatan ham ushbu foydalanuvchini o'chirmoqchimisiz?')) return;
+    if(!confirm("Haqiqatan ham ushbu foydalanuvchini o'chirmoqchimisiz?")) return;
     router.delete(route('admin.hr.users.delete', id));
 }
 
@@ -246,7 +246,7 @@ function saveWorker() {
 }
 
 function deleteWorker(id) {
-    if (confirm('Haqiqatan ham ushbu xodimni o'chirmoqchimisiz?')) {
+    if (confirm("Haqiqatan ham ushbu xodimni o'chirmoqchimisiz?")) {
         router.delete(route('admin.hr.worker.destroy', id));
     }
 }
@@ -401,7 +401,7 @@ function updateMachinery() {
 }
 
 function deleteMachinery(id) {
-    if(confirm('Ushbu texnikani haqiqatan ham o'chirasizmi?')) {
+    if(confirm("Ushbu texnikani haqiqatan ham o'chirasizmi?")) {
         router.delete(route('admin.hr.machinery.destroy', id));
     }
 }
@@ -926,7 +926,7 @@ function generatePayroll() {
         },
         onError: () => {
             isProcessing.value = false;
-            alert('Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.');
+            alert("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
         }
     });
 }

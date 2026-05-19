@@ -214,7 +214,7 @@ async function saveInlineForm() {
 <template>
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="close"></div>
-        <div class="relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[95vw] max-w-none min-h-[80vh] max-h-[95vh] overflow-y-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+        <div class="relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[85vw] max-w-none min-h-[80vh] max-h-[85vh] overflow-y-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]">
             
             <div class="flex justify-between items-center mb-6 relative z-10">
                 <button @click="$emit('exportPdf', owner?.id)" class="px-4 py-2 bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/30 rounded-lg hover:bg-neon-yellow hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
@@ -228,7 +228,7 @@ async function saveInlineForm() {
                 </button>
             </div>
             
-            <div class="flex-1 custom-scrollbar border border-white/10 rounded-xl bg-black/40 mb-6">
+            <div class="flex-1 custom-scrollbar overflow-x-auto border border-white/10 rounded-xl bg-black/40 mb-6">
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
                     <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
                         <tr>

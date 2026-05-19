@@ -608,7 +608,7 @@ function printLedger() {
     // Combine logs and transactions
     const items = [];
     data.logs.forEach(l => {
-        items.push({ date: new Date(l.date), desc: `Ish (Obyekt: ${l.building?.name || 'Noma'lum'}) - ${l.hours_worked || l.volume_done} ${m.payment_type==='hourly'?'soat':'hajm'}`, amount: `- ${l.calculated_cost}` });
+        items.push({ date: new Date(l.date), desc: `Ish (Obyekt: ${l.building?.name || "Noma'lum"}) - ${l.hours_worked || l.volume_done} ${m.payment_type==='hourly'?'soat':'hajm'}`, amount: `- ${l.calculated_cost}` });
     });
     data.transactions.forEach(t => {
         items.push({ date: new Date(t.date), desc: `To'lov: ${t.description || 'Izohsiz'}`, amount: `+ ${t.amount}` });
@@ -647,7 +647,7 @@ function printLedger() {
             
             <div class="summary">
                 <div>TEXNIKA: ${m.machinery_type || ''} ${m.name} (${m.license_plate || 'Raqamsiz'})</div>
-                <div>EGASI (Arendator): ${m.owner_name || 'Noma'lum'}</div>
+                <div>EGASI (Arendator): ${m.owner_name || "Noma'lum"}</div>
                 <div style="margin-top:10px;">Jami Ishlagan Summa: ${data.total_earned}</div>
                 <div style="color: red;">To'lanmagan Qoldiq Qarz: ${data.unpaid_balance}</div>
             </div>
@@ -697,7 +697,7 @@ function exportToExcel() {
     let csv = 'Sana,Izoh,Summa\n';
     
     data.logs.forEach(l => {
-        csv += `${new Date(l.date).toLocaleDateString()},Ish - ${l.building?.name || 'Noma'lum'},-${l.calculated_cost}\n`;
+        csv += `${new Date(l.date).toLocaleDateString()},Ish - ${l.building?.name || "Noma'lum"},-${l.calculated_cost}\n`;
     });
     data.transactions.forEach(t => {
         csv += `${new Date(t.date).toLocaleDateString()},To'lov: ${t.description || ''},+${t.amount}\n`;

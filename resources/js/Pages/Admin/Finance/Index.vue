@@ -180,7 +180,7 @@ const selectedCategoryName = computed(() => {
     return cat ? cat.name.toLowerCase() : '';
 });
 
-const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma'));
+const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma') || selectedCategoryName.value.includes('ishchi'));
 const requiresMachineOwner = computed(() => selectedCategoryName.value.includes('texnika') || selectedCategoryName.value.includes('arendator'));
 const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
 const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
@@ -1027,6 +1027,15 @@ const categoriesSummary = computed(() => {
                             <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                         </select>
                     </div>
+
+                    <div v-if="requiresBrigade">
+                        <label class="block text-xs font-mono mb-1 text-neon-cyan">YOKI Brigadani Tanlang (Yollanma)</label>
+                        <select v-model="form.brigade_id" class="glass-input w-full text-white bg-black/50 border-neon-cyan/50">
+                            <option value="">-- Brigadani Tanlash --</option>
+                            <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+
                     
                     <div v-if="requiresPartner || form.account_type === 'partner'">
                         <label class="block text-xs font-mono text-text-muted mb-1 text-neon-yellow">Ta'sischini Tanlang (Hamkor)</label>
@@ -1044,8 +1053,17 @@ const categoriesSummary = computed(() => {
                         </select>
                     </div>
 
-                    <div v-if="requiresMachinery">
-                        <label class="block text-xs font-mono text-text-muted mb-1">Texnikani Tanlang (Neyron bog'lama)</label>
+                    
+                    <div v-if="requiresMachineOwner">
+                        <label class="block text-xs font-mono mb-1 text-neon-yellow">Texnika Egasini Tanlang (Pul to'lash uchun)</label>
+                        <select v-model="form.machine_owner_id" class="glass-input w-full text-white bg-black/50 border-neon-yellow/50">
+                            <option value="">-- Egasini Tanlash --</option>
+                            <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
+                        </select>
+                    </div>
+
+<div v-if="requiresMachinery">
+                        <label class="block text-xs font-mono text-text-muted mb-1">(Ixtiyoriy) Aynan qaysi texnika?</label>
                         <select v-model="form.machinery_id" class="glass-input w-full text-white bg-black/50" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>

@@ -2188,7 +2188,10 @@ function generatePayroll() {
         <div v-if="showOwnerLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showOwnerLedgerModal = false"></div>
             <div class="relative bg-[#a1c4fd] text-black border-2 border-black p-4 rounded max-w-7xl w-full max-h-[90vh] overflow-y-auto font-sans shadow-2xl animate-[fadeIn_0.3s_ease-out]">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-4 relative">
+                    <a v-if="activeOwnerForLedger" :href="route('admin.hr.owner.ledger.export', activeOwnerForLedger.id)" target="_blank" class="absolute left-4 top-4 text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-2 shadow font-bold">
+                        ⬇ Yuklab Olish (Excel)
+                    </a>
                     <h2 class="text-2xl font-bold text-center w-full uppercase tracking-wider">{{ activeOwnerForLedger?.name }}</h2>
                     <button @click="showOwnerLedgerModal = false" class="absolute right-4 top-4 text-red-600 hover:text-red-800 font-bold text-xl">✕</button>
                 </div>
@@ -2198,18 +2201,18 @@ function generatePayroll() {
                         <thead>
                             <tr class="bg-[#fff2cc]">
                                 <th rowspan="2" class="border border-black p-2 w-10 text-center">№</th>
-                                <th rowspan="2" class="border border-black p-2 w-24 text-center">Сана</th>
-                                <th colspan="4" class="border border-black p-2 text-center uppercase font-bold tracking-wider">БАЖАРИЛГАН ИШЛАР</th>
-                                <th colspan="2" class="border border-black p-2 text-center uppercase font-bold tracking-wider">ТЎЛАНДИ</th>
-                                <th rowspan="2" class="border border-black p-2 w-32 text-center font-bold">Қолдиқ</th>
+                                <th rowspan="2" class="border border-black p-2 w-24 text-center">Sana</th>
+                                <th colspan="4" class="border border-black p-2 text-center uppercase font-bold tracking-wider">BAJARILGAN ISHLAR</th>
+                                <th colspan="2" class="border border-black p-2 text-center uppercase font-bold tracking-wider">TO'LANDI</th>
+                                <th rowspan="2" class="border border-black p-2 w-32 text-center font-bold">Qoldiq</th>
                             </tr>
                             <tr class="bg-[#fff2cc]">
-                                <th class="border border-black p-2 text-center font-bold">Номи</th>
-                                <th class="border border-black p-2 w-20 text-center font-bold">Сони<br><span class="text-[10px] font-normal">(соат,рейси)</span></th>
-                                <th class="border border-black p-2 w-28 text-center font-bold">Нархи<br><span class="text-[10px] font-normal">(соат,рейси)</span></th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">Жами нархи</th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">Тўланди</th>
-                                <th class="border border-black p-2 w-32 text-center font-bold">Саларка<br>олиб бердик</th>
+                                <th class="border border-black p-2 text-center font-bold">Nomi</th>
+                                <th class="border border-black p-2 w-20 text-center font-bold">Soni<br><span class="text-[10px] font-normal">(soat, reysi)</span></th>
+                                <th class="border border-black p-2 w-28 text-center font-bold">Narxi<br><span class="text-[10px] font-normal">(soat, reysi)</span></th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">Jami narxi</th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">To'landi</th>
+                                <th class="border border-black p-2 w-32 text-center font-bold">Salarka<br>olib berdik</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2222,7 +2225,7 @@ function generatePayroll() {
                                         {{ row.item.machinery?.name }} <span class="text-xs text-gray-500">({{ row.item.building?.name }})</span>
                                     </template>
                                     <template v-else>
-                                        Пул кўчирмаси / Тўлов
+                                        Pul ko'chirmasi / To'lov
                                     </template>
                                 </td>
                                 
@@ -2258,7 +2261,7 @@ function generatePayroll() {
                             
                             <!-- JAMI ROW -->
                             <tr class="font-bold bg-white">
-                                <td colspan="3" class="border border-black p-2 text-center uppercase">ЖАМИ</td>
+                                <td colspan="3" class="border border-black p-2 text-center uppercase">JAMI</td>
                                 <td class="border border-black p-2"></td>
                                 <td class="border border-black p-2 text-right pr-2"></td>
                                 <td class="border border-black p-2 text-right pr-2">

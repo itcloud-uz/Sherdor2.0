@@ -170,6 +170,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/hr/machinery/{machinery}', [\App\Http\Controllers\Admin\HrController::class, 'deleteMachinery'])->name('hr.machinery.destroy');
     Route::get('/hr/machinery/{machinery}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getMachineryLedger'])->name('hr.machinery.ledger');
     Route::get('/hr/owner/{owner}/ledger', [\App\Http\Controllers\Admin\HrController::class, 'getOwnerLedger'])->name('hr.owner.ledger');
+    Route::get('/hr/owner/{owner}/ledger/export', [\App\Http\Controllers\Admin\HrController::class, 'exportOwnerLedger'])->name('hr.owner.ledger.export');
     Route::post('/hr/machinery/{machinery}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineryTransaction'])->name('hr.machinery.transaction.store');
     
     Route::post('/hr/log', [\App\Http\Controllers\Admin\HrController::class, 'storeLog'])->name('hr.log.store');

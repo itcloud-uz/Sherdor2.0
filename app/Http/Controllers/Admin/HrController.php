@@ -227,6 +227,11 @@ class HrController extends Controller
         return redirect()->back()->with('message', 'Texnika o\'chirildi.');
     }
 
+    public function exportOwnerLedger($ownerId)
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\OwnerLedgerExport($ownerId), 'Texnika_Egasi_Hisoboti.xlsx');
+    }
+
     public function getOwnerLedger($ownerId)
     {
         $owner = \App\Models\MachineOwner::with('machineries')->findOrFail($ownerId);

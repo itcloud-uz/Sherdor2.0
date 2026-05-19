@@ -270,6 +270,7 @@ class HrController extends Controller
             'deductions' => 'nullable|numeric|min:0'
         ]);
 
+        $deductions = (float) $request->input('deductions', 0);
         $calculatedCost = 0;
         $rate = 0; // Default to prevent 500 errors
 
@@ -277,25 +278,27 @@ class HrController extends Controller
             $worker = Worker::find($validated['worker_id']);
             if ($worker->salary_type === 'hourly') {
                 $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
-                $calculatedCost = ($validated['hours_worked'] ?? 0) * $rate;
+                $calculatedCost = (($validated['hours_worked'] ?? 0) * $rate) - $deductions;
             } elseif ($worker->salary_type === 'piece_rate') {
                 $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
-                $calculatedCost = ($validated['volume_done'] ?? 0) * $rate;
+                $calculatedCost = (($validated['volume_done'] ?? 0) * $rate) - $deductions;
             } else {
-                $calculatedCost = 0; 
+                $calculatedCost = 0 - $deductions; 
                 $rate = 0;
             }
             $validated['machinery_id'] = null;
         } else {
             $machinery = Machinery::find($validated['machinery_id']);
             $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $machinery->cost_per_hour;
-            $calculatedCost = ($validated['hours_worked'] ?? 0) * $rate;
+            $calculatedCost = (($validated['hours_worked'] ?? 0) * $rate) - $deductions;
             $validated['worker_id'] = null;
         }
 
         $validated['rate'] = $rate;
         $validated['calculated_cost'] = $calculatedCost;
+        $validated['deductions'] = $deductions;
         $validated['status'] = 'unpaid';
+        unset($validated['custom_rate']);
 
         DB::transaction(function () use ($validated, $calculatedCost) {
             $log = WorkLog::create($validated);
@@ -612,35 +615,40 @@ class HrController extends Controller
         $validated = $request->validate([
             'hours_worked' => 'nullable|numeric|min:0',
             'volume_done' => 'nullable|numeric|min:0',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'custom_rate' => 'nullable|numeric|min:0',
+            'deductions' => 'nullable|numeric|min:0'
         ]);
 
         $oldCost = $log->calculated_cost;
+        $deductions = (float) $request->input('deductions', 0);
         $newCost = 0;
+        $rate = 0;
 
         if ($log->type === 'worker') {
             $worker = Worker::find($log->worker_id);
             if ($worker->salary_type === 'hourly') {
                 $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
-                $newCost = ($validated['hours_worked'] ?? 0) * $rate;
+                $newCost = (($validated['hours_worked'] ?? 0) * $rate) - $deductions;
             } elseif ($worker->salary_type === 'piece_rate') {
                 $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $worker->base_rate;
-                $newCost = ($validated['volume_done'] ?? 0) * $rate;
+                $newCost = (($validated['volume_done'] ?? 0) * $rate) - $deductions;
             }
         } else {
             $machinery = Machinery::find($log->machinery_id);
             $rate = $request->filled('custom_rate') ? $request->input('custom_rate') : $machinery->cost_per_hour;
-            $newCost = ($validated['hours_worked'] ?? 0) * $rate;
+            $newCost = (($validated['hours_worked'] ?? 0) * $rate) - $deductions;
         }
 
         $delta = $newCost - $oldCost;
 
-        DB::transaction(function () use ($log, $validated, $newCost, $oldCost, $delta, $rate) {
+        DB::transaction(function () use ($log, $validated, $newCost, $oldCost, $delta, $rate, $deductions) {
             $log->update([
                 'hours_worked' => $validated['hours_worked'] ?? null,
                 'volume_done' => $validated['volume_done'] ?? null,
                 'rate' => $rate ?? 0,
                 'calculated_cost' => $newCost,
+                'deductions' => $deductions,
                 'date' => $validated['date']
             ]);
 

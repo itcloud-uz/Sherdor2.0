@@ -1100,7 +1100,7 @@ function generatePayroll() {
                                 <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ishchini Tanlang</label>
                                 <select v-model="biometricForm.person_id" class="glass-input w-full bg-black/50">
                                     <option value="" disabled selected>-- Ishchi --</option>
-                                    <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                    <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                                 </select>
                             </div>
                             
@@ -1370,7 +1370,7 @@ function generatePayroll() {
                             <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_worker') }}</label>
                             <select v-model="logForm.worker_id" class="glass-input w-full text-white bg-black/50" required>
                                 <option value="" disabled>-- {{ $t('select') }} --</option>
-                                <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                             </select>
                         </div>
                         <div v-if="logForm.type === 'machinery'">
@@ -1954,7 +1954,7 @@ function generatePayroll() {
                             <!-- Worker -->
                             <select v-if="scannerForm.subject_type === 'Worker'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">
                                 <option value="" disabled selected>-- Tanlang --</option>
-                                <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
+                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                             </select>
                             <!-- User -->
                             <select v-if="scannerForm.subject_type === 'User'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">

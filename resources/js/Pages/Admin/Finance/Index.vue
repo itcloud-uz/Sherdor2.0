@@ -84,6 +84,26 @@ const recentIncomes = computed(() => (historicalTransactions.value || []).filter
 const recentExpenses = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'expense'));
 const totalApprovedExpenses = computed(() => (recentExpenses.value || []).reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
 
+const incomePage = ref(1);
+const expensePage = ref(1);
+const itemsPerPage = 15;
+
+const paginatedIncomes = computed(() => {
+    const start = (incomePage.value - 1) * itemsPerPage;
+    return recentIncomes.value.slice(start, start + itemsPerPage);
+});
+
+const paginatedExpenses = computed(() => {
+    const start = (expensePage.value - 1) * itemsPerPage;
+    return recentExpenses.value.slice(start, start + itemsPerPage);
+});
+
+const totalIncomesPages = computed(() => Math.max(1, Math.ceil(recentIncomes.value.length / itemsPerPage)));
+const totalExpensesPages = computed(() => Math.max(1, Math.ceil(recentExpenses.value.length / itemsPerPage)));
+
+const totalIncomeAmount = computed(() => recentIncomes.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+const totalExpenseAmount = computed(() => recentExpenses.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+
 import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 const showExpensesModal = ref(false);
 
@@ -641,40 +661,53 @@ const categoriesSummary = computed(() => {
             </h1>
         </div>
 
-        <div class="w-full">
+        <div class="flex gap-4">
             
-            <!-- Horizontal Tabs Navigation -->
-            <div class="w-full border-b border-white/10 mb-6 overflow-x-auto custom-scrollbar flex items-center gap-1 pb-2">
+            <!-- Sidebar Navigation (Slim, Icon-only) -->
+            <div class="w-[60px] shrink-0 flex flex-col gap-2 bg-black/40 border border-white/5 rounded-2xl p-2 py-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                 <button 
                     v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
-                    class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2"
-                    :class="activeTab === tab.id ? 'border-neon-yellow text-neon-yellow shadow-[0_2px_10px_-3px_rgba(252,238,9,0.4)]' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
+                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
+                    :class="activeTab === tab.id ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
                 >
-                    <span class="text-base">{{ tab.icon }}</span> {{ $t(tab.name) }}
+                    <span class="text-xl">{{ tab.icon }}</span>
+                    <!-- Tooltip -->
+                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
+                        [{{ $t(tab.name) }}]
+                    </div>
                 </button>
                 
-                <div class="h-6 w-px bg-white/20 mx-2 shrink-0"></div>
+                <div class="h-px w-8 bg-white/20 mx-auto my-2"></div>
                 
-                <Link :href="route('admin.approvals')" class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2 border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
-                    <span class="text-base">✅</span> {{ $t('Tasdiqlar') || 'Tasdiqlar' }}
+                <Link :href="route('admin.approvals')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
+                    <span class="text-xl">✅</span>
+                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
+                        [{{ $t('Tasdiqlar') || 'Tasdiqlar' }}]
+                    </div>
                 </Link>
                 
                 <button 
                     @click="activeTab = 2"
-                    class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2"
-                    :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_2px_10px_-3px_rgba(252,238,9,0.4)]' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
+                    class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border"
+                    :class="activeTab === 2 ? 'border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.3)] bg-neon-yellow/10' : 'border-transparent text-text-muted hover:text-white hover:border-white/30 hover:bg-white/5'"
                 >
-                    <span class="text-base">📜</span> {{ $t('ledger_history') }}
+                    <span class="text-xl">📜</span>
+                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-yellow/50 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(252,238,9,0.2)]">
+                        [{{ $t('ledger_history') }}]
+                    </div>
                 </button>
                 
-                <Link :href="route('admin.receipts')" class="whitespace-nowrap px-4 py-3 font-mono text-[11px] sm:text-xs tracking-widest uppercase transition-all border-b-2 font-bold flex items-center gap-2 border-transparent text-text-muted hover:text-neon-yellow hover:border-neon-yellow/50 hover:bg-white/5">
-                    <span class="text-base">🧾</span> {{ $t('Cheklar') || 'Cheklar' }}
+                <Link :href="route('admin.receipts')" class="relative group w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all border border-transparent text-text-muted hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/5">
+                    <span class="text-xl">🧾</span>
+                    <div class="absolute left-14 px-3 py-1 bg-black/90 border border-neon-cyan/50 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                        [{{ $t('Cheklar') || 'Cheklar' }}]
+                    </div>
                 </Link>
             </div>
 
             <!-- Content Area -->
-            <div class="w-full">
+            <div class="flex-1 w-[calc(100%-76px)] overflow-x-hidden">
 
         <!-- TAB 1: Main Dashboard -->
         <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
@@ -741,28 +774,55 @@ const categoriesSummary = computed(() => {
                             <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-text-muted hover:text-white']">{{ $t('imported') }}</button>
                         </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                        <div v-for="txn in recentIncomes" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
-                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
-                            <div class="flex justify-between items-start mt-2">
-                                <span class="text-xs text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
-                                <span class="text-lg font-bold text-neon-cyan">+ {{ $currency(txn.amount) }}</span>
-                            </div>
-                            <div class="text-sm text-white">
-                                {{ txn.notes || (txn.payment_schedule_id ? 'Shartnoma to\'lovi' : 'Noma\'lum') }}
-                            </div>
-                            <div class="flex justify-between items-center mt-2 border-t border-white/10 pt-2">
-                                <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-neon-yellow/20 text-neon-yellow' : 'bg-neon-green/20 text-neon-green'">
-                                    {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
-                                </span>
-                                <div class="flex gap-2">
-                                    <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
-                                    <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
-                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                        <table class="w-full text-left text-[12px] font-mono">
+                            <thead class="bg-white/5 border-b border-white/10 text-text-muted sticky top-0 z-10 backdrop-blur-md">
+                                <tr>
+                                    <th class="p-3">Sana</th>
+                                    <th class="p-3">Izoh</th>
+                                    <th class="p-3">Kategoriya</th>
+                                    <th class="p-3">Hisob</th>
+                                    <th class="p-3 text-right">Summa</th>
+                                    <th class="p-3 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover:bg-white/5 transition-colors group relative">
+                                    <td class="p-3">
+                                        <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
+                                        {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
+                                    </td>
+                                    <td class="p-3 whitespace-normal max-w-xs">{{ txn.notes || (txn.payment_schedule_id ? 'Shartnoma to\'lovi' : '-') }}</td>
+                                    <td class="p-3">{{ txn.category?.name || '-' }}</td>
+                                    <td class="p-3">
+                                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-neon-yellow/20 text-neon-yellow' : 'bg-neon-green/20 text-neon-green'">
+                                            {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-right font-bold text-neon-cyan whitespace-nowrap">+ {{ $currency(txn.amount) }}</td>
+                                    <td class="p-3 text-center">
+                                        <div class="flex justify-center gap-2">
+                                            <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
+                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-[10px] uppercase text-red-400 hover:text-red-300 bg-red-400/10 px-2 py-1 rounded">O'chir</button>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-white bg-white/10 px-2 py-1 rounded">Yuklash</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!paginatedIncomes.length">
+                                    <td colspan="6" class="p-4 text-center text-text-muted text-sm">Kirimlar mavjud emas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-auto border-t border-white/10 pt-4 pb-2">
+                            <div class="flex justify-between items-center px-4 font-mono">
+                                <div class="font-bold text-white text-sm">JAMI: <span class="text-neon-cyan">+ {{ $currency(totalIncomeAmount) }}</span></div>
+                                <div class="flex items-center gap-4 text-xs">
+                                    <button @click="incomePage > 1 && incomePage--" :disabled="incomePage === 1" class="text-white hover:text-neon-cyan disabled:opacity-30">◄</button>
+                                    <span>{{ incomePage }} / {{ totalIncomesPages }}</span>
+                                    <button @click="incomePage < totalIncomesPages && incomePage++" :disabled="incomePage === totalIncomesPages" class="text-white hover:text-neon-cyan disabled:opacity-30">►</button>
                                 </div>
                             </div>
                         </div>
-                        <div v-if="!recentIncomes.length" class="text-center text-text-muted text-sm py-4">Kirimlar mavjud emas</div>
                     </div>
                 </div>
 
@@ -785,28 +845,57 @@ const categoriesSummary = computed(() => {
                             </div>
                         </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                        <div v-for="txn in recentExpenses" :key="txn.id" class="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-2 relative">
-                            <span v-if="txn.is_legacy" class="absolute top-2 left-2 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-[0_0_5px_rgba(176,38,255,0.4)]">{{ $t('imported') }}</span>
-                            <div class="flex justify-between items-start mt-2">
-                                <span class="text-xs text-text-muted">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
-                                <span class="text-lg font-bold text-neon-red">- {{ $currency(txn.amount) }}</span>
-                            </div>
-                            <div class="text-sm text-white">
-                                {{ txn.notes || 'Noma\'lum xarajat' }}
-                            </div>
-                            <div class="flex justify-between items-center mt-2 border-t border-white/10 pt-2">
-                                <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-neon-yellow/20 text-neon-yellow' : 'bg-neon-green/20 text-neon-green'">
-                                    {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
-                                </span>
-                                <div class="flex gap-2">
-                                    <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-xs text-blue-400 hover:text-blue-300">{{ $t('edit') }}</button>
-                                    <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-xs text-red-400 hover:text-red-300">{{ $t('delete') }}</button>
-                                    <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-xs text-gray-400 hover:text-white">{{ $t('download') }}</a>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                        <table class="w-full text-left text-[12px] font-mono">
+                            <thead class="bg-white/5 border-b border-white/10 text-text-muted sticky top-0 z-10 backdrop-blur-md">
+                                <tr>
+                                    <th class="p-3">Sana</th>
+                                    <th class="p-3">Izoh</th>
+                                    <th class="p-3">Kategoriya</th>
+                                    <th class="p-3">Hisob</th>
+                                    <th class="p-3">To'lov Usuli</th>
+                                    <th class="p-3 text-right">Summa</th>
+                                    <th class="p-3 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover:bg-white/5 transition-colors group relative">
+                                    <td class="p-3">
+                                        <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
+                                        {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
+                                    </td>
+                                    <td class="p-3 whitespace-normal max-w-xs">{{ txn.notes || '-' }}</td>
+                                    <td class="p-3">{{ txn.category?.name || '-' }}</td>
+                                    <td class="p-3">
+                                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-neon-yellow/20 text-neon-yellow' : 'bg-neon-green/20 text-neon-green'">
+                                            {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 uppercase text-[10px]">{{ txn.payment_method || 'cash' }}</td>
+                                    <td class="p-3 text-right font-bold text-neon-red whitespace-nowrap">- {{ $currency(txn.amount) }}</td>
+                                    <td class="p-3 text-center">
+                                        <div class="flex justify-center gap-2">
+                                            <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
+                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-[10px] uppercase text-red-400 hover:text-red-300 bg-red-400/10 px-2 py-1 rounded">O'chir</button>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-white bg-white/10 px-2 py-1 rounded">Yuklash</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!paginatedExpenses.length">
+                                    <td colspan="7" class="p-4 text-center text-text-muted text-sm">Chiqimlar mavjud emas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-auto border-t border-white/10 pt-4 pb-2">
+                            <div class="flex justify-between items-center px-4 font-mono">
+                                <div class="font-bold text-white text-sm">JAMI: <span class="text-neon-red">- {{ $currency(totalExpenseAmount) }}</span></div>
+                                <div class="flex items-center gap-4 text-xs">
+                                    <button @click="expensePage > 1 && expensePage--" :disabled="expensePage === 1" class="text-white hover:text-neon-red disabled:opacity-30">◄</button>
+                                    <span>{{ expensePage }} / {{ totalExpensesPages }}</span>
+                                    <button @click="expensePage < totalExpensesPages && expensePage++" :disabled="expensePage === totalExpensesPages" class="text-white hover:text-neon-red disabled:opacity-30">►</button>
                                 </div>
                             </div>
                         </div>
-                        <div v-if="!recentExpenses.length" class="text-center text-text-muted text-sm py-4">Chiqimlar mavjud emas</div>
                     </div>
                 </div>
             </div>

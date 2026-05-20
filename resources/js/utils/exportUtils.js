@@ -1,23 +1,27 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 export function exportLedgerToPDF(title, columns, dataRows) {
-    const doc = new jsPDF('landscape');
-    
-    // Check if Arial or similar font needs to be added, but default helvetica works for Latin.
-    doc.text(title, 14, 15);
-    
-    doc.autoTable({
-        head: [columns],
-        body: dataRows,
-        startY: 20,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 245, 245] }
-    });
-    
-    doc.save(`${title}.pdf`);
+    try {
+        const doc = new jsPDF('landscape');
+        
+        doc.text(title, 14, 15);
+        
+        autoTable(doc, {
+            head: [columns],
+            body: dataRows,
+            startY: 20,
+            styles: { fontSize: 8, font: 'helvetica' },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+        
+        doc.save(`${title}.pdf`);
+    } catch (e) {
+        console.error("PDF Export Error: ", e);
+        alert("PDF yaratishda xatolik yuz berdi. Konsol (F12) ga qarang.");
+    }
 }
 
 export function exportLedgerToExcel(title, columns, dataRows) {

@@ -412,6 +412,7 @@ class FinanceController extends Controller
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
+                    'finance_transaction_id' => $transaction->id,
                 ]);
             }
         }
@@ -428,6 +429,7 @@ class FinanceController extends Controller
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
+                    'finance_transaction_id' => $transaction->id,
                 ]);
             }
         }
@@ -674,6 +676,39 @@ class FinanceController extends Controller
                     }
                     $schedule->save();
                 }
+            }
+            // Revert Ledger Transactions linked via finance_transaction_id
+            $ledgerTables = [
+                'worker_transactions' => \App\Models\Worker::class,
+                'brigade_transactions' => \App\Models\Brigade::class,
+                'user_transactions' => \App\Models\User::class,
+                'machine_owner_transactions' => \App\Models\MachineOwner::class,
+                'machinery_transactions' => \App\Models\Machinery::class,
+            ];
+
+            foreach ($ledgerTables as $table => $modelClass) {
+                $linkedTxs = \Illuminate\Support\Facades\DB::table($table)
+                    ->where('finance_transaction_id', $transaction->id)
+                    ->get();
+                
+                foreach ($linkedTxs as $tx) {
+                    $foreignKey = str_replace('_transactions', '_id', $table);
+                    if ($table === 'user_transactions') {
+                        $foreignKey = 'user_id';
+                    } elseif ($table === 'machine_owner_transactions') {
+                        $foreignKey = 'machine_owner_id';
+                    }
+                    
+                    $entity = $modelClass::find($tx->$foreignKey);
+                    if ($entity) {
+                        if ($tx->type === 'salary_accrual') {
+                            $entity->decrement('balance', $tx->amount);
+                        } else {
+                            $entity->increment('balance', $tx->amount);
+                        }
+                    }
+                }
+                \Illuminate\Support\Facades\DB::table($table)->where('finance_transaction_id', $transaction->id)->delete();
             }
         }
 

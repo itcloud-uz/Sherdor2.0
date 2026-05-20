@@ -286,19 +286,21 @@ class HrController extends Controller
                 $owner->decrement('balance', $totalPayment);
 
                 // 1. Asosiy to'lov (Summa)
-                \App\Models\MachineOwnerTransaction::create([
+                $ledgerTx = \App\Models\MachineOwnerTransaction::create([
                     'machine_owner_id' => $owner->id,
                     'type' => 'payment',
                     'amount' => $amount,
                     'description' => $validated['description'] ?? 'To\'lov',
                     'date' => $validated['date']
                 ]);
+                $ledgerTxId = $ledgerTx->id;
+                $ledgerTableName = 'machine_owner_transactions';
 
                 \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
 
                 // Moliya markazi uchun asosiy to'lov tranzaksiyasini yaratish
                 $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Texnika To\'lovi'], ['type' => 'expense']);
-                \App\Models\Transaction::create([
+                $financeTx = \App\Models\Transaction::create([
                     'type' => 'expense',
                     'amount' => $amount,
                     'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -312,21 +314,24 @@ class HrController extends Controller
                     'target_type' => 'machine_owner',
                     'target_id' => $owner->id,
                 ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
 
                 // 2. Chegirma (Texnika xarajati)
                 if ($discount > 0) {
-                    \App\Models\MachineOwnerTransaction::create([
+                    $ledgerTx = \App\Models\MachineOwnerTransaction::create([
                         'machine_owner_id' => $owner->id,
                         'type' => 'payment',
                         'amount' => $discount,
                         'description' => 'Texnika xarajati (Chegirma)',
                         'date' => $validated['date']
                     ]);
+                    $ledgerTxId = $ledgerTx->id;
+                    $ledgerTableName = 'machine_owner_transactions';
 
                     \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
 
                     $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Texnika xarajati (chegirma)'], ['type' => 'expense']);
-                    \App\Models\Transaction::create([
+                    $financeTx = \App\Models\Transaction::create([
                         'type' => 'expense',
                         'amount' => $discount,
                         'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -340,6 +345,7 @@ class HrController extends Controller
                         'target_type' => 'machine_owner',
                         'target_id' => $owner->id,
                     ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
                 }
             } else {
                 // Qarz yoki jarima qo'shilganda
@@ -1027,6 +1033,8 @@ class HrController extends Controller
             $tx = DB::table($table)->where('id', $id)->first();
             if (!$tx) abort(404);
 
+            $financeTxId = $tx->finance_transaction_id ?? null;
+
             if ($type === 'worker') {
                 $worker = Worker::find($tx->worker_id);
                 if ($tx->type === 'salary_accrual') {
@@ -1060,6 +1068,10 @@ class HrController extends Controller
             }
 
             DB::table($table)->where('id', $id)->delete();
+            
+            if ($financeTxId) {
+                \App\Models\Transaction::where('id', $financeTxId)->delete();
+            }
         });
 
         return redirect()->back()->with('message', 'Tranzaksiya o\'chirildi.');
@@ -1110,19 +1122,21 @@ class HrController extends Controller
                 $brigade->decrement('balance', $totalPayment);
 
                 // 1. Asosiy to'lov
-                \App\Models\BrigadeTransaction::create([
+                $ledgerTx = \App\Models\BrigadeTransaction::create([
                     'brigade_id' => $brigade->id,
                     'type' => 'payment',
                     'amount' => $amount,
                     'description' => $validated['description'] ?? 'To\'lov',
                     'date' => $validated['date']
                 ]);
+                $ledgerTxId = $ledgerTx->id;
+                $ledgerTableName = 'brigade_transactions';
 
                 \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
 
                 // Moliya markazi uchun asosiy to'lov tranzaksiyasi
                 $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Brigada To\'lovi'], ['type' => 'expense']);
-                \App\Models\Transaction::create([
+                $financeTx = \App\Models\Transaction::create([
                     'type' => 'expense',
                     'amount' => $amount,
                     'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -1136,21 +1150,24 @@ class HrController extends Controller
                     'target_type' => 'brigade',
                     'target_id' => $brigade->id,
                 ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
 
                 // 2. Chegirma
                 if ($discount > 0) {
-                    \App\Models\BrigadeTransaction::create([
+                    $ledgerTx = \App\Models\BrigadeTransaction::create([
                         'brigade_id' => $brigade->id,
                         'type' => 'payment',
                         'amount' => $discount,
                         'description' => 'Brigada xarajati (Chegirma)',
                         'date' => $validated['date']
                     ]);
+                    $ledgerTxId = $ledgerTx->id;
+                    $ledgerTableName = 'brigade_transactions';
 
                     \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
 
                     $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Brigada xarajati (chegirma)'], ['type' => 'expense']);
-                    \App\Models\Transaction::create([
+                    $financeTx = \App\Models\Transaction::create([
                         'type' => 'expense',
                         'amount' => $discount,
                         'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -1164,6 +1181,7 @@ class HrController extends Controller
                         'target_type' => 'brigade',
                         'target_id' => $brigade->id,
                     ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
                 }
             } else {
                 \App\Models\BrigadeTransaction::create([
@@ -1230,7 +1248,7 @@ class HrController extends Controller
                 $guard->decrement('balance', $totalPayment);
 
                 // 1. Asosiy to'lov
-                \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                $ledgerTxId = \Illuminate\Support\Facades\DB::table('worker_transactions')->insertGetId([
                     'worker_id' => $guard->id,
                     'type' => 'payment',
                     'amount' => $amount,
@@ -1239,12 +1257,13 @@ class HrController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                $ledgerTableName = 'worker_transactions';
 
                 \App\Models\CompanyBalance::addExpense($amount, $validated['account_type'] ?? 'main');
 
                 // Moliya markazi uchun asosiy to'lov tranzaksiyasi
                 $cat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Qorovul To\'lovi'], ['type' => 'expense']);
-                \App\Models\Transaction::create([
+                $financeTx = \App\Models\Transaction::create([
                     'type' => 'expense',
                     'amount' => $amount,
                     'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -1258,10 +1277,11 @@ class HrController extends Controller
                     'target_type' => 'worker',
                     'target_id' => $guard->id,
                 ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
 
                 // 2. Chegirma
                 if ($discount > 0) {
-                    \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([
+                    $ledgerTxId = \Illuminate\Support\Facades\DB::table('worker_transactions')->insertGetId([
                         'worker_id' => $guard->id,
                         'type' => 'payment',
                         'amount' => $discount,
@@ -1270,11 +1290,12 @@ class HrController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                    $ledgerTableName = 'worker_transactions';
 
                     \App\Models\CompanyBalance::addExpense($discount, $validated['account_type'] ?? 'main');
 
                     $discountCat = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Qorovul xarajati (chegirma)'], ['type' => 'expense']);
-                    \App\Models\Transaction::create([
+                    $financeTx = \App\Models\Transaction::create([
                         'type' => 'expense',
                         'amount' => $discount,
                         'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -1288,6 +1309,7 @@ class HrController extends Controller
                         'target_type' => 'worker',
                         'target_id' => $guard->id,
                     ]);
+                if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
                 }
             } else {
                 \Illuminate\Support\Facades\DB::table('worker_transactions')->insert([

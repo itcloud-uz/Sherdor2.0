@@ -14,7 +14,7 @@
 
                 <div class="relative z-10 p-1 h-full flex flex-col">
                     <!-- Header / Top Bar -->
-                    <div class="flex justify-between items-center px-6 py-4 border-b border-neon-cyan/20 bg-black/40">
+                    <div class="flex justify-between items-center px-6 py-4 border-b border-neon-cyan/20 bg-black/40 hidden">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 bg-neon-cyan/10 border border-neon-cyan/50 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.3)]">
                                 <svg class="w-5 h-5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">

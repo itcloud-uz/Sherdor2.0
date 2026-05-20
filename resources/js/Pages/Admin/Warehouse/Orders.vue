@@ -117,7 +117,7 @@ const formatMoney = (amount) => {
                     <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all">
                         ←
                     </Link>
-                    <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-magenta/50 text-shadow-glow flex items-center gap-3">
+                    <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-magenta/50 text-shadow-glow flex items-center gap-3 hidden">
                         <span class="text-neon-magenta">🛒</span> Xarid Buyurtmalari (PO)
                     </h1>
                 </div>

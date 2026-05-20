@@ -5,12 +5,8 @@
         <div class="p-6 h-screen flex flex-col bg-[#020205] overflow-y-auto custom-scrollbar">
             <!-- Header -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 relative z-10">
-                <div class="relative">
-                    <div class="absolute -left-10 -top-10 w-40 h-40 bg-neon-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
-                    <h1 class="text-4xl font-display font-black text-white uppercase tracking-wider drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                        AI Agent <span class="text-neon-purple">Smart SMS</span>
-                    </h1>
-                    <p class="text-xs text-text-muted font-mono mt-2">Avtomatlashtirilgan xabarnomalar va Rasilka markazi</p>
+                <div class="relative hidden">
+                    <!-- Global header replaces this -->
                 </div>
                 <div class="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto mt-4 md:mt-0">
                     <div v-if="isConnected" class="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 border border-neon-green/30 text-neon-green rounded text-xs font-mono">

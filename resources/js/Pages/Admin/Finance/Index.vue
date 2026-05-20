@@ -662,11 +662,7 @@ const categoriesSummary = computed(() => {
     <Head :title="$t('finance_core')" />
     <AdminLayout>
         
-        <div class="mb-8">
-            <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-green/50 text-shadow-glow flex items-center gap-3">
-                <span class="text-4xl drop-shadow-[0_0_15px_rgba(57,255,20,0.6)]">🏦</span> {{ $t('finance_core') }}
-            </h1>
-        </div>
+
 
         <div class="flex flex-col gap-4">
             

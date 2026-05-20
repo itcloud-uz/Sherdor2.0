@@ -16,13 +16,6 @@ const formatMoney = (amount) => {
     <Head title="Taminotchilar Markazi" />
     <AdminLayout>
         <div class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-blue/50 text-shadow-glow flex items-center gap-3">
-                    <span class="text-neon-cyan">📦</span> Taminotchilar Markazi
-                </h1>
-            </div>
-
-
 
             <!-- Navigation Links -->
             <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">

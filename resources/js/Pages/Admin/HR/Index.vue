@@ -81,7 +81,7 @@ function saveBrigade() {
 async function openBrigadeLedger(brigade) {
     activeBrigadeForLedger.value = brigade;
     try {
-        const response = await fetch(route('admin.hr.brigade.ledger', brigade.id));
+        const response = await fetch(route('admin.hr.brigade.transactions', brigade.id));
         if (!response.ok) {
             const errText = await response.text();
             alert("Server xatosi: " + response.status + " - " + errText.substring(0, 100));
@@ -123,7 +123,7 @@ async function openBrigadeLedger(brigade) {
 async function submitBrigadeLedger() {
     if (!activeBrigadeForLedger.value) return;
     try {
-        const response = await fetch(route('hr.brigade.transactions.store', activeBrigadeForLedger.value.id), {
+        const response = await fetch(route('admin.hr.brigade.transaction.store', activeBrigadeForLedger.value.id), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -148,8 +148,10 @@ function saveBrigadeTransaction() {
         alert("Sana, tur va summani kiriting.");
         return;
     }
-    router.post(route('admin.hr.brigade.transactions.store', activeBrigadeForLedger.value.id), brigadeLedgerForm.value, {
+    isProcessing.value = true;
+    router.post(route('admin.hr.brigade.transaction.store', activeBrigadeForLedger.value.id), brigadeLedgerForm.value, {
         onSuccess: () => {
+            isProcessing.value = false;
             brigadeLedgerForm.value = { amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] };
             openBrigadeLedger(activeBrigadeForLedger.value); // refresh data
         }
@@ -270,6 +272,59 @@ const filteredMachineries = computed(() => {
 });
 const isWorkerEditMode = ref(false);
 const showWorkerForm = ref(false);
+
+const isGuardEditMode = ref(false);
+const showGuardForm = ref(false);
+const guardForm = ref({ id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] });
+
+function openGuardForm(g = null) {
+    if (g && g.id) {
+        isGuardEditMode.value = true;
+        guardForm.value = {
+            id: g.id,
+            name: g.name,
+            phone: g.phone || '',
+            role: 'guard',
+            salary_type: 'fixed_monthly',
+            base_rate: g.base_rate || g.rate || '',
+            salary_periods: [] // we don't load existing periods in the edit form natively, but you can if needed
+        };
+    } else {
+        isGuardEditMode.value = false;
+        guardForm.value = { id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] };
+    }
+    showGuardForm.value = true;
+}
+
+function cancelGuardEdit() {
+    isGuardEditMode.value = false;
+    showGuardForm.value = false;
+    guardForm.value = { id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] };
+}
+
+function saveGuard() {
+    isProcessing.value = true;
+    if (isGuardEditMode.value) {
+        router.post(route('admin.hr.worker.update', guardForm.value.id), guardForm.value, {
+            preserveScroll: true,
+            onSuccess: () => { isProcessing.value = false; cancelGuardEdit(); },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.hr.worker.store'), guardForm.value, {
+            preserveScroll: true,
+            onSuccess: () => { isProcessing.value = false; cancelGuardEdit(); },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function addGuardSalaryPeriod() {
+    guardForm.value.salary_periods.push({ start_month: '', end_month: '', salary: guardForm.value.base_rate || '' });
+}
+function removeGuardSalaryPeriod(index) {
+    guardForm.value.salary_periods.splice(index, 1);
+}
 
 function openWorkerEdit(w) {
     isWorkerEditMode.value = !!w.id;
@@ -597,7 +652,7 @@ function destroyTx(type, id) {
 async function openOwnerLedger(owner) {
     activeOwnerForLedger.value = owner;
     try {
-        const response = await fetch(route('admin.hr.owner.ledger', owner.id));
+        const response = await fetch(route('admin.hr.owner.transactions', owner.id));
         const data = await response.json();
         
         let allItems = [];
@@ -1031,7 +1086,7 @@ function generatePayroll() {
 async function submitBrigadeLedgerFromEvent(payload) {
     if (!payload.target_id) return;
     try {
-        const response = await fetch(route('admin.hr.brigade.transactions.store', payload.target_id), {
+        const response = await fetch(route('admin.hr.brigade.transaction.store', payload.target_id), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1086,11 +1141,7 @@ function exportOwnerPdf(id) {
     <Head :title="$t('hr_hub')" />
     
     <AdminLayout>
-        <div class="flex items-center gap-4 mb-8">
-            <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-blue/50 text-shadow-glow flex items-center gap-3">
-                <span class="text-4xl drop-shadow-[0_0_15px_rgba(0,102,255,0.6)]">👷‍♂️</span> {{ $t('hr_hub') }}
-            </h1>
-        </div>
+
 
         <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <!-- Sidebar Navigation -->
@@ -1320,7 +1371,7 @@ function exportOwnerPdf(id) {
                           <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
                               🛡️ Qorovullar
                           </h2>
-                          <button @click="openWorkerEdit({ role: 'guard', salary_type: 'fixed_monthly' })" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                          <button @click="openGuardForm()" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
                               + Qorovul
                           </button>
                       </div>
@@ -1342,7 +1393,7 @@ function exportOwnerPdf(id) {
                                       <div class="text-neon-cyan text-xs font-mono font-bold">{{ $currency(g.base_rate) }} so'm</div>
                                       <div class="flex gap-2">
                                           <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-neon-cyan" title="Maosh Tarixi">📅</button>
-                                          <button @click="openWorkerEdit(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
+                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
 
 
                                           <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-neon-red" title="O'chirish">🗑️</button>
@@ -1354,6 +1405,52 @@ function exportOwnerPdf(id) {
                               </div>
                           </div>
                       </div>
+                      
+                      <!-- Guard Form Modal -->
+                      <Teleport to="body">
+                          <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                              <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelGuardEdit"></div>
+                              <form @submit.prevent="saveGuard" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
+                                  <h3 class="text-lg font-bold text-white uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
+                                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <input v-model="guardForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
+                                      <input v-model="guardForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
+                                      <input v-model="guardForm.base_rate" type="number" class="glass-input text-xs" placeholder="Oylik Maosh (Stavka)" required>
+
+                                      <div class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                                          <div class="flex justify-between items-center">
+                                              <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                              <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded hover:bg-neon-cyan hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                          </div>
+                                          <div v-if="guardForm.salary_periods && guardForm.salary_periods.length > 0" class="space-y-3">
+                                              <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-black/30 p-3 rounded-lg border border-white/5 relative group">
+                                                  <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-neon-red text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-[0_0_10px_rgba(255,0,0,0.5)]">✕</button>
+                                                  <div class="flex-1">
+                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                      <input type="month" v-model="period.start_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                  </div>
+                                                  <div class="flex-1">
+                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                      <input type="month" v-model="period.end_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                  </div>
+                                                  <div class="flex-1">
+                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Oylik Miqdori</label>
+                                                      <input type="number" v-model="period.salary" class="glass-input text-xs w-full bg-black/50" placeholder="Summa" required>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <div v-else class="text-center text-[10px] font-mono text-text-muted p-4 border border-dashed border-white/10 rounded-lg">
+                                              O'tgan davrlar kiritilmagan.
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div class="flex justify-end gap-3 mt-4">
+                                      <button type="button" @click="cancelGuardEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
+                                      <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
+                                  </div>
+                              </form>
+                          </div>
+                      </Teleport>
                   </div>
           </div>
           
@@ -1911,7 +2008,7 @@ function exportOwnerPdf(id) {
         <!-- MODAL: LEDGER -->
         <div v-if="showLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showLedgerModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-2xl border border-neon-blue/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="relative glass-panel p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-blue/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-neon-red text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_10px_rgba(255,0,0,0.5)] z-50" @click="showLedgerModal = false">✖</button>
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4 mb-4">
                     <div>
@@ -2112,7 +2209,7 @@ function exportOwnerPdf(id) {
         <!-- MODAL: USER LEDGER -->
         <div v-if="showUserLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showUserLedgerModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-2xl border border-neon-cyan/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="relative glass-panel p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-cyan/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-neon-red text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_10px_rgba(255,0,0,0.5)] z-50" @click="showUserLedgerModal = false">✖</button>
                 <div class="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
                     <div class="flex-1 pr-4">

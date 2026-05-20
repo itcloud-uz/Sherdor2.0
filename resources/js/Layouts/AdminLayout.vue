@@ -47,6 +47,12 @@ const filteredNavItems = computed(() => {
     });
 });
 
+const currentNav = computed(() => {
+    const currentRouteName = route().current();
+    if (!currentRouteName) return null;
+    return navItems.find(item => currentRouteName.startsWith(item.route.replace('.index', '')));
+});
+
 let refreshInterval = null;
 
 onMounted(() => {
@@ -103,28 +109,37 @@ onUnmounted(() => {
         <!-- Main Content -->
         <main class="flex-1 flex flex-col z-10 h-screen overflow-hidden relative">
             <!-- Top Header -->
-            <header class="h-20 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 relative z-30">
-                <div class="flex items-center gap-3">
-                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-2 text-white hover:text-neon-cyan focus:outline-none">
+            <header class="h-16 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 relative z-30 shrink-0">
+                <!-- Left side: Title/Icon -->
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-2 text-white hover:text-neon-cyan focus:outline-none shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
-                    <div>
-                        <h2 class="text-xl font-display font-bold text-white">{{ $t('welcome') }}, <span class="hidden sm:inline">{{ $page.props.auth?.user?.name }}</span></h2>
-                        <p class="text-[10px] sm:text-xs font-mono text-text-muted mt-1">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
-                    </div>
+                    <slot name="header">
+                        <h2 class="text-lg md:text-xl font-display font-bold text-white tracking-widest uppercase flex items-center gap-3 truncate">
+                            <span class="text-xl md:text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{{ currentNav?.icon || '⬡' }}</span> 
+                            <span class="truncate">{{ currentNav ? $t(currentNav.name) : 'Dashboard' }}</span>
+                        </h2>
+                    </slot>
                 </div>
                 
-                <div class="flex items-center gap-6">
+                <!-- Center: Date -->
+                <div class="hidden md:flex items-center justify-center flex-1 shrink-0">
+                    <p class="text-xs font-mono text-text-muted bg-white/5 px-4 py-1.5 rounded-full border border-white/10">{{ new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+                </div>
+
+                <!-- Right side: User Profile -->
+                <div class="flex items-center gap-6 justify-end flex-1 shrink-0">
                     <!-- User Profile Dropdown -->
                     <div class="relative group">
-                        <button class="flex items-center gap-3 p-2 pr-4 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10 cursor-default">
-                            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 overflow-hidden shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]">
+                        <button class="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10 cursor-default">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth?.user?.name }}</p>
+                                <p class="text-[9px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth?.user?.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20 overflow-hidden shadow-[0_0_10px_rgba(var(--color-neon-primary-rgb),0.3)]">
                                 <img v-if="$page.props.auth?.user?.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
                                 <span v-else class="text-xs font-bold text-white">{{ $page.props.auth?.user?.name?.charAt(0) }}</span>
-                            </div>
-                            <div class="text-left hidden sm:block">
-                                <p class="text-sm font-semibold text-white leading-tight">{{ $page.props.auth?.user?.name }}</p>
-                                <p class="text-[10px] font-mono text-neon-yellow mt-0.5">{{ ($page.props.auth?.user?.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
                             </div>
                         </button>
 

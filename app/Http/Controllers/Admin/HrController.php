@@ -359,7 +359,7 @@ class HrController extends Controller
             }
         });
 
-        return redirect()->back()->with('message', 'Tranzaksiya saqlandi.');
+        return response()->json(['success' => true, 'message' => 'Tranzaksiya muvaffaqiyatli saqlandi.']);
     }
 
     public function getMachineryLedger(Machinery $machinery)
@@ -1182,7 +1182,7 @@ class HrController extends Controller
             }
         });
 
-        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
+        return response()->json(['success' => true, 'message' => 'Tranzaksiya muvaffaqiyatli saqlandi.']);
     }
 
     public function exportBrigadeLedger(\App\Models\Brigade $brigade)
@@ -1313,6 +1313,6 @@ class HrController extends Controller
             }
         });
 
-        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli saqlandi.');
+        return response()->json(['success' => true, 'message' => 'Tranzaksiya muvaffaqiyatli saqlandi.']);
     }
 }

@@ -113,17 +113,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
     <Head :title="$t('global_dashboard')" />
     
     <AdminLayout>
-        <div class="mb-8 flex justify-between items-end">
-            <div>
-                <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-white/50 text-shadow-glow flex items-center gap-3">
-                    <span class="text-4xl drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]">🌌</span> {{ $t('global_dashboard') }}
-                </h1>
-                <p class="text-xs font-mono text-text-muted uppercase tracking-widest mt-2">{{ $t('dashboard_title_center') }}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-[10px] font-mono text-neon-green animate-pulse">{{ $t('system_optimal') }}</p>
-            </div>
-        </div>
+
 
         <!-- WIDGET 1: Top Financial Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

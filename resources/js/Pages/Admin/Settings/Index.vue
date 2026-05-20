@@ -105,10 +105,8 @@ const updateLabelSettings = () => {
     <Head title="System Settings" />
 
     <AdminLayout>
-        <div class="mb-8 flex items-center gap-4">
-            <h1 class="text-2xl md:text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-primary/50 text-shadow-glow flex items-center gap-3">
-                <span class="text-3xl drop-shadow-[0_0_15px_var(--color-neon-primary)]">⚙️</span> {{ $t('settings') }}
-            </h1>
+        <div class="mb-8 flex items-center gap-4 hidden">
+            <!-- Global header is used instead -->
         </div>
 
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 animate-[fadeIn_0.5s_ease-out]">

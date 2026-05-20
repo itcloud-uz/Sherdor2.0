@@ -165,6 +165,41 @@ function submitAccrual() {
     form.value.accrual_price = '';
     form.value.accrual_description = '';
 }
+import { exportLedgerToPDF, exportLedgerToExcel } from '@/utils/exportUtils';
+
+function handleExportPDF() {
+    const title = `${brigade.value?.name || 'Brigada'} - Brigada Jurnali`;
+    const columns = ["№", "Sana", "Bajarilgan Ishlar (Nomi)", "Soni", "Narxi", "Naqd (To'landi)", "Karta", "Boshqa", "Qoldiq"];
+    const dataRows = ledgerData.value.items.map((item, index) => [
+        index + 1,
+        item.date ? new Date(item.date).toISOString().split('T')[0] : '',
+        item.is_work ? item.desc : '',
+        item.is_work ? item.qty : '',
+        item.is_work ? item.amount : '',
+        item.is_payment && item.account_type === 'main' ? item.amount : '',
+        item.is_payment && item.account_type === 'credit' ? item.amount : '',
+        item.is_payment && !['main', 'credit'].includes(item.account_type) ? item.amount : '',
+        item.running_balance !== undefined ? item.running_balance : ''
+    ]);
+    exportLedgerToPDF(title, columns, dataRows);
+}
+
+function handleExportExcel() {
+    const title = `${brigade.value?.name || 'Brigada'} - Brigada Jurnali`;
+    const columns = ["№", "Sana", "Bajarilgan Ishlar (Nomi)", "Soni", "Narxi", "Naqd (To'landi)", "Karta", "Boshqa", "Qoldiq"];
+    const dataRows = ledgerData.value.items.map((item, index) => [
+        index + 1,
+        item.date ? new Date(item.date).toISOString().split('T')[0] : '',
+        item.is_work ? item.desc : '',
+        item.is_work ? item.qty : '',
+        item.is_work ? item.amount : '',
+        item.is_payment && item.account_type === 'main' ? item.amount : '',
+        item.is_payment && item.account_type === 'credit' ? item.amount : '',
+        item.is_payment && !['main', 'credit'].includes(item.account_type) ? item.amount : '',
+        item.running_balance !== undefined ? item.running_balance : ''
+    ]);
+    exportLedgerToExcel(title, columns, dataRows);
+}
 </script>
 
 <template>
@@ -173,20 +208,28 @@ function submitAccrual() {
         <div v-if="!inline" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
         <div :class="inline ? 'glass-panel bg-abyss/40 border border-white/10 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
             
-            <div class="flex justify-between items-center mb-6 relative z-10">
-                <button @click="$emit('exportPdf', brigade?.id)" class="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded-lg hover:bg-neon-green hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
-                    ⬇ Yuklab Olish (Excel)
-                </button>
-                <h2 class="text-2xl font-display font-bold text-white tracking-widest uppercase text-shadow-glow">
-                    {{ brigade?.name }} <span class="text-neon-cyan opacity-80">- Jurnal</span>
+            <div class="shrink-0 flex justify-between items-center mb-6 relative z-10">
+                <div v-if="!inline" class="flex gap-2 w-32">
+                    <button @click="handleExportPDF" class="p-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="PDF formatida yuklab olish">
+                        📄 PDF
+                    </button>
+                    <button @click="handleExportExcel" class="p-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500 hover:text-white transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="Excel formatida yuklab olish">
+                        📊 EXCEL
+                    </button>
+                </div>
+                <div v-else class="w-32"></div> <!-- Placeholder -->
+                <h2 class="text-2xl font-display font-bold text-white tracking-widest uppercase text-shadow-glow flex-1 text-center">
+                    {{ brigade?.name }} <span class="text-neon-cyan opacity-80">- Brigada Jurnali</span>
                 </h2>
-                <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-neon-red/20 text-white hover:text-neon-red transition-colors border border-white/10 hover:border-neon-red/50">
-                    ✕
-                </button>
-                <button v-else @click="close" class="px-4 py-2 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded-lg hover:bg-neon-red hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
-                    Yopish
-                </button>
-            </div>
+                <div class="flex justify-end w-32">
+                    <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-neon-red/20 text-white hover:text-neon-red transition-colors border border-white/10 hover:border-neon-red/50">
+                        ✕
+                    </button>
+                    <button v-else @click="close" class="px-4 py-2 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded-lg hover:bg-neon-red hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
+                        Yopish
+                    </button>
+                </div>
+            </div>  
             
             <div class="flex-1 min-h-[150px] custom-scrollbar overflow-y-auto overflow-x-auto border border-white/10 rounded-xl bg-black/40 mb-6">
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">

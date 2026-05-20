@@ -163,7 +163,7 @@ function submitAccrual() {
                 </button>
             </div>
             
-            <div class="flex-1 custom-scrollbar overflow-x-auto border border-white/10 rounded-xl bg-black/40 mb-6">
+            <div class="flex-1 min-h-[150px] custom-scrollbar overflow-y-auto overflow-x-auto border border-white/10 rounded-xl bg-black/40 mb-6">
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
                     <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
                         <tr>
@@ -210,7 +210,7 @@ function submitAccrual() {
                 </table>
             </div>
 
-            <div class="flex justify-between items-center bg-black/60 p-4 rounded-xl border border-white/10 mb-6 relative overflow-hidden">
+            <div class="shrink-0 flex justify-between items-center bg-black/60 p-4 rounded-xl border border-white/10 mb-6 relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-neon-cyan/5 to-transparent pointer-events-none"></div>
                 <span class="text-sm font-mono text-text-muted uppercase tracking-widest">Joriy Qoldiq:</span>
                 <span class="text-3xl font-display font-bold drop-shadow-md" :class="ledgerData.balance < 0 ? 'text-neon-red' : 'text-neon-green'">
@@ -219,7 +219,7 @@ function submitAccrual() {
             </div>
 
             <!-- TOP FORM: Qarz / Oylik Yozish -->
-            <div class="glass-card p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
+            <div class="glass-card shrink-0 p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
                 <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse"></span>🔴 OYLIK/AVANS YOZISH (Qarz)
@@ -250,7 +250,7 @@ function submitAccrual() {
             </div>
 
             <!-- BOTTOM FORM: Kassa Amaliyoti -->
-            <div class="glass-card p-6 border-t-4 border-t-neon-green relative overflow-hidden">
+            <div class="glass-card shrink-0 p-6 border-t-4 border-t-neon-green relative overflow-hidden">
                 <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <h3 class="text-[10px] font-mono text-neon-green uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span>🔵 Kassa amaliyoti (To'lov qilish)

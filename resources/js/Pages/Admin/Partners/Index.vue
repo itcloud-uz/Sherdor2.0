@@ -388,16 +388,16 @@ function formatDate(dateString) {
 
             <!-- Dashboard Stats -->
             <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white/5 border border-gray-200 rounded-xl p-6">
+                <div class="border border-gray-200 rounded-xl p-6">
                     <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Kompaniyaning jami qiymati</p>
                     <p class="text-3xl font-display font-bold text-gray-900">{{ formatCurrency(companyNetWorth) }} <span class="text-sm">so'm</span></p>
                 </div>
-                <div class="bg-white/5 border border-emerald-200 rounded-xl p-6 relative overflow-hidden">
+                <div class="border border-emerald-200 rounded-xl p-6 relative overflow-hidden">
                     <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
                     <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Kompaniyaning Sof Foydasi (Net Profit)</p>
                     <p class="text-3xl font-display font-bold text-emerald-600">{{ formatCurrency(netProfit) }} <span class="text-sm">so'm</span></p>
                 </div>
-                <div class="bg-white/5 border border-red-200 rounded-xl p-6 relative overflow-hidden">
+                <div class="border border-red-200 rounded-xl p-6 relative overflow-hidden">
                     <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
                     <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Ta'sischilardagi jami hisobdorlik (Qarz)</p>
                     <p class="text-3xl font-display font-bold text-red-600">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-sm">so'm</span></p>
@@ -453,7 +453,7 @@ function formatDate(dateString) {
                             <span class="block text-[9px] font-mono text-gray-500 uppercase">Kassa Chiqimi</span>
                             <span class="text-xs font-bold text-red-600">{{ formatCurrency(partner.kassa_chiqimi) }}</span>
                         </div>
-                        <div class="p-2 bg-white/5 border border-gray-300 rounded text-center cursor-pointer hover:bg-gray-100 transition-colors" @click="openAnalytics(partner)">
+                        <div class="p-2 border border-gray-300 rounded text-center cursor-pointer hover:bg-gray-100 transition-colors" @click="openAnalytics(partner)">
                             <span class="block text-[9px] font-mono text-gray-500 uppercase">Balans</span>
                             <span class="text-xs font-bold text-gray-900">{{ formatCurrency(partner.accountable_balance) }}</span>
                         </div>
@@ -471,7 +471,7 @@ function formatDate(dateString) {
                         <button @click="openExpenseModal(partner)" class="flex-1 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded text-[10px] font-bold font-mono uppercase hover:bg-emerald-600 hover:text-black transition-all">
                             Chek Yuklash
                         </button>
-                        <button @click="openAnalytics(partner)" class="flex-1 py-2 bg-white/5 border border-gray-300 text-gray-900 rounded text-[10px] font-bold font-mono uppercase hover:bg-white hover:text-black transition-all">
+                        <button @click="openAnalytics(partner)" class="flex-1 py-2 border border-gray-300 text-gray-900 rounded text-[10px] font-bold font-mono uppercase hover:bg-white hover:text-black transition-all">
                             Hisobot
                         </button>
                     </div>
@@ -487,8 +487,8 @@ function formatDate(dateString) {
                 <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 rounded-xl overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left font-mono text-xs">
-                            <thead class="bg-gray-900/50 text-gray-500 uppercase">
-                                <tr>
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-4 border-b border-gray-200">Nomi</th>
                                     <th class="p-4 border-b border-gray-200">Turi</th>
                                     <th class="p-4 border-b border-gray-200">Sotib olingan</th>
@@ -499,13 +499,13 @@ function formatDate(dateString) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-white/5">
-                                <tr v-for="asset in fixedAssets" :key="asset.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="asset in fixedAssets" :key="asset.id" class="hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <td class="p-4">
                                         <div class="font-bold text-gray-900">{{ asset.name }}</div>
                                         <div class="text-[9px] text-gray-500 truncate max-w-[200px]">{{ asset.description || 'Izoh yo\'q' }}</div>
                                     </td>
                                     <td class="p-4">
-                                        <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-900 border border-gray-200 text-[9px]">
+                                        <span class="px-2 py-0.5 rounded-full text-gray-900 border border-gray-200 text-[9px]">
                                             {{ 
                                                 asset.type === 'construction_equipment' ? 'Qurilish vositasi' : 
                                                 asset.type === 'office_furniture' ? 'Ofis buyumi' : 
@@ -525,7 +525,7 @@ function formatDate(dateString) {
                                                 <span>{{ calculateServiceMonths(asset.purchase_date) }} oy</span>
                                                 <span class="text-gray-500">Max: {{ asset.service_life_months }} oy</span>
                                             </div>
-                                            <div class="w-24 h-1 bg-white/10 rounded-full overflow-hidden">
+                                            <div class="w-24 h-1 rounded-full overflow-hidden">
                                                 <div 
                                                     class="h-full rounded-full transition-all"
                                                     :class="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months ? 'bg-red-600 shadow-sm' : 'bg-emerald-600 shadow-sm'"
@@ -539,11 +539,7 @@ function formatDate(dateString) {
                                     <td class="p-4">
                                         <span 
                                             class="px-2 py-0.5 rounded text-[9px] font-bold"
-                                            :class="{
-                                                'bg-emerald-50 text-emerald-600 border border-emerald-200': asset.status === 'active',
-                                                'bg-red-50 text-red-600 border border-red-200': asset.status === 'sold',
-                                                'bg-white/10 text-gray-900 border border-white/30': asset.status === 'retired',
-                                            }"
+                                            :class="{ 'bg-emerald-50 text-emerald-600 border border-emerald-200': asset.status === 'active', 'bg-red-50 text-red-600 border border-red-200': asset.status === 'sold', ' text-gray-900 border border-white/30': asset.status === 'retired', }"
                                         >
                                             {{ asset.status.toUpperCase() }}
                                         </span>
@@ -560,7 +556,7 @@ function formatDate(dateString) {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="fixedAssets.length === 0">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="fixedAssets.length === 0">
                                     <td colspan="7" class="p-12 text-center text-gray-500 font-mono italic">Assosiy vositalar ro'yxati bo'sh.</td>
                                 </tr>
                             </tbody>
@@ -571,7 +567,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Add Partner Modal -->
-        <div v-if="showAddPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showAddPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-sm shadow-sm">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAddPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">Yangi Ta'sischi</h2>
@@ -601,7 +597,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Edit Partner Modal -->
-        <div v-if="showEditPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showEditPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-sm shadow-sm">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showEditPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">Ta'sischi Tahrirlash</h2>
@@ -628,7 +624,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Advance Modal -->
-        <div v-if="showAdvanceModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showAdvanceModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-sm shadow-sm">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAdvanceModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4 text-blue-600">Kassadan Pul So'rash</h2>
@@ -651,7 +647,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Expense Modal -->
-        <div v-if="showExpenseModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showExpenseModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-emerald-200 w-full max-w-sm shadow-sm">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showExpenseModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4 text-emerald-600 mt-2">Xarajatni Qabul Qilish (Chek)</h2>
@@ -691,7 +687,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Analytics Modal -->
-        <div v-if="showAnalyticsModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showAnalyticsModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-[#111] text-gray-900 p-6 md:p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-sm">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>
@@ -727,7 +723,7 @@ function formatDate(dateString) {
 
                     <!-- Ledger Table -->
                     <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 rounded-xl overflow-hidden">
-                        <div class="p-4 border-b border-gray-200 bg-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
                             <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
                             <div class="flex flex-wrap gap-2 items-center">
                                 <input type="date" v-model="ledgerDateFrom" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 bg-gray-900/50 [color-scheme:dark]">
@@ -742,8 +738,8 @@ function formatDate(dateString) {
                         </div>
                         <div class="overflow-x-auto">
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
-                                <thead class="bg-gray-900/50 text-gray-500 uppercase">
-                                    <tr>
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <th class="p-3">{{ $t('date_label') }}</th>
                                         <th class="p-3">Tur</th>
                                         <th class="p-3">Kategoriya</th>
@@ -752,11 +748,11 @@ function formatDate(dateString) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="t in transactions" :key="t.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <tr v-for="t in transactions" :key="t.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <td class="p-3">{{ formatDate(t.created_at) }}</td>
                                         <td class="p-3">
                                             <span v-if="t.type === 'income'" class="text-blue-600 px-2 py-1 bg-blue-50 rounded">KIRIM (TUSHUM)</span>
-                                            <span v-else class="text-red-600 px-2 py-1 bg-red-50 rounded">CHIQIM (XARAJAT)</span>
+                                            <span v-else class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">CHIQIM (XARAJAT)</span>
                                         </td>
                                         <td class="p-3">{{ t.category || '-' }}</td>
                                         <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-blue-600' : 'text-red-600'">
@@ -764,7 +760,7 @@ function formatDate(dateString) {
                                         </td>
                                         <td class="p-3 text-gray-500 max-w-xs truncate" :title="t.notes">{{ t.notes || '-' }}</td>
                                     </tr>
-                                    <tr v-if="transactions.length === 0">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="transactions.length === 0">
                                         <td colspan="5" class="p-6 text-center text-gray-500">Ma'lumot topilmadi.</td>
                                     </tr>
                                 </tbody>
@@ -776,7 +772,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Asset Modal -->
-        <div v-if="showAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-lg shadow-sm max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAssetModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">

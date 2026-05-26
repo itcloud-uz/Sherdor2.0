@@ -765,7 +765,7 @@ function printLedger() {
     items.sort((a,b) => b.date - a.date); // Sort descending
     
     let rowsHtml = items.map((i, idx) => `
-        <tr>
+        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
             <td style="padding: 8px; border: 1px solid #ccc;">${idx+1}</td>
             <td style="padding: 8px; border: 1px solid #ccc;">${i.date.toLocaleDateString()}</td>
             <td style="padding: 8px; border: 1px solid #ccc;">${i.desc}</td>
@@ -802,8 +802,8 @@ function printLedger() {
             </div>
 
             <table>
-                <thead>
-                    <tr>
+                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                         <th width="5%">№</th>
                         <th width="15%">{{ $t('date_label') }}</th>
                         <th width="55%">Izoh / Obyekt</th>
@@ -1151,7 +1151,7 @@ function exportOwnerPdf(id) {
                         v-for="tab in tabs" :key="tab.id"
                         @click="activeTab = tab.id"
                         class="w-full text-left px-6 py-4 rounded-xl text-sm font-mono tracking-widest transition-all duration-300 uppercase flex items-center gap-3"
-                        :class="activeTab === tab.id ? 'bg-white/10 text-neon-blue border border-neon-blue/30 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 border border-transparent'"
+                        :class="activeTab === tab.id ? ' text-neon-blue border border-neon-blue/30 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 border border-transparent'"
                     >
                         <span class="text-xl">{{ tab.icon }}</span> {{ $t(tab.name) }}
                     </button>
@@ -1177,7 +1177,7 @@ function exportOwnerPdf(id) {
                     <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-3">
                         <div v-for="user in users" :key="user.id" class="p-4 bg-gray-900/50 border border-gray-100 rounded-2xl flex flex-col justify-between hover:border-gray-300 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                             <div class="flex items-start gap-3 mb-3">
-                                <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
                                     <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
                                     <span v-else class="text-lg">👤</span>
                                 </div>
@@ -1185,12 +1185,7 @@ function exportOwnerPdf(id) {
                                     <h3 class="text-xs font-bold text-gray-900 mb-0.5 group-hover:text-blue-600 transition-colors line-clamp-1" :title="user.name">{{ user.name }}</h3>
                                     <p class="text-[9px] font-mono text-gray-500 line-clamp-1" :title="user.email">{{ user.email }}</p>
                                     <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border"
-                                        :class="{
-                                            'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin',
-                                            'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator',
-                                            'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner',
-                                            'bg-white/10 text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length
-                                        }">
+                                        :class="{ 'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin', 'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator', 'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner', ' text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length }">
                                         {{ user.roles?.[0]?.name || 'None' }}
                                     </span>
                                 </div>
@@ -1199,7 +1194,7 @@ function exportOwnerPdf(id) {
                                 <p class="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{{ $currency(user.salary_rate || 0) }}</p>
                                 <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-neon-blue/10 text-neon-blue rounded hover:bg-neon-blue/30 transition-colors" title="Karta">💳</button>
-                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
 
                                     <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
@@ -1229,7 +1224,7 @@ function exportOwnerPdf(id) {
                         <input v-model="brigadeForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
                             {{ isBrigadeEditMode ? 'Saqlash' : "Qo'shish" }}
                         </button>
                     </div>
@@ -1252,7 +1247,7 @@ function exportOwnerPdf(id) {
                                     <p class="text-sm font-bold" :class="b.balance > 0 ? 'text-emerald-600' : (b.balance < 0 ? 'text-red-600' : 'text-gray-900')">{{ $currency(b.balance || 0) }}</p>
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
                                     <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors" title="Hisob-kitob Jurnali">
                                         📊 Jurnal
                                     </button>
@@ -1267,13 +1262,13 @@ function exportOwnerPdf(id) {
                         <div v-if="activeBrigadeId === b.id" class="bg-gray-900/50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-xs font-mono text-gray-500 uppercase">Brigada Ishchilari</h4>
-                                <button @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-white/10 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
+                                <button @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
                                     + Ishchi
                                 </button>
                             </div>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="w in b.workers" :key="w.id" class="p-3 bg-white/5 rounded-lg border border-gray-100 flex flex-col justify-between">
+                                <div v-for="w in b.workers" :key="w.id" class="p-3 rounded-lg border border-gray-100 flex flex-col justify-between">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <p class="text-xs font-bold text-gray-900">{{ w.name }}</p>
@@ -1297,7 +1292,7 @@ function exportOwnerPdf(id) {
                 <!-- Hidden Worker Form for reuse -->
                 <Teleport to="body">
                     <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
+                        <div class="absolute inset-0 bg-gray-900/50" @click="cancelWorkerEdit"></div>
                         <form @submit.prevent="saveWorker" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
                             <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1329,7 +1324,7 @@ function exportOwnerPdf(id) {
                                 </select>
                                 <input v-model="workerForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Narxi (Stavka)" required>
 
-                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-gray-200 rounded-xl space-y-4">
+                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
                                     <div class="flex justify-between items-center">
                                         <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
                                         <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
@@ -1392,8 +1387,8 @@ function exportOwnerPdf(id) {
                                   <div class="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
                                       <div class="text-blue-600 text-xs font-mono font-bold">{{ $currency(g.base_rate) }} so'm</div>
                                       <div class="flex gap-2">
-                                          <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-blue-600" title="Maosh Tarixi">📅</button>
-                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-gray-900" title="Tahrirlash">✏️</button>
+                                          <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-colors text-blue-600" title="Maosh Tarixi">📅</button>
+                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-colors text-gray-900" title="Tahrirlash">✏️</button>
 
 
                                           <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-red-50 flex items-center justify-center hover:bg-red-600 hover:text-gray-900 transition-colors text-red-600" title="O'chirish">🗑️</button>
@@ -1409,7 +1404,7 @@ function exportOwnerPdf(id) {
                       <!-- Guard Form Modal -->
                       <Teleport to="body">
                           <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                              <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="cancelGuardEdit"></div>
+                              <div class="absolute inset-0 bg-gray-900/50" @click="cancelGuardEdit"></div>
                               <form @submit.prevent="saveGuard" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
                                   <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
                                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1417,7 +1412,7 @@ function exportOwnerPdf(id) {
                                       <input v-model="guardForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
                                       <input v-model="guardForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Oylik Maosh (Stavka)" required>
 
-                                      <div class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-gray-200 rounded-xl space-y-4">
+                                      <div class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
                                           <div class="flex justify-between items-center">
                                               <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
                                               <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
@@ -1542,8 +1537,8 @@ function exportOwnerPdf(id) {
 
             <div class="overflow-x-auto">
                 <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                    <thead class="text-gray-500 border-b border-gray-200 uppercase tracking-widest text-[10px]">
-                        <tr>
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <th class="pb-3 w-16">Isbot</th>
                             <th class="pb-3">Vaqti</th>
                             <th class="pb-3">Obyekt / Shaxs</th>
@@ -1553,7 +1548,7 @@ function exportOwnerPdf(id) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="log in attendanceLogs" :key="log.id" @click="openLogModal(log)" class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                        <tr v-for="log in attendanceLogs" :key="log.id" @click="openLogModal(log)" class="border-b border-gray-100 hover: transition-colors cursor-pointer group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <td class="py-3">
                                 <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-900/50 shadow-inner flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
                                     <img v-if="log.proof_image" :src="log.proof_image" class="w-full h-full object-cover">
@@ -1591,7 +1586,7 @@ function exportOwnerPdf(id) {
                                 <span class="opacity-50">Acc: {{ log.confidence_score }}%</span>
                             </td>
                         </tr>
-                        <tr v-if="!attendanceLogs || attendanceLogs.length === 0">
+                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!attendanceLogs || attendanceLogs.length === 0">
                             <td colspan="6" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl block w-full mt-4">
                                 Hozircha AI jurnali bo'sh
                             </td>
@@ -1620,7 +1615,7 @@ function exportOwnerPdf(id) {
                         <input v-model="ownerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
                             {{ isOwnerEditMode ? 'Saqlash' : "Qo'shish" }}
                         </button>
                     </div>
@@ -1646,7 +1641,7 @@ function exportOwnerPdf(id) {
                                     <p class="text-sm font-bold" :class="owner.balance > 0 ? 'text-red-600' : (owner.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">{{ $currency(owner.balance || 0) }}</p>
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
 
                                     <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
@@ -1657,13 +1652,13 @@ function exportOwnerPdf(id) {
                         <div v-if="activeOwnerId === owner.id" class="bg-gray-900/50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-xs font-mono text-gray-500 uppercase">Tegishli Texnikalar</h4>
-                                <button @click="machineryForm.machine_owner_id = owner.id; showMachineryForm = true" class="px-2 py-1 bg-white/10 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
+                                <button @click="machineryForm.machine_owner_id = owner.id; showMachineryForm = true" class="px-2 py-1 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
                                     + Texnika Qo'shish
                                 </button>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="m in owner.machineries" :key="m.id" class="p-3 bg-white/5 rounded-lg border border-gray-100 flex flex-col justify-between hover:border-gray-300 transition-colors">
+                                <div v-for="m in owner.machineries" :key="m.id" class="p-3 rounded-lg border border-gray-100 flex flex-col justify-between hover:border-gray-300 transition-colors">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <p class="text-xs font-bold text-gray-900">{{ m.machinery_type }} - {{ m.name }}</p>
@@ -1689,7 +1684,7 @@ function exportOwnerPdf(id) {
 
                 <!-- Add/Edit Machinery Modal -->
                 <div v-if="showMachineryForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showMachineryForm = false; editMachineryId = null"></div>
+                    <div class="absolute inset-0 bg-gray-900/50" @click="showMachineryForm = false; editMachineryId = null"></div>
                     <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4">
                         <h3 class="text-lg font-bold text-gray-900 uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : "Yangi Texnika Qo'shish" }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1895,15 +1890,15 @@ function exportOwnerPdf(id) {
                     <h2 class="text-xl font-display font-bold text-gray-900 mb-6">Hisoblanmagan Jurnallar</h2>
                     <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
                         <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                            <thead class="text-gray-500 border-b border-gray-200 uppercase tracking-widest text-[10px] sticky top-0 bg-abyss/90 backdrop-blur">
-                                <tr>
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="pb-3">{{ $t('date_label') }}</th>
                                     <th class="pb-3">Xodim / Texnika</th>
                                     <th class="pb-3 text-right">{{ $t('amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="log in unpaidLogs" :key="log.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <tr v-for="log in unpaidLogs" :key="log.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <td class="py-3 text-gray-500 text-xs">{{ log.date }}</td>
                                     <td class="py-3">
                                         <div class="flex items-center gap-2">
@@ -1914,7 +1909,7 @@ function exportOwnerPdf(id) {
                                     </td>
                                     <td class="py-3 text-right text-amber-600 font-bold text-xs">{{ $currency(log.calculated_cost) }}</td>
                                 </tr>
-                                <tr v-if="unpaidLogs.length === 0">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="unpaidLogs.length === 0">
                                     <td colspan="3" class="py-8 text-center text-gray-500 font-mono text-xs border-dashed border border-gray-200 rounded-xl mt-4 block w-full">
                                         {{ $t('no_unpaid_logs') }}
                                     </td>
@@ -1940,7 +1935,7 @@ function exportOwnerPdf(id) {
                                 </p>
                             </div>
                             <div class="text-right flex gap-2">
-                                <a :href="route('admin.hr.payroll.print', payroll.id)" target="_blank" class="px-3 py-2 bg-white/5 text-gray-900 border border-gray-300 text-xs uppercase font-mono rounded-lg hover:bg-gray-100 hover:border-white/40 transition-all flex items-center gap-2">
+                                <a :href="route('admin.hr.payroll.print', payroll.id)" target="_blank" class="px-3 py-2 text-gray-900 border border-gray-300 text-xs uppercase font-mono rounded-lg hover:bg-gray-100 hover:border-white/40 transition-all flex items-center gap-2">
                                     🖨️ PDF / Chop etish
                                 </a>
                             </div>
@@ -1956,10 +1951,10 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: CREATE USER -->
         <div v-if="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showUserModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showUserModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-blue-200">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserModal = false">✖</button>
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest  shadow-neon-cyan/50">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-cyan/50">
                     {{ $t('add_user') }}
                 </h2>
                 <form @submit.prevent="saveUser" class="space-y-4">
@@ -2007,7 +2002,7 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: LEDGER -->
         <div v-if="showLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showLedgerModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showLedgerModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-blue/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showLedgerModal = false">✖</button>
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
@@ -2154,7 +2149,7 @@ function exportOwnerPdf(id) {
                                     <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
                                     <button v-if="isAdmin" @click="destroyTx('worker', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
@@ -2192,7 +2187,7 @@ function exportOwnerPdf(id) {
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="startEditLog(log)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
                                     <button v-if="isAdmin" @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
@@ -2208,12 +2203,12 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: USER LEDGER -->
         <div v-if="showUserLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showUserLedgerModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showUserLedgerModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-blue-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserLedgerModal = false">✖</button>
                 <div class="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
                     <div class="flex-1 pr-4">
-                        <h2 class="text-lg font-bold text-gray-900 uppercase tracking-widest  shadow-neon-cyan/50 leading-tight">
+                        <h2 class="text-lg font-bold text-gray-900 uppercase tracking-widest shadow-neon-cyan/50 leading-tight">
                             <span class="block mb-1 break-words">{{ ledgerUser?.name }}</span>
                             <span class="block text-sm text-blue-600/80">- SHAXSIY KARTA</span>
                         </h2>
@@ -2282,7 +2277,7 @@ function exportOwnerPdf(id) {
                                     <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
                                     <button v-if="isAdmin" @click="destroyTx('user', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
@@ -2297,7 +2292,7 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: AI LOG DETAILS -->
         <div v-if="showLogModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showLogModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showLogModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-0 rounded-2xl w-full max-w-sm border border-blue-200 overflow-hidden flex flex-col items-center">
                 
                 <!-- ID Card Header / Photo -->
@@ -2305,14 +2300,9 @@ function exportOwnerPdf(id) {
                     <div class="absolute top-4 right-4 cursor-pointer text-gray-500 hover:text-gray-900" @click="showLogModal = false">✖</div>
                     
                     <div class="w-32 h-32 rounded-full border-4 overflow-hidden shadow-sm mb-4" 
-                         :class="{
-                             'border-emerald-500': activeLog.type === 'entry',
-                             'border-neon-magenta': activeLog.type === 'exit',
-                             'border-neon-blue': activeLog.type === 'start_work',
-                             'border-red-500': activeLog.type === 'stop_work'
-                         }">
+                         :class="{ 'border-emerald-500': activeLog.type === 'entry', 'border-neon-magenta': activeLog.type === 'exit', 'border-neon-blue': activeLog.type === 'start_work', 'border-red-500': activeLog.type === 'stop_work' }">
                         <img v-if="activeLog.proof_image" :src="activeLog.proof_image" class="w-full h-full object-cover">
-                        <span v-else class="text-4xl w-full h-full flex items-center justify-center bg-white/5">N/A</span>
+                        <span v-else class="text-4xl w-full h-full flex items-center justify-center">N/A</span>
                     </div>
 
                     <h2 class="text-xl font-bold text-gray-900 text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
@@ -2355,7 +2345,7 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: MANUAL WEB SCANNER -->
         <div v-if="showScannerModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="stopScanner"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="stopScanner"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-3xl w-full max-w-lg border border-blue-200 shadow-sm flex flex-col items-center">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="stopScanner">✖</button>
                 <h2 class="text-xl font-display font-bold text-gray-900 mb-6 flex items-center gap-2">📷 Mobil Skaner (Davomat)</h2>
@@ -2426,7 +2416,7 @@ function exportOwnerPdf(id) {
                     </div>
 
                     <div class="flex gap-4 pt-4">
-                        <button @click="scannerSnapshot = null" type="button" class="flex-1 py-3 bg-white/5 border border-gray-200 text-gray-900 text-sm font-mono uppercase tracking-widest rounded hover:bg-gray-100 transition-colors">
+                        <button @click="scannerSnapshot = null" type="button" class="flex-1 py-3 border border-gray-200 text-gray-900 text-sm font-mono uppercase tracking-widest rounded hover:bg-gray-100 transition-colors">
                             Qayta Olish
                         </button>
                         <button @click="submitManualLog" :disabled="scannerForm.processing || (!scannerForm.subject_id && scannerForm.subject_type !== 'VisitorDelivery')" class="flex-1 py-3 bg-emerald-50 border border-emerald-500 text-emerald-600 text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
@@ -2446,7 +2436,7 @@ function exportOwnerPdf(id) {
         
 
         <div v-if="showMachineryLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showMachineryLedgerModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showMachineryLedgerModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-4xl border border-amber-200 shadow-sm flex flex-col max-h-[90vh]">
                 <button class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900" @click="showMachineryLedgerModal = false">✖</button>
                 
@@ -2455,7 +2445,7 @@ function exportOwnerPdf(id) {
                         🚜 {{ activeMachinery?.name }} (Daftar)
                     </h2>
                     <div class="flex gap-2 mr-8">
-                        <button @click="printLedger" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded border border-gray-300 transition-colors">
+                        <button @click="printLedger" class="px-3 py-1.5 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded border border-gray-300 transition-colors">
                             🖨️ PDF / Chop etish
                         </button>
                         <button @click="exportToExcel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-50 text-emerald-600 text-[10px] font-mono tracking-widest uppercase rounded border border-emerald-200 transition-colors">
@@ -2467,7 +2457,7 @@ function exportOwnerPdf(id) {
                     Davlat Raqami: {{ activeMachinery?.license_plate || 'N/A' }} | {{ activeMachinery?.payment_type === 'hourly' ? 'Soatbay' : 'Obyom' }}: {{ $currency(activeMachinery?.cost_per_hour) }}
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div class="p-4 bg-white/5 rounded-xl border border-gray-200">
+                    <div class="p-4 rounded-xl border border-gray-200">
                         <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Umumiy Ishlagan (Topilgan)</p>
                         <p class="text-xl font-bold text-gray-900">{{ $currency(machineryLedgerData.total_earned) }}</p>
                     </div>
@@ -2556,7 +2546,7 @@ function exportOwnerPdf(id) {
                                     <p class="text-sm font-bold text-emerald-600">+ {{ $currency(tx.amount) }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditTx(tx)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="startEditTx(tx)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
                                     <button @click="destroyTx('machinery', tx.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
@@ -2593,7 +2583,7 @@ function exportOwnerPdf(id) {
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                    <button @click="startEditLog(log)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
                                     <button @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
@@ -2627,7 +2617,7 @@ function exportOwnerPdf(id) {
 
         <!-- Guard Salary History Modal -->
         <div v-if="showGuardHistoryModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showGuardHistoryModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showGuardHistoryModal = false"></div>
             <div class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-2xl w-full shadow-sm">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-display font-bold text-gray-900 flex items-center gap-2">
@@ -2638,20 +2628,20 @@ function exportOwnerPdf(id) {
                     </button>
                 </div>
                 
-                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white/5">
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
                     <table class="w-full text-left text-xs font-mono">
-                        <thead class="text-blue-600 bg-gray-900/50 border-b border-gray-200">
-                            <tr>
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-3 font-normal uppercase tracking-widest">Sana</th>
                                 <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Miqdori</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
-                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover:bg-gray-50 transition-colors">
+                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="p-3 text-gray-900">{{ new Date(hist.effective_date).toLocaleDateString() }}</td>
                                 <td class="p-3 text-blue-600 text-right font-bold">{{ $currency(hist.salary) }} so'm</td>
                             </tr>
-                            <tr v-if="!activeGuardHistory?.salary_histories || activeGuardHistory.salary_histories.length === 0">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!activeGuardHistory?.salary_histories || activeGuardHistory.salary_histories.length === 0">
                                 <td colspan="2" class="p-6 text-center text-gray-500">Tarix mavjud emas</td>
                             </tr>
                         </tbody>
@@ -2659,7 +2649,7 @@ function exportOwnerPdf(id) {
                 </div>
                 
                 <div class="mt-6 flex justify-end">
-                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 bg-white/10 text-gray-900 font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
+                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 text-gray-900 font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
                 </div>
             </div>
         </div>

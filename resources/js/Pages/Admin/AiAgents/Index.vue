@@ -46,25 +46,25 @@ const aiLogs = ref([
                 <div class="flex border-b border-gray-200 overflow-x-auto hide-scrollbar">
                     <button 
                         @click="activeTab = 'config'"
-                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'config' ? 'text-blue-600 border-b-2 border-blue-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'config' ? 'text-blue-600 border-b-2 border-blue-500 ' : 'text-gray-500 hover:text-gray-900']"
                     >
                         📡 {{ $t('eskiz_config') }}
                     </button>
                     <button 
                         @click="activeTab = 'templates'"
-                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'templates' ? 'text-neon-purple border-b-2 border-neon-purple bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'templates' ? 'text-neon-purple border-b-2 border-neon-purple ' : 'text-gray-500 hover:text-gray-900']"
                     >
                         📝 {{ $t('templates') }}
                     </button>
                     <button 
                         @click="activeTab = 'automations'"
-                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'automations' ? 'text-amber-600 border-b-2 border-amber-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'automations' ? 'text-amber-600 border-b-2 border-amber-500 ' : 'text-gray-500 hover:text-gray-900']"
                     >
                         ⚙️ {{ $t('automations') }}
                     </button>
                     <button 
                         @click="activeTab = 'audiences'"
-                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'audiences' ? 'text-emerald-600 border-b-2 border-emerald-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                        :class="['px-6 py-3 text-xs font-display font-bold uppercase tracking-wider transition-all whitespace-nowrap', activeTab === 'audiences' ? 'text-emerald-600 border-b-2 border-emerald-500 ' : 'text-gray-500 hover:text-gray-900']"
                     >
                         👥 {{ $t('audience_broadcast') }}
                     </button>
@@ -119,9 +119,9 @@ const aiLogs = ref([
                             
                             <!-- Variables Toolbar -->
                             <div class="flex gap-2 mb-2 overflow-x-auto hide-scrollbar pb-1">
-                                <button @click="insertVariable('client_name')" class="px-2 py-1 bg-white/5 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{client_name}</button>
-                                <button @click="insertVariable('debt_amount')" class="px-2 py-1 bg-white/5 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{debt_amount}</button>
-                                <button @click="insertVariable('date')" class="px-2 py-1 bg-white/5 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{date}</button>
+                                <button @click="insertVariable('client_name')" class="px-2 py-1 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{client_name}</button>
+                                <button @click="insertVariable('debt_amount')" class="px-2 py-1 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{debt_amount}</button>
+                                <button @click="insertVariable('date')" class="px-2 py-1 border border-gray-200 text-gray-900/80 text-[10px] font-mono rounded hover:border-neon-purple hover:text-neon-purple transition-colors">{date}</button>
                             </div>
 
                             <div class="relative flex-1 flex flex-col max-h-[150px] mb-6">
@@ -244,7 +244,7 @@ const aiLogs = ref([
                                 <span class="text-4xl mb-4 opacity-50">📁</span>
                                 <h3 class="text-gray-900 font-bold mb-1">{{ $t('upload_csv_target_list') }}</h3>
                                 <p class="text-xs text-gray-500 font-mono max-w-[200px]">{{ $t('format_csv') }}</p>
-                                <button class="mt-4 px-4 py-2 bg-white/5 border border-gray-300 text-gray-900 text-xs font-mono rounded hover:bg-white hover:text-black transition-colors">
+                                <button class="mt-4 px-4 py-2 border border-gray-300 text-gray-900 text-xs font-mono rounded hover:bg-white hover:text-black transition-colors">
                                     {{ $t('browse_file') }}
                                 </button>
                             </div>
@@ -291,12 +291,7 @@ const aiLogs = ref([
                     <div v-for="log in aiLogs" :key="log.id" class="flex flex-col gap-1 border-b border-gray-100 pb-2">
                         <div class="flex justify-between text-gray-500 text-[10px]">
                             <span>[{{ log.time }}]</span>
-                            <span :class="{
-                                'text-blue-600': log.type === 'INFO',
-                                'text-amber-600': log.type === 'WARN',
-                                'text-indigo-600': log.type === 'ACTION',
-                                'text-emerald-600': log.type === 'SUCCESS'
-                            }">[{{ log.type }}]</span>
+                            <span :class="{ 'text-blue-600': log.type === 'INFO', 'text-amber-600': log.type === 'WARN', 'text-indigo-600': log.type === 'ACTION', 'text-emerald-600': log.type === 'SUCCESS' }">[{{ log.type }}]</span>
                         </div>
                         <span class="text-gray-900/80 leading-relaxed">{{ $t(log.msg) }}</span>
                     </div>

@@ -131,7 +131,7 @@ function lockSettings() {
                         <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Maxsus Ruxsat Talab Qilinadi</h2>
                         <p class="text-xs font-mono text-gray-500 mb-8">Bu bo'lim tizim arxitekturasini boshqarish uchun xizmat qiladi. Davom etish uchun Telegram orqali tasdiqlash kodini yuboring.</p>
 
-                        <button @click="requestOtp" :disabled="isProcessing" class="w-full py-4 mb-6 bg-white/5 hover:bg-gray-100 text-gray-900 font-mono uppercase tracking-widest text-sm rounded-xl transition-colors border border-gray-200 cursor-pointer relative z-20">
+                        <button @click="requestOtp" :disabled="isProcessing" class="w-full py-4 mb-6 hover:bg-gray-100 text-gray-900 font-mono uppercase tracking-widest text-sm rounded-xl transition-colors border border-gray-200 cursor-pointer relative z-20">
                             📱 Telegramga PIN Kod Yuborish
                         </button>
 
@@ -150,7 +150,7 @@ function lockSettings() {
             <!-- UNLOCKED STATE -->
             <div v-else class="space-y-6">
                 <!-- TOP ACTION BAR -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 flex justify-between items-center shadow-lg bg-gray-900/50 backdrop-blur-sm">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 flex justify-between items-center shadow-lg bg-gray-900/50">
                     <h1 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                         <span class="text-blue-600">⚙️</span> Dasturchi Paneli
                     </h1>
@@ -161,7 +161,7 @@ function lockSettings() {
 
                 <div class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 gap-8">
                     <!-- API & HARDWARE BLOCK -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-emerald-200 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm hover:border-emerald-200 transition-colors">
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-emerald-200 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent hover:border-emerald-200 transition-colors">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-green via-neon-cyan to-neon-blue"></div>
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -220,7 +220,7 @@ function lockSettings() {
                     </div>
 
                     <!-- TELEGRAM BOT USERS BLOCK -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-blue/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm hover:border-neon-blue/40 transition-colors">
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-blue/20 relative overflow-hidden h-full flex flex-col bg-gradient-to-b from-black/40 to-transparent hover:border-neon-blue/40 transition-colors">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-cyan to-white"></div>
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -238,14 +238,14 @@ function lockSettings() {
                         <div class="space-y-4 flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                             <div v-for="user in users" :key="user.id" class="p-5 border border-gray-200 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors flex flex-col gap-5">
                                 <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded-full bg-white/5 border border-gray-200 flex items-center justify-center text-xl overflow-hidden shrink-0">
+                                    <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-xl overflow-hidden shrink-0">
                                         <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
                                         <span v-else>👤</span>
                                     </div>
                                     <div>
                                         <h4 class="text-gray-900 font-bold text-lg">{{ user.name }}</h4>
                                         <div class="flex flex-wrap gap-2 mt-1">
-                                            <span class="px-2 py-0.5 bg-white/5 border border-gray-200 rounded text-[9px] font-mono text-gray-500 uppercase tracking-wider">{{ user.email }}</span>
+                                            <span class="px-2 py-0.5 border border-gray-200 rounded text-[9px] font-mono text-gray-500 uppercase tracking-wider">{{ user.email }}</span>
                                             <span class="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-[9px] font-mono text-blue-600 uppercase tracking-wider font-bold">{{ user.roles.join(', ') || 'Rolsiz' }}</span>
                                         </div>
                                     </div>
@@ -264,7 +264,7 @@ function lockSettings() {
                 </div>
 
                 <!-- SIP SETTINGS BLOCK -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-purple/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-sm hover:border-neon-purple/40 transition-colors">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-purple/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent hover:border-neon-purple/40 transition-colors">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple via-neon-magenta to-white"></div>
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -327,7 +327,7 @@ function lockSettings() {
                 </div>
 
                 <!-- PROMO SITE CMS BLOCK -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-magenta/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent backdrop-blur-sm hover:border-neon-magenta/40 transition-colors">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-3xl border border-neon-magenta/20 relative overflow-hidden mt-8 bg-gradient-to-r from-black/40 to-transparent hover:border-neon-magenta/40 transition-colors">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-magenta via-neon-red to-white"></div>
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">

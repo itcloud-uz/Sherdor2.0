@@ -729,31 +729,31 @@ function openQuickSmsModal(lead) {
         <div class="mb-8 flex border-b border-gray-200 pb-4 overflow-x-auto whitespace-nowrap hide-scrollbar">
             <button 
                 @click="activeTab = 'leads'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'leads' ? 'text-blue-600 border-b-2 border-blue-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'leads' ? 'text-blue-600 border-b-2 border-blue-500 ' : 'text-gray-500 hover:text-gray-900']"
             >
                 {{ $t('kanban_leads') }}
             </button>
             <button 
                 @click="activeTab = 'clients'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'clients' ? 'text-amber-600 border-b-2 border-amber-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'clients' ? 'text-amber-600 border-b-2 border-amber-500 ' : 'text-gray-500 hover:text-gray-900']"
             >
                 {{ $t('clients_roster') }}
             </button>
             <button 
                 @click="activeTab = 'contracts'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'contracts' ? 'text-emerald-600 border-b-2 border-emerald-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'contracts' ? 'text-emerald-600 border-b-2 border-emerald-500 ' : 'text-gray-500 hover:text-gray-900']"
             >
                 Shartnomalar
             </button>
             <button 
                 @click="activeTab = 'canceled'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'canceled' ? 'text-red-600 border-b-2 border-red-500 bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'canceled' ? 'text-red-600 border-b-2 border-red-500 ' : 'text-gray-500 hover:text-gray-900']"
             >
                 Bekor Qilinganlar <span v-if="canceledContracts.length > 0" class="ml-2 px-2 py-0.5 bg-red-600 text-white rounded-full text-xs animate-pulse">{{ canceledContracts.length }}</span>
             </button>
             <button 
                 @click="activeTab = 'overdue'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'overdue' ? 'text-indigo-600 border-b-2 border-neon-magenta bg-white/5' : 'text-gray-500 hover:text-gray-900']"
+                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'overdue' ? 'text-indigo-600 border-b-2 border-neon-magenta ' : 'text-gray-500 hover:text-gray-900']"
             >
                 {{ $t('overdue_radar') }} <span v-if="overdueSchedules.length > 0" class="ml-2 px-2 py-0.5 bg-indigo-600 text-white rounded-full text-xs animate-pulse">{{ overdueSchedules.length }}</span>
             </button>
@@ -782,7 +782,7 @@ function openQuickSmsModal(lead) {
                         <button @click="openCreateLeadModal" class="px-2 py-0.5 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
                             + Yangi Lid
                         </button>
-                        <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-blue-600">{{ leadsByStatus.new.length }}</span>
+                        <span class="text-xs font-mono px-2 py-0.5 rounded-full text-blue-600">{{ leadsByStatus.new.length }}</span>
                     </div>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
@@ -816,7 +816,7 @@ function openQuickSmsModal(lead) {
                  @dragover.prevent @drop="dropLead('contacted', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
                     <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_contacted') }}</h3>
-                    <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-amber-600">{{ leadsByStatus.contacted.length }}</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-amber-600">{{ leadsByStatus.contacted.length }}</span>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                     <div v-for="lead in leadsByStatus.contacted" :key="lead.id" 
@@ -849,7 +849,7 @@ function openQuickSmsModal(lead) {
                  @dragover.prevent @drop="dropLead('qualified', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
                     <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_qualified') }}</h3>
-                    <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-emerald-600">{{ leadsByStatus.qualified.length }}</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-emerald-600">{{ leadsByStatus.qualified.length }}</span>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                     <div v-for="lead in leadsByStatus.qualified" :key="lead.id" 
@@ -882,7 +882,7 @@ function openQuickSmsModal(lead) {
                  @dragover.prevent @drop="dropLead('lost', $event)">
                 <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
                     <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_lost') }}</h3>
-                    <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-full text-indigo-600">{{ leadsByStatus.lost.length }}</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-indigo-600">{{ leadsByStatus.lost.length }}</span>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                     <div v-for="lead in leadsByStatus.lost" :key="lead.id" 
@@ -913,7 +913,7 @@ function openQuickSmsModal(lead) {
 
         <!-- TAB 2: CLIENTS ROSTER -->
         <div v-if="activeTab === 'clients'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px]">
-            <div class="sticky top-0 z-20 bg-[#0d1117]/80 backdrop-blur-sm px-6 py-5 -mx-6 -mt-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 shadow-lg rounded-t-2xl">
+            <div class="sticky top-0 z-20 bg-[#0d1117]/80 px-6 py-5 -mx-6 -mt-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 shadow-lg rounded-t-2xl">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-display font-bold text-gray-900">{{ $t('clients_database') }}</h2>
                     <a :href="route('admin.crm.export.clients.excel')" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
@@ -937,8 +937,8 @@ function openQuickSmsModal(lead) {
 
             <div class="overflow-x-auto rounded-xl border border-gray-200">
                 <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-900/50 border-b border-gray-200">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                        <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
                             <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Telefon</th>
                             <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Pasport / PINFL</th>
@@ -950,7 +950,7 @@ function openQuickSmsModal(lead) {
                         <tr 
                             v-for="client in filteredClients" 
                             :key="client.id" 
-                            class="border-b border-gray-100 hover:bg-white/[0.03] transition-colors group"
+                            class="border-b border-gray-100 hover:/[0.03] transition-colors group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                         >
                             <td class="p-3">
                                 <div class="flex items-center gap-3">
@@ -978,7 +978,7 @@ function openQuickSmsModal(lead) {
                             </td>
                             <td class="p-3">
                                 <div v-if="client.contracts && client.contracts.length > 0" class="flex flex-col gap-1 max-w-[250px] whitespace-normal">
-                                    <div v-for="contract in client.contracts" :key="contract.id" class="px-2 py-1 rounded bg-emerald-50 border border-emerald-200 flex justify-between items-center text-xs font-mono cursor-pointer hover:bg-emerald-50 transition-colors" @click="openScheduleModal(contract)">
+                                    <div v-for="contract in client.contracts" :key="contract.id" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium" @click="openScheduleModal(contract)">
                                         <span class="text-gray-900 truncate" style="max-width: 120px;">🏠 Unit {{ contract.unit?.unit_number }}</span>
                                         <span class="text-emerald-600 font-bold ml-2">{{ $currency(contract.total_amount) }}</span>
                                     </div>
@@ -996,7 +996,7 @@ function openQuickSmsModal(lead) {
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="filteredClients.length === 0">
+                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="filteredClients.length === 0">
                             <td colspan="5" class="py-20 text-center text-gray-500 font-mono text-sm border-dashed">
                                 {{ $t('no_clients_found') }}
                             </td>
@@ -1027,8 +1027,8 @@ function openQuickSmsModal(lead) {
                 </h3>
                 <div class="overflow-x-auto rounded-xl border border-gray-200">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-900/50 border-b border-gray-200">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Shartnoma</th>
                                 <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
                                 <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Boshlang'ich to'lov</th>
@@ -1042,7 +1042,7 @@ function openQuickSmsModal(lead) {
                                 v-for="contract in contracts" 
                                 :key="contract.id"
                                 @click="openScheduleModal(contract)"
-                                class="border-b border-gray-100 hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                                class="border-b border-gray-100 hover:/[0.03] transition-colors cursor-pointer group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                             >
                                 <td class="p-3">
                                     <h3 class="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
@@ -1134,7 +1134,7 @@ function openQuickSmsModal(lead) {
                                     </div>
                                 </div>
                                 <div class="text-right flex flex-col items-end gap-1">
-                                    <span class="px-2 py-1 rounded bg-white/5 border border-red-200 text-[10px] font-mono text-red-600 whitespace-nowrap">Bekor qilingan</span>
+                                    <span class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">Bekor qilingan</span>
                                 </div>
                             </div>
     
@@ -1171,8 +1171,8 @@ function openQuickSmsModal(lead) {
                     </h3>
                     <div class="overflow-x-auto rounded-xl border border-red-200 shadow-sm">
                         <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-red-50 border-b border-red-200">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="border-b border-red-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Mijoz</th>
                                     <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Kechikkan Summa</th>
                                     <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Muddat</th>
@@ -1183,7 +1183,7 @@ function openQuickSmsModal(lead) {
                                 <tr 
                                     v-for="group in groupedStrictCollection" 
                                     :key="group.client?.id"
-                                    class="border-b border-red-200 hover:bg-red-50 transition-colors group cursor-pointer"
+                                    class="border-b border-red-200 hover: transition-colors group cursor-pointer bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     @click="openScheduleModal(group.schedules[0].contract)"
                                 >
                                     <td class="p-3">
@@ -1229,8 +1229,8 @@ function openQuickSmsModal(lead) {
                     </h3>
                     <div class="overflow-x-auto rounded-xl border border-gray-200">
                         <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-900/50 border-b border-gray-200">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Kechikkan Summa</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Muddat</th>
@@ -1241,7 +1241,7 @@ function openQuickSmsModal(lead) {
                                 <tr 
                                     v-for="group in groupedOverdueSchedules" 
                                     :key="group.client?.id"
-                                    class="border-b border-gray-100 hover:bg-white/[0.03] transition-colors group cursor-pointer"
+                                    class="border-b border-gray-100 hover:/[0.03] transition-colors group cursor-pointer bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     @click="openScheduleModal(group.schedules[0].contract)"
                                 >
                                     <td class="p-3">
@@ -1275,7 +1275,7 @@ function openQuickSmsModal(lead) {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="groupedOverdueSchedules.length === 0">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="groupedOverdueSchedules.length === 0">
                                     <td colspan="4" class="py-10 text-center text-emerald-600 font-mono text-sm border-dashed">
                                         {{ $t('no_overdue_payments') }} 🎉
                                     </td>
@@ -1288,11 +1288,11 @@ function openQuickSmsModal(lead) {
         </div>
 
         <!-- CLIENT LEDGER MODAL (GLASSMORPHIC) -->
-        <div v-if="showModal && selectedContract" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-all">
+        <div v-if="showModal && selectedContract" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 transition-all">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-6xl rounded-2xl border border-blue-200 shadow-sm overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-900/50">
                     <div>
-                        <h2 class="text-2xl font-display font-bold text-gray-900 uppercase tracking-widest ">{{ $t('client_personal_ledger') }} <span class="text-xs text-blue-600 ml-2">{{ $t('akt_sverka') }}</span></h2>
+                        <h2 class="text-2xl font-display font-bold text-gray-900 uppercase tracking-widest">{{ $t('client_personal_ledger') }} <span class="text-xs text-blue-600 ml-2">{{ $t('akt_sverka') }}</span></h2>
                         <p class="text-sm text-gray-500 font-mono mt-1">Contract #{{ selectedContract.contract_number || selectedContract.id.toString().padStart(5, '0') }} • {{ selectedContract.client?.first_name }} {{ selectedContract.client?.last_name }} • Unit {{ selectedContract.unit?.unit_number || 'N/A' }}</p>
                     </div>
                     <button @click="showModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
@@ -1366,11 +1366,7 @@ function openQuickSmsModal(lead) {
                             </div>
                             <div>
                                 <h4 class="text-gray-900 font-bold text-sm tracking-widest uppercase">{{ $t('ai_signature_verification') }}</h4>
-                                <p class="text-xs font-mono" :class="{
-                                    'text-gray-500': !selectedContract.ai_verification_status,
-                                    'text-emerald-600': selectedContract.ai_verification_status === 'passed',
-                                    'text-red-600': selectedContract.ai_verification_status === 'failed'
-                                }">
+                                <p class="text-xs font-mono" :class="{ 'text-gray-500': !selectedContract.ai_verification_status, 'text-emerald-600': selectedContract.ai_verification_status === 'passed', 'text-red-600': selectedContract.ai_verification_status === 'failed' }">
                                     {{ selectedContract.ai_verification_status === 'passed' ? 'Tasdiqlangan va imzolangan' : 
                                        (selectedContract.ai_verification_status === 'failed' ? 'Imzolanmagan qayta yuklang' : 'Hujjat kutilmoqda') }}
                                 </p>
@@ -1395,8 +1391,8 @@ function openQuickSmsModal(lead) {
                     <!-- LEDGER TABLE -->
                     <div class="overflow-x-auto rounded-xl border border-gray-200">
                         <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-900/50 border-b border-gray-200">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'langan Sana</th>
@@ -1413,7 +1409,7 @@ function openQuickSmsModal(lead) {
                                 <tr 
                                     v-for="(schedule, index) in selectedContract.payment_schedules" 
                                     :key="schedule.id" 
-                                    class="border-b border-gray-100 hover:bg-white/[0.03] transition-colors"
+                                    class="border-b border-gray-100 hover:/[0.03] transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     :class="{'bg-indigo-50 border-l-2 border-l-neon-magenta': schedule.remaining_debt > 0 && new Date(schedule.due_date) < new Date()}"
                                 >
                                     <td class="p-3 text-sm font-bold text-gray-900">{{ index + 1 }}</td>
@@ -1433,8 +1429,8 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-sm font-mono text-emerald-600">
                                         <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                             <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
-                                            <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] rounded hover:bg-emerald-600 hover:text-black transition-all">{{ $t('save') }}</button>
-                                            <button @click="editingScheduleId = null" class="px-2 py-1 bg-white/10 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
+                                            <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
+                                            <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
                                         </div>
                                         <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
                                             {{ $currency(schedule.paid_amount || 0) }}
@@ -1457,12 +1453,7 @@ function openQuickSmsModal(lead) {
                                     <td class="p-3 text-sm font-mono text-indigo-600">{{ $currency(schedule.penalty_for_this_month || 0) }}</td>
                                     <td class="p-3 text-right">
                                         <span class="inline-block px-2 py-1 rounded text-[10px] uppercase tracking-widest border"
-                                            :class="{
-                                                'bg-emerald-50 text-emerald-600 border-emerald-200': schedule.status === 'paid',
-                                                'bg-amber-50 text-amber-600 border-amber-200': schedule.status === 'partial',
-                                                'bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm': schedule.status === 'overdue',
-                                                'bg-white/10 text-gray-500 border-gray-300': schedule.status === 'pending'
-                                            }">
+                                            :class="{ 'bg-emerald-50 text-emerald-600 border-emerald-200': schedule.status === 'paid', 'bg-amber-50 text-amber-600 border-amber-200': schedule.status === 'partial', 'bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm': schedule.status === 'overdue', ' text-gray-500 border-gray-300': schedule.status === 'pending' }">
                                             {{ schedule.status }}
                                         </span>
                                     </td>
@@ -1479,8 +1470,8 @@ function openQuickSmsModal(lead) {
                         </h3>
                         <div class="overflow-x-auto rounded-xl border border-red-200">
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-red-50 border-b border-red-200">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="border-b border-red-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <th class="p-3 text-xs font-mono text-red-600 font-normal uppercase tracking-wider">Tranzaksiya ID</th>
                                         <th class="p-3 text-xs font-mono text-red-600 font-normal uppercase tracking-wider">Sana</th>
                                         <th class="p-3 text-xs font-mono text-red-600 font-normal uppercase tracking-wider">To'lov Usuli</th>
@@ -1492,7 +1483,7 @@ function openQuickSmsModal(lead) {
                                     <tr 
                                         v-for="transaction in refundTransactions" 
                                         :key="transaction.id" 
-                                        class="border-b border-gray-100 bg-gray-900/50 hover:bg-red-50 transition-colors"
+                                        class="border-b border-gray-100 /50 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     >
                                         <td class="p-3 text-sm font-mono text-gray-900/80">#{{ transaction.id }}</td>
                                         <td class="p-3 text-sm font-mono text-gray-900/80">{{ new Date(transaction.created_at).toLocaleString() }}</td>
@@ -1513,57 +1504,57 @@ function openQuickSmsModal(lead) {
 
         <!-- MODAL: CREATE / EDIT CLIENT -->
         <div v-if="showCreateClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
-            <div class="relative bg-white p-6 rounded-lg w-full max-w-lg border border-gray-200 shadow-xl">
+            <div class="absolute inset-0 bg-gray-900/50" @click="showCreateClientModal = false"></div>
+            <div class="relative bg-white p-6 rounded-lg w-full max-w-lg border border-gray-200">
                 <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">
                     {{ isEditingClient ? t('edit_client') : $t('add') + ' ' + $t('client') }}
                 </h2>
                 <form @submit.prevent="saveClient" class="space-y-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
-                        <input v-model="clientForm.created_at" type="date" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
+                        <input v-model="clientForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('first_name') }}</label>
-                            <input v-model="clientForm.first_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <input v-model="clientForm.first_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('last_name') }}</label>
-                            <input v-model="clientForm.last_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <input v-model="clientForm.last_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">Otasining ismi</label>
-                            <input v-model="clientForm.middle_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input v-model="clientForm.middle_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_series') }}</label>
-                            <input v-model="clientForm.passport_series" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input v-model="clientForm.passport_series" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('pinfl') }}</label>
-                            <input v-model="clientForm.pinfl" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input v-model="clientForm.pinfl" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('address') }}</label>
-                        <input v-model="clientForm.address" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <input v-model="clientForm.address" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
-                            <input v-model="clientForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input v-model="clientForm.passport_issued_date" type="date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('issued_by') }}</label>
-                            <input v-model="clientForm.passport_issued_by" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input v-model="clientForm.passport_issued_by" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('phone_number') }}</label>
-                        <input v-model="clientForm.phone" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <input v-model="clientForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                     </div>
                     <div class="flex justify-end gap-4 mt-8">
                         <button type="button" @click="showCreateClientModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">{{ $t('cancel') }}</button>
@@ -1575,9 +1566,9 @@ function openQuickSmsModal(lead) {
 
         <!-- MODAL: CREATE CONTRACT -->
         <div v-if="showCreateContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showCreateContractModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showCreateContractModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-3xl border border-emerald-200">
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest  shadow-neon-green/50">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-green/50">
                     {{ isEditingContract ? 'Shartnomani Tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
@@ -1639,7 +1630,7 @@ function openQuickSmsModal(lead) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
                             </div>
                         </div>
-                        <div v-if="showUnitDropdown" class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-gray-900/50 border border-gray-300 rounded-lg shadow-xl backdrop-blur-sm">
+                        <div v-if="showUnitDropdown" class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-gray-900/50 border border-gray-300 rounded-lg">
                             <div 
                                 v-for="u in filteredUnits" 
                                 :key="u.id" 
@@ -1752,10 +1743,10 @@ function openQuickSmsModal(lead) {
         </div>
 
         <!-- CREATE LEAD MODAL -->
-        <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-all">
+        <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 transition-all">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
                 <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-900/50">
-                    <h2 class="text-xl font-display font-bold text-gray-900 uppercase tracking-widest ">{{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}</h2>
+                    <h2 class="text-xl font-display font-bold text-gray-900 uppercase tracking-widest">{{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}</h2>
                     <button @click="showCreateLeadModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>

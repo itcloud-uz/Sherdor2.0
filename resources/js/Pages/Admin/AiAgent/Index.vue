@@ -66,7 +66,7 @@
                     <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
                         <div v-for="t in templates" :key="t.id" class="p-3 bg-gray-900/50 border border-gray-100 rounded-lg group relative">
                             <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
-                                <button @click="editTemplate(t)" class="text-[10px] bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                <button @click="editTemplate(t)" class="text-[10px] hover:bg-white/20 p-1 rounded">✏️</button>
                                 <button @click="deleteTemplate(t.id)" class="text-[10px] bg-indigo-50 hover:bg-indigo-50 text-indigo-600 p-1 rounded">🗑️</button>
                             </div>
                             <div class="text-xs text-gray-900 font-bold mb-1">{{ t.name }}</div>
@@ -83,7 +83,7 @@
                     <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
                         <div v-for="r in rules" :key="r.id" class="p-3 bg-gray-900/50 border border-gray-100 rounded-lg flex items-center justify-between group relative">
                             <div class="absolute right-8 top-2 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
-                                <button @click="editRule(r)" class="text-[10px] bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
+                                <button @click="editRule(r)" class="text-[10px] hover:bg-white/20 p-1 rounded">✏️</button>
                                 <button @click="deleteRule(r.id)" class="text-[10px] bg-indigo-50 hover:bg-indigo-50 text-indigo-600 p-1 rounded">🗑️</button>
                             </div>
                             <div>
@@ -108,11 +108,7 @@
                                 <div class="text-xs text-gray-900 font-mono">{{ log.phone_number }}</div>
                                 <div class="text-[10px] text-gray-500 truncate max-w-[150px]">{{ log.message }}</div>
                             </div>
-                            <span :class="{
-                                'text-emerald-600': log.status === 'DELIVRD',
-                                'text-amber-600': log.status === 'pending' || log.status === 'sent' || log.status === 'pending_batch',
-                                'text-indigo-600': log.status === 'UNDELIV' || log.status === 'failed'
-                            }" class="text-[10px] font-mono font-bold uppercase">{{ log.status }}</span>
+                            <span :class="{ 'text-emerald-600': log.status === 'DELIVRD', 'text-amber-600': log.status === 'pending' || log.status === 'sent' || log.status === 'pending_batch', 'text-indigo-600': log.status === 'UNDELIV' || log.status === 'failed' }" class="text-[10px] font-mono font-bold uppercase">{{ log.status }}</span>
                         </div>
                     </div>
                 </div>
@@ -259,7 +255,7 @@
                             </div>
                         </div>
 
-                        <div v-if="promoRuleForm.audience_type === 'upload_file'" class="p-4 border border-dashed border-gray-300 rounded-xl bg-white/5 text-center">
+                        <div v-if="promoRuleForm.audience_type === 'upload_file'" class="p-4 border border-dashed border-gray-300 rounded-xl text-center">
                             <h3 class="text-sm font-mono text-gray-900 mb-2">Mijozlar Bazasini Yuklash (CSV)</h3>
                             <p class="text-xs text-gray-500 mb-4">Faqat bitta "Telefon Raqam" (998901234567) ustuni bo'lishi kerak.</p>
                             <input type="file" @change="promoRuleForm.file = $event.target.files[0]" accept=".csv" class="mx-auto block w-full max-w-xs text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-gray-900 hover:file:bg-white/20 cursor-pointer">

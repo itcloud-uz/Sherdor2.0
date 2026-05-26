@@ -59,7 +59,7 @@
                         <div class="grid grid-cols-3 gap-3 mb-6 relative z-10">
                             <button v-for="num in ['1','2','3','4','5','6','7','8','9','*','0','#']" :key="num" 
                                 @click="dialerPhone += num"
-                                class="h-14 bg-white/5 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-lg text-xl font-mono text-gray-900/80 hover:text-gray-900 hover:shadow-sm transition-all flex flex-col items-center justify-center group/key">
+                                class="h-14 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-lg text-xl font-mono text-gray-900/80 hover:text-gray-900 hover:shadow-sm transition-all flex flex-col items-center justify-center group/key">
                                 <span>{{ num }}</span>
                                 <span v-if="num === '1'" class="text-[8px] text-blue-600/40 opacity-0 group-hover/key:opacity-100">SYS</span>
                                 <span v-if="num === '2'" class="text-[8px] text-blue-600/40 opacity-0 group-hover/key:opacity-100">ABC</span>
@@ -114,7 +114,7 @@
                                     
                                     <div v-if="autoGroup === 'new_leads'">
                                         <label class="block text-xs font-mono text-neon-purple/70 tracking-widest uppercase mb-1">MIJOZLAR BAZASI (EXCEL/CSV)</label>
-                                        <div class="relative w-full border border-neon-purple/30 border-dashed rounded bg-white/5 hover:bg-gray-100 transition flex items-center justify-center p-3 cursor-pointer">
+                                        <div class="relative w-full border border-neon-purple/30 border-dashed rounded hover:bg-gray-100 transition flex items-center justify-center p-3 cursor-pointer">
                                             <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".xlsx,.xls,.csv" @change="handleExcelUpload">
                                             <span class="text-xs font-mono text-blue-600" v-if="!excelFile">+ Excel fayl tanlang</span>
                                             <span class="text-xs font-mono text-emerald-600" v-else>✅ {{ excelFile.name }}</span>
@@ -124,7 +124,7 @@
                                     <div>
                                         <div class="flex justify-between items-end mb-1">
                                             <label class="block text-xs font-mono text-neon-purple/70 tracking-widest uppercase">AUDIO FAYLNI TANLANG</label>
-                                            <label class="cursor-pointer text-[10px] text-blue-600 hover:text-gray-900 transition-colors bg-white/5 px-2 py-0.5 rounded border border-gray-200" :class="{'opacity-50 pointer-events-none': isUploading}">
+                                            <label class="cursor-pointer text-[10px] text-blue-600 hover:text-gray-900 transition-colors px-2 py-0.5 rounded border border-gray-200" :class="{'opacity-50 pointer-events-none': isUploading}">
                                                 <span v-if="isUploading">Yuklanmoqda...</span>
                                                 <span v-else>+ Yuklash</span>
                                                 <input type="file" class="hidden" accept=".mp3,.wav" @change="handleFileUpload" :disabled="isUploading">
@@ -173,7 +173,7 @@
                         <div class="bg-gray-900/50 border border-gray-100 p-0 flex-1 relative overflow-hidden flex flex-col h-80 lg:h-auto">
                             <div class="p-4 border-b border-gray-200 bg-[#050B14]/80 flex justify-between items-center z-10">
                                 <h3 class="text-sm font-mono text-gray-900/70 uppercase tracking-widest flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 bg-white/50 block"></span>
+                                    <span class="w-1.5 h-1.5 block"></span>
                                     QO'NG'IROQLAR TARIXI
                                 </h3>
                                 <button @click="fetchLogs" class="text-blue-600/70 hover:text-blue-600 font-mono text-xs uppercase tracking-wider border border-blue-200 px-3 py-1.5 rounded">
@@ -191,11 +191,7 @@
                                 
                                 <div v-else v-for="log in logs" :key="log.id" class="p-3 border-l-2 border-r border-y border-gray-100 rounded bg-gray-900/50 flex items-center justify-between hover:bg-gray-50 hover:border-l-neon-cyan transition-colors group">
                                     <div class="flex items-center gap-4">
-                                        <div :class="{
-                                            'text-emerald-600 bg-emerald-50 border-emerald-200': log.status === 'answered',
-                                            'text-red-500 bg-red-500/10 border-red-200': log.status === 'missed' || log.status === 'failed',
-                                            'text-amber-600 bg-amber-50 border-amber-200': log.status === 'pending'
-                                        }" class="w-8 h-8 rounded border flex items-center justify-center text-sm shadow-inner">
+                                        <div :class="{ 'text-emerald-600 bg-emerald-50 border-emerald-200': log.status === 'answered', 'text-red-500 bg-red-500/10 border-red-200': log.status === 'missed' || log.status === 'failed', 'text-amber-600 bg-amber-50 border-amber-200': log.status === 'pending' }" class="w-8 h-8 rounded border flex items-center justify-center text-sm shadow-inner">
                                             <span v-if="log.type === 'inbound'">🡗</span>
                                             <span v-else-if="log.type === 'outbound'">🡕</span>
                                             <span v-else>🤖</span>
@@ -211,11 +207,7 @@
                                     <div class="flex items-center gap-4">
                                         <div class="text-right hidden sm:block">
                                             <div class="text-xs font-mono text-gray-900/60 tracking-widest uppercase">{{ log.duration_seconds }} SONIYA</div>
-                                            <div :class="{
-                                                'text-emerald-600': log.status === 'answered',
-                                                'text-red-500': log.status === 'missed' || log.status === 'failed',
-                                                'text-amber-600': log.status === 'pending'
-                                            }" class="text-[10px] font-mono tracking-widest uppercase font-bold mt-0.5">
+                                            <div :class="{ 'text-emerald-600': log.status === 'answered', 'text-red-500': log.status === 'missed' || log.status === 'failed', 'text-amber-600': log.status === 'pending' }" class="text-[10px] font-mono tracking-widest uppercase font-bold mt-0.5">
                                                 HOLAT: {{ log.status }}
                                             </div>
                                         </div>

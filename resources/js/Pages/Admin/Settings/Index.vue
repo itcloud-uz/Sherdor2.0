@@ -280,7 +280,7 @@ const updateLabelSettings = () => {
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'minimalist' ? 'text-neon-primary font-bold' : 'text-gray-500'">Minimalist</span>
                                 </button>
                                 <button type="button" @click="updateThemeStyle('gold')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'gold' ? 'border-[#FFD700] bg-[#FFD700]/10 shadow-sm' : 'border-gray-200 hover:border-[#FFD700]/50 bg-gray-900/50'">
-                                    <span class="text-3xl  shadow-[#FFD700]">⚜️</span>
+                                    <span class="text-3xl shadow-[#FFD700]">⚜️</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'gold' ? 'text-[#FFD700] font-bold' : 'text-gray-500'">Gold Royal</span>
                                 </button>
                                 <button type="button" @click="updateThemeStyle('itcloud_cyberglass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'border-[#00F0FF] bg-[#00F0FF]/10 shadow-sm' : 'border-gray-200 hover:border-[#00F0FF]/50 bg-gray-900/50'">
@@ -299,7 +299,7 @@ const updateLabelSettings = () => {
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Shrift Kattaligi (PX)</label>
                                     <div class="flex items-center gap-4">
-                                        <input v-model="profileForm.label_font_size" type="range" min="8" max="24" step="1" @change="updateLabelSettings" class="flex-1 accent-neon-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
+                                        <input v-model="profileForm.label_font_size" type="range" min="8" max="24" step="1" @change="updateLabelSettings" class="flex-1 accent-neon-primary h-1 rounded-lg appearance-none cursor-pointer">
                                         <span class="w-12 text-center font-mono text-lg text-gray-900 font-bold border border-gray-200 rounded bg-gray-900/50">{{ profileForm.label_font_size }}</span>
                                     </div>
                                 </div>

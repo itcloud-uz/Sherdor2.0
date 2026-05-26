@@ -222,8 +222,8 @@ function handleExportExcel() {
 <template>
     <Teleport to="body" :disabled="inline">
         <div v-if="show" :class="inline ? 'w-full mt-4 animate-[fadeIn_0.3s_ease-out]' : 'fixed inset-0 z-[9999] flex items-center justify-center p-4'">
-        <div v-if="!inline" class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="close"></div>
-        <div :class="inline ? 'bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/40 border border-gray-200 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/90 border border-gray-200 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
+        <div v-if="!inline" class="absolute inset-0 bg-gray-900/50" @click="close"></div>
+        <div :class="inline ? 'bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/40 border border-gray-200 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/90 border border-gray-200 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col animate-[fadeIn_0.3s_ease-out]'">
             
             <div class="shrink-0 flex justify-between items-center mb-6 relative z-10">
                 <div v-if="!inline" class="flex gap-2 w-32">
@@ -235,11 +235,11 @@ function handleExportExcel() {
                     </button>
                 </div>
                 <div v-else class="w-32"></div> <!-- Placeholder -->
-                <h2 class="text-2xl font-display font-bold text-gray-900 tracking-widest uppercase  flex-1 text-center">
+                <h2 class="text-2xl font-display font-bold text-gray-900 tracking-widest uppercase flex-1 text-center">
                     {{ owner?.name }} <span class="text-amber-600 opacity-80">- Texnikalar Jurnali</span>
                 </h2>
                 <div class="flex justify-end w-32">
-                    <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-red-50 text-gray-900 hover:text-red-600 transition-colors border border-gray-200 hover:border-red-200">
+                    <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-900 hover:text-red-600 transition-colors border border-gray-200 hover:border-red-200">
                         ✕
                     </button>
                     <button v-else @click="close" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-600 hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
@@ -250,15 +250,15 @@ function handleExportExcel() {
             
             <div class="flex-1 min-h-[150px] custom-scrollbar overflow-y-auto overflow-x-auto border border-gray-200 rounded-xl bg-gray-900/50 mb-6">
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
-                    <thead class="bg-white/5 border-b border-gray-200 text-[11px] uppercase tracking-widest text-gray-500 sticky top-0 z-10 backdrop-blur-sm">
-                        <tr>
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <th class="p-4 border-r border-gray-100 w-16 min-w-[64px] text-center text-gray-500">№</th>
                             <th class="p-4 border-r border-gray-100 w-[130px] min-w-[130px]">Sana</th>
-                            <th class="p-4 border-r border-gray-100 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
+                            <th class="p-4 border-r border-gray-100 text-center" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
                             <th class="p-4 border-r border-gray-100 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
                             <th class="p-4 w-[130px] min-w-[130px] text-right">Qoldiq</th>
                         </tr>
-                        <tr class="border-t border-gray-100 text-[11px] bg-gray-900/50">
+                        <tr class="border-t border-gray-100 text-[11px] /50 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <th class="border-r border-gray-100 p-2"></th>
                             <th class="border-r border-gray-100 p-2"></th>
                             <th class="border-r border-gray-100 p-2 text-amber-600 w-[180px] min-w-[180px]">Nomi</th>
@@ -272,7 +272,7 @@ function handleExportExcel() {
                     </thead>
                     <tbody class="divide-y divide-white/5 text-gray-900/90">
 
-                        <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover:bg-gray-50 transition-colors group">
+                        <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover: transition-colors group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                             <td class="p-3 border-r border-gray-100 text-center text-gray-500">{{ idx + 1 }}</td>
                             <td class="p-3 border-r border-gray-100">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>
                             
@@ -290,7 +290,7 @@ function handleExportExcel() {
                                 {{ item.running_balance !== undefined ? (item.running_balance > 0 ? '+' : '') + Number(item.running_balance).toLocaleString() : '' }}
                             </td>
                         </tr>
-                        <tr v-if="!ledgerData.items || ledgerData.items.length === 0">
+                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!ledgerData.items || ledgerData.items.length === 0">
                             <td colspan="9" class="p-8 text-center text-gray-500 italic border-dashed border border-gray-100 rounded-xl m-4">Ma'lumot topilmadi</td>
                         </tr>
                     </tbody>

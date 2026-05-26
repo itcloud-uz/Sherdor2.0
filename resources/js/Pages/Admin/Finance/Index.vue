@@ -677,7 +677,7 @@ const categoriesSummary = computed(() => {
                     <span class="text-base">{{ tab.icon }}</span> {{ $t(tab.name) }}
                 </button>
                 
-                <div class="w-px h-6 bg-white/20 mx-1 hidden sm:block"></div>
+                <div class="w-px h-6 mx-1 hidden sm:block"></div>
                 
                 <Link :href="route('admin.approvals')" class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest text-gray-500 hover:text-amber-600 hover:bg-gray-50 border border-transparent transition-all whitespace-nowrap">
                     <span class="text-base">✅</span> Tasdiqlar
@@ -759,15 +759,15 @@ const categoriesSummary = computed(() => {
                             <span class="w-2 h-2 rounded-full bg-blue-600"></span>{{ $t('incomes_from') }}</h3>
                         <!-- LEGACY FILTERS -->
                         <div class="flex bg-gray-900/50 border border-gray-200 rounded-lg p-1">
-                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
+                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
                             <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
                             <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
                         </div>
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                         <table class="w-full text-left text-[12px] font-mono">
-                            <thead class="bg-white/5 border-b border-gray-200 text-gray-500 sticky top-0 z-10 backdrop-blur-sm">
-                                <tr>
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-3">Sana</th>
                                     <th class="p-3">Izoh</th>
                                     <th class="p-3">Kategoriya</th>
@@ -777,7 +777,7 @@ const categoriesSummary = computed(() => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-white/5">
-                                <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover:bg-gray-50 transition-colors group relative">
+                                <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover: transition-colors group relative bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <td class="p-3">
                                         <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
                                         {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
@@ -793,12 +793,12 @@ const categoriesSummary = computed(() => {
                                     <td class="p-3 text-center">
                                         <div class="flex justify-center gap-2">
                                             <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
-                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-[10px] uppercase text-red-400 hover:text-red-300 bg-red-400/10 px-2 py-1 rounded">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 bg-white/10 px-2 py-1 rounded">Yuklash</a>
+                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="!paginatedIncomes.length">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!paginatedIncomes.length">
                                     <td colspan="6" class="p-4 text-center text-gray-500 text-sm">Kirimlar mavjud emas</td>
                                 </tr>
                             </tbody>
@@ -829,7 +829,7 @@ const categoriesSummary = computed(() => {
                             </button>
                             <!-- LEGACY FILTERS -->
                             <div class="flex bg-gray-900/50 border border-gray-200 rounded-lg p-1">
-                                <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? 'bg-white/20 text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
+                                <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
                                 <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
                                 <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
                             </div>
@@ -837,8 +837,8 @@ const categoriesSummary = computed(() => {
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                         <table class="w-full text-left text-[12px] font-mono">
-                            <thead class="bg-white/5 border-b border-gray-200 text-gray-500 sticky top-0 z-10 backdrop-blur-sm">
-                                <tr>
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <th class="p-3">Sana</th>
                                     <th class="p-3">Izoh</th>
                                     <th class="p-3">Kategoriya</th>
@@ -849,7 +849,7 @@ const categoriesSummary = computed(() => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-white/5">
-                                <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover:bg-gray-50 transition-colors group relative">
+                                <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover: transition-colors group relative bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <td class="p-3">
                                         <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
                                         {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
@@ -866,12 +866,12 @@ const categoriesSummary = computed(() => {
                                     <td class="p-3 text-center">
                                         <div class="flex justify-center gap-2">
                                             <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
-                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="text-[10px] uppercase text-red-400 hover:text-red-300 bg-red-400/10 px-2 py-1 rounded">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 bg-white/10 px-2 py-1 rounded">Yuklash</a>
+                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="!paginatedExpenses.length">
+                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!paginatedExpenses.length">
                                     <td colspan="7" class="p-4 text-center text-gray-500 text-sm">Chiqimlar mavjud emas</td>
                                 </tr>
                             </tbody>
@@ -891,7 +891,7 @@ const categoriesSummary = computed(() => {
             </div>
 
             <!-- Edit Transaction Modal -->
-            <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+            <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
                 <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-gray-200">
                     <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                     <h3 class="text-xl font-display text-gray-900 mb-6">{{ $t('edit_transaction') }}</h3>
@@ -955,18 +955,14 @@ const categoriesSummary = computed(() => {
                             </p>
                         </div>
                         
-                        <div class="bg-white/5 p-3 rounded-lg text-xs font-mono text-gray-900/80 z-10">
+                        <div class="p-3 rounded-lg text-xs font-mono text-gray-900/80 z-10">
                             <p class="mb-1"><span class="text-gray-500">{{ $t('notes_label') }}</span> {{ txn.notes || 'Kiritilmagan' }}</p>
                             <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-gray-500">{{ $t('client_label') }}</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
                             <p><span class="text-gray-500">{{ $t('maker_label') }}</span> <span class="text-gray-900 font-bold">{{ txn.creator?.name }}</span></p>
                             
                             <div class="mt-2 pt-2 border-t border-gray-200">
                                 <p class="text-[10px] uppercase font-bold tracking-widest flex items-center gap-1"
-                                   :class="{
-                                       'text-blue-400': txn.source === 'telegram',
-                                       'text-neon-purple': txn.source === 'admin_panel' || !txn.source,
-                                       'text-amber-600': txn.source === 'partner_app'
-                                   }">
+                                   :class="{ 'text-blue-400': txn.source === 'telegram', 'text-neon-purple': txn.source === 'admin_panel' || !txn.source, 'text-amber-600': txn.source === 'partner_app' }">
                                     <span v-if="txn.source === 'telegram'">{{ $t('source_telegram') }}</span>
                                     <span v-else-if="txn.source === 'partner_app'">{{ $t('source_partner_app') }}</span>
                                     <span v-else>{{ $t('source_admin_panel') }}</span>
@@ -1002,8 +998,8 @@ const categoriesSummary = computed(() => {
         <div v-if="activeTab === 2" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-xl font-display font-bold text-gray-900 mb-6">{{ $t('ledger_history') }}</h2>
             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                <thead class="text-gray-500 border-b border-gray-200 uppercase tracking-widest text-[10px]">
-                    <tr>
+                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                         <th class="pb-3">{{ $t('date') }}</th>
                         <th class="pb-3">{{ $t('type') }}</th>
                         <th class="pb-3">{{ $t('amount') }}</th>
@@ -1014,7 +1010,7 @@ const categoriesSummary = computed(() => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="txn in historicalTransactions" :key="txn.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <tr v-for="txn in historicalTransactions" :key="txn.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                         <td class="py-4 text-gray-500">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</td>
                         <td class="py-4">
                             <span class="px-2 py-1 rounded text-[10px] uppercase tracking-wider" :class="txn.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'">
@@ -1262,7 +1258,7 @@ const categoriesSummary = computed(() => {
                         <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 text-xl leading-none">&times;</button>
                     </div>
                     
-                    <div v-if="showScheduleDropdown && filteredContracts.length > 0" class="absolute z-50 w-full mt-1 bg-[#111] border border-gray-300 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                    <div v-if="showScheduleDropdown && filteredContracts.length > 0" class="absolute z-50 w-full mt-1 bg-[#111] border border-gray-300 rounded-xl max-h-60 overflow-y-auto custom-scrollbar">
                         <div 
                             v-for="c in filteredContracts" 
                             :key="c.id" 
@@ -1320,7 +1316,7 @@ const categoriesSummary = computed(() => {
                 <!-- Active Liabilities List -->
                 <div v-for="liability in financialLiabilities" :key="liability.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
                     <div class="absolute right-0 top-0 p-4 flex gap-2">
-                        <button @click="openEditLiability(liability)" class="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] uppercase tracking-widest font-mono transition-all">
+                        <button @click="openEditLiability(liability)" class="px-3 py-1 rounded hover:bg-white/20 text-gray-900 text-[10px] uppercase tracking-widest font-mono transition-all">
                             ✏️ Tahrirlash
                         </button>
                         <button @click="deleteLiability(liability.id)" class="px-3 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-[10px] uppercase tracking-widest font-mono transition-all" title="O'chirish">
@@ -1363,7 +1359,7 @@ const categoriesSummary = computed(() => {
                             <span>To'langan: {{ $currency((liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span>
                             <span>Qoldiq: {{ $currency(liability.total_amount - (liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span>
                         </div>
-                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                        <div class="w-full rounded-full h-1.5">
                             <div class="bg-emerald-600 h-1.5 rounded-full" :style="{ width: Math.min(100, ((liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0) / (liability.total_amount || 1)) * 100) + '%' }"></div>
                         </div>
                     </div>
@@ -1435,7 +1431,7 @@ const categoriesSummary = computed(() => {
                     </div>
 
                     <button v-if="s.balance > 0" @click="openSupplierPaymentModal(s)" class="w-full py-3 bg-emerald-50 border border-emerald-500 text-emerald-600 font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-emerald-600 hover:text-black transition-all">{{ $t('pay_liability') }}</button>
-                    <button v-else-if="s.balance < 0" class="w-full py-3 bg-white/5 border border-gray-200 text-gray-900 font-bold font-mono text-sm uppercase tracking-widest rounded-xl cursor-not-allowed opacity-50">{{ $t('withdraw_money') }}</button>
+                    <button v-else-if="s.balance < 0" class="w-full py-3 border border-gray-200 text-gray-900 font-bold font-mono text-sm uppercase tracking-widest rounded-xl cursor-not-allowed opacity-50">{{ $t('withdraw_money') }}</button>
                 </div>
                 
                 <div v-if="!suppliers || suppliers.length === 0" class="col-span-full py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">{{ $t('no_suppliers') }}</div>
@@ -1558,8 +1554,8 @@ const categoriesSummary = computed(() => {
                         <div class="flex justify-between items-start mb-4">
                             <h3 class="text-xl font-bold text-gray-900 font-display uppercase tracking-widest">{{ cat.name }}</h3>
                             <div class="flex gap-2">
-                                <a :href="route('admin.finance.transactions.export.category.excel', { category: cat.name })" target="_blank" class="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded text-[10px] font-mono hover:bg-green-500 hover:text-gray-900 transition-colors">EXCEL</a>
-                                <a :href="route('admin.finance.transactions.export.category.pdf', { category: cat.name })" target="_blank" class="px-2 py-1 bg-red-500/20 text-red-400 border border-red-200 rounded text-[10px] font-mono hover:bg-red-500 hover:text-gray-900 transition-colors">PDF</a>
+                                <a :href="route('admin.finance.transactions.export.category.excel', { category: cat.name })" target="_blank" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">EXCEL</a>
+                                <a :href="route('admin.finance.transactions.export.category.pdf', { category: cat.name })" target="_blank" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">PDF</a>
                             </div>
                         </div>
                         <div class="space-y-2 font-mono text-sm">
@@ -1585,7 +1581,7 @@ const categoriesSummary = computed(() => {
     </div>
 
         <!-- Edit Supplier Modal -->
-        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-blue-200 shadow-sm">
                 <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">Tahrirlash: {{ editSupplierForm.company_name || editSupplierForm.name }}</h3>
@@ -1613,7 +1609,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- Supplier Payment Modal -->
-        <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-emerald-200 shadow-sm">
                 <button @click="showSupplierPaymentModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">To'lov: {{ selectedSupplier?.company_name || selectedSupplier?.name }}</h3>
@@ -1649,7 +1645,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- RECEIPT MODAL -->
-        <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white text-black p-4 md:p-8 rounded border border-gray-300 w-full max-w-sm shadow-sm">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
@@ -1694,7 +1690,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- CONTRACT APPROVE MODAL -->
-        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('contract_payment_distribution') }}</h2>
                 <div class="mb-6 bg-gray-900/50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
@@ -1722,7 +1718,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- NEW LIABILITY MODAL -->
-        <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('add_new_liability') }}</h2>
                 <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
@@ -1789,7 +1785,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- PAYMENT MODAL -->
-        <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-emerald-200 w-full max-w-sm shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('liability_payment') }}</h2>
                 <div class="mb-6 font-mono text-xs">
@@ -1825,7 +1821,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- SCHEDULE MODAL -->
-        <div v-if="showScheduleModal && selectedLiabilityForSchedule" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showScheduleModal && selectedLiabilityForSchedule" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-[#111] text-gray-900 p-6 rounded-2xl border border-blue-200 w-full max-w-2xl shadow-sm flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>
@@ -1837,8 +1833,8 @@ const categoriesSummary = computed(() => {
                 
                 <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-100 rounded-xl">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
-                        <thead class="bg-white/5 sticky top-0 z-10 text-[10px] uppercase text-gray-500">
-                            <tr>
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-3">#</th>
                                 <th class="p-3">{{ $t('date_label') }}</th>
                                 <th class="p-3">{{ $t('main_debt') }}</th>
@@ -1848,7 +1844,7 @@ const categoriesSummary = computed(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
-                            <tr v-for="row in generatedSchedule" :key="row.month" class="hover:bg-gray-50 transition-colors">
+                            <tr v-for="row in generatedSchedule" :key="row.month" class="hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="p-3 text-gray-500">{{ row.month }}</td>
                                 <td class="p-3">{{ row.date }}</td>
                                 <td class="p-3 text-gray-900">{{ $currency(row.principal) }}</td>

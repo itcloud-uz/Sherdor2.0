@@ -106,10 +106,10 @@ const handleFileUpload = async (event) => {
         <div class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
+                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
                         ←
                     </Link>
-                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-green/50  flex items-center gap-3 hidden">
+                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-green/50 flex items-center gap-3 hidden">
                         <span class="text-emerald-600">📝</span> Shartnomalar
                     </h1>
                 </div>
@@ -121,8 +121,8 @@ const handleFileUpload = async (event) => {
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
                 <div class="overflow-x-auto">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest bg-gray-900/50">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest /50 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-4 font-medium rounded-tl-xl">Raqami</th>
                                 <th class="p-4 font-medium">Ta'minotchi</th>
                                 <th class="p-4 font-medium">Boshlanish</th>
@@ -132,18 +132,18 @@ const handleFileUpload = async (event) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="c in contracts" :key="c.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                            <tr v-for="c in contracts" :key="c.id" class="border-b border-gray-100 hover: transition-colors group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="p-4 text-blue-600 font-bold">{{ c.contract_number }}</td>
                                 <td class="p-4 text-gray-900">{{ c.supplier?.company_name || c.supplier?.name }}</td>
                                 <td class="p-4 text-gray-600">{{ c.start_date }}</td>
                                 <td class="p-4 text-gray-600">{{ c.end_date || '-' }}</td>
                                 <td class="p-4 text-right text-emerald-600 font-bold">{{ formatMoney(c.total_amount) }}</td>
                                 <td class="p-4 text-right">
-                                    <span v-if="c.status === 'active'" class="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] uppercase rounded">Faol</span>
+                                    <span v-if="c.status === 'active'" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">Faol</span>
                                     <span v-else class="px-2 py-1 bg-text-muted/20 text-gray-500 border border-text-muted/30 text-[10px] uppercase rounded">{{ c.status }}</span>
                                 </td>
                             </tr>
-                            <tr v-if="contracts.length === 0">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="contracts.length === 0">
                                 <td colspan="6" class="p-12 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Shartnomalar yo'q</td>
                             </tr>
                         </tbody>
@@ -153,7 +153,7 @@ const handleFileUpload = async (event) => {
         </div>
 
         <!-- YANGA SHARTNOMA MODAL -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-lg p-6 rounded-2xl border border-emerald-200 shadow-sm relative">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 

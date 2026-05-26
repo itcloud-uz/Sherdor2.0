@@ -53,8 +53,8 @@ const formatMoney = (amount) => {
                 
                 <div class="overflow-x-auto">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                        <thead>
-                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="py-3 font-medium">{{ $t('date_label') }}</th>
                                 <th class="py-3 font-medium">Tur</th>
                                 <th class="py-3 font-medium">Mahsulot</th>
@@ -63,7 +63,7 @@ const formatMoney = (amount) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="t in recent_transactions" :key="t.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <tr v-for="t in recent_transactions" :key="t.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="py-3 text-gray-600">{{ new Date(t.created_at).toLocaleString() }}</td>
                                 <td class="py-3">
                                     <span v-if="t.type === 'in'" class="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-200">{{ $t('income') }}</span>
@@ -73,7 +73,7 @@ const formatMoney = (amount) => {
                                 <td class="py-3 text-right text-blue-600 font-bold">{{ t.type === 'in' ? '+' : '-' }}{{ t.quantity }} {{ t.item?.unit }}</td>
                                 <td class="py-3 text-gray-600">{{ t.user?.name || 'Tizim' }}</td>
                             </tr>
-                            <tr v-if="recent_transactions.length === 0">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="recent_transactions.length === 0">
                                 <td colspan="5" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Harakatlar yo'q</td>
                             </tr>
                         </tbody>

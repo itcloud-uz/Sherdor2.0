@@ -36,7 +36,7 @@ function formatDate(dateString) {
     <AdminLayout>
         <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-2xl animate-[fadeIn_0.5s_ease-out]">
             <div class="mb-6 border-b border-gray-200 pb-4 flex items-center gap-4">
-                <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-neon-primary/20 border border-gray-200 hover:border-neon-primary flex items-center justify-center text-gray-900 hover:text-neon-primary transition-all group">
+                <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl hover:bg-neon-primary/20 border border-gray-200 hover:border-neon-primary flex items-center justify-center text-gray-900 hover:text-neon-primary transition-all group">
                     <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 </Link>
                 <div>
@@ -52,7 +52,7 @@ function formatDate(dateString) {
                     :key="key"
                     @click="activeTab = key"
                     class="px-6 py-2 rounded-t-xl font-mono text-xs uppercase transition-all"
-                    :class="activeTab === key ? 'bg-white/10 text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-900'"
+                    :class="activeTab === key ? ' text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-900'"
                 >
                     {{ getTabLabel(key) }} ({{ groupedReceipts[key].length }})
                 </button>
@@ -80,10 +80,10 @@ function formatDate(dateString) {
                     </div>
 
                     <!-- Details Area -->
-                    <div class="p-4 bg-white/5">
+                    <div class="p-4">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-lg font-display font-bold text-gray-900">{{ formatCurrency(receipt.amount) }}</span>
-                            <span class="text-[9px] px-2 py-1 rounded bg-white/10 text-gray-900 font-mono" :class="{'bg-emerald-50 text-emerald-600': receipt.status === 'approved', 'bg-amber-50 text-amber-600': receipt.status === 'pending'}">
+                            <span class="text-[9px] px-2 py-1 rounded text-gray-900 font-mono" :class="{'bg-emerald-50 text-emerald-600': receipt.status === 'approved', 'bg-amber-50 text-amber-600': receipt.status === 'pending'}">
                                 {{ receipt.status }}
                             </span>
                         </div>
@@ -109,7 +109,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Image Preview Modal -->
-        <div v-if="previewImage" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm" @click="previewImage = null">
+        <div v-if="previewImage" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4" @click="previewImage = null">
             <button @click="previewImage = null" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900 transition-colors text-2xl z-[101]">✕</button>
             <div class="relative flex justify-center items-center rounded-lg shadow-sm overflow-hidden" style="width: 90vw; height: 90vh; max-width: 1200px;" @click.stop>
                 <template v-if="previewImage.endsWith('.pdf')">

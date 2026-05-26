@@ -114,10 +114,10 @@ const formatMoney = (amount) => {
         <div class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
+                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
                         ←
                     </Link>
-                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-magenta/50  flex items-center gap-3 hidden">
+                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-magenta/50 flex items-center gap-3 hidden">
                         <span class="text-indigo-600">🛒</span> Xarid Buyurtmalari (PO)
                     </h1>
                 </div>
@@ -133,7 +133,7 @@ const formatMoney = (amount) => {
                         <span v-if="order.status === 'pending'" class="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-mono tracking-widest uppercase rounded">Kutilmoqda</span>
                         <span v-if="order.status === 'delivered'" class="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-mono tracking-widest uppercase rounded">Qabul Qilindi</span>
                         
-                        <a :href="route('admin.warehouse.orders.pdf', order.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="PDF formatida yuklab olish">
+                        <a :href="route('admin.warehouse.orders.pdf', order.id)" target="_blank" class="px-3 py-1 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="PDF formatida yuklab olish">
                             PDF
                         </a>
                         <button @click="openEditModal(order)" class="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Tahrirlash">
@@ -167,8 +167,8 @@ const formatMoney = (amount) => {
                         <h4 class="text-[10px] font-mono text-gray-500 uppercase mb-3">Mahsulotlar ro'yxati:</h4>
                         <div class="overflow-x-auto">
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border border-gray-100 rounded-lg">
-                                <thead>
-                                    <tr class="bg-white/5 text-gray-500 text-[10px] uppercase">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="text-gray-500 text-[10px] uppercase bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <th class="p-2">Mahsulot</th>
                                         <th class="p-2 text-right">Miqdor</th>
                                         <th class="p-2 text-right">Narxi</th>
@@ -176,7 +176,7 @@ const formatMoney = (amount) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="item in order.items" :key="item.id" class="border-t border-gray-100">
+                                    <tr v-for="item in order.items" :key="item.id" class="border-t border-gray-100 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <td class="p-2 text-gray-900">{{ item.item_name }}</td>
                                         <td class="p-2 text-right text-blue-600">{{ item.quantity }} {{ item.unit }}</td>
                                         <td class="p-2 text-right text-gray-600">{{ formatMoney(item.unit_price) }}</td>
@@ -201,7 +201,7 @@ const formatMoney = (amount) => {
         </div>
 
         <!-- Add Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -235,7 +235,7 @@ const formatMoney = (amount) => {
                     </div>
 
                     <div class="space-y-3">
-                        <div v-for="(item, idx) in form.items" :key="idx" class="flex gap-3 items-start bg-white/5 p-3 rounded-xl border border-gray-100 relative">
+                        <div v-for="(item, idx) in form.items" :key="idx" class="flex gap-3 items-start p-3 rounded-xl border border-gray-100 relative">
                             <button v-if="form.items.length > 1" @click="removeItem(idx)" class="absolute top-2 right-2 text-red-600/50 hover:text-red-600">✕</button>
                             
                             <div class="flex-1">

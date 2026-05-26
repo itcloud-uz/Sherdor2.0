@@ -29,25 +29,25 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="crm" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
+                                <div class="px-4 py-3 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     CRM (Мижозлар)
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="hr" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
+                                <div class="px-4 py-3 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     HR (Ишчилар)
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="finance" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
+                                <div class="px-4 py-3 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     Молия
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="machinery" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
+                                <div class="px-4 py-3 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     Техника
                                 </div>
                             </label>
@@ -72,7 +72,7 @@
                     <div v-if="selectedFiles.length > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 p-6 bg-gray-900/50 rounded-2xl max-h-[250px] overflow-y-auto custom-scrollbar">
                         <h3 class="text-xs font-mono text-gray-900 mb-4 uppercase tracking-widest text-amber-600">Танланган Файллар ({{ selectedFiles.length }})</h3>
                         <div class="space-y-2">
-                            <div v-for="(file, i) in selectedFiles" :key="i" class="p-2 bg-white/5 border border-gray-100 rounded flex justify-between items-center group">
+                            <div v-for="(file, i) in selectedFiles" :key="i" class="p-2 border border-gray-100 rounded flex justify-between items-center group">
                                 <div class="text-[10px] text-gray-900 font-mono truncate max-w-[80%]">{{ file.name }}</div>
                                 <div class="text-[9px] text-gray-500 font-mono">{{ (file.size / 1024).toFixed(1) }} KB</div>
                             </div>
@@ -81,7 +81,7 @@
 
                     <!-- Progress Bar -->
                     <div v-if="uploadProgress > 0" class="w-full">
-                        <div class="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-1 w-full rounded-full overflow-hidden">
                             <div class="h-full bg-emerald-600 transition-all duration-300" :style="`width: ${uploadProgress}%`"></div>
                         </div>
                         <div class="text-right text-[10px] text-emerald-600 font-mono mt-1">Юкланмоқда... {{ uploadProgress }}%</div>

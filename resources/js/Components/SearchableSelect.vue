@@ -132,7 +132,7 @@ onUnmounted(() => {
         <!-- Dropdown Options -->
         <div 
             v-if="isOpen" 
-            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg shadow-xl backdrop-blur-sm border border-gray-300"
+            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-300"
             :style="{ 
                 backgroundColor: 'var(--dropdown-bg-color, #111111)',
                 color: 'var(--dropdown-text-color, #ffffff)'
@@ -161,7 +161,7 @@ onUnmounted(() => {
                     :key="index"
                     @click="selectOption(option)"
                     class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
-                    :class="{ 'bg-white/5 font-bold': getValue(option) === modelValue }"
+                    :class="{ ' font-bold': getValue(option) === modelValue }"
                 >
                     {{ getLabel(option) }}
                 </div>

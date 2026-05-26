@@ -632,10 +632,7 @@ const progressSeries = computed(() => {
                     v-for="building in buildings" 
                     :key="building.id"
                     @click="selectedBuilding = building"
-                    :class="[
-                        'bg-white border border-gray-200 shadow-sm rounded-xl p-4 cursor-pointer transition-all duration-300 border hover:border-blue-200',
-                        selectedBuilding?.id === building.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200'
-                    ]"
+                    :class="[ 'bg-white border border-gray-200 shadow-sm rounded-xl p-4 cursor-pointer transition-all duration-300 border hover:border-blue-200', selectedBuilding?.id === building.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200' ]"
                 >
                     <div class="flex items-center gap-3">
                         <div :class="['w-10 h-10 rounded-lg flex items-center justify-center border transition-all', selectedBuilding?.id === building.id ? 'bg-blue-50 border-blue-500 text-blue-600 shadow-sm' : 'bg-gray-900/50 border-gray-200 text-gray-900/50']">
@@ -679,7 +676,7 @@ const progressSeries = computed(() => {
                         
                         <div class="flex flex-col items-end gap-3 shrink-0">
                             <div class="flex items-center gap-2">
-                                <button @click="openEditBuilding" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
+                                <button @click="openEditBuilding" class="px-3 py-1 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
                                     ✏️ Tahrirlash
                                 </button>
                                 <button v-if="isAdmin" @click="deleteBuilding" class="px-3 py-1 bg-indigo-50 border border-neon-magenta/50 text-indigo-600 text-[10px] font-mono rounded hover:bg-indigo-600 hover:text-black transition-all shadow-sm">
@@ -709,7 +706,7 @@ const progressSeries = computed(() => {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                     EXCEL YUKLAB OLISH
                                 </button>
-                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
                                     + QAVAT
                                 </button>
                             </div>
@@ -735,7 +732,7 @@ const progressSeries = computed(() => {
                                         </div>
                                         
                                         <div class="flex flex-wrap gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center bg-white/5 border border-gray-300 text-gray-900 text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
+                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center border border-gray-300 text-gray-900 text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
                                                 ✏️
                                             </button>
                                             <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-200 text-blue-600 text-xs rounded hover:bg-blue-600 hover:text-black transition-all" title="Xonadon qo'shish">
@@ -788,11 +785,11 @@ const progressSeries = computed(() => {
                             <!-- Unit Tooltip -->
                             <Teleport to="body">
                                 <div v-if="hoveredUnit" 
-                                     class="fixed z-50 pointer-events-none bg-gray-900/50 backdrop-blur-sm border border-gray-300 p-4 rounded-xl shadow-sm"
+                                     class="fixed z-50 pointer-events-none bg-gray-900/50 border border-gray-300 p-4 rounded-xl shadow-sm"
                                      :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
                                     <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2">
                                         {{ hoveredUnit.unit_number }} 
-                                        <span class="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-gray-900">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
+                                        <span class="text-[10px] font-mono px-2 py-0.5 rounded text-gray-900">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                     </h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
                                         <span class="text-gray-500">Maydoni:</span>
@@ -854,8 +851,8 @@ const progressSeries = computed(() => {
                                 <h4 class="text-xs font-mono text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-sm font-mono">
-                                        <thead>
-                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
+                                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                                 <th class="py-3 px-2">Bino / Qavat</th>
                                                 <th class="py-3 px-2">Raqam</th>
                                                 <th class="py-3 px-2">Turi</th>
@@ -865,7 +862,7 @@ const progressSeries = computed(() => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover:bg-gray-50">
+                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover: bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                                 <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
                                                 <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
                                                 <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
@@ -873,7 +870,7 @@ const progressSeries = computed(() => {
                                                 <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
                                                 <td class="py-3 px-2 text-emerald-600 text-right">{{ $currency(unit.price) }}</td>
                                             </tr>
-                                            <tr v-if="searchResults.length === 0">
+                                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="searchResults.length === 0">
                                                 <td colspan="6" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Hech narsa topilmadi</td>
                                             </tr>
                                         </tbody>
@@ -886,7 +883,7 @@ const progressSeries = computed(() => {
                         <div v-if="activeTab === 'progress'" class="animate-fade-in space-y-6">
                             <div class="flex justify-between items-center">
                                 <h3 class="text-sm font-mono text-amber-600 uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
-                                <button @click="showAddStageModal = true" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                <button @click="showAddStageModal = true" class="px-3 py-1 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
                                     + {{ $t('add_stage') }}
                                 </button>
                             </div>
@@ -1266,9 +1263,9 @@ const progressSeries = computed(() => {
 
         <!-- Sell Unit Modal (Create Contract) -->
         <div v-if="showSellUnitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showSellUnitModal = false"></div>
+            <div class="absolute inset-0 bg-gray-900/50" @click="showSellUnitModal = false"></div>
             <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-emerald-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest  shadow-neon-green/50">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-green/50">
                     {{ $t('add') }} {{ $t('contract') }}
                 </h2>
                 <form @submit.prevent="submitContract" class="space-y-4">

@@ -376,8 +376,8 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
         </div>
 
         <!-- MODAL: LOST LEADS -->
-        <div v-if="showLostLeadsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-all">
-            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div v-if="showLostLeadsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 transition-all">
+            <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <h2 class="text-xl font-display font-bold text-gray-900 uppercase tracking-wide">{{ $t('lost_leads') }}</h2>
                     <button @click="showLostLeadsModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">

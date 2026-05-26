@@ -253,10 +253,10 @@ const sendToTelegram = (id) => {
         <div class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
+                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
                         ←
                     </Link>
-                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-yellow/50  flex items-center gap-3 hidden">
+                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-yellow/50 flex items-center gap-3 hidden">
                         <span class="text-amber-600">🏢</span>{{ $t('suppliers') }}</h1>
                 </div>
                 
@@ -272,8 +272,8 @@ const sendToTelegram = (id) => {
             <div v-if="!selectedSupplierView" class="bg-white border border-gray-200 shadow-sm rounded-xl p-1 rounded-2xl border border-gray-200 relative overflow-hidden animate-[fadeIn_0.3s_ease-out]">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm font-mono border-collapse">
-                        <thead>
-                            <tr class="bg-gray-900/50 text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-200">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="/50 text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-4 rounded-tl-xl">Kompaniya / Vakil</th>
                                 <th class="p-4">Telefon</th>
                                 <th class="p-4">Buyurtmalar</th>
@@ -282,7 +282,7 @@ const sendToTelegram = (id) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="s in suppliers" :key="s.id" @click="selectedSupplierView = s" class="border-b border-gray-100 hover:bg-gray-50 transition-all cursor-pointer group">
+                            <tr v-for="s in suppliers" :key="s.id" @click="selectedSupplierView = s" class="border-b border-gray-100 hover: transition-all cursor-pointer group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="p-4">
                                     <div class="font-bold text-gray-900 font-display group-hover:text-amber-600 transition-colors">{{ s.company_name || s.name }}</div>
                                     <div class="text-[10px] text-gray-500 uppercase mt-1">{{ s.name }}</div>
@@ -296,7 +296,7 @@ const sendToTelegram = (id) => {
                                 </td>
                                 <td class="p-4 text-center" @click.stop>
                                     <div class="flex items-center justify-center gap-2">
-                                        <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg bg-white/5 border border-gray-200 hover:bg-white/20 text-gray-900 flex items-center justify-center transition-all" title="Tahrirlash">
+                                        <button @click="openEditModal(s)" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-white/20 text-gray-900 flex items-center justify-center transition-all" title="Tahrirlash">
                                             ✏️
                                         </button>
                                         <button @click="deleteSupplier(s.id)" class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-200 text-red-400 hover:bg-red-500 hover:text-gray-900 flex items-center justify-center transition-all" title="O'chirish">
@@ -305,7 +305,7 @@ const sendToTelegram = (id) => {
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-if="suppliers.length === 0">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="suppliers.length === 0">
                                 <td colspan="5" class="p-12 text-center text-gray-500 font-mono text-xs border border-dashed border-gray-200 rounded-xl">
                                     Hozircha ta'minotchilar yo'q.
                                 </td>
@@ -324,10 +324,10 @@ const sendToTelegram = (id) => {
                 <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-amber-200 relative shadow-sm">
                     <!-- Edit & Delete Buttons -->
                     <div class="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2">
-                        <a :href="route('admin.warehouse.suppliers.ledger', selectedSupplierView.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
+                        <a :href="route('admin.warehouse.suppliers.ledger', selectedSupplierView.id)" target="_blank" class="px-3 py-1 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (PDF) yuklab olish">
                             PDF
                         </a>
-                        <a :href="route('admin.warehouse.suppliers.ledger.excel', selectedSupplierView.id)" target="_blank" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (Excel) yuklab olish">
+                        <a :href="route('admin.warehouse.suppliers.ledger.excel', selectedSupplierView.id)" target="_blank" class="px-3 py-1 border border-gray-300 text-gray-900 hover:bg-white hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Hisobot (Excel) yuklab olish">
                             EXCEL
                         </a>
                         <button @click="openAddOrderModal(selectedSupplierView)" class="px-3 py-1 bg-indigo-50 border border-neon-magenta/30 text-indigo-600 hover:bg-indigo-600 hover:text-black transition-all rounded text-[10px] font-mono uppercase tracking-widest" title="Yangi Buyurtma">
@@ -370,7 +370,7 @@ const sendToTelegram = (id) => {
                     <!-- Document Attachment Section -->
                     <div class="pt-4 border-t border-gray-200">
                         <div v-if="!selectedSupplierView.document_path" class="flex items-center justify-start max-w-sm">
-                            <button @click="triggerUpload(selectedSupplierView.id)" class="w-full py-3 bg-white/5 border border-dashed border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-1000 text-[10px] font-mono uppercase tracking-widest rounded transition-all">
+                            <button @click="triggerUpload(selectedSupplierView.id)" class="w-full py-3 border border-dashed border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-1000 text-[10px] font-mono uppercase tracking-widest rounded transition-all">
                                 📎 Hujjat Biriktirish
                             </button>
                         </div>
@@ -404,8 +404,8 @@ const sendToTelegram = (id) => {
                                 <h5 class="text-center bg-gray-900/50 py-2 border-b border-gray-200 text-[10px] font-bold uppercase tracking-widest text-blue-600">{{ category }}</h5>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-[10px] font-mono border-collapse">
-                                        <thead class="bg-white/5 text-gray-500">
-                                            <tr>
+                                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                                 <th class="p-2 border-b border-r border-gray-200 text-center">№</th>
                                                 <th class="p-2 border-b border-r border-gray-200">Sana</th>
                                                 <th class="p-2 border-b border-r border-gray-200">O'lcham</th>
@@ -416,7 +416,7 @@ const sendToTelegram = (id) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="(item, idx) in items" :key="idx" class="border-b border-gray-100 hover:bg-gray-50">
+                                            <tr v-for="(item, idx) in items" :key="idx" class="border-b border-gray-100 hover: bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                                 <td class="p-2 border-r border-gray-100 text-center text-gray-600">{{ idx + 1 }}</td>
                                                 <td class="p-2 border-r border-gray-100 text-gray-900">{{ item.date }}</td>
                                                 <td class="p-2 border-r border-gray-100 text-amber-600">{{ item.size || '-' }}</td>
@@ -427,7 +427,7 @@ const sendToTelegram = (id) => {
                                             </tr>
                                         </tbody>
                                         <tfoot>
-                                            <tr class="bg-gray-900/50">
+                                            <tr class="/50 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                                 <td colspan="6" class="p-2 text-right font-bold border-r border-gray-200">Jami ({{ category }}):</td>
                                                 <td class="p-2 text-right font-bold text-red-600">{{ formatMoney(items.reduce((acc, curr) => acc + curr.total_price, 0)) }}</td>
                                             </tr>
@@ -444,8 +444,8 @@ const sendToTelegram = (id) => {
                         <h4 class="text-xs font-mono text-gray-900 uppercase tracking-widest mb-4">To'lovlar Tarixi (Chiqim):</h4>
                         <div class="overflow-x-auto bg-gray-900/50 rounded-xl border border-gray-100">
                             <table class="w-full text-left text-sm font-mono border-collapse">
-                                <thead class="bg-gray-900/50 backdrop-blur">
-                                    <tr class="text-gray-500 text-[10px] uppercase border-b border-gray-200">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="text-gray-500 text-[10px] uppercase border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <th class="p-3">Sana</th>
                                         <th class="p-3">To'lov Turi</th>
                                         <th class="p-3">Izoh</th>
@@ -453,13 +453,13 @@ const sendToTelegram = (id) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="p in getPayments(selectedSupplierView)" :key="p.id" class="border-b border-gray-100 hover:bg-gray-50 bg-emerald-50 transition-colors">
+                                    <tr v-for="p in getPayments(selectedSupplierView)" :key="p.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                         <td class="p-3 text-gray-900">{{ p.transaction_date }}</td>
                                         <td class="p-3 text-emerald-600 uppercase text-xs">{{ p.payment_method }}</td>
                                         <td class="p-3 text-gray-600 text-xs">{{ p.notes || '-' }}</td>
                                         <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(p.amount) }}</td>
                                     </tr>
-                                    <tr v-if="getPayments(selectedSupplierView).length === 0">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="getPayments(selectedSupplierView).length === 0">
                                         <td colspan="4" class="p-6 text-center text-xs text-gray-500">To'lovlar topilmadi.</td>
                                     </tr>
                                 </tbody>
@@ -471,7 +471,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Add/Edit Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-xl p-4 md:p-8 rounded-2xl border border-amber-200 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -508,7 +508,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Payment Modal -->
-        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md p-4 md:p-8 rounded-2xl border border-emerald-200 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -552,7 +552,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Add Order Modal -->
-        <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showOrderModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -578,7 +578,7 @@ const sendToTelegram = (id) => {
                     </div>
 
                     <div class="space-y-3">
-                        <div v-for="(item, idx) in orderForm.items" :key="idx" class="flex flex-wrap gap-3 items-start bg-white/5 p-3 rounded-xl border border-gray-100 relative">
+                        <div v-for="(item, idx) in orderForm.items" :key="idx" class="flex flex-wrap gap-3 items-start p-3 rounded-xl border border-gray-100 relative">
                             <button v-if="orderForm.items.length > 1" @click="removeOrderItem(idx)" class="absolute top-2 right-2 text-red-600/50 hover:text-red-600">✕</button>
                             
                             <div class="flex-1 min-w-[150px]">

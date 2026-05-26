@@ -51,7 +51,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
 </script>
 
 <template>
-    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 animate-[fadeIn_0.3s_ease-out]">
         <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-0 rounded-2xl relative border border-gray-200 flex flex-col max-h-[90vh]">
             
             <!-- Header -->
@@ -69,7 +69,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
 
             <!-- Content -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 relative">
-                <div v-if="isProcessing" class="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-10 rounded-b-2xl">
+                <div v-if="isProcessing" class="absolute inset-0 flex items-center justify-center bg-gray-900/50 z-10 rounded-b-2xl">
                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
                 </div>
 

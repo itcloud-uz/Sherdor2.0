@@ -82,12 +82,12 @@ function reject(id) {
         <div class="space-y-6">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-neon-primary/20 border border-gray-200 hover:border-neon-primary flex items-center justify-center text-gray-900 hover:text-neon-primary transition-all group">
+                    <Link :href="route('admin.finance')" class="w-10 h-10 rounded-xl hover:bg-neon-primary/20 border border-gray-200 hover:border-neon-primary flex items-center justify-center text-gray-900 hover:text-neon-primary transition-all group">
                         <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     </Link>
                 </div>
                 
-                <div class="flex gap-2 p-1 bg-white/5 rounded-xl border border-gray-200">
+                <div class="flex gap-2 p-1 rounded-xl border border-gray-200">
                     <button 
                         @click="activeTab = 'pending'" 
                         class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
@@ -96,7 +96,7 @@ function reject(id) {
                     <button 
                         @click="activeTab = 'history'" 
                         class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                        :class="activeTab === 'history' ? 'bg-white/20 text-gray-900' : 'text-gray-500 hover:text-gray-900'"
+                        :class="activeTab === 'history' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900'"
                     >Tarix</button>
                 </div>
             </div>
@@ -144,8 +144,8 @@ function reject(id) {
             <div v-if="activeTab === 'history'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
                 <div class="overflow-x-auto">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-200 text-xs font-mono text-gray-500 uppercase">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                            <tr class="border-b border-gray-200 text-xs font-mono text-gray-500 uppercase bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <th class="p-3">{{ $t('date_label') }}</th>
                                 <th class="p-3">Operator</th>
                                 <th class="p-3">Tur</th>
@@ -154,7 +154,7 @@ function reject(id) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="req in history" :key="req.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <tr v-for="req in history" :key="req.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                 <td class="p-3 text-sm text-gray-600">{{ new Date(req.created_at).toLocaleString() }}</td>
                                 <td class="p-3 text-sm text-gray-900">{{ req.user?.name }}</td>
                                 <td class="p-3 text-sm text-gray-900">{{ formatType(req.type) }}</td>
@@ -163,7 +163,7 @@ function reject(id) {
                                 </td>
                                 <td class="p-3 text-xs text-gray-500">{{ req.reviewer_notes || '-' }}</td>
                             </tr>
-                            <tr v-if="history.length === 0">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="history.length === 0">
                                 <td colspan="5" class="p-6 text-center text-gray-500 text-sm">Tarix bo'sh</td>
                             </tr>
                         </tbody>
@@ -174,7 +174,7 @@ function reject(id) {
         </div>
 
         <!-- APPROVAL MODAL (Financial) -->
-        <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+        <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md p-6 rounded-2xl border border-blue-200 shadow-sm relative">
                 <button @click="closeApproveModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 

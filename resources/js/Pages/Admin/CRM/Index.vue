@@ -1513,61 +1513,61 @@ function openQuickSmsModal(lead) {
 
         <!-- MODAL: CREATE / EDIT CLIENT -->
         <div v-if="showCreateClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-cyan/30">
-                <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-cyan/50">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
+            <div class="relative bg-white p-6 rounded-lg w-full max-w-lg border border-gray-200 shadow-xl">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">
                     {{ isEditingClient ? t('edit_client') : $t('add') + ' ' + $t('client') }}
                 </h2>
                 <form @submit.prevent="saveClient" class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
-                        <input v-model="clientForm.created_at" type="date" class="glass-input w-full text-neon-cyan" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
+                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
+                        <input v-model="clientForm.created_at" type="date" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('first_name') }}</label>
-                            <input v-model="clientForm.first_name" type="text" class="glass-input w-full" required>
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('first_name') }}</label>
+                            <input v-model="clientForm.first_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('last_name') }}</label>
-                            <input v-model="clientForm.last_name" type="text" class="glass-input w-full" required>
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('last_name') }}</label>
+                            <input v-model="clientForm.last_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Otasining ismi</label>
-                            <input v-model="clientForm.middle_name" type="text" class="glass-input w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">Otasining ismi</label>
+                            <input v-model="clientForm.middle_name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport_series') }}</label>
-                            <input v-model="clientForm.passport_series" type="text" class="glass-input w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_series') }}</label>
+                            <input v-model="clientForm.passport_series" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('pinfl') }}</label>
-                            <input v-model="clientForm.pinfl" type="text" class="glass-input w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('pinfl') }}</label>
+                            <input v-model="clientForm.pinfl" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('address') }}</label>
-                        <input v-model="clientForm.address" type="text" class="glass-input w-full">
+                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('address') }}</label>
+                        <input v-model="clientForm.address" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
-                            <input v-model="clientForm.passport_issued_date" type="date" class="glass-input w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
+                            <input v-model="clientForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('issued_by') }}</label>
-                            <input v-model="clientForm.passport_issued_by" type="text" class="glass-input w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('issued_by') }}</label>
+                            <input v-model="clientForm.passport_issued_by" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('phone_number') }}</label>
-                        <input v-model="clientForm.phone" type="text" class="glass-input w-full">
+                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('phone_number') }}</label>
+                        <input v-model="clientForm.phone" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showCreateClientModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#00F0FF] transition-all disabled:opacity-50">{{ $t('save') }}</button>
+                        <button type="button" @click="showCreateClientModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>

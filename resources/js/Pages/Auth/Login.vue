@@ -61,7 +61,7 @@ const installPWA = async () => {
         <div class="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out] px-2 sm:px-0">
             
             <div class="text-center mb-6 sm:mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] sm:rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-4 sm:mb-6 backdrop-blur-xl">
+                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] sm:rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-4 sm:mb-6 ">
                     <span class="font-display font-black text-3xl sm:text-4xl text-black">S</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-widest">{{ $t('sher_dor') }}</h1>
@@ -69,7 +69,7 @@ const installPWA = async () => {
             </div>
 
             <!-- Apple Glassmorphism Panel -->
-            <div class="bg-white/5 p-6 sm:p-4 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
+            <div class="bg-white/5 p-6 sm:p-4 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] ">
                 
                 <div v-if="status" class="mb-6 text-sm font-medium text-green-400 bg-green-400/10 border border-green-400/20 p-3 rounded-xl text-center">
                     {{ status }}
@@ -85,7 +85,7 @@ const installPWA = async () => {
                             required
                             autofocus
                             autocomplete="username"
-                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all backdrop-blur-md"
+                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all "
                             placeholder="admin@itcloud.uz"
                         />
                         <p v-if="form.errors.email" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.email }}</p>
@@ -99,7 +99,7 @@ const installPWA = async () => {
                             v-model="form.password"
                             required
                             autocomplete="current-password"
-                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all backdrop-blur-md"
+                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all "
                             placeholder="••••••••"
                         />
                         <p v-if="form.errors.password" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.password }}</p>
@@ -107,7 +107,7 @@ const installPWA = async () => {
 
                     <div class="flex items-center justify-between mt-2">
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox" v-model="form.remember" class="w-5 h-5 rounded-md border-white/20 bg-black/50 text-white focus:ring-white/50 focus:ring-offset-black transition-all">
+                            <input type="checkbox" v-model="form.remember" class="w-5 h-5 rounded-md border-white/20 bg-gray-500/50 text-white focus:ring-white/50 focus:ring-offset-black transition-all">
                             <span class="text-sm text-gray-400 group-hover:text-white transition-colors">Eslab qolish</span>
                         </label>
 

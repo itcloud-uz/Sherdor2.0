@@ -68,7 +68,7 @@ onUnmounted(() => {
     <div class="min-h-screen bg-gray-50 text-gray-900 flex relative overflow-hidden font-sans">
         
         <!-- Mobile Overlay -->
-        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 md:hidden"></div>
+        <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-gray-500/50  z-40 md:hidden"></div>
 
         <!-- Sidebar -->
         <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-64 h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">

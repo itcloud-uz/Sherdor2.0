@@ -43,7 +43,7 @@ function currentLang() {
         >
             <div 
                 v-if="isOpen" 
-                class="absolute right-0 mt-2 w-32 rounded-xl bg-gray-900/50 border border-gray-200 shadow-depth overflow-hidden z-50"
+                class="absolute right-0 mt-2 w-32 rounded-xl bg-gray-500/50 border border-gray-200 shadow-depth overflow-hidden z-50"
             >
                 <div class="py-1">
                     <button 

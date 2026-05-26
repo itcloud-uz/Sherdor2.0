@@ -112,7 +112,7 @@ function reject(id) {
                         
                         <p class="text-sm text-gray-600 mb-2">Operator: <span class="text-gray-900 font-bold">{{ req.user?.name }}</span></p>
                         
-                        <div class="bg-gray-900/50 rounded-lg p-3 text-xs font-mono text-gray-500 overflow-auto max-h-40 mb-4 border border-gray-100">
+                        <div class="bg-gray-500/50 rounded-lg p-3 text-xs font-mono text-gray-500 overflow-auto max-h-40 mb-4 border border-gray-100">
                             <pre v-if="req.type !== 'edit_contract'">{{ JSON.stringify(req.payload, null, 2) }}</pre>
                             <div v-else class="space-y-2">
                                 <p class="text-blue-600 font-bold mb-1">Taklif etilayotgan o'zgarishlar:</p>
@@ -174,7 +174,7 @@ function reject(id) {
         </div>
 
         <!-- APPROVAL MODAL (Financial) -->
-        <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md p-6 rounded-2xl border border-blue-200 shadow-sm relative">
                 <button @click="closeApproveModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -191,7 +191,7 @@ function reject(id) {
                     
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Qaysi Hisob (Kassa) orqali?</label>
-                        <select v-model="approveForm.account_type" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-blue-500 transition-colors">
+                        <select v-model="approveForm.account_type" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-blue-500 transition-colors">
                             <option value="main">Asosiy Kassa (Naqd)</option>
                             <option value="bank">Bank Hisobi (Pul o'tkazma)</option>
                             <option value="credit">Kredit Hisobi</option>
@@ -201,7 +201,7 @@ function reject(id) {
                     
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Izoh (Admin Note)</label>
-                        <input v-model="approveForm.notes" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-2 text-gray-900 text-sm" placeholder="Tasdiqlash bo'yicha izoh">
+                        <input v-model="approveForm.notes" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-2 text-gray-900 text-sm" placeholder="Tasdiqlash bo'yicha izoh">
                     </div>
                 </div>
                 

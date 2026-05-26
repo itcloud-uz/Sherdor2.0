@@ -315,7 +315,7 @@ function vote(voteId, action) {
         <!-- ADD TRANSACTION MODAL -->
         <div v-if="showAddModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <!-- Backdrop -->
-            <div @click="showAddModal = false" class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+            <div @click="showAddModal = false" class="absolute inset-0 bg-gray-500/50 "></div>
             
             <!-- Modal Content -->
             <div class="glass-panel p-6 rounded-2xl border border-white/10 w-full max-w-md relative z-10 animate-[fadeIn_0.3s_ease-out]">
@@ -326,26 +326,26 @@ function vote(voteId, action) {
                 <form @submit.prevent="submitTransaction(); showAddModal = false;" class="space-y-4">
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('type_label') }}</label>
-                        <select v-model="txForm.type" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <select v-model="txForm.type" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                             <option value="expense">Chiqim (Xarajat)</option>
                             <option value="income">Kirim (Tushum)</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Summa (UZS)</label>
-                        <input type="number" v-model="txForm.amount" required class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <input type="number" v-model="txForm.amount" required class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Kategoriya</label>
-                        <input type="text" v-model="txForm.category" required class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <input type="text" v-model="txForm.category" required class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Izoh / Maqsad</label>
-                        <textarea v-model="txForm.notes" rows="2" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all"></textarea>
+                        <textarea v-model="txForm.notes" rows="2" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Chek nusxasi (Fayl)</label>
-                        <input type="file" @change="e => txForm.attachment = e.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
+                        <input type="file" @change="e => txForm.attachment = e.target.files[0]" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
                     </div>
                     
                     <button type="submit" :disabled="isProcessing" class="w-full mt-6 bg-gradient-to-r from-neon-magenta to-neon-red text-white py-4 rounded-xl font-display font-bold tracking-widest uppercase hover:shadow-[0_0_20px_rgba(255,0,60,0.5)] transition-all">
@@ -365,7 +365,7 @@ function vote(voteId, action) {
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                         <div v-for="tx in transactions" :key="'tx-'+tx.id" class="glass-card p-4 rounded-xl border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-black/50 border border-white/10 shrink-0"
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-500/50 border border-white/10 shrink-0"
                                      :class="tx.type === 'income' ? 'text-neon-green shadow-[0_0_10px_rgba(57,255,20,0.2)]' : 'text-neon-red shadow-[0_0_10px_rgba(255,0,60,0.2)]'">
                                     {{ tx.type === 'income' ? '↓' : '↑' }}
                                 </div>

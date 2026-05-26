@@ -12,7 +12,7 @@ const customBg = computed(() => page.props.branding?.background_image_path);
 <template>
     <!-- CUSTOM BACKGROUND IMAGE OVERLAY -->
     <template v-if="customBg">
-        <div class="fixed inset-0 pointer-events-none z-0 bg-gray-900/50"></div>
+        <div class="fixed inset-0 pointer-events-none z-0 bg-gray-500/50"></div>
     </template>
     
     <template v-else>
@@ -23,7 +23,7 @@ const customBg = computed(() => page.props.branding?.background_image_path);
 
     <!-- APPLE GLASS THEME -->
     <template v-else-if="themeStyle === 'apple_glass'">
-        <div class="fixed inset-0 pointer-events-none z-0 bg-black">
+        <div class="fixed inset-0 pointer-events-none z-0 bg-white">
             <!-- macOS style vibrant mesh gradient orbs -->
             <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-indigo-600/40 to-purple-600/40 blur-[140px]"></div>
             <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-blue-500/40 to-cyan-400/40 blur-[140px]"></div>

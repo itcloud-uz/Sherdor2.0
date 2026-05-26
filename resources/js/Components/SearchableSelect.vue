@@ -101,7 +101,7 @@ onUnmounted(() => {
         <!-- Main Select Button -->
         <div 
             @click="toggleDropdown"
-            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 pr-8 cursor-pointer flex items-center min-h-[42px]"
+            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 pr-8 cursor-pointer flex items-center min-h-[42px]"
             :class="[disabled ? 'opacity-50 cursor-not-allowed' : '']"
             :style="{ 
                 borderColor: isOpen ? 'var(--color-neon-primary, #00F0FF)' : '',
@@ -144,7 +144,7 @@ onUnmounted(() => {
                     <input 
                         type="text" 
                         v-model="searchQuery" 
-                        class="w-full bg-gray-900/50 border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
+                        class="w-full bg-gray-500/50 border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
                         placeholder="Izlash..."
                         @click.stop
                     >

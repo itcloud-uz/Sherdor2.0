@@ -17,7 +17,7 @@ const page = usePage();
         <header class="h-20 md:h-24 glass-panel border-b border-gray-200 flex items-center justify-between px-4 md:px-8 z-50 relative">
             <div class="flex items-center gap-4 md:gap-8">
                 <div class="flex items-center gap-2 md:gap-3">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/50 border border-gray-200 flex items-center justify-center shadow-neon-primary overflow-hidden">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-500/50 border border-gray-200 flex items-center justify-center shadow-neon-primary overflow-hidden">
                         <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain" />
                         <span v-else class="text-neon-primary font-bold text-xl md:text-2xl font-display">O</span>
                     </div>
@@ -37,7 +37,7 @@ const page = usePage();
                 <div class="relative group">
                     <div class="w-10 h-10 md:w-12 md:h-12 rounded-full border border-gray-300 overflow-hidden cursor-pointer">
                         <img v-if="$page.props.auth.user.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center bg-black/50">
+                        <div v-else class="w-full h-full flex items-center justify-center bg-gray-500/50">
                             <span class="text-gray-900 font-bold">{{ $page.props.auth.user.name.charAt(0) }}</span>
                         </div>
                     </div>

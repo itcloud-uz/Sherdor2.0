@@ -63,7 +63,7 @@ function formatDate(dateString) {
                 <div v-for="receipt in groupedReceipts[activeTab]" :key="receipt.id" class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 hover:border-blue-200 transition-all rounded-xl overflow-hidden group cursor-pointer" @click="openPreview(receipt.attachment_path)">
                     
                     <!-- Image Area -->
-                    <div class="h-48 bg-gray-900/50 relative overflow-hidden flex items-center justify-center">
+                    <div class="h-48 bg-gray-50 relative overflow-hidden flex items-center justify-center">
                         <template v-if="receipt.attachment_path.endsWith('.pdf')">
                             <div class="text-center text-red-600">
                                 <span class="text-4xl mb-2 block">📄</span>
@@ -74,7 +74,7 @@ function formatDate(dateString) {
                             <img :src="'/storage/' + receipt.attachment_path" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         </template>
                         
-                        <div class="absolute inset-0 bg-gray-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div class="absolute inset-0 bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-xs font-bold font-mono rounded">Ko'rish</span>
                         </div>
                     </div>
@@ -109,7 +109,7 @@ function formatDate(dateString) {
         </div>
 
         <!-- Image Preview Modal -->
-        <div v-if="previewImage" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4" @click="previewImage = null">
+        <div v-if="previewImage" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 p-4" @click="previewImage = null">
             <button @click="previewImage = null" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900 transition-colors text-2xl z-[101]">✕</button>
             <div class="relative flex justify-center items-center rounded-lg shadow-sm overflow-hidden" style="width: 90vw; height: 90vh; max-width: 1200px;" @click.stop>
                 <template v-if="previewImage.endsWith('.pdf')">

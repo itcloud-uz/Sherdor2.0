@@ -98,11 +98,11 @@ const aiLogs = ref([
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('email') }}</label>
-                                        <input v-model="eskizEmail" type="email" class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan/50 outline-none" placeholder="eskiz@domain.uz" />
+                                        <input v-model="eskizEmail" type="email" class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan/50 outline-none" placeholder="eskiz@domain.uz" />
                                     </div>
                                     <div>
                                         <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('password') }}</label>
-                                        <input v-model="eskizPassword" type="password" class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan/50 outline-none" placeholder="••••••••" />
+                                        <input v-model="eskizPassword" type="password" class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan/50 outline-none" placeholder="••••••••" />
                                     </div>
                                     <button class="w-full px-6 py-2 bg-blue-50 border border-blue-200 text-blue-600 text-sm font-mono font-bold rounded-lg hover:bg-blue-600 hover:text-black transition-all shadow-sm hover:shadow-sm">
                                         {{ $t('connect_get_token') }}
@@ -127,7 +127,7 @@ const aiLogs = ref([
                             <div class="relative flex-1 flex flex-col max-h-[150px] mb-6">
                                 <textarea 
                                     v-model="newTemplateContent"
-                                    class="w-full flex-1 bg-gray-900/50 border border-gray-200 rounded-xl p-4 text-gray-900 font-mono text-sm focus:border-neon-purple focus:ring-1 focus:ring-neon-purple/50 transition-all resize-none shadow-inner"
+                                    class="w-full flex-1 bg-gray-500/50 border border-gray-200 rounded-xl p-4 text-gray-900 font-mono text-sm focus:border-neon-purple focus:ring-1 focus:ring-neon-purple/50 transition-all resize-none shadow-inner"
                                     placeholder="..."
                                 ></textarea>
                                 <div class="absolute bottom-4 right-4 flex items-center gap-4">
@@ -167,17 +167,17 @@ const aiLogs = ref([
                             <h3 class="text-sm font-display text-amber-600 mb-4">{{ $t('create_automation_rule') }}</h3>
                             <div class="flex flex-col lg:flex-row items-center gap-4 text-sm font-mono text-gray-900/80">
                                 <span>{{ $t('when') }}</span>
-                                <select class="bg-gray-900/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[200px]">
+                                <select class="bg-gray-500/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[200px]">
                                     <option value="new_contract">{{ $t('rule_new_contract') }}</option>
                                     <option value="payment_overdue">{{ $t('rule_payment_overdue') }}</option>
                                     <option value="birthday">{{ $t('rule_birthday') }}</option>
                                 </select>
                                 <span>{{ $t('happens_send') }}</span>
-                                <select class="bg-gray-900/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[200px]">
+                                <select class="bg-gray-500/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[200px]">
                                     <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
                                 </select>
                                 <span>{{ $t('at') }}</span>
-                                <select class="bg-gray-900/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[150px]">
+                                <select class="bg-gray-500/50 border border-gray-300 rounded px-3 py-2 text-gray-900 outline-none focus:border-amber-500 flex-1 lg:flex-none min-w-[150px]">
                                     <option value="immediate">{{ $t('time_immediate') }}</option>
                                     <option value="3_days_before">{{ $t('time_3_days_before') }}</option>
                                     <option value="daily_0900">{{ $t('time_daily_0900') }}</option>
@@ -200,7 +200,7 @@ const aiLogs = ref([
                                         <p class="text-xs font-mono text-gray-500">{{ $t('trigger') }}: <span class="text-blue-600">{{ rule.event_trigger }}</span> | {{ $t('template') }}: <span class="text-neon-purple">{{ rule.template?.name }}</span></p>
                                     </div>
                                     <div class="text-right flex items-center gap-4">
-                                        <span class="text-xs font-mono text-gray-900/50 bg-gray-900/50 px-2 py-1 rounded border border-gray-100">{{ rule.schedule_time }}</span>
+                                        <span class="text-xs font-mono text-gray-900/50 bg-gray-500/50 px-2 py-1 rounded border border-gray-100">{{ rule.schedule_time }}</span>
                                         <button class="text-xs font-mono text-indigo-600 hover:text-gray-900 transition-colors border border-neon-magenta/30 px-3 py-1 rounded bg-indigo-50">{{ $t('pause') }}</button>
                                     </div>
                                 </div>
@@ -221,7 +221,7 @@ const aiLogs = ref([
                                 <div class="space-y-4 relative z-10">
                                     <div>
                                         <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('select_target_audience') }}</label>
-                                        <select class="w-full bg-gray-900/50 border border-gray-200 rounded p-2 text-gray-900 text-sm font-mono focus:border-emerald-500 outline-none">
+                                        <select class="w-full bg-gray-500/50 border border-gray-200 rounded p-2 text-gray-900 text-sm font-mono focus:border-emerald-500 outline-none">
                                             <option>{{ $t('aud_all_clients') }}</option>
                                             <option>{{ $t('aud_active_debtors') }}</option>
                                             <option>{{ $t('aud_custom_list') }}</option>
@@ -229,7 +229,7 @@ const aiLogs = ref([
                                     </div>
                                     <div>
                                         <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('select_template') }}</label>
-                                        <select class="w-full bg-gray-900/50 border border-gray-200 rounded p-2 text-gray-900 text-sm font-mono focus:border-emerald-500 outline-none">
+                                        <select class="w-full bg-gray-500/50 border border-gray-200 rounded p-2 text-gray-900 text-sm font-mono focus:border-emerald-500 outline-none">
                                             <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
                                         </select>
                                     </div>

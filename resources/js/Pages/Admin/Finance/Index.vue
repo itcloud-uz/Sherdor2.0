@@ -667,7 +667,7 @@ const categoriesSummary = computed(() => {
         <div class="flex flex-col gap-4">
             
             <!-- Horizontal Navigation Panel -->
-            <div class="flex flex-wrap items-center gap-2 p-2 bg-gray-900/50 border border-gray-100 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+            <div class="flex flex-wrap items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                 <button 
                     v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
@@ -758,7 +758,7 @@ const categoriesSummary = computed(() => {
                         <h3 class="text-sm font-display text-gray-900 uppercase tracking-widest flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-blue-600"></span>{{ $t('incomes_from') }}</h3>
                         <!-- LEGACY FILTERS -->
-                        <div class="flex bg-gray-900/50 border border-gray-200 rounded-lg p-1">
+                        <div class="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
                             <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
                             <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
                             <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
@@ -828,7 +828,7 @@ const categoriesSummary = computed(() => {
                                 Analitika
                             </button>
                             <!-- LEGACY FILTERS -->
-                            <div class="flex bg-gray-900/50 border border-gray-200 rounded-lg p-1">
+                            <div class="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
                                 <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
                                 <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
                                 <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
@@ -891,7 +891,7 @@ const categoriesSummary = computed(() => {
             </div>
 
             <!-- Edit Transaction Modal -->
-            <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+            <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
                 <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-gray-200">
                     <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                     <h3 class="text-xl font-display text-gray-900 mb-6">{{ $t('edit_transaction') }}</h3>
@@ -933,7 +933,7 @@ const categoriesSummary = computed(() => {
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-gray-900/50 border border-gray-200 hover:border-amber-200 transition-all flex flex-col gap-4 relative overflow-hidden group">
+                    <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-gray-50 border border-gray-200 hover:border-amber-200 transition-all flex flex-col gap-4 relative overflow-hidden group">
                         <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         
                         <div class="flex justify-between items-start z-10">
@@ -1075,7 +1075,7 @@ const categoriesSummary = computed(() => {
                         <input v-model="form.category_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900" placeholder="Yangi kategoriya nomini kiriting" required>
                     </div>
                     <div v-else>
-                        <select v-model="form.category_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50" required>
+                        <select v-model="form.category_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
                             <option value="" disabled>-- Kategoriya tanlang --</option>
                             <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
                                 {{ cat.name }}
@@ -1093,7 +1093,7 @@ const categoriesSummary = computed(() => {
                 <!-- DYNAMIC FIELDS (Full width) -->
                 <div v-if="requiresWorker" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.worker_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50" required>
+                    <select v-model="form.worker_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
                     </select>
@@ -1119,7 +1119,7 @@ const categoriesSummary = computed(() => {
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-mono mb-1 text-blue-600">Brigada</label>
-                            <select v-model="form.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 border-blue-200">
+                            <select v-model="form.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-blue-200">
                                 <option value="">-- Tanlang --</option>
                                 <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
@@ -1142,7 +1142,7 @@ const categoriesSummary = computed(() => {
 
                 <div v-if="requiresPartner || form.account_type === 'partner'" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1 text-amber-600">Ta'sischini Tanlang (Hamkor)</label>
-                    <select v-model="form.partner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 border-amber-200" :required="requiresPartner || form.account_type === 'partner'">
+                    <select v-model="form.partner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200" :required="requiresPartner || form.account_type === 'partner'">
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
                     </select>
@@ -1150,7 +1150,7 @@ const categoriesSummary = computed(() => {
 
                 <div v-if="requiresFixedAsset" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1 text-blue-600">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
-                    <select v-model="form.fixed_asset_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 border-blue-200" required>
+                    <select v-model="form.fixed_asset_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-blue-200" required>
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="f in fixedAssets" :key="f.id" :value="f.id">{{ f.name }} ({{ f.type }})</option>
                     </select>
@@ -1163,7 +1163,7 @@ const categoriesSummary = computed(() => {
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-mono mb-1 text-amber-600">Texnika Egasi</label>
-                            <select v-model="form.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 border-amber-200">
+                            <select v-model="form.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200">
                                 <option value="">-- Tanlang --</option>
                                 <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
                             </select>
@@ -1171,7 +1171,7 @@ const categoriesSummary = computed(() => {
                         
                         <div>
                             <label class="block text-xs font-mono mb-1 text-amber-600">Texnika</label>
-                            <select v-model="form.machinery_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 border-amber-200">
+                            <select v-model="form.machinery_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200">
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
                             </select>
@@ -1194,7 +1194,7 @@ const categoriesSummary = computed(() => {
 
                 <div v-if="requiresSupplier" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.supplier_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50" required>
+                    <select v-model="form.supplier_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
                     </select>
@@ -1202,7 +1202,7 @@ const categoriesSummary = computed(() => {
 
                 <div v-if="requiresBuilding" class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50" required>
+                    <select v-model="form.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
                         <option value="" disabled>-- Tanlang --</option>
                         <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                     </select>
@@ -1211,7 +1211,7 @@ const categoriesSummary = computed(() => {
                 <!-- ACCOUNT (Half width) -->
                 <div v-show="!requiresMachineOwner && !requiresBrigade">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Hisob (Account)</label>
-                    <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-base font-bold text-gray-900 bg-gray-900/50">
+                    <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-base font-bold text-gray-900 bg-gray-50">
                         <option value="main">{{ $t('main_account') }}</option>
                         <option value="bank">Bank Hisobi (Bank)</option>
                         <option value="credit">Kredit Hisobi (Credit)</option>
@@ -1222,7 +1222,7 @@ const categoriesSummary = computed(() => {
                 <!-- PAYMENT METHOD (Half width) -->
                 <div v-show="!requiresMachineOwner && !requiresBrigade">
                     <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('payment_method') }}</label>
-                    <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50">
+                    <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50">
                         <option value="cash">{{ $t('cash') }}</option>
                         <option value="card">{{ $t('card') }}</option>
                         <option value="bank_transfer">{{ $t('bank_transfer') }}</option>
@@ -1232,7 +1232,7 @@ const categoriesSummary = computed(() => {
                 <!-- DATE (Half width) -->
                 <div v-show="!requiresMachineOwner && !requiresBrigade">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Sana va Vaqt</label>
-                    <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50 [color-scheme:dark]">
+                    <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 [color-scheme:dark]">
                 </div>
 
                 <!-- FILE (Half width) -->
@@ -1252,7 +1252,7 @@ const categoriesSummary = computed(() => {
                             @focus="showScheduleDropdown = true" 
                             @blur="handleBlur"
                             type="text" 
-                            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-900/50" 
+                            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" 
                             placeholder="Ism yoki Kvartira bo'yicha qidiring..."
                         >
                         <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 text-xl leading-none">&times;</button>
@@ -1283,11 +1283,11 @@ const categoriesSummary = computed(() => {
                 <!-- NOTES (Full width) -->
                 <div class="col-span-1 md:col-span-2">
                     <label class="block text-xs font-mono text-gray-500 mb-1">Izohlar</label>
-                    <textarea v-model="form.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50 pt-3" placeholder="Maqsad va tafsilotlar..."></textarea>
+                    <textarea v-model="form.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50 pt-3" placeholder="Maqsad va tafsilotlar..."></textarea>
                 </div>
 
                 <!-- AUTO APPROVE (Full width) -->
-                <div class="col-span-1 md:col-span-2 flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-900/50">
+                <div class="col-span-1 md:col-span-2 flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
                     <span class="text-sm font-mono text-gray-900">Avtomatik tasdiqlash</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" v-model="form.auto_approve" class="sr-only peer">
@@ -1446,7 +1446,7 @@ const categoriesSummary = computed(() => {
                     <h3 class="text-lg font-display font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>{{ $t('pending_withdrawals') }}</h3>
                     <div class="space-y-3">
-                        <div v-for="refund in pendingRefunds" :key="refund.id" class="flex justify-between items-center bg-gray-900/50 p-4 rounded-xl border border-gray-100 hover:border-amber-200 transition-all">
+                        <div v-for="refund in pendingRefunds" :key="refund.id" class="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-amber-200 transition-all">
                             <div>
                                 <p class="text-sm font-bold text-gray-900 font-mono">Shartnoma #{{ refund.contract_id }}</p>
                                 <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">{{ refund.notes }}</p>
@@ -1466,7 +1466,7 @@ const categoriesSummary = computed(() => {
                     <form @submit.prevent="submitTransfer" class="space-y-6">
                     <div>
                         <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('link_client_contract') }}</label>
-                        <select v-model="transferForm.contract_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-bold h-12">
+                        <select v-model="transferForm.contract_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12">
                             <option value="">Hech qaysi (Faqat Ichki O'tkazma)</option>
                             <option v-for="c in contracts" :key="c.id" :value="c.id">
                                 {{ c.client?.first_name }} {{ c.client?.last_name }} - {{ c.unit?.unit_number }} (Shartnoma #{{ c.id }})
@@ -1478,19 +1478,19 @@ const categoriesSummary = computed(() => {
                     <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('transfer_amount') }}</label>
-                            <input v-model="transferForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-3xl font-display text-gray-900 font-bold h-16 bg-gray-900/50" placeholder="0.00" required>
+                            <input v-model="transferForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-3xl font-display text-gray-900 font-bold h-16 bg-gray-50" placeholder="0.00" required>
                         </div>
 
                         <div>
                             <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('commission_fee') }}</label>
-                            <input v-model="transferForm.fee_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-display text-amber-600 font-bold h-16 bg-gray-900/50" placeholder="Masalan: 100000">
+                            <input v-model="transferForm.fee_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-display text-amber-600 font-bold h-16 bg-gray-50" placeholder="Masalan: 100000">
                         </div>
                     </div>
 
                     <div class="flex items-center gap-4 py-4">
                         <div class="flex-1">
                             <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('from_account') }}</label>
-                            <select v-model="transferForm.from_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-bold h-12" required>
+                            <select v-model="transferForm.from_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
                                 <option value="bank">{{ $t('bank_account') }}</option>
                                 <option value="main">{{ $t('cash_account') }}</option>
                                 <option value="credit">{{ $t('card_account') }}</option>
@@ -1503,7 +1503,7 @@ const categoriesSummary = computed(() => {
 
                         <div class="flex-1">
                             <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('to_account') }}</label>
-                            <select v-model="transferForm.to_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-bold h-12" required>
+                            <select v-model="transferForm.to_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
                                 <option value="main">{{ $t('cash_account') }}</option>
                                 <option value="bank">{{ $t('bank_account') }}</option>
                                 <option value="credit">{{ $t('card_account') }}</option>
@@ -1513,7 +1513,7 @@ const categoriesSummary = computed(() => {
 
                     <div>
                         <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('notes') }}</label>
-                        <textarea v-model="transferForm.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
+                        <textarea v-model="transferForm.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
                     </div>
 
                     <!-- O'tkazma hisob-kitobi xulosasi -->
@@ -1581,7 +1581,7 @@ const categoriesSummary = computed(() => {
     </div>
 
         <!-- Edit Supplier Modal -->
-        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-blue-200 shadow-sm">
                 <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">Tahrirlash: {{ editSupplierForm.company_name || editSupplierForm.name }}</h3>
@@ -1609,7 +1609,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- Supplier Payment Modal -->
-        <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-emerald-200 shadow-sm">
                 <button @click="showSupplierPaymentModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">To'lov: {{ selectedSupplier?.company_name || selectedSupplier?.name }}</h3>
@@ -1645,7 +1645,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- RECEIPT MODAL -->
-        <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-white text-black p-4 md:p-8 rounded border border-gray-300 w-full max-w-sm shadow-sm">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
@@ -1684,16 +1684,16 @@ const categoriesSummary = computed(() => {
 
                 <div class="mt-8 flex justify-center gap-4">
                     <button @click="showReceiptModal = false" class="px-4 py-2 text-xs border border-gray-400 rounded hover:bg-gray-100 font-mono uppercase">{{ $t('cancel') }}</button>
-                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-black text-gray-900 rounded hover:bg-gray-800 font-mono uppercase text-center flex items-center">{{ $t('print_button') }}</a>
+                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-white text-gray-900 rounded hover:bg-white font-mono uppercase text-center flex items-center">{{ $t('print_button') }}</a>
                 </div>
             </div>
         </div>
 
         <!-- CONTRACT APPROVE MODAL -->
-        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('contract_payment_distribution') }}</h2>
-                <div class="mb-6 bg-gray-900/50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
+                <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
                     <p>Kiritilgan summa: <strong class="text-blue-600 text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
                 </div>
                 <form @submit.prevent="submitContractApprove" class="space-y-6 font-mono text-xs">
@@ -1704,7 +1704,7 @@ const categoriesSummary = computed(() => {
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-2 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
-                        <input type="number" step="0.01" v-model="contractApproveForm.refund_amount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xl font-bold text-amber-600 h-12 bg-gray-900/50" readonly>
+                        <input type="number" step="0.01" v-model="contractApproveForm.refund_amount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xl font-bold text-amber-600 h-12 bg-gray-50" readonly>
                         <p class="text-[10px] text-gray-500 mt-2">Bu summa "O'tkazmalar" bo'limiga kutayotgan so'rov bo'lib tushadi.</p>
                     </div>
                     <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
@@ -1718,7 +1718,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- NEW LIABILITY MODAL -->
-        <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('add_new_liability') }}</h2>
                 <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
@@ -1785,7 +1785,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- PAYMENT MODAL -->
-        <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-emerald-200 w-full max-w-sm shadow-sm">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('liability_payment') }}</h2>
                 <div class="mb-6 font-mono text-xs">
@@ -1821,7 +1821,7 @@ const categoriesSummary = computed(() => {
         </div>
 
         <!-- SCHEDULE MODAL -->
-        <div v-if="showScheduleModal && selectedLiabilityForSchedule" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showScheduleModal && selectedLiabilityForSchedule" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-50">
             <div class="bg-[#111] text-gray-900 p-6 rounded-2xl border border-blue-200 w-full max-w-2xl shadow-sm flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>

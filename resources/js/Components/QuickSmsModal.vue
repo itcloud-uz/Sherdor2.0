@@ -19,7 +19,7 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase tracking-widest">Qabul qiluvchi (Mijoz)</label>
-                        <div class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 flex items-center gap-2 opacity-70 cursor-not-allowed">
+                        <div class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 flex items-center gap-2 opacity-70 cursor-not-allowed">
                             <span class="text-xs">📞</span>
                             <span class="font-mono">{{ lead?.phone }}</span>
                         </div>
@@ -33,7 +33,7 @@
                 </div>
 
                 <div class="mt-8 flex gap-3">
-                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-gray-900/50 border border-gray-300 text-gray-900 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-gray-100 transition-all">{{ $t('cancel') }}</button>
+                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-gray-500/50 border border-gray-300 text-gray-900 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-gray-100 transition-all">{{ $t('cancel') }}</button>
                     <button @click="sendSms" :disabled="isSending || !message.trim()" class="flex-1 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm disabled:opacity-50 flex justify-center items-center gap-2">
                         <span v-if="isSending" class="animate-pulse">Yuborilmoqda...</span>
                         <template v-else>

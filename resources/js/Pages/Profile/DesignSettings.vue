@@ -103,13 +103,13 @@ const updateThemeStyle = (style) => {
                 <form @submit.prevent="submit" class="space-y-5">
                     
                     <div class="flex items-center gap-6 mb-6">
-                        <div class="w-20 h-20 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                        <div class="w-20 h-20 rounded-2xl bg-gray-500/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                             <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover" />
                             <span v-else class="text-3xl">👤</span>
                         </div>
                         <div class="flex-1">
                             <label class="block text-xs font-mono text-text-muted uppercase mb-2">{{ $t('avatar_upload') }}</label>
-                            <input type="file" @change="e => form.avatar = e.target.files[0]" class="w-full bg-black/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
+                            <input type="file" @change="e => form.avatar = e.target.files[0]" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-2 text-white font-mono text-xs text-text-muted file:bg-white/10 file:border-0 file:rounded file:text-white file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
                         </div>
                     </div>
 

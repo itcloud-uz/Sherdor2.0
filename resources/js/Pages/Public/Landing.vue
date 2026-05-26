@@ -52,7 +52,7 @@ const panels = [
         <GalaxyBackground />
 
         <!-- Navigation (Apple Glassmorphism) -->
-        <nav class="relative z-50 flex items-center justify-between p-6 md:px-12 bg-black/80 border-b border-white/10 sticky top-0 backdrop-blur-md shadow-sm">
+        <nav class="relative z-50 flex items-center justify-between p-6 md:px-12 bg-gray-500/50 border-b border-white/10 sticky top-0  shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)]">
                     <span class="font-display font-bold text-xl text-white">S</span>
@@ -65,7 +65,7 @@ const panels = [
                 <a href="#contact" class="hover:text-amber-400 transition-colors">Texnik Yordam</a>
             </div>
             <div class="flex items-center gap-4">
-                <Link :href="route('login')" class="px-5 py-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-colors backdrop-blur-md">
+                <Link :href="route('login')" class="px-5 py-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-colors ">
                     Tizimga Kirish
                 </Link>
             </div>
@@ -73,7 +73,7 @@ const panels = [
 
         <!-- Hero Section -->
         <main class="relative z-10 flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium tracking-wide mb-8 backdrop-blur-md">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium tracking-wide mb-8 ">
                 <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse"></span>
                 Siz uchun maxsus ishlab chiqildi
             </div>
@@ -88,10 +88,10 @@ const panels = [
             </p>
             
             <div class="flex flex-col sm:flex-row items-center gap-6">
-                <a href="#panels" class="px-8 py-4 bg-gradient-to-r from-purple-600 to-red-600 text-white font-medium text-lg rounded-full shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_40px_rgba(239,68,68,0.6)] hover:scale-105 transition-all w-full sm:w-auto border border-white/20 backdrop-blur-md">
+                <a href="#panels" class="px-8 py-4 bg-gradient-to-r from-purple-600 to-red-600 text-white font-medium text-lg rounded-full shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_40px_rgba(239,68,68,0.6)] hover:scale-105 transition-all w-full sm:w-auto border border-white/20 ">
                     Bo'limlar Bilan Tanishish
                 </a>
-                <Link :href="route('login')" class="px-8 py-4 bg-black/40 border border-amber-500/30 text-amber-400 font-medium text-lg rounded-full hover:bg-white/10 transition-all w-full sm:w-auto backdrop-blur-xl flex items-center justify-center gap-2">
+                <Link :href="route('login')" class="px-8 py-4 bg-black/40 border border-amber-500/30 text-amber-400 font-medium text-lg rounded-full hover:bg-white/10 transition-all w-full sm:w-auto  flex items-center justify-center gap-2">
                     Tizimga Kirish <span class="opacity-50">→</span>
                 </Link>
             </div>
@@ -108,7 +108,7 @@ const panels = [
                 <div 
                     v-for="(panel, idx) in panels" 
                     :key="idx"
-                    class="bg-black/40 p-4 md:p-8 rounded-[2rem] border border-white/10 backdrop-blur-3xl transition-all duration-500 hover:border-white/30 hover:-translate-y-2 group shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                    class="bg-black/40 p-4 md:p-8 rounded-[2rem] border border-white/10  transition-all duration-500 hover:border-white/30 hover:-translate-y-2 group shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                 >
                     <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 bg-gradient-to-br border border-white/20 shadow-lg" :class="panel.color">
                         {{ panel.icon }}
@@ -125,7 +125,7 @@ const panels = [
         </section>
 
         <!-- Technical Capabilities -->
-        <section id="about" class="relative z-10 py-24 px-4 border-y border-white/10 bg-black/40 backdrop-blur-3xl mt-12">
+        <section id="about" class="relative z-10 py-24 px-4 border-y border-white/10 bg-black/40  mt-12">
             <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
                 <div class="flex-1 space-y-8">
                     <h2 class="text-3xl md:text-4xl font-display font-bold leading-tight">
@@ -159,15 +159,15 @@ const panels = [
                         </li>
                     </ul>
                 </div>
-                <div class="flex-1 relative w-full aspect-square md:aspect-video lg:aspect-square max-h-[500px] rounded-[3rem] border border-white/20 bg-[#0A0A10]/80 overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.15)] backdrop-blur-3xl flex flex-col justify-center items-center">
+                <div class="flex-1 relative w-full aspect-square md:aspect-video lg:aspect-square max-h-[500px] rounded-[3rem] border border-white/20 bg-[#0A0A10]/80 overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.15)]  flex flex-col justify-center items-center">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/20 rounded-full blur-[80px]"></div>
                     <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px]"></div>
                     
                     <div class="relative z-10 text-center p-4 md:p-8">
                         <div class="inline-flex gap-3 mb-8">
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg">👑</div>
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg">💼</div>
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg">🏗️</div>
+                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">👑</div>
+                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">💼</div>
+                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">🏗️</div>
                         </div>
                         <h3 class="text-2xl font-bold text-white mb-2">Bitta Tizim</h3>
                         <p class="text-gray-400">Uchta mukammal yechim</p>
@@ -177,36 +177,36 @@ const panels = [
         </section>
 
         <!-- Footer / Contact -->
-        <footer id="contact" class="relative z-10 pt-20 pb-10 px-4 text-center border-t border-white/10 bg-[#05050A]/80 backdrop-blur-3xl">
+        <footer id="contact" class="relative z-10 pt-20 pb-10 px-4 text-center border-t border-white/10 bg-[#05050A]/80 ">
             <h2 class="text-3xl font-display font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-purple-400">Texnik Yordam va Qo'llab-Quvvatlash</h2>
             <p class="text-gray-400 mb-12 max-w-2xl mx-auto text-lg">Tizim bo'yicha savollaringiz yoki qo'shimcha modullar kerak bo'lsa, Dasturchilar Jamoasi bilan istalgan vaqtda bog'lanishingiz mumkin.</p>
             
             <div class="flex flex-wrap justify-center gap-6 mb-16 max-w-5xl mx-auto">
-                <a href="tel:+998335180005" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-amber-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="tel:+998335180005" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-amber-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl mb-4 shadow-lg">📱</div>
                     <span class="font-bold text-white text-xl">+998 33 518 00 05</span>
                     <span class="text-sm text-gray-400 mt-2">Asosiy Raqam</span>
                 </a>
                 
-                <a href="tel:+998911873730" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-purple-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="tel:+998911873730" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-purple-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-purple-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📞</div>
                     <span class="font-bold text-white text-xl">+998 91 187 37 30</span>
                     <span class="text-sm text-gray-400 mt-2">Qo'shimcha Raqam</span>
                 </a>
                 
-                <a href="mailto:itclouduz@gmail.com" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-red-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="mailto:itclouduz@gmail.com" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-red-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-red-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✉️</div>
                     <span class="font-bold text-white text-xl">itclouduz@gmail.com</span>
                     <span class="text-sm text-gray-400 mt-2">Elektron Pochta</span>
                 </a>
 
-                <a href="https://t.me/ITcloud_me" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="https://t.me/ITcloud_me" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✈️</div>
                     <span class="font-bold text-white text-xl">@ITcloud_me</span>
                     <span class="text-sm text-gray-400 mt-2">Telegram orqali yozish</span>
                 </a>
                 
-                <a href="https://instagram.com/Shodiyor_kholmurodov" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-pink-500/50 hover:bg-white/5 transition-all backdrop-blur-xl flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <a href="https://instagram.com/Shodiyor_kholmurodov" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-pink-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-600 to-orange-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📷</div>
                     <span class="font-bold text-white text-xl">Shodiyor_kholmurodov</span>
                     <span class="text-sm text-gray-400 mt-2">Instagram sahifa</span>

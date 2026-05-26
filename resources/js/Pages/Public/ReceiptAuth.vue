@@ -7,7 +7,7 @@
         </div>
 
         <div class="w-full max-w-md z-10">
-            <div class="glass-panel p-4 md:p-8 rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+            <div class="glass-panel p-4 md:p-8 rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] ">
                 <div class="text-center mb-8">
                     <h1 class="text-3xl font-display font-bold text-white tracking-widest mb-2 uppercase">Sher-Dor</h1>
                     <p class="text-neon-cyan text-sm tracking-widest uppercase">Xavfsizlik Darvozasi</p>
@@ -36,7 +36,7 @@
                                 <input 
                                     v-model="form.phone" 
                                     type="text" 
-                                    class="glass-input w-full pl-10 text-white bg-black/50" 
+                                    class="glass-input w-full pl-10 text-white bg-gray-500/50" 
                                     placeholder="+998 90 123 45 67"
                                     required
                                 >
@@ -53,7 +53,7 @@
                                 <input 
                                     v-model="form.passport" 
                                     type="text" 
-                                    class="glass-input w-full pl-10 text-white bg-black/50 uppercase" 
+                                    class="glass-input w-full pl-10 text-white bg-gray-500/50 uppercase" 
                                     placeholder="Masalan: AB1234567"
                                     required
                                 >
@@ -67,7 +67,7 @@
                             <input 
                                 v-model="form.email" 
                                 type="email" 
-                                class="glass-input w-full text-white bg-black/50" 
+                                class="glass-input w-full text-white bg-gray-500/50" 
                                 placeholder="admin@itcloud.uz"
                                 required
                             >
@@ -79,7 +79,7 @@
                             <input 
                                 v-model="form.password" 
                                 type="password" 
-                                class="glass-input w-full text-white bg-black/50" 
+                                class="glass-input w-full text-white bg-gray-500/50" 
                                 placeholder="••••••••"
                                 required
                             >

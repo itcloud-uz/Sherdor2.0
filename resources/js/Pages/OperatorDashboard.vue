@@ -520,7 +520,7 @@ function submitWarehouseRequest() {
     <OperatorLayout>
         
         <!-- UNIVERSAL DOCK NAVIGATION -->
-        <div class="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-2xl px-4 py-3 glass-panel border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+        <div class="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-2xl px-4 py-3 glass-panel border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] ">
             <div class="flex items-center justify-between relative">
                 
                 <!-- Left Side -->
@@ -547,8 +547,8 @@ function submitWarehouseRequest() {
                     
                     <!-- Hover Quick Menu -->
                     <div class="absolute bottom-[120%] left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col gap-2">
-                        <button @click="activeTab = 3; openPaymentModal()" class="bg-black/80 border border-white/20 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-neon-cyan hover:text-black hover:border-neon-cyan transition-colors">Yangi To'lov</button>
-                        <button @click="activeTab = 5; warehouseForm.action = 'kirim'; warehouseForm.attachment_type = 'qr'; showWarehouseModal = true" class="bg-black/80 border border-white/20 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-neon-green hover:text-black hover:border-neon-green transition-colors">Qabul qilish (QR)</button>
+                        <button @click="activeTab = 3; openPaymentModal()" class="bg-gray-500/50 border border-white/20 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-neon-cyan hover:text-black hover:border-neon-cyan transition-colors">Yangi To'lov</button>
+                        <button @click="activeTab = 5; warehouseForm.action = 'kirim'; warehouseForm.attachment_type = 'qr'; showWarehouseModal = true" class="bg-gray-500/50 border border-white/20 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-neon-green hover:text-black hover:border-neon-green transition-colors">Qabul qilish (QR)</button>
                     </div>
                 </button>
 
@@ -621,7 +621,7 @@ function submitWarehouseRequest() {
                         ]"
                     >
                         <div class="flex items-center gap-3">
-                            <div :class="['w-10 h-10 rounded-lg flex items-center justify-center border transition-all', selectedBuilding?.id === building.id ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.5)]' : 'bg-black/50 border-white/10 text-white/50']">
+                            <div :class="['w-10 h-10 rounded-lg flex items-center justify-center border transition-all', selectedBuilding?.id === building.id ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.5)]' : 'bg-gray-500/50 border-white/10 text-white/50']">
                                 <span class="text-xl">🏗️</span>
                             </div>
                             <div>
@@ -686,7 +686,7 @@ function submitWarehouseRequest() {
                                 </div>
                             </div>
                             
-                            <div class="flex-1 relative border border-white/10 rounded-xl overflow-hidden bg-black/50 group flex items-start p-2 sm:p-6">
+                            <div class="flex-1 relative border border-white/10 rounded-xl overflow-hidden bg-gray-500/50 group flex items-start p-2 sm:p-6">
                                 <!-- Blueprint Mode (SVG) -->
                                 <svg v-if="selectedFloor && selectedFloor.blueprint_path" class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
                                     <g v-for="(unit, idx) in selectedFloor.units" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-150" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="unit.status === 'available' || unit.status === 'booked' ? openUnitActionModal(unit) : null">
@@ -746,7 +746,7 @@ function submitWarehouseRequest() {
                                     </div>
                                 </div>
 
-                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-4 md:p-8 rounded-xl bg-black/80 backdrop-blur-md">
+                                <div v-if="selectedFloor && !selectedFloor.units?.length" class="absolute inset-0 m-auto h-max w-max z-30 text-neon-cyan font-mono text-sm border border-dashed border-neon-cyan/50 p-4 md:p-8 rounded-xl bg-gray-500/50 ">
                                     [ QAVAT UCHUN XONADONLAR YO'Q ]
                                 </div>
                             </div>
@@ -754,7 +754,7 @@ function submitWarehouseRequest() {
                             <!-- Unit Tooltip -->
                             <Teleport to="body">
                                 <div v-if="hoveredUnit" 
-                                     class="fixed z-50 pointer-events-none bg-black/90 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.8)]"
+                                     class="fixed z-50 pointer-events-none bg-black/90  border border-white/20 p-4 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.8)]"
                                      :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
                                     <h4 class="text-neon-cyan font-display text-lg mb-2 flex items-center gap-2">
                                         {{ hoveredUnit.unit_number }} 
@@ -816,7 +816,7 @@ function submitWarehouseRequest() {
             </div>
 
             <div class="glass-panel p-6 rounded-2xl border border-white/5">
-                <input v-model="paymentSearchQuery" type="text" placeholder="Mijoz ismi, pasport seriyasi yoki uy raqami orqali qidiring..." class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors mb-6">
+                <input v-model="paymentSearchQuery" type="text" placeholder="Mijoz ismi, pasport seriyasi yoki uy raqami orqali qidiring..." class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors mb-6">
                 
                 <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     <div v-for="contract in filteredContractsForPayment" :key="contract.id" class="glass-card p-4 rounded-xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-white/20 transition-colors">
@@ -987,7 +987,7 @@ function submitWarehouseRequest() {
         </div>
 
         <!-- HR MODAL -->
-        <div v-if="showHrModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div v-if="showHrModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
             <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)] relative">
                 <button @click="closeHrModal" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
                 
@@ -1010,14 +1010,14 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ish haqi turi</label>
-                            <select v-model="hrForm.type" class="glass-input w-full bg-black/50 text-white">
+                            <select v-model="hrForm.type" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="fixed">Oylik (Fixed)</option>
                                 <option value="piece_rate">Baybay (Hajmga)</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">O'lchov Birligi</label>
-                            <select v-if="hrForm.type === 'piece_rate'" v-model="hrForm.metric_type" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="hrForm.type === 'piece_rate'" v-model="hrForm.metric_type" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="kvadrat">1 Kvadrat (kv.m)</option>
                                 <option value="dona">1 Dona</option>
                                 <option value="kub">1 Kub (m³)</option>
@@ -1057,7 +1057,7 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">To'lov Turi</label>
-                            <select v-model="hrForm.payment_type" class="glass-input w-full bg-black/50 text-white">
+                            <select v-model="hrForm.payment_type" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="hourly">Soatbay (Hourly)</option>
                                 <option value="volume">Hajmga (Volume)</option>
                             </select>
@@ -1072,12 +1072,12 @@ function submitWarehouseRequest() {
                 <div v-if="activeHrModalType === 'faceid'" class="py-6 flex flex-col items-center space-y-4">
                     <div class="w-full mb-4">
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-1 text-left">Skaner qilinayotgan Xodim</label>
-                        <select v-model="hrForm.worker_id" class="glass-input w-full bg-black/50 text-white">
+                        <select v-model="hrForm.worker_id" class="glass-input w-full bg-gray-500/50 text-white">
                             <option value="">Tanlang</option>
                             <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }}</option>
                         </select>
                     </div>
-                    <div class="relative w-48 h-48 sm:w-64 sm:h-64 border-2 border-dashed border-neon-cyan/50 rounded-2xl flex items-center justify-center overflow-hidden bg-black/50">
+                    <div class="relative w-48 h-48 sm:w-64 sm:h-64 border-2 border-dashed border-neon-cyan/50 rounded-2xl flex items-center justify-center overflow-hidden bg-gray-500/50">
                         <video ref="scannerVideo" autoplay playsinline class="w-full h-full object-cover"></video>
                         <div v-if="isScanning && !scannerVideo?.srcObject" class="absolute inset-0 bg-neon-cyan/20 animate-pulse"></div>
                         <div v-if="isScanning" class="absolute top-0 left-0 w-full h-1 bg-neon-cyan shadow-[0_0_10px_#00F0FF] animate-[scan_2s_ease-in-out_infinite]"></div>
@@ -1092,18 +1092,18 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kim uchun (Turi)</label>
-                            <select v-model="hrForm.type" class="glass-input w-full bg-black/50 text-white">
+                            <select v-model="hrForm.type" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="worker">Ishchi / Usta</option>
                                 <option value="machinery">Texnika</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Shaxs / Texnika</label>
-                            <select v-if="hrForm.type === 'worker'" v-model="hrForm.worker_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="hrForm.type === 'worker'" v-model="hrForm.worker_id" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="">Tanlang</option>
                                 <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }}</option>
                             </select>
-                            <select v-if="hrForm.type === 'machinery'" v-model="hrForm.machinery_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="hrForm.type === 'machinery'" v-model="hrForm.machinery_id" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="">Tanlang</option>
                                 <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }}</option>
                             </select>
@@ -1113,14 +1113,14 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Bino / Obyekt</label>
-                            <select v-model="hrForm.building_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-model="hrForm.building_id" class="glass-input w-full bg-gray-500/50 text-white">
                                 <option value="">Tanlang</option>
                                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                            <input v-model="hrForm.date" type="date" class="glass-input w-full bg-black/50 text-white">
+                            <input v-model="hrForm.date" type="date" class="glass-input w-full bg-gray-500/50 text-white">
                         </div>
                     </div>
 
@@ -1146,9 +1146,9 @@ function submitWarehouseRequest() {
         </div>
 
         <!-- WAREHOUSE MODAL -->
-        <div v-if="showWarehouseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div v-if="showWarehouseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
             <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)] relative">
-                <button @click="closeWarehouseModal" class="absolute top-4 right-4 text-text-muted hover:text-white bg-black/50 w-8 h-8 rounded-full flex items-center justify-center border border-white/10 hover:bg-neon-red/20 transition-colors">
+                <button @click="closeWarehouseModal" class="absolute top-4 right-4 text-text-muted hover:text-white bg-gray-500/50 w-8 h-8 rounded-full flex items-center justify-center border border-white/10 hover:bg-neon-red/20 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
                 
@@ -1174,19 +1174,19 @@ function submitWarehouseRequest() {
                     <div class="space-y-4 mt-6">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Mahsulot Nomi</label>
-                            <input v-model="warehouseForm.name" required type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Masalan: Sement M400">
+                            <input v-model="warehouseForm.name" required type="text" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Masalan: Sement M400">
                         </div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kategoriya</label>
-                                <input v-model="warehouseForm.category" required type="text" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Qurilish">
+                                <input v-model="warehouseForm.category" required type="text" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Qurilish">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Miqdori</label>
                                 <div class="flex">
-                                    <input v-model="warehouseForm.quantity" required type="number" step="0.01" class="w-2/3 bg-black/50 border border-white/10 rounded-l-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors border-r-0" placeholder="0">
-                                    <select v-model="warehouseForm.unit" class="w-1/3 bg-black/50 border border-white/10 rounded-r-xl px-2 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors text-xs appearance-none">
+                                    <input v-model="warehouseForm.quantity" required type="number" step="0.01" class="w-2/3 bg-gray-500/50 border border-white/10 rounded-l-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors border-r-0" placeholder="0">
+                                    <select v-model="warehouseForm.unit" class="w-1/3 bg-gray-500/50 border border-white/10 rounded-r-xl px-2 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors text-xs appearance-none">
                                         <option value="kg">kg</option>
                                         <option value="tonna">tonna</option>
                                         <option value="dona">dona</option>
@@ -1201,7 +1201,7 @@ function submitWarehouseRequest() {
                         
                         <div v-if="warehouseForm.action === 'kirim'" class="mt-4">
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Umumiy Xarajat (Kassa uchun)</label>
-                            <input v-model="warehouseForm.cost" type="number" step="0.01" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Kiritilgan mahsulotlarning umumiy summasi (agar xarid qilingan bo'lsa)">
+                            <input v-model="warehouseForm.cost" type="number" step="0.01" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Kiritilgan mahsulotlarning umumiy summasi (agar xarid qilingan bo'lsa)">
                         </div>
                     </div>
 
@@ -1219,7 +1219,7 @@ function submitWarehouseRequest() {
                             </label>
                         </div>
                         
-                        <div v-if="warehouseForm.attachment_type === 'qr'" class="flex items-center justify-center p-6 border-2 border-dashed border-white/10 rounded-xl bg-black/50">
+                        <div v-if="warehouseForm.attachment_type === 'qr'" class="flex items-center justify-center p-6 border-2 border-dashed border-white/10 rounded-xl bg-gray-500/50">
                             <button type="button" class="text-xs bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                                 QR Kodni Skanerlash
@@ -1249,7 +1249,7 @@ function submitWarehouseRequest() {
 
     <!-- NEW MODALS -->
     <!-- Client Modal -->
-    <div v-if="showClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-white/20 shadow-2xl relative">
             <button @click="showClientModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-4 uppercase">Yangi Mijoz</h2>
@@ -1264,16 +1264,16 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Book Modal -->
-    <div v-if="showBookModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showBookModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)] relative">
             <button @click="showBookModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-4 uppercase">Uyni Band Qilish</h2>
             <form @submit.prevent="submitBookForm" class="space-y-4">
-                <select v-model="bookForm.client_id" required class="glass-input w-full bg-black/50 text-white">
+                <select v-model="bookForm.client_id" required class="glass-input w-full bg-gray-500/50 text-white">
                     <option value="" disabled>Mijozni tanlang</option>
                     <option v-for="client in clients" :key="client.id" :value="client.id">{{ client.first_name }} {{ client.last_name }}</option>
                 </select>
-                <select v-model="bookForm.payment_type" required class="glass-input w-full bg-black/50 text-white">
+                <select v-model="bookForm.payment_type" required class="glass-input w-full bg-gray-500/50 text-white">
                     <option value="cash">Naqd To'lov (100%)</option>
                     <option value="installment">Muddatli To'lov (Rassrochka)</option>
                 </select>
@@ -1284,7 +1284,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Contract Modal -->
-    <div v-if="showContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,60,0.15)] relative">
             <button @click="showContractModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-magenta/50">
@@ -1293,14 +1293,14 @@ function submitWarehouseRequest() {
             <form @submit.prevent="submitContractForm" class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Mijoz</label>
-                    <select v-model="contractForm.client_id" class="glass-input w-full bg-black/50" required>
+                    <select v-model="contractForm.client_id" class="glass-input w-full bg-gray-500/50" required>
                         <option value="" disabled>Mijozni tanlang</option>
                         <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Obyektni tanlang</label>
-                    <select v-model="contractForm.unit_id" class="glass-input w-full bg-black/50" required>
+                    <select v-model="contractForm.unit_id" class="glass-input w-full bg-gray-500/50" required>
                         <option value="" disabled>Uyni tanlang</option>
                         <option v-for="u in units" :key="u.id" :value="u.id">XONADON {{ u.unit_number }} - {{ u.floor?.building?.name }}</option>
                     </select>
@@ -1311,11 +1311,11 @@ function submitWarehouseRequest() {
                     <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Mulk turi (Shartnoma shabloni)</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                            <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
                             <span class="text-xs text-white">Uy-joy (Kvartira)</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                            <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
                             <span class="text-xs text-white">Savdo do'koni</span>
                         </label>
                     </div>
@@ -1357,11 +1357,11 @@ function submitWarehouseRequest() {
                     <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">To'lov turi</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                            <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
                             <span class="text-xs text-white">Bir martalik umumiy to'lov</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
+                            <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
                             <span class="text-xs text-white">Bo'lib to'lash</span>
                         </label>
                     </div>
@@ -1387,17 +1387,17 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Payment Modal -->
-    <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-green/50 shadow-[0_0_30px_rgba(57,255,20,0.15)] relative">
             <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-4 uppercase">Yangi To'lov</h2>
             <form @submit.prevent="submitPaymentForm" class="space-y-4">
-                <select v-model="paymentForm.contract_id" required class="glass-input w-full bg-black/50 text-white">
+                <select v-model="paymentForm.contract_id" required class="glass-input w-full bg-gray-500/50 text-white">
                     <option value="" disabled>Shartnomani tanlang</option>
                     <option v-for="contract in contracts" :key="contract.id" :value="contract.id">{{ contract.client?.first_name }} - Unit #{{ contract.unit?.unit_number }}</option>
                 </select>
                 <input v-model="paymentForm.amount" required type="number" class="glass-input w-full" placeholder="To'lov summasi">
-                <select v-model="paymentForm.payment_method" required class="glass-input w-full bg-black/50 text-white">
+                <select v-model="paymentForm.payment_method" required class="glass-input w-full bg-gray-500/50 text-white">
                     <option value="cash">Naqd</option>
                     <option value="card">Karta (Terminal / Click)</option>
                     <option value="bank">Bank o'tkazmasi</option>
@@ -1409,7 +1409,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- EXPENSE (CHIQIM) MODAL -->
-    <div v-if="showExpenseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showExpenseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-red/50 shadow-[0_0_30px_rgba(255,0,0,0.15)] relative">
             <button @click="closeExpenseModal" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             
@@ -1424,7 +1424,7 @@ function submitWarehouseRequest() {
 
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kategoriya / Yo'nalish</label>
-                    <select v-model="expenseForm.category" required class="glass-input w-full bg-black/50 text-white">
+                    <select v-model="expenseForm.category" required class="glass-input w-full bg-gray-500/50 text-white">
                         <option value="">Tanlang</option>
                         <option value="Xo'jalik">Xo'jalik mollari</option>
                         <option value="Transport">Yo'lkira / Transport</option>
@@ -1447,7 +1447,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Unit Action Modal -->
-    <div v-if="showUnitActionModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showUnitActionModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-sm p-6 rounded-2xl border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)] relative">
             <button @click="closeUnitActionModal" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             
@@ -1471,7 +1471,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Contract Details Modal -->
-    <div v-if="showContractDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showContractDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-neon-magenta/50 shadow-[0_0_30px_rgba(255,0,60,0.15)] relative">
             <button @click="showContractDetailsModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             
@@ -1481,18 +1481,18 @@ function submitWarehouseRequest() {
             </div>
             
             <div v-if="selectedContract" class="space-y-4">
-                <div class="bg-black/50 p-4 rounded-xl border border-white/10">
+                <div class="bg-gray-500/50 p-4 rounded-xl border border-white/10">
                     <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Mijoz</p>
                     <p class="text-sm font-bold text-white">{{ selectedContract.client?.first_name }} {{ selectedContract.client?.last_name }}</p>
                     <p class="text-xs text-text-muted mt-1">{{ selectedContract.client?.phone }} | {{ selectedContract.client?.passport_number }}</p>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="bg-black/50 p-4 rounded-xl border border-white/10">
+                    <div class="bg-gray-500/50 p-4 rounded-xl border border-white/10">
                         <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Obyekt</p>
                         <p class="text-sm font-bold text-neon-cyan">Unit #{{ selectedContract.unit?.unit_number }}</p>
                     </div>
-                    <div class="bg-black/50 p-4 rounded-xl border border-white/10">
+                    <div class="bg-gray-500/50 p-4 rounded-xl border border-white/10">
                         <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Umumiy Qiymat</p>
                         <p class="text-sm font-bold text-neon-green">{{ $currency(selectedContract.total_amount) }}</p>
                     </div>
@@ -1512,7 +1512,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Edit Contract Modal -->
-    <div v-if="showEditContractModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showEditContractModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-lg p-6 rounded-2xl border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,240,255,0.15)] relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button @click="showEditContractModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             
@@ -1552,7 +1552,7 @@ function submitWarehouseRequest() {
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">To'lov Turi</label>
-                        <select v-model="editContractForm.payment_type" class="glass-input w-full bg-black/50 text-white p-2 text-sm">
+                        <select v-model="editContractForm.payment_type" class="glass-input w-full bg-gray-500/50 text-white p-2 text-sm">
                             <option value="full">To'liq (Bir martalik)</option>
                             <option value="installment">Bo'lib To'lash</option>
                         </select>
@@ -1575,7 +1575,7 @@ function submitWarehouseRequest() {
     </div>
 
     <!-- Worker Action Modal -->
-    <div v-if="showWorkerActionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div v-if="showWorkerActionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 ">
         <div class="glass-panel w-full max-w-sm p-6 rounded-2xl border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] relative">
             <button @click="showWorkerActionModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             
@@ -1585,7 +1585,7 @@ function submitWarehouseRequest() {
             <form @submit.prevent="submitWorkerAction" class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Harakat Turi</label>
-                    <select v-model="workerActionForm.type" class="glass-input w-full bg-black/50 text-white">
+                    <select v-model="workerActionForm.type" class="glass-input w-full bg-gray-500/50 text-white">
                         <option value="advance">Avans So'rash</option>
                         <option value="bonus">Mukofot Yozish</option>
                         <option value="fire">Ishdan Bo'shatish</option>

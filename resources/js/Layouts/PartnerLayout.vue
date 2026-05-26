@@ -20,7 +20,7 @@ const page = usePage();
         <header class="h-20 md:h-24 glass-panel border-b border-gray-200 flex items-center justify-between px-4 md:px-8 z-10 relative">
             <div class="flex items-center gap-4 md:gap-8">
                 <div class="flex items-center gap-2 md:gap-3">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/50 border border-gray-200 flex items-center justify-center shadow-neon-primary overflow-hidden">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-500/50 border border-gray-200 flex items-center justify-center shadow-neon-primary overflow-hidden">
                         <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain" />
                         <span v-else class="text-neon-primary font-bold text-xl md:text-2xl font-display">P</span>
                     </div>
@@ -44,7 +44,7 @@ const page = usePage();
                         <p class="text-[9px] font-mono text-neon-yellow">PARTNER</p>
                     </div>
                     <!-- Avatar Link to Settings -->
-                    <Link :href="route('settings.index')" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/50 border border-neon-primary/50 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.2)] flex items-center justify-center overflow-hidden shrink-0 hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-primary)] transition-all">
+                    <Link :href="route('settings.index')" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-500/50 border border-neon-primary/50 shadow-[0_0_15px_rgba(var(--color-neon-primary),0.2)] flex items-center justify-center overflow-hidden shrink-0 hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-primary)] transition-all">
                         <img v-if="$page.props.auth.user.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover" />
                         <span v-else class="text-xl">👤</span>
                     </Link>

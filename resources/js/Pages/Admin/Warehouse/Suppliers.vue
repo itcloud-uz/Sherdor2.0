@@ -346,15 +346,15 @@ const sendToTelegram = (id) => {
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
+                        <div class="bg-gray-500/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
                             <span class="text-[10px] font-mono text-gray-500 uppercase mb-1">Telefon</span>
                             <span class="text-sm font-bold text-gray-900 font-mono">{{ selectedSupplierView.phone || '-' }}</span>
                         </div>
-                        <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
+                        <div class="bg-gray-500/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
                             <span class="text-[10px] font-mono text-gray-500 uppercase mb-1">Buyurtmalar</span>
                             <span class="text-sm font-bold text-blue-600 font-mono">{{ selectedSupplierView.orders?.length || 0 }} ta</span>
                         </div>
-                        <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
+                        <div class="bg-gray-500/50 p-4 rounded-xl border border-gray-100 flex flex-col justify-center">
                             <span class="text-[10px] font-mono text-gray-500 uppercase mb-1">Joriy Balans</span>
                             <div class="text-left">
                                 <span class="block text-xl font-bold font-mono" :class="selectedSupplierView.balance > 0 ? 'text-red-600' : (selectedSupplierView.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">
@@ -400,8 +400,8 @@ const sendToTelegram = (id) => {
                         
                         <!-- Products Tables by Category -->
                         <div class="grid grid-cols-1 gap-6 mb-8">
-                            <div v-for="(items, category) in getGroupedItems(selectedSupplierView)" :key="category" class="bg-gray-900/50 rounded-xl border border-gray-100 overflow-hidden">
-                                <h5 class="text-center bg-gray-900/50 py-2 border-b border-gray-200 text-[10px] font-bold uppercase tracking-widest text-blue-600">{{ category }}</h5>
+                            <div v-for="(items, category) in getGroupedItems(selectedSupplierView)" :key="category" class="bg-gray-500/50 rounded-xl border border-gray-100 overflow-hidden">
+                                <h5 class="text-center bg-gray-500/50 py-2 border-b border-gray-200 text-[10px] font-bold uppercase tracking-widest text-blue-600">{{ category }}</h5>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-[10px] font-mono border-collapse">
                                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
@@ -442,7 +442,7 @@ const sendToTelegram = (id) => {
 
                         <!-- Payments Table -->
                         <h4 class="text-xs font-mono text-gray-900 uppercase tracking-widest mb-4">To'lovlar Tarixi (Chiqim):</h4>
-                        <div class="overflow-x-auto bg-gray-900/50 rounded-xl border border-gray-100">
+                        <div class="overflow-x-auto bg-gray-500/50 rounded-xl border border-gray-100">
                             <table class="w-full text-left text-sm font-mono border-collapse">
                                 <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
                                     <tr class="text-gray-500 text-[10px] uppercase border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -471,7 +471,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Add/Edit Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-xl p-4 md:p-8 rounded-2xl border border-amber-200 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -482,17 +482,17 @@ const sendToTelegram = (id) => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="col-span-2">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kompaniya Nomi</label>
-                        <input v-model="form.company_name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="MCHJ / XK nomi">
+                        <input v-model="form.company_name" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="MCHJ / XK nomi">
                     </div>
                     
                     <div class="col-span-2 md:col-span-1">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Vakil Ismi (F.I.O) *</label>
-                        <input v-model="form.name" type="text" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="Ism familiyasi">
+                        <input v-model="form.name" type="text" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="Ism familiyasi">
                     </div>
 
                     <div class="col-span-2 md:col-span-1">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Telefon</label>
-                        <input v-model="form.phone" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="+998 90 123 45 67">
+                        <input v-model="form.phone" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-amber-500 transition-colors" placeholder="+998 90 123 45 67">
                     </div>
 
 
@@ -508,7 +508,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Payment Modal -->
-        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md p-4 md:p-8 rounded-2xl border border-emerald-200 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -519,12 +519,12 @@ const sendToTelegram = (id) => {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Summasi (UZS) *</label>
-                        <input v-model="paymentForm.amount" type="number" step="0.01" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors text-right text-lg">
+                        <input v-model="paymentForm.amount" type="number" step="0.01" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors text-right text-lg">
                     </div>
                     
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Turi *</label>
-                        <select v-model="paymentForm.payment_method" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors">
+                        <select v-model="paymentForm.payment_method" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors">
                             <option value="bank">Bank / Pul o'tkazma</option>
                             <option value="card">Plastik karta</option>
                             <option value="cash">Naqd pul</option>
@@ -533,12 +533,12 @@ const sendToTelegram = (id) => {
 
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Sana *</label>
-                        <input v-model="paymentForm.transaction_date" type="date" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors">
+                        <input v-model="paymentForm.transaction_date" type="date" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors">
                     </div>
 
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Izoh</label>
-                        <textarea v-model="paymentForm.notes" rows="2" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors"></textarea>
+                        <textarea v-model="paymentForm.notes" rows="2" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-emerald-500 transition-colors"></textarea>
                     </div>
                 </div>
                 
@@ -552,7 +552,7 @@ const sendToTelegram = (id) => {
         </div>
 
         <!-- Add Order Modal -->
-        <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showOrderModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -561,12 +561,12 @@ const sendToTelegram = (id) => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Buyurtma Sanasi *</label>
-                        <input v-model="orderForm.order_date" type="date" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
+                        <input v-model="orderForm.order_date" type="date" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
                     </div>
 
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kutilyotgan Kelish Sanasi</label>
-                        <input v-model="orderForm.expected_delivery_date" type="date" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
+                        <input v-model="orderForm.expected_delivery_date" type="date" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
                     </div>
                 </div>
 
@@ -583,7 +583,7 @@ const sendToTelegram = (id) => {
                             
                             <div class="flex-1 min-w-[150px]">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Nomi *</label>
-                                <input v-model="item.item_name" type="text" list="inventory_list" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="Sement, Armatura...">
+                                <input v-model="item.item_name" type="text" list="inventory_list" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="Sement, Armatura...">
                                 <datalist id="inventory_list">
                                     <option v-for="inv in inventory_items" :key="inv.id" :value="inv.name"></option>
                                 </datalist>
@@ -591,12 +591,12 @@ const sendToTelegram = (id) => {
                             
                             <div class="w-24">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'lcham</label>
-                                <input v-model="item.size" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="d20, 10x10...">
+                                <input v-model="item.size" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="d20, 10x10...">
                             </div>
                             
                             <div class="w-24">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'lchov</label>
-                                <select v-model="item.unit" class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-sm">
+                                <select v-model="item.unit" class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-sm">
                                     <option value="dona">Dona</option>
                                     <option value="kg">Kg</option>
                                     <option value="tonna">Tonna</option>
@@ -611,12 +611,12 @@ const sendToTelegram = (id) => {
 
                             <div class="w-24">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Soni *</label>
-                                <input v-model="item.quantity" type="number" step="0.01" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
+                                <input v-model="item.quantity" type="number" step="0.01" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
                             </div>
 
                             <div class="w-32">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Narxi (UZS) *</label>
-                                <input v-model="item.unit_price" type="number" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
+                                <input v-model="item.unit_price" type="number" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
                             </div>
                             
                             <div class="w-full sm:w-auto pt-6 text-right sm:pr-6">
@@ -628,7 +628,7 @@ const sendToTelegram = (id) => {
 
                 <div class="mb-6">
                     <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Qo'shimcha Izoh</label>
-                    <textarea v-model="orderForm.notes" rows="2" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors" placeholder="Ixtiyoriy..."></textarea>
+                    <textarea v-model="orderForm.notes" rows="2" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors" placeholder="Ixtiyoriy..."></textarea>
                 </div>
                 
                 <div class="flex justify-between items-center border-t border-gray-200 pt-6">

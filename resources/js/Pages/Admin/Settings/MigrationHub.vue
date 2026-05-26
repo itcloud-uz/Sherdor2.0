@@ -14,7 +14,7 @@
                     <p class="text-xs text-gray-500 font-mono mt-2">Эски Excel ва Word базаларни ақлли кўчириш маркази</p>
                 </div>
                 
-                <button @click="clearData" :disabled="isClearing || isExecuting" class="px-4 py-2 bg-gray-900/50 border border-neon-magenta/50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-50 hover:border-neon-magenta disabled:opacity-50 transition-all flex items-center gap-2">
+                <button @click="clearData" :disabled="isClearing || isExecuting" class="px-4 py-2 bg-gray-500/50 border border-neon-magenta/50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-50 hover:border-neon-magenta disabled:opacity-50 transition-all flex items-center gap-2">
                     <span v-if="isClearing" class="animate-spin">⚙️</span>
                     🗑️ Базани Тозалаш
                 </button>
@@ -69,7 +69,7 @@
                     </div>
                     
                     <!-- Selected Files Preview -->
-                    <div v-if="selectedFiles.length > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 p-6 bg-gray-900/50 rounded-2xl max-h-[250px] overflow-y-auto custom-scrollbar">
+                    <div v-if="selectedFiles.length > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 p-6 bg-gray-500/50 rounded-2xl max-h-[250px] overflow-y-auto custom-scrollbar">
                         <h3 class="text-xs font-mono text-gray-900 mb-4 uppercase tracking-widest text-amber-600">Танланган Файллар ({{ selectedFiles.length }})</h3>
                         <div class="space-y-2">
                             <div v-for="(file, i) in selectedFiles" :key="i" class="p-2 border border-gray-100 rounded flex justify-between items-center group">

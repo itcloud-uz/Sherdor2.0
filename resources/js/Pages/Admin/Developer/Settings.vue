@@ -150,7 +150,7 @@ function lockSettings() {
             <!-- UNLOCKED STATE -->
             <div v-else class="space-y-6">
                 <!-- TOP ACTION BAR -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 flex justify-between items-center shadow-lg bg-gray-900/50">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 flex justify-between items-center shadow-lg bg-gray-500/50">
                     <h1 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                         <span class="text-blue-600">⚙️</span> Dasturchi Paneli
                     </h1>
@@ -176,7 +176,7 @@ function lockSettings() {
                         
                         <p class="text-sm font-mono text-gray-500 mb-8 leading-relaxed">Ushbu bo'lim orqali LPR va boshqa aqlli kameralar uchun maxsus API ruxsatnomalarini (API Keys) yaratasiz. Ularni faqat ishonchli uskunalar tarmog'iga kiriting.</p>
 
-                        <div class="bg-gray-900/50 p-6 rounded-2xl border border-gray-100 mb-8 shadow-inner">
+                        <div class="bg-gray-500/50 p-6 rounded-2xl border border-gray-100 mb-8 shadow-inner">
                             <h3 class="text-xs font-mono text-gray-500 mb-4 uppercase tracking-widest flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-blue-600"></span> Yangi Uskuna Qo'shish
                             </h3>
@@ -208,7 +208,7 @@ function lockSettings() {
                                         🗑️
                                     </button>
                                 </div>
-                                <div class="p-3 bg-gray-900/50 rounded-xl border border-emerald-200 font-mono text-xs text-emerald-600 break-all shadow-inner select-all cursor-text relative group">
+                                <div class="p-3 bg-gray-500/50 rounded-xl border border-emerald-200 font-mono text-xs text-emerald-600 break-all shadow-inner select-all cursor-text relative group">
                                     {{ key.api_key }}
                                 </div>
                             </div>
@@ -233,7 +233,7 @@ function lockSettings() {
                             <span class="px-4 py-1.5 bg-neon-blue/10 text-neon-blue border border-neon-blue/30 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full shadow-sm shrink-0">Integratsiya</span>
                         </div>
                         
-                        <p class="text-sm font-mono text-gray-500 mb-8 leading-relaxed">Xodimlar Telegram bot orqali bildirishnomalar olishi yoki tasdiqlash funksiyalaridan foydalanishi uchun ularning shaxsiy <code class="bg-gray-900/50 px-1 rounded text-gray-900">Chat ID</code> larini bu yerga biriktiring.</p>
+                        <p class="text-sm font-mono text-gray-500 mb-8 leading-relaxed">Xodimlar Telegram bot orqali bildirishnomalar olishi yoki tasdiqlash funksiyalaridan foydalanishi uchun ularning shaxsiy <code class="bg-gray-500/50 px-1 rounded text-gray-900">Chat ID</code> larini bu yerga biriktiring.</p>
 
                         <div class="space-y-4 flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                             <div v-for="user in users" :key="user.id" class="p-5 border border-gray-200 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors flex flex-col gap-5">
@@ -251,7 +251,7 @@ function lockSettings() {
                                     </div>
                                 </div>
                                 
-                                <div class="flex flex-col sm:flex-row items-center gap-3 w-full bg-gray-900/50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex flex-col sm:flex-row items-center gap-3 w-full bg-gray-500/50 p-3 rounded-xl border border-gray-100">
                                     <div class="relative w-full">
                                         <input v-model="user.telegram_chat_id" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm pl-10 py-2 border-transparent focus:border-neon-blue bg-transparent" placeholder="Chat ID (masalan: 1412501744)">
                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neon-blue opacity-70">💬</span>
@@ -279,7 +279,7 @@ function lockSettings() {
 
                     <p class="text-sm font-mono text-gray-500 mb-8 leading-relaxed max-w-3xl">Tizimni korxona PBX serveriga (Asterisk) ulash orqali CRM orqali to'g'ridan-to'g'ri qo'ng'iroqlarni amalga oshirish mumkin. Qatorlardagi PBX sozlamalarini Uztelecom, EastTelecom yoki shaxsiy VoIP provayderingizga moslang.</p>
 
-                    <form @submit.prevent="updateSipSettings" class="bg-gray-900/50 p-6 sm:p-4 md:p-8 rounded-2xl border border-gray-100 shadow-inner">
+                    <form @submit.prevent="updateSipSettings" class="bg-gray-500/50 p-6 sm:p-4 md:p-8 rounded-2xl border border-gray-100 shadow-inner">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-900/50 mb-2 uppercase tracking-widest flex items-center gap-2">
@@ -342,7 +342,7 @@ function lockSettings() {
 
                     <p class="text-sm font-mono text-gray-500 mb-8 leading-relaxed max-w-3xl">Ochiq reklama sahifasini boshqarish uchun shu yerdan foydalaning. Matnlar va Asosiy Rasmni yuklaganingizda, public sahifa darhol o'zgaradi.</p>
 
-                    <form @submit.prevent="updatePromoSettings" class="bg-gray-900/50 p-6 sm:p-4 md:p-8 rounded-2xl border border-gray-100 shadow-inner">
+                    <form @submit.prevent="updatePromoSettings" class="bg-gray-500/50 p-6 sm:p-4 md:p-8 rounded-2xl border border-gray-100 shadow-inner">
                         <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
                             <div class="space-y-6">
                                 <div>
@@ -371,12 +371,12 @@ function lockSettings() {
                                 <label class="block text-[10px] font-mono text-gray-900/50 uppercase tracking-widest flex items-center gap-2">
                                     <span class="text-indigo-600">🖼️</span> Asosiy Rasm (Promo Image)
                                 </label>
-                                <div class="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl bg-gray-900/50 flex flex-col items-center justify-center relative overflow-hidden group hover:border-neon-magenta/50 transition-colors">
+                                <div class="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl bg-gray-500/50 flex flex-col items-center justify-center relative overflow-hidden group hover:border-neon-magenta/50 transition-colors">
                                     <input type="file" @change="handleImageUpload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                                     <template v-if="promoImagePreview">
                                         <img :src="promoImagePreview" class="w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity">
                                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            <span class="bg-gray-900/50 px-4 py-2 rounded-lg text-indigo-600 font-mono text-xs uppercase tracking-widest">Rasmni Almashtirish</span>
+                                            <span class="bg-gray-500/50 px-4 py-2 rounded-lg text-indigo-600 font-mono text-xs uppercase tracking-widest">Rasmni Almashtirish</span>
                                         </div>
                                     </template>
                                     <template v-else>

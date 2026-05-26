@@ -113,19 +113,19 @@ const updateLabelSettings = () => {
             
             <!-- Sidebar Tabs -->
             <div class="w-full md:w-72 space-y-3 shrink-0">
-                <button @click="activeTab = 'branding'" :class="activeTab === 'branding' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-900/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                <button @click="activeTab = 'branding'" :class="activeTab === 'branding' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
                     <span class="text-2xl drop-shadow">🎨</span> Brending va Tashqi Ko'rinish
                 </button>
                 
-                <button @click="activeTab = 'financial'" :class="activeTab === 'financial' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-900/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                <button @click="activeTab = 'financial'" :class="activeTab === 'financial' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
                     <span class="text-2xl drop-shadow">🏦</span> Financial Defaults
                 </button>
 
-                <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-900/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
+                <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-5 rounded-2xl border transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4">
                     <span class="text-2xl drop-shadow group-hover:scale-110 transition-transform">👤</span> Profil va Dizayn
                 </button>
 
-                <button disabled class="w-full text-left px-5 py-5 rounded-2xl border bg-gray-900/50 border-gray-100 text-gray-900/30 transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4 cursor-not-allowed">
+                <button disabled class="w-full text-left px-5 py-5 rounded-2xl border bg-gray-500/50 border-gray-100 text-gray-900/30 transition-all font-display text-sm uppercase tracking-wider flex items-center gap-4 cursor-not-allowed">
                     <span class="text-2xl opacity-50">⏳</span> Yangi blok tez orada..!
                 </button>
             </div>
@@ -144,12 +144,12 @@ const updateLabelSettings = () => {
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Company Name</label>
-                                    <input v-model="form.company_name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                    <input v-model="form.company_name" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Primary Theme Color</label>
-                                    <div class="flex items-center gap-4 bg-gray-900/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                    <div class="flex items-center gap-4 bg-gray-500/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
                                         <input v-model="form.primary_theme_color" type="color" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
                                         <input v-model="form.primary_theme_color" type="text" class="bg-transparent border-0 text-gray-900 flex-1 font-mono focus:ring-0">
                                     </div>
@@ -157,15 +157,15 @@ const updateLabelSettings = () => {
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">{{ $t('custom_logo_desc') }}</label>
-                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Tizim Orqa Foni (Background Image)</label>
-                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                     <div v-if="$page.props.branding?.background_image_path" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-gray-300">
                                         <img :src="'/storage/' + $page.props.branding.background_image_path" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                        <div class="absolute inset-0 bg-gray-500/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                             <span class="text-xs text-gray-900 font-mono uppercase tracking-widest">Joriy Orqa Fon</span>
                                         </div>
                                     </div>
@@ -185,7 +185,7 @@ const updateLabelSettings = () => {
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Default Currency</label>
-                                    <select v-model="form.default_currency" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                    <select v-model="form.default_currency" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                         <option value="USD" class="bg-black text-gray-900">USD ($)</option>
                                         <option value="UZS" class="bg-black text-gray-900">UZS (So'm)</option>
                                         <option value="RUB" class="bg-black text-gray-900">RUB (₽)</option>
@@ -194,12 +194,12 @@ const updateLabelSettings = () => {
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Global Tax Rate (%)</label>
-                                    <input v-model="form.tax_rate" type="number" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-emerald-600 font-bold text-lg focus:border-emerald-500 focus:ring-1 focus:ring-neon-green transition-all">
+                                    <input v-model="form.tax_rate" type="number" step="0.01" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-emerald-600 font-bold text-lg focus:border-emerald-500 focus:ring-1 focus:ring-neon-green transition-all">
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Default Daily Penalty Rate (%)</label>
-                                    <input v-model="form.default_penalty_rate" type="number" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-red-600 font-bold text-lg focus:border-red-500 focus:ring-1 focus:ring-neon-red transition-all">
+                                    <input v-model="form.default_penalty_rate" type="number" step="0.01" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-red-600 font-bold text-lg focus:border-red-500 focus:ring-1 focus:ring-neon-red transition-all">
                                 </div>
                             </div>
                             
@@ -216,37 +216,37 @@ const updateLabelSettings = () => {
                         
                         <div class="space-y-5">
                             <div class="flex items-center gap-6 mb-6">
-                                <div class="w-20 h-20 rounded-2xl bg-gray-900/50 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                                <div class="w-20 h-20 rounded-2xl bg-gray-500/50 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                     <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover" />
                                     <span v-else class="text-3xl">👤</span>
                                 </div>
                                 <div class="flex-1">
                                     <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('upload_avatar') }}</label>
-                                    <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
+                                    <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">{{ $t('full_name_abbr') }}</label>
-                                <input type="text" v-model="profileForm.name" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="text" v-model="profileForm.name" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.name" class="text-red-600 text-xs mt-1">{{ profileForm.errors.name }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Email</label>
-                                <input type="email" v-model="profileForm.email" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="email" v-model="profileForm.email" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.email" class="text-red-600 text-xs mt-1">{{ profileForm.errors.email }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Telefon</label>
-                                <input type="text" v-model="profileForm.phone" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="text" v-model="profileForm.phone" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.phone" class="text-red-600 text-xs mt-1">{{ profileForm.errors.phone }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Yangi parol (ixtiyoriy)</label>
-                                <input type="password" v-model="profileForm.password" placeholder="••••••••" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="password" v-model="profileForm.password" placeholder="••••••••" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.password" class="text-red-600 text-xs mt-1">{{ profileForm.errors.password }}</div>
                             </div>
                         </div>
@@ -263,27 +263,27 @@ const updateLabelSettings = () => {
                         <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 md:p-4 md:p-8 rounded-2xl border border-gray-100 relative overflow-hidden group">
                             <h2 class="text-xl font-display font-bold text-gray-900 mb-6">{{ $t('global_design_theme') }}</h2>
                             <div class="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('apple_glass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'apple_glass' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'">
                                     <span class="text-3xl">🍏</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'apple_glass' ? 'text-neon-primary font-bold' : 'text-gray-500'">Apple Glass</span>
                                 </button>
-                                <button type="button" @click="updateThemeStyle('galaxy')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'galaxy' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('galaxy')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'galaxy' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'">
                                     <span class="text-3xl">🌌</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'galaxy' ? 'text-neon-primary font-bold' : 'text-gray-500'">Sher-Dor Galaxy</span>
                                 </button>
-                                <button type="button" @click="updateThemeStyle('cyberpunk')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'cyberpunk' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('cyberpunk')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'cyberpunk' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'">
                                     <span class="text-3xl">🤖</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'cyberpunk' ? 'text-neon-primary font-bold' : 'text-gray-500'">Neon Cyberpunk</span>
                                 </button>
-                                <button type="button" @click="updateThemeStyle('minimalist')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'minimalist' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('minimalist')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'minimalist' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'">
                                     <span class="text-3xl">⬛</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'minimalist' ? 'text-neon-primary font-bold' : 'text-gray-500'">Minimalist</span>
                                 </button>
-                                <button type="button" @click="updateThemeStyle('gold')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'gold' ? 'border-[#FFD700] bg-[#FFD700]/10 shadow-sm' : 'border-gray-200 hover:border-[#FFD700]/50 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('gold')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'gold' ? 'border-[#FFD700] bg-[#FFD700]/10 shadow-sm' : 'border-gray-200 hover:border-[#FFD700]/50 bg-gray-500/50'">
                                     <span class="text-3xl shadow-[#FFD700]">⚜️</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'gold' ? 'text-[#FFD700] font-bold' : 'text-gray-500'">Gold Royal</span>
                                 </button>
-                                <button type="button" @click="updateThemeStyle('itcloud_cyberglass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'border-[#00F0FF] bg-[#00F0FF]/10 shadow-sm' : 'border-gray-200 hover:border-[#00F0FF]/50 bg-gray-900/50'">
+                                <button type="button" @click="updateThemeStyle('itcloud_cyberglass')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'border-[#00F0FF] bg-[#00F0FF]/10 shadow-sm' : 'border-gray-200 hover:border-[#00F0FF]/50 bg-gray-500/50'">
                                     <span class="text-3xl">🌐</span>
                                     <span class="font-mono text-xs uppercase text-center" :class="profileForm.theme_style === 'itcloud_cyberglass' ? 'text-[#00F0FF] font-bold' : 'text-gray-500'">ITCloud Cyberglass</span>
                                 </button>
@@ -300,13 +300,13 @@ const updateLabelSettings = () => {
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Shrift Kattaligi (PX)</label>
                                     <div class="flex items-center gap-4">
                                         <input v-model="profileForm.label_font_size" type="range" min="8" max="24" step="1" @change="updateLabelSettings" class="flex-1 accent-neon-primary h-1 rounded-lg appearance-none cursor-pointer">
-                                        <span class="w-12 text-center font-mono text-lg text-gray-900 font-bold border border-gray-200 rounded bg-gray-900/50">{{ profileForm.label_font_size }}</span>
+                                        <span class="w-12 text-center font-mono text-lg text-gray-900 font-bold border border-gray-200 rounded bg-gray-500/50">{{ profileForm.label_font_size }}</span>
                                     </div>
                                 </div>
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Matn Rangi (Yorqinlik)</label>
-                                    <div class="flex items-center gap-4 bg-gray-900/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                    <div class="flex items-center gap-4 bg-gray-500/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
                                         <input v-model="profileForm.label_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
                                         <input v-model="profileForm.label_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-gray-900 flex-1 font-mono focus:ring-0 text-sm">
                                     </div>
@@ -316,7 +316,7 @@ const updateLabelSettings = () => {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Ro'yxat orqa foni (Dropdown BG)</label>
-                                    <div class="flex items-center gap-4 bg-gray-900/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                    <div class="flex items-center gap-4 bg-gray-500/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
                                         <input v-model="profileForm.dropdown_bg_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
                                         <input v-model="profileForm.dropdown_bg_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-gray-900 flex-1 font-mono focus:ring-0 text-sm">
                                     </div>
@@ -324,7 +324,7 @@ const updateLabelSettings = () => {
 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Ro'yxat matn rangi (Dropdown Text)</label>
-                                    <div class="flex items-center gap-4 bg-gray-900/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
+                                    <div class="flex items-center gap-4 bg-gray-500/50 border border-gray-200 rounded-xl p-2 transition-all focus-within:border-neon-primary">
                                         <input v-model="profileForm.dropdown_text_color" type="color" @change="updateLabelSettings" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
                                         <input v-model="profileForm.dropdown_text_color" type="text" @change="updateLabelSettings" class="bg-transparent border-0 text-gray-900 flex-1 font-mono focus:ring-0 text-sm">
                                     </div>
@@ -332,16 +332,16 @@ const updateLabelSettings = () => {
                             </div>
 
                             <!-- Preview -->
-                            <div class="mt-8 p-6 border border-dashed border-gray-300 rounded-xl bg-gray-900/50">
+                            <div class="mt-8 p-6 border border-dashed border-gray-300 rounded-xl bg-gray-500/50">
                                 <p class="text-[10px] font-mono text-gray-500 mb-4 italic uppercase">Jonli Ko'rinish (Preview):</p>
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block mb-1 uppercase" :style="{ fontSize: profileForm.label_font_size + 'px', color: profileForm.label_color }">RO'YXATDAN O'TGAN SANA (IXTIYORIY)</label>
-                                        <div class="w-full h-10 bg-gray-900/50 border border-gray-200 rounded-lg flex items-center px-4 text-xs text-gray-500 font-mono">kk/oo/yyyy</div>
+                                        <div class="w-full h-10 bg-gray-500/50 border border-gray-200 rounded-lg flex items-center px-4 text-xs text-gray-500 font-mono">kk/oo/yyyy</div>
                                     </div>
                                     <div>
                                         <label class="block mb-1 uppercase" :style="{ fontSize: profileForm.label_font_size + 'px', color: profileForm.label_color }">ISM</label>
-                                        <div class="w-full h-10 bg-gray-900/50 border border-gray-200 rounded-lg"></div>
+                                        <div class="w-full h-10 bg-gray-500/50 border border-gray-200 rounded-lg"></div>
                                     </div>
                                 </div>
                             </div>
@@ -373,7 +373,7 @@ const updateLabelSettings = () => {
                                     type="button"
                                     @click="updateLanguage('uz')"
                                     class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
-                                    :class="profileForm.language === 'uz' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'"
+                                    :class="profileForm.language === 'uz' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'"
                                 >
                                     <span class="text-2xl">🇺🇿</span>
                                     <span class="font-mono text-xs uppercase" :class="profileForm.language === 'uz' ? 'text-neon-primary font-bold' : 'text-gray-500'">{{ $t('uzbek') }}</span>
@@ -383,7 +383,7 @@ const updateLabelSettings = () => {
                                     type="button"
                                     @click="updateLanguage('ru')"
                                     class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
-                                    :class="profileForm.language === 'ru' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'"
+                                    :class="profileForm.language === 'ru' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'"
                                 >
                                     <span class="text-2xl">🇷🇺</span>
                                     <span class="font-mono text-xs uppercase" :class="profileForm.language === 'ru' ? 'text-neon-primary font-bold' : 'text-gray-500'">{{ $t('russian') }}</span>
@@ -393,7 +393,7 @@ const updateLabelSettings = () => {
                                     type="button"
                                     @click="updateLanguage('en')"
                                     class="p-4 rounded-xl border flex flex-col items-center gap-2 transition-all"
-                                    :class="profileForm.language === 'en' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-900/50'"
+                                    :class="profileForm.language === 'en' ? 'border-neon-primary bg-neon-primary/10 shadow-sm' : 'border-gray-200 hover:border-white/30 bg-gray-500/50'"
                                 >
                                     <span class="text-2xl">🇬🇧</span>
                                     <span class="font-mono text-xs uppercase" :class="profileForm.language === 'en' ? 'text-neon-primary font-bold' : 'text-gray-500'">{{ $t('english') }}</span>

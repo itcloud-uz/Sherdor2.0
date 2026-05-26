@@ -201,7 +201,7 @@ const formatMoney = (amount) => {
         </div>
 
         <!-- Add Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-4 md:p-8 rounded-2xl border border-neon-magenta/50 shadow-sm relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
@@ -210,7 +210,7 @@ const formatMoney = (amount) => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <div class="col-span-3 md:col-span-1">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Ta'minotchi *</label>
-                        <select v-model="form.supplier_id" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
+                        <select v-model="form.supplier_id" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
                             <option value="">Tanlang</option>
                             <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
                         </select>
@@ -218,12 +218,12 @@ const formatMoney = (amount) => {
                     
                     <div class="col-span-3 md:col-span-1">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Buyurtma Sanasi *</label>
-                        <input v-model="form.order_date" type="date" required class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
+                        <input v-model="form.order_date" type="date" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
                     </div>
 
                     <div class="col-span-3 md:col-span-1">
                         <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kutilyotgan Kelish Sanasi</label>
-                        <input v-model="form.expected_delivery_date" type="date" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
+                        <input v-model="form.expected_delivery_date" type="date" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors">
                     </div>
                 </div>
 
@@ -240,7 +240,7 @@ const formatMoney = (amount) => {
                             
                             <div class="flex-1">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Nomi *</label>
-                                <input v-model="item.item_name" type="text" list="inventory_list" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="Sement, Armatura...">
+                                <input v-model="item.item_name" type="text" list="inventory_list" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm" placeholder="Sement, Armatura...">
                                 <datalist id="inventory_list">
                                     <option v-for="inv in inventory_items" :key="inv.id" :value="inv.name"></option>
                                 </datalist>
@@ -248,7 +248,7 @@ const formatMoney = (amount) => {
                             
                             <div class="w-24">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'lchov</label>
-                                <select v-model="item.unit" class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-sm">
+                                <select v-model="item.unit" class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-sm">
                                     <option value="dona">Dona</option>
                                     <option value="kg">Kg</option>
                                     <option value="tonna">Tonna</option>
@@ -263,12 +263,12 @@ const formatMoney = (amount) => {
 
                             <div class="w-24">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Soni *</label>
-                                <input v-model="item.quantity" type="number" step="0.01" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
+                                <input v-model="item.quantity" type="number" step="0.01" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
                             </div>
 
                             <div class="w-32">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Narxi (UZS) *</label>
-                                <input v-model="item.unit_price" type="number" required class="w-full bg-gray-900/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
+                                <input v-model="item.unit_price" type="number" required class="w-full bg-gray-500/50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
                             </div>
                             
                             <div class="w-32 pt-6 text-right pr-6">
@@ -280,7 +280,7 @@ const formatMoney = (amount) => {
 
                 <div class="mb-6">
                     <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Qo'shimcha Izoh</label>
-                    <textarea v-model="form.notes" rows="2" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors" placeholder="Ixtiyoriy..."></textarea>
+                    <textarea v-model="form.notes" rows="2" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-magenta transition-colors" placeholder="Ixtiyoriy..."></textarea>
                 </div>
                 
                 <div class="flex justify-between items-center border-t border-gray-200 pt-6">

@@ -480,6 +480,7 @@ watch(() => contractForm.value.unit_id, (newUnitId) => {
 });
 
 watch(() => contractForm.value.total_amount, (newTotal) => {
+    if (isEditingContract.value) return;
     if (contractForm.value.unit_id) {
         const u = props.units.find(unit => unit.id === contractForm.value.unit_id);
         if (u) {
@@ -494,7 +495,9 @@ watch(() => contractForm.value.total_amount, (newTotal) => {
         }
     }
 });
+
 watch(() => contractForm.value.payment_type, (newType) => {
+    if (isEditingContract.value) return;
     if (newType === 'full') {
         contractForm.value.down_payment = contractForm.value.total_amount;
         contractForm.value.term_months = 1;
@@ -1573,9 +1576,9 @@ function openQuickSmsModal(lead) {
         <!-- MODAL: CREATE CONTRACT -->
         <div v-if="showCreateContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCreateContractModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-green/30">
+            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-3xl border border-neon-green/30">
                 <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-green/50">
-                    {{ isEditingContract ? t('edit_contract') : $t('add') + ' ' + $t('contract') }}
+                    {{ isEditingContract ? 'Shartnomani Tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
                 <form @submit.prevent="createContract" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

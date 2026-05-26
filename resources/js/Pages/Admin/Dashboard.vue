@@ -30,6 +30,37 @@ const props = defineProps({
     buildingsSummary: Array
 });
 
+
+const groupedBuildingsSummary = computed(() => {
+    if (!props.buildingsSummary) return [];
+    const groups = {};
+    props.buildingsSummary.forEach(b => {
+        const name = b.name || 'Noma\'lum Obyekt';
+        if (!groups[name]) {
+            groups[name] = {
+                id: b.id, // Use the first block's id as group id
+                name: name,
+                total_units: 0,
+                sold_units: 0,
+                total_area: 0,
+                income: 0,
+                debt: 0
+            };
+        }
+        groups[name].total_units += b.total_units || 0;
+        groups[name].sold_units += b.sold_units || 0;
+        groups[name].total_area += b.total_area || 0;
+        groups[name].income += b.income || 0;
+        groups[name].debt += b.debt || 0;
+    });
+    
+    // Convert back to array
+    return Object.values(groups).map(g => ({
+        ...g,
+        total_area: Math.round(g.total_area * 100) / 100 // rounding
+    }));
+});
+
 const showLostLeadsModal = ref(false);
 import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 const showExpensesModal = ref(false);
@@ -124,10 +155,10 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 <span class="w-3 h-3 rounded-full bg-blue-500"></span> Obyektlar Statistikasi
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                <div v-for="building in buildingsSummary" :key="building.id" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <div v-for="building in groupedBuildingsSummary" :key="building.id" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-4">
                         <h4 class="text-gray-900 font-bold text-lg">{{ building.name }}</h4>
-                        <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-mono uppercase">{{ building.block_name }}</span>
+                        
                     </div>
                     
                     <div class="flex gap-4">

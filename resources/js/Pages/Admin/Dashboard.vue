@@ -26,7 +26,8 @@ const props = defineProps({
     leadsBySource: Object,
     leadsFunnel: Array,
     lostLeads: Array,
-    financialSummary: Object
+    financialSummary: Object,
+    buildingsSummary: Array
 });
 
 const showLostLeadsModal = ref(false);
@@ -113,7 +114,56 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
     <Head :title="$t('global_dashboard')" />
     
     <AdminLayout>
+    <div class="bg-slate-50 min-h-screen p-4 md:p-6 lg:p-8 space-y-8">
 
+
+
+        <!-- OBYEKTLAR KARTASI -->
+        <div class="mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span> Obyektlar Statistikasi
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div v-for="building in buildingsSummary" :key="building.id" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-4">
+                        <h4 class="text-gray-900 font-bold text-lg">{{ building.name }}</h4>
+                        <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-mono uppercase">{{ building.block_name }}</span>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">XONALAR</p>
+                            <p class="text-lg font-bold text-gray-900">{{ building.total_units }}</p>
+                        </div>
+                        <div class="flex-1 border-l border-gray-100 pl-4">
+                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">MAYDON</p>
+                            <p class="text-lg font-bold text-gray-900">{{ building.total_area }} m²</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[11px] font-bold uppercase mb-2">
+                            <span class="text-gray-400">Sotilgan: {{ building.sold_units }} ta</span>
+                            <span class="text-orange-500">{{ building.total_units > 0 ? Math.round((building.sold_units / building.total_units) * 100) : 0 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units) * 100 : 0) + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-gray-100 flex justify-between">
+                        <div>
+                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Tushum</p>
+                            <p class="text-sm font-bold text-emerald-500">{{ $currency(building.income) }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Qarzdorlik</p>
+                            <p class="text-sm font-bold text-red-500">{{ $currency(building.debt) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- WIDGET 1: Top Financial Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -412,6 +462,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             :category="activeFinancialCategory" 
             @close="showFinancialModal = false" 
         />
+        </div>
     </AdminLayout>
 </template>
 

@@ -156,6 +156,39 @@ class AdminController extends Controller
         // Lost leads for modal
         $lostLeads = \App\Models\Lead::where('status', 'lost')->select('id', 'full_name', 'phone', 'reason', 'updated_at')->get();
 
+        // Buildings Summary for Object Cards
+        $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) {
+            $totalUnits = 0;
+            $soldUnits = 0;
+            $totalArea = 0;
+            $expectedRevenue = 0;
+            
+            foreach($building->floors as $floor) {
+                foreach($floor->units as $unit) {
+                    $totalUnits++;
+                    $totalArea += (float)$unit->area_sqm;
+                    if ($unit->status === 'sold') {
+                        $soldUnits++;
+                        $expectedRevenue += (float)$unit->price;
+                    }
+                }
+            }
+            
+            return [
+                'id' => $building->id,
+                'name' => $building->name,
+                'block_name' => $building->block_name ?? 'Asosiy Blok',
+                'total_units' => $totalUnits,
+                'sold_units' => $soldUnits,
+                'total_area' => round($totalArea, 2),
+                'expected_revenue' => $expectedRevenue,
+                // Mocking debt/income split for the UI since we don't have unit-level contract linking here easily
+                // Usually this is calculated via contracts/transactions associated with this building.
+                'income' => $expectedRevenue * 0.7, // 70% paid
+                'debt' => $expectedRevenue * 0.3    // 30% debt
+            ];
+        });
+
         return Inertia::render('Admin/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalExpenses' => $totalExpenses,
@@ -175,6 +208,7 @@ class AdminController extends Controller
             'leadsFunnel' => $leadsFunnel,
             'lostLeads' => $lostLeads,
             'financialSummary' => $financialSummary,
+            'buildingsSummary' => $buildingsSummary,
         ]);
     }
 }

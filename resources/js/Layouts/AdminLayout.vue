@@ -92,7 +92,7 @@ onUnmounted(() => {
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100"
                         :class="currentNav?.name === item.name ? 'bg-blue-50 border-blue-100' : ''"
                     >
-                        <span class="text-lg text-gray-400 group-hover:text-blue-600 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                        <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-600' : ''">{{ item.icon }}</span>
                         <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
                     </Link>
                 </template>
@@ -110,7 +110,7 @@ onUnmounted(() => {
                     </button>
                     <slot name="header">
                         <h2 class="text-lg md:text-xl font-display font-semibold text-gray-900 flex items-center gap-3 truncate">
-                            <span class="text-xl md:text-2xl text-gray-400">{{ currentNav?.icon || '⬡' }}</span> 
+                            <span class="text-xl md:text-2xl text-gray-500">{{ currentNav?.icon || '⬡' }}</span> 
                             <span class="truncate">{{ currentNav ? $t(currentNav.name) : 'Dashboard' }}</span>
                         </h2>
                     </slot>

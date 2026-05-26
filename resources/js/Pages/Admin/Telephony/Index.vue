@@ -79,7 +79,7 @@
                             <button @click="dialerPhone = dialerPhone.slice(0, -1)" class="w-16 h-14 bg-red-500/10 hover:bg-red-500/30 border border-red-200 rounded-lg text-red-500 flex items-center justify-center transition-all">
                                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
                             </button>
-                            <button @click="makeCall" :disabled="isCalling || !dialerPhone" class="flex-1 h-14 bg-blue-50 hover:bg-blue-50 disabled:bg-white/5 disabled:border-gray-200 text-blue-600 disabled:text-gray-500 font-display font-bold rounded-lg border border-blue-200 disabled:border-transparent transition-all uppercase tracking-wider text-xs sm:text-sm flex justify-center items-center gap-2 shadow-sm">
+                            <button @click="makeCall" :disabled="isCalling || !dialerPhone" class="flex-1 h-14 bg-blue-50 hover:bg-blue-50 disabled:bg-gray-50 disabled:border-gray-200 text-blue-600 disabled:text-gray-500 font-display font-bold rounded-lg border border-blue-200 disabled:border-transparent transition-all uppercase tracking-wider text-xs sm:text-sm flex justify-center items-center gap-2 shadow-sm">
                                 <span v-if="isCalling" class="animate-pulse">ULANMOQDA...</span>
                                 <span v-else>QO'NG'IROQ QILISH</span>
                             </button>

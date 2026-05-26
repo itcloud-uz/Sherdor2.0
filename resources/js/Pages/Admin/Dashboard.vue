@@ -217,7 +217,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{{ $t('hr_workers_today') }}</p>
                 <h2 class="text-xl font-display font-bold text-gray-900 mt-1 flex gap-4">
                     <span class="text-emerald-600" title="Kelganlar">{{ attendanceStats?.present || 0 }}</span>
-                    <span class="text-gray-400">/</span>
+                    <span class="text-gray-500">/</span>
                     <span class="text-red-600" title="Kelmaganlar">{{ attendanceStats?.absent || 0 }}</span>
                 </h2>
             </div>
@@ -238,7 +238,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         </div>
                     </div>
                     <div @click.stop="showExpensesModal = true" class="cursor-pointer group hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors border border-transparent hover:border-gray-200">
-                        <p class="text-red-600 mb-2 font-bold flex justify-between"><span>{{ $t('expense_destinations') }} <span class="text-[10px] text-gray-400 ml-2 font-normal">(batafsil ko'rish)</span></span> <span>{{ $currency(totalExpenses) }}</span></p>
+                        <p class="text-red-600 mb-2 font-bold flex justify-between"><span>{{ $t('expense_destinations') }} <span class="text-[10px] text-gray-500 ml-2 font-normal">(batafsil ko'rish)</span></span> <span>{{ $currency(totalExpenses) }}</span></p>
                         <div v-for="(amount, source) in expensesBySource" :key="source" class="flex justify-between border-b border-gray-100 py-1.5">
                             <span class="text-gray-600 uppercase">{{ source }}</span>
                             <span class="text-gray-900 font-semibold">{{ $currency(amount) }}</span>
@@ -380,7 +380,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <h2 class="text-xl font-display font-bold text-gray-900 uppercase tracking-wide">{{ $t('lost_leads') }}</h2>
-                    <button @click="showLostLeadsModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button @click="showLostLeadsModal = false" class="text-gray-500 hover:text-gray-600 transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>

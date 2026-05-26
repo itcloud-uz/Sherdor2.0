@@ -157,12 +157,12 @@ const updateLabelSettings = () => {
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">{{ $t('custom_logo_desc') }}</label>
-                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-white/10 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Tizim Orqa Foni (Background Image)</label>
-                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-white/10 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                     <div v-if="$page.props.branding?.background_image_path" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-gray-300">
                                         <img :src="'/storage/' + $page.props.branding.background_image_path" class="w-full h-full object-cover">
                                         <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -222,7 +222,7 @@ const updateLabelSettings = () => {
                                 </div>
                                 <div class="flex-1">
                                     <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('upload_avatar') }}</label>
-                                    <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-white/10 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
+                                    <input type="file" @change="e => profileForm.avatar = e.target.files[0]" class="w-full bg-gray-900/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20">
                                 </div>
                             </div>
 

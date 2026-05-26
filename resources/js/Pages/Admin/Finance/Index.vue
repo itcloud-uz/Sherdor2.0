@@ -794,7 +794,7 @@ const categoriesSummary = computed(() => {
                                         <div class="flex justify-center gap-2">
                                             <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
                                             <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-500 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -867,7 +867,7 @@ const categoriesSummary = computed(() => {
                                         <div class="flex justify-center gap-2">
                                             <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
                                             <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-400 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
+                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-500 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
                                         </div>
                                     </td>
                                 </tr>

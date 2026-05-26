@@ -17,15 +17,15 @@ const page = usePage();
             <BackgroundTheme />
 
         <!-- Top Navigation -->
-        <header class="h-20 md:h-24 glass-panel border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-10 relative">
+        <header class="h-20 md:h-24 glass-panel border-b border-gray-200 flex items-center justify-between px-4 md:px-8 z-10 relative">
             <div class="flex items-center gap-4 md:gap-8">
                 <div class="flex items-center gap-2 md:gap-3">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center shadow-neon-primary overflow-hidden">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/50 border border-gray-200 flex items-center justify-center shadow-neon-primary overflow-hidden">
                         <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain" />
                         <span v-else class="text-neon-primary font-bold text-xl md:text-2xl font-display">P</span>
                     </div>
                     <div>
-                        <h1 class="text-base md:text-lg font-display font-bold tracking-widest text-white">PARTNER</h1>
+                        <h1 class="text-base md:text-lg font-display font-bold tracking-widest text-gray-900">PARTNER</h1>
                         <p class="text-[8px] md:text-[10px] font-mono text-neon-primary uppercase tracking-[0.2em] hidden sm:block">Consensus Hub</p>
                     </div>
                 </div>
@@ -38,9 +38,9 @@ const page = usePage();
                     <LanguageSwitcher />
                 </div>
                 
-                <div class="flex items-center gap-3 md:border-l border-white/10 md:pl-6">
+                <div class="flex items-center gap-3 md:border-l border-gray-200 md:pl-6">
                     <div class="text-right hidden sm:block">
-                        <p class="text-xs font-semibold text-white">{{ $page.props.auth.user.name }}</p>
+                        <p class="text-xs font-semibold text-gray-900">{{ $page.props.auth.user.name }}</p>
                         <p class="text-[9px] font-mono text-neon-yellow">PARTNER</p>
                     </div>
                     <!-- Avatar Link to Settings -->

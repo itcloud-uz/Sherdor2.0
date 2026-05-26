@@ -258,7 +258,7 @@
                         <div v-if="promoRuleForm.audience_type === 'upload_file'" class="p-4 border border-dashed border-gray-300 rounded-xl text-center">
                             <h3 class="text-sm font-mono text-gray-900 mb-2">Mijozlar Bazasini Yuklash (CSV)</h3>
                             <p class="text-xs text-gray-500 mb-4">Faqat bitta "Telefon Raqam" (998901234567) ustuni bo'lishi kerak.</p>
-                            <input type="file" @change="promoRuleForm.file = $event.target.files[0]" accept=".csv" class="mx-auto block w-full max-w-xs text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-gray-900 hover:file:bg-white/20 cursor-pointer">
+                            <input type="file" @change="promoRuleForm.file = $event.target.files[0]" accept=".csv" class="mx-auto block w-full max-w-xs text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:bg-gray-100 file:text-gray-900 hover:file:bg-white/20 cursor-pointer">
                         </div>
 
                         <div v-if="promoRuleForm.audience_type === 'manual_number'">

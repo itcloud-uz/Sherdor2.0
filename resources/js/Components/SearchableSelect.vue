@@ -101,21 +101,21 @@ onUnmounted(() => {
         <!-- Main Select Button -->
         <div 
             @click="toggleDropdown"
-            class="glass-input w-full bg-black/50 pr-8 cursor-pointer flex items-center min-h-[42px]"
+            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 pr-8 cursor-pointer flex items-center min-h-[42px]"
             :class="[disabled ? 'opacity-50 cursor-not-allowed' : '']"
             :style="{ 
                 borderColor: isOpen ? 'var(--color-neon-primary, #00F0FF)' : '',
-                boxShadow: isOpen ? 'var(--shadow-neon-primary, 0 0 15px rgba(0, 240, 255, 0.3))' : ''
+                boxShadow: isOpen ? 'var(--shadow-sm, 0 0 15px rgba(0, 240, 255, 0.3))' : ''
             }"
         >
-            <span v-if="selectedOption" class="text-white truncate pr-2">
+            <span v-if="selectedOption" class="text-gray-900 truncate pr-2">
                 {{ getLabel(selectedOption) }}
             </span>
-            <span v-else class="text-white/50 truncate pr-2">
+            <span v-else class="text-gray-900/50 truncate pr-2">
                 {{ placeholder }}
             </span>
             
-            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-white/50">
+            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-900/50">
                 <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </div>
@@ -132,23 +132,23 @@ onUnmounted(() => {
         <!-- Dropdown Options -->
         <div 
             v-if="isOpen" 
-            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg shadow-xl backdrop-blur-xl border border-white/20"
+            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg shadow-xl backdrop-blur-sm border border-gray-300"
             :style="{ 
                 backgroundColor: 'var(--dropdown-bg-color, #111111)',
                 color: 'var(--dropdown-text-color, #ffffff)'
             }"
         >
             <!-- Search Input -->
-            <div class="sticky top-0 p-2 z-10 border-b border-white/10" :style="{ backgroundColor: 'var(--dropdown-bg-color, #111111)' }">
+            <div class="sticky top-0 p-2 z-10 border-b border-gray-200" :style="{ backgroundColor: 'var(--dropdown-bg-color, #111111)' }">
                 <div class="relative">
                     <input 
                         type="text" 
                         v-model="searchQuery" 
-                        class="w-full bg-black/40 border border-white/10 rounded-md py-1.5 pl-8 pr-3 text-sm text-white focus:outline-none focus:border-white/30"
+                        class="w-full bg-gray-900/50 border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
                         placeholder="Izlash..."
                         @click.stop
                     >
-                    <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-white/40">
+                    <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-900/40">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </div>
                 </div>
@@ -160,7 +160,7 @@ onUnmounted(() => {
                     v-for="(option, index) in filteredOptions" 
                     :key="index"
                     @click="selectOption(option)"
-                    class="px-4 py-2 hover:bg-white/10 cursor-pointer text-sm transition-colors"
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
                     :class="{ 'bg-white/5 font-bold': getValue(option) === modelValue }"
                 >
                     {{ getLabel(option) }}

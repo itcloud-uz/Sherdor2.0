@@ -8,13 +8,13 @@
             <div class="flex justify-between items-end mb-8 relative z-10">
                 <div class="relative">
                     <div class="absolute -left-10 -top-10 w-40 h-40 bg-neon-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
-                    <h1 class="text-4xl font-display font-black text-white uppercase tracking-wider drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                    <h1 class="text-4xl font-display font-black text-gray-900 uppercase tracking-wider drop-shadow-sm">
                         Migration <span class="text-neon-purple">Hub</span>
                     </h1>
-                    <p class="text-xs text-text-muted font-mono mt-2">Эски Excel ва Word базаларни ақлли кўчириш маркази</p>
+                    <p class="text-xs text-gray-500 font-mono mt-2">Эски Excel ва Word базаларни ақлли кўчириш маркази</p>
                 </div>
                 
-                <button @click="clearData" :disabled="isClearing || isExecuting" class="px-4 py-2 bg-black/50 border border-neon-magenta/50 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta/10 hover:border-neon-magenta disabled:opacity-50 transition-all flex items-center gap-2">
+                <button @click="clearData" :disabled="isClearing || isExecuting" class="px-4 py-2 bg-gray-900/50 border border-neon-magenta/50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-50 hover:border-neon-magenta disabled:opacity-50 transition-all flex items-center gap-2">
                     <span v-if="isClearing" class="animate-spin">⚙️</span>
                     🗑️ Базани Тозалаш
                 </button>
@@ -24,30 +24,30 @@
                 <!-- Action Section -->
                 <div class="flex flex-col gap-6">
                     <!-- Category Selector -->
-                    <div class="glass-panel border border-neon-purple/30 rounded-3xl p-6 flex flex-col gap-4 bg-[#05050A] shadow-[0_0_15px_rgba(188,19,254,0.1)]">
-                        <h3 class="text-xs font-mono text-white uppercase tracking-widest text-neon-purple">Маълумот Турини Танланг</h3>
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-neon-purple/30 rounded-3xl p-6 flex flex-col gap-4 bg-[#05050A] shadow-sm">
+                        <h3 class="text-xs font-mono text-gray-900 uppercase tracking-widest text-neon-purple">Маълумот Турини Танланг</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="crm" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-text-muted font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-white transition-all hover:bg-white/10">
+                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     CRM (Мижозлар)
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="hr" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-text-muted font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-white transition-all hover:bg-white/10">
+                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     HR (Ишчилар)
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="finance" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-text-muted font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-white transition-all hover:bg-white/10">
+                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     Молия
                                 </div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" v-model="selectedCategory" value="machinery" class="hidden peer">
-                                <div class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-text-muted font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-white transition-all hover:bg-white/10">
+                                <div class="px-4 py-3 bg-white/5 border border-gray-200 rounded-xl text-center text-xs text-gray-500 font-display uppercase tracking-wider peer-checked:bg-neon-purple/20 peer-checked:border-neon-purple peer-checked:text-gray-900 transition-all hover:bg-gray-100">
                                     Техника
                                 </div>
                             </label>
@@ -55,26 +55,26 @@
                     </div>
 
                     <!-- File Chooser Container -->
-                    <div class="glass-panel border border-neon-cyan/30 rounded-3xl p-4 md:p-8 flex flex-col items-center justify-center transition-all bg-[#05050A] shadow-[0_0_20px_rgba(0,240,255,0.1)] hover:border-neon-cyan/80">
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-blue-200 rounded-3xl p-4 md:p-8 flex flex-col items-center justify-center transition-all bg-[#05050A] shadow-sm hover:border-blue-200">
                         <input type="file" ref="fileInput" @change="handleFileSelect" multiple accept=".xlsx,.xls,.docx,.zip" class="hidden">
                         
-                        <button @click="$refs.fileInput.click()" class="w-full py-5 bg-neon-cyan/10 border-2 border-neon-cyan text-neon-cyan font-bold font-display text-xl uppercase tracking-widest rounded-2xl hover:bg-neon-cyan hover:text-black hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transition-all flex items-center justify-center gap-4 group">
+                        <button @click="$refs.fileInput.click()" class="w-full py-5 bg-blue-50 border-2 border-blue-500 text-blue-600 font-bold font-display text-xl uppercase tracking-widest rounded-2xl hover:bg-blue-600 hover:text-black hover:shadow-sm transition-all flex items-center justify-center gap-4 group">
                             <span class="text-3xl group-hover:scale-125 transition-transform">📂</span>
                             Компьютердан файлларни танлаш
                         </button>
                         
-                        <p class="text-[10px] text-text-muted font-mono mt-4 text-center uppercase tracking-widest">
+                        <p class="text-[10px] text-gray-500 font-mono mt-4 text-center uppercase tracking-widest">
                             Қўллаб-қувватланади: .xlsx, .docx, .zip
                         </p>
                     </div>
                     
                     <!-- Selected Files Preview -->
-                    <div v-if="selectedFiles.length > 0" class="glass-panel border border-white/10 p-6 bg-black/40 rounded-2xl max-h-[250px] overflow-y-auto custom-scrollbar">
-                        <h3 class="text-xs font-mono text-white mb-4 uppercase tracking-widest text-neon-yellow">Танланган Файллар ({{ selectedFiles.length }})</h3>
+                    <div v-if="selectedFiles.length > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 p-6 bg-gray-900/50 rounded-2xl max-h-[250px] overflow-y-auto custom-scrollbar">
+                        <h3 class="text-xs font-mono text-gray-900 mb-4 uppercase tracking-widest text-amber-600">Танланган Файллар ({{ selectedFiles.length }})</h3>
                         <div class="space-y-2">
-                            <div v-for="(file, i) in selectedFiles" :key="i" class="p-2 bg-white/5 border border-white/5 rounded flex justify-between items-center group">
-                                <div class="text-[10px] text-white font-mono truncate max-w-[80%]">{{ file.name }}</div>
-                                <div class="text-[9px] text-text-muted font-mono">{{ (file.size / 1024).toFixed(1) }} KB</div>
+                            <div v-for="(file, i) in selectedFiles" :key="i" class="p-2 bg-white/5 border border-gray-100 rounded flex justify-between items-center group">
+                                <div class="text-[10px] text-gray-900 font-mono truncate max-w-[80%]">{{ file.name }}</div>
+                                <div class="text-[9px] text-gray-500 font-mono">{{ (file.size / 1024).toFixed(1) }} KB</div>
                             </div>
                         </div>
                     </div>
@@ -82,9 +82,9 @@
                     <!-- Progress Bar -->
                     <div v-if="uploadProgress > 0" class="w-full">
                         <div class="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-neon-green transition-all duration-300" :style="`width: ${uploadProgress}%`"></div>
+                            <div class="h-full bg-emerald-600 transition-all duration-300" :style="`width: ${uploadProgress}%`"></div>
                         </div>
-                        <div class="text-right text-[10px] text-neon-green font-mono mt-1">Юкланмоқда... {{ uploadProgress }}%</div>
+                        <div class="text-right text-[10px] text-emerald-600 font-mono mt-1">Юкланмоқда... {{ uploadProgress }}%</div>
                     </div>
 
                     <!-- Start Button (Upload + Trigger) -->
@@ -92,7 +92,7 @@
                         @click="startMigration" 
                         :disabled="selectedFiles.length === 0 || isExecuting"
                         class="w-full py-5 rounded-2xl text-black font-black font-display text-xl uppercase tracking-[0.2em] transition-all relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                        :class="isExecuting ? 'bg-neon-yellow shadow-[0_0_40px_rgba(252,238,9,0.5)]' : 'bg-neon-green hover:shadow-[0_0_40px_rgba(57,255,20,0.6)] hover:scale-[1.02]'"
+                        :class="isExecuting ? 'bg-amber-500 shadow-sm' : 'bg-emerald-600 hover:shadow-sm hover:scale-[1.02]'"
                     >
                         <span v-if="isExecuting" class="flex items-center justify-center gap-3">
                             <span class="animate-spin text-2xl">⚙️</span>
@@ -108,7 +108,7 @@
                 <!-- Terminal Section -->
                 <div class="flex flex-col gap-6 h-full">
                     <!-- Cyberpunk Terminal -->
-                    <div class="glass-panel border border-[#00ff41]/30 p-1 bg-black flex-1 flex flex-col relative overflow-hidden group shadow-[0_0_20px_rgba(0,255,65,0.05)] rounded-2xl h-[500px]">
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-[#00ff41]/30 p-1 bg-black flex-1 flex flex-col relative overflow-hidden group shadow-sm rounded-2xl h-[500px]">
                         <div class="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.03)_50%,rgba(0,0,0,0.2)_50%)] bg-[length:100%_4px] pointer-events-none"></div>
                         
                         <div class="bg-[#001100] px-4 py-2 border-b border-[#00ff41]/30 flex justify-between items-center relative z-10">

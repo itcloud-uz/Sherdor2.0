@@ -222,122 +222,122 @@ function handleExportExcel() {
 <template>
     <Teleport to="body" :disabled="inline">
         <div v-if="show" :class="inline ? 'w-full mt-4 animate-[fadeIn_0.3s_ease-out]' : 'fixed inset-0 z-[9999] flex items-center justify-center p-4'">
-        <div v-if="!inline" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
-        <div :class="inline ? 'glass-panel bg-abyss/40 border border-white/10 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative glass-panel bg-abyss/90 border border-white/10 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
+        <div v-if="!inline" class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="close"></div>
+        <div :class="inline ? 'bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/40 border border-gray-200 p-6 rounded-2xl w-full flex flex-col shadow-inner' : 'relative bg-white border border-gray-200 shadow-sm rounded-xl bg-abyss/90 border border-gray-200 p-6 rounded-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-y-auto mx-auto flex flex-col shadow-2xl animate-[fadeIn_0.3s_ease-out]'">
             
             <div class="shrink-0 flex justify-between items-center mb-6 relative z-10">
                 <div v-if="!inline" class="flex gap-2 w-32">
-                    <button @click="handleExportPDF" class="p-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="PDF formatida yuklab olish">
+                    <button @click="handleExportPDF" class="p-2 bg-red-500/20 text-red-400 border border-red-200 rounded-lg hover:bg-red-500 hover:text-gray-900 transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="PDF formatida yuklab olish">
                         📄 PDF
                     </button>
-                    <button @click="handleExportExcel" class="p-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500 hover:text-white transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="Excel formatida yuklab olish">
+                    <button @click="handleExportExcel" class="p-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500 hover:text-gray-900 transition-colors text-xs font-mono tracking-widest flex items-center justify-center shadow-lg" title="Excel formatida yuklab olish">
                         📊 EXCEL
                     </button>
                 </div>
                 <div v-else class="w-32"></div> <!-- Placeholder -->
-                <h2 class="text-2xl font-display font-bold text-white tracking-widest uppercase text-shadow-glow flex-1 text-center">
-                    {{ owner?.name }} <span class="text-neon-yellow opacity-80">- Texnikalar Jurnali</span>
+                <h2 class="text-2xl font-display font-bold text-gray-900 tracking-widest uppercase  flex-1 text-center">
+                    {{ owner?.name }} <span class="text-amber-600 opacity-80">- Texnikalar Jurnali</span>
                 </h2>
                 <div class="flex justify-end w-32">
-                    <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-neon-red/20 text-white hover:text-neon-red transition-colors border border-white/10 hover:border-neon-red/50">
+                    <button v-if="!inline" @click="close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-red-50 text-gray-900 hover:text-red-600 transition-colors border border-gray-200 hover:border-red-200">
                         ✕
                     </button>
-                    <button v-else @click="close" class="px-4 py-2 bg-neon-red/20 text-neon-red border border-neon-red/30 rounded-lg hover:bg-neon-red hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
+                    <button v-else @click="close" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-600 hover:text-black transition-colors font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
                         Yopish
                     </button>
                 </div>
             </div>
             
-            <div class="flex-1 min-h-[150px] custom-scrollbar overflow-y-auto overflow-x-auto border border-white/10 rounded-xl bg-black/40 mb-6">
+            <div class="flex-1 min-h-[150px] custom-scrollbar overflow-y-auto overflow-x-auto border border-gray-200 rounded-xl bg-gray-900/50 mb-6">
                 <table class="w-full text-left text-[13px] font-mono whitespace-nowrap">
-                    <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-widest text-text-muted sticky top-0 z-10 backdrop-blur-md">
+                    <thead class="bg-white/5 border-b border-gray-200 text-[11px] uppercase tracking-widest text-gray-500 sticky top-0 z-10 backdrop-blur-sm">
                         <tr>
-                            <th class="p-4 border-r border-white/5 w-16 min-w-[64px] text-center text-text-muted">№</th>
-                            <th class="p-4 border-r border-white/5 w-[130px] min-w-[130px]">Sana</th>
-                            <th class="p-4 border-r border-white/5 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
-                            <th class="p-4 border-r border-white/5 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
+                            <th class="p-4 border-r border-gray-100 w-16 min-w-[64px] text-center text-gray-500">№</th>
+                            <th class="p-4 border-r border-gray-100 w-[130px] min-w-[130px]">Sana</th>
+                            <th class="p-4 border-r border-gray-100 text-center bg-white/5" colspan="3">Bajarilgan Ishlar (Qarzlarimiz)</th>
+                            <th class="p-4 border-r border-gray-100 text-center" colspan="3">To'landi (To'lovlarimiz)</th>
                             <th class="p-4 w-[130px] min-w-[130px] text-right">Qoldiq</th>
                         </tr>
-                        <tr class="border-t border-white/5 text-[11px] bg-black/20">
-                            <th class="border-r border-white/5 p-2"></th>
-                            <th class="border-r border-white/5 p-2"></th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[180px] min-w-[180px]">Nomi</th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[80px] min-w-[80px]">Soni</th>
-                            <th class="border-r border-white/5 p-2 text-neon-yellow w-[120px] min-w-[120px]">Narxi</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Naqd</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Karta</th>
-                            <th class="border-r border-white/5 p-2 text-neon-green w-[120px] min-w-[120px]">Boshqa</th>
+                        <tr class="border-t border-gray-100 text-[11px] bg-gray-900/50">
+                            <th class="border-r border-gray-100 p-2"></th>
+                            <th class="border-r border-gray-100 p-2"></th>
+                            <th class="border-r border-gray-100 p-2 text-amber-600 w-[180px] min-w-[180px]">Nomi</th>
+                            <th class="border-r border-gray-100 p-2 text-amber-600 w-[80px] min-w-[80px]">Soni</th>
+                            <th class="border-r border-gray-100 p-2 text-amber-600 w-[120px] min-w-[120px]">Narxi</th>
+                            <th class="border-r border-gray-100 p-2 text-emerald-600 w-[120px] min-w-[120px]">Naqd</th>
+                            <th class="border-r border-gray-100 p-2 text-emerald-600 w-[120px] min-w-[120px]">Karta</th>
+                            <th class="border-r border-gray-100 p-2 text-emerald-600 w-[120px] min-w-[120px]">Boshqa</th>
                             <th class="p-2"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5 text-white/90">
+                    <tbody class="divide-y divide-white/5 text-gray-900/90">
 
-                        <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover:bg-white/5 transition-colors group">
-                            <td class="p-3 border-r border-white/5 text-center text-text-muted">{{ idx + 1 }}</td>
-                            <td class="p-3 border-r border-white/5">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>
+                        <tr v-for="(item, idx) in ledgerData.items" :key="idx" class="hover:bg-gray-50 transition-colors group">
+                            <td class="p-3 border-r border-gray-100 text-center text-gray-500">{{ idx + 1 }}</td>
+                            <td class="p-3 border-r border-gray-100">{{ item.date ? new Date(item.date).toISOString().split('T')[0] : '' }}</td>
                             
                             <!-- Bajarilgan ish (Agar transaction_type qarz (expense) bo'lsa) -->
-                            <td class="p-3 border-r border-white/5 text-[13px] whitespace-normal">{{ item.is_work ? item.desc : '' }}</td>
-                            <td class="p-3 border-r border-white/5 text-center">{{ item.is_work ? item.qty : '' }}</td>
-                            <td class="p-3 border-r border-white/5 text-right font-bold text-neon-yellow">{{ item.is_work ? item.amount : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-[13px] whitespace-normal">{{ item.is_work ? item.desc : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-center">{{ item.is_work ? item.qty : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-right font-bold text-amber-600">{{ item.is_work ? item.amount : '' }}</td>
                             
                             <!-- To'lovlar (Agar transaction_type tolov bo'lsa) -->
-                            <td class="p-3 border-r border-white/5 text-right font-bold text-neon-green">{{ item.is_payment && item.account_type === 'main' ? item.amount : '' }}</td>
-                            <td class="p-3 border-r border-white/5 text-right font-bold text-neon-cyan">{{ item.is_payment && item.account_type === 'credit' ? item.amount : '' }}</td>
-                            <td class="p-3 border-r border-white/5 text-right font-bold text-text-muted">{{ item.is_payment && !['main', 'credit'].includes(item.account_type) ? item.amount : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-right font-bold text-emerald-600">{{ item.is_payment && item.account_type === 'main' ? item.amount : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-right font-bold text-blue-600">{{ item.is_payment && item.account_type === 'credit' ? item.amount : '' }}</td>
+                            <td class="p-3 border-r border-gray-100 text-right font-bold text-gray-500">{{ item.is_payment && !['main', 'credit'].includes(item.account_type) ? item.amount : '' }}</td>
                             
-                            <td class="p-3 text-right font-bold" :class="item.running_balance > 0 ? 'text-neon-red' : (item.running_balance < 0 ? 'text-neon-green' : 'text-text-muted')">
+                            <td class="p-3 text-right font-bold" :class="item.running_balance > 0 ? 'text-red-600' : (item.running_balance < 0 ? 'text-emerald-600' : 'text-gray-500')">
                                 {{ item.running_balance !== undefined ? (item.running_balance > 0 ? '+' : '') + Number(item.running_balance).toLocaleString() : '' }}
                             </td>
                         </tr>
                         <tr v-if="!ledgerData.items || ledgerData.items.length === 0">
-                            <td colspan="9" class="p-8 text-center text-text-muted italic border-dashed border border-white/5 rounded-xl m-4">Ma'lumot topilmadi</td>
+                            <td colspan="9" class="p-8 text-center text-gray-500 italic border-dashed border border-gray-100 rounded-xl m-4">Ma'lumot topilmadi</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="shrink-0 flex justify-between items-center bg-black/60 p-4 rounded-xl border border-white/10 mb-6 relative overflow-hidden">
+            <div class="shrink-0 flex justify-between items-center bg-gray-900/50 p-4 rounded-xl border border-gray-200 mb-6 relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-neon-yellow/5 to-transparent pointer-events-none"></div>
-                <span class="text-sm font-mono text-text-muted uppercase tracking-widest">Joriy Qoldiq (Qarzimiz):</span>
-                <span class="text-3xl font-display font-bold drop-shadow-md" :class="ledgerData.balance > 0 ? 'text-neon-red' : (ledgerData.balance < 0 ? 'text-neon-green' : 'text-white')">
+                <span class="text-sm font-mono text-gray-500 uppercase tracking-widest">Joriy Qoldiq (Qarzimiz):</span>
+                <span class="text-3xl font-display font-bold drop-shadow-md" :class="ledgerData.balance > 0 ? 'text-red-600' : (ledgerData.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">
                     {{ Number(ledgerData.balance || 0).toLocaleString() }} so'm
                 </span>
             </div>
 
             <!-- TOP FORM: Bajarilgan Ish Kiritish -->
-            <div class="glass-card shrink-0 p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
-                <div class="absolute inset-0 bg-neon-red/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse"></span>🔴 Bajarilgan Ish Kiritish (Qarz Yozish)
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl shrink-0 p-6 border-t-4 border-t-neon-red relative overflow-hidden mb-6">
+                <div class="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-[10px] font-mono text-red-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>🔴 Bajarilgan Ish Kiritish (Qarz Yozish)
                 </h3>
                 <form @submit.prevent="submitAccrual" class="grid grid-cols-1 md:grid-cols-6 gap-4 relative z-10">
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Sana</label>
-                        <input v-model="form.accrual_date" type="date" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 [color-scheme:dark] outline-none" required />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Sana</label>
+                        <input v-model="form.accrual_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Nomi</label>
-                        <input v-model="form.accrual_name" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="Nomi" />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Nomi</label>
+                        <input v-model="form.accrual_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="Nomi" />
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Soni</label>
-                        <input v-model="form.accrual_qty" type="number" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="0" />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Soni</label>
+                        <input v-model="form.accrual_qty" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Narxi</label>
-                        <input v-model="form.accrual_price" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" required placeholder="0" />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Narxi</label>
+                        <input v-model="form.accrual_price" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
                     </div>
                     <div class="md:col-span-2 flex gap-4 items-end">
                         <div class="flex-grow">
-                            <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh (Ixtiyoriy)</label>
-                            <input v-model="form.accrual_description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-red outline-none" placeholder="Qo'shimcha izoh..." />
+                            <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Izoh (Ixtiyoriy)</label>
+                            <input v-model="form.accrual_description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" placeholder="Qo'shimcha izoh..." />
                         </div>
                         <div class="flex flex-col gap-1 items-end">
-                            <span class="text-[10px] text-text-muted font-mono uppercase">Jami:</span>
-                            <span class="text-sm font-bold text-neon-red whitespace-nowrap">{{ ((Number(form.accrual_qty)||0) * (Number(form.accrual_price)||0)).toLocaleString() }}</span>
+                            <span class="text-[10px] text-gray-500 font-mono uppercase">Jami:</span>
+                            <span class="text-sm font-bold text-red-600 whitespace-nowrap">{{ ((Number(form.accrual_qty)||0) * (Number(form.accrual_price)||0)).toLocaleString() }}</span>
                         </div>
-                        <button type="submit" class="h-10 px-4 bg-neon-red/20 border border-neon-red text-neon-red font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-red hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(255,51,102,0.2)]">
+                        <button type="submit" class="h-10 px-4 bg-red-50 border border-red-500 text-red-600 font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-red-600 hover:text-black transition-all font-bold whitespace-nowrap shadow-sm">
                             Qo'shish
                         </button>
                     </div>
@@ -345,15 +345,15 @@ function handleExportExcel() {
             </div>
 
             <!-- BOTTOM FORM: Kassa Amaliyoti -->
-            <div class="glass-card shrink-0 p-6 border-t-4 border-t-neon-green relative overflow-hidden">
-                <div class="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-[10px] font-mono text-neon-green uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span>🔵 Kassa amaliyoti (To'lov qilish)
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl shrink-0 p-6 border-t-4 border-t-neon-green relative overflow-hidden">
+                <div class="absolute inset-0 bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-[10px] font-mono text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>🔵 Kassa amaliyoti (To'lov qilish)
                 </h3>
                 <form @submit.prevent="submitPayment" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Hisob</label>
-                        <select v-model="form.account_type" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Hisob</label>
+                        <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
                             <option value="main">Kompaniya Hisobi (Main)</option>
                             <option value="bank">Bank Hisobi (Bank)</option>
                             <option value="credit">Kredit Hisobi (Credit)</option>
@@ -361,35 +361,35 @@ function handleExportExcel() {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">To'lov Usuli</label>
-                        <select v-model="form.payment_method" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required>
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">To'lov Usuli</label>
+                        <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
                             <option value="cash">Naqd Pul</option>
                             <option value="card">Plastik Karta</option>
                             <option value="bank_transfer">Bank O'tkazmasi</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Summa (so'm)</label>
-                        <input v-model="form.amount" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required placeholder="0" />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Summa (so'm)</label>
+                        <input v-model="form.amount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="0" />
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1" title="Ixtiyoriy">Texnika Xarajati / Chegirma</label>
-                        <input v-model="form.discount" type="number" step="100" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" placeholder="0" />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1" title="Ixtiyoriy">Texnika Xarajati / Chegirma</label>
+                        <input v-model="form.discount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" placeholder="0" />
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Sana</label>
-                        <input v-model="form.date" type="date" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 [color-scheme:dark] outline-none" required />
+                        <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Sana</label>
+                        <input v-model="form.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
                     <div class="md:col-span-3 flex gap-4 items-end">
                         <div class="flex-grow">
-                            <label class="block text-[10px] uppercase tracking-widest font-mono text-text-muted mb-1">Izoh / Maqsad <span class="text-neon-red">*</span></label>
-                            <input v-model="form.description" type="text" class="glass-input w-full bg-black/50 text-white font-mono text-sm h-10 border border-white/10 rounded-lg px-3 focus:border-neon-green outline-none" required placeholder="Nima uchun to'lov qilinmoqda?" />
+                            <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Izoh / Maqsad <span class="text-red-600">*</span></label>
+                            <input v-model="form.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="Nima uchun to'lov qilinmoqda?" />
                         </div>
                         <div class="flex flex-col gap-1 items-end">
-                            <span class="text-[10px] text-text-muted font-mono uppercase">Jami yechiladi:</span>
-                            <span class="text-sm font-bold text-neon-green whitespace-nowrap">{{ (Number(form.amount || 0) + Number(form.discount || 0)).toLocaleString() }}</span>
+                            <span class="text-[10px] text-gray-500 font-mono uppercase">Jami yechiladi:</span>
+                            <span class="text-sm font-bold text-emerald-600 whitespace-nowrap">{{ (Number(form.amount || 0) + Number(form.discount || 0)).toLocaleString() }}</span>
                         </div>
-                        <button type="submit" class="h-10 px-6 bg-neon-green/20 border border-neon-green text-neon-green font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-neon-green hover:text-black transition-all font-bold whitespace-nowrap shadow-[0_0_10px_rgba(0,255,100,0.2)]">
+                        <button type="submit" class="h-10 px-6 bg-emerald-50 border border-emerald-500 text-emerald-600 font-mono text-[10px] uppercase tracking-widest rounded-lg hover:bg-emerald-600 hover:text-black transition-all font-bold whitespace-nowrap shadow-sm">
                             Saqlash
                         </button>
                     </div>

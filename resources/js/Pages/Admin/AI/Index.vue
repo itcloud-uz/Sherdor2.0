@@ -6,9 +6,9 @@ import { Head } from '@inertiajs/vue3';
 <template>
     <Head title="AI Agents" />
     <AdminLayout>
-        <div class="glass-card p-12 text-center border-neon-cyan/50 shadow-neon-cyan">
-            <h2 class="text-3xl font-display text-neon-cyan mb-2 hidden">AI Agents</h2>
-            <p class="text-text-muted font-mono animate-pulse">[ AWAITING_DATA ]</p>
+        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-12 text-center border-blue-200 shadow-neon-cyan">
+            <h2 class="text-3xl font-display text-blue-600 mb-2 hidden">AI Agents</h2>
+            <p class="text-gray-500 font-mono animate-pulse">[ AWAITING_DATA ]</p>
         </div>
     </AdminLayout>
 </template>

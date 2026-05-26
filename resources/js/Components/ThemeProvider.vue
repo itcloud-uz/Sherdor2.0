@@ -16,7 +16,7 @@ watchEffect(() => {
         const rgb = hexToRgb(color);
         
         document.documentElement.style.setProperty('--color-neon-primary', color);
-        document.documentElement.style.setProperty('--shadow-neon-primary', `${glow} rgba(${rgb}, 0.3)`);
+        document.documentElement.style.setProperty('--shadow-sm', `${glow} rgba(${rgb}, 0.3)`);
     }
 
     if (page.props.auth?.user) {

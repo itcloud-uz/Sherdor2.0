@@ -540,10 +540,10 @@ function getFallbackTextY(unit) {
 }
 
 function getUnitBorderColor(status) {
-    if (status === 'available') return 'border-neon-green shadow-[0_0_10px_rgba(57,255,20,0.2)]';
-    if (status === 'reserved') return 'border-neon-yellow shadow-[0_0_10px_rgba(252,238,9,0.2)]';
-    if (status === 'sold') return 'border-neon-magenta shadow-[0_0_10px_rgba(255,0,60,0.2)]';
-    return 'border-white/10';
+    if (status === 'available') return 'border-emerald-500 shadow-sm';
+    if (status === 'reserved') return 'border-amber-500 shadow-sm';
+    if (status === 'sold') return 'border-neon-magenta shadow-sm';
+    return 'border-gray-200';
 }
 
 function getUnitFillColor(status) {
@@ -561,10 +561,10 @@ function getUnitStrokeColor(status) {
 }
 
 function getUnitTextColor(status) {
-    if (status === 'available') return 'text-neon-green';
-    if (status === 'reserved') return 'text-neon-yellow';
-    if (status === 'sold') return 'text-neon-magenta';
-    return 'text-white';
+    if (status === 'available') return 'text-emerald-600';
+    if (status === 'reserved') return 'text-amber-600';
+    if (status === 'sold') return 'text-indigo-600';
+    return 'text-gray-900';
 }
 
 // Chart Options for Analytics
@@ -623,8 +623,8 @@ const progressSeries = computed(() => {
             <!-- Left Side: Building List -->
             <div class="w-full lg:w-1/4 flex flex-col gap-4">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-display text-white">{{ $t('buildings') }}</h3>
-                    <button @click="showAddBuildingModal = true" class="px-3 py-1 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan text-[10px] font-mono rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                    <h3 class="text-lg font-display text-gray-900">{{ $t('buildings') }}</h3>
+                    <button @click="showAddBuildingModal = true" class="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-[10px] font-mono rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
                         + {{ $t('add') }}
                     </button>
                 </div>
@@ -633,45 +633,45 @@ const progressSeries = computed(() => {
                     :key="building.id"
                     @click="selectedBuilding = building"
                     :class="[
-                        'glass-card p-4 cursor-pointer transition-all duration-300 border hover:border-neon-cyan/50',
-                        selectedBuilding?.id === building.id ? 'border-neon-cyan bg-neon-cyan/5 shadow-[0_0_15px_rgba(0,240,255,0.2)]' : 'border-white/10'
+                        'bg-white border border-gray-200 shadow-sm rounded-xl p-4 cursor-pointer transition-all duration-300 border hover:border-blue-200',
+                        selectedBuilding?.id === building.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200'
                     ]"
                 >
                     <div class="flex items-center gap-3">
-                        <div :class="['w-10 h-10 rounded-lg flex items-center justify-center border transition-all', selectedBuilding?.id === building.id ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.5)]' : 'bg-black/50 border-white/10 text-white/50']">
+                        <div :class="['w-10 h-10 rounded-lg flex items-center justify-center border transition-all', selectedBuilding?.id === building.id ? 'bg-blue-50 border-blue-500 text-blue-600 shadow-sm' : 'bg-gray-900/50 border-gray-200 text-gray-900/50']">
                             <span class="text-xl">🏗️</span>
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-white">{{ building.name }}</h4>
+                            <h4 class="text-sm font-bold text-gray-900">{{ building.name }}</h4>
                             <div class="flex items-center gap-2 mt-1">
-                                <span :class="['w-2 h-2 rounded-full', building.status === 'active' ? 'bg-neon-cyan animate-pulse shadow-[0_0_5px_#00F0FF]' : (building.status === 'completed' ? 'bg-neon-green' : 'bg-neon-yellow')]"></span>
-                                <p class="text-[10px] text-text-muted font-mono uppercase tracking-wider">{{ $t(building.status) || building.status }}</p>
+                                <span :class="['w-2 h-2 rounded-full', building.status === 'active' ? 'bg-blue-600 animate-pulse shadow-sm' : (building.status === 'completed' ? 'bg-emerald-600' : 'bg-amber-500')]"></span>
+                                <p class="text-[10px] text-gray-500 font-mono uppercase tracking-wider">{{ $t(building.status) || building.status }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="buildings.length === 0" class="glass-card p-6 text-center text-text-muted text-sm font-mono border-dashed border-white/20">
+                <div v-if="buildings.length === 0" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 text-center text-gray-500 text-sm font-mono border-dashed border-gray-300">
                     {{ $t('no_buildings_found') }}
                 </div>
             </div>
 
             <!-- Right Side: Main Command Center -->
-            <div class="w-full lg:flex-1 flex flex-col glass-panel rounded-2xl overflow-hidden min-h-[600px] lg:min-h-0">
+            <div class="w-full lg:flex-1 flex flex-col bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl overflow-hidden min-h-[600px] lg:min-h-0">
                 <div v-if="selectedBuilding" class="flex flex-col h-full">
                     
                     <!-- Header -->
-                    <div class="p-6 border-b border-white/10 flex flex-col md:flex-row justify-between items-start gap-4 relative overflow-hidden">
-                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-neon-cyan/10 blur-[100px] rounded-full pointer-events-none"></div>
+                    <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start gap-4 relative overflow-hidden">
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-50 blur-[100px] rounded-full pointer-events-none"></div>
                         <div class="flex-1">
-                            <h2 class="text-3xl font-display font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                                {{ selectedBuilding.name }} <span class="text-neon-cyan">{{ $t('command_center') }}</span>
+                            <h2 class="text-3xl font-display font-bold text-gray-900 drop-shadow-sm">
+                                {{ selectedBuilding.name }} <span class="text-blue-600">{{ $t('command_center') }}</span>
                             </h2>
-                            <p class="text-xs text-text-muted font-mono mt-2 flex flex-wrap items-center gap-2">
+                            <p class="text-xs text-gray-500 font-mono mt-2 flex flex-wrap items-center gap-2">
                                 <span>📍 {{ [selectedBuilding.city, selectedBuilding.district, selectedBuilding.mahalla, selectedBuilding.street].filter(Boolean).join(', ') || 'Manzil kiritilmagan' }}</span>
-                                <span v-if="selectedBuilding.block_name || selectedBuilding.corpus_name" class="text-white">| 🏢 {{ [selectedBuilding.block_name, selectedBuilding.corpus_name].filter(Boolean).join(' - ') }}</span>
-                                <span class="text-neon-yellow">| 📏 {{ selectedBuilding.total_floors }} {{ $t('floors') }}</span>
-                                <span v-if="selectedBuilding.length_m || selectedBuilding.width_m || selectedBuilding.height_m" class="text-neon-green">
+                                <span v-if="selectedBuilding.block_name || selectedBuilding.corpus_name" class="text-gray-900">| 🏢 {{ [selectedBuilding.block_name, selectedBuilding.corpus_name].filter(Boolean).join(' - ') }}</span>
+                                <span class="text-amber-600">| 📏 {{ selectedBuilding.total_floors }} {{ $t('floors') }}</span>
+                                <span v-if="selectedBuilding.length_m || selectedBuilding.width_m || selectedBuilding.height_m" class="text-emerald-600">
                                     | 📐 U: {{ selectedBuilding.length_m || 0 }}m × K: {{ selectedBuilding.width_m || 0 }}m × B: {{ selectedBuilding.height_m || 0 }}m
                                 </span>
                             </p>
@@ -679,21 +679,21 @@ const progressSeries = computed(() => {
                         
                         <div class="flex flex-col items-end gap-3 shrink-0">
                             <div class="flex items-center gap-2">
-                                <button @click="openEditBuilding" class="px-3 py-1 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
+                                <button @click="openEditBuilding" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
                                     ✏️ Tahrirlash
                                 </button>
-                                <button v-if="isAdmin" @click="deleteBuilding" class="px-3 py-1 bg-neon-magenta/10 border border-neon-magenta/50 text-neon-magenta text-[10px] font-mono rounded hover:bg-neon-magenta hover:text-black transition-all shadow-[0_0_10px_rgba(255,0,60,0.2)]">
+                                <button v-if="isAdmin" @click="deleteBuilding" class="px-3 py-1 bg-indigo-50 border border-neon-magenta/50 text-indigo-600 text-[10px] font-mono rounded hover:bg-indigo-600 hover:text-black transition-all shadow-sm">
                                     🗑️ O'chirish
                                 </button>
                             </div>
                         
                         <!-- Tabs -->
                         <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
-                            <button @click="activeTab = 'blueprint'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'blueprint' ? 'text-black bg-neon-cyan border-neon-cyan shadow-[0_0_15px_rgba(0,240,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🗺️ {{ $t('blueprint') }}</button>
-                            <button @click="activeTab = 'search'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'search' ? 'text-black bg-white border-white shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🔍 QIDIRUV</button>
-                            <button @click="activeTab = 'progress'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'progress' ? 'text-black bg-neon-yellow border-neon-yellow shadow-[0_0_15px_rgba(252,238,9,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">🏗️ {{ $t('progress') }}</button>
-                            <button @click="activeTab = 'finances'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'finances' ? 'text-black bg-neon-green border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">💰 {{ $t('finances') }}</button>
-                            <button @click="activeTab = 'analytics'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'analytics' ? 'text-black bg-neon-purple border-neon-purple shadow-[0_0_15px_rgba(176,38,255,0.5)]' : 'text-text-muted border-white/10 hover:border-white/30']">📊 {{ $t('analytics') }}</button>
+                            <button @click="activeTab = 'blueprint'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'blueprint' ? 'text-black bg-blue-600 border-blue-500 shadow-sm' : 'text-gray-500 border-gray-200 hover:border-white/30']">🗺️ {{ $t('blueprint') }}</button>
+                            <button @click="activeTab = 'search'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'search' ? 'text-black bg-white border-white shadow-sm' : 'text-gray-500 border-gray-200 hover:border-white/30']">🔍 QIDIRUV</button>
+                            <button @click="activeTab = 'progress'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'progress' ? 'text-black bg-amber-500 border-amber-500 shadow-sm' : 'text-gray-500 border-gray-200 hover:border-white/30']">🏗️ {{ $t('progress') }}</button>
+                            <button @click="activeTab = 'finances'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'finances' ? 'text-black bg-emerald-600 border-emerald-500 shadow-sm' : 'text-gray-500 border-gray-200 hover:border-white/30']">💰 {{ $t('finances') }}</button>
+                            <button @click="activeTab = 'analytics'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'analytics' ? 'text-black bg-neon-purple border-neon-purple shadow-sm' : 'text-gray-500 border-gray-200 hover:border-white/30']">📊 {{ $t('analytics') }}</button>
                         </div>
                         </div>
                     </div>
@@ -705,43 +705,43 @@ const progressSeries = computed(() => {
                         <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
                             <!-- Header Actions -->
                             <div class="flex justify-end items-center gap-4 mb-4 w-full">
-                                <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-neon-green/10 border border-neon-green/30 text-neon-green text-[10px] font-mono rounded hover:bg-neon-green hover:text-black transition-all flex items-center gap-2 shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                                <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-[10px] font-mono rounded hover:bg-emerald-600 hover:text-black transition-all flex items-center gap-2 shadow-sm">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                     EXCEL YUKLAB OLISH
                                 </button>
-                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
                                     + QAVAT
                                 </button>
                             </div>
 
-                            <div class="flex gap-4 text-[10px] font-mono mb-4 bg-black/40 p-2 rounded-lg inline-flex w-max border border-white/10">
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-neon-green/30 border border-neon-green shadow-[0_0_5px_#39FF14]"></span> {{ $t('available') }}</span>
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-neon-yellow/30 border border-neon-yellow shadow-[0_0_5px_#FCEE09]"></span> {{ $t('reserved') }}</span>
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-neon-magenta/30 border border-neon-magenta shadow-[0_0_5px_#FF003C]"></span> {{ $t('sold') }}</span>
+                            <div class="flex gap-4 text-[10px] font-mono mb-4 bg-gray-900/50 p-2 rounded-lg inline-flex w-max border border-gray-200">
+                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-emerald-50 border border-emerald-500 shadow-sm"></span> {{ $t('available') }}</span>
+                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-amber-50 border border-amber-500 shadow-sm"></span> {{ $t('reserved') }}</span>
+                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-indigo-50 border border-neon-magenta shadow-sm"></span> {{ $t('sold') }}</span>
                             </div>
                             
                             <!-- Floors List -->
                             <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-6">
-                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border-b border-white/5 bg-black/20 relative group">
+                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border-b border-gray-100 bg-gray-900/50 relative group">
                                     
                                     <!-- Floor Header (Left Side) -->
-                                    <div class="w-full xl:w-48 bg-black/40 border-b xl:border-b-0 xl:border-r border-white/5 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-white/5">
+                                    <div class="w-full xl:w-48 bg-gray-900/50 border-b xl:border-b-0 xl:border-r border-gray-100 p-4 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-gray-50">
                                         <div class="flex items-center gap-3">
-                                            <h3 class="text-2xl font-display font-bold text-white whitespace-nowrap">{{ floor.floor_number }}-qavat</h3>
+                                            <h3 class="text-2xl font-display font-bold text-gray-900 whitespace-nowrap">{{ floor.floor_number }}-qavat</h3>
                                             <div class="flex gap-1">
-                                                <span v-if="floor.units?.some(u => u.type === 'commercial')" class="text-xl drop-shadow-[0_0_10px_rgba(255,0,60,0.5)]" title="Do'konlar">🏬</span>
-                                                <span v-if="floor.units?.some(u => u.type === 'residential')" class="text-xl drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]" title="Xonadonlar">🏠</span>
+                                                <span v-if="floor.units?.some(u => u.type === 'commercial')" class="text-xl drop-shadow-sm" title="Do'konlar">🏬</span>
+                                                <span v-if="floor.units?.some(u => u.type === 'residential')" class="text-xl drop-shadow-sm" title="Xonadonlar">🏠</span>
                                             </div>
                                         </div>
                                         
                                         <div class="flex flex-wrap gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/20 text-white text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
+                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center bg-white/5 border border-gray-300 text-gray-900 text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
                                                 ✏️
                                             </button>
-                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-xs rounded hover:bg-neon-cyan hover:text-black transition-all" title="Xonadon qo'shish">
+                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-200 text-blue-600 text-xs rounded hover:bg-blue-600 hover:text-black transition-all" title="Xonadon qo'shish">
                                                 +
                                             </button>
-                                            <button v-if="isAdmin" @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-neon-magenta/10 border border-neon-magenta/30 text-neon-magenta text-xs rounded hover:bg-neon-magenta hover:text-white transition-all" title="Qavatni o'chirish">
+                                            <button v-if="isAdmin" @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-indigo-50 border border-neon-magenta/30 text-indigo-600 text-xs rounded hover:bg-indigo-600 hover:text-gray-900 transition-all" title="Qavatni o'chirish">
                                                 🗑️
                                             </button>
                                         </div>
@@ -750,7 +750,7 @@ const progressSeries = computed(() => {
                                     <!-- Floor Units (Right Side) -->
                                     <div class="flex-1 p-4 pb-6 overflow-x-auto custom-scrollbar flex items-center min-h-[140px]">
                                         <!-- Interactive SVG Blueprint Mode for Floor -->
-                                        <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-black/40 rounded-lg border border-white/5">
+                                        <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-gray-900/50 rounded-lg border border-gray-100">
                                             <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
                                                 <g v-for="(unit, idx) in floor.units" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-150" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
                                                     <polygon v-if="unit.svg_polygon" :points="unit.svg_polygon" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
@@ -773,14 +773,14 @@ const progressSeries = computed(() => {
                                                     {{ unit.type === 'commercial' ? 'D-' : '' }}{{ unit.unit_number }}
                                                 </span>
                                             </div>
-                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-text-muted italic flex items-center h-full px-4 border border-dashed border-white/10 rounded-md">
+                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-gray-500 italic flex items-center h-full px-4 border border-dashed border-gray-200 rounded-md">
                                                 Xonadonlar yo'q
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div v-if="!selectedBuilding.floors?.length" class="text-center py-10 border border-dashed border-white/20 rounded-xl text-text-muted font-mono text-sm bg-black/30">
+                                <div v-if="!selectedBuilding.floors?.length" class="text-center py-10 border border-dashed border-gray-300 rounded-xl text-gray-500 font-mono text-sm bg-gray-900/50">
                                     Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
                                 </div>
                             </div>
@@ -788,26 +788,26 @@ const progressSeries = computed(() => {
                             <!-- Unit Tooltip -->
                             <Teleport to="body">
                                 <div v-if="hoveredUnit" 
-                                     class="fixed z-50 pointer-events-none bg-black/90 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.8)]"
+                                     class="fixed z-50 pointer-events-none bg-gray-900/50 backdrop-blur-sm border border-gray-300 p-4 rounded-xl shadow-sm"
                                      :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
-                                    <h4 class="text-neon-cyan font-display text-lg mb-2 flex items-center gap-2">
+                                    <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2">
                                         {{ hoveredUnit.unit_number }} 
-                                        <span class="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-white">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
+                                        <span class="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-gray-900">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                     </h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
-                                        <span class="text-text-muted">Maydoni:</span>
-                                        <span class="text-white text-right">{{ hoveredUnit.area_sqm }} m²</span>
+                                        <span class="text-gray-500">Maydoni:</span>
+                                        <span class="text-gray-900 text-right">{{ hoveredUnit.area_sqm }} m²</span>
                                         
-                                        <span class="text-text-muted">Xonalar:</span>
-                                        <span class="text-white text-right">{{ hoveredUnit.rooms_count || 1 }} xona</span>
+                                        <span class="text-gray-500">Xonalar:</span>
+                                        <span class="text-gray-900 text-right">{{ hoveredUnit.rooms_count || 1 }} xona</span>
                                         
-                                        <span class="text-text-muted">Joylashuv:</span>
-                                        <span class="text-white text-right">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
+                                        <span class="text-gray-500">Joylashuv:</span>
+                                        <span class="text-gray-900 text-right">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
                                         
-                                        <span class="text-text-muted">Narxi:</span>
-                                        <span class="text-neon-green text-right">{{ $currency(hoveredUnit.price) }}</span>
+                                        <span class="text-gray-500">Narxi:</span>
+                                        <span class="text-emerald-600 text-right">{{ $currency(hoveredUnit.price) }}</span>
                                         
-                                        <span class="text-text-muted">Status:</span>
+                                        <span class="text-gray-500">Status:</span>
                                         <span :class="['text-right', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
                                     </div>
                                 </div>
@@ -816,27 +816,27 @@ const progressSeries = computed(() => {
                         
                         <!-- TAB: Search -->
                         <div v-if="activeTab === 'search'" class="animate-fade-in space-y-6">
-                            <div class="glass-card p-6 border border-white/10">
-                                <h3 class="text-sm font-mono text-white uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
+                                <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                     <div>
-                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Obyekt (Bino)</label>
-                                        <select v-model="searchFilters.building_id" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyekt (Bino)</label>
+                                        <select v-model="searchFilters.building_id" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
                                             <option value="">Barchasi</option>
                                             <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Turi</label>
-                                        <select v-model="searchFilters.type" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi</label>
+                                        <select v-model="searchFilters.type" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
                                             <option value="">Barchasi</option>
                                             <option value="residential">Turar joy (Uy)</option>
                                             <option value="commercial">Tijorat (Do'kon)</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Holati</label>
-                                        <select v-model="searchFilters.status" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Holati</label>
+                                        <select v-model="searchFilters.status" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
                                             <option value="">Barchasi</option>
                                             <option value="available">Bo'sh</option>
                                             <option value="reserved">Band qilingan</option>
@@ -844,18 +844,18 @@ const progressSeries = computed(() => {
                                         </select>
                                     </div>
                                 </div>
-                                <button @click="performSearch" class="w-full py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-gray-200 transition-colors shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                <button @click="performSearch" class="w-full py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-gray-200 transition-colors shadow-sm">
                                     Qidirish
                                 </button>
                             </div>
                         
                             <!-- Results -->
-                            <div v-if="searchResults !== null" class="glass-card p-4 border border-white/10">
-                                <h4 class="text-xs font-mono text-text-muted uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
+                            <div v-if="searchResults !== null" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-200">
+                                <h4 class="text-xs font-mono text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-sm font-mono">
                                         <thead>
-                                            <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest">
+                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
                                                 <th class="py-3 px-2">Bino / Qavat</th>
                                                 <th class="py-3 px-2">Raqam</th>
                                                 <th class="py-3 px-2">Turi</th>
@@ -865,16 +865,16 @@ const progressSeries = computed(() => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-white/5 hover:bg-white/5">
-                                                <td class="py-3 px-2 text-white">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
-                                                <td class="py-3 px-2 font-bold text-white">{{ unit.unit_number }}</td>
+                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover:bg-gray-50">
+                                                <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
+                                                <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
                                                 <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
                                                 <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
                                                 <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
-                                                <td class="py-3 px-2 text-neon-green text-right">{{ $currency(unit.price) }}</td>
+                                                <td class="py-3 px-2 text-emerald-600 text-right">{{ $currency(unit.price) }}</td>
                                             </tr>
                                             <tr v-if="searchResults.length === 0">
-                                                <td colspan="6" class="py-8 text-center text-text-muted text-xs border border-dashed border-white/10 rounded-xl">Hech narsa topilmadi</td>
+                                                <td colspan="6" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Hech narsa topilmadi</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -885,62 +885,62 @@ const progressSeries = computed(() => {
                         <!-- TAB 2: Construction Progress -->
                         <div v-if="activeTab === 'progress'" class="animate-fade-in space-y-6">
                             <div class="flex justify-between items-center">
-                                <h3 class="text-sm font-mono text-neon-yellow uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
-                                <button @click="showAddStageModal = true" class="px-3 py-1 bg-white/5 border border-white/20 text-white text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                <h3 class="text-sm font-mono text-amber-600 uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
+                                <button @click="showAddStageModal = true" class="px-3 py-1 bg-white/5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
                                     + {{ $t('add_stage') }}
                                 </button>
                             </div>
 
                             <div v-if="selectedBuilding.stages?.length" class="space-y-4">
-                                <div v-for="stage in selectedBuilding.stages" :key="stage.id" class="glass-card p-4 border border-white/10 relative overflow-hidden">
+                                <div v-for="stage in selectedBuilding.stages" :key="stage.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-200 relative overflow-hidden">
                                     <!-- Progress Background Bar -->
-                                    <div class="absolute left-0 top-0 bottom-0 bg-neon-cyan/10" :style="{ width: stage.progress_percentage + '%' }"></div>
-                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-neon-cyan shadow-[0_0_10px_#00F0FF]" :style="{ left: stage.progress_percentage + '%' }"></div>
+                                    <div class="absolute left-0 top-0 bottom-0 bg-blue-50" :style="{ width: stage.progress_percentage + '%' }"></div>
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 shadow-sm" :style="{ left: stage.progress_percentage + '%' }"></div>
                                     
                                     <div class="relative z-10 flex justify-between items-center">
                                         <div>
-                                            <h4 class="text-white font-bold text-lg">{{ stage.name }}</h4>
-                                            <p class="text-[10px] text-text-muted font-mono uppercase">{{ stage.start_date || $t('tbd') }} {{ $t('to') }} {{ stage.end_date || $t('tbd') }}</p>
+                                            <h4 class="text-gray-900 font-bold text-lg">{{ stage.name }}</h4>
+                                            <p class="text-[10px] text-gray-500 font-mono uppercase">{{ stage.start_date || $t('tbd') }} {{ $t('to') }} {{ stage.end_date || $t('tbd') }}</p>
                                         </div>
                                         <div class="flex items-center gap-4">
                                             <input type="range" v-model="stage.progress_percentage" class="w-32 accent-neon-cyan cursor-pointer" min="0" max="100">
-                                            <span class="text-xl font-display font-bold text-neon-cyan w-12 text-right">{{ stage.progress_percentage }}%</span>
+                                            <span class="text-xl font-display font-bold text-blue-600 w-12 text-right">{{ stage.progress_percentage }}%</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div v-else class="text-center py-16 border border-dashed border-white/10 rounded-2xl text-text-muted font-mono text-sm">
+                            <div v-else class="text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-500 font-mono text-sm">
                                 {{ $t('no_stages_defined') }}
                             </div>
                         </div>
 
                         <!-- TAB 3: Estimates vs Expenses -->
                         <div v-if="activeTab === 'finances'" class="animate-fade-in">
-                            <h3 class="text-sm font-mono text-neon-green uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
+                            <h3 class="text-sm font-mono text-emerald-600 uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                                <div class="glass-card p-6 border border-neon-cyan/30 bg-neon-cyan/5">
-                                    <h4 class="text-xs font-mono text-text-muted uppercase mb-2">{{ $t('estimated_budget') }}</h4>
-                                    <p class="text-4xl font-display font-bold text-neon-cyan tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+                                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-blue-50">
+                                    <h4 class="text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('estimated_budget') }}</h4>
+                                    <p class="text-4xl font-display font-bold text-blue-600 tracking-tight drop-shadow-sm">
                                         {{ $currency(selectedBuilding.estimated_budget) }}
                                     </p>
                                 </div>
-                                <div :class="['glass-card p-6 border', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'border-neon-magenta/50 bg-neon-magenta/10' : 'border-neon-green/30 bg-neon-green/5']">
-                                    <h4 class="text-xs font-mono text-text-muted uppercase mb-2">{{ $t('actual_expenses') }}</h4>
-                                    <p :class="['text-4xl font-display font-bold tracking-tight', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'text-neon-magenta drop-shadow-[0_0_10px_rgba(255,0,60,0.5)] animate-pulse' : 'text-neon-green drop-shadow-[0_0_10px_rgba(57,255,20,0.3)]']">
+                                <div :class="['bg-white border border-gray-200 shadow-sm rounded-xl p-6 border', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'border-neon-magenta/50 bg-indigo-50' : 'border-emerald-200 bg-emerald-50']">
+                                    <h4 class="text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('actual_expenses') }}</h4>
+                                    <p :class="['text-4xl font-display font-bold tracking-tight', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'text-indigo-600 drop-shadow-sm animate-pulse' : 'text-emerald-600 drop-shadow-sm']">
                                         {{ $currency(selectedBuilding.actual_expenses) }}
                                     </p>
                                     <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="absolute top-4 right-4 text-xl">⚠️</div>
                                 </div>
                             </div>
 
-                            <div class="glass-card p-6 border border-white/10">
-                                <h4 class="text-sm font-display text-white mb-4">{{ $t('budget_health') }}</h4>
-                                <div class="h-4 bg-black rounded-full overflow-hidden flex border border-white/20">
-                                    <div class="h-full bg-neon-green shadow-[0_0_10px_#39FF14]" :style="{ width: Math.min(100, (selectedBuilding.actual_expenses / (selectedBuilding.estimated_budget || 1)) * 100) + '%' }"></div>
-                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="h-full bg-neon-magenta shadow-[0_0_10px_#FF003C] animate-pulse" :style="{ width: ((selectedBuilding.actual_expenses - selectedBuilding.estimated_budget) / selectedBuilding.estimated_budget) * 100 + '%' }"></div>
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
+                                <h4 class="text-sm font-display text-gray-900 mb-4">{{ $t('budget_health') }}</h4>
+                                <div class="h-4 bg-black rounded-full overflow-hidden flex border border-gray-300">
+                                    <div class="h-full bg-emerald-600 shadow-sm" :style="{ width: Math.min(100, (selectedBuilding.actual_expenses / (selectedBuilding.estimated_budget || 1)) * 100) + '%' }"></div>
+                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="h-full bg-indigo-600 shadow-sm animate-pulse" :style="{ width: ((selectedBuilding.actual_expenses - selectedBuilding.estimated_budget) / selectedBuilding.estimated_budget) * 100 + '%' }"></div>
                                 </div>
-                                <div class="flex justify-between mt-2 text-[10px] font-mono text-text-muted">
+                                <div class="flex justify-between mt-2 text-[10px] font-mono text-gray-500">
                                     <span>$0</span>
                                     <span>{{ $t('target') }}: {{ $currency(selectedBuilding.estimated_budget) }}</span>
                                 </div>
@@ -949,12 +949,12 @@ const progressSeries = computed(() => {
 
                         <!-- TAB 4: Analytics -->
                         <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div class="glass-card p-6 border border-white/10">
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
                                 <h3 class="text-sm font-mono text-neon-purple uppercase tracking-widest mb-6">{{ $t('unit_distribution') }}</h3>
                                 <VueApexCharts type="donut" height="300" :options="chartOptions" :series="chartSeries" />
                             </div>
-                            <div class="glass-card p-6 border border-white/10">
-                                <h3 class="text-sm font-mono text-neon-cyan uppercase tracking-widest mb-6">{{ $t('construction_velocity') }}</h3>
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
+                                <h3 class="text-sm font-mono text-blue-600 uppercase tracking-widest mb-6">{{ $t('construction_velocity') }}</h3>
                                 <VueApexCharts type="bar" height="300" :options="progressOptions" :series="progressSeries" />
                             </div>
                         </div>
@@ -962,7 +962,7 @@ const progressSeries = computed(() => {
                     </div>
                 </div>
                 
-                <div v-else class="h-full flex items-center justify-center text-text-muted font-mono text-sm text-center px-4">
+                <div v-else class="h-full flex items-center justify-center text-gray-500 font-mono text-sm text-center px-4">
                     {{ $t('select_building_command_center') }}
                 </div>
             </div>
@@ -970,132 +970,132 @@ const progressSeries = computed(() => {
 
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
-            <div class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A] w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar">
-                <h2 class="text-2xl font-display text-neon-cyan mb-4">{{ isEditingBuilding ? 'Binoni tahrirlash' : $t('add_new_building') }}</h2>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-[#05050A] w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar">
+                <h2 class="text-2xl font-display text-blue-600 mb-4">{{ isEditingBuilding ? 'Binoni tahrirlash' : $t('add_new_building') }}</h2>
                 <form @submit.prevent="submitBuilding" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('building_name') }}</label>
-                        <input v-model="buildingForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" required>
+                        <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('building_name') }}</label>
+                        <input v-model="buildingForm.name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" required>
                     </div>
 
                     <!-- Location Fields -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shahar</label>
-                            <input v-model="buildingForm.city" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shahar</label>
+                            <input v-model="buildingForm.city" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Tuman</label>
-                            <input v-model="buildingForm.district" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tuman</label>
+                            <input v-model="buildingForm.district" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Mahalla</label>
-                            <input v-model="buildingForm.mahalla" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Mahalla</label>
+                            <input v-model="buildingForm.mahalla" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ko'cha (Mo'ljal)</label>
-                            <input v-model="buildingForm.street" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Ko'cha (Mo'ljal)</label>
+                            <input v-model="buildingForm.street" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                     </div>
 
                     <!-- Block and Corpus Fields -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Blok Nomi</label>
-                            <input v-model="buildingForm.block_name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: A Blok">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Nomi</label>
+                            <input v-model="buildingForm.block_name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" placeholder="Masalan: A Blok">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Korpus Nomi</label>
-                            <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: 3-Korpus">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Korpus Nomi</label>
+                            <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" placeholder="Masalan: 3-Korpus">
                         </div>
                     </div>
 
                     <!-- Building Details -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_floors') }}</label>
-                            <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_floors') }}</label>
+                            <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Bloklar (Korpus)</label>
-                            <input v-model="buildingForm.blocks_count" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Bloklar (Korpus)</label>
+                            <input v-model="buildingForm.blocks_count" type="number" min="1" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Podyezdlar</label>
-                            <input v-model="buildingForm.entrances_count" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Podyezdlar</label>
+                            <input v-model="buildingForm.entrances_count" type="number" min="1" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Jami Kvartiralar</label>
-                            <input v-model="buildingForm.total_apartments" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Jami Kvartiralar</label>
+                            <input v-model="buildingForm.total_apartments" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Jami Do'konlar</label>
-                            <input v-model="buildingForm.total_shops" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Jami Do'konlar</label>
+                            <input v-model="buildingForm.total_shops" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all">
                         </div>
                     </div>
 
                     <!-- Building Dimensions -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Uzunligi (m)</label>
-                            <input v-model="buildingForm.length_m" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: 45.5">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Uzunligi (m)</label>
+                            <input v-model="buildingForm.length_m" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" placeholder="Masalan: 45.5">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Kengligi (m)</label>
-                            <input v-model="buildingForm.width_m" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: 20">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kengligi (m)</label>
+                            <input v-model="buildingForm.width_m" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" placeholder="Masalan: 20">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Balandligi (m)</label>
-                            <input v-model="buildingForm.height_m" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-cyan transition-all" placeholder="Masalan: 32">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Balandligi (m)</label>
+                            <input v-model="buildingForm.height_m" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-blue-500 transition-all" placeholder="Masalan: 32">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('estimated_budget_usd') }}</label>
-                        <input v-model="buildingForm.estimated_budget" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all" required>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('estimated_budget_usd') }}</label>
+                        <input v-model="buildingForm.estimated_budget" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" required>
                     </div>
 
                     <!-- Auto-Generation Fields (Only when creating) -->
-                    <div v-if="!isEditingBuilding" class="p-4 border border-neon-yellow/30 rounded-lg bg-neon-yellow/5">
-                        <h4 class="text-xs font-mono text-neon-yellow uppercase mb-3 font-bold tracking-widest">Qavat va Xonalarni Avtomatlashtirilgan Generatsiyasi</h4>
+                    <div v-if="!isEditingBuilding" class="p-4 border border-amber-200 rounded-lg bg-amber-50">
+                        <h4 class="text-xs font-mono text-amber-600 uppercase mb-3 font-bold tracking-widest">Qavat va Xonalarni Avtomatlashtirilgan Generatsiyasi</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Har qavatdagi xonadonlar (dona)</label>
-                                <input v-model="buildingForm.units_per_floor" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 4">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Har qavatdagi xonadonlar (dona)</label>
+                                <input v-model="buildingForm.units_per_floor" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 4">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">O'rtacha maydoni (kv.m)</label>
-                                <input v-model="buildingForm.average_area" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 65">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'rtacha maydoni (kv.m)</label>
+                                <input v-model="buildingForm.average_area" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 65">
                             </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">O'rtacha narxi (UZS)</label>
-                                <input v-model="buildingForm.average_price" type="number" min="0" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 500000000">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'rtacha narxi (UZS)</label>
+                                <input v-model="buildingForm.average_price" type="number" min="0" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 500000000">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">1-qavatdagi Do'konlar soni</label>
-                                <input v-model="buildingForm.commercial_units_first_floor" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white text-sm focus:border-neon-yellow transition-all" placeholder="Masalan: 3">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">1-qavatdagi Do'konlar soni</label>
+                                <input v-model="buildingForm.commercial_units_first_floor" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 3">
                             </div>
                         </div>
-                        <p class="text-[10px] text-text-muted font-mono mt-3 italic">Eslatma: Agar kiritilsa, bino qo'shilganida barcha qavat va xonalar tayyor holatda (A1-01, D1-01 formatida) tizimga yuklanadi.</p>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3 italic">Eslatma: Agar kiritilsa, bino qo'shilganida barcha qavat va xonalar tayyor holatda (A1-01, D1-01 formatida) tizimga yuklanadi.</p>
                     </div>
 
                     <!-- Blueprint Upload -->
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Chizma yuklash (PDF/JPG)</label>
-                        <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer border border-white/10 rounded bg-black/50">
-                        <p v-if="buildingForm.errors.blueprint" class="text-xs text-neon-red mt-1">{{ buildingForm.errors.blueprint }}</p>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Chizma yuklash (PDF/JPG)</label>
+                        <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-gray-900 hover:file:bg-white/20 cursor-pointer border border-gray-200 rounded bg-gray-900/50">
+                        <p v-if="buildingForm.errors.blueprint" class="text-xs text-red-600 mt-1">{{ buildingForm.errors.blueprint }}</p>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="buildingForm.processing" class="px-4 py-2 bg-neon-cyan text-black font-bold font-mono text-xs rounded shadow-[0_0_10px_rgba(0,240,255,0.3)] hover:bg-white transition-colors disabled:opacity-50">
+                        <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="buildingForm.processing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">
                             {{ isEditingBuilding ? 'Saqlash' : $t('create_building') }}
                         </button>
                     </div>
@@ -1105,56 +1105,56 @@ const progressSeries = computed(() => {
 
         <!-- Add Stage Modal -->
         <Modal :show="showAddStageModal" @close="showAddStageModal = false">
-            <div class="glass-panel p-6 border border-neon-yellow/30 bg-[#05050A]">
-                <h2 class="text-2xl font-display text-neon-yellow mb-4">{{ $t('add_construction_stage') }}</h2>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-amber-200 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-amber-600 mb-4">{{ $t('add_construction_stage') }}</h2>
                 <form @submit.prevent="submitStage" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('stage_name') }}</label>
-                        <input v-model="stageForm.name" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all" required :placeholder="$t('stage_name_placeholder')">
+                        <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('stage_name') }}</label>
+                        <input v-model="stageForm.name" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all" required :placeholder="$t('stage_name_placeholder')">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('start_date') }}</label>
-                            <input v-model="stageForm.start_date" type="date" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('start_date') }}</label>
+                            <input v-model="stageForm.start_date" type="date" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('end_date') }}</label>
-                            <input v-model="stageForm.end_date" type="date" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-yellow focus:ring-1 focus:ring-neon-yellow transition-all">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('end_date') }}</label>
+                            <input v-model="stageForm.end_date" type="date" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all">
                         </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showAddStageModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="stageForm.processing" class="px-4 py-2 bg-neon-yellow text-black font-bold font-mono text-xs rounded shadow-[0_0_10px_rgba(252,238,9,0.3)] hover:bg-white transition-colors disabled:opacity-50">{{ $t('btn_add_stage') }}</button>
+                        <button type="button" @click="showAddStageModal = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="stageForm.processing" class="px-4 py-2 bg-amber-500 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">{{ $t('btn_add_stage') }}</button>
                     </div>
                 </form>
             </div>
         </Modal>
         <!-- Add Floor Modal -->
         <Modal :show="showAddFloorModal" @close="showAddFloorModal = false">
-            <div class="glass-panel p-6 border border-white/30 bg-[#05050A]">
-                <h2 class="text-2xl font-display text-white mb-4">{{ isEditingFloor ? "Qavatni Tahrirlash" : "Qavat Qo'shish" }}</h2>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-white/30 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-gray-900 mb-4">{{ isEditingFloor ? "Qavatni Tahrirlash" : "Qavat Qo'shish" }}</h2>
                 <form @submit.prevent="submitFloor" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Qavat Raqami</label>
-                            <input v-model="floorForm.floor_number" type="number" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: 1, 2, -1">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Qavat Raqami</label>
+                            <input v-model="floorForm.floor_number" type="number" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: 1, 2, -1">
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Xonadonlar soni</label>
-                            <input v-model="floorForm.total_units" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: 12">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Xonadonlar soni</label>
+                            <input v-model="floorForm.total_units" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all" required placeholder="Masalan: 12">
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Do'konlar soni (Ixtiyoriy)</label>
-                            <input v-model="floorForm.total_commercial_units" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-white focus:ring-1 focus:ring-white transition-all" placeholder="Masalan: 4">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Do'konlar soni (Ixtiyoriy)</label>
+                            <input v-model="floorForm.total_commercial_units" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all" placeholder="Masalan: 4">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Qavat Chizmasi (PDF/JPG)</label>
-                        <input type="file" @input="floorForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer border border-white/10 rounded bg-black/50">
+                        <label class="block text-xs font-mono text-gray-500 mb-1">Qavat Chizmasi (PDF/JPG)</label>
+                        <input type="file" @input="floorForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-white/10 file:text-gray-900 hover:file:bg-white/20 cursor-pointer border border-gray-200 rounded bg-gray-900/50">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingFloor && isAdmin" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
-                        <button type="button" @click="showAddFloorModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
+                        <button type="button" v-if="isEditingFloor && isAdmin" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-indigo-50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-600 hover:text-black transition-colors">{{ $t('delete') }}</button>
+                        <button type="button" @click="showAddFloorModal = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="floorForm.processing" class="px-4 py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-white/80 transition-colors disabled:opacity-50">{{ isEditingFloor ? "Saqlash" : "Qo'shish" }}</button>
                     </div>
                 </form>
@@ -1163,17 +1163,17 @@ const progressSeries = computed(() => {
 
         <!-- Add Unit Modal -->
         <Modal :show="showAddUnitModal" @close="showAddUnitModal = false">
-            <div class="glass-panel p-6 border border-neon-cyan/30 bg-[#05050A]">
-                <h2 class="text-2xl font-display text-neon-cyan mb-4">{{ isEditingUnit ? "Xonadonni Tahrirlash" : "Xonadon / Do'kon Qo'shish" }}</h2>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-[#05050A]">
+                <h2 class="text-2xl font-display text-blue-600 mb-4">{{ isEditingUnit ? "Xonadonni Tahrirlash" : "Xonadon / Do'kon Qo'shish" }}</h2>
                 <form @submit.prevent="submitUnit" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Raqami (Masalan: A501)</label>
-                            <input v-model="unitForm.unit_number" type="text" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Raqami (Masalan: A501)</label>
+                            <input v-model="unitForm.unit_number" type="text" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">{{ $t('type_label') }}</label>
-                            <select v-model="unitForm.type" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('type_label') }}</label>
+                            <select v-model="unitForm.type" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                                 <option value="residential">Turar joy (Xonadon)</option>
                                 <option value="commercial">Tijorat (Do'kon)</option>
                             </select>
@@ -1181,47 +1181,47 @@ const progressSeries = computed(() => {
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Maydoni (kv.m)</label>
-                            <input v-model="unitForm.area_sqm" type="number" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Maydoni (kv.m)</label>
+                            <input v-model="unitForm.area_sqm" type="number" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Jami Narxi (USD/UZS)</label>
-                            <input v-model="unitForm.price" type="number" step="0.01" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Jami Narxi (USD/UZS)</label>
+                            <input v-model="unitForm.price" type="number" step="0.01" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                         </div>
                     </div>
 
                     <!-- Detailed Attributes -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Xonalar</label>
-                            <input v-model="unitForm.rooms_count" type="number" min="1" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonalar</label>
+                            <input v-model="unitForm.rooms_count" type="number" min="1" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Oshxona</label>
-                            <input v-model="unitForm.kitchens_count" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Oshxona</label>
+                            <input v-model="unitForm.kitchens_count" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Hammom</label>
-                            <input v-model="unitForm.bathrooms_count" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Hammom</label>
+                            <input v-model="unitForm.bathrooms_count" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Hojatxona</label>
-                            <input v-model="unitForm.toilets_count" type="number" min="0" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Hojatxona</label>
+                            <input v-model="unitForm.toilets_count" type="number" min="0" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-text-muted mb-1">Status</label>
-                            <select v-model="unitForm.status" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" required>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Status</label>
+                            <select v-model="unitForm.status" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                                 <option value="available">Bo'sh</option>
                                 <option value="reserved">Band qilingan</option>
                                 <option value="sold">Sotilgan</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Joylashuvi (Orientation)</label>
-                            <input v-model="unitForm.orientation" type="text" list="orientations" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all" placeholder="Masalan: Burchak, O'rtada">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Joylashuvi (Orientation)</label>
+                            <input v-model="unitForm.orientation" type="text" list="orientations" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" placeholder="Masalan: Burchak, O'rtada">
                             <datalist id="orientations">
                                 <option value="Burchak"></option>
                                 <option value="O'rtada"></option>
@@ -1234,16 +1234,16 @@ const progressSeries = computed(() => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-text-muted mb-1">Poligon Koordinatalari (Ixtiyoriy, chizma ustida shakl chizish uchun)</label>
-                        <input v-model="unitForm.svg_polygon" type="text" placeholder="e.g. 100,100 200,100 200,200 100,200" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-white focus:border-neon-cyan transition-all text-xs font-mono text-text-muted">
+                        <label class="block text-xs font-mono text-gray-500 mb-1">Poligon Koordinatalari (Ixtiyoriy, chizma ustida shakl chizish uchun)</label>
+                        <input v-model="unitForm.svg_polygon" type="text" placeholder="e.g. 100,100 200,100 200,200 100,200" class="w-full bg-gray-900/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs font-mono text-gray-500">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" v-if="isEditingUnit && isAdmin" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-neon-magenta/10 text-neon-magenta font-mono text-xs rounded hover:bg-neon-magenta hover:text-black transition-colors">{{ $t('delete') }}</button>
-                        <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedFloor.units.find(u => u.id === editingUnitId))" class="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green font-bold font-mono text-xs rounded hover:bg-neon-green hover:text-black transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+                        <button type="button" v-if="isEditingUnit && isAdmin" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-indigo-50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-600 hover:text-black transition-colors">{{ $t('delete') }}</button>
+                        <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedFloor.units.find(u => u.id === editingUnitId))" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-500 font-bold font-mono text-xs rounded hover:bg-emerald-600 hover:text-black transition-colors shadow-sm">
                             Sotish
                         </button>
-                        <button type="button" @click="showAddUnitModal = false" class="px-4 py-2 text-xs font-mono text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-neon-cyan text-black font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(0,240,255,0.3)] disabled:opacity-50">{{ isEditingUnit ? "Saqlash" : "Qo'shish" }}</button>
+                        <button type="button" @click="showAddUnitModal = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded hover:bg-white transition-colors shadow-sm disabled:opacity-50">{{ isEditingUnit ? "Saqlash" : "Qo'shish" }}</button>
                     </div>
                 </form>
             </div>
@@ -1251,14 +1251,14 @@ const progressSeries = computed(() => {
 
         <!-- Blueprint Viewer Modal -->
         <Modal :show="showBlueprintModal" @close="showBlueprintModal = false" maxWidth="4xl">
-            <div class="glass-panel p-6 border border-neon-purple/30 bg-[#05050A]">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-neon-purple/30 bg-[#05050A]">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-display text-neon-purple">Qavat Chizmasi</h2>
-                    <button @click="showBlueprintModal = false" class="text-white hover:text-neon-magenta transition-colors">
+                    <button @click="showBlueprintModal = false" class="text-gray-900 hover:text-indigo-600 transition-colors">
                         ✕
                     </button>
                 </div>
-                <div class="w-full max-h-[80vh] overflow-auto flex items-center justify-center bg-black/50 rounded-xl border border-white/10">
+                <div class="w-full max-h-[80vh] overflow-auto flex items-center justify-center bg-gray-900/50 rounded-xl border border-gray-200">
                     <img v-if="selectedFloor?.blueprint_path" :src="`/storage/${selectedFloor.blueprint_path}`" class="max-w-full object-contain" />
                 </div>
             </div>
@@ -1266,32 +1266,32 @@ const progressSeries = computed(() => {
 
         <!-- Sell Unit Modal (Create Contract) -->
         <div v-if="showSellUnitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showSellUnitModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-green/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-green/50">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showSellUnitModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-emerald-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest  shadow-neon-green/50">
                     {{ $t('add') }} {{ $t('contract') }}
                 </h2>
                 <form @submit.prevent="submitContract" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
-                            <input v-model="contractForm.created_at" type="date" class="glass-input w-full text-neon-green" title="O'tmish sanada shartnoma tuzish uchun">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
+                            <input v-model="contractForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" title="O'tmish sanada shartnoma tuzish uchun">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
-                            <input v-model="contractForm.contract_number" type="text" class="glass-input w-full text-neon-green" placeholder="Masalan: SH-001">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
+                            <input v-model="contractForm.contract_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" placeholder="Masalan: SH-001">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Xaridor Turi</label>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">Xaridor Turi</label>
                         <div class="flex gap-4 mb-3">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">Mijoz (Client)</span>
+                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan bg-gray-900/50 border-gray-300">
+                                <span class="text-xs text-gray-900">Mijoz (Client)</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-neon-yellow focus:ring-neon-yellow bg-black/50 border-white/20">
-                                <span class="text-xs text-white text-neon-yellow">Ta'sischi Xaridi (Partner)</span>
+                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow bg-gray-900/50 border-gray-300">
+                                <span class="text-xs text-gray-900 text-amber-600">Ta'sischi Xaridi (Partner)</span>
                             </label>
                         </div>
                         
@@ -1314,68 +1314,68 @@ const progressSeries = computed(() => {
                         />
                     </div>
 
-                    <div v-if="currentSellingUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-white/10 rounded-xl bg-black/30">
+                    <div v-if="currentSellingUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-gray-200 rounded-xl bg-gray-900/50">
                         <div class="col-span-1 sm:col-span-2">
-                            <p class="text-[10px] font-mono text-text-muted uppercase">{{ $t('object_block') }}</p>
-                            <p class="text-xs text-white font-bold">{{ selectedBuilding?.name || 'Noma\'lum' }} (Xonadon: {{ currentSellingUnit.unit_number }}, Maydon: {{ currentSellingUnit.area_sqm }} kv.m)</p>
+                            <p class="text-[10px] font-mono text-gray-500 uppercase">{{ $t('object_block') }}</p>
+                            <p class="text-xs text-gray-900 font-bold">{{ selectedBuilding?.name || 'Noma\'lum' }} (Xonadon: {{ currentSellingUnit.unit_number }}, Maydon: {{ currentSellingUnit.area_sqm }} kv.m)</p>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('floor') }}</label>
-                            <input v-model="contractForm.floor" type="text" class="glass-input w-full text-white" placeholder="Qavatni kiriting">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('floor') }}</label>
+                            <input v-model="contractForm.floor" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qavatni kiriting">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
-                            <input v-model="contractForm.rooms" type="number" class="glass-input w-full text-white" placeholder="Xonalar sonini kiriting">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
+                            <input v-model="contractForm.rooms" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Xonalar sonini kiriting">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="currentSellingUnit">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
-                            <input v-model="contractForm.total_amount" type="number" step="any" class="glass-input w-full text-neon-green font-bold text-lg" required placeholder="Umumiy summani kiriting">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
+                            <input v-model="contractForm.total_amount" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" required placeholder="Umumiy summani kiriting">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik)</label>
-                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="glass-input w-full bg-black/50 opacity-70 cursor-not-allowed" readonly tabindex="-1">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik)</label>
+                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 opacity-70 cursor-not-allowed" readonly tabindex="-1">
                         </div>
                     </div>
 
                     <!-- Payment Type Selection -->
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">{{ $t('payment_type') }}</label>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('payment_type') }}</label>
                         <div class="flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">{{ $t('one_time_full_payment') }}</span>
+                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan bg-gray-900/50 border-gray-300">
+                                <span class="text-xs text-gray-900">{{ $t('one_time_full_payment') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-black/50 border-white/20">
-                                <span class="text-xs text-white">{{ $t('installment_payment') }}</span>
+                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan bg-gray-900/50 border-gray-300">
+                                <span class="text-xs text-gray-900">{{ $t('installment_payment') }}</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('down_payment') }}</label>
-                            <input v-model="contractForm.down_payment" type="number" step="any" class="glass-input w-full" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('down_payment') }}</label>
+                            <input v-model="contractForm.down_payment" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                         </div>
                         <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('term_months') }}</label>
-                            <input v-model="contractForm.term_months" type="number" class="glass-input w-full" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('term_months') }}</label>
+                            <input v-model="contractForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-white/10 mt-4">
-                        <h3 class="text-sm font-bold text-neon-cyan uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
+                    <div class="pt-4 border-t border-gray-200 mt-4">
+                        <h3 class="text-sm font-bold text-blue-600 uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Haqiqatda qilingan to'lov</label>
-                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="glass-input w-full text-neon-yellow" placeholder="Masalan: 600000000">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
+                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">To'lov Usuli</label>
-                                <select v-model="contractForm.payment_method" class="glass-input w-full bg-black/50">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Usuli</label>
+                                <select v-model="contractForm.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50">
                                     <option value="bank">{{ $t('bank_account') }}</option>
                                     <option value="main">{{ $t('cash_account') }}</option>
                                     <option value="credit">💳 Plastik / Terminal</option>
@@ -1385,8 +1385,8 @@ const progressSeries = computed(() => {
                     </div>
 
                     <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showSellUnitModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessingContract" class="px-6 py-2 bg-neon-green text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#39FF14] transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
+                        <button type="button" @click="showSellUnitModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessingContract" class="px-6 py-2 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
                     </div>
                 </form>
             </div>

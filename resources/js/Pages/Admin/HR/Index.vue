@@ -1146,12 +1146,12 @@ function exportOwnerPdf(id) {
         <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <!-- Sidebar Navigation -->
             <div class="lg:col-span-1 space-y-4">
-                <div class="glass-panel p-4 rounded-2xl flex flex-col gap-2 bg-black/40 border border-white/10">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-2xl flex flex-col gap-2 bg-gray-900/50 border border-gray-200">
                     <button 
                         v-for="tab in tabs" :key="tab.id"
                         @click="activeTab = tab.id"
                         class="w-full text-left px-6 py-4 rounded-xl text-sm font-mono tracking-widest transition-all duration-300 uppercase flex items-center gap-3"
-                        :class="activeTab === tab.id ? 'bg-white/10 text-neon-blue border border-neon-blue/30 shadow-[0_0_15px_rgba(0,102,255,0.1)] font-bold' : 'text-text-muted hover:text-white hover:bg-white/5 border border-transparent'"
+                        :class="activeTab === tab.id ? 'bg-white/10 text-neon-blue border border-neon-blue/30 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 border border-transparent'"
                     >
                         <span class="text-xl">{{ tab.icon }}</span> {{ $t(tab.name) }}
                     </button>
@@ -1163,45 +1163,45 @@ function exportOwnerPdf(id) {
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
         <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-3 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                         👥 Tizim Xodimlari
                     </h2>
-                    <button @click="showUserModal = true" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                    <button @click="showUserModal = true" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
                         + Tizim Xodimi
                     </button>
                 </div>
                 
                 <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
                     <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div v-for="user in users" :key="user.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                        <div v-for="user in users" :key="user.id" class="p-4 bg-gray-900/50 border border-gray-100 rounded-2xl flex flex-col justify-between hover:border-gray-300 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                             <div class="flex items-start gap-3 mb-3">
-                                <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
+                                <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
                                     <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
                                     <span v-else class="text-lg">👤</span>
                                 </div>
                                 <div>
-                                    <h3 class="text-xs font-bold text-white mb-0.5 group-hover:text-neon-cyan transition-colors line-clamp-1" :title="user.name">{{ user.name }}</h3>
-                                    <p class="text-[9px] font-mono text-text-muted line-clamp-1" :title="user.email">{{ user.email }}</p>
+                                    <h3 class="text-xs font-bold text-gray-900 mb-0.5 group-hover:text-blue-600 transition-colors line-clamp-1" :title="user.name">{{ user.name }}</h3>
+                                    <p class="text-[9px] font-mono text-gray-500 line-clamp-1" :title="user.email">{{ user.email }}</p>
                                     <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border"
                                         :class="{
-                                            'bg-neon-red/20 text-neon-red border-neon-red/30': user.roles?.[0]?.name === 'Super_Admin',
-                                            'bg-neon-cyan/20 text-neon-cyan border-neon-cyan/30': user.roles?.[0]?.name === 'Operator',
-                                            'bg-neon-yellow/20 text-neon-yellow border-neon-yellow/30': user.roles?.[0]?.name === 'Partner',
-                                            'bg-white/10 text-text-muted border-white/20': user.roles?.[0]?.name === 'Worker' || !user.roles?.length
+                                            'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin',
+                                            'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator',
+                                            'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner',
+                                            'bg-white/10 text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length
                                         }">
                                         {{ user.roles?.[0]?.name || 'None' }}
                                     </span>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between border-t border-white/5 pt-3">
-                                <p class="text-[10px] font-mono font-bold text-neon-green bg-neon-green/10 px-2 py-0.5 rounded">{{ $currency(user.salary_rate || 0) }}</p>
+                            <div class="flex items-center justify-between border-t border-gray-100 pt-3">
+                                <p class="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{{ $currency(user.salary_rate || 0) }}</p>
                                 <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-neon-blue/10 text-neon-blue rounded hover:bg-neon-blue/30 transition-colors" title="Karta">💳</button>
-                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
 
-                                    <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
+                                    <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
                         </div>
@@ -1210,26 +1210,26 @@ function exportOwnerPdf(id) {
             </div>
 
             <!-- Workers Column -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                         👷‍♂️ Yollanma Ishchilar & Brigadalar
                     </h2>
                     
-                    <button @click="showBrigadeForm = !showBrigadeForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
+                    <button @click="showBrigadeForm = !showBrigadeForm" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-50 transition-colors border border-blue-200">
                         {{ showBrigadeForm ? '- Yopish' : "+ Brigada Qo'shish" }}
                     </button>
                 </div>
 
-                <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-black/30 p-4 rounded-xl border border-white/5 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
+                <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-gray-900/50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
+                    <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input v-model="brigadeForm.name" type="text" class="glass-input text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
-                        <input v-model="brigadeForm.foreman_name" type="text" class="glass-input text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
-                        <input v-model="brigadeForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqami">
+                        <input v-model="brigadeForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
+                        <input v-model="brigadeForm.foreman_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
+                        <input v-model="brigadeForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
                             {{ isBrigadeEditMode ? 'Saqlash' : "Qo'shish" }}
                         </button>
                     </div>
@@ -1237,56 +1237,56 @@ function exportOwnerPdf(id) {
 
                 <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                     <!-- Brigades List -->
-                    <div v-for="b in brigades" :key="b.id" class="border border-white/10 bg-black/40 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                        <div class="p-4 cursor-pointer hover:bg-white/5 flex justify-between items-center transition-colors" @click="activeBrigadeId = activeBrigadeId === b.id ? null : b.id">
+                    <div v-for="b in brigades" :key="b.id" class="border border-gray-200 bg-gray-900/50 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                        <div class="p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center transition-colors" @click="activeBrigadeId = activeBrigadeId === b.id ? null : b.id">
                             <div>
-                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                                    <span class="text-neon-cyan">{{ activeBrigadeId === b.id ? '▼' : '▶' }}</span>
+                                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                    <span class="text-blue-600">{{ activeBrigadeId === b.id ? '▼' : '▶' }}</span>
                                     {{ b.name }}
                                 </h3>
-                                <p class="text-[10px] font-mono text-text-muted mt-1 uppercase">Usta: {{ b.foreman_name }} <span v-if="b.phone">| {{ b.phone }}</span></p>
+                                <p class="text-[10px] font-mono text-gray-500 mt-1 uppercase">Usta: {{ b.foreman_name }} <span v-if="b.phone">| {{ b.phone }}</span></p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-[10px] font-mono text-text-muted uppercase mb-0.5">Brigada Balansi</p>
-                                    <p class="text-sm font-bold" :class="b.balance > 0 ? 'text-neon-green' : (b.balance < 0 ? 'text-neon-red' : 'text-white')">{{ $currency(b.balance || 0) }}</p>
+                                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-0.5">Brigada Balansi</p>
+                                    <p class="text-sm font-bold" :class="b.balance > 0 ? 'text-emerald-600' : (b.balance < 0 ? 'text-red-600' : 'text-gray-900')">{{ $currency(b.balance || 0) }}</p>
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded hover:bg-neon-cyan/40 transition-colors" title="Hisob-kitob Jurnali">
+                                    <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors" title="Hisob-kitob Jurnali">
                                         📊 Jurnal
                                     </button>
 
 
-                                    <button v-if="isAdmin" @click.stop="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
+                                    <button v-if="isAdmin" @click.stop="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Inner Workers -->
-                        <div v-if="activeBrigadeId === b.id" class="bg-black/60 p-4 border-t border-white/5 animate-[fadeIn_0.2s_ease-out]">
+                        <div v-if="activeBrigadeId === b.id" class="bg-gray-900/50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
                             <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-xs font-mono text-text-muted uppercase">Brigada Ishchilari</h4>
-                                <button @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-white/10 text-white text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
+                                <h4 class="text-xs font-mono text-gray-500 uppercase">Brigada Ishchilari</h4>
+                                <button @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-white/10 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
                                     + Ishchi
                                 </button>
                             </div>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="w in b.workers" :key="w.id" class="p-3 bg-white/5 rounded-lg border border-white/5 flex flex-col justify-between">
+                                <div v-for="w in b.workers" :key="w.id" class="p-3 bg-white/5 rounded-lg border border-gray-100 flex flex-col justify-between">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <p class="text-xs font-bold text-white">{{ w.name }}</p>
-                                            <p class="text-[9px] font-mono text-text-muted mt-0.5 uppercase">{{ w.role }} | {{ w.salary_type }} ({{ w.metric_type }})</p>
+                                            <p class="text-xs font-bold text-gray-900">{{ w.name }}</p>
+                                            <p class="text-[9px] font-mono text-gray-500 mt-0.5 uppercase">{{ w.role }} | {{ w.salary_type }} ({{ w.metric_type }})</p>
                                         </div>
                                         <div class="flex gap-1">
-                                            <button v-if="isAdmin" @click="openWorkerEdit(w)" class="text-[10px] px-1 hover:text-white text-text-muted">✏️</button>
-                                            <button v-if="isAdmin" @click="deleteWorker(w.id)" class="text-[10px] px-1 hover:text-neon-red text-text-muted">🗑️</button>
+                                            <button v-if="isAdmin" @click="openWorkerEdit(w)" class="text-[10px] px-1 hover:text-gray-900 text-gray-500">✏️</button>
+                                            <button v-if="isAdmin" @click="deleteWorker(w.id)" class="text-[10px] px-1 hover:text-red-600 text-gray-500">🗑️</button>
                                         </div>
                                     </div>
-                                    <div class="mt-2 text-xs font-mono text-neon-cyan">{{ $currency(w.base_rate || w.rate) }}</div>
+                                    <div class="mt-2 text-xs font-mono text-blue-600">{{ $currency(w.base_rate || w.rate) }}</div>
                                 </div>
-                                <div v-if="!b.workers || b.workers.length === 0" class="col-span-2 text-center text-[10px] font-mono text-text-muted py-4 border border-dashed border-white/10 rounded-lg">
+                                <div v-if="!b.workers || b.workers.length === 0" class="col-span-2 text-center text-[10px] font-mono text-gray-500 py-4 border border-dashed border-gray-200 rounded-lg">
                                     Ishchilar mavjud emas
                                 </div>
                             </div>
@@ -1297,28 +1297,28 @@ function exportOwnerPdf(id) {
                 <!-- Hidden Worker Form for reuse -->
                 <Teleport to="body">
                     <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
-                        <form @submit.prevent="saveWorker" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
-                            <h3 class="text-lg font-bold text-white uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
+                        <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="cancelWorkerEdit"></div>
+                        <form @submit.prevent="saveWorker" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <input v-model="workerForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
-                                <input v-model="workerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
-                                <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="glass-input text-xs bg-black/50 text-white" :required="workerForm.role !== 'guard'">
+                                <input v-model="workerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
+                                <input v-model="workerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
+                                <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-900/50 text-gray-900" :required="workerForm.role !== 'guard'">
                                     <option value="" disabled>-- Brigada --</option>
                                     <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
                                 </select>
-                                <select v-model="workerForm.role" class="glass-input text-xs bg-black/50 text-white">
+                                <select v-model="workerForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-900/50 text-gray-900">
                                     <option value="builder">Quruvchi / Usta</option>
                                     <option value="driver">Haydovchi</option>
                                     <option value="guard">Qorovul</option>
                                     <option value="office">Boshqa</option>
                                 </select>
-                                <select v-model="workerForm.salary_type" class="glass-input text-xs bg-black/50 text-white">
+                                <select v-model="workerForm.salary_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-900/50 text-gray-900">
                                     <option value="piece_rate">Ishbay</option>
                                     <option value="hourly">Soatbay</option>
                                     <option value="fixed_monthly">Oylik Maosh</option>
                                 </select>
-                                <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="glass-input text-xs bg-black/50 text-white">
+                                <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-900/50 text-gray-900">
                                     <option value="dona">Dona</option>
                                     <option value="kv_m">Kvadrat Metr</option>
                                     <option value="kub_m">Kub Metr</option>
@@ -1327,80 +1327,80 @@ function exportOwnerPdf(id) {
                                     <option value="kun">Kun</option>
                                     <option value="reys">Reys</option>
                                 </select>
-                                <input v-model="workerForm.base_rate" type="number" class="glass-input text-xs" placeholder="Narxi (Stavka)" required>
+                                <input v-model="workerForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Narxi (Stavka)" required>
 
-                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-gray-200 rounded-xl space-y-4">
                                     <div class="flex justify-between items-center">
-                                        <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                        <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded hover:bg-neon-cyan hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                        <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                        <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
                                     </div>
                                     <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
-                                        <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-black/30 p-3 rounded-lg border border-white/5 relative group">
-                                            <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-neon-red text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-[0_0_10px_rgba(255,0,0,0.5)]">✕</button>
+                                        <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-900/50 p-3 rounded-lg border border-gray-100 relative group">
+                                            <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
                                             <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                <input type="month" v-model="period.start_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" required>
                                             </div>
                                             <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                <input type="month" v-model="period.end_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" required>
                                             </div>
                                             <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Oylik Miqdori</label>
-                                                <input type="number" v-model="period.salary" class="glass-input text-xs w-full bg-black/50" placeholder="Summa" required>
+                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
+                                                <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" placeholder="Summa" required>
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else class="text-center text-[10px] font-mono text-text-muted p-4 border border-dashed border-white/10 rounded-lg">
+                                    <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
                                         O'tgan davrlar kiritilmagan.
                                     </div>
                                 </div>
 
                             </div>
                             <div class="flex justify-end gap-3 mt-4">
-                                <button type="button" @click="cancelWorkerEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
+                                <button type="button" @click="cancelWorkerEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
+                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
                             </div>
                         </form>
                     </div>
                 </Teleport>
             </div>
                   <!-- Qorovullar -->
-                  <div class="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-[700px]">
+                  <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
                       <div class="flex justify-between items-center mb-6">
-                          <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                          <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                               🛡️ Qorovullar
                           </h2>
-                          <button @click="openGuardForm()" class="px-4 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                          <button @click="openGuardForm()" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
                               + Qorovul
                           </button>
                       </div>
                       
                       <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
                           <div class="grid grid-cols-1 gap-3">
-                              <div v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col justify-between hover:border-white/20 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                              <div v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="p-4 bg-gray-900/50 border border-gray-100 rounded-2xl flex flex-col justify-between hover:border-gray-300 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                                   <div class="flex items-start gap-3 mb-3">
-                                      <div class="w-10 h-10 rounded-xl bg-neon-cyan/10 flex items-center justify-center shrink-0 border border-neon-cyan/20 group-hover:border-neon-cyan/50 transition-colors">
+                                      <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 border border-blue-200 group-hover:border-blue-200 transition-colors">
                                           <span class="text-lg">🛡️</span>
                                       </div>
                                       <div class="flex-1 min-w-0">
-                                          <h3 class="text-white font-bold truncate">{{ g.name }}</h3>
-                                          <p class="text-text-muted text-[10px] font-mono uppercase mt-1">{{ g.phone || '-' }}</p>
+                                          <h3 class="text-gray-900 font-bold truncate">{{ g.name }}</h3>
+                                          <p class="text-gray-500 text-[10px] font-mono uppercase mt-1">{{ g.phone || '-' }}</p>
                                       </div>
                                   </div>
                                   
-                                  <div class="flex justify-between items-center pt-3 border-t border-white/5 mt-auto">
-                                      <div class="text-neon-cyan text-xs font-mono font-bold">{{ $currency(g.base_rate) }} so'm</div>
+                                  <div class="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
+                                      <div class="text-blue-600 text-xs font-mono font-bold">{{ $currency(g.base_rate) }} so'm</div>
                                       <div class="flex gap-2">
-                                          <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-neon-cyan" title="Maosh Tarixi">📅</button>
-                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-white" title="Tahrirlash">✏️</button>
+                                          <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-blue-600" title="Maosh Tarixi">📅</button>
+                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded bg-white/5 flex items-center justify-center hover:bg-white/20 transition-colors text-gray-900" title="Tahrirlash">✏️</button>
 
 
-                                          <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-neon-red/10 flex items-center justify-center hover:bg-neon-red hover:text-white transition-colors text-neon-red" title="O'chirish">🗑️</button>
+                                          <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-red-50 flex items-center justify-center hover:bg-red-600 hover:text-gray-900 transition-colors text-red-600" title="O'chirish">🗑️</button>
                                       </div>
                                   </div>
                               </div>
-                              <div v-if="workers.filter(w => w.role === 'guard').length === 0" class="text-center p-8 border border-dashed border-white/10 rounded-2xl text-text-muted text-sm font-mono">
+                              <div v-if="workers.filter(w => w.role === 'guard').length === 0" class="text-center p-8 border border-dashed border-gray-200 rounded-2xl text-gray-500 text-sm font-mono">
                                   Qorovullar yo'q
                               </div>
                           </div>
@@ -1409,44 +1409,44 @@ function exportOwnerPdf(id) {
                       <!-- Guard Form Modal -->
                       <Teleport to="body">
                           <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                              <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="cancelGuardEdit"></div>
-                              <form @submit.prevent="saveGuard" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
-                                  <h3 class="text-lg font-bold text-white uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
+                              <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="cancelGuardEdit"></div>
+                              <form @submit.prevent="saveGuard" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
+                                  <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
                                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <input v-model="guardForm.name" type="text" class="glass-input text-xs" placeholder="F.I.SH" required>
-                                      <input v-model="guardForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqam">
-                                      <input v-model="guardForm.base_rate" type="number" class="glass-input text-xs" placeholder="Oylik Maosh (Stavka)" required>
+                                      <input v-model="guardForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
+                                      <input v-model="guardForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
+                                      <input v-model="guardForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Oylik Maosh (Stavka)" required>
 
-                                      <div class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                                      <div class="col-span-1 sm:col-span-2 p-4 bg-white/5 border border-gray-200 rounded-xl space-y-4">
                                           <div class="flex justify-between items-center">
-                                              <h4 class="text-[10px] font-mono text-neon-cyan uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                              <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded hover:bg-neon-cyan hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                              <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                              <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
                                           </div>
                                           <div v-if="guardForm.salary_periods && guardForm.salary_periods.length > 0" class="space-y-3">
-                                              <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-black/30 p-3 rounded-lg border border-white/5 relative group">
-                                                  <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-neon-red text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-[0_0_10px_rgba(255,0,0,0.5)]">✕</button>
+                                              <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-900/50 p-3 rounded-lg border border-gray-100 relative group">
+                                                  <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
                                                   <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                      <input type="month" v-model="period.start_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                      <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" required>
                                                   </div>
                                                   <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                      <input type="month" v-model="period.end_month" class="glass-input text-xs w-full bg-black/50" required>
+                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                      <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" required>
                                                   </div>
                                                   <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-text-muted mb-1 uppercase">Oylik Miqdori</label>
-                                                      <input type="number" v-model="period.salary" class="glass-input text-xs w-full bg-black/50" placeholder="Summa" required>
+                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
+                                                      <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50" placeholder="Summa" required>
                                                   </div>
                                               </div>
                                           </div>
-                                          <div v-else class="text-center text-[10px] font-mono text-text-muted p-4 border border-dashed border-white/10 rounded-lg">
+                                          <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
                                               O'tgan davrlar kiritilmagan.
                                           </div>
                                       </div>
                                   </div>
                                   <div class="flex justify-end gap-3 mt-4">
-                                      <button type="button" @click="cancelGuardEdit" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
-                                      <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
+                                      <button type="button" @click="cancelGuardEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
+                                      <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
                                   </div>
                               </form>
                           </div>
@@ -1455,67 +1455,67 @@ function exportOwnerPdf(id) {
           </div>
           
           <!-- TAB 1: FACE-ID HUB -->
-        <div v-if="activeTab === 1" class="glass-panel p-6 rounded-2xl border border-white/5 animate-[fadeIn_0.5s_ease-out]">
-            <h2 class="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
+        <div v-if="activeTab === 1" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
+            <h2 class="text-xl font-display font-bold text-gray-900 mb-6 flex items-center gap-2">
                 👁️ {{ $t('biometric_registration') }}
             </h2>
             <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8">
                 <!-- Camera Feed Placeholder -->
-                <div class="glass-card rounded-2xl border border-neon-cyan/50 overflow-hidden relative min-h-[400px] flex items-center justify-center bg-black/80 group">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl border border-blue-200 overflow-hidden relative min-h-[400px] flex items-center justify-center bg-gray-900/50 group">
                     <video ref="videoElement" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0" v-show="isCameraActive"></video>
                     
                     <div v-if="!isCameraActive" class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                     <!-- Crosshair UI -->
-                    <div class="absolute inset-8 border border-neon-cyan/30 rounded-[40px] pointer-events-none z-10"></div>
-                    <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-neon-cyan pointer-events-none z-10"></div>
-                    <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-neon-cyan pointer-events-none z-10"></div>
-                    <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-neon-cyan pointer-events-none z-10"></div>
-                    <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-neon-cyan pointer-events-none z-10"></div>
+                    <div class="absolute inset-8 border border-blue-200 rounded-[40px] pointer-events-none z-10"></div>
+                    <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-blue-500 pointer-events-none z-10"></div>
+                    <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-blue-500 pointer-events-none z-10"></div>
+                    <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-blue-500 pointer-events-none z-10"></div>
+                    <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-blue-500 pointer-events-none z-10"></div>
                     
                     <div v-if="!isCameraActive" class="text-center z-10">
                         <div class="text-6xl mb-4 animate-pulse">📷</div>
-                        <p class="text-neon-cyan font-mono text-sm tracking-widest uppercase mb-2">Kamera faol emas</p>
-                        <button @click="startCamera" class="px-4 py-2 mt-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan hover:text-black transition-colors">Kamerani Yoqish</button>
+                        <p class="text-blue-600 font-mono text-sm tracking-widest uppercase mb-2">Kamera faol emas</p>
+                        <button @click="startCamera" class="px-4 py-2 mt-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-600 hover:text-black transition-colors">Kamerani Yoqish</button>
                     </div>
                 </div>
 
                 <!-- Registration Actions -->
                 <div class="space-y-6">
-                    <div class="bg-black/40 p-6 rounded-xl border border-white/5">
-                        <h3 class="text-sm font-mono text-white mb-4 uppercase tracking-widest border-b border-white/10 pb-2">Yuzni Xodimga Biriktirish</h3>
+                    <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-100">
+                        <h3 class="text-sm font-mono text-gray-900 mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Yuzni Xodimga Biriktirish</h3>
                         <div class="space-y-4">
                             <div class="flex gap-4">
                                 <label class="flex-1 cursor-pointer">
                                     <input type="radio" v-model="biometricForm.person_type" value="worker" class="hidden peer" @change="biometricForm.person_id = ''">
-                                    <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all text-[10px] uppercase tracking-widest font-mono">
+                                    <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-[10px] uppercase tracking-widest font-mono">
                                         👷 Yollanma Ishchi
                                     </div>
                                 </label>
                                 <label class="flex-1 cursor-pointer">
                                     <input type="radio" v-model="biometricForm.person_type" value="user" class="hidden peer" @change="biometricForm.person_id = ''">
-                                    <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all text-[10px] uppercase tracking-widest font-mono">
+                                    <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-[10px] uppercase tracking-widest font-mono">
                                         👨‍💻 Tizim Xodimi
                                     </div>
                                 </label>
                             </div>
                             
                             <div v-if="biometricForm.person_type === 'worker'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Ishchini Tanlang</label>
-                                <select v-model="biometricForm.person_id" class="glass-input w-full bg-black/50">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Ishchini Tanlang</label>
+                                <select v-model="biometricForm.person_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50">
                                     <option value="" disabled selected>-- Ishchi --</option>
                                     <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                                 </select>
                             </div>
                             
                             <div v-if="biometricForm.person_type === 'user'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Tizim Xodimini Tanlang</label>
-                                <select v-model="biometricForm.person_id" class="glass-input w-full bg-black/50">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tizim Xodimini Tanlang</label>
+                                <select v-model="biometricForm.person_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50">
                                     <option value="" disabled selected>-- Xodim --</option>
                                     <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} ({{ user.role }})</option>
                                 </select>
                             </div>
 
-                            <button @click="scanNewFace" :disabled="!isCameraActive || isProcessing" class="w-full mt-4 py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)] disabled:opacity-50">
+                            <button @click="scanNewFace" :disabled="!isCameraActive || isProcessing" class="w-full mt-4 py-3 bg-blue-50 border border-blue-500 text-blue-600 text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                                 {{ isProcessing ? 'Saqlanmoqda...' : '📷 Yangi Yuzni Skanerlash' }}
                             </button>
                         </div>
@@ -1525,24 +1525,24 @@ function exportOwnerPdf(id) {
         </div>
 
         <!-- TAB 2: ATTENDANCE LOGS (AI HUB) -->
-        <div v-if="activeTab === 2" class="glass-panel p-6 rounded-2xl border border-white/5 animate-[fadeIn_0.5s_ease-out]">
+        <div v-if="activeTab === 2" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                     ⏱️ AI Davomat va Nazorat Jurnali
                 </h2>
                 <div class="flex gap-2">
-                    <button @click="startScanner" class="px-3 py-1 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 text-[10px] font-mono uppercase tracking-widest rounded shadow-[0_0_10px_rgba(0,255,255,0.1)] hover:bg-neon-cyan hover:text-black transition-colors cursor-pointer relative z-10 flex items-center gap-2">
+                    <button @click="startScanner" class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-mono uppercase tracking-widest rounded shadow-sm hover:bg-blue-600 hover:text-black transition-colors cursor-pointer relative z-10 flex items-center gap-2">
                         <span>📷</span> Mobil Skaner (Qo'lda)
                     </button>
-                    <span class="px-3 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] font-mono uppercase tracking-widest rounded shadow-[0_0_10px_rgba(57,255,20,0.1)] flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span> Live Tizim
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-mono uppercase tracking-widest rounded shadow-sm flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Live Tizim
                     </span>
                 </div>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                    <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px]">
+                    <thead class="text-gray-500 border-b border-gray-200 uppercase tracking-widest text-[10px]">
                         <tr>
                             <th class="pb-3 w-16">Isbot</th>
                             <th class="pb-3">Vaqti</th>
@@ -1553,46 +1553,46 @@ function exportOwnerPdf(id) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="log in attendanceLogs" :key="log.id" @click="openLogModal(log)" class="border-b border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                        <tr v-for="log in attendanceLogs" :key="log.id" @click="openLogModal(log)" class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
                             <td class="py-3">
-                                <div class="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/50 shadow-inner flex items-center justify-center cursor-pointer hover:border-neon-cyan transition-colors">
+                                <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-900/50 shadow-inner flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
                                     <img v-if="log.proof_image" :src="log.proof_image" class="w-full h-full object-cover">
                                     <span v-else class="text-xs opacity-50">N/A</span>
                                 </div>
                             </td>
-                            <td class="py-3 text-white font-bold">{{ new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }} <span class="text-text-muted text-[10px] block">{{ new Date(log.timestamp).toLocaleDateString() }}</span></td>
+                            <td class="py-3 text-gray-900 font-bold">{{ new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }} <span class="text-gray-500 text-[10px] block">{{ new Date(log.timestamp).toLocaleDateString() }}</span></td>
                             <td class="py-3">
-                                <p class="text-white font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || "Noma'lum" }}</p>
-                                <p v-if="log.subject?.license_plate" class="text-neon-cyan text-[10px] tracking-widest">{{ log.subject.license_plate }}</p>
+                                <p class="text-gray-900 font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || "Noma'lum" }}</p>
+                                <p v-if="log.subject?.license_plate" class="text-blue-600 text-[10px] tracking-widest">{{ log.subject.license_plate }}</p>
                             </td>
                             <td class="py-3">
-                                <span v-if="log.subject_type?.includes('User')" class="text-neon-cyan/80 text-[10px] uppercase tracking-widest">👨‍💻 Xodim</span>
-                                <span v-else-if="log.subject_type?.includes('Worker')" class="text-neon-magenta/80 text-[10px] uppercase tracking-widest">👷 Ishchi</span>
-                                <span v-else-if="log.subject_type?.includes('Machinery')" class="text-neon-yellow/80 text-[10px] uppercase tracking-widest">🚜 Texnika</span>
-                                <span v-else-if="log.subject_type?.includes('VisitorDelivery')" class="text-text-muted text-[10px] uppercase tracking-widest">🚚 Tashrif buyuruvchi</span>
-                                <span v-else class="text-text-muted text-[10px] uppercase tracking-widest">❓ Noma'lum</span>
+                                <span v-if="log.subject_type?.includes('User')" class="text-blue-600/80 text-[10px] uppercase tracking-widest">👨‍💻 Xodim</span>
+                                <span v-else-if="log.subject_type?.includes('Worker')" class="text-indigo-600/80 text-[10px] uppercase tracking-widest">👷 Ishchi</span>
+                                <span v-else-if="log.subject_type?.includes('Machinery')" class="text-amber-600/80 text-[10px] uppercase tracking-widest">🚜 Texnika</span>
+                                <span v-else-if="log.subject_type?.includes('VisitorDelivery')" class="text-gray-500 text-[10px] uppercase tracking-widest">🚚 Tashrif buyuruvchi</span>
+                                <span v-else class="text-gray-500 text-[10px] uppercase tracking-widest">❓ Noma'lum</span>
                             </td>
                             <td class="py-3">
-                                <span v-if="log.type === 'entry'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-green/20 text-neon-green border-neon-green/30 shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+                                <span v-if="log.type === 'entry'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm">
                                     ➡️ Keldi
                                 </span>
-                                <span v-else-if="log.type === 'exit'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-magenta/20 text-neon-magenta border-neon-magenta/30 shadow-[0_0_10px_rgba(255,0,60,0.2)]">
+                                <span v-else-if="log.type === 'exit'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm">
                                     🚪 Ketdi
                                 </span>
-                                <span v-else-if="log.type === 'start_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-blue/20 text-neon-blue border-neon-blue/30 shadow-[0_0_10px_rgba(0,102,255,0.2)]">
+                                <span v-else-if="log.type === 'start_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-blue/20 text-neon-blue border-neon-blue/30 shadow-sm">
                                     ⚙️ Ish Boshladi
                                 </span>
-                                <span v-else-if="log.type === 'stop_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-red/20 text-neon-red border-neon-red/30 shadow-[0_0_10px_rgba(255,0,0,0.2)]">
+                                <span v-else-if="log.type === 'stop_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-red-50 text-red-600 border-red-200 shadow-sm">
                                     🛑 Ish To'xtadi
                                 </span>
                             </td>
-                            <td class="py-3 text-right text-text-muted text-[10px] uppercase tracking-widest">
+                            <td class="py-3 text-right text-gray-500 text-[10px] uppercase tracking-widest">
                                 {{ log.camera_id }}<br>
                                 <span class="opacity-50">Acc: {{ log.confidence_score }}%</span>
                             </td>
                         </tr>
                         <tr v-if="!attendanceLogs || attendanceLogs.length === 0">
-                            <td colspan="6" class="py-12 text-center text-text-muted font-mono text-sm border-dashed border border-white/10 rounded-xl block w-full mt-4">
+                            <td colspan="6" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl block w-full mt-4">
                                 Hozircha AI jurnali bo'sh
                             </td>
                         </tr>
@@ -1603,83 +1603,83 @@ function exportOwnerPdf(id) {
 
         <!-- TAB 3: Machinery -->
         <div v-if="activeTab === 3" class="max-w-4xl mx-auto animate-[fadeIn_0.5s_ease-out]">
-            <div class="glass-panel p-6 rounded-2xl border border-white/5">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 class="text-xl font-display font-bold text-white flex items-center gap-2">
+                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
                         🚜 Og'ir Texnika va Egaslari (Arendatorlar)
                     </h2>
-                    <button @click="showOwnerForm = !showOwnerForm" class="px-3 py-1.5 bg-neon-cyan/20 text-neon-cyan text-[10px] font-mono tracking-widest uppercase rounded hover:bg-neon-cyan/30 transition-colors border border-neon-cyan/30">
+                    <button @click="showOwnerForm = !showOwnerForm" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-50 transition-colors border border-blue-200">
                         {{ showOwnerForm ? '- Yopish' : "+ Texnika Egasi Qo'shish" }}
                     </button>
                 </div>
 
-                <form v-if="showOwnerForm" @submit.prevent="saveOwner" class="mb-6 space-y-4 bg-black/30 p-4 rounded-xl border border-white/5 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">{{ isOwnerEditMode ? 'Egasini Tahrirlash' : 'Yangi Texnika Egasi' }}</h3>
+                <form v-if="showOwnerForm" @submit.prevent="saveOwner" class="mb-6 space-y-4 bg-gray-900/50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
+                    <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isOwnerEditMode ? 'Egasini Tahrirlash' : 'Yangi Texnika Egasi' }}</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input v-model="ownerForm.name" type="text" class="glass-input text-xs" placeholder="Tashkilot / Ism" required>
-                        <input v-model="ownerForm.phone" type="text" class="glass-input text-xs" placeholder="Telefon Raqami">
+                        <input v-model="ownerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Tashkilot / Ism" required>
+                        <input v-model="ownerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
                     </div>
                     <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
                             {{ isOwnerEditMode ? 'Saqlash' : "Qo'shish" }}
                         </button>
                     </div>
                 </form>
 
                 <div class="space-y-4">
-                    <div v-for="owner in machineOwners" :key="owner.id" class="border border-white/10 bg-black/40 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                    <div v-for="owner in machineOwners" :key="owner.id" class="border border-gray-200 bg-gray-900/50 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                         <!-- Owner Header -->
-                        <div class="p-4 cursor-pointer hover:bg-white/5 flex justify-between items-center transition-colors" @click="activeOwnerId = activeOwnerId === owner.id ? null : owner.id">
+                        <div class="p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center transition-colors" @click="activeOwnerId = activeOwnerId === owner.id ? null : owner.id">
                             <div>
-                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                                    <span class="text-neon-cyan">{{ activeOwnerId === owner.id ? '▼' : '▶' }}</span>
+                                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                    <span class="text-blue-600">{{ activeOwnerId === owner.id ? '▼' : '▶' }}</span>
                                     {{ owner.name }}
                                 </h3>
-                                <p class="text-[10px] font-mono text-text-muted mt-1">{{ owner.phone }}</p>
+                                <p class="text-[10px] font-mono text-gray-500 mt-1">{{ owner.phone }}</p>
                             </div>
                             <div class="flex items-center gap-4">
-                                <button @click.stop="openOwnerLedger(owner)" class="px-3 py-1 bg-neon-yellow/20 text-neon-yellow text-[10px] font-mono tracking-widest uppercase rounded border border-neon-yellow/30 hover:bg-neon-yellow hover:text-black transition-colors flex items-center gap-2">
+                                <button @click.stop="openOwnerLedger(owner)" class="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-mono tracking-widest uppercase rounded border border-amber-200 hover:bg-amber-500 hover:text-black transition-colors flex items-center gap-2">
                                     <span>📊</span> Xisobot (Jurnal)
                                 </button>
                                 <div class="text-right">
-                                    <p class="text-[10px] font-mono text-text-muted uppercase mb-0.5">Umumiy Balans (Haqi)</p>
-                                    <p class="text-sm font-bold" :class="owner.balance > 0 ? 'text-neon-red' : (owner.balance < 0 ? 'text-neon-green' : 'text-white')">{{ $currency(owner.balance || 0) }}</p>
+                                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-0.5">Umumiy Balans (Haqi)</p>
+                                    <p class="text-sm font-bold" :class="owner.balance > 0 ? 'text-red-600' : (owner.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">{{ $currency(owner.balance || 0) }}</p>
                                 </div>
                                 <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-white rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
+                                    <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center bg-white/5 text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
 
-                                    <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-neon-red/10 text-neon-red rounded hover:bg-neon-red/30 transition-colors" title="O'chirish">🗑️</button>
+                                    <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Inner Machineries -->
-                        <div v-if="activeOwnerId === owner.id" class="bg-black/60 p-4 border-t border-white/5 animate-[fadeIn_0.2s_ease-out]">
+                        <div v-if="activeOwnerId === owner.id" class="bg-gray-900/50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
                             <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-xs font-mono text-text-muted uppercase">Tegishli Texnikalar</h4>
-                                <button @click="machineryForm.machine_owner_id = owner.id; showMachineryForm = true" class="px-2 py-1 bg-white/10 text-white text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
+                                <h4 class="text-xs font-mono text-gray-500 uppercase">Tegishli Texnikalar</h4>
+                                <button @click="machineryForm.machine_owner_id = owner.id; showMachineryForm = true" class="px-2 py-1 bg-white/10 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
                                     + Texnika Qo'shish
                                 </button>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="m in owner.machineries" :key="m.id" class="p-3 bg-white/5 rounded-lg border border-white/5 flex flex-col justify-between hover:border-white/20 transition-colors">
+                                <div v-for="m in owner.machineries" :key="m.id" class="p-3 bg-white/5 rounded-lg border border-gray-100 flex flex-col justify-between hover:border-gray-300 transition-colors">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <p class="text-xs font-bold text-white">{{ m.machinery_type }} - {{ m.name }}</p>
-                                            <p class="text-[9px] font-mono text-neon-cyan uppercase mt-0.5">{{ m.license_plate }}</p>
+                                            <p class="text-xs font-bold text-gray-900">{{ m.machinery_type }} - {{ m.name }}</p>
+                                            <p class="text-[9px] font-mono text-blue-600 uppercase mt-0.5">{{ m.license_plate }}</p>
                                         </div>
                                         <div class="flex gap-1">
-                                            <button v-if="isAdmin" @click="startEditMachinery(m); showMachineryForm = true" class="text-[10px] px-1 hover:text-white text-text-muted">✏️</button>
-                                            <button v-if="isAdmin" @click="deleteMachinery(m.id)" class="text-[10px] px-1 hover:text-neon-red text-text-muted">🗑️</button>
+                                            <button v-if="isAdmin" @click="startEditMachinery(m); showMachineryForm = true" class="text-[10px] px-1 hover:text-gray-900 text-gray-500">✏️</button>
+                                            <button v-if="isAdmin" @click="deleteMachinery(m.id)" class="text-[10px] px-1 hover:text-red-600 text-gray-500">🗑️</button>
                                         </div>
                                     </div>
                                     <div class="flex justify-between items-end mt-3">
-                                        <p class="text-[10px] font-mono text-text-muted uppercase">{{ m.payment_type === 'hourly' ? 'Soatbay' : 'Hajm' }}</p>
-                                        <p class="text-xs font-bold text-neon-green">{{ $currency(m.cost_per_hour) }}</p>
+                                        <p class="text-[10px] font-mono text-gray-500 uppercase">{{ m.payment_type === 'hourly' ? 'Soatbay' : 'Hajm' }}</p>
+                                        <p class="text-xs font-bold text-emerald-600">{{ $currency(m.cost_per_hour) }}</p>
                                     </div>
                                 </div>
-                                <div v-if="!owner.machineries || owner.machineries.length === 0" class="col-span-2 text-center text-[10px] font-mono text-text-muted py-4 border border-dashed border-white/10 rounded-lg">
+                                <div v-if="!owner.machineries || owner.machineries.length === 0" class="col-span-2 text-center text-[10px] font-mono text-gray-500 py-4 border border-dashed border-gray-200 rounded-lg">
                                     Texnikalar mavjud emas
                                 </div>
                             </div>
@@ -1689,59 +1689,59 @@ function exportOwnerPdf(id) {
 
                 <!-- Add/Edit Machinery Modal -->
                 <div v-if="showMachineryForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryForm = false; editMachineryId = null"></div>
-                    <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-white uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : "Yangi Texnika Qo'shish" }}</h3>
+                    <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showMachineryForm = false; editMachineryId = null"></div>
+                    <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4">
+                        <h3 class="text-lg font-bold text-gray-900 uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : "Yangi Texnika Qo'shish" }}</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Egasi (Tanlang)</label>
-                                <select v-if="editMachineryId" v-model="editMachineryForm.machine_owner_id" class="glass-input text-xs w-full bg-black/50 text-white" required>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Egasi (Tanlang)</label>
+                                <select v-if="editMachineryId" v-model="editMachineryForm.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50 text-gray-900" required>
                                     <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
                                 </select>
-                                <select v-else v-model="machineryForm.machine_owner_id" class="glass-input text-xs w-full bg-black/50 text-white" required>
+                                <select v-else v-model="machineryForm.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50 text-gray-900" required>
                                     <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Turi (Yo'nalishi)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.machinery_type" type="text" class="glass-input text-xs w-full" placeholder="Kran, Buldozer...">
-                                <input v-else v-model="machineryForm.machinery_type" type="text" class="glass-input text-xs w-full" placeholder="Kran, Buldozer...">
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Turi (Yo'nalishi)</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.machinery_type" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Kran, Buldozer...">
+                                <input v-else v-model="machineryForm.machinery_type" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Kran, Buldozer...">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Haydovchi Ismi (ixtiyoriy)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.driver_name" type="text" class="glass-input text-xs w-full" placeholder="Eshmatov Toshmat">
-                                <input v-else v-model="machineryForm.driver_name" type="text" class="glass-input text-xs w-full" placeholder="Eshmatov Toshmat">
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Haydovchi Ismi (ixtiyoriy)</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.driver_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Eshmatov Toshmat">
+                                <input v-else v-model="machineryForm.driver_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Eshmatov Toshmat">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Model / Rusumi</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.name" type="text" class="glass-input text-xs w-full" required>
-                                <input v-else v-model="machineryForm.name" type="text" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Model / Rusumi</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
+                                <input v-else v-model="machineryForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Davlat Raqami</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.license_plate" type="text" class="glass-input text-xs w-full">
-                                <input v-else v-model="machineryForm.license_plate" type="text" class="glass-input text-xs w-full">
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Davlat Raqami</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.license_plate" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
+                                <input v-else v-model="machineryForm.license_plate" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">To'lov Turi</label>
-                                <select v-if="editMachineryId" v-model="editMachineryForm.payment_type" class="glass-input text-xs w-full bg-black/50 text-white" required>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">To'lov Turi</label>
+                                <select v-if="editMachineryId" v-model="editMachineryForm.payment_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50 text-gray-900" required>
                                     <option value="hourly">Soatbay</option>
                                     <option value="volume">Hajm bo'yicha</option>
                                 </select>
-                                <select v-else v-model="machineryForm.payment_type" class="glass-input text-xs w-full bg-black/50 text-white" required>
+                                <select v-else v-model="machineryForm.payment_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-900/50 text-gray-900" required>
                                     <option value="hourly">Soatbay</option>
                                     <option value="volume">Hajm bo'yicha</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] text-text-muted uppercase mb-1">Narxi (Stavka)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.cost_per_hour" type="number" class="glass-input text-xs w-full" required>
-                                <input v-else v-model="machineryForm.cost_per_hour" type="number" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Narxi (Stavka)</label>
+                                <input v-if="editMachineryId" v-model="editMachineryForm.cost_per_hour" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
+                                <input v-else v-model="machineryForm.cost_per_hour" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                         </div>
                         <div class="flex justify-end gap-3 mt-4">
-                            <button type="button" @click="showMachineryForm = false; editMachineryId = null" class="text-text-muted text-xs hover:text-white">Bekor qilish</button>
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest text-xs rounded hover:shadow-[0_0_15px_#00F0FF]">{{ $t('save') }}</button>
+                            <button type="button" @click="showMachineryForm = false; editMachineryId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
+                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -1752,21 +1752,21 @@ function exportOwnerPdf(id) {
         <div v-if="activeTab === 4" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
             
             <!-- Existing Work Log Form -->
-            <div class="glass-panel p-4 md:p-8 rounded-2xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,102,255,0.1)]">
-                <h2 class="text-2xl font-display font-bold text-white mb-2">{{ $t('log_work') }}</h2>
-                <p class="text-xs font-mono text-text-muted mb-8">{{ $t('log_work_desc') }}</p>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-2xl border border-neon-blue/30 shadow-sm">
+                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">{{ $t('log_work') }}</h2>
+                <p class="text-xs font-mono text-gray-500 mb-8">{{ $t('log_work_desc') }}</p>
 
                 <form @submit.prevent="submitLog" class="space-y-6">
                     <div class="flex gap-4 flex-wrap md:flex-nowrap">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" v-model="logForm.type" value="worker" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-cyan peer-checked:bg-neon-cyan/10 peer-checked:text-neon-cyan text-text-muted transition-all text-sm uppercase tracking-widest font-mono">
+                            <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-sm uppercase tracking-widest font-mono">
                                 👷 {{ $t('worker') }}
                             </div>
                         </label>
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" v-model="logForm.type" value="machinery" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-white/10 peer-checked:border-neon-yellow peer-checked:bg-neon-yellow/10 peer-checked:text-neon-yellow text-text-muted transition-all text-sm uppercase tracking-widest font-mono">
+                            <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-600 text-gray-500 transition-all text-sm uppercase tracking-widest font-mono">
                                 🚜 {{ $t('machinery') }}
                             </div>
                         </label>
@@ -1777,16 +1777,16 @@ function exportOwnerPdf(id) {
                         <div class="space-y-6">
                             <!-- Worker/Machinery Select -->
                             <div v-if="logForm.type === 'worker'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_worker') }}</label>
-                                <select v-model="logForm.worker_id" class="glass-input w-full text-white bg-black/50" required>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('select_worker') }}</label>
+                                <select v-model="logForm.worker_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50" required>
                                     <option value="" disabled>-- {{ $t('select') }} --</option>
                                     <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                                 </select>
                             </div>
                             <div v-if="logForm.type === 'machinery'" class="space-y-3">
                                 <div>
-                                    <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Texnika Egasi (Ixtiyoriy)</label>
-                                    <select v-model="logForm.machine_owner_id" @change="logForm.machinery_id = ''" class="glass-input w-full text-white bg-black/50">
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Texnika Egasi (Ixtiyoriy)</label>
+                                    <select v-model="logForm.machine_owner_id" @change="logForm.machinery_id = ''" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50">
                                         <option value="">-- Barcha Texnikalar --</option>
                                         <option v-for="o in machineOwners" :key="o.id" :value="o.id">
                                             {{ o.name }}
@@ -1794,8 +1794,8 @@ function exportOwnerPdf(id) {
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('select_machinery') }}</label>
-                                    <select v-model="logForm.machinery_id" class="glass-input w-full text-white bg-black/50" required>
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('select_machinery') }}</label>
+                                    <select v-model="logForm.machinery_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50" required>
                                         <option value="" disabled>-- {{ $t('select') }} --</option>
                                         <option v-for="m in filteredMachineries" :key="m.id" :value="m.id">{{ m.name }}</option>
                                     </select>
@@ -1804,16 +1804,16 @@ function exportOwnerPdf(id) {
                             
                             <!-- Ish Hajmi & Obyom & Sana -->
                             <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ logForm.type === 'machinery' ? 'Ish Hajmi / Qatnov / Soat' : $t('hours_worked') }}</label>
-                                <input v-model="logForm.hours_worked" type="number" step="0.5" class="glass-input w-full text-white" placeholder="0.0">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ logForm.type === 'machinery' ? 'Ish Hajmi / Qatnov / Soat' : $t('hours_worked') }}</label>
+                                <input v-model="logForm.hours_worked" type="number" step="0.5" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="0.0">
                             </div>
                             <div v-if="logForm.type === 'worker'">
-                                <label class="block text-[10px] font-mono text-neon-yellow mb-1 uppercase">Obyom / Hajm</label>
-                                <input v-model="logForm.volume_done" type="number" step="0.1" class="glass-input w-full text-white" placeholder="0.0">
+                                <label class="block text-[10px] font-mono text-amber-600 mb-1 uppercase">Obyom / Hajm</label>
+                                <input v-model="logForm.volume_done" type="number" step="0.1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="0.0">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('date') }}</label>
-                                <input v-model="logForm.date" type="date" class="glass-input w-full text-white" required>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('date') }}</label>
+                                <input v-model="logForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" required>
                             </div>
                         </div>
 
@@ -1821,17 +1821,17 @@ function exportOwnerPdf(id) {
                         <div class="space-y-6">
                             <!-- Bino Target -->
                             <div class="space-y-3">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('building_target') }} ({{ $t('expense_link') }})</label>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('building_target') }} ({{ $t('expense_link') }})</label>
                                 <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    <select v-model="logForm.building_id" class="glass-input w-full text-white bg-black/50" :required="logForm.type === 'worker' || logForm.type === 'machinery'" @change="logForm.floor_id = ''; logForm.unit_id = ''">
+                                    <select v-model="logForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50" :required="logForm.type === 'worker' || logForm.type === 'machinery'" @change="logForm.floor_id = ''; logForm.unit_id = ''">
                                         <option value="" disabled>-- Bino --</option>
                                         <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                                     </select>
-                                    <select v-model="logForm.floor_id" :disabled="!logForm.building_id" class="glass-input w-full text-white bg-black/50" @change="logForm.unit_id = ''">
+                                    <select v-model="logForm.floor_id" :disabled="!logForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50" @change="logForm.unit_id = ''">
                                         <option value="" disabled selected>-- Qavat --</option>
                                         <option v-for="f in logFloors" :key="f.id" :value="f.id">{{ f.floor_number }}-qavat</option>
                                     </select>
-                                    <select v-model="logForm.unit_id" :disabled="!logForm.floor_id" class="glass-input w-full text-white bg-black/50">
+                                    <select v-model="logForm.unit_id" :disabled="!logForm.floor_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-900/50">
                                         <option value="" disabled selected>-- Xonadon --</option>
                                         <option v-for="u in logUnits" :key="u.id" :value="u.id">{{ u.unit_number }}-xonadon</option>
                                     </select>
@@ -1840,31 +1840,31 @@ function exportOwnerPdf(id) {
 
                             <!-- Maxsus Narx -->
                             <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-neon-magenta mb-1 uppercase">Maxsus Narx (Ixtiyoriy)</label>
-                                <input v-model="logForm.custom_rate" type="number" step="0.01" class="glass-input w-full text-white" placeholder="Kelishilgan narx">
+                                <label class="block text-[10px] font-mono text-indigo-600 mb-1 uppercase">Maxsus Narx (Ixtiyoriy)</label>
+                                <input v-model="logForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Kelishilgan narx">
                             </div>
 
                             <!-- Texnika Xarajati (Deductions) -->
                             <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-neon-yellow mb-1 uppercase">
+                                <label class="block text-[10px] font-mono text-amber-600 mb-1 uppercase">
                                     {{ logForm.type === 'machinery' ? 'Texnika Xarajati (Chegirma)' : 'Ushlanma / Jarima' }}
                                 </label>
-                                <input v-model="logForm.deductions" type="number" step="0.01" class="glass-input w-full text-white border-neon-yellow/50 focus:border-neon-yellow focus:ring-neon-yellow/50" placeholder="0.00">
+                                <input v-model="logForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 border-amber-200 focus:border-amber-500 focus:ring-neon-yellow/50" placeholder="0.00">
                             </div>
 
                             <!-- Izoh -->
                             <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Izoh (Ixtiyoriy)</label>
-                                <input v-model="logForm.description" type="text" class="glass-input w-full text-white" placeholder="Qo'shimcha ma'lumot yoki sabab...">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Izoh (Ixtiyoriy)</label>
+                                <input v-model="logForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qo'shimcha ma'lumot yoki sabab...">
                             </div>
                         </div>
                     </div>
-                    <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'" class="mt-8 bg-black/40 p-4 rounded-xl border border-neon-blue/20 flex justify-between items-center">
-                        <span class="text-xs font-mono text-text-muted uppercase tracking-widest">{{ $t('calculated_cost_preview') }}:</span>
+                    <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'" class="mt-8 bg-gray-900/50 p-4 rounded-xl border border-neon-blue/20 flex justify-between items-center">
+                        <span class="text-xs font-mono text-gray-500 uppercase tracking-widest">{{ $t('calculated_cost_preview') }}:</span>
                         <span class="text-2xl font-display font-bold text-neon-blue">{{ $currency(logPreviewCost) }}</span>
                     </div>
 
-                    <button type="submit" :disabled="isProcessing" class="w-full py-4 rounded-xl text-black font-bold font-mono tracking-widest uppercase hover:shadow-[0_0_20px_rgba(0,102,255,0.5)] transition-all disabled:opacity-50 bg-neon-blue">
+                    <button type="submit" :disabled="isProcessing" class="w-full py-4 rounded-xl text-black font-bold font-mono tracking-widest uppercase hover:shadow-sm transition-all disabled:opacity-50 bg-neon-blue">
                         <span>{{ $t('save_log') }}</span>
                     </button>
                 </form>
@@ -1874,14 +1874,14 @@ function exportOwnerPdf(id) {
         <!-- TAB 5: Payroll & Disbursement -->
         <div v-if="activeTab === 5" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             
-            <div class="glass-panel p-4 md:p-8 border border-neon-yellow/30 shadow-[0_0_30px_rgba(252,238,9,0.1)] rounded-2xl text-center relative overflow-hidden group">
-                <div class="absolute inset-0 bg-neon-yellow/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-mono text-text-muted uppercase tracking-widest mb-2">{{ $t('total_unpaid_payroll') }}</h3>
-                <h1 class="text-6xl font-display font-bold text-white drop-shadow-[0_0_15px_rgba(252,238,9,0.3)] mb-8">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 border border-amber-200 shadow-sm rounded-2xl text-center relative overflow-hidden group">
+                <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h3 class="text-sm font-mono text-gray-500 uppercase tracking-widest mb-2">{{ $t('total_unpaid_payroll') }}</h3>
+                <h1 class="text-6xl font-display font-bold text-gray-900 drop-shadow-sm mb-8">
                     {{ $currency(unpaidTotal) }}
                 </h1>
                 
-                <button @click="generatePayroll" :disabled="isProcessing || unpaidTotal <= 0" class="px-8 py-4 bg-neon-yellow text-black font-bold font-mono text-lg uppercase tracking-widest rounded-xl hover:shadow-[0_0_25px_rgba(252,238,9,0.6)] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:hover:shadow-none inline-flex items-center gap-3">
+                <button @click="generatePayroll" :disabled="isProcessing || unpaidTotal <= 0" class="px-8 py-4 bg-amber-500 text-white font-bold font-mono text-lg uppercase tracking-widest rounded-xl hover:shadow-sm active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:hover:shadow-none inline-flex items-center gap-3">
                     <span v-if="isProcessing" class="animate-spin text-xl">⚙️</span>
                     <span v-else class="text-xl group-hover:-translate-y-1 transition-transform">📄</span>
                     <span>{{ isProcessing ? 'HISOBLANMOQDA...' : 'OYLIK HISOBOTINI SHAKLLANTIRISH' }}</span>
@@ -1891,11 +1891,11 @@ function exportOwnerPdf(id) {
 
             <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Unpaid Logs -->
-                <div class="glass-panel p-6 rounded-2xl border border-white/5">
-                    <h2 class="text-xl font-display font-bold text-white mb-6">Hisoblanmagan Jurnallar</h2>
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
+                    <h2 class="text-xl font-display font-bold text-gray-900 mb-6">Hisoblanmagan Jurnallar</h2>
                     <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
                         <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                            <thead class="text-text-muted border-b border-white/10 uppercase tracking-widest text-[10px] sticky top-0 bg-abyss/90 backdrop-blur">
+                            <thead class="text-gray-500 border-b border-gray-200 uppercase tracking-widest text-[10px] sticky top-0 bg-abyss/90 backdrop-blur">
                                 <tr>
                                     <th class="pb-3">{{ $t('date_label') }}</th>
                                     <th class="pb-3">Xodim / Texnika</th>
@@ -1903,19 +1903,19 @@ function exportOwnerPdf(id) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="log in unpaidLogs" :key="log.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                    <td class="py-3 text-text-muted text-xs">{{ log.date }}</td>
+                                <tr v-for="log in unpaidLogs" :key="log.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td class="py-3 text-gray-500 text-xs">{{ log.date }}</td>
                                     <td class="py-3">
                                         <div class="flex items-center gap-2">
-                                            <span v-if="log.worker_id" class="text-neon-cyan">👷</span>
-                                            <span v-else class="text-neon-yellow">🚜</span>
-                                            <span class="text-white text-xs font-bold">{{ log.worker?.name || log.machinery?.name }}</span>
+                                            <span v-if="log.worker_id" class="text-blue-600">👷</span>
+                                            <span v-else class="text-amber-600">🚜</span>
+                                            <span class="text-gray-900 text-xs font-bold">{{ log.worker?.name || log.machinery?.name }}</span>
                                         </div>
                                     </td>
-                                    <td class="py-3 text-right text-neon-yellow font-bold text-xs">{{ $currency(log.calculated_cost) }}</td>
+                                    <td class="py-3 text-right text-amber-600 font-bold text-xs">{{ $currency(log.calculated_cost) }}</td>
                                 </tr>
                                 <tr v-if="unpaidLogs.length === 0">
-                                    <td colspan="3" class="py-8 text-center text-text-muted font-mono text-xs border-dashed border border-white/10 rounded-xl mt-4 block w-full">
+                                    <td colspan="3" class="py-8 text-center text-gray-500 font-mono text-xs border-dashed border border-gray-200 rounded-xl mt-4 block w-full">
                                         {{ $t('no_unpaid_logs') }}
                                     </td>
                                 </tr>
@@ -1925,27 +1925,27 @@ function exportOwnerPdf(id) {
                 </div>
 
                 <!-- Payroll History -->
-                <div class="glass-panel p-6 rounded-2xl border border-neon-cyan/20">
-                    <h2 class="text-xl font-display font-bold text-white mb-6">Yaratilgan Oyliklar (Tarix)</h2>
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-blue-200">
+                    <h2 class="text-xl font-display font-bold text-gray-900 mb-6">Yaratilgan Oyliklar (Tarix)</h2>
                     <div class="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        <div v-for="payroll in payrolls" :key="payroll.id" class="p-4 bg-black/40 rounded-xl border border-white/10 flex justify-between items-center group hover:border-neon-cyan/50 transition-colors">
+                        <div v-for="payroll in payrolls" :key="payroll.id" class="p-4 bg-gray-900/50 rounded-xl border border-gray-200 flex justify-between items-center group hover:border-blue-200 transition-colors">
                             <div>
                                 <div class="flex items-center gap-2 mb-1">
-                                    <span class="px-2 py-0.5 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 text-[10px] uppercase font-mono tracking-widest rounded">PAY-{{ String(payroll.id).padStart(5, '0') }}</span>
-                                    <span class="text-xs font-mono text-text-muted">{{ new Date(payroll.created_at).toLocaleDateString() }}</span>
+                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] uppercase font-mono tracking-widest rounded">PAY-{{ String(payroll.id).padStart(5, '0') }}</span>
+                                    <span class="text-xs font-mono text-gray-500">{{ new Date(payroll.created_at).toLocaleDateString() }}</span>
                                 </div>
-                                <p class="text-lg text-white font-bold">{{ $currency(payroll.total_amount) }}</p>
-                                <p class="text-[10px] font-mono mt-1 uppercase" :class="payroll.status === 'paid' ? 'text-neon-green' : 'text-neon-yellow'">
+                                <p class="text-lg text-gray-900 font-bold">{{ $currency(payroll.total_amount) }}</p>
+                                <p class="text-[10px] font-mono mt-1 uppercase" :class="payroll.status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
                                     Status: {{ payroll.status === 'paid' ? "To'langan" : 'Shakllantirildi (Hisobot)' }}
                                 </p>
                             </div>
                             <div class="text-right flex gap-2">
-                                <a :href="route('admin.hr.payroll.print', payroll.id)" target="_blank" class="px-3 py-2 bg-white/5 text-white border border-white/20 text-xs uppercase font-mono rounded-lg hover:bg-white/10 hover:border-white/40 transition-all flex items-center gap-2">
+                                <a :href="route('admin.hr.payroll.print', payroll.id)" target="_blank" class="px-3 py-2 bg-white/5 text-gray-900 border border-gray-300 text-xs uppercase font-mono rounded-lg hover:bg-gray-100 hover:border-white/40 transition-all flex items-center gap-2">
                                     🖨️ PDF / Chop etish
                                 </a>
                             </div>
                         </div>
-                        <div v-if="payrolls.length === 0" class="text-center py-8 text-text-muted font-mono text-xs border-dashed border border-white/10 rounded-xl">
+                        <div v-if="payrolls.length === 0" class="text-center py-8 text-gray-500 font-mono text-xs border-dashed border border-gray-200 rounded-xl">
                             Hech qanday oylik tarixi yo'q
                         </div>
                     </div>
@@ -1956,28 +1956,28 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: CREATE USER -->
         <div v-if="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showUserModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-lg border border-neon-cyan/30">
-                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="showUserModal = false">✖</button>
-                <h2 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-shadow-glow shadow-neon-cyan/50">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showUserModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-blue-200">
+                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserModal = false">✖</button>
+                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest  shadow-neon-cyan/50">
                     {{ $t('add_user') }}
                 </h2>
                 <form @submit.prevent="saveUser" class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('full_name') }}</label>
-                        <input v-model="userForm.name" type="text" class="glass-input w-full" required>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('full_name') }}</label>
+                        <input v-model="userForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('email') }}</label>
-                        <input v-model="userForm.email" type="email" class="glass-input w-full" required>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('email') }}</label>
+                        <input v-model="userForm.email" type="email" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('password') }} <span v-if="isEditMode" class="text-neon-yellow lowercase">(Leave empty to keep)</span></label>
-                        <input v-model="userForm.password" type="password" class="glass-input w-full" :required="!isEditMode">
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('password') }} <span v-if="isEditMode" class="text-amber-600 lowercase">(Leave empty to keep)</span></label>
+                        <input v-model="userForm.password" type="password" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="!isEditMode">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('system_role') }}</label>
-                        <select v-model="userForm.role" class="glass-input w-full bg-black/50" required>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('system_role') }}</label>
+                        <select v-model="userForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50" required>
                             <option value="Super_Admin">Super Admin</option>
                             <option value="Partner">Partner</option>
                             <option value="Operator">Operator</option>
@@ -1985,21 +1985,21 @@ function exportOwnerPdf(id) {
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('pinfl') }}</label>
-                            <input v-model="userForm.pinfl" type="text" class="glass-input w-full">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('pinfl') }}</label>
+                            <input v-model="userForm.pinfl" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('passport') }}</label>
-                            <input v-model="userForm.passport" type="text" class="glass-input w-full">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('passport') }}</label>
+                            <input v-model="userForm.passport" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('salary_rate') }}</label>
-                        <input v-model="userForm.salary_rate" type="number" step="0.01" class="glass-input w-full">
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('salary_rate') }}</label>
+                        <input v-model="userForm.salary_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                     </div>
                     <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showUserModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-text-muted hover:text-white transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-neon-cyan text-black font-bold uppercase tracking-widest rounded hover:shadow-[0_0_15px_#00F0FF] transition-all disabled:opacity-50">{{ $t('save_user') }}</button>
+                        <button type="button" @click="showUserModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ $t('save_user') }}</button>
                     </div>
                 </form>
             </div>
@@ -2007,30 +2007,30 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: LEDGER -->
         <div v-if="showLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showLedgerModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-blue/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-neon-red text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_10px_rgba(255,0,0,0.5)] z-50" @click="showLedgerModal = false">✖</button>
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4 mb-4">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showLedgerModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-blue/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showLedgerModal = false">✖</button>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
                     <div>
-                        <h3 class="text-lg font-mono text-white font-bold tracking-widest uppercase">{{ ledgerWorker?.first_name }} {{ ledgerWorker?.last_name }}</h3>
+                        <h3 class="text-lg font-mono text-gray-900 font-bold tracking-widest uppercase">{{ ledgerWorker?.first_name }} {{ ledgerWorker?.last_name }}</h3>
                         <p class="text-xs text-neon-blue font-mono mt-1">- SHAXSIY KARTA</p>
-                        <p class="text-[10px] text-text-muted uppercase mt-2 font-mono tracking-wider">{{ ledgerWorker?.department }} | {{ ledgerWorker?.salary_type }}</p>
+                        <p class="text-[10px] text-gray-500 uppercase mt-2 font-mono tracking-wider">{{ ledgerWorker?.department }} | {{ ledgerWorker?.salary_type }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-xs text-text-muted font-mono uppercase mb-1">Joriy Balans</p>
-                        <p class="text-2xl font-mono" :class="ledgerData.balance >= 0 ? 'text-neon-green' : 'text-neon-red'">
+                        <p class="text-xs text-gray-500 font-mono uppercase mb-1">Joriy Balans</p>
+                        <p class="text-2xl font-mono" :class="ledgerData.balance >= 0 ? 'text-emerald-600' : 'text-red-600'">
                             {{ new Intl.NumberFormat('fr-FR').format(ledgerData.balance) }} so'm
                         </p>
                     </div>
                 </div>
 
                 <!-- Category Balances -->
-                <div v-if="ledgerData.category_balances && Object.keys(ledgerData.category_balances).length > 0" class="mb-4 bg-black/30 p-3 rounded-lg border border-white/5">
-                    <h4 class="text-[10px] text-neon-cyan uppercase tracking-widest mb-2 font-mono">Yo'nalishlar bo'yicha balans:</h4>
+                <div v-if="ledgerData.category_balances && Object.keys(ledgerData.category_balances).length > 0" class="mb-4 bg-gray-900/50 p-3 rounded-lg border border-gray-100">
+                    <h4 class="text-[10px] text-blue-600 uppercase tracking-widest mb-2 font-mono">Yo'nalishlar bo'yicha balans:</h4>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <div v-for="(amount, cat) in ledgerData.category_balances" :key="cat" class="bg-black/40 p-2 rounded flex justify-between items-center">
-                            <span class="text-xs text-text-muted font-mono">{{ cat }}</span>
-                            <span class="text-xs font-mono" :class="amount >= 0 ? 'text-neon-green' : 'text-neon-red'">{{ new Intl.NumberFormat('fr-FR').format(amount) }}</span>
+                        <div v-for="(amount, cat) in ledgerData.category_balances" :key="cat" class="bg-gray-900/50 p-2 rounded flex justify-between items-center">
+                            <span class="text-xs text-gray-500 font-mono">{{ cat }}</span>
+                            <span class="text-xs font-mono" :class="amount >= 0 ? 'text-emerald-600' : 'text-red-600'">{{ new Intl.NumberFormat('fr-FR').format(amount) }}</span>
                         </div>
                     </div>
                 </div>
@@ -2041,14 +2041,14 @@ function exportOwnerPdf(id) {
                         <h4 class="text-[10px] font-mono text-neon-blue uppercase tracking-widest border-b border-neon-blue/30 pb-2">➕ Ish Hajmini Kiritish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Obyekt (Bino)</label>
-                                <select v-model="workerLogForm.building_id" class="glass-input text-xs w-full text-white bg-black/50" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt (Bino)</label>
+                                <select v-model="workerLogForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50" required>
                                     <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">O'lchov Birligi</label>
-                                <select v-model="workerLogForm.measurement_unit" class="glass-input text-xs w-full text-white bg-black/50" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">O'lchov Birligi</label>
+                                <select v-model="workerLogForm.measurement_unit" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50" required>
                                     <option value="" disabled>Tanlang</option>
                                     <option value="dona">Dona</option>
                                     <option value="kv_m">Kvadrat metr (m2)</option>
@@ -2061,25 +2061,25 @@ function exportOwnerPdf(id) {
                         </div>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ish Turi</label>
-                                <select v-model="workerLogForm.work_category" class="glass-input text-xs w-full text-white bg-black/50" required :disabled="!workerLogForm.measurement_unit">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ish Turi</label>
+                                <select v-model="workerLogForm.work_category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50" required :disabled="!workerLogForm.measurement_unit">
                                     <option value="" disabled>Tanlang</option>
                                     <option v-for="cat in availableWorkCategories" :key="cat" :value="cat">{{ cat }}</option>
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Hajm (Obyom)</label>
-                                <input v-model="workerLogForm.volume" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Hajm (Obyom)</label>
+                                <input v-model="workerLogForm.volume" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
                             </div>
                         </div>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Maxsus Narx</label>
-                                <input v-model="workerLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="Ixtiyoriy">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Maxsus Narx</label>
+                                <input v-model="workerLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Ixtiyoriy">
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="workerLogForm.date" type="date" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
+                                <input v-model="workerLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                         </div>
                         <div class="flex justify-end pt-1">
@@ -2090,12 +2090,12 @@ function exportOwnerPdf(id) {
                     </form>
 
                     <!-- Ledger Transaction Form -->
-                    <form @submit.prevent="saveLedgerTransaction" class="flex flex-col gap-2 p-4 bg-neon-green/10 rounded-xl border border-neon-green/30">
-                        <h4 class="text-[10px] font-mono text-neon-green uppercase tracking-widest border-b border-neon-green/30 pb-2">💸 Tranzaksiya Qo'shish</h4>
+                    <form @submit.prevent="saveLedgerTransaction" class="flex flex-col gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                        <h4 class="text-[10px] font-mono text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-2">💸 Tranzaksiya Qo'shish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Turi</label>
-                                <select v-model="ledgerForm.type" class="glass-input text-xs w-full text-white bg-black/50">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Turi</label>
+                                <select v-model="ledgerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50">
                                     <option value="payment">To'lov (Chiqim)</option>
                                     <option value="advance_payment">Avans (Chiqim)</option>
                                     <option value="penalty">Jarima (Chiqim)</option>
@@ -2103,8 +2103,8 @@ function exportOwnerPdf(id) {
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ish Turi (Kategoriya)</label>
-                                <select v-model="ledgerForm.work_category" class="glass-input text-xs w-full text-white bg-black/50">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ish Turi (Kategoriya)</label>
+                                <select v-model="ledgerForm.work_category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50">
                                     <option value="">Umumiy (Kategoriyasiz)</option>
                                     <option v-for="(amount, cat) in ledgerData.category_balances" :key="cat" :value="cat">
                                         {{ cat }} ({{ new Intl.NumberFormat('fr-FR').format(amount) }} so'm)
@@ -2114,92 +2114,92 @@ function exportOwnerPdf(id) {
                         </div>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Miqdori</label>
-                                <input v-model="ledgerForm.amount" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Miqdori</label>
+                                <input v-model="ledgerForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="ledgerForm.date" type="date" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
+                                <input v-model="ledgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                         </div>
                         <div class="mt-2">
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('notes') }}</label>
-                            <input v-model="ledgerForm.description" type="text" class="glass-input text-xs w-full">
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('notes') }}</label>
+                            <input v-model="ledgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
                         </div>
                         <div class="flex justify-end pt-1">
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50">{{ $t('save') }}</button>
+                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 text-emerald-600 text-[10px] font-mono uppercase tracking-widest rounded border border-emerald-200 hover:bg-emerald-600 hover:text-black transition-colors disabled:opacity-50">{{ $t('save') }}</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                    <div v-for="t in ledgerData.transactions" :key="'tx'+t.id" class="flex flex-col gap-2 p-3 border border-white/5 rounded-lg bg-black/40 hover:border-white/20 transition-colors group">
-                        <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
+                    <div v-for="t in ledgerData.transactions" :key="'tx'+t.id" class="flex flex-col gap-2 p-3 border border-gray-100 rounded-lg bg-gray-900/50 hover:border-gray-300 transition-colors group">
+                        <div v-if="editTxId === t.id" class="w-full bg-gray-900/50 p-2 rounded border border-neon-blue/30 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
                             <button @click="submitEditTx('worker')" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
                             <div>
-                                <p class="text-[10px] font-mono text-text-muted">{{ new Date(t.date).toLocaleDateString() }}</p>
-                                <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                                <p class="text-[10px] font-mono text-gray-500">{{ new Date(t.date).toLocaleDateString() }}</p>
+                                <p class="text-sm text-gray-900">{{ t.description || t.type }}</p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
+                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
                                     </p>
-                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyTx('worker', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="destroyTx('worker', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div v-for="log in ledgerData.logs" :key="'log'+log.id" class="p-3 border border-white/5 rounded-lg bg-black/40 hover:border-neon-yellow/30 transition-colors group">
-                        <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
-                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
-                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
-                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="glass-input text-xs w-24 border-neon-yellow" placeholder="Chegirma">
-                            <input v-model="editLogForm.description" type="text" class="glass-input text-xs w-32" placeholder="Izoh">
-                            <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
-                            <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
+                    <div v-for="log in ledgerData.logs" :key="'log'+log.id" class="p-3 border border-gray-100 rounded-lg bg-gray-900/50 hover:border-amber-200 transition-colors group">
+                        <div v-if="editLogId === log.id" class="w-full bg-gray-900/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
+                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-20" placeholder="Soat/Hajm">
+                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24 border-amber-500" placeholder="Chegirma">
+                            <input v-model="editLogForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32" placeholder="Izoh">
+                            <input v-model="editLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-28">
+                            <div class="flex-1 text-[10px] font-mono text-gray-500 uppercase">Tahrirlanmoqda...</div>
                             <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                            <button @click="editLogId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
                             <div>
-                                <p class="text-[10px] font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
-                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
+                                <p class="text-[10px] font-mono text-gray-900 mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-neon-blue">@ {{ log.rate }} so'm</span></p>
+                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">
                                     Obyekt: {{ log.building?.name || "Noma'lum" }}
-                                    <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
-                                    <span v-if="log.deductions" class="text-neon-yellow block mt-1">Ushlanma: {{ log.deductions }} so'm</span>
+                                    <span v-if="log.description" class="text-blue-600 block mt-1">Izoh: {{ log.description }}</span>
+                                    <span v-if="log.deductions" class="text-amber-600 block mt-1">Ushlanma: {{ log.deductions }} so'm</span>
                                 </p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-neon-red' : 'text-neon-green'">
+                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-red-600' : 'text-emerald-600'">
                                         - {{ $currency(log.calculated_cost) }}
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
-                                        :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
+                                        :class="log.status === 'unpaid' ? 'border-red-500 text-red-600 bg-red-50' : 'border-emerald-500 text-emerald-600 bg-emerald-50'">
                                         {{ log.status === 'unpaid' ? "To'lanmagan" : "To'langan" }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div v-if="!ledgerData.transactions.length && !ledgerData.logs.length" class="text-center py-6 text-text-muted text-xs font-mono border border-dashed border-white/10 rounded-xl">
+                    <div v-if="!ledgerData.transactions.length && !ledgerData.logs.length" class="text-center py-6 text-gray-500 text-xs font-mono border border-dashed border-gray-200 rounded-xl">
                         Tarix topilmadi.
                     </div>
                 </div>
@@ -2208,31 +2208,31 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: USER LEDGER -->
         <div v-if="showUserLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showUserLedgerModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-neon-cyan/30 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-neon-red text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_10px_rgba(255,0,0,0.5)] z-50" @click="showUserLedgerModal = false">✖</button>
-                <div class="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showUserLedgerModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-blue-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserLedgerModal = false">✖</button>
+                <div class="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
                     <div class="flex-1 pr-4">
-                        <h2 class="text-lg font-bold text-white uppercase tracking-widest text-shadow-glow shadow-neon-cyan/50 leading-tight">
+                        <h2 class="text-lg font-bold text-gray-900 uppercase tracking-widest  shadow-neon-cyan/50 leading-tight">
                             <span class="block mb-1 break-words">{{ ledgerUser?.name }}</span>
-                            <span class="block text-sm text-neon-cyan/80">- SHAXSIY KARTA</span>
+                            <span class="block text-sm text-blue-600/80">- SHAXSIY KARTA</span>
                         </h2>
-                        <p class="text-[10px] font-mono text-text-muted mt-2 uppercase">{{ ledgerUser?.roles?.[0]?.name || 'User' }}</p>
+                        <p class="text-[10px] font-mono text-gray-500 mt-2 uppercase">{{ ledgerUser?.roles?.[0]?.name || 'User' }}</p>
                     </div>
                     <div class="text-right shrink-0 mr-8 mt-1">
-                        <p class="text-[10px] font-mono text-text-muted uppercase mb-1">Joriy Balans</p>
-                        <p class="text-xl font-bold font-mono" :class="userLedgerData.balance >= 0 ? 'text-neon-green' : 'text-neon-red'">
+                        <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Joriy Balans</p>
+                        <p class="text-xl font-bold font-mono" :class="userLedgerData.balance >= 0 ? 'text-emerald-600' : 'text-red-600'">
                             {{ $currency(userLedgerData.balance) }}
                         </p>
                     </div>
                 </div>
 
-                <form @submit.prevent="saveUserLedgerTransaction" class="mb-8 p-4 bg-black/40 border border-white/5 rounded-xl space-y-4">
-                    <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
+                <form @submit.prevent="saveUserLedgerTransaction" class="mb-8 p-4 bg-gray-900/50 border border-gray-100 rounded-xl space-y-4">
+                    <h3 class="text-xs font-mono text-gray-500 uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('type_label') }}</label>
-                            <select v-model="userLedgerForm.type" class="glass-input w-full text-xs bg-black/50" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('type_label') }}</label>
+                            <select v-model="userLedgerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-900/50" required>
                                 <option value="salary_accrual">Oylik/Ish xaqi hisoblash (Kirim)</option>
                                 <option value="advance_payment">Avans berish (Chiqim)</option>
                                 <option value="payment">To'lov (Chiqim)</option>
@@ -2240,55 +2240,55 @@ function exportOwnerPdf(id) {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('amount') }}</label>
-                            <input v-model="userLedgerForm.amount" type="number" step="0.01" class="glass-input w-full text-xs" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('amount') }}</label>
+                            <input v-model="userLedgerForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs" required>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('date_label') }}</label>
-                            <input v-model="userLedgerForm.date" type="date" class="glass-input w-full text-xs" required>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('date_label') }}</label>
+                            <input v-model="userLedgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">{{ $t('notes') }}</label>
-                            <input v-model="userLedgerForm.description" type="text" class="glass-input w-full text-xs">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('notes') }}</label>
+                            <input v-model="userLedgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
                         </div>
                     </div>
                     <div class="flex justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 font-bold uppercase tracking-widest text-xs rounded hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50">{{ $t('save') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 font-bold uppercase tracking-widest text-xs rounded hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">{{ $t('save') }}</button>
                     </div>
                 </form>
 
                 <div class="space-y-2">
-                    <h3 class="text-xs font-mono text-text-muted uppercase tracking-widest mb-2">Tranzaksiyalar Tarixi</h3>
-                    <div v-for="t in userLedgerData.transactions" :key="t.id" class="flex flex-col gap-2 p-3 border border-white/5 rounded-lg hover:bg-white/[0.02] transition-colors">
-                        <div v-if="editTxId === t.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
-                            <button @click="submitEditTx('user')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                    <h3 class="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Tranzaksiyalar Tarixi</h3>
+                    <div v-for="t in userLedgerData.transactions" :key="t.id" class="flex flex-col gap-2 p-3 border border-gray-100 rounded-lg hover:bg-white/[0.02] transition-colors">
+                        <div v-if="editTxId === t.id" class="w-full bg-gray-900/50 p-2 rounded border border-blue-200 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
+                            <button @click="submitEditTx('user')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-600 hover:text-black">{{ $t('save') }}</button>
+                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full group">
                             <div>
-                                <p class="text-[10px] font-mono text-text-muted">{{ t.date }}</p>
-                                <p class="text-sm text-white">{{ t.description || t.type }}</p>
+                                <p class="text-[10px] font-mono text-gray-500">{{ t.date }}</p>
+                                <p class="text-sm text-gray-900">{{ t.description || t.type }}</p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-neon-green' : 'text-neon-red'">
+                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
                                     </p>
-                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-neon-green/50' : 'text-neon-red/50'">{{ t.type }}</p>
+                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyTx('user', t.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button v-if="isAdmin" @click="destroyTx('user', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-if="!userLedgerData.transactions.length" class="text-center py-6 text-text-muted text-xs font-mono border border-dashed border-white/10 rounded-xl">
+                    <div v-if="!userLedgerData.transactions.length" class="text-center py-6 text-gray-500 text-xs font-mono border border-dashed border-gray-200 rounded-xl">
                         Tranzaksiyalar topilmadi.
                     </div>
                 </div>
@@ -2297,26 +2297,26 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: AI LOG DETAILS -->
         <div v-if="showLogModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showLogModal = false"></div>
-            <div class="relative glass-panel p-0 rounded-2xl w-full max-w-sm border border-neon-cyan/30 overflow-hidden flex flex-col items-center">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showLogModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-0 rounded-2xl w-full max-w-sm border border-blue-200 overflow-hidden flex flex-col items-center">
                 
                 <!-- ID Card Header / Photo -->
-                <div class="w-full bg-black/50 relative border-b border-white/10 flex flex-col items-center p-6 pt-8 group">
-                    <div class="absolute top-4 right-4 cursor-pointer text-text-muted hover:text-white" @click="showLogModal = false">✖</div>
+                <div class="w-full bg-gray-900/50 relative border-b border-gray-200 flex flex-col items-center p-6 pt-8 group">
+                    <div class="absolute top-4 right-4 cursor-pointer text-gray-500 hover:text-gray-900" @click="showLogModal = false">✖</div>
                     
-                    <div class="w-32 h-32 rounded-full border-4 overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] mb-4" 
+                    <div class="w-32 h-32 rounded-full border-4 overflow-hidden shadow-sm mb-4" 
                          :class="{
-                             'border-neon-green': activeLog.type === 'entry',
+                             'border-emerald-500': activeLog.type === 'entry',
                              'border-neon-magenta': activeLog.type === 'exit',
                              'border-neon-blue': activeLog.type === 'start_work',
-                             'border-neon-red': activeLog.type === 'stop_work'
+                             'border-red-500': activeLog.type === 'stop_work'
                          }">
                         <img v-if="activeLog.proof_image" :src="activeLog.proof_image" class="w-full h-full object-cover">
                         <span v-else class="text-4xl w-full h-full flex items-center justify-center bg-white/5">N/A</span>
                     </div>
 
-                    <h2 class="text-xl font-bold text-white text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
-                    <p class="text-[10px] font-mono text-neon-cyan tracking-widest uppercase mt-1">
+                    <h2 class="text-xl font-bold text-gray-900 text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
+                    <p class="text-[10px] font-mono text-blue-600 tracking-widest uppercase mt-1">
                         {{ activeLog.subject_type?.split(String.fromCharCode(92)).pop() || 'Unidentified' }}
                         <span v-if="activeLog.subject?.license_plate"> • {{ activeLog.subject.license_plate }}</span>
                     </p>
@@ -2325,29 +2325,29 @@ function exportOwnerPdf(id) {
                 <!-- ID Card Body -->
                 <div class="w-full p-6 space-y-4 bg-gradient-to-b from-transparent to-black/40">
                     
-                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Sana / Vaqt</span>
-                        <span class="text-sm font-bold text-white">{{ new Date(activeLog.timestamp).toLocaleString() }}</span>
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Sana / Vaqt</span>
+                        <span class="text-sm font-bold text-gray-900">{{ new Date(activeLog.timestamp).toLocaleString() }}</span>
                     </div>
 
-                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Kamera (Nuqta)</span>
-                        <span class="text-sm font-mono text-white">{{ activeLog.camera_id }}</span>
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Kamera (Nuqta)</span>
+                        <span class="text-sm font-mono text-gray-900">{{ activeLog.camera_id }}</span>
                     </div>
 
-                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Aniqlik (AI)</span>
-                        <span class="text-sm font-mono text-white" :class="activeLog.confidence_score > 90 ? 'text-neon-green' : 'text-neon-yellow'">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Aniqlik (AI)</span>
+                        <span class="text-sm font-mono text-gray-900" :class="activeLog.confidence_score > 90 ? 'text-emerald-600' : 'text-amber-600'">
                             {{ activeLog.confidence_score }}%
                         </span>
                     </div>
 
                     <div class="flex justify-between items-center pt-2">
-                        <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Harakat</span>
-                        <span v-if="activeLog.type === 'entry'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-neon-green/20 text-neon-green border-neon-green/30">➡️ Kirdi</span>
-                        <span v-else-if="activeLog.type === 'exit'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-neon-magenta/20 text-neon-magenta border-neon-magenta/30">🚪 Chiqdi</span>
+                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Harakat</span>
+                        <span v-if="activeLog.type === 'entry'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-200">➡️ Kirdi</span>
+                        <span v-else-if="activeLog.type === 'exit'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-indigo-50 text-indigo-600 border-neon-magenta/30">🚪 Chiqdi</span>
                         <span v-else-if="activeLog.type === 'start_work'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-neon-blue/20 text-neon-blue border-neon-blue/30">⚙️ Ish Boshladi</span>
-                        <span v-else-if="activeLog.type === 'stop_work'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-neon-red/20 text-neon-red border-neon-red/30">🛑 Ish To'xtadi</span>
+                        <span v-else-if="activeLog.type === 'stop_work'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-red-50 text-red-600 border-red-200">🛑 Ish To'xtadi</span>
                     </div>
                 </div>
             </div>
@@ -2355,38 +2355,38 @@ function exportOwnerPdf(id) {
 
         <!-- MODAL: MANUAL WEB SCANNER -->
         <div v-if="showScannerModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="stopScanner"></div>
-            <div class="relative glass-panel p-6 rounded-3xl w-full max-w-lg border border-neon-cyan/30 shadow-[0_0_50px_rgba(0,255,255,0.1)] flex flex-col items-center">
-                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-neon-red text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,0,0,0.5)] z-50" @click="stopScanner">✖</button>
-                <h2 class="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">📷 Mobil Skaner (Davomat)</h2>
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="stopScanner"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-3xl w-full max-w-lg border border-blue-200 shadow-sm flex flex-col items-center">
+                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="stopScanner">✖</button>
+                <h2 class="text-xl font-display font-bold text-gray-900 mb-6 flex items-center gap-2">📷 Mobil Skaner (Davomat)</h2>
 
-                <div class="w-full relative rounded-2xl overflow-hidden border-2 border-neon-cyan mb-6 bg-black flex items-center justify-center min-h-[300px]">
+                <div class="w-full relative rounded-2xl overflow-hidden border-2 border-blue-500 mb-6 bg-black flex items-center justify-center min-h-[300px]">
                     <video v-if="!scannerSnapshot" ref="scannerVideo" autoplay playsinline class="w-full h-full object-cover"></video>
                     <img v-else :src="scannerSnapshot" class="w-full h-full object-cover">
                     
                     <!-- Scanner overlay effect -->
                     <div v-if="!scannerSnapshot" class="absolute inset-0 pointer-events-none">
                         <div class="w-full h-full border-[10px] border-black/50"></div>
-                        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-neon-cyan/50 shadow-[0_0_10px_#00f0ff] animate-[scan_2s_ease-in-out_infinite_alternate]"></div>
+                        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-blue-50 shadow-sm animate-[scan_2s_ease-in-out_infinite_alternate]"></div>
                         <!-- Viewfinder corners -->
-                        <div class="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-neon-cyan"></div>
-                        <div class="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-neon-cyan"></div>
-                        <div class="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-neon-cyan"></div>
-                        <div class="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-neon-cyan"></div>
+                        <div class="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-blue-500"></div>
+                        <div class="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-blue-500"></div>
+                        <div class="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-blue-500"></div>
+                        <div class="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-blue-500"></div>
                     </div>
                 </div>
 
                 <div v-if="!scannerSnapshot" class="w-full flex justify-center">
-                    <button @click="takeScannerSnapshot" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center group hover:border-neon-cyan transition-colors">
-                        <div class="w-12 h-12 rounded-full bg-white group-hover:bg-neon-cyan transition-colors"></div>
+                    <button @click="takeScannerSnapshot" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center group hover:border-blue-500 transition-colors">
+                        <div class="w-12 h-12 rounded-full bg-white group-hover:bg-blue-600 transition-colors"></div>
                     </button>
                 </div>
 
                 <div v-else class="w-full space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shaxs Kategoriyasi</label>
-                            <select v-model="scannerForm.subject_type" class="glass-input w-full bg-black/50 text-white" @change="scannerForm.subject_id = ''">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shaxs Kategoriyasi</label>
+                            <select v-model="scannerForm.subject_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900" @change="scannerForm.subject_id = ''">
                                 <option value="Worker">👷 Quruvchi / Ishchi</option>
                                 <option value="User">👨‍💻 Tizim Xodimi</option>
                                 <option value="Machinery">🚜 Maxsus Texnika</option>
@@ -2394,30 +2394,30 @@ function exportOwnerPdf(id) {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Shaxsni / Texnikani Tanlang</label>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shaxsni / Texnikani Tanlang</label>
                             <!-- Worker -->
-                            <select v-if="scannerForm.subject_type === 'Worker'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="scannerForm.subject_type === 'Worker'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                                 <option value="" disabled selected>-- Tanlang --</option>
                                 <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
                             </select>
                             <!-- User -->
-                            <select v-if="scannerForm.subject_type === 'User'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="scannerForm.subject_type === 'User'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                                 <option value="" disabled selected>-- Tanlang --</option>
                                 <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.role }})</option>
                             </select>
                             <!-- Machinery -->
-                            <select v-if="scannerForm.subject_type === 'Machinery'" v-model="scannerForm.subject_id" class="glass-input w-full bg-black/50 text-white">
+                            <select v-if="scannerForm.subject_type === 'Machinery'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                                 <option value="" disabled selected>-- Tanlang --</option>
                                 <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
                             </select>
                             <!-- Visitor -->
-                            <input v-if="scannerForm.subject_type === 'VisitorDelivery'" v-model="scannerForm.subject_id" placeholder="Mashina raqami yoki ismi..." type="text" class="glass-input w-full bg-black/50 text-white">
+                            <input v-if="scannerForm.subject_type === 'VisitorDelivery'" v-model="scannerForm.subject_id" placeholder="Mashina raqami yoki ismi..." type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Harakat (Action)</label>
-                        <select v-model="scannerForm.type" class="glass-input w-full bg-black/50 text-white">
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Harakat (Action)</label>
+                        <select v-model="scannerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                             <option value="entry">➡️ Kirdi (Entry)</option>
                             <option value="exit">🚪 Chiqdi (Exit)</option>
                             <option value="start_work">⚙️ Ish boshladi</option>
@@ -2426,10 +2426,10 @@ function exportOwnerPdf(id) {
                     </div>
 
                     <div class="flex gap-4 pt-4">
-                        <button @click="scannerSnapshot = null" type="button" class="flex-1 py-3 bg-white/5 border border-white/10 text-white text-sm font-mono uppercase tracking-widest rounded hover:bg-white/10 transition-colors">
+                        <button @click="scannerSnapshot = null" type="button" class="flex-1 py-3 bg-white/5 border border-gray-200 text-gray-900 text-sm font-mono uppercase tracking-widest rounded hover:bg-gray-100 transition-colors">
                             Qayta Olish
                         </button>
-                        <button @click="submitManualLog" :disabled="scannerForm.processing || (!scannerForm.subject_id && scannerForm.subject_type !== 'VisitorDelivery')" class="flex-1 py-3 bg-neon-green/20 border border-neon-green text-neon-green text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-green hover:text-black transition-all shadow-[0_0_15px_rgba(57,255,20,0.2)] disabled:opacity-50">
+                        <button @click="submitManualLog" :disabled="scannerForm.processing || (!scannerForm.subject_id && scannerForm.subject_type !== 'VisitorDelivery')" class="flex-1 py-3 bg-emerald-50 border border-emerald-500 text-emerald-600 text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                             {{ scannerForm.processing ? 'Yuborilmoqda...' : 'Tizimga Yozish' }}
                         </button>
                     </div>
@@ -2446,35 +2446,35 @@ function exportOwnerPdf(id) {
         
 
         <div v-if="showMachineryLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showMachineryLedgerModal = false"></div>
-            <div class="relative glass-panel p-6 rounded-2xl w-full max-w-4xl border border-neon-yellow/30 shadow-[0_0_40px_rgba(255,255,0,0.1)] flex flex-col max-h-[90vh]">
-                <button class="absolute top-4 right-4 text-white/50 hover:text-white" @click="showMachineryLedgerModal = false">✖</button>
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showMachineryLedgerModal = false"></div>
+            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-4xl border border-amber-200 shadow-sm flex flex-col max-h-[90vh]">
+                <button class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900" @click="showMachineryLedgerModal = false">✖</button>
                 
                 <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-2xl font-display font-bold text-white flex items-center gap-2">
+                    <h2 class="text-2xl font-display font-bold text-gray-900 flex items-center gap-2">
                         🚜 {{ activeMachinery?.name }} (Daftar)
                     </h2>
                     <div class="flex gap-2 mr-8">
-                        <button @click="printLedger" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-mono tracking-widest uppercase rounded border border-white/20 transition-colors">
+                        <button @click="printLedger" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded border border-gray-300 transition-colors">
                             🖨️ PDF / Chop etish
                         </button>
-                        <button @click="exportToExcel" class="px-3 py-1.5 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-mono tracking-widest uppercase rounded border border-neon-green/30 transition-colors">
+                        <button @click="exportToExcel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-50 text-emerald-600 text-[10px] font-mono tracking-widest uppercase rounded border border-emerald-200 transition-colors">
                             📊 Excel (CSV)
                         </button>
                     </div>
                 </div>
-                <p class="text-[10px] font-mono text-neon-yellow tracking-widest uppercase border-b border-white/10 pb-4 mb-4">
+                <p class="text-[10px] font-mono text-amber-600 tracking-widest uppercase border-b border-gray-200 pb-4 mb-4">
                     Davlat Raqami: {{ activeMachinery?.license_plate || 'N/A' }} | {{ activeMachinery?.payment_type === 'hourly' ? 'Soatbay' : 'Obyom' }}: {{ $currency(activeMachinery?.cost_per_hour) }}
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div class="p-4 bg-white/5 rounded-xl border border-white/10">
-                        <p class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Umumiy Ishlagan (Topilgan)</p>
-                        <p class="text-xl font-bold text-white">{{ $currency(machineryLedgerData.total_earned) }}</p>
+                    <div class="p-4 bg-white/5 rounded-xl border border-gray-200">
+                        <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Umumiy Ishlagan (Topilgan)</p>
+                        <p class="text-xl font-bold text-gray-900">{{ $currency(machineryLedgerData.total_earned) }}</p>
                     </div>
-                    <div class="p-4 bg-neon-red/10 rounded-xl border border-neon-red/30 flex justify-between items-center">
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-200 flex justify-between items-center">
                         <div>
-                            <p class="text-[10px] font-mono text-neon-red uppercase tracking-widest mb-1">To'lanmagan Qarz</p>
-                            <p class="text-xl font-bold text-neon-red">{{ $currency(machineryLedgerData.unpaid_balance) }}</p>
+                            <p class="text-[10px] font-mono text-red-600 uppercase tracking-widest mb-1">To'lanmagan Qarz</p>
+                            <p class="text-xl font-bold text-red-600">{{ $currency(machineryLedgerData.unpaid_balance) }}</p>
                         </div>
                     </div>
                 </div>
@@ -2485,24 +2485,24 @@ function exportOwnerPdf(id) {
                         <h4 class="text-[10px] font-mono text-neon-blue uppercase tracking-widest border-b border-neon-blue/30 pb-2">➕ Ish Hajmini Kiritish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Obyekt (Building)</label>
-                                <select v-model="machineryLogForm.building_id" class="glass-input text-xs w-full text-white bg-black/50" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt (Building)</label>
+                                <select v-model="machineryLogForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-900/50" required>
                                     <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ activeMachinery?.payment_type === 'hourly' ? 'Soat' : 'Hajm (Obyom)' }}</label>
-                                <input v-model="machineryLogForm.volume" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="0.00" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ activeMachinery?.payment_type === 'hourly' ? 'Soat' : 'Hajm (Obyom)' }}</label>
+                                <input v-model="machineryLogForm.volume" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Maxsus Narx</label>
-                                <input v-model="machineryLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-full" placeholder="Ixtiyoriy">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Maxsus Narx</label>
+                                <input v-model="machineryLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Ixtiyoriy">
                             </div>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="machineryLogForm.date" type="date" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
+                                <input v-model="machineryLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                             <div class="flex items-end">
                                 <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-neon-blue text-[10px] font-mono uppercase tracking-widest rounded border border-neon-blue/50 hover:bg-neon-blue hover:text-black transition-colors disabled:opacity-50 h-[38px]">
@@ -2513,93 +2513,93 @@ function exportOwnerPdf(id) {
                     </form>
 
                     <!-- Payment Form -->
-                    <form @submit.prevent="saveMachineryTransaction" class="flex flex-col gap-2 p-4 bg-neon-green/10 rounded-xl border border-neon-green/30">
-                        <h4 class="text-[10px] font-mono text-neon-green uppercase tracking-widest border-b border-neon-green/30 pb-2">💸 To'lov Qilish</h4>
+                    <form @submit.prevent="saveMachineryTransaction" class="flex flex-col gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                        <h4 class="text-[10px] font-mono text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-2">💸 To'lov Qilish</h4>
                         <div class="flex gap-2 mt-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('amount') }}</label>
-                                <input v-model="machineryLedgerForm.amount" type="number" class="glass-input text-xs w-full" placeholder="0.00" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('amount') }}</label>
+                                <input v-model="machineryLedgerForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="machineryLedgerForm.date" type="date" class="glass-input text-xs w-full" required>
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
+                                <input v-model="machineryLedgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
                             </div>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('notes') }}</label>
-                                <input v-model="machineryLedgerForm.description" type="text" class="glass-input text-xs w-full" placeholder="Masalan: Naqd pul orqali...">
+                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('notes') }}</label>
+                                <input v-model="machineryLedgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Masalan: Naqd pul orqali...">
                             </div>
                             <div class="flex items-end">
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-green/20 text-neon-green text-[10px] font-mono uppercase tracking-widest rounded border border-neon-green/50 hover:bg-neon-green hover:text-black transition-colors disabled:opacity-50 h-[38px]">{{ $t('pay_button') }}</button>
+                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 text-emerald-600 text-[10px] font-mono uppercase tracking-widest rounded border border-emerald-200 hover:bg-emerald-600 hover:text-black transition-colors disabled:opacity-50 h-[38px]">{{ $t('pay_button') }}</button>
                             </div>
                         </div>
                     </form>
                 </div>
 
                 <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                    <div v-for="tx in machineryLedgerData.transactions" :key="'tx'+tx.id" class="p-4 border border-neon-green/30 rounded-xl bg-neon-green/5 group transition-colors">
-                        <div v-if="editTxId === tx.id" class="w-full bg-black/50 p-2 rounded border border-neon-cyan/30 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="glass-input text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="glass-input text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="glass-input text-xs flex-1" :placeholder="$t('notes')">
-                            <button @click="submitEditTx('machinery')" class="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs hover:bg-neon-cyan hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                    <div v-for="tx in machineryLedgerData.transactions" :key="'tx'+tx.id" class="p-4 border border-emerald-200 rounded-xl bg-emerald-50 group transition-colors">
+                        <div v-if="editTxId === tx.id" class="w-full bg-gray-900/50 p-2 rounded border border-blue-200 flex items-center gap-2">
+                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
+                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
+                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
+                            <button @click="submitEditTx('machinery')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-600 hover:text-black">{{ $t('save') }}</button>
+                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
                             <div>
-                                <p class="text-xs font-mono text-white mb-1">{{ new Date(tx.date).toLocaleDateString() }} | 💸 To'lov Qilindi</p>
-                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">{{ tx.description || 'Izohsiz' }}</p>
+                                <p class="text-xs font-mono text-gray-900 mb-1">{{ new Date(tx.date).toLocaleDateString() }} | 💸 To'lov Qilindi</p>
+                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">{{ tx.description || 'Izohsiz' }}</p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-sm font-bold text-neon-green">+ {{ $currency(tx.amount) }}</p>
+                                    <p class="text-sm font-bold text-emerald-600">+ {{ $currency(tx.amount) }}</p>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button @click="startEditTx(tx)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyTx('machinery', tx.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button @click="destroyTx('machinery', tx.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-for="log in machineryLedgerData.logs" :key="log.id" class="p-4 border border-white/10 rounded-xl bg-black/40 group hover:border-neon-yellow/30 transition-colors">
-                        <div v-if="editLogId === log.id" class="w-full bg-black/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
-                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="glass-input text-xs w-20" placeholder="Soat/Hajm">
-                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="glass-input text-xs w-24" placeholder="Maxsus narx">
-                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="glass-input text-xs w-24 border-neon-yellow" placeholder="Chegirma">
-                            <input v-model="editLogForm.description" type="text" class="glass-input text-xs w-32" placeholder="Izoh">
-                            <input v-model="editLogForm.date" type="date" class="glass-input text-xs w-28">
-                            <div class="flex-1 text-[10px] font-mono text-text-muted uppercase">Tahrirlanmoqda...</div>
+                    <div v-for="log in machineryLedgerData.logs" :key="log.id" class="p-4 border border-gray-200 rounded-xl bg-gray-900/50 group hover:border-amber-200 transition-colors">
+                        <div v-if="editLogId === log.id" class="w-full bg-gray-900/50 p-2 rounded border border-neon-blue/30 flex flex-wrap items-center gap-2">
+                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-20" placeholder="Soat/Hajm">
+                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24" placeholder="Maxsus narx">
+                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24 border-amber-500" placeholder="Chegirma">
+                            <input v-model="editLogForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32" placeholder="Izoh">
+                            <input v-model="editLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-28">
+                            <div class="flex-1 text-[10px] font-mono text-gray-500 uppercase">Tahrirlanmoqda...</div>
                             <button @click="submitEditLog" class="bg-neon-blue/20 text-neon-blue px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editLogId = null" class="text-text-muted text-xs hover:text-white">Bekor</button>
+                            <button @click="editLogId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
                         </div>
                         <div v-else class="flex justify-between items-center w-full">
                             <div>
-                                <p class="text-xs font-mono text-white mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
-                                <p class="text-[10px] font-mono text-text-muted tracking-widest uppercase">
+                                <p class="text-xs font-mono text-gray-900 mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
+                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">
                                     Obyekt: {{ log.building?.name || "Noma'lum" }}
-                                    <span v-if="log.description" class="text-neon-cyan block mt-1">Izoh: {{ log.description }}</span>
-                                    <span v-if="log.deductions" class="text-neon-yellow block mt-1">Chegirma / Xarajat: {{ log.deductions }} so'm</span>
+                                    <span v-if="log.description" class="text-blue-600 block mt-1">Izoh: {{ log.description }}</span>
+                                    <span v-if="log.deductions" class="text-amber-600 block mt-1">Chegirma / Xarajat: {{ log.deductions }} so'm</span>
                                 </p>
                             </div>
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
-                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-neon-red' : 'text-neon-green'">
+                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-red-600' : 'text-emerald-600'">
                                         - {{ $currency(log.calculated_cost) }}
                                     </p>
                                     <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
-                                        :class="log.status === 'unpaid' ? 'border-neon-red text-neon-red bg-neon-red/10' : 'border-neon-green text-neon-green bg-neon-green/10'">
+                                        :class="log.status === 'unpaid' ? 'border-red-500 text-red-600 bg-red-50' : 'border-emerald-500 text-emerald-600 bg-emerald-50'">
                                         {{ log.status === 'unpaid' ? "To'lanmagan" : "To'langan" }}
                                     </span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button @click="startEditLog(log)" class="text-xs bg-white/10 hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyLog(log.id)" class="text-xs bg-neon-red/10 text-neon-red hover:bg-neon-red/30 p-1 rounded">🗑️</button>
+                                    <button @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-if="!machineryLedgerData.logs.length && !machineryLedgerData.transactions?.length" class="text-center py-8 text-text-muted font-mono text-xs border border-dashed border-white/10 rounded-xl">
+                    <div v-if="!machineryLedgerData.logs.length && !machineryLedgerData.transactions?.length" class="text-center py-8 text-gray-500 font-mono text-xs border border-dashed border-gray-200 rounded-xl">
                         Hozircha hisob-kitob tarixi yo'q
                     </div>
                 </div>
@@ -2627,39 +2627,39 @@ function exportOwnerPdf(id) {
 
         <!-- Guard Salary History Modal -->
         <div v-if="showGuardHistoryModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showGuardHistoryModal = false"></div>
-            <div class="relative bg-black border border-neon-cyan/30 p-6 rounded-2xl max-w-2xl w-full shadow-[0_0_50px_rgba(0,255,255,0.1)]">
+            <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="showGuardHistoryModal = false"></div>
+            <div class="relative bg-black border border-blue-200 p-6 rounded-2xl max-w-2xl w-full shadow-sm">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-display font-bold text-white flex items-center gap-2">
+                    <h2 class="text-lg font-display font-bold text-gray-900 flex items-center gap-2">
                         🛡️ {{ activeGuardHistory?.name }} - Maosh Tarixi
                     </h2>
-                    <button @click="showGuardHistoryModal = false" class="text-text-muted hover:text-white transition-colors">
+                    <button @click="showGuardHistoryModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
                         ✕
                     </button>
                 </div>
                 
-                <div class="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white/5">
                     <table class="w-full text-left text-xs font-mono">
-                        <thead class="text-neon-cyan bg-black/50 border-b border-white/10">
+                        <thead class="text-blue-600 bg-gray-900/50 border-b border-gray-200">
                             <tr>
                                 <th class="p-3 font-normal uppercase tracking-widest">Sana</th>
                                 <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Miqdori</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
-                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover:bg-white/5 transition-colors">
-                                <td class="p-3 text-white">{{ new Date(hist.effective_date).toLocaleDateString() }}</td>
-                                <td class="p-3 text-neon-cyan text-right font-bold">{{ $currency(hist.salary) }} so'm</td>
+                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-3 text-gray-900">{{ new Date(hist.effective_date).toLocaleDateString() }}</td>
+                                <td class="p-3 text-blue-600 text-right font-bold">{{ $currency(hist.salary) }} so'm</td>
                             </tr>
                             <tr v-if="!activeGuardHistory?.salary_histories || activeGuardHistory.salary_histories.length === 0">
-                                <td colspan="2" class="p-6 text-center text-text-muted">Tarix mavjud emas</td>
+                                <td colspan="2" class="p-6 text-center text-gray-500">Tarix mavjud emas</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 
                 <div class="mt-6 flex justify-end">
-                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 bg-white/10 text-white font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
+                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 bg-white/10 text-gray-900 font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
                 </div>
             </div>
         </div>

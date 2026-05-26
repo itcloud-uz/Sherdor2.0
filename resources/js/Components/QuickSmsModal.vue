@@ -1,15 +1,15 @@
 <template>
     <Modal :show="show" @close="closeModal" maxWidth="md">
-        <div class="glass-panel p-6 border border-neon-cyan/50 bg-[#020205] relative overflow-hidden">
+        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-[#020205] relative overflow-hidden">
             <!-- Background Glow -->
-            <div class="absolute -top-40 -right-40 w-96 h-96 bg-neon-cyan/20 blur-[100px] pointer-events-none"></div>
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-50 blur-[100px] pointer-events-none"></div>
             
             <div class="relative z-10">
-                <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                    <h2 class="text-xl font-display font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <span class="text-neon-cyan">💬</span> Tezkor SMS
+                <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                    <h2 class="text-xl font-display font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span class="text-blue-600">💬</span> Tezkor SMS
                     </h2>
-                    <button @click="closeModal" class="text-text-muted hover:text-white transition-colors">
+                    <button @click="closeModal" class="text-gray-500 hover:text-gray-900 transition-colors">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -18,23 +18,23 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">Qabul qiluvchi (Mijoz)</label>
-                        <div class="glass-input w-full bg-black/50 text-white flex items-center gap-2 opacity-70 cursor-not-allowed">
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase tracking-widest">Qabul qiluvchi (Mijoz)</label>
+                        <div class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900 flex items-center gap-2 opacity-70 cursor-not-allowed">
                             <span class="text-xs">📞</span>
                             <span class="font-mono">{{ lead?.phone }}</span>
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase tracking-widest">Xabar matni</label>
-                        <textarea v-model="message" rows="4" class="glass-input w-full focus:border-neon-cyan focus:ring-neon-cyan resize-none" placeholder="Assalomu alaykum, ..."></textarea>
-                        <p class="text-[9px] font-mono text-text-muted mt-1 text-right">{{ message.length }} belgilar</p>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase tracking-widest">Xabar matni</label>
+                        <textarea v-model="message" rows="4" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full focus:border-blue-500 focus:ring-neon-cyan resize-none" placeholder="Assalomu alaykum, ..."></textarea>
+                        <p class="text-[9px] font-mono text-gray-500 mt-1 text-right">{{ message.length }} belgilar</p>
                     </div>
                 </div>
 
                 <div class="mt-8 flex gap-3">
-                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-black/50 border border-white/20 text-white text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-white/10 transition-all">{{ $t('cancel') }}</button>
-                    <button @click="sendSms" :disabled="isSending || !message.trim()" class="flex-1 py-2 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] disabled:opacity-50 flex justify-center items-center gap-2">
+                    <button @click="closeModal" type="button" class="flex-1 py-2 bg-gray-900/50 border border-gray-300 text-gray-900 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-gray-100 transition-all">{{ $t('cancel') }}</button>
+                    <button @click="sendSms" :disabled="isSending || !message.trim()" class="flex-1 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm disabled:opacity-50 flex justify-center items-center gap-2">
                         <span v-if="isSending" class="animate-pulse">Yuborilmoqda...</span>
                         <template v-else>
                             <span>🚀</span> Yuborish

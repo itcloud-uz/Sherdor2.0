@@ -106,23 +106,23 @@ const handleFileUpload = async (event) => {
         <div class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all">
+                    <Link :href="route('admin.warehouse.index')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-gray-200 hover:bg-gray-100 text-gray-900 transition-all">
                         ←
                     </Link>
-                    <h1 class="text-3xl font-display font-bold text-white tracking-widest uppercase shadow-neon-green/50 text-shadow-glow flex items-center gap-3 hidden">
-                        <span class="text-neon-green">📝</span> Shartnomalar
+                    <h1 class="text-3xl font-display font-bold text-gray-900 tracking-widest uppercase shadow-neon-green/50  flex items-center gap-3 hidden">
+                        <span class="text-emerald-600">📝</span> Shartnomalar
                     </h1>
                 </div>
-                <button @click="openModal" class="bg-neon-green text-black px-4 py-2 rounded-lg font-bold hover:shadow-[0_0_15px_#39FF14] transition-all text-sm">
+                <button @click="openModal" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-sm transition-all text-sm">
                     + Yangi Shartnoma
                 </button>
             </div>
 
-            <div class="glass-panel p-6 rounded-2xl border border-white/5">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
                 <div class="overflow-x-auto">
                     <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono border-collapse">
                         <thead>
-                            <tr class="border-b border-white/10 text-[10px] text-text-muted uppercase tracking-widest bg-black/40">
+                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest bg-gray-900/50">
                                 <th class="p-4 font-medium rounded-tl-xl">Raqami</th>
                                 <th class="p-4 font-medium">Ta'minotchi</th>
                                 <th class="p-4 font-medium">Boshlanish</th>
@@ -132,19 +132,19 @@ const handleFileUpload = async (event) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="c in contracts" :key="c.id" class="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                                <td class="p-4 text-neon-cyan font-bold">{{ c.contract_number }}</td>
-                                <td class="p-4 text-white">{{ c.supplier?.company_name || c.supplier?.name }}</td>
-                                <td class="p-4 text-text-secondary">{{ c.start_date }}</td>
-                                <td class="p-4 text-text-secondary">{{ c.end_date || '-' }}</td>
-                                <td class="p-4 text-right text-neon-green font-bold">{{ formatMoney(c.total_amount) }}</td>
+                            <tr v-for="c in contracts" :key="c.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                                <td class="p-4 text-blue-600 font-bold">{{ c.contract_number }}</td>
+                                <td class="p-4 text-gray-900">{{ c.supplier?.company_name || c.supplier?.name }}</td>
+                                <td class="p-4 text-gray-600">{{ c.start_date }}</td>
+                                <td class="p-4 text-gray-600">{{ c.end_date || '-' }}</td>
+                                <td class="p-4 text-right text-emerald-600 font-bold">{{ formatMoney(c.total_amount) }}</td>
                                 <td class="p-4 text-right">
-                                    <span v-if="c.status === 'active'" class="px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 text-[10px] uppercase rounded">Faol</span>
-                                    <span v-else class="px-2 py-1 bg-text-muted/20 text-text-muted border border-text-muted/30 text-[10px] uppercase rounded">{{ c.status }}</span>
+                                    <span v-if="c.status === 'active'" class="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] uppercase rounded">Faol</span>
+                                    <span v-else class="px-2 py-1 bg-text-muted/20 text-gray-500 border border-text-muted/30 text-[10px] uppercase rounded">{{ c.status }}</span>
                                 </td>
                             </tr>
                             <tr v-if="contracts.length === 0">
-                                <td colspan="6" class="p-12 text-center text-text-muted text-xs border border-dashed border-white/10 rounded-xl">Shartnomalar yo'q</td>
+                                <td colspan="6" class="p-12 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Shartnomalar yo'q</td>
                             </tr>
                         </tbody>
                     </table>
@@ -153,30 +153,30 @@ const handleFileUpload = async (event) => {
         </div>
 
         <!-- YANGA SHARTNOMA MODAL -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div class="glass-panel w-full max-w-lg p-6 rounded-2xl border border-neon-green/50 shadow-[0_0_30px_rgba(57,255,20,0.15)] relative">
-                <button @click="showModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-lg p-6 rounded-2xl border border-emerald-200 shadow-sm relative">
+                <button @click="showModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
                 
-                <h2 class="text-xl font-display font-bold text-white mb-6 uppercase">Yangi Ta'minot Shartnomasi</h2>
+                <h2 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase">Yangi Ta'minot Shartnomasi</h2>
                 
                 <!-- PDF Upload Area -->
-                <div class="mb-6 p-4 border border-dashed border-neon-cyan/50 rounded-xl bg-neon-cyan/5 text-center transition-all hover:bg-neon-cyan/10">
+                <div class="mb-6 p-4 border border-dashed border-blue-200 rounded-xl bg-blue-50 text-center transition-all hover:bg-blue-50">
                     <input type="file" ref="fileInput" @change="handleFileUpload" accept=".pdf" class="hidden" />
                     
-                    <div v-if="isScanning" class="flex flex-col items-center justify-center py-4 text-neon-cyan">
-                        <div class="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <div v-if="isScanning" class="flex flex-col items-center justify-center py-4 text-blue-600">
+                        <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
                         <span class="text-xs font-mono font-bold animate-pulse">PDF O'qilmoqda...</span>
                     </div>
                     
                     <div v-else class="flex flex-col items-center">
-                        <span class="text-3xl mb-2 text-neon-cyan">📄</span>
-                        <button type="button" @click="triggerFileUpload" class="text-sm font-bold text-neon-cyan hover:text-white transition-colors mb-1 font-display">
+                        <span class="text-3xl mb-2 text-blue-600">📄</span>
+                        <button type="button" @click="triggerFileUpload" class="text-sm font-bold text-blue-600 hover:text-gray-900 transition-colors mb-1 font-display">
                             Shartnoma PDF faylini yuklash (Skaner)
                         </button>
-                        <p class="text-[10px] font-mono text-text-muted">QR kod orqali avtomatik to'ldirish</p>
+                        <p class="text-[10px] font-mono text-gray-500">QR kod orqali avtomatik to'ldirish</p>
                     </div>
                     
-                    <div v-if="scanError" class="mt-3 p-2 bg-neon-red/10 border border-neon-red/30 text-neon-red text-xs rounded">
+                    <div v-if="scanError" class="mt-3 p-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded">
                         {{ scanError }}
                     </div>
                 </div>
@@ -184,39 +184,39 @@ const handleFileUpload = async (event) => {
                 <form @submit.prevent="submit" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ta'minotchi</label>
-                            <select v-model="form.supplier_id" required class="glass-input w-full bg-black/50 text-white">
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ta'minotchi</label>
+                            <select v-model="form.supplier_id" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900">
                                 <option value="" disabled>Tanlang</option>
                                 <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Shartnoma Raqami</label>
-                            <input v-model="form.contract_number" type="text" required class="glass-input w-full">
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Shartnoma Raqami</label>
+                            <input v-model="form.contract_number" type="text" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('start_date') }}</label>
-                            <input v-model="form.start_date" type="date" required class="glass-input w-full bg-black/50 text-white" style="color-scheme: dark;">
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('start_date') }}</label>
+                            <input v-model="form.start_date" type="date" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900" style="color-scheme: dark;">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Tugash Sanasi (Ixtiyoriy)</label>
-                            <input v-model="form.end_date" type="date" class="glass-input w-full bg-black/50 text-white" style="color-scheme: dark;">
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Tugash Sanasi (Ixtiyoriy)</label>
+                            <input v-model="form.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-900/50 text-gray-900" style="color-scheme: dark;">
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Umumiy Summa (UZS)</label>
-                        <input v-model="form.total_amount" type="number" required min="0" class="glass-input w-full" placeholder="Shartnoma summasi">
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Umumiy Summa (UZS)</label>
+                        <input v-model="form.total_amount" type="number" required min="0" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" placeholder="Shartnoma summasi">
                     </div>
                     
                     <div>
-                        <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Izoh / Shartlar</label>
-                        <textarea v-model="form.notes" rows="3" class="glass-input w-full" placeholder="Qo'shimcha ma'lumotlar..."></textarea>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Izoh / Shartlar</label>
+                        <textarea v-model="form.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" placeholder="Qo'shimcha ma'lumotlar..."></textarea>
                     </div>
                     
                     <div class="pt-4 flex gap-3 justify-end">
-                        <button type="button" @click="showModal = false" class="px-4 py-2 text-sm font-mono text-text-muted hover:text-white">{{ $t('cancel') }}</button>
-                        <button type="submit" class="bg-neon-green text-black font-bold text-sm px-6 py-2 rounded hover:shadow-[0_0_15px_#39FF14] transition-all">{{ $t('save') }}</button>
+                        <button type="button" @click="showModal = false" class="px-4 py-2 text-sm font-mono text-gray-500 hover:text-gray-900">{{ $t('cancel') }}</button>
+                        <button type="submit" class="bg-emerald-600 text-white font-bold text-sm px-6 py-2 rounded hover:shadow-sm transition-all">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>

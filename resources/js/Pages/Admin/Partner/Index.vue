@@ -6,9 +6,9 @@ import { Head } from '@inertiajs/vue3';
 <template>
     <Head title="Partner Hub" />
     <AdminLayout>
-        <div class="glass-card p-12 text-center">
-            <h2 class="text-3xl font-display text-white mb-2">Partner Hub</h2>
-            <p class="text-text-muted font-mono animate-pulse">[ AWAITING_DATA ]</p>
+        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-12 text-center">
+            <h2 class="text-3xl font-display text-gray-900 mb-2">Partner Hub</h2>
+            <p class="text-gray-500 font-mono animate-pulse">[ AWAITING_DATA ]</p>
         </div>
     </AdminLayout>
 </template>

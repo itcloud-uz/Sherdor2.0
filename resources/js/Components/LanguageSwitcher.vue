@@ -27,7 +27,7 @@ function currentLang() {
     <div class="relative">
         <button 
             @click="isOpen = !isOpen" 
-            class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glass-border bg-glass hover:bg-glass-hover transition-all text-sm font-semibold text-text-secondary hover:text-text-primary backdrop-blur-xl"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glass-border bg-glass hover:bg-glass-hover transition-all text-sm font-semibold text-gray-600 hover:text-gray-900 backdrop-blur-sm"
         >
             <span class="text-lg">{{ currentLang().flag }}</span>
             <span class="uppercase tracking-wider text-[10px]">{{ currentLang().code }}</span>
@@ -43,7 +43,7 @@ function currentLang() {
         >
             <div 
                 v-if="isOpen" 
-                class="absolute right-0 mt-2 w-32 rounded-xl bg-black/80 backdrop-blur-3xl border border-white/10 shadow-depth overflow-hidden z-50"
+                class="absolute right-0 mt-2 w-32 rounded-xl bg-gray-900/50 backdrop-blur-sm border border-gray-200 shadow-depth overflow-hidden z-50"
             >
                 <div class="py-1">
                     <button 
@@ -53,8 +53,8 @@ function currentLang() {
                         :class="[
                             'w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors',
                             locale === lang.code 
-                                ? 'bg-neon-cyan/10 text-neon-cyan font-bold' 
-                                : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'
+                                ? 'bg-blue-50 text-blue-600 font-bold' 
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         ]"
                     >
                         <span>{{ lang.flag }}</span>

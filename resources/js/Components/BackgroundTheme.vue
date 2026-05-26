@@ -12,7 +12,7 @@ const customBg = computed(() => page.props.branding?.background_image_path);
 <template>
     <!-- CUSTOM BACKGROUND IMAGE OVERLAY -->
     <template v-if="customBg">
-        <div class="fixed inset-0 pointer-events-none z-0 bg-black/60"></div>
+        <div class="fixed inset-0 pointer-events-none z-0 bg-gray-900/50"></div>
     </template>
     
     <template v-else>

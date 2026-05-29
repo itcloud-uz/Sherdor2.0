@@ -168,7 +168,7 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         </div>
                         <div class="flex-1 border-l border-gray-100 pl-4">
                             <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">MAYDON</p>
-                            <p class="text-lg font-bold text-gray-900">{{ building.total_area }} m²</p>
+                            <p class="text-lg font-bold text-gray-900">{{ building.total_area }} kv.m</p>
                         </div>
                     </div>
 

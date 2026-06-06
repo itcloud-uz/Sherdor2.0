@@ -1187,293 +1187,343 @@ function exportOwnerPdf(id) {
             <!-- Content Area -->
             <div class="w-full min-h-[700px]">
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
-        <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-3 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
-            <!-- System Users Column -->
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                        👥 Tizim Xodimlari
-                    </h2>
-                    <button @click="showUserModal = true" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                        + Tizim Xodimi
-                    </button>
-                </div>
-                
-                <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
-                    <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div v-for="user in users" :key="user.id" class="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col justify-between hover:border-gray-300 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                            <div class="flex items-start gap-3 mb-3">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
-                                    <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
-                                    <span v-else class="text-lg">👤</span>
-                                </div>
-                                <div>
-                                    <h3 class="text-xs font-bold text-gray-900 mb-0.5 group-hover:text-blue-600 transition-colors line-clamp-1" :title="user.name">{{ user.name }}</h3>
-                                    <p class="text-[9px] font-mono text-gray-500 line-clamp-1" :title="user.email">{{ user.email }}</p>
-                                    <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border"
-                                        :class="{ 'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin', 'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator', 'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner', ' text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length }">
-                                        {{ user.roles?.[0]?.name || 'None' }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-gray-100 pt-3">
-                                <p class="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{{ $currency(user.salary_rate || 0) }}</p>
-                                <div class="flex gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                                    <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="Karta">💳</button>
-                                    <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-
-                                    <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
-                                </div>
-                            </div>
+                <div v-if="activeTab === 0" class="space-y-8 animate-[fadeIn_0.5s_ease-out] w-full">
+                    <!-- 1. Tizim Xodimlari Section -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
+                                👥 Tizim Xodimlari
+                            </h2>
+                            <button @click="showUserModal = true" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
+                                + Tizim Xodimi
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto rounded-xl border border-gray-200">
+                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <th class="p-3 font-normal uppercase tracking-widest">Xodim</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest">Rol</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Stavka</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="user in users" :key="user.id" class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
+                                        <td class="p-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
+                                                    <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
+                                                    <span v-else class="text-lg">👤</span>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-xs font-bold text-gray-900 line-clamp-1" :title="user.name">{{ user.name }}</h3>
+                                                    <p class="text-[9px] text-gray-500 line-clamp-1" :title="user.email">{{ user.email }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border"
+                                                :class="{ 'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin', 'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator', 'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner', ' text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length }">
+                                                {{ user.roles?.[0]?.name || 'None' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right font-bold text-emerald-600">
+                                            {{ $currency(user.salary_rate || 0) }}
+                                        </td>
+                                        <td class="p-3">
+                                            <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="Karta">💳</button>
+                                                <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
+                                                <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Workers Column -->
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                        👷‍♂️ Yollanma Ishchilar & Brigadalar
-                    </h2>
-                    
-                    <button @click="showBrigadeForm = !showBrigadeForm" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-50 transition-colors border border-blue-200">
-                        {{ showBrigadeForm ? '- Yopish' : "+ Brigada Qo'shish" }}
-                    </button>
-                </div>
-
-                <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input v-model="brigadeForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
-                        <input v-model="brigadeForm.foreman_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
-                        <input v-model="brigadeForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
-                    </div>
-                    <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isBrigadeEditMode ? 'Saqlash' : "Qo'shish" }}
-                        </button>
-                    </div>
-                </form>
-
-                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                    <!-- Brigades List -->
-                    <div v-for="b in brigades" :key="b.id" class="border border-gray-200 bg-gray-50 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                        <div class="p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center transition-colors" @click="activeBrigadeId = activeBrigadeId === b.id ? null : b.id">
-                            <div>
-                                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                    <span class="text-blue-600">{{ activeBrigadeId === b.id ? '▼' : '▶' }}</span>
-                                    {{ b.name }}
-                                </h3>
-                                <p class="text-[10px] font-mono text-gray-500 mt-1 uppercase">Usta: {{ b.foreman_name }} <span v-if="b.phone">| {{ b.phone }}</span></p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-0.5">Brigada Balansi</p>
-                                    <p class="text-sm font-bold" :class="b.balance > 0 ? 'text-emerald-600' : (b.balance < 0 ? 'text-red-600' : 'text-gray-900')">{{ $currency(b.balance || 0) }}</p>
-                                </div>
-                                <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-                                    <button v-if="isAdmin" @click.stop="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors" title="Hisob-kitob Jurnali">
-                                        📊 Jurnal
-                                    </button>
-
-
-                                    <button v-if="isAdmin" @click.stop="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
-                                </div>
-                            </div>
+                    <!-- 2. Yollanma Ishchilar & Brigadalar Section -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
+                                👷‍♂️ Yollanma Ishchilar & Brigadalar
+                            </h2>
+                            <button @click="showBrigadeForm = !showBrigadeForm" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
+                                {{ showBrigadeForm ? '- Yopish' : "+ Brigada Qo'shish" }}
+                            </button>
                         </div>
 
-                        <!-- Inner Workers -->
-                        <div v-if="activeBrigadeId === b.id" class="bg-gray-50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-xs font-mono text-gray-500 uppercase">Brigada Ishchilari</h4>
-                                <button @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
-                                    + Ishchi
+                        <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
+                            <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input v-model="brigadeForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
+                                <input v-model="brigadeForm.foreman_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
+                                <input v-model="brigadeForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
+                            </div>
+                            <div class="flex gap-3 items-center justify-end pt-2">
+                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
+                                    {{ isBrigadeEditMode ? 'Saqlash' : "Qo'shish" }}
                                 </button>
                             </div>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="w in b.workers" :key="w.id" class="p-3 rounded-lg border border-gray-100 flex flex-col justify-between">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <p class="text-xs font-bold text-gray-900">{{ w.name }}</p>
-                                            <p class="text-[9px] font-mono text-gray-500 mt-0.5 uppercase">{{ w.role }} | {{ w.salary_type }} ({{ w.metric_type }})</p>
-                                        </div>
-                                        <div class="flex gap-1">
-                                            <button v-if="isAdmin" @click="openWorkerEdit(w)" class="text-[10px] px-1 hover:text-gray-900 text-gray-500">✏️</button>
-                                            <button v-if="isAdmin" @click="deleteWorker(w.id)" class="text-[10px] px-1 hover:text-red-600 text-gray-500">🗑️</button>
-                                        </div>
-                                    </div>
-                                    <div class="mt-2 text-xs font-mono text-blue-600">{{ $currency(w.base_rate || w.rate) }}</div>
-                                </div>
-                                <div v-if="!b.workers || b.workers.length === 0" class="col-span-2 text-center text-[10px] font-mono text-gray-500 py-4 border border-dashed border-gray-200 rounded-lg">
-                                    Ishchilar mavjud emas
-                                </div>
-                            </div>
+                        </form>
+
+                        <div class="overflow-x-auto rounded-xl border border-gray-200">
+                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <th class="p-3 font-normal uppercase tracking-widest">Brigada</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest">Boshqaruvchi (Usta)</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-center">Ishchilar Soni</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Brigada Balansi</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <template v-for="b in brigades" :key="b.id">
+                                        <tr class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors cursor-pointer group" @click="activeBrigadeId = activeBrigadeId === b.id ? null : b.id">
+                                            <td class="p-3 font-bold text-gray-900">
+                                                <span class="text-blue-600 mr-2">{{ activeBrigadeId === b.id ? '▼' : '▶' }}</span>
+                                                {{ b.name }}
+                                            </td>
+                                            <td class="p-3 text-gray-700">
+                                                <div>{{ b.foreman_name }}</div>
+                                                <div class="text-[9px] text-gray-500 mt-0.5" v-if="b.phone">{{ b.phone }}</div>
+                                            </td>
+                                            <td class="p-3 text-center text-gray-700 font-bold">
+                                                {{ b.workers ? b.workers.length : 0 }}
+                                            </td>
+                                            <td class="p-3 text-right font-bold" :class="b.balance > 0 ? 'text-emerald-600' : (b.balance < 0 ? 'text-red-600' : 'text-gray-900')">
+                                                {{ $currency(b.balance || 0) }}
+                                            </td>
+                                            <td class="p-3">
+                                                <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity" @click.stop>
+                                                    <button v-if="isAdmin" @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors text-[9px] font-bold uppercase tracking-wider" title="+ Ishchi">+ Ishchi</button>
+                                                    <button v-if="isAdmin" @click="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors text-[9px] font-bold uppercase tracking-wider" title="Hisob-kitob Jurnali">📊 Jurnal</button>
+                                                    <button v-if="isAdmin" @click="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
+                                                    <button v-if="isAdmin" @click="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <!-- Collapsible Inner Workers Row -->
+                                        <tr v-if="activeBrigadeId === b.id" class="bg-gray-50/50">
+                                            <td colspan="5" class="p-4 border-b border-gray-200">
+                                                <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-inner" @click.stop>
+                                                    <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                                                        <h4 class="text-xs font-mono text-gray-700 uppercase tracking-wider font-bold">Brigada Ishchilari</h4>
+                                                        <button v-if="isAdmin" @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-blue-50 border border-blue-500 text-blue-600 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">+ Ishchi Qo'shish</button>
+                                                    </div>
+                                                    <div class="overflow-x-auto">
+                                                        <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
+                                                            <thead class="bg-gray-50 text-gray-500 uppercase text-[9px] font-medium">
+                                                                <tr class="border-b border-gray-100">
+                                                                    <th class="p-2">Ishchi F.I.SH</th>
+                                                                    <th class="p-2">Roli / Kasbi</th>
+                                                                    <th class="p-2">Telefon</th>
+                                                                    <th class="p-2">To'lov turi</th>
+                                                                    <th class="p-2 text-right">Stavka</th>
+                                                                    <th class="p-2 text-right">Amallar</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="divide-y divide-gray-100 text-[11px]">
+                                                                <tr v-for="w in b.workers" :key="w.id" class="hover:bg-gray-50/30 transition-colors">
+                                                                    <td class="p-2 font-bold text-gray-800">{{ w.name }}</td>
+                                                                    <td class="p-2 text-gray-700">
+                                                                        {{ w.role === 'builder' ? 'Quruvchi' : (w.role === 'driver' ? 'Haydovchi' : (w.role === 'guard' ? 'Qorovul' : 'Boshqa')) }}
+                                                                    </td>
+                                                                    <td class="p-2 text-gray-600">{{ w.phone || '-' }}</td>
+                                                                    <td class="p-2 text-gray-600">
+                                                                        {{ w.salary_type === 'piece_rate' ? 'Ishbay' : (w.salary_type === 'hourly' ? 'Soatbay' : 'Oylik Maosh') }} ({{ w.metric_type || '-' }})
+                                                                    </td>
+                                                                    <td class="p-2 text-right font-bold text-blue-600">{{ $currency(w.base_rate || w.rate) }}</td>
+                                                                    <td class="p-2">
+                                                                        <div class="flex justify-end gap-1.5">
+                                                                            <button v-if="isAdmin" @click="openWorkerEdit(w)" class="w-5 h-5 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors text-[10px]" title="Tahrirlash">✏️</button>
+                                                                            <button v-if="isAdmin" @click="deleteWorker(w.id)" class="w-5 h-5 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors text-[10px]" title="O'chirish">🗑️</button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr v-if="!b.workers || b.workers.length === 0">
+                                                                    <td colspan="6" class="text-center p-4 text-gray-400">Ishchilar mavjud emas</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
 
-                <!-- Hidden Worker Form for reuse -->
-                <Teleport to="body">
-                    <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div class="absolute inset-0 bg-gray-50" @click="cancelWorkerEdit"></div>
-                        <form @submit.prevent="saveWorker" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
-                            <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <input v-model="workerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
-                                <input v-model="workerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
-                                <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900" :required="workerForm.role !== 'guard'">
-                                    <option value="" disabled>-- Brigada --</option>
-                                    <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
-                                </select>
-                                <select v-model="workerForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                    <option value="builder">Quruvchi / Usta</option>
-                                    <option value="driver">Haydovchi</option>
-                                    <option value="guard">Qorovul</option>
-                                    <option value="office">Boshqa</option>
-                                </select>
-                                <select v-model="workerForm.salary_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                    <option value="piece_rate">Ishbay</option>
-                                    <option value="hourly">Soatbay</option>
-                                    <option value="fixed_monthly">Oylik Maosh</option>
-                                </select>
-                                <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                    <option value="dona">Dona</option>
-                                    <option value="kv_m">Kvadrat Metr</option>
-                                    <option value="kub_m">Kub Metr</option>
-                                    <option value="metr">Metr</option>
-                                    <option value="soat">Soat</option>
-                                    <option value="kun">Kun</option>
-                                    <option value="reys">Reys</option>
-                                </select>
-                                <input v-model="workerForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Narxi (Stavka)" required>
+                    <!-- 3. Qorovullar Section -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
+                                🛡️ Qorovullar
+                            </h2>
+                            <button @click="openGuardForm()" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
+                                + Qorovul
+                            </button>
+                        </div>
 
-                                <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                        <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
-                                    </div>
-                                    <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
-                                        <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
-                                            <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
-                                            <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                        <div class="overflow-x-auto rounded-xl border border-gray-200">
+                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <th class="p-3 font-normal uppercase tracking-widest">Qorovul</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest">Telefon</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Maosh</th>
+                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
+                                        <td class="p-3 font-bold text-gray-900">
+                                            <div class="flex items-center gap-2">
+                                                <span>🛡️</span>
+                                                <span>{{ g.name }}</span>
                                             </div>
-                                            <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                                        </td>
+                                        <td class="p-3 text-gray-700">{{ g.phone || '-' }}</td>
+                                        <td class="p-3 text-right font-bold text-emerald-600">{{ $currency(g.base_rate) }}</td>
+                                        <td class="p-3">
+                                            <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <button @click="viewGuardHistory(g)" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="Maosh Tarixi">📅</button>
+                                                <button @click="openGuardForm(g)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
+                                                <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
                                             </div>
-                                            <div class="flex-1">
-                                                <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
-                                                <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="workers.filter(w => w.role === 'guard').length === 0">
+                                        <td colspan="4" class="text-center p-8 text-gray-500 font-mono">Qorovullar yo'q</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Worker Form for reuse -->
+                    <Teleport to="body">
+                        <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div class="absolute inset-0 bg-gray-50" @click="cancelWorkerEdit"></div>
+                            <form @submit.prevent="saveWorker" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
+                                <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input v-model="workerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
+                                    <input v-model="workerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
+                                    <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900" :required="workerForm.role !== 'guard'">
+                                        <option value="" disabled>-- Brigada --</option>
+                                        <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
+                                    </select>
+                                    <select v-model="workerForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
+                                        <option value="builder">Quruvchi / Usta</option>
+                                        <option value="driver">Haydovchi</option>
+                                        <option value="guard">Qorovul</option>
+                                        <option value="office">Boshqa</option>
+                                    </select>
+                                    <select v-model="workerForm.salary_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
+                                        <option value="piece_rate">Ishbay</option>
+                                        <option value="hourly">Soatbay</option>
+                                        <option value="fixed_monthly">Oylik Maosh</option>
+                                    </select>
+                                    <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
+                                        <option value="dona">Dona</option>
+                                        <option value="kv_m">Kvadrat Metr</option>
+                                        <option value="kub_m">Kub Metr</option>
+                                        <option value="metr">Metr</option>
+                                        <option value="soat">Soat</option>
+                                        <option value="kun">Kun</option>
+                                        <option value="reys">Reys</option>
+                                    </select>
+                                    <input v-model="workerForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Narxi (Stavka)" required>
+
+                                    <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
+                                        <div class="flex justify-between items-center">
+                                            <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                            <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                        </div>
+                                        <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
+                                            <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
+                                                <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                    <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                    <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
+                                                    <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
+                                            O'tgan davrlar kiritilmagan.
+                                        </div>
                                     </div>
-                                    <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
-                                        O'tgan davrlar kiritilmagan.
+
+                                </div>
+                                <div class="flex justify-end gap-3 mt-4">
+                                    <button type="button" @click="cancelWorkerEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
+                                    <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </Teleport>
+
+                    <!-- Guard Form Modal -->
+                    <Teleport to="body">
+                        <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div class="absolute inset-0 bg-gray-50" @click="cancelGuardEdit"></div>
+                            <form @submit.prevent="saveGuard" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
+                                <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input v-model="guardForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
+                                    <input v-model="guardForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
+                                    <input v-model="guardForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Oylik Maosh (Stavka)" required>
+
+                                    <div class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
+                                        <div class="flex justify-between items-center">
+                                            <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
+                                            <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
+                                        </div>
+                                        <div v-if="guardForm.salary_periods && guardForm.salary_periods.length > 0" class="space-y-3">
+                                            <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
+                                                <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
+                                                    <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
+                                                    <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
+                                                    <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
+                                            O'tgan davrlar kiritilmagan.
+                                        </div>
                                     </div>
                                 </div>
-
-                            </div>
-                            <div class="flex justify-end gap-3 mt-4">
-                                <button type="button" @click="cancelWorkerEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
-                            </div>
-                        </form>
-                    </div>
-                </Teleport>
-            </div>
-                  <!-- Qorovullar -->
-                  <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 flex flex-col h-[700px]">
-                      <div class="flex justify-between items-center mb-6">
-                          <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                              🛡️ Qorovullar
-                          </h2>
-                          <button @click="openGuardForm()" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                              + Qorovul
-                          </button>
-                      </div>
-                      
-                      <div class="overflow-y-auto custom-scrollbar flex-1 relative pr-2">
-                          <div class="grid grid-cols-1 gap-3">
-                              <div v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col justify-between hover:border-gray-300 transition-all group shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                                  <div class="flex items-start gap-3 mb-3">
-                                      <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 border border-blue-200 group-hover:border-blue-200 transition-colors">
-                                          <span class="text-lg">🛡️</span>
-                                      </div>
-                                      <div class="flex-1 min-w-0">
-                                          <h3 class="text-gray-900 font-bold truncate">{{ g.name }}</h3>
-                                          <p class="text-gray-500 text-[10px] font-mono uppercase mt-1">{{ g.phone || '-' }}</p>
-                                      </div>
-                                  </div>
-                                  
-                                  <div class="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
-                                      <div class="text-blue-600 text-xs font-mono font-bold">{{ $currency(g.base_rate) }} so'm</div>
-                                      <div class="flex gap-2">
-                                          <button @click="viewGuardHistory(g)" class="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-colors text-blue-600" title="Maosh Tarixi">📅</button>
-                                          <button @click="openGuardForm(g)" class="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-colors text-gray-900" title="Tahrirlash">✏️</button>
-
-
-                                          <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-7 h-7 rounded bg-red-50 flex items-center justify-center hover:bg-red-600 hover:text-gray-900 transition-colors text-red-600" title="O'chirish">🗑️</button>
-                                      </div>
-                                  </div>
-                              </div>
-                              <div v-if="workers.filter(w => w.role === 'guard').length === 0" class="text-center p-8 border border-dashed border-gray-200 rounded-2xl text-gray-500 text-sm font-mono">
-                                  Qorovullar yo'q
-                              </div>
-                          </div>
-                      </div>
-                      
-                      <!-- Guard Form Modal -->
-                      <Teleport to="body">
-                          <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                              <div class="absolute inset-0 bg-gray-50" @click="cancelGuardEdit"></div>
-                              <form @submit.prevent="saveGuard" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
-                                  <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
-                                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <input v-model="guardForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
-                                      <input v-model="guardForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
-                                      <input v-model="guardForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Oylik Maosh (Stavka)" required>
-
-                                      <div class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
-                                          <div class="flex justify-between items-center">
-                                              <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                              <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
-                                          </div>
-                                          <div v-if="guardForm.salary_periods && guardForm.salary_periods.length > 0" class="space-y-3">
-                                              <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
-                                                  <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
-                                                  <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                      <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                  </div>
-                                                  <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                      <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                  </div>
-                                                  <div class="flex-1">
-                                                      <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
-                                                      <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                          <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
-                                              O'tgan davrlar kiritilmagan.
-                                          </div>
-                                      </div>
-                                  </div>
-                                  <div class="flex justify-end gap-3 mt-4">
-                                      <button type="button" @click="cancelGuardEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
-                                      <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
-                                  </div>
-                              </form>
-                          </div>
-                      </Teleport>
-                  </div>
-          </div>
+                                <div class="flex justify-end gap-3 mt-4">
+                                    <button type="button" @click="cancelGuardEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
+                                    <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </Teleport>
+                </div>
           
           <!-- TAB 1: FACE-ID HUB -->
         <div v-if="activeTab === 1" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">

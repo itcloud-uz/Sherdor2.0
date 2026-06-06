@@ -505,6 +505,43 @@ watch(() => contractForm.value.payment_type, (newType) => {
 });
 
 const activeTab = ref('leads');
+
+// Synchronize activeTab with the URL tab parameter reactively
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                if (activeTab.value !== tabParam) {
+                    activeTab.value = tabParam;
+                }
+            } else {
+                activeTab.value = 'leads'; // Default tab is 'leads'
+            }
+        } catch (e) {
+            console.error('URL parse error in CRM tab watcher', e);
+        }
+    },
+    { immediate: true }
+);
+
+// Synchronize URL query parameter with activeTab changes inside the component
+watch(activeTab, (newTab) => {
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab === null || currentTab !== newTab) {
+            router.replace(route('admin.crm', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in CRM activeTab watcher', e);
+    }
+});
 const searchQuery = ref('');
 const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
 
@@ -725,51 +762,22 @@ function openQuickSmsModal(lead) {
 <template>
     <Head :title="$t('crm_pipeline')" />
     <AdminLayout>
-        <!-- TABS NAV -->
-        <div class="mb-8 flex border-b border-gray-200 pb-4 overflow-x-auto whitespace-nowrap hide-scrollbar">
-            <button 
-                @click="activeTab = 'leads'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'leads' ? 'text-blue-600 border-b-2 border-blue-500 ' : 'text-gray-500 hover:text-gray-900']"
-            >
-                {{ $t('kanban_leads') }}
-            </button>
-            <button 
-                @click="activeTab = 'clients'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'clients' ? 'text-amber-600 border-b-2 border-amber-500 ' : 'text-gray-500 hover:text-gray-900']"
-            >
-                {{ $t('clients_roster') }}
-            </button>
-            <button 
-                @click="activeTab = 'contracts'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'contracts' ? 'text-emerald-600 border-b-2 border-emerald-500 ' : 'text-gray-500 hover:text-gray-900']"
-            >
-                Shartnomalar
-            </button>
-            <button 
-                @click="activeTab = 'canceled'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'canceled' ? 'text-red-600 border-b-2 border-red-500 ' : 'text-gray-500 hover:text-gray-900']"
-            >
-                Bekor Qilinganlar <span v-if="canceledContracts.length > 0" class="ml-2 px-2 py-0.5 bg-red-600 text-white rounded-full text-xs animate-pulse">{{ canceledContracts.length }}</span>
-            </button>
-            <button 
-                @click="activeTab = 'overdue'"
-                :class="['px-6 py-2 text-sm font-display font-bold uppercase tracking-wider transition-all rounded-t-lg', activeTab === 'overdue' ? 'text-indigo-600 border-b-2 border-neon-magenta ' : 'text-gray-500 hover:text-gray-900']"
-            >
-                {{ $t('overdue_radar') }} <span v-if="overdueSchedules.length > 0" class="ml-2 px-2 py-0.5 bg-indigo-600 text-white rounded-full text-xs animate-pulse">{{ overdueSchedules.length }}</span>
-            </button>
-            
-            <!-- Global Refresh Button -->
-            <div class="ml-auto pl-4 border-l border-gray-200 flex items-center">
+        <template #header>
+            <div class="flex items-center justify-between w-full">
+                <h2 class="text-lg md:text-xl font-display font-semibold text-gray-900 flex items-center gap-3 truncate">
+                    <span class="text-xl md:text-2xl text-gray-500">🛒</span> 
+                    <span class="truncate">{{ $t('sales_department') }}</span>
+                </h2>
                 <button 
                     @click="refreshData" 
                     :disabled="isProcessing"
-                    class="flex items-center gap-2 px-4 py-1.5 bg-gray-500/50 border border-gray-300 text-blue-600 hover:bg-blue-600 hover:text-black rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-sm disabled:opacity-50 group"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-gray-100 border border-gray-300 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-sm disabled:opacity-50 group"
                 >
                     <span class="group-hover:rotate-180 transition-transform duration-500 inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span> 
                     {{ $t('refresh_live') }}
                 </button>
             </div>
-        </div>
+        </template>
 
         <!-- TAB 1: LEADS KANBAN -->
         <div v-if="activeTab === 'leads'" class="flex gap-4 h-full min-h-[600px] overflow-x-auto pb-4">

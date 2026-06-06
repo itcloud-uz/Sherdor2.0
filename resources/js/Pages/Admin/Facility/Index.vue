@@ -27,6 +27,43 @@ const selectedBuilding = ref(props.buildings?.length > 0 ? props.buildings[0] : 
 const selectedFloor = ref(selectedBuilding.value?.floors?.length > 0 ? selectedBuilding.value.floors[0] : null);
 const activeTab = ref('blueprint');
 
+// Synchronize activeTab with the URL tab parameter reactively
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                if (activeTab.value !== tabParam) {
+                    activeTab.value = tabParam;
+                }
+            } else {
+                activeTab.value = 'blueprint'; // Default tab is 'blueprint'
+            }
+        } catch (e) {
+            console.error('URL parse error in Facility tab watcher', e);
+        }
+    },
+    { immediate: true }
+);
+
+// Synchronize URL query parameter with activeTab changes inside the component
+watch(activeTab, (newTab) => {
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab === null || currentTab !== newTab) {
+            router.replace(route('admin.facility', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in Facility activeTab watcher', e);
+    }
+});
+
 const hoveredUnit = ref(null);
 const mouseX = ref(0);
 const mouseY = ref(0);
@@ -725,14 +762,7 @@ const progressSeries = computed(() => {
                                 </button>
                             </div>
                         
-                        <!-- Tabs -->
-                        <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
-                            <button @click="activeTab = 'blueprint'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'blueprint' ? 'text-white bg-blue-600 border-blue-600 shadow-sm' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50']">🗺️ {{ $t('blueprint') }}</button>
-                            <button @click="activeTab = 'search'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'search' ? 'text-white bg-blue-600 border-blue-600 shadow-sm' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50']">🔍 QIDIRUV</button>
-                            <button @click="activeTab = 'progress'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'progress' ? 'text-white bg-blue-600 border-blue-600 shadow-sm' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50']">🏗️ {{ $t('progress') }}</button>
-                            <button @click="activeTab = 'finances'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'finances' ? 'text-white bg-blue-600 border-blue-600 shadow-sm' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50']">💰 {{ $t('finances') }}</button>
-                            <button @click="activeTab = 'analytics'" :class="['px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all rounded border', activeTab === 'analytics' ? 'text-white bg-blue-600 border-blue-600 shadow-sm' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50']">📊 {{ $t('analytics') }}</button>
-                        </div>
+
                         </div>
                     </div>
 

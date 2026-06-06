@@ -704,35 +704,6 @@ const categoriesSummary = computed(() => {
 
         <div class="flex flex-col gap-4">
             
-            <!-- Horizontal Navigation Panel -->
-            <div class="flex flex-wrap items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                <button 
-                    v-for="tab in tabs" :key="tab.id"
-                    @click="activeTab = tab.id"
-                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-all whitespace-nowrap"
-                    :class="activeTab === tab.id ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-sm' : 'border border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
-                >
-                    <span class="text-base">{{ tab.icon }}</span> {{ $t(tab.name) }}
-                </button>
-                
-                <div class="w-px h-6 mx-1 hidden sm:block"></div>
-                
-                <Link :href="route('admin.approvals')" class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest text-gray-500 hover:text-amber-600 hover:bg-gray-50 border border-transparent transition-all whitespace-nowrap">
-                    <span class="text-base">✅</span> Tasdiqlar
-                </Link>
-                
-                <button 
-                    @click="activeTab = 2"
-                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-all whitespace-nowrap"
-                    :class="activeTab === 2 ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-sm' : 'border border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
-                >
-                    <span class="text-base">📜</span> Jurnal
-                </button>
-                
-                <Link :href="route('admin.receipts')" class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest text-gray-500 hover:text-blue-600 hover:bg-gray-50 border border-transparent transition-all whitespace-nowrap">
-                    <span class="text-base">🧾</span> Cheklar
-                </Link>
-            </div>
 
             <!-- Content Area -->
             <div class="w-full overflow-x-hidden">

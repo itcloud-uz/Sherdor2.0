@@ -1,7 +1,9 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+
+const page = usePage();
 import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
 import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
 
@@ -33,6 +35,44 @@ const filteredWorkers = computed(() => {
 
 
 const activeTab = ref(0);
+
+// Synchronize activeTab with the URL tab parameter reactively
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                const tabVal = parseInt(tabParam, 10);
+                if (activeTab.value !== tabVal) {
+                    activeTab.value = tabVal;
+                }
+            } else {
+                activeTab.value = 0; // Default tab is 0
+            }
+        } catch (e) {
+            console.error('URL parse error in HR tab watcher', e);
+        }
+    },
+    { immediate: true }
+);
+
+// Synchronize URL query parameter with activeTab changes inside the component
+watch(activeTab, (newTab) => {
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab === null || parseInt(currentTab, 10) !== newTab) {
+            router.replace(route('admin.hr', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in HR activeTab watcher', e);
+    }
+});
 const isProcessing = ref(false);
 
 const tabs = [
@@ -1143,23 +1183,9 @@ function exportOwnerPdf(id) {
     <AdminLayout>
 
 
-        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <!-- Sidebar Navigation -->
-            <div class="lg:col-span-1 space-y-4">
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-2xl flex flex-col gap-2 bg-gray-50 border border-gray-200">
-                    <button 
-                        v-for="tab in tabs" :key="tab.id"
-                        @click="activeTab = tab.id"
-                        class="w-full text-left px-6 py-4 rounded-xl text-sm font-mono tracking-widest transition-all duration-300 uppercase flex items-center gap-3"
-                        :class="activeTab === tab.id ? ' text-blue-600 border border-blue-200 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 border border-transparent'"
-                    >
-                        <span class="text-xl">{{ tab.icon }}</span> {{ $t(tab.name) }}
-                    </button>
-                </div>
-            </div>
-
+        <div class="w-full">
             <!-- Content Area -->
-            <div class="lg:col-span-3 min-h-[700px]">
+            <div class="w-full min-h-[700px]">
                 <!-- TAB 0: GLOBAL USER MANAGEMENT -->
         <div v-if="activeTab === 0" class="grid grid-cols-1 xl:grid-cols-3 sm:grid-cols-2 gap-8 animate-[fadeIn_0.5s_ease-out]">
             <!-- System Users Column -->

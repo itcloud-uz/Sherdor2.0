@@ -6,10 +6,58 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 const page = usePage();
 const isMobileMenuOpen = ref(false);
 const isFinanceMenuOpen = ref(false);
+const isCrmMenuOpen = ref(false);
+const isFacilityMenuOpen = ref(false);
+const isHrMenuOpen = ref(false);
 
 const isTabActive = (tabId) => {
     const currentRoute = route().current();
     if (currentRoute !== 'admin.finance') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const tabParam = url.searchParams.get('tab');
+        if (tabParam === null) {
+            return tabId === 0;
+        }
+        return parseInt(tabParam, 10) === tabId;
+    } catch (e) {
+        return false;
+    }
+};
+
+const isCrmTabActive = (tabId) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.crm') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const tabParam = url.searchParams.get('tab');
+        if (tabParam === null) {
+            return tabId === 'leads';
+        }
+        return tabParam === tabId;
+    } catch (e) {
+        return false;
+    }
+};
+
+const isFacilityTabActive = (tabId) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.facility') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const tabParam = url.searchParams.get('tab');
+        if (tabParam === null) {
+            return tabId === 'blueprint';
+        }
+        return tabParam === tabId;
+    } catch (e) {
+        return false;
+    }
+};
+
+const isHrTabActive = (tabId) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.hr') return false;
     try {
         const url = new URL(page.url, window.location.origin);
         const tabParam = url.searchParams.get('tab');
@@ -71,8 +119,19 @@ let refreshInterval = null;
 
 onMounted(() => {
     const currentRoute = route().current();
-    if (currentRoute && (currentRoute.includes('finance') || currentRoute.includes('approvals'))) {
-        isFinanceMenuOpen.value = true;
+    if (currentRoute) {
+        if (currentRoute.includes('finance') || currentRoute.includes('approvals')) {
+            isFinanceMenuOpen.value = true;
+        }
+        if (currentRoute.includes('crm')) {
+            isCrmMenuOpen.value = true;
+        }
+        if (currentRoute.includes('facility')) {
+            isFacilityMenuOpen.value = true;
+        }
+        if (currentRoute.includes('hr')) {
+            isHrMenuOpen.value = true;
+        }
     }
 });
 
@@ -206,6 +265,219 @@ onUnmounted(() => {
                                 :class="isTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
                                 📜 Jurnal
+                            </Link>
+                        </div>
+                    </div>
+
+                    <!-- Custom nested menu for sales_department (CRM) -->
+                    <div v-else-if="item.name === 'sales_department'" class="space-y-1" :key="item.name + '-group'">
+                        <button
+                            @click="isCrmMenuOpen = !isCrmMenuOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
+                            :class="route().current('admin.crm') ? 'bg-blue-50/70 border-blue-100' : ''"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.crm') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.crm') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                            </div>
+                            <svg
+                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
+                                :class="isCrmMenuOpen ? 'rotate-180' : ''"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div v-show="isCrmMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
+                            <!-- Lidlar / Kanban -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'leads' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('leads') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🛒 {{ $t('kanban_leads') }}
+                            </Link>
+                            
+                            <!-- Mijozlar bazasi -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('clients') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                👥 {{ $t('clients_roster') }}
+                            </Link>
+                            
+                            <!-- Shartnomalar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'contracts' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('contracts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📄 Shartnomalar
+                            </Link>
+                            
+                            <!-- Bekor Qilinganlar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'canceled' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('canceled') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ❌ Bekor Qilinganlar
+                            </Link>
+                            
+                            <!-- Qarzdorlik radari -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'overdue' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ⏳ {{ $t('overdue_radar') }}
+                            </Link>
+                        </div>
+                    </div>
+
+                    <!-- Custom nested menu for facility_manager -->
+                    <div v-else-if="item.name === 'facility_manager'" class="space-y-1" :key="item.name + '-group'">
+                        <button
+                            @click="isFacilityMenuOpen = !isFacilityMenuOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
+                            :class="route().current('admin.facility') ? 'bg-blue-50/70 border-blue-100' : ''"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.facility') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.facility') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                            </div>
+                            <svg
+                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
+                                :class="isFacilityMenuOpen ? 'rotate-180' : ''"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div v-show="isFacilityMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
+                            <!-- Blueprint -->
+                            <Link
+                                :href="route('admin.facility', { tab: 'blueprint' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isFacilityTabActive('blueprint') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🗺️ {{ $t('blueprint') }}
+                            </Link>
+                            
+                            <!-- Qidiruv -->
+                            <Link
+                                :href="route('admin.facility', { tab: 'search' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isFacilityTabActive('search') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🔍 Qidiruv
+                            </Link>
+                            
+                            <!-- Progress -->
+                            <Link
+                                :href="route('admin.facility', { tab: 'progress' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isFacilityTabActive('progress') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🏗️ {{ $t('progress') }}
+                            </Link>
+                            
+                            <!-- Finances -->
+                            <Link
+                                :href="route('admin.facility', { tab: 'finances' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isFacilityTabActive('finances') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                💰 {{ $t('finances') }}
+                            </Link>
+                            
+                            <!-- Analytics -->
+                            <Link
+                                :href="route('admin.facility', { tab: 'analytics' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isFacilityTabActive('analytics') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📊 {{ $t('analytics') }}
+                            </Link>
+                        </div>
+                    </div>
+
+                    <!-- Custom nested menu for hr_payroll -->
+                    <div v-else-if="item.name === 'hr_payroll'" class="space-y-1" :key="item.name + '-group'">
+                        <button
+                            @click="isHrMenuOpen = !isHrMenuOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
+                            :class="route().current('admin.hr') ? 'bg-blue-50/70 border-blue-100' : ''"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.hr') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.hr') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                            </div>
+                            <svg
+                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
+                                :class="isHrMenuOpen ? 'rotate-180' : ''"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div v-show="isHrMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
+                            <!-- Xodimlar / Foydalanuvchilar -->
+                            <Link
+                                :href="route('admin.hr', { tab: 0 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(0) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                👥 {{ $t('user_management') }}
+                            </Link>
+                            
+                            <!-- Face ID Hub -->
+                            <Link
+                                :href="route('admin.hr', { tab: 1 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(1) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                👁️ Face ID Hub
+                            </Link>
+                            
+                            <!-- Davomat jurnali -->
+                            <Link
+                                :href="route('admin.hr', { tab: 2 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ⏱️ Davomat jurnali
+                            </Link>
+                            
+                            <!-- Texnika / Mashinalar -->
+                            <Link
+                                :href="route('admin.hr', { tab: 3 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(3) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🚜 {{ $t('machinery') }}
+                            </Link>
+                            
+                            <!-- Tabel / Jurnal -->
+                            <Link
+                                :href="route('admin.hr', { tab: 4 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(4) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📝 Tabel / Jurnal
+                            </Link>
+                            
+                            <!-- Ish haqi / Payroll -->
+                            <Link
+                                :href="route('admin.hr', { tab: 5 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isHrTabActive(5) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                💸 Ish haqi / Payroll
                             </Link>
                         </div>
                     </div>

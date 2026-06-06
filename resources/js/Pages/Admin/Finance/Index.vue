@@ -47,6 +47,44 @@ const props = defineProps({
 const activeTab = ref(0);
 const isProcessing = ref(false);
 
+// Synchronize activeTab with the URL tab parameter reactively
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                const tabVal = parseInt(tabParam, 10);
+                if (activeTab.value !== tabVal) {
+                    activeTab.value = tabVal;
+                }
+            } else {
+                activeTab.value = 0; // Default tab is 0
+            }
+        } catch (e) {
+            console.error('URL parse error in Finance tab watcher', e);
+        }
+    },
+    { immediate: true }
+);
+
+// Synchronize URL query parameter with activeTab changes inside the component
+watch(activeTab, (newTab) => {
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab === null || parseInt(currentTab, 10) !== newTab) {
+            router.replace(route('admin.finance', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in Finance activeTab watcher', e);
+    }
+});
+
 const tabs = [
     { id: 0, name: 'dashboard', icon: '🏦' },
     { id: 1, name: 'action_center', icon: '⚖️' },

@@ -326,22 +326,22 @@ function vote(voteId, action) {
                 <form @submit.prevent="submitTransaction(); showAddModal = false;" class="space-y-4">
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('type_label') }}</label>
-                        <select v-model="txForm.type" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <select v-model="txForm.type" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                             <option value="expense">Chiqim (Xarajat)</option>
                             <option value="income">Kirim (Tushum)</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Summa (UZS)</label>
-                        <input type="number" v-model="txForm.amount" required class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <input type="number" v-model="txForm.amount" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Kategoriya</label>
-                        <input type="text" v-model="txForm.category" required class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
+                        <input type="text" v-model="txForm.category" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Izoh / Maqsad</label>
-                        <textarea v-model="txForm.notes" rows="2" class="w-full bg-gray-500/50 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all"></textarea>
+                        <textarea v-model="txForm.notes" rows="2" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta transition-all"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">Chek nusxasi (Fayl)</label>

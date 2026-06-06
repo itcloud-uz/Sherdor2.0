@@ -4,8 +4,8 @@
 
 @layer base {
   body {
-    background-color: theme('colors.abyss');
-    color: theme('colors.text-primary');
+    background-color: var(--body-bg-color, #F9FAFB);
+    color: var(--body-text-color, #111827);
     -webkit-font-smoothing: antialiased;
     background-image: none; 
   }
@@ -34,30 +34,45 @@
   }
   
   .glass-input {
-    @apply bg-black/50 border border-white/10 rounded-xl px-4 py-2 placeholder:text-text-muted focus:outline-none transition-all;
-    color: theme('colors.text-primary');
+    background-color: var(--glass-input-bg, rgba(255, 255, 255, 0.9));
+    border: 1px solid var(--glass-input-border, rgba(0, 0, 0, 0.1));
+    border-radius: theme('borderRadius.xl');
+    padding-left: theme('padding.4');
+    padding-right: theme('padding.4');
+    padding-top: theme('padding.2');
+    padding-bottom: theme('padding.2');
+    color: var(--glass-input-text, #111827);
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  .glass-input::placeholder {
+    color: var(--glass-input-placeholder, rgba(0, 0, 0, 0.4));
+  }
+  .glass-input:focus {
+    border-color: var(--color-neon-primary, #00F0FF);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
   }
 
   /* Dynamic Label Styling - Global Override from User Settings */
   label, .label-text {
     font-size: var(--label-font-size, 12px) !important;
-    color: var(--label-color, rgba(255, 255, 255, 0.7)) !important;
+    color: var(--label-color, #374151);
     transition: all 0.3s ease;
   }
 
   /* Global Dropdown (Select) Fixes */
   select {
-    color-scheme: dark;
+    color-scheme: var(--select-color-scheme, light);
   }
   
   select option {
-    background-color: var(--dropdown-bg-color, #111111) !important;
-    color: var(--dropdown-text-color, #ffffff) !important;
+    background-color: var(--dropdown-bg-color, #ffffff) !important;
+    color: var(--dropdown-text-color, #111827) !important;
   }
   
   select optgroup {
-    background-color: var(--dropdown-bg-color, #111111) !important;
-    color: var(--dropdown-text-color, #ffffff) !important;
+    background-color: var(--dropdown-bg-color, #ffffff) !important;
+    color: var(--dropdown-text-color, #111827) !important;
   }
 
   .text-text-muted {

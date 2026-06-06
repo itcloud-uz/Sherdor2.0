@@ -185,7 +185,7 @@ const handleFileUpload = async (event) => {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ta'minotchi</label>
-                            <select v-model="form.supplier_id" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900">
+                            <select v-model="form.supplier_id" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900">
                                 <option value="" disabled>Tanlang</option>
                                 <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
                             </select>
@@ -196,11 +196,11 @@ const handleFileUpload = async (event) => {
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('start_date') }}</label>
-                            <input v-model="form.start_date" type="date" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900" style="color-scheme: dark;">
+                            <input v-model="form.start_date" type="date" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" style="color-scheme: dark;">
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Tugash Sanasi (Ixtiyoriy)</label>
-                            <input v-model="form.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900" style="color-scheme: dark;">
+                            <input v-model="form.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" style="color-scheme: dark;">
                         </div>
                     </div>
                     

@@ -85,7 +85,7 @@ const installPWA = async () => {
                             required
                             autofocus
                             autocomplete="username"
-                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all "
+                            class="w-full px-5 py-4 bg-white border border-gray-200 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
                             placeholder="admin@itcloud.uz"
                         />
                         <p v-if="form.errors.email" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.email }}</p>
@@ -99,7 +99,7 @@ const installPWA = async () => {
                             v-model="form.password"
                             required
                             autocomplete="current-password"
-                            class="w-full px-5 py-4 bg-black/40 border border-white/10 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all "
+                            class="w-full px-5 py-4 bg-white border border-gray-200 text-white placeholder-white/30 rounded-2xl focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
                             placeholder="••••••••"
                         />
                         <p v-if="form.errors.password" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.password }}</p>
@@ -107,7 +107,7 @@ const installPWA = async () => {
 
                     <div class="flex items-center justify-between mt-2">
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox" v-model="form.remember" class="w-5 h-5 rounded-md border-white/20 bg-gray-500/50 text-white focus:ring-white/50 focus:ring-offset-black transition-all">
+                            <input type="checkbox" v-model="form.remember" class="w-5 h-5 rounded-md border-gray-300 text-gray-900 focus:ring-white/50 focus:ring-offset-black transition-all">
                             <span class="text-sm text-gray-400 group-hover:text-white transition-colors">Eslab qolish</span>
                         </label>
 

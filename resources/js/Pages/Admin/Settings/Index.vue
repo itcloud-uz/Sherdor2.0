@@ -23,6 +23,13 @@ const form = useForm({
     background_image: null,
 });
 
+const themeStyle = user.theme_style || 'apple_glass';
+const isDarkTheme = ['galaxy', 'cyberpunk', 'minimalist', 'gold', 'itcloud_cyberglass'].includes(themeStyle);
+
+const defaultLabelColor = isDarkTheme ? '#CCCCCC' : '#374151';
+const defaultDropdownBg = isDarkTheme ? '#111111' : '#FFFFFF';
+const defaultDropdownText = isDarkTheme ? '#ffffff' : '#111827';
+
 const profileForm = useForm({
     name: user.name || '',
     email: user.email || '',
@@ -30,11 +37,11 @@ const profileForm = useForm({
     password: '',
     language: user.language || 'uz',
     theme_color: user.theme_color || '#00F0FF',
-    theme_style: user.theme_style || 'apple_glass',
+    theme_style: themeStyle,
     label_font_size: user.label_font_size || 12,
-    label_color: user.label_color || '#CCCCCC',
-    dropdown_bg_color: user.dropdown_bg_color || '#111111',
-    dropdown_text_color: user.dropdown_text_color || '#ffffff',
+    label_color: (!user.label_color || user.label_color === '#CCCCCC') ? defaultLabelColor : user.label_color,
+    dropdown_bg_color: (!user.dropdown_bg_color || user.dropdown_bg_color === '#111111') ? defaultDropdownBg : user.dropdown_bg_color,
+    dropdown_text_color: (!user.dropdown_text_color || user.dropdown_text_color === '#ffffff') ? defaultDropdownText : user.dropdown_text_color,
     avatar: null,
 });
 
@@ -144,7 +151,7 @@ const updateLabelSettings = () => {
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Company Name</label>
-                                    <input v-model="form.company_name" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                    <input v-model="form.company_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 </div>
                                 
                                 <div>
@@ -157,12 +164,12 @@ const updateLabelSettings = () => {
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">{{ $t('custom_logo_desc') }}</label>
-                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.logo = $event.target.files[0]" class="w-full border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Tizim Orqa Foni (Background Image)</label>
-                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
+                                    <input type="file" @input="form.background_image = $event.target.files[0]" class="w-full border border-gray-200 rounded-xl p-2 text-gray-900 font-mono text-xs text-gray-500 file:bg-gray-100 file:border-0 file:rounded file:text-gray-900 file:px-3 file:py-1 file:mr-3 hover:file:bg-white/20" accept="image/*">
                                     <div v-if="$page.props.branding?.background_image_path" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-gray-300">
                                         <img :src="'/storage/' + $page.props.branding.background_image_path" class="w-full h-full object-cover">
                                         <div class="absolute inset-0 bg-gray-500/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -185,7 +192,7 @@ const updateLabelSettings = () => {
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Default Currency</label>
-                                    <select v-model="form.default_currency" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                    <select v-model="form.default_currency" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                         <option value="USD" class="bg-black text-gray-900">USD ($)</option>
                                         <option value="UZS" class="bg-black text-gray-900">UZS (So'm)</option>
                                         <option value="RUB" class="bg-black text-gray-900">RUB (₽)</option>
@@ -194,12 +201,12 @@ const updateLabelSettings = () => {
                                 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Global Tax Rate (%)</label>
-                                    <input v-model="form.tax_rate" type="number" step="0.01" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-emerald-600 font-bold text-lg focus:border-emerald-500 focus:ring-1 focus:ring-neon-green transition-all">
+                                    <input v-model="form.tax_rate" type="number" step="0.01" class="w-full border border-gray-200 rounded-xl p-3 text-emerald-600 font-bold text-lg focus:border-emerald-500 focus:ring-1 focus:ring-neon-green transition-all">
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Default Daily Penalty Rate (%)</label>
-                                    <input v-model="form.default_penalty_rate" type="number" step="0.01" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-red-600 font-bold text-lg focus:border-red-500 focus:ring-1 focus:ring-neon-red transition-all">
+                                    <input v-model="form.default_penalty_rate" type="number" step="0.01" class="w-full border border-gray-200 rounded-xl p-3 text-red-600 font-bold text-lg focus:border-red-500 focus:ring-1 focus:ring-neon-red transition-all">
                                 </div>
                             </div>
                             
@@ -228,25 +235,25 @@ const updateLabelSettings = () => {
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">{{ $t('full_name_abbr') }}</label>
-                                <input type="text" v-model="profileForm.name" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="text" v-model="profileForm.name" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.name" class="text-red-600 text-xs mt-1">{{ profileForm.errors.name }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Email</label>
-                                <input type="email" v-model="profileForm.email" required class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="email" v-model="profileForm.email" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.email" class="text-red-600 text-xs mt-1">{{ profileForm.errors.email }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Telefon</label>
-                                <input type="text" v-model="profileForm.phone" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="text" v-model="profileForm.phone" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.phone" class="text-red-600 text-xs mt-1">{{ profileForm.errors.phone }}</div>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Yangi parol (ixtiyoriy)</label>
-                                <input type="password" v-model="profileForm.password" placeholder="••••••••" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                <input type="password" v-model="profileForm.password" placeholder="••••••••" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                                 <div v-if="profileForm.errors.password" class="text-red-600 text-xs mt-1">{{ profileForm.errors.password }}</div>
                             </div>
                         </div>

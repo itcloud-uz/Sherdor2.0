@@ -144,7 +144,7 @@ onUnmounted(() => {
                     <input 
                         type="text" 
                         v-model="searchQuery" 
-                        class="w-full bg-gray-500/50 border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
+                        class="w-full border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
                         placeholder="Izlash..."
                         @click.stop
                     >

@@ -816,7 +816,7 @@ function submitWarehouseRequest() {
             </div>
 
             <div class="glass-panel p-6 rounded-2xl border border-white/5">
-                <input v-model="paymentSearchQuery" type="text" placeholder="Mijoz ismi, pasport seriyasi yoki uy raqami orqali qidiring..." class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-3 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors mb-6">
+                <input v-model="paymentSearchQuery" type="text" placeholder="Mijoz ismi, pasport seriyasi yoki uy raqami orqali qidiring..." class="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors mb-6">
                 
                 <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     <div v-for="contract in filteredContractsForPayment" :key="contract.id" class="glass-card p-4 rounded-xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-white/20 transition-colors">
@@ -1010,14 +1010,14 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Ish haqi turi</label>
-                            <select v-model="hrForm.type" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-model="hrForm.type" class="glass-input w-full text-gray-900">
                                 <option value="fixed">Oylik (Fixed)</option>
                                 <option value="piece_rate">Baybay (Hajmga)</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">O'lchov Birligi</label>
-                            <select v-if="hrForm.type === 'piece_rate'" v-model="hrForm.metric_type" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-if="hrForm.type === 'piece_rate'" v-model="hrForm.metric_type" class="glass-input w-full text-gray-900">
                                 <option value="kvadrat">1 Kvadrat (kv.m)</option>
                                 <option value="dona">1 Dona</option>
                                 <option value="kub">1 Kub (m³)</option>
@@ -1057,7 +1057,7 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">To'lov Turi</label>
-                            <select v-model="hrForm.payment_type" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-model="hrForm.payment_type" class="glass-input w-full text-gray-900">
                                 <option value="hourly">Soatbay (Hourly)</option>
                                 <option value="volume">Hajmga (Volume)</option>
                             </select>
@@ -1072,7 +1072,7 @@ function submitWarehouseRequest() {
                 <div v-if="activeHrModalType === 'faceid'" class="py-6 flex flex-col items-center space-y-4">
                     <div class="w-full mb-4">
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-1 text-left">Skaner qilinayotgan Xodim</label>
-                        <select v-model="hrForm.worker_id" class="glass-input w-full bg-gray-500/50 text-white">
+                        <select v-model="hrForm.worker_id" class="glass-input w-full text-gray-900">
                             <option value="">Tanlang</option>
                             <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }}</option>
                         </select>
@@ -1092,18 +1092,18 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kim uchun (Turi)</label>
-                            <select v-model="hrForm.type" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-model="hrForm.type" class="glass-input w-full text-gray-900">
                                 <option value="worker">Ishchi / Usta</option>
                                 <option value="machinery">Texnika</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Shaxs / Texnika</label>
-                            <select v-if="hrForm.type === 'worker'" v-model="hrForm.worker_id" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-if="hrForm.type === 'worker'" v-model="hrForm.worker_id" class="glass-input w-full text-gray-900">
                                 <option value="">Tanlang</option>
                                 <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }}</option>
                             </select>
-                            <select v-if="hrForm.type === 'machinery'" v-model="hrForm.machinery_id" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-if="hrForm.type === 'machinery'" v-model="hrForm.machinery_id" class="glass-input w-full text-gray-900">
                                 <option value="">Tanlang</option>
                                 <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }}</option>
                             </select>
@@ -1113,14 +1113,14 @@ function submitWarehouseRequest() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Bino / Obyekt</label>
-                            <select v-model="hrForm.building_id" class="glass-input w-full bg-gray-500/50 text-white">
+                            <select v-model="hrForm.building_id" class="glass-input w-full text-gray-900">
                                 <option value="">Tanlang</option>
                                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">{{ $t('date_label') }}</label>
-                            <input v-model="hrForm.date" type="date" class="glass-input w-full bg-gray-500/50 text-white">
+                            <input v-model="hrForm.date" type="date" class="glass-input w-full text-gray-900">
                         </div>
                     </div>
 
@@ -1174,19 +1174,19 @@ function submitWarehouseRequest() {
                     <div class="space-y-4 mt-6">
                         <div>
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Mahsulot Nomi</label>
-                            <input v-model="warehouseForm.name" required type="text" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Masalan: Sement M400">
+                            <input v-model="warehouseForm.name" required type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Masalan: Sement M400">
                         </div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kategoriya</label>
-                                <input v-model="warehouseForm.category" required type="text" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Qurilish">
+                                <input v-model="warehouseForm.category" required type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Qurilish">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Miqdori</label>
                                 <div class="flex">
-                                    <input v-model="warehouseForm.quantity" required type="number" step="0.01" class="w-2/3 bg-gray-500/50 border border-white/10 rounded-l-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors border-r-0" placeholder="0">
-                                    <select v-model="warehouseForm.unit" class="w-1/3 bg-gray-500/50 border border-white/10 rounded-r-xl px-2 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors text-xs appearance-none">
+                                    <input v-model="warehouseForm.quantity" required type="number" step="0.01" class="w-2/3 border border-gray-200 rounded-l-xl px-4 py-2.5 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors border-r-0" placeholder="0">
+                                    <select v-model="warehouseForm.unit" class="w-1/3 border border-gray-200 rounded-r-xl px-2 py-2.5 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors text-xs appearance-none">
                                         <option value="kg">kg</option>
                                         <option value="tonna">tonna</option>
                                         <option value="dona">dona</option>
@@ -1201,7 +1201,7 @@ function submitWarehouseRequest() {
                         
                         <div v-if="warehouseForm.action === 'kirim'" class="mt-4">
                             <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Umumiy Xarajat (Kassa uchun)</label>
-                            <input v-model="warehouseForm.cost" type="number" step="0.01" class="w-full bg-gray-500/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Kiritilgan mahsulotlarning umumiy summasi (agar xarid qilingan bo'lsa)">
+                            <input v-model="warehouseForm.cost" type="number" step="0.01" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 font-medium focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors" placeholder="Kiritilgan mahsulotlarning umumiy summasi (agar xarid qilingan bo'lsa)">
                         </div>
                     </div>
 
@@ -1210,11 +1210,11 @@ function submitWarehouseRequest() {
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-3">Hujjat Asosi (Tasdiq)</label>
                         <div class="flex gap-4 mb-4">
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" v-model="warehouseForm.attachment_type" value="qr" class="text-neon-cyan focus:ring-neon-cyan bg-black border-white/20">
+                                <input type="radio" v-model="warehouseForm.attachment_type" value="qr" class="text-neon-cyan focus:ring-neon-cyan bg-black border-gray-300">
                                 <span class="text-sm font-mono text-white group-hover:text-neon-cyan transition-colors">QR Chek</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" v-model="warehouseForm.attachment_type" value="photo" class="text-neon-cyan focus:ring-neon-cyan bg-black border-white/20">
+                                <input type="radio" v-model="warehouseForm.attachment_type" value="photo" class="text-neon-cyan focus:ring-neon-cyan bg-black border-gray-300">
                                 <span class="text-sm font-mono text-white group-hover:text-neon-cyan transition-colors">Shot Faktura Rasmi</span>
                             </label>
                         </div>
@@ -1269,11 +1269,11 @@ function submitWarehouseRequest() {
             <button @click="showBookModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-4 uppercase">Uyni Band Qilish</h2>
             <form @submit.prevent="submitBookForm" class="space-y-4">
-                <select v-model="bookForm.client_id" required class="glass-input w-full bg-gray-500/50 text-white">
+                <select v-model="bookForm.client_id" required class="glass-input w-full text-gray-900">
                     <option value="" disabled>Mijozni tanlang</option>
                     <option v-for="client in clients" :key="client.id" :value="client.id">{{ client.first_name }} {{ client.last_name }}</option>
                 </select>
-                <select v-model="bookForm.payment_type" required class="glass-input w-full bg-gray-500/50 text-white">
+                <select v-model="bookForm.payment_type" required class="glass-input w-full text-gray-900">
                     <option value="cash">Naqd To'lov (100%)</option>
                     <option value="installment">Muddatli To'lov (Rassrochka)</option>
                 </select>
@@ -1293,14 +1293,14 @@ function submitWarehouseRequest() {
             <form @submit.prevent="submitContractForm" class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Mijoz</label>
-                    <select v-model="contractForm.client_id" class="glass-input w-full bg-gray-500/50" required>
+                    <select v-model="contractForm.client_id" class="glass-input w-full" required>
                         <option value="" disabled>Mijozni tanlang</option>
                         <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.first_name }} {{ c.last_name }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted mb-1 uppercase">Obyektni tanlang</label>
-                    <select v-model="contractForm.unit_id" class="glass-input w-full bg-gray-500/50" required>
+                    <select v-model="contractForm.unit_id" class="glass-input w-full" required>
                         <option value="" disabled>Uyni tanlang</option>
                         <option v-for="u in units" :key="u.id" :value="u.id">XONADON {{ u.unit_number }} - {{ u.floor?.building?.name }}</option>
                     </select>
@@ -1311,11 +1311,11 @@ function submitWarehouseRequest() {
                     <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">Mulk turi (Shartnoma shabloni)</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
+                            <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
                             <span class="text-xs text-white">Uy-joy (Kvartira)</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
+                            <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
                             <span class="text-xs text-white">Savdo do'koni</span>
                         </label>
                     </div>
@@ -1357,11 +1357,11 @@ function submitWarehouseRequest() {
                     <label class="block text-[10px] font-mono text-text-muted mb-2 uppercase">To'lov turi</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
+                            <input type="radio" v-model="contractForm.payment_type" value="full" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
                             <span class="text-xs text-white">Bir martalik umumiy to'lov</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan bg-gray-500/50 border-white/20">
+                            <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
                             <span class="text-xs text-white">Bo'lib to'lash</span>
                         </label>
                     </div>
@@ -1392,12 +1392,12 @@ function submitWarehouseRequest() {
             <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-text-muted hover:text-white">✕</button>
             <h2 class="text-xl font-display font-bold text-white mb-4 uppercase">Yangi To'lov</h2>
             <form @submit.prevent="submitPaymentForm" class="space-y-4">
-                <select v-model="paymentForm.contract_id" required class="glass-input w-full bg-gray-500/50 text-white">
+                <select v-model="paymentForm.contract_id" required class="glass-input w-full text-gray-900">
                     <option value="" disabled>Shartnomani tanlang</option>
                     <option v-for="contract in contracts" :key="contract.id" :value="contract.id">{{ contract.client?.first_name }} - Unit #{{ contract.unit?.unit_number }}</option>
                 </select>
                 <input v-model="paymentForm.amount" required type="number" class="glass-input w-full" placeholder="To'lov summasi">
-                <select v-model="paymentForm.payment_method" required class="glass-input w-full bg-gray-500/50 text-white">
+                <select v-model="paymentForm.payment_method" required class="glass-input w-full text-gray-900">
                     <option value="cash">Naqd</option>
                     <option value="card">Karta (Terminal / Click)</option>
                     <option value="bank">Bank o'tkazmasi</option>
@@ -1424,7 +1424,7 @@ function submitWarehouseRequest() {
 
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Kategoriya / Yo'nalish</label>
-                    <select v-model="expenseForm.category" required class="glass-input w-full bg-gray-500/50 text-white">
+                    <select v-model="expenseForm.category" required class="glass-input w-full text-gray-900">
                         <option value="">Tanlang</option>
                         <option value="Xo'jalik">Xo'jalik mollari</option>
                         <option value="Transport">Yo'lkira / Transport</option>
@@ -1552,7 +1552,7 @@ function submitWarehouseRequest() {
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">To'lov Turi</label>
-                        <select v-model="editContractForm.payment_type" class="glass-input w-full bg-gray-500/50 text-white p-2 text-sm">
+                        <select v-model="editContractForm.payment_type" class="glass-input w-full text-gray-900 p-2 text-sm">
                             <option value="full">To'liq (Bir martalik)</option>
                             <option value="installment">Bo'lib To'lash</option>
                         </select>
@@ -1585,7 +1585,7 @@ function submitWarehouseRequest() {
             <form @submit.prevent="submitWorkerAction" class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-mono text-text-muted uppercase mb-1">Harakat Turi</label>
-                    <select v-model="workerActionForm.type" class="glass-input w-full bg-gray-500/50 text-white">
+                    <select v-model="workerActionForm.type" class="glass-input w-full text-gray-900">
                         <option value="advance">Avans So'rash</option>
                         <option value="bonus">Mukofot Yozish</option>
                         <option value="fire">Ishdan Bo'shatish</option>

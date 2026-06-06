@@ -112,7 +112,7 @@ const submitLead = async () => {
                                     v-model="form.full_name" 
                                     required 
                                     placeholder="Masalan: Azizbek"
-                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                    class="w-full bg-white border border-gray-200 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
                                 >
                             </div>
 
@@ -123,7 +123,7 @@ const submitLead = async () => {
                                     v-model="form.phone" 
                                     required 
                                     placeholder="+998 90 123 45 67"
-                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                    class="w-full bg-white border border-gray-200 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
                                 >
                             </div>
 

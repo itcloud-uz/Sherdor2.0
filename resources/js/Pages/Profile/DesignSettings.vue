@@ -115,25 +115,25 @@ const updateThemeStyle = (style) => {
 
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('full_name') }}</label>
-                        <input type="text" v-model="form.name" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                        <input type="text" v-model="form.name" required class="w-full bg-white border border-gray-200 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                         <div v-if="form.errors.name" class="text-neon-red text-xs mt-1">{{ form.errors.name }}</div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('email') }}</label>
-                        <input type="email" v-model="form.email" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                        <input type="email" v-model="form.email" required class="w-full bg-white border border-gray-200 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                         <div v-if="form.errors.email" class="text-neon-red text-xs mt-1">{{ form.errors.email }}</div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('phone_number') }}</label>
-                        <input type="text" v-model="form.phone" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                        <input type="text" v-model="form.phone" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                         <div v-if="form.errors.phone" class="text-neon-red text-xs mt-1">{{ form.errors.phone }}</div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-mono text-text-muted uppercase mb-1">{{ $t('new_password_optional') }}</label>
-                        <input type="password" v-model="form.password" placeholder="••••••••" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                        <input type="password" v-model="form.password" placeholder="••••••••" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-white font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
                         <div v-if="form.errors.password" class="text-neon-red text-xs mt-1">{{ form.errors.password }}</div>
                     </div>
 

@@ -89,11 +89,11 @@ const applyFilter = () => {
             <div class="flex flex-col sm:flex-row gap-4 mb-6 items-end bg-gray-500/50 p-4 rounded-xl border border-gray-100">
                 <div class="w-full sm:w-auto">
                     <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Boshlanish Sanasi</label>
-                    <input v-model="startDate" type="date" class="bg-gray-500/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all text-sm w-full">
+                    <input v-model="startDate" type="date" class="border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all text-sm w-full">
                 </div>
                 <div class="w-full sm:w-auto">
                     <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Tugash Sanasi</label>
-                    <input v-model="endDate" type="date" class="bg-gray-500/50 border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all text-sm w-full">
+                    <input v-model="endDate" type="date" class="border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all text-sm w-full">
                 </div>
                 <div class="flex gap-3 mt-2 sm:mt-0 ml-auto w-full sm:w-auto">
                     <button @click="applyFilter" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 text-gray-900 font-mono text-xs rounded hover:bg-gray-100 transition-colors">

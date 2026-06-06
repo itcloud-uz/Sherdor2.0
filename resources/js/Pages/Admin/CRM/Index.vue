@@ -931,7 +931,7 @@ function openQuickSmsModal(lead) {
                     v-model="searchQuery" 
                     type="text" 
                     :placeholder="$t('search_clients_pinfl')" 
-                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-blue-200 focus:border-blue-500 focus:ring-neon-cyan shadow-sm focus:shadow-sm bg-gray-500/50"
+                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-blue-200 focus:border-blue-500 focus:ring-neon-cyan shadow-sm focus:shadow-sm"
                 >
             </div>
 
@@ -1013,7 +1013,7 @@ function openQuickSmsModal(lead) {
                     v-model="contractSearchQuery" 
                     type="text" 
                     :placeholder="$t('search') + '...'" 
-                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm bg-gray-500/50"
+                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm"
                 >
 
                 <button @click="isEditingContract = false; contractForm = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' }; showCreateContractModal = true" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
@@ -1586,11 +1586,11 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">Xaridor Turi</label>
                         <div class="flex gap-4 mb-3">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                 <span class="text-xs text-gray-900">Mijoz (Client)</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow border-gray-300">
                                 <span class="text-xs text-gray-900 text-amber-600">Ta'sischi Xaridi (Partner)</span>
                             </label>
                         </div>
@@ -1621,7 +1621,7 @@ function openQuickSmsModal(lead) {
                                 v-model="unitSearchQuery" 
                                 @focus="showUnitDropdown = true"
                                 @blur="showUnitDropdown = false"
-                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 pr-8" 
+                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full pr-8" 
                                 placeholder="Xonadonni qidiring (masalan: A503)..."
                                 required
                             >
@@ -1650,11 +1650,11 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('property_type_template') }}</label>
                         <div class="flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-blue-600 focus:ring-neon-cyan bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                 <span class="text-xs text-gray-900">{{ $t('residential_apartment') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-blue-600 focus:ring-neon-cyan bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                 <span class="text-xs text-gray-900">{{ $t('commercial_shop') }}</span>
                             </label>
                         </div>
@@ -1683,7 +1683,7 @@ function openQuickSmsModal(lead) {
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
-                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 opacity-70 cursor-not-allowed" readonly tabindex="-1">
+                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full opacity-70 cursor-not-allowed" readonly tabindex="-1">
                         </div>
                     </div>
 
@@ -1692,11 +1692,11 @@ function openQuickSmsModal(lead) {
                         <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('payment_type') }}</label>
                         <div class="flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                 <span class="text-xs text-gray-900">{{ $t('one_time_full_payment') }}</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan bg-gray-500/50 border-gray-300">
+                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                 <span class="text-xs text-gray-900">{{ $t('installment_payment') }}</span>
                             </label>
                         </div>
@@ -1722,7 +1722,7 @@ function openQuickSmsModal(lead) {
                             </div>
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Usuli</label>
-                                <select v-model="contractForm.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50">
+                                <select v-model="contractForm.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                                     <option value="bank">{{ $t('bank_account') }}</option>
                                     <option value="main">{{ $t('cash_account') }}</option>
                                     <option value="credit">💳 Plastik / Terminal</option>
@@ -1755,11 +1755,11 @@ function openQuickSmsModal(lead) {
                     <form @submit.prevent="submitNewLead" class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('first_last_name') }}</label>
-                            <input v-model="newLeadForm.full_name" required type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: Azizbek">
+                            <input v-model="newLeadForm.full_name" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: Azizbek">
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('phone_number') }}</label>
-                            <input v-model="newLeadForm.phone" required type="tel" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
+                            <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
                         </div>
                         <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-blue-50 border border-blue-500 text-blue-600 py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">
                             {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}

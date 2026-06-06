@@ -191,7 +191,7 @@ function reject(id) {
                     
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Qaysi Hisob (Kassa) orqali?</label>
-                        <select v-model="approveForm.account_type" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-blue-500 transition-colors">
+                        <select v-model="approveForm.account_type" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:border-blue-500 transition-colors">
                             <option value="main">Asosiy Kassa (Naqd)</option>
                             <option value="bank">Bank Hisobi (Pul o'tkazma)</option>
                             <option value="credit">Kredit Hisobi</option>
@@ -201,7 +201,7 @@ function reject(id) {
                     
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Izoh (Admin Note)</label>
-                        <input v-model="approveForm.notes" type="text" class="w-full bg-gray-500/50 border border-gray-200 rounded-xl px-4 py-2 text-gray-900 text-sm" placeholder="Tasdiqlash bo'yicha izoh">
+                        <input v-model="approveForm.notes" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2 text-gray-900 text-sm" placeholder="Tasdiqlash bo'yicha izoh">
                     </div>
                 </div>
                 

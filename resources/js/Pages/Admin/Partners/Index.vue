@@ -574,7 +574,7 @@ function formatDate(dateString) {
                 <form @submit.prevent="submitPartner" class="space-y-4 font-mono text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">Foydalanuvchi (User)</label>
-                        <select v-model="partnerForm.user_id" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50">
+                        <select v-model="partnerForm.user_id" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                             <option value="">Tanlang...</option>
                             <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} ({{ user.email }})</option>
                         </select>
@@ -661,7 +661,7 @@ function formatDate(dateString) {
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Kategoriya</label>
-                        <select v-model="expenseForm.category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50" required>
+                        <select v-model="expenseForm.category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                             <option value="Ovqatlanish">Ovqatlanish (Restoran)</option>
                             <option value="Reklama va Marketing">Reklama va Marketing</option>
                             <option value="Transport va Yoqilg'i">Transport va Yoqilg'i</option>
@@ -726,9 +726,9 @@ function formatDate(dateString) {
                         <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
                             <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <input type="date" v-model="ledgerDateFrom" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 bg-gray-500/50 [color-scheme:dark]">
+                                <input type="date" v-model="ledgerDateFrom" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 [color-scheme:dark]">
                                 <span class="text-gray-500">-</span>
-                                <input type="date" v-model="ledgerDateTo" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 bg-gray-500/50 [color-scheme:dark]">
+                                <input type="date" v-model="ledgerDateTo" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 [color-scheme:dark]">
                                 <button @click="fetchLedger" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-black rounded text-xs font-bold uppercase transition-colors">Filtr</button>
                                 <button @click="exportLedgerCSV" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-black rounded text-xs font-bold uppercase transition-colors flex items-center gap-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -788,7 +788,7 @@ function formatDate(dateString) {
                         
                         <div>
                             <label class="block text-gray-500 mb-1">Turi</label>
-                            <select v-model="assetForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50" required>
+                            <select v-model="assetForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                                 <option value="construction_equipment">Qurilish vositasi</option>
                                 <option value="office_furniture">Ofis buyumi</option>
                                 <option value="light_structure">Yengil konsturuksiya</option>
@@ -798,7 +798,7 @@ function formatDate(dateString) {
 
                         <div>
                             <label class="block text-gray-500 mb-1">Holati</label>
-                            <select v-model="assetForm.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50" required>
+                            <select v-model="assetForm.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
                                 <option value="active">Ishlatilmoqda (Aktiv)</option>
                                 <option value="sold">Sotilgan</option>
                                 <option value="retired">Ishdan chiqqan</option>
@@ -822,7 +822,7 @@ function formatDate(dateString) {
 
                         <div>
                             <label class="block text-gray-500 mb-1">Mas'ul Hamkor (Taqsimot)</label>
-                            <select v-model="assetForm.partner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50">
+                            <select v-model="assetForm.partner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
                                 <option value="">Kompaniya (Umumiy)</option>
                                 <option v-for="partner in partners" :key="partner.id" :value="partner.id">{{ partner.user?.name }}</option>
                             </select>

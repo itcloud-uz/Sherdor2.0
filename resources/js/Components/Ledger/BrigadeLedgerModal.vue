@@ -297,24 +297,24 @@ function handleExportExcel() {
                 <form @submit.prevent="submitAccrual" class="grid grid-cols-1 md:grid-cols-6 gap-4 relative z-10">
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Sana</label>
-                        <input v-model="form.accrual_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
+                        <input v-model="form.accrual_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Nomi</label>
-                        <input v-model="form.accrual_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="Nomi" />
+                        <input v-model="form.accrual_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="Nomi" />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Soni</label>
-                        <input v-model="form.accrual_qty" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
+                        <input v-model="form.accrual_qty" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Narxi</label>
-                        <input v-model="form.accrual_price" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
+                        <input v-model="form.accrual_price" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" required placeholder="0" />
                     </div>
                     <div class="md:col-span-2 flex gap-4 items-end">
                         <div class="flex-grow">
                             <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Izoh (Ixtiyoriy)</label>
-                            <input v-model="form.accrual_description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" placeholder="Qo'shimcha izoh..." />
+                            <input v-model="form.accrual_description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-red-500 outline-none" placeholder="Qo'shimcha izoh..." />
                         </div>
                         <div class="flex flex-col gap-1 items-end">
                             <span class="text-[10px] text-gray-500 font-mono uppercase">Jami:</span>
@@ -336,7 +336,7 @@ function handleExportExcel() {
                 <form @submit.prevent="submitPayment" class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Hisob</label>
-                        <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
+                        <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
                             <option value="main">Kompaniya Hisobi (Main)</option>
                             <option value="bank">Bank Hisobi (Bank)</option>
                             <option value="credit">Kredit Hisobi (Credit)</option>
@@ -345,7 +345,7 @@ function handleExportExcel() {
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">To'lov Usuli</label>
-                        <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
+                        <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required>
                             <option value="cash">Naqd Pul</option>
                             <option value="card">Plastik Karta</option>
                             <option value="bank_transfer">Bank O'tkazmasi</option>
@@ -353,20 +353,20 @@ function handleExportExcel() {
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Summa (so'm)</label>
-                        <input v-model="form.amount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="0" />
+                        <input v-model="form.amount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1" title="Ixtiyoriy">Chegirma / Qolgani</label>
-                        <input v-model="form.discount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" placeholder="0" />
+                        <input v-model="form.discount" type="number" step="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Sana</label>
-                        <input v-model="form.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
+                        <input v-model="form.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 [color-scheme:dark] outline-none" required />
                     </div>
                     <div class="md:col-span-3 flex gap-4 items-end">
                         <div class="flex-grow">
                             <label class="block text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">Izoh / Maqsad <span class="text-red-600">*</span></label>
-                            <input v-model="form.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="Nima uchun to'lov qilinmoqda?" />
+                            <input v-model="form.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 font-mono text-sm h-10 border border-gray-200 rounded-lg px-3 focus:border-emerald-500 outline-none" required placeholder="Nima uchun to'lov qilinmoqda?" />
                         </div>
                         <div class="flex flex-col gap-1 items-end">
                             <span class="text-[10px] text-gray-500 font-mono uppercase">Jami yechiladi:</span>

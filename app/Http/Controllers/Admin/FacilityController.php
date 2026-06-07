@@ -77,58 +77,73 @@ class FacilityController extends Controller
             ]);
 
             // Avtomatik Generatsiya Mantiqi
-            $totalFloors = $validated['total_floors'];
-            $unitsPerFloor = $validated['units_per_floor'] ?? 0;
-            $averageArea = $validated['average_area'] ?? 0;
-            $averagePrice = $validated['average_price'] ?? 0;
-            $commercialFirstFloor = $validated['commercial_units_first_floor'] ?? 0;
+            $totalFloors = (int) $validated['total_floors'];
+            $totalApartments = (int) ($validated['total_apartments'] ?? 0);
+            $totalShops = (int) ($validated['total_shops'] ?? 0);
 
-            if ($unitsPerFloor > 0 || $commercialFirstFloor > 0) {
-                for ($f = 1; $f <= $totalFloors; $f++) {
-                    $isFirstFloor = ($f === 1);
-                    $commercialCount = $isFirstFloor ? $commercialFirstFloor : 0;
-                    $residentialCount = $isFirstFloor && $commercialCount > 0 ? 0 : $unitsPerFloor;
-                    
-                    if ($isFirstFloor && $commercialCount > 0) {
-                        $residentialCount = 0; // 1-qavat tijorat
+            // Barcha qavatlarni yaratamiz
+            for ($f = 1; $f <= $totalFloors; $f++) {
+                $commercialCount = 0;
+                $residentialCount = 0;
+
+                // Do'konlarni taqsimlash (odatda 1-qavatda)
+                if ($f === 1) {
+                    $commercialCount = $totalShops;
+                }
+
+                // Uylarni taqsimlash
+                if ($totalApartments > 0) {
+                    if ($totalShops > 0 && $totalFloors > 1) {
+                        // Agar 1-qavatda do'konlar bo'lsa, uylarni 2-qavatdan boshlab taqsimlaymiz
+                        $residentialFloors = $totalFloors - 1;
+                        $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
+                        $remainder = $totalApartments % $residentialFloors;
+
+                        if ($f > 1) {
+                            $residentialCount = $baseUnitsPerFloor + (($f - 2) < $remainder ? 1 : 0);
+                        }
                     } else {
-                        $residentialCount = $unitsPerFloor;
+                        // Aks holda barcha qavatlarga taqsimlaymiz
+                        $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
+                        $remainder = $totalApartments % $totalFloors;
+                        
+                        $residentialCount = $baseUnitsPerFloor + (($f - 1) < $remainder ? 1 : 0);
                     }
+                }
 
-                    $floor = \App\Models\Floor::create([
-                        'building_id' => $building->id,
-                        'floor_number' => $f,
-                        'total_units' => $residentialCount,
-                        'total_commercial_units' => $commercialCount,
+                $floor = \App\Models\Floor::create([
+                    'building_id' => $building->id,
+                    'floor_number' => $f,
+                    'total_units' => $residentialCount,
+                    'total_commercial_units' => $commercialCount,
+                ]);
+
+                // Turar joy xonadonlari (Residential) yaratish
+                for ($u = 1; $u <= $residentialCount; $u++) {
+                    $prefix = 'A' . $f;
+                    $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                    \App\Models\Unit::create([
+                        'floor_id' => $floor->id,
+                        'unit_number' => $unitNumber,
+                        'type' => 'residential',
+                        'area_sqm' => 0,
+                        'price' => 0,
+                        'status' => 'available',
                     ]);
+                }
 
-                    // Turar joy (Residential) yaratish
-                    for ($u = 1; $u <= $residentialCount; $u++) {
-                        $prefix = 'A' . $f;
-                        $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
-                        \App\Models\Unit::create([
-                            'floor_id' => $floor->id,
-                            'unit_number' => $unitNumber,
-                            'type' => 'residential',
-                            'area_sqm' => $averageArea,
-                            'price' => $averagePrice,
-                            'status' => 'available',
-                        ]);
-                    }
-
-                    // Tijorat xonalari (Commercial) yaratish
-                    for ($c = 1; $c <= $commercialCount; $c++) {
-                        $prefix = 'D' . $f;
-                        $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
-                        \App\Models\Unit::create([
-                            'floor_id' => $floor->id,
-                            'unit_number' => $unitNumber,
-                            'type' => 'commercial',
-                            'area_sqm' => $averageArea,
-                            'price' => $averagePrice,
-                            'status' => 'available',
-                        ]);
-                    }
+                // Tijorat xonalari (Commercial) yaratish
+                for ($c = 1; $c <= $commercialCount; $c++) {
+                    $prefix = 'D' . $f;
+                    $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                    \App\Models\Unit::create([
+                        'floor_id' => $floor->id,
+                        'unit_number' => $unitNumber,
+                        'type' => 'commercial',
+                        'area_sqm' => 0,
+                        'price' => 0,
+                        'status' => 'available',
+                    ]);
                 }
             }
         });

@@ -571,11 +571,15 @@ class FacilityController extends Controller
             'floor_number' => 'required|integer',
             'total_units' => 'required|integer|min:0',
             'total_commercial_units' => 'nullable|integer|min:0',
-            'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'blueprint' => 'nullable|file|max:256000',
         ]);
 
         $blueprintPath = null;
         if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png'])) {
+                return redirect()->back()->withErrors(['blueprint' => 'Qavat chizmasi fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png).']);
+            }
             $blueprintPath = $request->file('blueprint')->store('blueprints/floors', 'public');
         }
 
@@ -643,12 +647,16 @@ class FacilityController extends Controller
             'floor_number' => 'required|integer',
             'total_units' => 'required|integer|min:0',
             'total_commercial_units' => 'nullable|integer|min:0',
-            'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'blueprint' => 'nullable|file|max:256000',
         ]);
 
         $oldFloorNumber = $floor->floor_number;
 
         if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png'])) {
+                return redirect()->back()->withErrors(['blueprint' => 'Qavat chizmasi fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png).']);
+            }
             $floor->blueprint_path = $request->file('blueprint')->store('blueprints/floors', 'public');
         }
 

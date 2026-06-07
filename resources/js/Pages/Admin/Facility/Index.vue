@@ -134,6 +134,14 @@ function openAddBlock(objName) {
     setTimeout(() => {
         buildingForm.reset();
         buildingForm.name = objName;
+        // Find the first building in this group to copy its location details
+        const existing = props.buildings.find(b => b.name === objName);
+        if (existing) {
+            buildingForm.city = existing.city || '';
+            buildingForm.district = existing.district || '';
+            buildingForm.mahalla = existing.mahalla || '';
+            buildingForm.street = existing.street || '';
+        }
     }, 100);
 }
 
@@ -1080,10 +1088,10 @@ const progressSeries = computed(() => {
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
             <div class="p-6 w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar">
-                <h2 class="text-xl font-bold text-gray-900 mb-6">{{ isEditingBuilding ? 'Binoni tahrirlash' : $t('add_new_building') }}</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-6">{{ isAddingBlock ? 'Yangi Blok Qo\'shish' : (isEditingBuilding ? 'Binoni tahrirlash' : $t('add_new_building')) }}</h2>
                 <form @submit.prevent="submitBuilding" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('building_name') }}</label>
+                        <label class="block text-xs font-mono text-gray-500 mb-1">Obyekt Nomi</label>
                         <input v-model="buildingForm.name" type="text" :readonly="isAddingBlock" :class="[isAddingBlock ? 'bg-gray-100 cursor-not-allowed' : 'bg-white', 'border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5']" required>
                     </div>
 
@@ -1091,21 +1099,21 @@ const progressSeries = computed(() => {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shahar</label>
-                            <input v-model="buildingForm.city" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <input v-model="buildingForm.city" type="text" :readonly="isAddingBlock" :class="[isAddingBlock ? 'bg-gray-100 cursor-not-allowed' : 'bg-white', 'border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5']">
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tuman</label>
-                            <input v-model="buildingForm.district" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <input v-model="buildingForm.district" type="text" :readonly="isAddingBlock" :class="[isAddingBlock ? 'bg-gray-100 cursor-not-allowed' : 'bg-white', 'border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5']">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Mahalla</label>
-                            <input v-model="buildingForm.mahalla" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <input v-model="buildingForm.mahalla" type="text" :readonly="isAddingBlock" :class="[isAddingBlock ? 'bg-gray-100 cursor-not-allowed' : 'bg-white', 'border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5']">
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Ko'cha (Mo'ljal)</label>
-                            <input v-model="buildingForm.street" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <input v-model="buildingForm.street" type="text" :readonly="isAddingBlock" :class="[isAddingBlock ? 'bg-gray-100 cursor-not-allowed' : 'bg-white', 'border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5']">
                         </div>
                     </div>
 
@@ -1148,12 +1156,10 @@ const progressSeries = computed(() => {
                         </div>
                     </div>
 
-
-
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="buildingForm.processing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">
-                            {{ isEditingBuilding ? 'Saqlash' : $t('create_building') }}
+                            {{ isAddingBlock ? 'Blok Qo\'shish' : (isEditingBuilding ? 'Saqlash' : $t('create_building')) }}
                         </button>
                     </div>
                 </form>

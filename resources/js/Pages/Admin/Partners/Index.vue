@@ -4,6 +4,7 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
+import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
     partners: Array,
@@ -567,8 +568,8 @@ function formatDate(dateString) {
         </div>
 
         <!-- Add Partner Modal -->
-        <div v-if="showAddPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-sm shadow-sm">
+        <Modal :show="showAddPartnerModal" @close="showAddPartnerModal = false" maxWidth="sm">
+            <div class="p-6">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAddPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">Yangi Ta'sischi</h2>
                 <form @submit.prevent="submitPartner" class="space-y-4 font-mono text-xs">
@@ -590,15 +591,15 @@ function formatDate(dateString) {
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showAddPartnerModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase">Qo'shish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded uppercase">Qo'shish</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- Edit Partner Modal -->
-        <div v-if="showEditPartnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-sm shadow-sm">
+        <Modal :show="showEditPartnerModal" @close="showEditPartnerModal = false" maxWidth="sm">
+            <div class="p-6">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showEditPartnerModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">Ta'sischi Tahrirlash</h2>
                 <form @submit.prevent="submitEditPartner" class="space-y-4 font-mono text-xs">
@@ -617,15 +618,15 @@ function formatDate(dateString) {
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showEditPartnerModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase">{{ $t('save') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded uppercase">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- Advance Modal -->
-        <div v-if="showAdvanceModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-sm shadow-sm">
+        <Modal :show="showAdvanceModal && selectedPartner !== null" @close="showAdvanceModal = false" maxWidth="sm">
+            <div class="p-6">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAdvanceModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4 text-blue-600">Kassadan Pul So'rash</h2>
                 <p class="text-xs font-mono text-gray-500 mb-4">Ushbu so'rov darhol kassaga ta'sir qilmaydi. U Moliya markazida ko'rib chiqilib **Tasdiqlangandan so'nggina** pul ajratiladi.</p>
@@ -640,15 +641,15 @@ function formatDate(dateString) {
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showAdvanceModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase">So'rov yuborish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded uppercase">So'rov yuborish</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- Expense Modal -->
-        <div v-if="showExpenseModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-emerald-200 w-full max-w-sm shadow-sm">
+        <Modal :show="showExpenseModal && selectedPartner !== null" @close="showExpenseModal = false" maxWidth="sm">
+            <div class="p-6">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showExpenseModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4 text-emerald-600 mt-2">Xarajatni Qabul Qilish (Chek)</h2>
                 <p class="text-xs font-mono text-gray-500 mb-4">Ushbu chek Moliya markazida tasdiqlangach hisobdorlik balansi qoldig'idan o'chiriladi.</p>
@@ -680,15 +681,14 @@ function formatDate(dateString) {
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showExpenseModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-black rounded uppercase">Tasdiqqa Yuborish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-600 text-white rounded uppercase">Tasdiqqa Yuborish</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
-        <!-- Analytics Modal -->
-        <div v-if="showAnalyticsModal && selectedPartner" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="bg-[#111] text-gray-900 p-6 md:p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-sm">
+        <Modal :show="showAnalyticsModal && selectedPartner !== null" @close="showAnalyticsModal = false" maxWidth="6xl">
+            <div class="p-6 flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>
                         <h2 class="text-2xl font-display font-bold uppercase tracking-widest">{{ selectedPartner.user?.name }} — Hisobot va Analitika</h2>
@@ -701,9 +701,8 @@ function formatDate(dateString) {
                     <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
 
-                <div v-else>
-                    <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <!-- Pie Chart -->
+                <div v-else class="overflow-y-auto custom-scrollbar flex-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                         <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl">
                             <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Xarajatlar Toifasi (Donut)</h3>
                             <div v-if="pieChartSeries.length > 0">
@@ -714,14 +713,12 @@ function formatDate(dateString) {
                             </div>
                         </div>
 
-                        <!-- Bar Chart -->
                         <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl lg:col-span-2">
                             <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Oylik Sarf va Avans Tahlili</h3>
                             <VueApexCharts type="bar" height="250" :options="barChartOptions" :series="barChartSeries"></VueApexCharts>
                         </div>
                     </div>
 
-                    <!-- Ledger Table -->
                     <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 rounded-xl overflow-hidden">
                         <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
                             <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
@@ -740,23 +737,24 @@ function formatDate(dateString) {
                             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
                                 <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
                                     <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <th class="p-3">{{ $t('date_label') }}</th>
+                                        <th class="p-3">Sana</th>
                                         <th class="p-3">Tur</th>
                                         <th class="p-3">Kategoriya</th>
-                                        <th class="p-3 text-right">Summa (UZS)</th>
-                                        <th class="p-3">{{ $t('notes') }}</th>
+                                        <th class="p-3 text-right">Summa (so'm)</th>
+                                        <th class="p-3">Izoh</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="t in transactions" :key="t.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <td class="p-3">{{ formatDate(t.created_at) }}</td>
+                                        <td class="p-3 text-gray-500 whitespace-nowrap">{{ formatDate(t.created_at) }}</td>
                                         <td class="p-3">
-                                            <span v-if="t.type === 'income'" class="text-blue-600 px-2 py-1 bg-blue-50 rounded">KIRIM (TUSHUM)</span>
-                                            <span v-else class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">CHIQIM (XARAJAT)</span>
+                                            <span :class="t.type === 'income' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'" class="px-2 py-0.5 rounded text-[10px] uppercase font-bold">
+                                                {{ t.type === 'income' ? 'Kirim' : 'Chiqim' }}
+                                            </span>
                                         </td>
-                                        <td class="p-3">{{ t.category || '-' }}</td>
-                                        <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-blue-600' : 'text-red-600'">
-                                            {{ formatCurrency(t.amount) }}
+                                        <td class="p-3 text-gray-900">{{ t.category || '-' }}</td>
+                                        <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ t.type === 'income' ? '+' : '-' }}{{ formatCurrency(t.amount) }}
                                         </td>
                                         <td class="p-3 text-gray-500 max-w-xs truncate" :title="t.notes">{{ t.notes || '-' }}</td>
                                     </tr>
@@ -769,11 +767,10 @@ function formatDate(dateString) {
                     </div>
                 </div>
             </div>
-        </div>
+        </Modal>
 
-        <!-- Asset Modal -->
-        <div v-if="showAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
-            <div class="relative bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-gray-300 w-full max-w-lg shadow-sm max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <Modal :show="showAssetModal" @close="showAssetModal = false" maxWidth="lg">
+            <div class="p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showAssetModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">
                     {{ isEditingAsset ? 'Assosiy Vosita Tahrirlash' : 'Yangi Assosiy Vosita' }}
@@ -836,12 +833,12 @@ function formatDate(dateString) {
 
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showAssetModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-black rounded uppercase">
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded uppercase">
                             {{ isEditingAsset ? 'Yangilash' : 'Saqlash' }}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
     </AdminLayout>
 </template>

@@ -68,6 +68,36 @@ watchEffect(() => {
     }
 
     // Set globally shared layout variables
+    const modalBg = isDarkTheme ? '#1f2937' : '#ffffff';
+    const modalText = isDarkTheme ? '#f9fafb' : '#111827';
+    document.documentElement.style.setProperty('--modal-bg-color', modalBg);
+    document.documentElement.style.setProperty('--modal-text-color', modalText);
+
+    // Premium high-contrast unit status colors
+    const unitAvailableBg = isDarkTheme ? 'rgba(16, 185, 129, 0.15)' : '#d1fae5';
+    const unitAvailableBorder = isDarkTheme ? '#10b981' : '#059669';
+    const unitAvailableText = isDarkTheme ? '#34d399' : '#065f46';
+
+    const unitReservedBg = isDarkTheme ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7';
+    const unitReservedBorder = isDarkTheme ? '#f59e0b' : '#d97706';
+    const unitReservedText = isDarkTheme ? '#fbbf24' : '#92400e';
+
+    const unitSoldBg = isDarkTheme ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2';
+    const unitSoldBorder = isDarkTheme ? '#ef4444' : '#dc2626';
+    const unitSoldText = isDarkTheme ? '#f87171' : '#991b1b';
+
+    document.documentElement.style.setProperty('--unit-available-bg', unitAvailableBg);
+    document.documentElement.style.setProperty('--unit-available-border', unitAvailableBorder);
+    document.documentElement.style.setProperty('--unit-available-text', unitAvailableText);
+
+    document.documentElement.style.setProperty('--unit-reserved-bg', unitReservedBg);
+    document.documentElement.style.setProperty('--unit-reserved-border', unitReservedBorder);
+    document.documentElement.style.setProperty('--unit-reserved-text', unitReservedText);
+
+    document.documentElement.style.setProperty('--unit-sold-bg', unitSoldBg);
+    document.documentElement.style.setProperty('--unit-sold-border', unitSoldBorder);
+    document.documentElement.style.setProperty('--unit-sold-text', unitSoldText);
+
     document.documentElement.style.setProperty('--body-bg-color', bodyBg);
     document.documentElement.style.setProperty('--body-text-color', bodyText);
     document.documentElement.style.setProperty('--select-color-scheme', colorScheme);

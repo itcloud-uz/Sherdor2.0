@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import ThemeProvider from '@/Components/ThemeProvider.vue';
 
 const page = usePage();
 const isMobileMenuOpen = ref(false);
@@ -143,7 +144,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 text-gray-900 flex relative overflow-hidden font-sans">
+    <ThemeProvider>
+        <div class="min-h-screen bg-gray-50 text-gray-900 flex relative overflow-hidden font-sans">
         
         <!-- Mobile Overlay -->
         <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-gray-500/50  z-40 md:hidden"></div>
@@ -565,4 +567,5 @@ onUnmounted(() => {
             </div>
         </main>
     </div>
+    </ThemeProvider>
 </template>

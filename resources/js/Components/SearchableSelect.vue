@@ -160,7 +160,7 @@ onUnmounted(() => {
                     v-for="(option, index) in filteredOptions" 
                     :key="index"
                     @click="selectOption(option)"
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                    class="px-4 py-2 hover:bg-blue-600 hover:text-white cursor-pointer text-sm transition-colors"
                     :class="{ ' font-bold': getValue(option) === modelValue }"
                 >
                     {{ getLabel(option) }}

@@ -7,6 +7,7 @@ import VueApexCharts from 'vue3-apexcharts';
 import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
 import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
 import GuardLedgerModal from '@/Components/Ledger/GuardLedgerModal.vue';
+import Modal from '@/Components/Modal.vue';
 
 const page = usePage();
 
@@ -900,8 +901,8 @@ const categoriesSummary = computed(() => {
             </div>
 
             <!-- Edit Transaction Modal -->
-            <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-gray-200">
+            <Modal :show="showEditTransactionModal" @close="showEditTransactionModal = false" maxWidth="md">
+                <div class="p-6">
                     <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                     <h3 class="text-xl font-display text-gray-900 mb-6">{{ $t('edit_transaction') }}</h3>
                     
@@ -924,11 +925,11 @@ const categoriesSummary = computed(() => {
                         
                         <div class="flex justify-end pt-4 gap-4">
                             <button type="button" @click="showEditTransactionModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">{{ $t('cancel') }}</button>
-                            <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200 disabled:opacity-50">{{ $t('save') }}</button>
+                            <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm disabled:opacity-50">{{ $t('save') }}</button>
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
         </div>
 
         <!-- TAB 2: Action Center (Maker/Checker) -->
@@ -1590,8 +1591,8 @@ const categoriesSummary = computed(() => {
     </div>
 
         <!-- Edit Supplier Modal -->
-        <div v-if="showEditSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-blue-200 shadow-sm">
+        <Modal :show="showEditSupplierModal" @close="showEditSupplierModal = false" maxWidth="md">
+            <div class="p-6">
                 <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">Tahrirlash: {{ editSupplierForm.company_name || editSupplierForm.name }}</h3>
                 
@@ -1615,11 +1616,11 @@ const categoriesSummary = computed(() => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- Supplier Payment Modal -->
-        <div v-if="showSupplierPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl max-w-md w-full p-6 rounded-2xl relative border border-emerald-200 shadow-sm">
+        <Modal :show="showSupplierPaymentModal" @close="showSupplierPaymentModal = false" maxWidth="md">
+            <div class="p-6">
                 <button @click="showSupplierPaymentModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
                 <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">To'lov: {{ selectedSupplier?.company_name || selectedSupplier?.name }}</h3>
                 
@@ -1651,11 +1652,11 @@ const categoriesSummary = computed(() => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- RECEIPT MODAL -->
-        <div v-if="showReceiptModal && receiptData" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-white text-black p-4 md:p-8 rounded border border-gray-300 w-full max-w-sm shadow-sm">
+        <Modal :show="showReceiptModal && receiptData !== null" @close="showReceiptModal = false" maxWidth="md">
+            <div class="p-6">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
                     <p class="text-xs font-mono text-gray-500">{{ $t('receipt') }}</p>
@@ -1693,16 +1694,16 @@ const categoriesSummary = computed(() => {
 
                 <div class="mt-8 flex justify-center gap-4">
                     <button @click="showReceiptModal = false" class="px-4 py-2 text-xs border border-gray-400 rounded hover:bg-gray-100 font-mono uppercase">{{ $t('cancel') }}</button>
-                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-white text-gray-900 rounded hover:bg-white font-mono uppercase text-center flex items-center">{{ $t('print_button') }}</a>
+                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-mono uppercase text-center flex items-center justify-center">{{ $t('print_button') }}</a>
                 </div>
             </div>
-        </div>
+        </Modal>
 
         <!-- CONTRACT APPROVE MODAL -->
-        <div v-if="showContractApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
+        <Modal :show="showContractApproveModal" @close="showContractApproveModal = false" maxWidth="lg">
+            <div class="p-6">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('contract_payment_distribution') }}</h2>
-                <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
+                <div class="mb-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
                     <p>Kiritilgan summa: <strong class="text-blue-600 text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
                 </div>
                 <form @submit.prevent="submitContractApprove" class="space-y-6 font-mono text-xs">
@@ -1724,11 +1725,11 @@ const categoriesSummary = computed(() => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- NEW LIABILITY MODAL -->
-        <div v-if="showLiabilityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-blue-200 w-full max-w-lg shadow-sm">
+        <Modal :show="showLiabilityModal" @close="showLiabilityModal = false" maxWidth="lg">
+            <div class="p-6">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('add_new_liability') }}</h2>
                 <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
                     <div>
@@ -1787,15 +1788,15 @@ const categoriesSummary = computed(() => {
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showLiabilityModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase">{{ $t('save') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded hover:bg-blue-700 transition-colors">{{ $t('save') }}</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- PAYMENT MODAL -->
-        <div v-if="showPaymentModal && selectedLiability" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-[#111] text-gray-900 p-4 md:p-8 rounded-2xl border border-emerald-200 w-full max-w-sm shadow-sm">
+        <Modal :show="showPaymentModal && selectedLiability !== null" @close="showPaymentModal = false" maxWidth="sm">
+            <div class="p-6">
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('liability_payment') }}</h2>
                 <div class="mb-6 font-mono text-xs">
                     <p class="text-gray-500 mb-1">{{ $t('creditor_label') }}<span class="text-gray-900">{{ selectedLiability.creditor_name }}</span></p>
@@ -1827,11 +1828,11 @@ const categoriesSummary = computed(() => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
         <!-- SCHEDULE MODAL -->
-        <div v-if="showScheduleModal && selectedLiabilityForSchedule" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-50">
-            <div class="bg-[#111] text-gray-900 p-6 rounded-2xl border border-blue-200 w-full max-w-2xl shadow-sm flex flex-col max-h-[90vh]">
+        <Modal :show="showScheduleModal && selectedLiabilityForSchedule !== null" @close="showScheduleModal = false" maxWidth="2xl">
+            <div class="p-6 flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>
                         <h2 class="text-xl font-display font-bold uppercase tracking-widest text-blue-600">{{ $t('payment_schedule_label') }}</h2>
@@ -1869,7 +1870,7 @@ const categoriesSummary = computed(() => {
                     <button @click="showScheduleModal = false" class="px-6 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase font-mono text-xs font-bold transition-all">{{ $t('close_button') }}</button>
                 </div>
             </div>
-    </div>
+        </Modal>
         </div>
 
         <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />

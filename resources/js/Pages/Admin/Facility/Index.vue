@@ -27,6 +27,26 @@ const selectedBuilding = ref(props.buildings?.length > 0 ? props.buildings[0] : 
 const selectedFloor = ref(selectedBuilding.value?.floors?.length > 0 ? selectedBuilding.value.floors[0] : null);
 const activeTab = ref('blueprint');
 
+const sortedFloors = computed(() => {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return [];
+    return [...selectedBuilding.value.floors].sort((a, b) => b.floor_number - a.floor_number);
+});
+
+const maxUnitsCount = computed(() => {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return 1;
+    const counts = selectedBuilding.value.floors.map(f => f.units?.length || 0);
+    return Math.max(...counts, 1);
+});
+
+function getSortedUnits(units) {
+    if (!units) return [];
+    return [...units].sort((a, b) => {
+        const numA = String(a.unit_number).replace(/\D/g, '');
+        const numB = String(b.unit_number).replace(/\D/g, '');
+        return (Number(numA) || 0) - (Number(numB) || 0);
+    });
+}
+
 // Synchronize activeTab with the URL tab parameter reactively
 watch(
     () => page.url,
@@ -615,24 +635,24 @@ function getUnitBorderColor(status) {
 }
 
 function getUnitFillColor(status) {
-    if (status === 'available') return '#f0fdf4'; // bg-green-50
-    if (status === 'reserved') return '#fff7ed'; // bg-orange-50
-    if (status === 'sold') return '#fef2f2'; // bg-red-50
-    return '#f3f4f6'; // bg-gray-100
+    if (status === 'available') return 'var(--unit-available-bg, #e8f5e9)';
+    if (status === 'reserved') return 'var(--unit-reserved-bg, #fff3e0)';
+    if (status === 'sold') return 'var(--unit-sold-bg, #ffebee)';
+    return 'var(--glass-input-bg, #f3f4f6)';
 }
 
 function getUnitStrokeColor(status) {
-    if (status === 'available') return '#bbf7d0'; // border-green-200
-    if (status === 'reserved') return '#fed7aa'; // border-orange-200
-    if (status === 'sold') return '#fecaca'; // border-red-200
-    return '#e5e7eb'; // border-gray-200
+    if (status === 'available') return 'var(--unit-available-border, #a5d6a7)';
+    if (status === 'reserved') return 'var(--unit-reserved-border, #ffcc80)';
+    if (status === 'sold') return 'var(--unit-sold-border, #ffcdd2)';
+    return 'var(--glass-input-border, #e5e7eb)';
 }
 
 function getUnitTextColor(status) {
-    if (status === 'available') return 'text-green-700';
-    if (status === 'reserved') return 'text-orange-700';
-    if (status === 'sold') return 'text-red-700';
-    return 'text-gray-900';
+    if (status === 'available') return 'var(--unit-available-text, #2e7d32)';
+    if (status === 'reserved') return 'var(--unit-reserved-text, #ef6c00)';
+    if (status === 'sold') return 'var(--unit-sold-text, #c62828)';
+    return 'var(--body-text-color, #111827)';
 }
 
 // Chart Options for Analytics
@@ -789,7 +809,7 @@ const progressSeries = computed(() => {
                             </div>
                             
                             <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-6">
-                                <div v-for="floor in selectedBuilding.floors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border border-gray-200 bg-white rounded-lg shadow-sm relative group overflow-hidden">
+                                <div v-for="floor in sortedFloors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border border-gray-200 bg-white rounded-lg shadow-sm relative group overflow-hidden">
                                     
                                     <!-- Floor Header (Left Side) -->
                                     <div class="w-full xl:w-48 bg-white border-b xl:border-b-0 xl:border-r border-gray-200 p-4 py-6 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-gray-100">
@@ -819,17 +839,17 @@ const progressSeries = computed(() => {
                                         <!-- Interactive SVG Blueprint Mode for Floor -->
                                         <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-gray-50 rounded-lg border border-gray-200">
                                             <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
-                                                <g v-for="(unit, idx) in floor.units" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-110" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
+                                                <g v-for="(unit, idx) in getSortedUnits(floor.units)" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-110" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
                                                     <polygon v-if="unit.svg_polygon" :points="unit.svg_polygon" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
                                                     <polygon v-else :points="getFallbackPolygon(unit)" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
-                                                    <text v-if="!unit.svg_polygon" :x="getFallbackTextX(unit)" :y="getFallbackTextY(unit)" text-anchor="middle" fill="#1f2937" class="font-mono text-sm font-bold pointer-events-none drop-shadow-sm">{{ unit.unit_number }}</text>
+                                                    <text v-if="!unit.svg_polygon" :x="getFallbackTextX(unit)" :y="getFallbackTextY(unit)" text-anchor="middle" :fill="getUnitTextColor(unit.status)" class="font-mono text-sm font-bold pointer-events-none drop-shadow-sm">{{ unit.unit_number }}</text>
                                                 </g>
                                             </svg>
                                         </div>
                                         
                                         <!-- Fallback Grid Mode -->
-                                        <div v-else class="flex gap-4">
-                                            <div v-for="unit in floor.units" :key="'grid-'+unit.id"
+                                        <div v-else class="grid gap-4" :style="{ gridTemplateColumns: 'repeat(' + maxUnitsCount + ', minmax(7rem, 1fr))' }">
+                                            <div v-for="unit in getSortedUnits(floor.units)" :key="'grid-'+unit.id"
                                                  class="w-24 h-16 sm:w-28 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-transform hover:-translate-y-1 rounded-md shadow-lg shrink-0 relative"
                                                  :class="getUnitBorderColor(unit.status)"
                                                  :style="{ backgroundColor: getUnitFillColor(unit.status) }"
@@ -840,7 +860,7 @@ const progressSeries = computed(() => {
                                                     {{ unit.type === 'commercial' ? 'D-' : '' }}{{ unit.unit_number }}
                                                 </span>
                                             </div>
-                                            <div v-if="!floor.units?.length" class="text-xs font-mono text-gray-500 italic flex items-center h-full px-4 border border-dashed border-gray-200 rounded-md">
+                                            <div v-if="!floor.units?.length" class="col-span-full text-xs font-mono text-gray-500 italic py-4 border border-dashed border-gray-200 rounded-md text-center">
                                                 Xonadonlar yo'q
                                             </div>
                                         </div>
@@ -1037,7 +1057,7 @@ const progressSeries = computed(() => {
 
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-white w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar">
+            <div class="p-6 w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar">
                 <h2 class="text-xl font-bold text-gray-900 mb-6">{{ isEditingBuilding ? 'Binoni tahrirlash' : $t('add_new_building') }}</h2>
                 <form @submit.prevent="submitBuilding" class="space-y-4">
                     <div>
@@ -1172,7 +1192,7 @@ const progressSeries = computed(() => {
 
         <!-- Add Stage Modal -->
         <Modal :show="showAddStageModal" @close="showAddStageModal = false">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-amber-200 bg-white">
+            <div class="p-6">
                 <h2 class="text-2xl font-display text-amber-600 mb-4">{{ $t('add_construction_stage') }}</h2>
                 <form @submit.prevent="submitStage" class="space-y-4">
                     <div>
@@ -1198,7 +1218,7 @@ const progressSeries = computed(() => {
         </Modal>
         <!-- Add Floor Modal -->
         <Modal :show="showAddFloorModal" @close="showAddFloorModal = false">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-white/30 bg-white">
+            <div class="p-6">
                 <h2 class="text-2xl font-display text-gray-900 mb-4">{{ isEditingFloor ? "Qavatni Tahrirlash" : "Qavat Qo'shish" }}</h2>
                 <form @submit.prevent="submitFloor" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1230,7 +1250,7 @@ const progressSeries = computed(() => {
 
         <!-- Add Unit Modal -->
         <Modal :show="showAddUnitModal" @close="showAddUnitModal = false">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-white">
+            <div class="p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-6">{{ isEditingUnit ? "Xonadonni Tahrirlash" : "Xonadon / Do'kon Qo'shish" }}</h2>
                 <form @submit.prevent="submitUnit" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1318,7 +1338,7 @@ const progressSeries = computed(() => {
 
         <!-- Blueprint Viewer Modal -->
         <Modal :show="showBlueprintModal" @close="showBlueprintModal = false" maxWidth="4xl">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-neon-purple/30 bg-white">
+            <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-display text-neon-purple">Qavat Chizmasi</h2>
                     <button @click="showBlueprintModal = false" class="text-gray-900 hover:text-indigo-600 transition-colors">
@@ -1332,9 +1352,8 @@ const progressSeries = computed(() => {
         </Modal>
 
         <!-- Sell Unit Modal (Create Contract) -->
-        <div v-if="showSellUnitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-white" @click="showSellUnitModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-emerald-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <Modal :show="showSellUnitModal" @close="showSellUnitModal = false">
+            <div class="p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-green/50">
                     {{ $t('add') }} {{ $t('contract') }}
                 </h2>
@@ -1457,7 +1476,7 @@ const progressSeries = computed(() => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
     </AdminLayout>
 </template>

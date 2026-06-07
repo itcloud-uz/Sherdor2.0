@@ -562,6 +562,8 @@ class FacilityController extends Controller
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
+        $oldFloorNumber = $floor->floor_number;
+
         if ($request->hasFile('blueprint')) {
             $floor->blueprint_path = $request->file('blueprint')->store('blueprints/floors', 'public');
         }
@@ -570,6 +572,29 @@ class FacilityController extends Controller
         $floor->total_units = $validated['total_units'];
         $floor->total_commercial_units = $validated['total_commercial_units'] ?? 0;
         $floor->save();
+
+        // If floor number changed, rename existing units
+        if ($oldFloorNumber !== $floor->floor_number) {
+            $oldResPrefix = $oldFloorNumber < 0 ? 'B' . abs($oldFloorNumber) : 'A' . $oldFloorNumber;
+            $newResPrefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
+            
+            $oldCommPrefix = 'D' . $oldFloorNumber;
+            $newCommPrefix = 'D' . $floor->floor_number;
+            
+            foreach ($floor->units as $unit) {
+                if ($unit->type === 'residential') {
+                    if (str_starts_with($unit->unit_number, $oldResPrefix)) {
+                        $unit->unit_number = $newResPrefix . substr($unit->unit_number, strlen($oldResPrefix));
+                        $unit->save();
+                    }
+                } else if ($unit->type === 'commercial') {
+                    if (str_starts_with($unit->unit_number, $oldCommPrefix)) {
+                        $unit->unit_number = $newCommPrefix . substr($unit->unit_number, strlen($oldCommPrefix));
+                        $unit->save();
+                    }
+                }
+            }
+        }
 
         $building = $floor->building;
         $entrancesCount = $building ? (int) ($building->entrances_count ?? 1) : 1;
@@ -601,6 +626,14 @@ class FacilityController extends Controller
                     'podyezd' => $podyezd,
                 ]);
             }
+        } elseif ($validated['total_units'] < $currentResidentialCount) {
+            $excessCount = $currentResidentialCount - $validated['total_units'];
+            $excessIds = $floor->units()
+                ->where('type', 'residential')
+                ->orderBy('id', 'desc')
+                ->limit($excessCount)
+                ->pluck('id');
+            \App\Models\Unit::whereIn('id', $excessIds)->delete();
         }
 
         $currentCommercialCount = $floor->units()->where('type', 'commercial')->count();
@@ -630,6 +663,14 @@ class FacilityController extends Controller
                     'podyezd' => $podyezd,
                 ]);
             }
+        } elseif ($totalCommercial < $currentCommercialCount) {
+            $excessCount = $currentCommercialCount - $totalCommercial;
+            $excessIds = $floor->units()
+                ->where('type', 'commercial')
+                ->orderBy('id', 'desc')
+                ->limit($excessCount)
+                ->pluck('id');
+            \App\Models\Unit::whereIn('id', $excessIds)->delete();
         }
 
         return redirect()->back()->with('message', 'Qavat yangilandi!');

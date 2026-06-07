@@ -132,8 +132,8 @@ class FacilityController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'district' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255', // Tuman/Shahar
+            'district' => 'nullable|string|max:255', // Viloyat
             'mahalla' => 'nullable|string|max:255',
             'street' => 'nullable|string|max:255',
             'block_name' => 'nullable|string|max:255',
@@ -141,21 +141,23 @@ class FacilityController extends Controller
             'length_m' => 'nullable|numeric|min:0',
             'width_m' => 'nullable|numeric|min:0',
             'height_m' => 'nullable|numeric|min:0',
-            'total_floors' => 'required|integer|min:1',
+            'total_floors' => 'nullable|integer|min:0',
             'blocks_count' => 'nullable|integer|min:1',
             'entrances_count' => 'nullable|integer|min:1',
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:10240',
             'model_3d' => 'nullable|file|max:51200',
             'basement_floors' => 'nullable|integer|min:0',
-            // Ommaviy generatsiya uchun maydonlar
-            'units_per_floor' => 'nullable|integer|min:0',
-            'average_area' => 'nullable|numeric|min:0',
-            'average_price' => 'nullable|numeric|min:0',
-            'commercial_units_first_floor' => 'nullable|integer|min:0',
+            'is_object_only' => 'nullable|boolean',
         ]);
+
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos', 'public');
+        }
 
         $blueprintPath = null;
         if ($request->hasFile('blueprint')) {
@@ -167,139 +169,187 @@ class FacilityController extends Controller
             $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $blueprintPath, $model3dPath) {
-            $building = Building::create([
-                'name' => $validated['name'],
-                'city' => $validated['city'] ?? null,
-                'district' => $validated['district'] ?? null,
-                'mahalla' => $validated['mahalla'] ?? null,
-                'street' => $validated['street'] ?? null,
-                'block_name' => $validated['block_name'] ?? null,
-                'corpus_name' => $validated['corpus_name'] ?? null,
-                'length_m' => $validated['length_m'] ?? null,
-                'width_m' => $validated['width_m'] ?? null,
-                'height_m' => $validated['height_m'] ?? null,
-                'total_floors' => $validated['total_floors'],
-                'blocks_count' => $validated['blocks_count'] ?? 1,
-                'entrances_count' => $validated['entrances_count'] ?? 1,
-                'total_apartments' => $validated['total_apartments'] ?? 0,
-                'total_shops' => $validated['total_shops'] ?? 0,
-                'estimated_budget' => $validated['estimated_budget'] ?? 0,
-                'status' => 'planning',
-                'actual_expenses' => 0,
-                'blueprint_path' => $blueprintPath,
-                'model_3d_path' => $model3dPath,
-                'basement_floors' => $validated['basement_floors'] ?? 0,
-            ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $blueprintPath, $photoPath, $model3dPath, $request) {
+            $isObjectOnly = $request->boolean('is_object_only');
 
-            // Avtomatik Generatsiya Mantiqi
-            $totalFloors = (int) $validated['total_floors'];
-            $basementFloors = (int) ($validated['basement_floors'] ?? 0);
-            $totalApartments = (int) ($validated['total_apartments'] ?? 0);
-            $totalShops = (int) ($validated['total_shops'] ?? 0);
-            $entrancesCount = (int) ($validated['entrances_count'] ?? 1);
-            if ($entrancesCount < 1) $entrancesCount = 1;
+            if ($isObjectOnly) {
+                Building::create([
+                    'name' => $validated['name'],
+                    'city' => $validated['city'] ?? null,
+                    'district' => $validated['district'] ?? null,
+                    'mahalla' => $validated['mahalla'] ?? null,
+                    'street' => $validated['street'] ?? null,
+                    'total_floors' => 0,
+                    'blueprint_path' => $blueprintPath,
+                    'photo_path' => $photoPath,
+                    'model_3d_path' => $model3dPath,
+                    'status' => 'planning',
+                ]);
+            } else {
+                // Yangi Blok Qo'shish: check if there's an existing empty container record for this object
+                $container = Building::where('name', $validated['name'])
+                    ->where('total_floors', 0)
+                    ->first();
 
-            // Barcha qavatlarni yaratamiz
-            $floorNumbers = [];
-            for ($b = -$basementFloors; $b <= -1; $b++) {
-                if ($b < 0) $floorNumbers[] = $b;
-            }
-            $aboveGroundCount = $totalFloors - $basementFloors;
-            for ($a = 1; $a <= $aboveGroundCount; $a++) {
-                $floorNumbers[] = $a;
-            }
+                $data = [
+                    'name' => $validated['name'],
+                    'city' => $validated['city'] ?? null,
+                    'district' => $validated['district'] ?? null,
+                    'mahalla' => $validated['mahalla'] ?? null,
+                    'street' => $validated['street'] ?? null,
+                    'block_name' => $validated['block_name'] ?? null,
+                    'corpus_name' => $validated['corpus_name'] ?? null,
+                    'length_m' => $validated['length_m'] ?? null,
+                    'width_m' => $validated['width_m'] ?? null,
+                    'height_m' => $validated['height_m'] ?? null,
+                    'total_floors' => $validated['total_floors'] ?? 1,
+                    'blocks_count' => $validated['blocks_count'] ?? 1,
+                    'entrances_count' => $validated['entrances_count'] ?? 1,
+                    'total_apartments' => $validated['total_apartments'] ?? 0,
+                    'total_shops' => $validated['total_shops'] ?? 0,
+                    'estimated_budget' => $validated['estimated_budget'] ?? 0,
+                    'basement_floors' => $validated['basement_floors'] ?? 0,
+                    'status' => 'planning',
+                ];
 
-            foreach ($floorNumbers as $idx => $f) {
-                $commercialCount = 0;
-                $residentialCount = 0;
-
-                // Do'konlarni taqsimlash (odatda 1-qavatda)
-                if ($f === 1) {
-                    $commercialCount = $totalShops;
+                if ($blueprintPath) {
+                    $data['blueprint_path'] = $blueprintPath;
+                }
+                if ($photoPath) {
+                    $data['photo_path'] = $photoPath;
+                }
+                if ($model3dPath) {
+                    $data['model_3d_path'] = $model3dPath;
                 }
 
-                // Uylarni taqsimlash
-                if ($totalApartments > 0) {
-                    if ($totalShops > 0 && $aboveGroundCount > 1) {
-                        // Agar 1-qavatda do'konlar bo'lsa, uylarni boshqa qavatlarga taqsimlaymiz
-                        $residentialFloors = $totalFloors - 1;
-                        $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
-                        $remainder = $totalApartments % $residentialFloors;
+                if ($container) {
+                    // Update the existing empty object container to become the first block
+                    if (!isset($data['photo_path']) && $container->photo_path) {
+                        $data['photo_path'] = $container->photo_path;
+                    }
+                    if (!isset($data['blueprint_path']) && $container->blueprint_path) {
+                        $data['blueprint_path'] = $container->blueprint_path;
+                    }
+                    if (!isset($data['model_3d_path']) && $container->model_3d_path) {
+                        $data['model_3d_path'] = $container->model_3d_path;
+                    }
+                    $container->update($data);
+                    $building = $container;
+                } else {
+                    // Create a new block record, copy photo from existing block if not provided
+                    if (!isset($data['photo_path'])) {
+                        $existingWithPhoto = Building::where('name', $validated['name'])
+                            ->whereNotNull('photo_path')
+                            ->first();
+                        if ($existingWithPhoto) {
+                            $data['photo_path'] = $existingWithPhoto->photo_path;
+                        }
+                    }
+                    $building = Building::create($data);
+                }
 
-                        if ($f !== 1) {
+                // Avtomatik Generatsiya Mantiqi (Qavat va Xonadonlar)
+                $totalFloors = (int) $building->total_floors;
+                $basementFloors = (int) ($building->basement_floors ?? 0);
+                $totalApartments = (int) ($building->total_apartments ?? 0);
+                $totalShops = (int) ($building->total_shops ?? 0);
+                $entrancesCount = (int) ($building->entrances_count ?? 1);
+                if ($entrancesCount < 1) $entrancesCount = 1;
+
+                $floorNumbers = [];
+                for ($b = -$basementFloors; $b <= -1; $b++) {
+                    if ($b < 0) $floorNumbers[] = $b;
+                }
+                $aboveGroundCount = $totalFloors - $basementFloors;
+                for ($a = 1; $a <= $aboveGroundCount; $a++) {
+                    $floorNumbers[] = $a;
+                }
+
+                foreach ($floorNumbers as $idx => $f) {
+                    $commercialCount = 0;
+                    $residentialCount = 0;
+
+                    if ($f === 1) {
+                        $commercialCount = $totalShops;
+                    }
+
+                    if ($totalApartments > 0) {
+                        if ($totalShops > 0 && $aboveGroundCount > 1) {
+                            $residentialFloors = $totalFloors - 1;
+                            $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
+                            $remainder = $totalApartments % $residentialFloors;
+
+                            if ($f !== 1) {
+                                $residentialCount = $baseUnitsPerFloor;
+                                if ($idx < $remainder) {
+                                    $residentialCount++;
+                                }
+                            }
+                        } else {
+                            $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
+                            $remainder = $totalApartments % $totalFloors;
                             $residentialCount = $baseUnitsPerFloor;
                             if ($idx < $remainder) {
                                 $residentialCount++;
                             }
                         }
-                    } else {
-                        // Aks holda barcha qavatlarga taqsimlaymiz
-                        $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
-                        $remainder = $totalApartments % $totalFloors;
-                        
-                        $residentialCount = $baseUnitsPerFloor;
-                        if ($idx < $remainder) {
-                            $residentialCount++;
+                    }
+
+                    $floor = \App\Models\Floor::create([
+                        'building_id' => $building->id,
+                        'floor_number' => $f,
+                        'total_units' => $residentialCount,
+                        'total_commercial_units' => $commercialCount,
+                    ]);
+
+                    $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
+                    if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
+                    for ($u = 1; $u <= $residentialCount; $u++) {
+                        $prefix = $f < 0 ? 'B' . abs($f) : 'A' . $f;
+                        $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                        $podyezd = (int) ceil($u / $resUnitsPerEntrance);
+                        if ($podyezd > $entrancesCount) {
+                            $podyezd = $entrancesCount;
                         }
-                    }
-                }
 
-                $floor = \App\Models\Floor::create([
-                    'building_id' => $building->id,
-                    'floor_number' => $f,
-                    'total_units' => $residentialCount,
-                    'total_commercial_units' => $commercialCount,
-                ]);
-
-                // Turar joy xonadonlari (Residential) yaratish
-                $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
-                if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
-                for ($u = 1; $u <= $residentialCount; $u++) {
-                    $prefix = $f < 0 ? 'B' . abs($f) : 'A' . $f;
-                    $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
-                    $podyezd = (int) ceil($u / $resUnitsPerEntrance);
-                    if ($podyezd > $entrancesCount) {
-                        $podyezd = $entrancesCount;
+                        \App\Models\Unit::create([
+                            'floor_id' => $floor->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'residential',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                            'podyezd' => $podyezd,
+                        ]);
                     }
 
-                    \App\Models\Unit::create([
-                        'floor_id' => $floor->id,
-                        'unit_number' => $unitNumber,
-                        'type' => 'residential',
-                        'area_sqm' => 0,
-                        'price' => 0,
-                        'status' => 'available',
-                        'podyezd' => $podyezd,
-                    ]);
-                }
+                    $commUnitsPerEntrance = (int) ceil($commercialCount / $entrancesCount);
+                    if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
+                    for ($c = 1; $c <= $commercialCount; $c++) {
+                        $prefix = 'D' . $f;
+                        $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                        $podyezd = (int) ceil($c / $commUnitsPerEntrance);
+                        if ($podyezd > $entrancesCount) {
+                            $podyezd = $entrancesCount;
+                        }
 
-                // Tijorat xonalari (Commercial) yaratish
-                $commUnitsPerEntrance = (int) ceil($commercialCount / $entrancesCount);
-                if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
-                for ($c = 1; $c <= $commercialCount; $c++) {
-                    $prefix = 'D' . $f;
-                    $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
-                    $podyezd = (int) ceil($c / $commUnitsPerEntrance);
-                    if ($podyezd > $entrancesCount) {
-                        $podyezd = $entrancesCount;
+                        \App\Models\Unit::create([
+                            'floor_id' => $floor->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'commercial',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                            'podyezd' => $podyezd,
+                        ]);
                     }
-
-                    \App\Models\Unit::create([
-                        'floor_id' => $floor->id,
-                        'unit_number' => $unitNumber,
-                        'type' => 'commercial',
-                        'area_sqm' => 0,
-                        'price' => 0,
-                        'status' => 'available',
-                        'podyezd' => $podyezd,
-                    ]);
                 }
             }
         });
 
         return redirect()->back()->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
     }
+
     public function updateBuilding(\Illuminate\Http\Request $request, $id)
     {
         $building = Building::findOrFail($id);
@@ -315,23 +365,31 @@ class FacilityController extends Controller
             'length_m' => 'nullable|numeric|min:0',
             'width_m' => 'nullable|numeric|min:0',
             'height_m' => 'nullable|numeric|min:0',
-            'total_floors' => 'required|integer|min:1',
+            'total_floors' => 'required|integer|min:0',
             'blocks_count' => 'nullable|integer|min:1',
             'entrances_count' => 'nullable|integer|min:1',
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:10240',
             'model_3d' => 'nullable|file|max:51200',
             'basement_floors' => 'nullable|integer|min:0',
         ]);
 
-        if ($request->hasFile('blueprint')) {
-            $building->blueprint_path = $request->file('blueprint')->store('blueprints', 'public');
+        $photoPath = $building->photo_path;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos', 'public');
         }
 
+        $blueprintPath = $building->blueprint_path;
+        if ($request->hasFile('blueprint')) {
+            $blueprintPath = $request->file('blueprint')->store('blueprints', 'public');
+        }
+
+        $model3dPath = $building->model_3d_path;
         if ($request->hasFile('model_3d')) {
-            $building->model_3d_path = $request->file('model_3d')->store('models_3d', 'public');
+            $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
         }
 
         $totalFloors = (int) $validated['total_floors'];
@@ -341,7 +399,6 @@ class FacilityController extends Controller
         $entrancesCount = (int) ($validated['entrances_count'] ?? 1);
         if ($entrancesCount < 1) $entrancesCount = 1;
 
-        // Desired floor numbers
         $desiredFloorNumbers = [];
         for ($b = -$basementFloors; $b <= -1; $b++) {
             if ($b < 0) $desiredFloorNumbers[] = $b;
@@ -351,7 +408,7 @@ class FacilityController extends Controller
             $desiredFloorNumbers[] = $a;
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($building, $validated, $desiredFloorNumbers, $totalFloors, $basementFloors, $totalApartments, $totalShops, $entrancesCount) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($building, $validated, $desiredFloorNumbers, $totalFloors, $basementFloors, $totalApartments, $totalShops, $entrancesCount, $photoPath, $blueprintPath, $model3dPath) {
             $building->update([
                 'name' => $validated['name'],
                 'city' => $validated['city'] ?? null,
@@ -370,6 +427,9 @@ class FacilityController extends Controller
                 'total_shops' => $validated['total_shops'] ?? 0,
                 'estimated_budget' => $validated['estimated_budget'] ?? 0,
                 'basement_floors' => $validated['basement_floors'] ?? 0,
+                'photo_path' => $photoPath,
+                'blueprint_path' => $blueprintPath,
+                'model_3d_path' => $model3dPath,
             ]);
 
             // Sync floors: delete floors that are not in the desired floor numbers

@@ -1148,35 +1148,7 @@ const progressSeries = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Building Dimensions -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Uzunligi (m)</label>
-                            <input v-model="buildingForm.length_m" type="number" min="0" step="0.01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Masalan: 45.5">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kengligi (m)</label>
-                            <input v-model="buildingForm.width_m" type="number" min="0" step="0.01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Masalan: 20">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Balandligi (m)</label>
-                            <input v-model="buildingForm.height_m" type="number" min="0" step="0.01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Masalan: 32">
-                        </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('estimated_budget_usd') }}</label>
-                        <input v-model="buildingForm.estimated_budget" type="number" min="0" step="0.01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
-                    </div>
-
-
-
-                    <!-- Blueprint Upload -->
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Chizma yuklash (PDF/JPG)</label>
-                        <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-gray-100 file:text-gray-900 hover:file:bg-white/20 cursor-pointer border border-gray-200 rounded bg-white">
-                        <p v-if="buildingForm.errors.blueprint" class="text-xs text-red-600 mt-1">{{ buildingForm.errors.blueprint }}</p>
-                    </div>
 
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>

@@ -39,7 +39,7 @@ class FacilityController extends Controller
             'entrances_count' => 'nullable|integer|min:1',
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
-            'estimated_budget' => 'required|numeric|min:0',
+            'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             // Ommaviy generatsiya uchun maydonlar
             'units_per_floor' => 'nullable|integer|min:0',
@@ -70,7 +70,7 @@ class FacilityController extends Controller
                 'entrances_count' => $validated['entrances_count'] ?? 1,
                 'total_apartments' => $validated['total_apartments'] ?? 0,
                 'total_shops' => $validated['total_shops'] ?? 0,
-                'estimated_budget' => $validated['estimated_budget'],
+                'estimated_budget' => $validated['estimated_budget'] ?? 0,
                 'status' => 'planning',
                 'actual_expenses' => 0,
                 'blueprint_path' => $blueprintPath,
@@ -150,7 +150,7 @@ class FacilityController extends Controller
             'entrances_count' => 'nullable|integer|min:1',
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
-            'estimated_budget' => 'required|numeric|min:0',
+            'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
@@ -174,7 +174,7 @@ class FacilityController extends Controller
             'entrances_count' => $validated['entrances_count'] ?? 1,
             'total_apartments' => $validated['total_apartments'] ?? 0,
             'total_shops' => $validated['total_shops'] ?? 0,
-            'estimated_budget' => $validated['estimated_budget'],
+            'estimated_budget' => $validated['estimated_budget'] ?? 0,
         ]);
 
         return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');

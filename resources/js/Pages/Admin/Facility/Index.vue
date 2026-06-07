@@ -29,7 +29,17 @@ const activeTab = ref('blueprint');
 
 const sortedFloors = computed(() => {
     if (!selectedBuilding.value || !selectedBuilding.value.floors) return [];
-    return [...selectedBuilding.value.floors].sort((a, b) => b.floor_number - a.floor_number);
+    return [...selectedBuilding.value.floors].sort((a, b) => a.floor_number - b.floor_number);
+});
+
+const formattedCurrentDate = computed(() => {
+    const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+    const now = new Date();
+    const dayName = days[now.getDay()];
+    const date = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${dayName}, ${date}.${month}.${year}`;
 });
 
 const maxUnitsCount = computed(() => {
@@ -412,7 +422,8 @@ const unitForm = useForm({
     kitchens_count: 1,
     bathrooms_count: 1,
     toilets_count: 1,
-    orientation: ''
+    orientation: '',
+    podyezd: 1,
 });
 
 const isEditingBuilding = ref(false);
@@ -563,6 +574,7 @@ function openEditUnit(unit) {
     unitForm.bathrooms_count = unit.bathrooms_count || 1;
     unitForm.toilets_count = unit.toilets_count || 1;
     unitForm.orientation = unit.orientation || '';
+    unitForm.podyezd = unit.podyezd || 1;
     showAddUnitModal.value = true;
 }
 
@@ -636,31 +648,31 @@ function getFallbackTextY(unit) {
 }
 
 function getUnitBorderColor(status) {
-    if (status === 'available') return 'border-green-200 shadow-sm';
-    if (status === 'reserved') return 'border-orange-200 shadow-sm';
-    if (status === 'sold') return 'border-red-200 shadow-sm';
-    return 'border-gray-200';
+    if (status === 'available') return 'border-green-600 shadow-sm';
+    if (status === 'reserved') return 'border-yellow-600 shadow-sm';
+    if (status === 'sold') return 'border-red-600 shadow-sm';
+    return 'border-gray-300';
 }
 
 function getUnitFillColor(status) {
-    if (status === 'available') return 'var(--unit-available-bg, #e8f5e9)';
-    if (status === 'reserved') return 'var(--unit-reserved-bg, #fff3e0)';
-    if (status === 'sold') return 'var(--unit-sold-bg, #ffebee)';
-    return 'var(--glass-input-bg, #f3f4f6)';
+    if (status === 'available') return '#22c55e'; // Green-500
+    if (status === 'reserved') return '#eab308'; // Yellow-500
+    if (status === 'sold') return '#ef4444'; // Red-500
+    return '#f3f4f6';
 }
 
 function getUnitStrokeColor(status) {
-    if (status === 'available') return 'var(--unit-available-border, #a5d6a7)';
-    if (status === 'reserved') return 'var(--unit-reserved-border, #ffcc80)';
-    if (status === 'sold') return 'var(--unit-sold-border, #ffcdd2)';
-    return 'var(--glass-input-border, #e5e7eb)';
+    if (status === 'available') return '#16a34a'; // Green-600
+    if (status === 'reserved') return '#ca8a04'; // Yellow-600
+    if (status === 'sold') return '#dc2626'; // Red-600
+    return '#e5e7eb';
 }
 
 function getUnitTextColor(status) {
-    if (status === 'available') return 'var(--unit-available-text, #2e7d32)';
-    if (status === 'reserved') return 'var(--unit-reserved-text, #ef6c00)';
-    if (status === 'sold') return 'var(--unit-sold-text, #c62828)';
-    return 'var(--body-text-color, #111827)';
+    if (status === 'available') return 'text-green-600 font-bold';
+    if (status === 'reserved') return 'text-yellow-600 font-bold';
+    if (status === 'sold') return 'text-red-600 font-bold';
+    return 'text-gray-900';
 }
 
 // Chart Options for Analytics
@@ -710,6 +722,15 @@ const progressSeries = computed(() => {
         data: selectedBuilding.value?.stages?.map(s => s.progress_percentage) || []
     }];
 });
+
+function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
+    if (!floor || !floor.units) return [];
+    return floor.units.filter(u => (u.podyezd || 1) === podyezdNumber).sort((a, b) => {
+        const numA = String(a.unit_number).replace(/\D/g, '');
+        const numB = String(b.unit_number).replace(/\D/g, '');
+        return (Number(numA) || 0) - (Number(numB) || 0);
+    });
+}
 </script>
 
 <template>
@@ -821,83 +842,89 @@ const progressSeries = computed(() => {
                         
                         <!-- TAB 1: Interactive Blueprint -->
                         <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
-                            <!-- Header Actions -->
-                            <div class="flex justify-end items-center gap-4 mb-4 w-full">
-                                <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-[10px] font-mono rounded hover:bg-emerald-600 hover:text-black transition-all flex items-center gap-2 shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    EXCEL YUKLAB OLISH
-                                </button>
-                                <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
-                                    + QAVAT
-                                </button>
+                            <!-- Premium Header with Building Name and Dynamic Date -->
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-gray-100">
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-1">
+                                        <!-- Gold/Amber Layout Icon similar to screenshot -->
+                                        <svg class="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                                            <path d="M9 4v16M4 10h16" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-gray-900 font-sans tracking-tight">
+                                            {{ selectedBuilding.name }}
+                                        </h3>
+                                        <p class="text-xs text-gray-400 mt-1 font-sans">
+                                            {{ formattedCurrentDate }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-4 md:mt-0">
+                                    <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        EXCEL YUKLAB OLISH
+                                    </button>
+                                    <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-sans rounded hover:bg-gray-50 hover:text-black transition-all">
+                                        + QAVAT
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="flex gap-4 text-[10px] font-mono mb-4 bg-gray-50 p-2 rounded-lg inline-flex w-max border border-gray-200">
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-green-100 border border-green-300 shadow-sm"></span> {{ $t('available') }}</span>
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-yellow-100 border border-yellow-300 shadow-sm"></span> {{ $t('reserved') }}</span>
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-red-100 border border-red-300 shadow-sm"></span> {{ $t('sold') }}</span>
+                            <!-- Legend: circles and text on same card background -->
+                            <div class="flex gap-6 text-sm font-sans mb-8">
+                                <span class="flex items-center gap-2 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block"></span> Sotuvda
+                                </span>
+                                <span class="flex items-center gap-2 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block"></span> Sotilgan
+                                </span>
+                                <span class="flex items-center gap-2 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block"></span> Bron qilingan
+                                </span>
                             </div>
                             
-                            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-6">
-                                <div v-for="floor in sortedFloors" :key="floor.id" class="flex flex-col xl:flex-row items-stretch border border-gray-200 bg-white rounded-lg shadow-sm relative group overflow-hidden">
-                                    
-                                    <!-- Floor Header (Left Side) -->
-                                    <div class="w-full xl:w-48 bg-white border-b xl:border-b-0 xl:border-r border-gray-200 p-4 py-6 flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 shrink-0 transition-colors hover:bg-gray-100">
-                                        <div class="flex items-center gap-3">
-                                            <h3 class="text-2xl font-display font-bold text-gray-900 whitespace-nowrap">{{ floor.floor_number }}-qavat</h3>
-                                            <div class="flex gap-1">
-                                                <span v-if="floor.units?.some(u => u.type === 'commercial')" class="text-xl drop-shadow-sm" title="Do'konlar">🏬</span>
-                                                <span v-if="floor.units?.some(u => u.type === 'residential')" class="text-xl drop-shadow-sm" title="Xonadonlar">🏠</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="flex flex-wrap gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                            <button @click="openEditFloor(floor)" class="w-7 h-7 flex items-center justify-center border border-gray-300 text-gray-900 text-xs rounded hover:bg-white hover:text-black transition-all" title="Qavatni tahrirlash">
-                                                ✏️
-                                            </button>
-                                            <button @click="selectedFloor = floor; showAddUnitModal = true; isEditingUnit = false" class="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-200 text-blue-600 text-xs rounded hover:bg-blue-600 hover:text-black transition-all" title="Xonadon qo'shish">
-                                                +
-                                            </button>
-                                            <button v-if="isAdmin" @click="deleteFloor(floor.id)" class="w-7 h-7 flex items-center justify-center bg-indigo-50 border border-neon-magenta/30 text-indigo-600 text-xs rounded hover:bg-indigo-600 hover:text-gray-900 transition-all" title="Qavatni o'chirish">
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Floor Units (Right Side) -->
-                                    <div class="flex-1 p-4 pb-6 overflow-x-auto custom-scrollbar flex items-center min-h-[140px]">
-                                        <!-- Interactive SVG Blueprint Mode for Floor -->
-                                        <div v-if="floor.blueprint_path" class="w-full h-full relative min-w-[800px] min-h-[300px] bg-gray-50 rounded-lg border border-gray-200">
-                                            <svg class="w-full h-full absolute inset-0 z-10" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
-                                                <g v-for="(unit, idx) in getSortedUnits(floor.units)" :key="'u-'+unit.id" class="cursor-pointer transition-all duration-300 hover:brightness-110" @mousemove="(e) => onUnitHover(unit, e)" @mouseleave="onUnitLeave" @click="openEditUnit(unit)">
-                                                    <polygon v-if="unit.svg_polygon" :points="unit.svg_polygon" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
-                                                    <polygon v-else :points="getFallbackPolygon(unit)" :fill="getUnitFillColor(unit.status)" :stroke="getUnitStrokeColor(unit.status)" stroke-width="2" />
-                                                    <text v-if="!unit.svg_polygon" :x="getFallbackTextX(unit)" :y="getFallbackTextY(unit)" text-anchor="middle" :fill="getUnitTextColor(unit.status)" class="font-mono text-sm font-bold pointer-events-none drop-shadow-sm">{{ unit.unit_number }}</text>
-                                                </g>
-                                            </svg>
-                                        </div>
-                                        
-                                        <!-- Fallback Grid Mode -->
-                                        <div v-else class="grid gap-4" :style="{ gridTemplateColumns: 'repeat(' + maxUnitsCount + ', minmax(7rem, 1fr))' }">
-                                            <div v-for="unit in getSortedUnits(floor.units)" :key="'grid-'+unit.id"
-                                                 class="w-24 h-16 sm:w-28 sm:h-20 flex items-center justify-center border-2 cursor-pointer transition-transform hover:-translate-y-1 rounded-md shadow-lg shrink-0 relative"
-                                                 :class="getUnitBorderColor(unit.status)"
-                                                 :style="{ backgroundColor: getUnitFillColor(unit.status) }"
-                                                 @mousemove="(e) => onUnitHover(unit, e)"
-                                                 @mouseleave="onUnitLeave"
-                                                 @click="openEditUnit(unit)">
-                                                <span class="font-mono text-sm sm:text-base font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
-                                                    {{ (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D')) ? 'D-' : '' }}{{ unit.unit_number }}
-                                                </span>
-                                            </div>
-                                            <div v-if="!floor.units?.length" class="col-span-full text-xs font-mono text-gray-500 italic py-4 border border-dashed border-gray-200 rounded-md text-center">
-                                                Xonadonlar yo'q
+                            <div class="flex-1 overflow-y-auto custom-scrollbar pb-6">
+                                <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
+                                    <!-- Podyezd Columns side-by-side without border/bg cards -->
+                                    <div v-for="p in selectedBuilding.entrances_count || 1" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
+                                        <!-- Centered title without border and emoji -->
+                                        <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
+                                            {{ p }}-padezd
+                                        </h4>
+                                        <div class="space-y-4">
+                                            <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
+                                                <!-- Floor label and edit/add buttons -->
+                                                <div class="w-20 flex items-center justify-between shrink-0">
+                                                    <span class="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider">{{ floor.floor_number }}-QAVAT</span>
+                                                    <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
+                                                        <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
+                                                        <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Floor Units for this podyezd, aligned horizontally -->
+                                                <div class="flex gap-2 items-center">
+                                                    <div v-for="unit in getUnitsByFloorAndPodyezd(floor, p)" :key="'unit-'+unit.id"
+                                                         class="unit-box w-12 h-12 flex flex-col items-center justify-center cursor-pointer transition-transform hover:-translate-y-0.5 rounded-lg shadow-sm relative shrink-0"
+                                                         :class="['status-' + unit.status]"
+                                                         @mousemove="(e) => onUnitHover(unit, e)"
+                                                         @mouseleave="onUnitLeave"
+                                                         @click="openEditUnit(unit)">
+                                                        <span class="font-sans text-xs font-bold pointer-events-none z-10 text-white">
+                                                            {{ unit.unit_number }}
+                                                        </span>
+                                                    </div>
+                                                    <div v-if="!getUnitsByFloorAndPodyezd(floor, p).length" class="text-[10px] font-sans text-gray-300 italic">
+                                                        -
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div v-if="!selectedBuilding.floors?.length" class="text-center py-10 border border-dashed border-gray-300 rounded-xl text-gray-500 font-mono text-sm bg-gray-50">
+                                <div v-else class="text-center py-10 border border-dashed border-gray-300 rounded-xl text-gray-500 font-sans text-sm bg-gray-50">
                                     Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
                                 </div>
                             </div>
@@ -1273,7 +1300,7 @@ const progressSeries = computed(() => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Status</label>
                             <select v-model="unitForm.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
@@ -1281,6 +1308,10 @@ const progressSeries = computed(() => {
                                 <option value="reserved">Band qilingan</option>
                                 <option value="sold">Sotilgan</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Podyezd</label>
+                            <input v-model="unitForm.podyezd" type="number" min="1" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                         </div>
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Joylashuvi (Orientation)</label>
@@ -1456,3 +1487,27 @@ const progressSeries = computed(() => {
 
     </AdminLayout>
 </template>
+
+<style scoped>
+.unit-box.status-available {
+    background-color: #00c853;
+    border-bottom: 4px solid #009624;
+}
+.unit-box.status-available:hover {
+    background-color: #00e676;
+}
+.unit-box.status-reserved {
+    background-color: #ffd600;
+    border-bottom: 4px solid #d89b00;
+}
+.unit-box.status-reserved:hover {
+    background-color: #ffea00;
+}
+.unit-box.status-sold {
+    background-color: #ef4444;
+    border-bottom: 4px solid #c83030;
+}
+.unit-box.status-sold:hover {
+    background-color: #f87171;
+}
+</style>

@@ -19,6 +19,7 @@ class Unit extends Model
         'bathrooms_count',
         'toilets_count',
         'orientation',
+        'podyezd',
     ];
 
     public function floor()

@@ -20,6 +20,8 @@ class FacilityController extends Controller
                 $totalFloors = (int) $building->total_floors;
                 $totalApartments = (int) ($building->total_apartments ?? 0);
                 $totalShops = (int) ($building->total_shops ?? 0);
+                $entrancesCount = (int) ($building->entrances_count ?? 1);
+                if ($entrancesCount < 1) $entrancesCount = 1;
 
                 for ($f = 1; $f <= $totalFloors; $f++) {
                     $commercialCount = 0;
@@ -52,9 +54,17 @@ class FacilityController extends Controller
                         'total_commercial_units' => $commercialCount,
                     ]);
 
+                    // Turar joy xonadonlari (Residential) yaratish
+                    $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
+                    if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
                     for ($u = 1; $u <= $residentialCount; $u++) {
                         $prefix = 'A' . $f;
                         $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                        $podyezd = (int) ceil($u / $resUnitsPerEntrance);
+                        if ($podyezd > $entrancesCount) {
+                            $podyezd = $entrancesCount;
+                        }
+
                         \App\Models\Unit::create([
                             'floor_id' => $floor->id,
                             'unit_number' => $unitNumber,
@@ -62,12 +72,21 @@ class FacilityController extends Controller
                             'area_sqm' => 0,
                             'price' => 0,
                             'status' => 'available',
+                            'podyezd' => $podyezd,
                         ]);
                     }
 
+                    // Tijorat xonalari (Commercial) yaratish
+                    $commUnitsPerEntrance = (int) ceil($commercialCount / $entrancesCount);
+                    if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
                     for ($c = 1; $c <= $commercialCount; $c++) {
                         $prefix = 'D' . $f;
                         $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                        $podyezd = (int) ceil($c / $commUnitsPerEntrance);
+                        if ($podyezd > $entrancesCount) {
+                            $podyezd = $entrancesCount;
+                        }
+
                         \App\Models\Unit::create([
                             'floor_id' => $floor->id,
                             'unit_number' => $unitNumber,
@@ -75,6 +94,7 @@ class FacilityController extends Controller
                             'area_sqm' => 0,
                             'price' => 0,
                             'status' => 'available',
+                            'podyezd' => $podyezd,
                         ]);
                     }
                 }
@@ -151,6 +171,8 @@ class FacilityController extends Controller
             $totalFloors = (int) $validated['total_floors'];
             $totalApartments = (int) ($validated['total_apartments'] ?? 0);
             $totalShops = (int) ($validated['total_shops'] ?? 0);
+            $entrancesCount = (int) ($validated['entrances_count'] ?? 1);
+            if ($entrancesCount < 1) $entrancesCount = 1;
 
             // Barcha qavatlarni yaratamiz
             for ($f = 1; $f <= $totalFloors; $f++) {
@@ -190,9 +212,16 @@ class FacilityController extends Controller
                 ]);
 
                 // Turar joy xonadonlari (Residential) yaratish
+                $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
+                if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
                 for ($u = 1; $u <= $residentialCount; $u++) {
                     $prefix = 'A' . $f;
                     $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                    $podyezd = (int) ceil($u / $resUnitsPerEntrance);
+                    if ($podyezd > $entrancesCount) {
+                        $podyezd = $entrancesCount;
+                    }
+
                     \App\Models\Unit::create([
                         'floor_id' => $floor->id,
                         'unit_number' => $unitNumber,
@@ -200,13 +229,21 @@ class FacilityController extends Controller
                         'area_sqm' => 0,
                         'price' => 0,
                         'status' => 'available',
+                        'podyezd' => $podyezd,
                     ]);
                 }
 
                 // Tijorat xonalari (Commercial) yaratish
+                $commUnitsPerEntrance = (int) ceil($commercialCount / $entrancesCount);
+                if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
                 for ($c = 1; $c <= $commercialCount; $c++) {
                     $prefix = 'D' . $f;
                     $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                    $podyezd = (int) ceil($c / $commUnitsPerEntrance);
+                    if ($podyezd > $entrancesCount) {
+                        $podyezd = $entrancesCount;
+                    }
+
                     \App\Models\Unit::create([
                         'floor_id' => $floor->id,
                         'unit_number' => $unitNumber,
@@ -214,6 +251,7 @@ class FacilityController extends Controller
                         'area_sqm' => 0,
                         'price' => 0,
                         'status' => 'available',
+                        'podyezd' => $podyezd,
                     ]);
                 }
             }
@@ -313,10 +351,19 @@ class FacilityController extends Controller
             'blueprint_path' => $blueprintPath,
         ]);
 
+        $building = Building::find($validated['building_id']);
+        $entrancesCount = $building ? (int) ($building->entrances_count ?? 1) : 1;
+        if ($entrancesCount < 1) $entrancesCount = 1;
+
         if ($validated['total_units'] > 0) {
+            $resUnitsPerEntrance = (int) ceil($validated['total_units'] / $entrancesCount);
+            if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
             for ($i = 1; $i <= $validated['total_units']; $i++) {
                 $prefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
                 $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
+                $podyezd = (int) ceil($i / $resUnitsPerEntrance);
+                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
                 \App\Models\Unit::create([
                     'floor_id' => $floor->id,
                     'unit_number' => $unitNumber,
@@ -324,14 +371,20 @@ class FacilityController extends Controller
                     'area_sqm' => 0,
                     'price' => 0,
                     'status' => 'available',
+                    'podyezd' => $podyezd,
                 ]);
             }
         }
 
         if (($validated['total_commercial_units'] ?? 0) > 0) {
+            $commUnitsPerEntrance = (int) ceil($validated['total_commercial_units'] / $entrancesCount);
+            if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
             for ($i = 1; $i <= $validated['total_commercial_units']; $i++) {
                 $prefix = 'D' . $floor->floor_number;
                 $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
+                $podyezd = (int) ceil($i / $commUnitsPerEntrance);
+                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
                 \App\Models\Unit::create([
                     'floor_id' => $floor->id,
                     'unit_number' => $unitNumber,
@@ -339,6 +392,7 @@ class FacilityController extends Controller
                     'area_sqm' => 0,
                     'price' => 0,
                     'status' => 'available',
+                    'podyezd' => $podyezd,
                 ]);
             }
         }
@@ -365,8 +419,14 @@ class FacilityController extends Controller
         $floor->total_commercial_units = $validated['total_commercial_units'] ?? 0;
         $floor->save();
 
+        $building = $floor->building;
+        $entrancesCount = $building ? (int) ($building->entrances_count ?? 1) : 1;
+        if ($entrancesCount < 1) $entrancesCount = 1;
+
         $currentResidentialCount = $floor->units()->where('type', 'residential')->count();
         if ($validated['total_units'] > $currentResidentialCount) {
+            $resUnitsPerEntrance = (int) ceil($validated['total_units'] / $entrancesCount);
+            if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
             for ($i = $currentResidentialCount + 1; $i <= $validated['total_units']; $i++) {
                 $prefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
                 $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
@@ -376,6 +436,9 @@ class FacilityController extends Controller
                     $unitNumber = $originalNumber . '-' . $counter;
                     $counter++;
                 }
+                $podyezd = (int) ceil($i / $resUnitsPerEntrance);
+                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
                 \App\Models\Unit::create([
                     'floor_id' => $floor->id,
                     'unit_number' => $unitNumber,
@@ -383,6 +446,7 @@ class FacilityController extends Controller
                     'area_sqm' => 0,
                     'price' => 0,
                     'status' => 'available',
+                    'podyezd' => $podyezd,
                 ]);
             }
         }
@@ -390,6 +454,8 @@ class FacilityController extends Controller
         $currentCommercialCount = $floor->units()->where('type', 'commercial')->count();
         $totalCommercial = $validated['total_commercial_units'] ?? 0;
         if ($totalCommercial > $currentCommercialCount) {
+            $commUnitsPerEntrance = (int) ceil($totalCommercial / $entrancesCount);
+            if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
             for ($i = $currentCommercialCount + 1; $i <= $totalCommercial; $i++) {
                 $prefix = 'D' . $floor->floor_number;
                 $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
@@ -399,6 +465,9 @@ class FacilityController extends Controller
                     $unitNumber = $originalNumber . '-' . $counter;
                     $counter++;
                 }
+                $podyezd = (int) ceil($i / $commUnitsPerEntrance);
+                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
                 \App\Models\Unit::create([
                     'floor_id' => $floor->id,
                     'unit_number' => $unitNumber,
@@ -406,6 +475,7 @@ class FacilityController extends Controller
                     'area_sqm' => 0,
                     'price' => 0,
                     'status' => 'available',
+                    'podyezd' => $podyezd,
                 ]);
             }
         }
@@ -442,6 +512,7 @@ class FacilityController extends Controller
             'bathrooms_count' => 'nullable|integer|min:0',
             'toilets_count' => 'nullable|integer|min:0',
             'orientation' => 'nullable|string|max:255',
+            'podyezd' => 'nullable|integer|min:1',
         ]);
 
         \App\Models\Unit::create($validated);
@@ -464,6 +535,7 @@ class FacilityController extends Controller
             'bathrooms_count' => 'nullable|integer|min:0',
             'toilets_count' => 'nullable|integer|min:0',
             'orientation' => 'nullable|string|max:255',
+            'podyezd' => 'nullable|integer|min:1',
         ]);
 
         $unit->update($validated);

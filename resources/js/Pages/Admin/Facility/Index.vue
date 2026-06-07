@@ -762,14 +762,36 @@ const progressSeries = computed(() => {
                             <h2 class="text-3xl font-display font-bold text-gray-900 drop-shadow-sm">
                                 {{ selectedBuilding.name }} <span class="text-blue-600">{{ $t('command_center') }}</span>
                             </h2>
-                            <p class="text-xs text-gray-500 font-mono mt-2 flex flex-wrap items-center gap-2">
-                                <span>📍 {{ [selectedBuilding.city, selectedBuilding.district, selectedBuilding.mahalla, selectedBuilding.street].filter(Boolean).join(', ') || 'Manzil kiritilmagan' }}</span>
-                                <span v-if="selectedBuilding.block_name || selectedBuilding.corpus_name" class="text-gray-900">| 🏢 {{ [selectedBuilding.block_name, selectedBuilding.corpus_name].filter(Boolean).join(' - ') }}</span>
-                                <span class="text-amber-600">| 📏 {{ selectedBuilding.total_floors }} {{ $t('floors') }}</span>
-                                <span v-if="selectedBuilding.length_m || selectedBuilding.width_m || selectedBuilding.height_m" class="text-emerald-600">
-                                    | 📐 U: {{ selectedBuilding.length_m || 0 }}m × K: {{ selectedBuilding.width_m || 0 }}m × B: {{ selectedBuilding.height_m || 0 }}m
-                                </span>
-                            </p>
+                            <div class="mt-4 overflow-x-auto border border-gray-200/20 rounded-xl bg-gray-50 p-4">
+                                <table class="w-full text-left text-xs font-mono text-gray-700">
+                                    <tbody>
+                                        <tr class="border-b border-gray-200/10">
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📍 Manzil:</td>
+                                            <td class="py-2 pr-6 font-bold text-gray-900">{{ [selectedBuilding.city, selectedBuilding.district, selectedBuilding.mahalla, selectedBuilding.street].filter(Boolean).join(', ') || 'Manzil kiritilmagan' }}</td>
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏢 Blok / Korpus:</td>
+                                            <td class="py-2 font-bold text-gray-900">{{ [selectedBuilding.block_name, selectedBuilding.corpus_name].filter(Boolean).join(' - ') || 'Kiritilmagan' }}</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200/10">
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📏 Qavatlar:</td>
+                                            <td class="py-2 pr-6 font-bold text-amber-600">{{ selectedBuilding.total_floors }} qavat</td>
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🚪 Podyezdlar / Bloklar:</td>
+                                            <td class="py-2 font-bold text-gray-900">{{ selectedBuilding.entrances_count || 1 }} ta podyezd / {{ selectedBuilding.blocks_count || 1 }} ta blok</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200/10">
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏠 Jami Uylar:</td>
+                                            <td class="py-2 pr-6 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }} ta</td>
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏬 Jami Do'konlar:</td>
+                                            <td class="py-2 font-bold text-indigo-600">{{ selectedBuilding.total_shops || 0 }} ta</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📐 O'lchamlar (U×K×B):</td>
+                                            <td class="py-2 pr-6 font-bold text-emerald-600">{{ selectedBuilding.length_m || 0 }}m × {{ selectedBuilding.width_m || 0 }}m × {{ selectedBuilding.height_m || 0 }}m</td>
+                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">💰 Smeta byudjeti:</td>
+                                            <td class="py-2 font-bold text-emerald-600">{{ $currency(selectedBuilding.estimated_budget) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         
                         <div class="flex flex-col items-end gap-3 shrink-0">
@@ -1147,31 +1169,7 @@ const progressSeries = computed(() => {
                         <input v-model="buildingForm.estimated_budget" type="number" min="0" step="0.01" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
                     </div>
 
-                    <!-- Auto-Generation Fields (Only when creating) -->
-                    <div v-if="!isEditingBuilding" class="p-4 border border-amber-200 rounded-lg bg-amber-50">
-                        <h4 class="text-xs font-mono text-amber-600 uppercase mb-3 font-bold tracking-widest">Qavat va Xonalarni Avtomatlashtirilgan Generatsiyasi</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Har qavatdagi xonadonlar (dona)</label>
-                                <input v-model="buildingForm.units_per_floor" type="number" min="0" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 4">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'rtacha maydoni (kv.m)</label>
-                                <input v-model="buildingForm.average_area" type="number" min="0" step="0.01" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 65">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">O'rtacha narxi (UZS)</label>
-                                <input v-model="buildingForm.average_price" type="number" min="0" step="0.01" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 500000000">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">1-qavatdagi Do'konlar soni</label>
-                                <input v-model="buildingForm.commercial_units_first_floor" type="number" min="0" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm focus:border-amber-500 transition-all" placeholder="Masalan: 3">
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-gray-500 font-mono mt-3 italic">Eslatma: Agar kiritilsa, bino qo'shilganida barcha qavat va xonalar tayyor holatda (A1-01, D1-01 formatida) tizimga yuklanadi.</p>
-                    </div>
+
 
                     <!-- Blueprint Upload -->
                     <div>

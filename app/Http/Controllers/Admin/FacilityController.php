@@ -147,9 +147,9 @@ class FacilityController extends Controller
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
-            'blueprint' => 'nullable|file|max:10240',
-            'photo' => 'nullable|file|max:10240',
-            'model_3d' => 'nullable|file|max:51200',
+            'blueprint' => 'nullable|file|max:256000',
+            'photo' => 'nullable|file|max:102400',
+            'model_3d' => 'nullable|file|max:1024000',
             'basement_floors' => 'nullable|integer|min:0',
             'is_object_only' => 'nullable|boolean',
         ]);
@@ -383,9 +383,9 @@ class FacilityController extends Controller
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
-            'blueprint' => 'nullable|file|max:10240',
-            'photo' => 'nullable|file|max:10240',
-            'model_3d' => 'nullable|file|max:51200',
+            'blueprint' => 'nullable|file|max:256000',
+            'photo' => 'nullable|file|max:102400',
+            'model_3d' => 'nullable|file|max:1024000',
             'basement_floors' => 'nullable|integer|min:0',
         ]);
 

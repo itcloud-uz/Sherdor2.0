@@ -27,6 +27,8 @@ class Building extends Model
         'length_m',
         'width_m',
         'height_m',
+        'model_3d_path',
+        'basement_floors',
     ];
 
     public function floors()

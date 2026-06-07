@@ -18,12 +18,22 @@ class FacilityController extends Controller
         foreach ($emptyBuildings as $building) {
             \Illuminate\Support\Facades\DB::transaction(function () use ($building) {
                 $totalFloors = (int) $building->total_floors;
+                $basementFloors = (int) ($building->basement_floors ?? 0);
                 $totalApartments = (int) ($building->total_apartments ?? 0);
                 $totalShops = (int) ($building->total_shops ?? 0);
                 $entrancesCount = (int) ($building->entrances_count ?? 1);
                 if ($entrancesCount < 1) $entrancesCount = 1;
 
-                for ($f = 1; $f <= $totalFloors; $f++) {
+                $floorNumbers = [];
+                for ($b = -$basementFloors; $b <= -1; $b++) {
+                    if ($b < 0) $floorNumbers[] = $b;
+                }
+                $aboveGroundCount = $totalFloors - $basementFloors;
+                for ($a = 1; $a <= $aboveGroundCount; $a++) {
+                    $floorNumbers[] = $a;
+                }
+
+                foreach ($floorNumbers as $idx => $f) {
                     $commercialCount = 0;
                     $residentialCount = 0;
 
@@ -32,18 +42,24 @@ class FacilityController extends Controller
                     }
 
                     if ($totalApartments > 0) {
-                        if ($totalShops > 0 && $totalFloors > 1) {
+                        if ($totalShops > 0 && $aboveGroundCount > 1) {
                             $residentialFloors = $totalFloors - 1;
                             $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
                             $remainder = $totalApartments % $residentialFloors;
 
-                            if ($f > 1) {
-                                $residentialCount = $baseUnitsPerFloor + (($f - 2) < $remainder ? 1 : 0);
+                            if ($f !== 1) {
+                                $residentialCount = $baseUnitsPerFloor;
+                                if ($idx < $remainder) {
+                                    $residentialCount++;
+                                }
                             }
                         } else {
                             $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
                             $remainder = $totalApartments % $totalFloors;
-                            $residentialCount = $baseUnitsPerFloor + (($f - 1) < $remainder ? 1 : 0);
+                            $residentialCount = $baseUnitsPerFloor;
+                            if ($idx < $remainder) {
+                                $residentialCount++;
+                            }
                         }
                     }
 
@@ -58,7 +74,7 @@ class FacilityController extends Controller
                     $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
                     if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
                     for ($u = 1; $u <= $residentialCount; $u++) {
-                        $prefix = 'A' . $f;
+                        $prefix = $f < 0 ? 'B' . abs($f) : 'A' . $f;
                         $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
                         $podyezd = (int) ceil($u / $resUnitsPerEntrance);
                         if ($podyezd > $entrancesCount) {
@@ -132,6 +148,8 @@ class FacilityController extends Controller
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'model_3d' => 'nullable|file|max:51200',
+            'basement_floors' => 'nullable|integer|min:0',
             // Ommaviy generatsiya uchun maydonlar
             'units_per_floor' => 'nullable|integer|min:0',
             'average_area' => 'nullable|numeric|min:0',
@@ -144,7 +162,12 @@ class FacilityController extends Controller
             $blueprintPath = $request->file('blueprint')->store('blueprints', 'public');
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $blueprintPath) {
+        $model3dPath = null;
+        if ($request->hasFile('model_3d')) {
+            $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $blueprintPath, $model3dPath) {
             $building = Building::create([
                 'name' => $validated['name'],
                 'city' => $validated['city'] ?? null,
@@ -165,17 +188,29 @@ class FacilityController extends Controller
                 'status' => 'planning',
                 'actual_expenses' => 0,
                 'blueprint_path' => $blueprintPath,
+                'model_3d_path' => $model3dPath,
+                'basement_floors' => $validated['basement_floors'] ?? 0,
             ]);
 
             // Avtomatik Generatsiya Mantiqi
             $totalFloors = (int) $validated['total_floors'];
+            $basementFloors = (int) ($validated['basement_floors'] ?? 0);
             $totalApartments = (int) ($validated['total_apartments'] ?? 0);
             $totalShops = (int) ($validated['total_shops'] ?? 0);
             $entrancesCount = (int) ($validated['entrances_count'] ?? 1);
             if ($entrancesCount < 1) $entrancesCount = 1;
 
             // Barcha qavatlarni yaratamiz
-            for ($f = 1; $f <= $totalFloors; $f++) {
+            $floorNumbers = [];
+            for ($b = -$basementFloors; $b <= -1; $b++) {
+                if ($b < 0) $floorNumbers[] = $b;
+            }
+            $aboveGroundCount = $totalFloors - $basementFloors;
+            for ($a = 1; $a <= $aboveGroundCount; $a++) {
+                $floorNumbers[] = $a;
+            }
+
+            foreach ($floorNumbers as $idx => $f) {
                 $commercialCount = 0;
                 $residentialCount = 0;
 
@@ -186,21 +221,27 @@ class FacilityController extends Controller
 
                 // Uylarni taqsimlash
                 if ($totalApartments > 0) {
-                    if ($totalShops > 0 && $totalFloors > 1) {
-                        // Agar 1-qavatda do'konlar bo'lsa, uylarni 2-qavatdan boshlab taqsimlaymiz
+                    if ($totalShops > 0 && $aboveGroundCount > 1) {
+                        // Agar 1-qavatda do'konlar bo'lsa, uylarni boshqa qavatlarga taqsimlaymiz
                         $residentialFloors = $totalFloors - 1;
                         $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
                         $remainder = $totalApartments % $residentialFloors;
 
-                        if ($f > 1) {
-                            $residentialCount = $baseUnitsPerFloor + (($f - 2) < $remainder ? 1 : 0);
+                        if ($f !== 1) {
+                            $residentialCount = $baseUnitsPerFloor;
+                            if ($idx < $remainder) {
+                                $residentialCount++;
+                            }
                         }
                     } else {
                         // Aks holda barcha qavatlarga taqsimlaymiz
                         $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
                         $remainder = $totalApartments % $totalFloors;
                         
-                        $residentialCount = $baseUnitsPerFloor + (($f - 1) < $remainder ? 1 : 0);
+                        $residentialCount = $baseUnitsPerFloor;
+                        if ($idx < $remainder) {
+                            $residentialCount++;
+                        }
                     }
                 }
 
@@ -215,7 +256,7 @@ class FacilityController extends Controller
                 $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
                 if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
                 for ($u = 1; $u <= $residentialCount; $u++) {
-                    $prefix = 'A' . $f;
+                    $prefix = $f < 0 ? 'B' . abs($f) : 'A' . $f;
                     $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
                     $podyezd = (int) ceil($u / $resUnitsPerEntrance);
                     if ($podyezd > $entrancesCount) {
@@ -281,10 +322,16 @@ class FacilityController extends Controller
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
             'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'model_3d' => 'nullable|file|max:51200',
+            'basement_floors' => 'nullable|integer|min:0',
         ]);
 
         if ($request->hasFile('blueprint')) {
             $building->blueprint_path = $request->file('blueprint')->store('blueprints', 'public');
+        }
+
+        if ($request->hasFile('model_3d')) {
+            $building->model_3d_path = $request->file('model_3d')->store('models_3d', 'public');
         }
 
         $building->update([
@@ -304,6 +351,7 @@ class FacilityController extends Controller
             'total_apartments' => $validated['total_apartments'] ?? 0,
             'total_shops' => $validated['total_shops'] ?? 0,
             'estimated_budget' => $validated['estimated_budget'] ?? 0,
+            'basement_floors' => $validated['basement_floors'] ?? 0,
         ]);
 
         return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');

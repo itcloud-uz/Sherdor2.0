@@ -189,8 +189,16 @@ watch(
                 if (activeTab.value !== tabParam) {
                     activeTab.value = tabParam;
                 }
+                // Autoselect the first building if none is selected
+                if (!selectedBuilding.value && props.buildings && props.buildings.length > 0) {
+                    const firstBuilding = props.buildings[0];
+                    selectedBuilding.value = firstBuilding;
+                    currentObject.value = firstBuilding.name;
+                }
             } else {
-                activeTab.value = 'blueprint'; // Default tab is 'blueprint'
+                // If no tab is specified in the URL, reset building selection to show main page
+                selectedBuilding.value = null;
+                currentObject.value = null;
             }
         } catch (e) {
             console.error('URL parse error in Facility tab watcher', e);
@@ -336,6 +344,7 @@ function downloadUnitsCSV() {
         sortedUnits.forEach(unit => {
             const buildingName = selectedBuilding.value.name;
             const floorNum = floor.floor_number;
+            const floorLabel = floorNum < 0 ? `${floorNum} yerto'la` : `${floorNum}-qavat`;
             const unitType = unit.type === 'commercial' ? "Do'kon" : 'Xonadon';
             const unitNumber = (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D') ? 'D-' : '') + unit.unit_number;
             const area = unit.area_sqm || 0;
@@ -349,7 +358,7 @@ function downloadUnitsCSV() {
             
             const row = [
                 `"${buildingName}"`,
-                `"${floorNum}-qavat"`,
+                `"${floorLabel}"`,
                 `"${unitNumber}"`,
                 `"${unitType}"`,
                 `"${area}"`,
@@ -502,6 +511,8 @@ const buildingForm = useForm({
     total_shops: 0,
     estimated_budget: 0,
     blueprint: null,
+    model_3d: null,
+    basement_floors: 0,
     // Detailed Attributes
     block_name: '',
     corpus_name: '',
@@ -550,6 +561,41 @@ const unitForm = useForm({
 const isEditingBuilding = ref(false);
 const isAddingBlock = ref(false);
 
+const showUploadModelsModal = ref(false);
+const uploadModelsForm = useForm({
+    building_id: '',
+    blueprint: null,
+    model_3d: null,
+});
+
+function openUploadModelsModal() {
+    uploadModelsForm.reset();
+    const blocks = groupedObjects.value[currentObject.value] || [];
+    if (blocks.length > 0) {
+        uploadModelsForm.building_id = blocks[0].id;
+    }
+    showUploadModelsModal.value = true;
+}
+
+function submitUploadModels() {
+    if (!uploadModelsForm.building_id) return;
+    // Set other form fields if we need to preserve unchanged values, but updateBuilding validation allows just these
+    const selectedObj = props.buildings.find(b => b.id === uploadModelsForm.building_id);
+    if (selectedObj) {
+        uploadModelsForm.name = selectedObj.name;
+        uploadModelsForm.total_floors = selectedObj.total_floors;
+    }
+    uploadModelsForm.transform((data) => ({
+        ...data,
+        _method: 'put'
+    })).post(route('admin.facility.buildings.update', uploadModelsForm.building_id), {
+        onSuccess: () => {
+            showUploadModelsModal.value = false;
+            uploadModelsForm.reset();
+        }
+    });
+}
+
 function openEditBuilding() {
     if (!selectedBuilding.value) return;
     isEditingBuilding.value = true;
@@ -565,6 +611,8 @@ function openEditBuilding() {
     buildingForm.total_shops = selectedBuilding.value.total_shops;
     buildingForm.estimated_budget = selectedBuilding.value.estimated_budget;
     buildingForm.blueprint = null;
+    buildingForm.model_3d = null;
+    buildingForm.basement_floors = selectedBuilding.value.basement_floors || 0;
     buildingForm.block_name = selectedBuilding.value.block_name || '';
     buildingForm.corpus_name = selectedBuilding.value.corpus_name || '';
     buildingForm.length_m = selectedBuilding.value.length_m || '';
@@ -935,6 +983,9 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                 <button class="px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
                                     👁️ Showroom
                                 </button>
+                                <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
+                                    📁 Modellar yuklash
+                                </button>
                                 <button @click="openAddBlock(currentObject)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
                                     + Bino qo'shish
                                 </button>
@@ -1033,6 +1084,10 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                         <span class="text-gray-500">Qavatlar soni</span>
                                         <span class="text-gray-900 font-bold">{{ selectedBuilding.total_floors }}</span>
                                     </div>
+                                    <div v-if="selectedBuilding.basement_floors > 0" class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Yerto'lalar</span>
+                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.basement_floors }} ta yerto'la</span>
+                                    </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">Xonalar soni</span>
                                         <span class="text-gray-900 font-bold">{{ maxRoomsCountForBuilding }}</span>
@@ -1105,7 +1160,7 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                         <div class="space-y-4">
                                             <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
                                                 <div class="w-20 flex items-center justify-between shrink-0">
-                                                    <span class="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider">{{ floor.floor_number }}-QAVAT</span>
+                                                    <span class="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-QAVAT` }}</span>
                                                     <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
                                                         <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
                                                         <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
@@ -1217,7 +1272,7 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                         </thead>
                                         <tbody>
                                             <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                                <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
+                                                <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number < 0 ? `${unit.floor_number} yerto'la` : `${unit.floor_number}-qavat` }}</td>
                                                 <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
                                                 <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
                                                 <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
@@ -1385,10 +1440,60 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                         </div>
                     </div>
 
+                    <!-- Files and Basements Section -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-100 pt-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Yerto'lalar soni</label>
+                            <input v-model="buildingForm.basement_floors" type="number" min="0" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">2D Chizma</label>
+                            <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">3D Model (GLTF/OBJ)</label>
+                            <input type="file" @input="buildingForm.model_3d = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                        </div>
+                    </div>
+
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="buildingForm.processing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">
                             {{ isAddingBlock ? 'Blok Qo\'shish' : (isEditingBuilding ? 'Saqlash' : $t('create_building')) }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Upload Models Modal -->
+        <Modal :show="showUploadModelsModal" @close="showUploadModelsModal = false">
+            <div class="p-6 w-[500px] max-w-[95vw]">
+                <h2 class="text-xl font-bold text-gray-900 mb-6">2D Chizma va 3D Model Yuklash</h2>
+                <form @submit.prevent="submitUploadModels" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-gray-500 mb-1">Blok / Korpusni tanlang</label>
+                        <select v-model="uploadModelsForm.building_id" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            <option v-for="b in (groupedObjects[currentObject] || [])" :key="b.id" :value="b.id">
+                                {{ b.block_name || b.corpus_name || 'Blok' }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-gray-500 mb-1">2D Chizma (PDF, JPG, PNG)</label>
+                        <input type="file" @input="uploadModelsForm.blueprint = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-gray-500 mb-1">3D Model (GLTF, OBJ, GLB)</label>
+                        <input type="file" @input="uploadModelsForm.model_3d = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="showUploadModelsModal = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="uploadModelsForm.processing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">
+                            Yuklash
                         </button>
                     </div>
                 </form>

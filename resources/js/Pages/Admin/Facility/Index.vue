@@ -239,13 +239,44 @@ function onUnitLeave() {
 
 // Watch for building changes to select the first floor
 
-watch(selectedBuilding, (newBuilding) => {
-    if (newBuilding && newBuilding.floors && newBuilding.floors.length > 0) {
-        selectedFloor.value = newBuilding.floors[0];
-    } else {
+watch(selectedBuilding, (newBuilding, oldBuilding) => {
+    if (!newBuilding) {
         selectedFloor.value = null;
+        return;
+    }
+    // Only reset floor to first floor if we switched to a different building
+    if (!oldBuilding || newBuilding.id !== oldBuilding.id) {
+        if (newBuilding.floors && newBuilding.floors.length > 0) {
+            selectedFloor.value = newBuilding.floors[0];
+        } else {
+            selectedFloor.value = null;
+        }
+    } else {
+        // If same building (updated metadata), sync selectedFloor to the updated floor instance
+        if (selectedFloor.value && newBuilding.floors) {
+            const updatedFloor = newBuilding.floors.find(f => f.id === selectedFloor.value.id);
+            if (updatedFloor) {
+                selectedFloor.value = updatedFloor;
+            } else {
+                selectedFloor.value = newBuilding.floors[0] || null;
+            }
+        }
     }
 });
+
+// Reactively update selectedBuilding when props.buildings updates from the server
+watch(
+    () => props.buildings,
+    (newBuildings) => {
+        if (selectedBuilding.value && newBuildings) {
+            const updated = newBuildings.find(b => b.id === selectedBuilding.value.id);
+            if (updated) {
+                selectedBuilding.value = updated;
+            }
+        }
+    },
+    { deep: true }
+);
 
 
 const expandedObjects = ref({});

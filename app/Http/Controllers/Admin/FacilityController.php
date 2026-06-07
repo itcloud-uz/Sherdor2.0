@@ -334,25 +334,129 @@ class FacilityController extends Controller
             $building->model_3d_path = $request->file('model_3d')->store('models_3d', 'public');
         }
 
-        $building->update([
-            'name' => $validated['name'],
-            'city' => $validated['city'] ?? null,
-            'district' => $validated['district'] ?? null,
-            'mahalla' => $validated['mahalla'] ?? null,
-            'street' => $validated['street'] ?? null,
-            'block_name' => $validated['block_name'] ?? null,
-            'corpus_name' => $validated['corpus_name'] ?? null,
-            'length_m' => $validated['length_m'] ?? null,
-            'width_m' => $validated['width_m'] ?? null,
-            'height_m' => $validated['height_m'] ?? null,
-            'total_floors' => $validated['total_floors'],
-            'blocks_count' => $validated['blocks_count'] ?? 1,
-            'entrances_count' => $validated['entrances_count'] ?? 1,
-            'total_apartments' => $validated['total_apartments'] ?? 0,
-            'total_shops' => $validated['total_shops'] ?? 0,
-            'estimated_budget' => $validated['estimated_budget'] ?? 0,
-            'basement_floors' => $validated['basement_floors'] ?? 0,
-        ]);
+        $totalFloors = (int) $validated['total_floors'];
+        $basementFloors = (int) ($validated['basement_floors'] ?? 0);
+        $totalApartments = (int) ($validated['total_apartments'] ?? 0);
+        $totalShops = (int) ($validated['total_shops'] ?? 0);
+        $entrancesCount = (int) ($validated['entrances_count'] ?? 1);
+        if ($entrancesCount < 1) $entrancesCount = 1;
+
+        // Desired floor numbers
+        $desiredFloorNumbers = [];
+        for ($b = -$basementFloors; $b <= -1; $b++) {
+            if ($b < 0) $desiredFloorNumbers[] = $b;
+        }
+        $aboveGroundCount = $totalFloors - $basementFloors;
+        for ($a = 1; $a <= $aboveGroundCount; $a++) {
+            $desiredFloorNumbers[] = $a;
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($building, $validated, $desiredFloorNumbers, $totalFloors, $basementFloors, $totalApartments, $totalShops, $entrancesCount) {
+            $building->update([
+                'name' => $validated['name'],
+                'city' => $validated['city'] ?? null,
+                'district' => $validated['district'] ?? null,
+                'mahalla' => $validated['mahalla'] ?? null,
+                'street' => $validated['street'] ?? null,
+                'block_name' => $validated['block_name'] ?? null,
+                'corpus_name' => $validated['corpus_name'] ?? null,
+                'length_m' => $validated['length_m'] ?? null,
+                'width_m' => $validated['width_m'] ?? null,
+                'height_m' => $validated['height_m'] ?? null,
+                'total_floors' => $validated['total_floors'],
+                'blocks_count' => $validated['blocks_count'] ?? 1,
+                'entrances_count' => $validated['entrances_count'] ?? 1,
+                'total_apartments' => $validated['total_apartments'] ?? 0,
+                'total_shops' => $validated['total_shops'] ?? 0,
+                'estimated_budget' => $validated['estimated_budget'] ?? 0,
+                'basement_floors' => $validated['basement_floors'] ?? 0,
+            ]);
+
+            // Sync floors: delete floors that are not in the desired floor numbers
+            $building->floors()->whereNotIn('floor_number', $desiredFloorNumbers)->delete();
+
+            $existingFloorNumbers = $building->floors()->pluck('floor_number')->toArray();
+
+            // Create new floors if they do not exist
+            foreach ($desiredFloorNumbers as $idx => $f) {
+                if (!in_array($f, $existingFloorNumbers)) {
+                    $commercialCount = 0;
+                    $residentialCount = 0;
+
+                    if ($f === 1) {
+                        $commercialCount = $totalShops;
+                    }
+
+                    $aboveGroundCount = $totalFloors - $basementFloors;
+                    if ($totalApartments > 0) {
+                        $residentialFloors = $totalFloors - ($totalShops > 0 && $aboveGroundCount > 1 ? 1 : 0);
+                        if ($residentialFloors < 1) $residentialFloors = 1;
+                        $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
+                        $remainder = $totalApartments % $residentialFloors;
+
+                        if ($f !== 1 || $totalShops == 0 || $aboveGroundCount <= 1) {
+                            $residentialCount = $baseUnitsPerFloor;
+                            if ($idx < $remainder) {
+                                $residentialCount++;
+                            }
+                        }
+                    }
+
+                    $floor = \App\Models\Floor::create([
+                        'building_id' => $building->id,
+                        'floor_number' => $f,
+                        'total_units' => $residentialCount,
+                        'total_commercial_units' => $commercialCount,
+                    ]);
+
+                    if ($residentialCount > 0) {
+                        $resUnitsPerEntrance = (int) ceil($residentialCount / $entrancesCount);
+                        if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
+                        for ($u = 1; $u <= $residentialCount; $u++) {
+                            $prefix = $f < 0 ? 'B' . abs($f) : 'A' . $f;
+                            $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                            $podyezd = (int) ceil($u / $resUnitsPerEntrance);
+                            if ($podyezd > $entrancesCount) {
+                                $podyezd = $entrancesCount;
+                            }
+
+                            \App\Models\Unit::create([
+                                'floor_id' => $floor->id,
+                                'unit_number' => $unitNumber,
+                                'type' => 'residential',
+                                'area_sqm' => 0,
+                                'price' => 0,
+                                'status' => 'available',
+                                'podyezd' => $podyezd,
+                            ]);
+                        }
+                    }
+
+                    if ($commercialCount > 0) {
+                        $commUnitsPerEntrance = (int) ceil($commercialCount / $entrancesCount);
+                        if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
+                        for ($c = 1; $c <= $commercialCount; $c++) {
+                            $prefix = 'D' . $f;
+                            $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                            $podyezd = (int) ceil($c / $commUnitsPerEntrance);
+                            if ($podyezd > $entrancesCount) {
+                                $podyezd = $entrancesCount;
+                            }
+
+                            \App\Models\Unit::create([
+                                'floor_id' => $floor->id,
+                                'unit_number' => $unitNumber,
+                                'type' => 'commercial',
+                                'area_sqm' => 0,
+                                'price' => 0,
+                                'status' => 'available',
+                                'podyezd' => $podyezd,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
 
         return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');
     }

@@ -966,6 +966,22 @@ const submitButtonLabel = computed(() => {
     if (isEditingBuilding.value) return 'Saqlash';
     return 'Bino Yaratish';
 });
+
+function handleFileChange(formRef, field, event, maxSizeMb) {
+    const file = event.target.files[0];
+    if (!file) {
+        formRef[field] = null;
+        return;
+    }
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > maxSizeMb) {
+        alert(`Fayl hajmi juda katta! Maksimal ruxsat etilgan hajm: ${maxSizeMb} MB. (Siz tanlagan fayl: ${sizeMb.toFixed(2)} MB)\n\nIltimos, fayl hajmini kamaytiring yoki serverning Nginx (client_max_body_size) sozlamalarini oshiring.`);
+        event.target.value = ''; // reset file input element
+        formRef[field] = null;
+    } else {
+        formRef[field] = file;
+    }
+}
 </script>
 
 <template>
@@ -1450,7 +1466,7 @@ const submitButtonLabel = computed(() => {
                         <!-- FOTO -->
                         <div>
                             <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">FOTO</label>
-                            <input type="file" @input="buildingForm.photo = $event.target.files[0]" accept="image/*" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                            <input type="file" @change="handleFileChange(buildingForm, 'photo', $event, 10)" accept="image/*" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                         </div>
 
                         <!-- OBYEKT NOMI -->
@@ -1486,11 +1502,11 @@ const submitButtonLabel = computed(() => {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">2D CHIZMA</label>
-                                <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 10)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">3D MODEL (GLTF/OBJ)</label>
-                                <input type="file" @input="buildingForm.model_3d = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 50)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                         </div>
                     </div>
@@ -1541,11 +1557,11 @@ const submitButtonLabel = computed(() => {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">2D CHIZMA</label>
-                                <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 10)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">3D MODEL (GLTF/OBJ)</label>
-                                <input type="file" @input="buildingForm.model_3d = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 50)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                         </div>
                     </div>
@@ -1560,7 +1576,7 @@ const submitButtonLabel = computed(() => {
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">Foto</label>
-                                <input type="file" @input="buildingForm.photo = $event.target.files[0]" accept="image/*" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'photo', $event, 10)" accept="image/*" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                         </div>
 
@@ -1630,11 +1646,11 @@ const submitButtonLabel = computed(() => {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">2D Chizma</label>
-                                <input type="file" @input="buildingForm.blueprint = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 10)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">3D Model (GLTF/OBJ)</label>
-                                <input type="file" @input="buildingForm.model_3d = $event.target.files[0]" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                                <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 50)" class="w-full bg-[#0f172a] border border-[#334155] text-gray-300 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
                             </div>
                         </div>
                     </div>
@@ -1665,12 +1681,12 @@ const submitButtonLabel = computed(() => {
 
                     <div>
                         <label class="block text-xs font-mono text-gray-500 mb-1">2D Chizma (PDF, JPG, PNG)</label>
-                        <input type="file" @input="uploadModelsForm.blueprint = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                        <input type="file" @change="handleFileChange(uploadModelsForm, 'blueprint', $event, 10)" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
                     </div>
 
                     <div>
                         <label class="block text-xs font-mono text-gray-500 mb-1">3D Model (GLTF, OBJ, GLB)</label>
-                        <input type="file" @input="uploadModelsForm.model_3d = $event.target.files[0]" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
+                        <input type="file" @change="handleFileChange(uploadModelsForm, 'model_3d', $event, 50)" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">
@@ -1730,7 +1746,7 @@ const submitButtonLabel = computed(() => {
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-gray-500 mb-1">Qavat Chizmasi (PDF/JPG)</label>
-                        <input type="file" @input="floorForm.blueprint = $event.target.files[0]" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-gray-100 file:text-gray-900 hover:file:bg-white/20 cursor-pointer border border-gray-200 rounded bg-white">
+                        <input type="file" @change="handleFileChange(floorForm, 'blueprint', $event, 10)" accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[10px] file:font-mono file:uppercase file:tracking-widest file:bg-gray-100 file:text-gray-900 hover:file:bg-white/20 cursor-pointer border border-gray-200 rounded bg-white">
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" v-if="isEditingFloor && isAdmin" @click="deleteFloor(editingFloorId)" class="mr-auto px-4 py-2 bg-indigo-50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-600 hover:text-black transition-colors">{{ $t('delete') }}</button>

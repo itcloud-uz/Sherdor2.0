@@ -23,9 +23,130 @@ const isAdmin = computed(() => {
     return roles.includes('Super_Admin') || roles.includes('Admin');
 });
 
-const selectedBuilding = ref(props.buildings?.length > 0 ? props.buildings[0] : null);
-const selectedFloor = ref(selectedBuilding.value?.floors?.length > 0 ? selectedBuilding.value.floors[0] : null);
+const currentObject = ref(props.buildings?.length > 0 ? props.buildings[0].name : null);
+const selectedBuilding = ref(null);
+const selectedFloor = ref(null);
 const activeTab = ref('blueprint');
+
+// Dynamic Building statistics
+const maxRoomsCountForBuilding = computed(() => {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return 0;
+    let max = 0;
+    selectedBuilding.value.floors.forEach(f => {
+        if (f.units) {
+            f.units.forEach(u => {
+                if (u.type === 'residential') {
+                    const rooms = u.rooms_count || 1;
+                    if (rooms > max) max = rooms;
+                }
+            });
+        }
+    });
+    return max || 1;
+});
+
+const buildingRoomStats = computed(() => {
+    const stats = {};
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return stats;
+    selectedBuilding.value.floors.forEach(f => {
+        if (f.units) {
+            f.units.forEach(u => {
+                if (u.type === 'residential') {
+                    const rooms = u.rooms_count || 1;
+                    stats[rooms] = (stats[rooms] || 0) + 1;
+                }
+            });
+        }
+    });
+    return stats;
+});
+
+// Dynamic room filters
+const availableRoomOptions = computed(() => {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return [1, 2, 3];
+    const set = new Set();
+    selectedBuilding.value.floors.forEach(f => {
+        if (f.units) {
+            f.units.forEach(u => {
+                if (u.type === 'residential') {
+                    set.add(u.rooms_count || 1);
+                }
+            });
+        }
+    });
+    return Array.from(set).sort((a, b) => a - b);
+});
+
+// Filtering variables
+const showFilterModal = ref(false);
+const tempFilterRooms = ref([]);
+const tempFilterMinArea = ref('');
+const tempFilterMaxArea = ref('');
+const tempFilterMinPrice = ref('');
+const tempFilterMaxPrice = ref('');
+
+const activeFilters = ref({
+    rooms: [],
+    minArea: null,
+    maxArea: null,
+    minPrice: null,
+    maxPrice: null
+});
+
+function toggleTempRoom(roomNum) {
+    const idx = tempFilterRooms.value.indexOf(roomNum);
+    if (idx > -1) {
+        tempFilterRooms.value.splice(idx, 1);
+    } else {
+        tempFilterRooms.value.push(roomNum);
+    }
+}
+
+function applyFilters() {
+    activeFilters.value.rooms = [...tempFilterRooms.value];
+    activeFilters.value.minArea = tempFilterMinArea.value;
+    activeFilters.value.maxArea = tempFilterMaxArea.value;
+    activeFilters.value.minPrice = tempFilterMinPrice.value;
+    activeFilters.value.maxPrice = tempFilterMaxPrice.value;
+    showFilterModal.value = false;
+}
+
+function resetFilters() {
+    tempFilterRooms.value = [];
+    tempFilterMinArea.value = '';
+    tempFilterMaxArea.value = '';
+    tempFilterMinPrice.value = '';
+    tempFilterMaxPrice.value = '';
+    applyFilters();
+}
+
+function isUnitMatchingFilters(unit) {
+    if (!unit) return false;
+    
+    // Rooms count filter
+    if (activeFilters.value.rooms.length > 0) {
+        const rooms = unit.rooms_count || 1;
+        if (!activeFilters.value.rooms.includes(rooms)) return false;
+    }
+    
+    // Area filter
+    if (activeFilters.value.minArea !== null && activeFilters.value.minArea !== '') {
+        if (unit.area_sqm < Number(activeFilters.value.minArea)) return false;
+    }
+    if (activeFilters.value.maxArea !== null && activeFilters.value.maxArea !== '') {
+        if (unit.area_sqm > Number(activeFilters.value.maxArea)) return false;
+    }
+    
+    // Price filter
+    if (activeFilters.value.minPrice !== null && activeFilters.value.minPrice !== '') {
+        if (unit.price < Number(activeFilters.value.minPrice)) return false;
+    }
+    if (activeFilters.value.maxPrice !== null && activeFilters.value.maxPrice !== '') {
+        if (unit.price > Number(activeFilters.value.maxPrice)) return false;
+    }
+    
+    return true;
+}
 
 const sortedFloors = computed(() => {
     if (!selectedBuilding.value || !selectedBuilding.value.floors) return [];
@@ -736,132 +857,234 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
 <template>
     <Head :title="$t('facility_command_center') || 'Facility Command Center'" />
     <AdminLayout>
-        <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 h-auto lg:h-[calc(100vh-8rem)] min-h-[500px]">
-            <!-- Left Side: Building List -->
-            <div class="w-full lg:w-1/4 flex flex-col gap-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-display text-gray-900 font-bold uppercase tracking-wider">Obyektlar</h3>
-                    <button @click="showAddBuildingModal = true; isEditingBuilding = false; isAddingBlock = false; buildingForm.reset();" class="px-3 py-1.5 bg-white border border-gray-200 shadow-sm text-gray-700 text-xs font-mono rounded hover:bg-gray-50 transition-all">
-                        + OBYEKT
+        <!-- Dynamic Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6 font-sans">
+            <button @click="currentObject = null; selectedBuilding = null" class="hover:text-blue-600 transition-colors flex items-center gap-1.5 font-medium">
+                🏠 Asosiy
+            </button>
+            <span class="text-gray-300">/</span>
+            <button @click="currentObject = null; selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
+                Obyektlar
+            </button>
+            <template v-if="currentObject">
+                <span class="text-gray-300">/</span>
+                <button @click="selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
+                    {{ currentObject }}
+                </button>
+            </template>
+            <template v-if="selectedBuilding">
+                <span class="text-gray-300">/</span>
+                <span class="text-gray-400">Bloklar</span>
+                <span class="text-gray-300">/</span>
+                <span class="text-gray-800 font-semibold">{{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'Asosiy Blok' }}</span>
+            </template>
+        </nav>
+
+        <div class="w-full flex flex-col min-h-[600px] font-sans">
+            
+            <!-- VIEW 1: Objects Page (If currentObject is null) -->
+            <div v-if="currentObject === null" class="space-y-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Mavjud Obyektlar</h2>
+                    <button @click="showAddBuildingModal = true; isEditingBuilding = false; isAddingBlock = false; buildingForm.reset();" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all">
+                        + Yangi Obyekt
                     </button>
                 </div>
-                
-                <div v-for="(blocks, objName) in groupedObjects" :key="objName" class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden transition-all">
-                    <div @click="toggleObject(objName)" class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 border-b border-gray-100">
-                        <div class="flex items-center gap-3">
-                            <span class="text-blue-600">🏢</span>
-                            <h4 class="text-sm font-bold text-gray-900 uppercase tracking-widest">{{ objName }}</h4>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-for="(blocks, objName) in groupedObjects" :key="objName" 
+                         @click="currentObject = objName; selectedBuilding = null"
+                         class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
+                        <div class="h-48 overflow-hidden bg-gray-100 relative">
+                            <img src="/modern_apartment_render.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                            <div class="absolute bottom-4 left-4 text-white">
+                                <h3 class="text-lg font-bold uppercase tracking-wide">{{ objName }}</h3>
+                                <p class="text-xs opacity-90 font-mono">{{ blocks.length }} ta blok / korpus</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button @click.stop="openAddBlock(objName)" class="w-6 h-6 flex items-center justify-center bg-gray-50 border border-gray-200 text-gray-500 rounded hover:bg-blue-50 hover:text-blue-600 transition-all" title="Blok qo'shish">+</button>
-                            <span class="text-gray-400 transform transition-transform" :class="{'rotate-180': expandedObjects[objName]}">▼</span>
+                        <div class="p-4 flex justify-between items-center bg-gray-50 border-t border-gray-100">
+                            <span class="text-xs font-semibold text-blue-600 group-hover:underline">Boshqarish →</span>
                         </div>
                     </div>
                     
-                    <div v-show="expandedObjects[objName] !== false" class="p-2 flex flex-col gap-2 bg-gray-50">
-                        <div 
-                            v-for="building in blocks" 
-                            :key="building.id"
-                            @click="selectedBuilding = building"
-                            :class="[ 'bg-white border shadow-sm rounded-lg p-3 cursor-pointer transition-all hover:border-blue-300', selectedBuilding?.id === building.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200' ]"
-                        >
-                            <div class="flex justify-between items-center">
-                                <h5 class="text-xs font-bold text-gray-900">{{ building.block_name || building.corpus_name || 'Asosiy Blok' }}</h5>
-                                <div class="flex items-center gap-1">
-                                    <span :class="['w-2 h-2 rounded-full', building.status === 'active' ? 'bg-blue-500' : (building.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500')]"></span>
-                                </div>
-                            </div>
-                        </div>
+                    <div v-if="Object.keys(groupedObjects).length === 0" class="col-span-full bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                        Hech qanday obyekt topilmadi. Yuqoridagi "+ Yangi Obyekt" orqali obyekt kiritishingiz mumkin.
                     </div>
-                </div>
-
-                <div v-if="Object.keys(groupedObjects).length === 0" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 text-center text-gray-500 text-sm font-mono border-dashed">
-                    Hech narsa topilmadi
                 </div>
             </div>
 
-            <!-- Right Side: Main Command Center -->
-            <div class="w-full lg:flex-1 flex flex-col bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl overflow-hidden min-h-[600px] lg:min-h-0">
-                <div v-if="selectedBuilding" class="flex flex-col h-full">
-                    
-                    <!-- Header -->
-                    <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start gap-4 relative overflow-hidden">
-                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-50 blur-[100px] rounded-full pointer-events-none"></div>
-                        <div class="flex-1">
-                            <h2 class="text-3xl font-display font-bold text-gray-900 drop-shadow-sm">
-                                {{ selectedBuilding.name }} <span class="text-blue-600">{{ $t('command_center') }}</span>
-                            </h2>
-                            <div class="mt-4 overflow-x-auto border border-gray-200/20 rounded-xl bg-gray-50 p-4">
-                                <table class="w-full text-left text-xs font-mono text-gray-700">
-                                    <tbody>
-                                        <tr class="border-b border-gray-200/10">
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📍 Manzil:</td>
-                                            <td class="py-2 pr-6 font-bold text-gray-900">{{ [selectedBuilding.city, selectedBuilding.district, selectedBuilding.mahalla, selectedBuilding.street].filter(Boolean).join(', ') || 'Manzil kiritilmagan' }}</td>
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏢 Blok / Korpus:</td>
-                                            <td class="py-2 font-bold text-gray-900">{{ [selectedBuilding.block_name, selectedBuilding.corpus_name].filter(Boolean).join(' - ') || 'Kiritilmagan' }}</td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200/10">
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📏 Qavatlar:</td>
-                                            <td class="py-2 pr-6 font-bold text-amber-600">{{ selectedBuilding.total_floors }} qavat</td>
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🚪 Podyezdlar / Bloklar:</td>
-                                            <td class="py-2 font-bold text-gray-900">{{ selectedBuilding.entrances_count || 1 }} ta podyezd / {{ selectedBuilding.blocks_count || 1 }} ta blok</td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200/10">
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏠 Jami Uylar:</td>
-                                            <td class="py-2 pr-6 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }} ta</td>
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">🏬 Jami Do'konlar:</td>
-                                            <td class="py-2 font-bold text-indigo-600">{{ selectedBuilding.total_shops || 0 }} ta</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">📐 O'lchamlar (U×K×B):</td>
-                                            <td class="py-2 pr-6 font-bold text-emerald-600">{{ selectedBuilding.length_m || 0 }}m × {{ selectedBuilding.width_m || 0 }}m × {{ selectedBuilding.height_m || 0 }}m</td>
-                                            <td class="py-2 pr-4 text-gray-400 font-bold uppercase tracking-wider text-[10px]">💰 Smeta byudjeti:</td>
-                                            <td class="py-2 font-bold text-emerald-600">{{ $currency(selectedBuilding.estimated_budget) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+            <!-- VIEW 2: Object Detail View (3rd screenshot) -->
+            <div v-else-if="currentObject !== null && selectedBuilding === null" class="space-y-6">
+                <!-- Large banner with photo, showroom toggle, and Bino qo'shish button -->
+                <div class="relative h-64 rounded-2xl overflow-hidden shadow-sm">
+                    <img src="/modern_apartment_render.png" class="w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+                    <div class="absolute inset-0 p-8 flex flex-col justify-between text-white">
+                        <div class="flex justify-between items-start w-full">
+                            <div></div>
+                            <!-- Controls on the right -->
+                            <div class="flex items-center gap-3 bg-black/30 p-2 rounded-xl backdrop-blur-sm border border-white/10">
+                                <div class="flex items-center gap-2 text-xs font-bold px-2">
+                                    <span class="opacity-75">2d</span>
+                                    <div class="w-10 h-5 bg-amber-500 rounded-full p-0.5 cursor-pointer relative transition-colors">
+                                        <div class="w-4 h-4 bg-white rounded-full absolute right-0.5 shadow-md"></div>
+                                    </div>
+                                    <span>3d</span>
+                                </div>
+                                <button class="px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
+                                    👁️ Showroom
+                                </button>
+                                <button @click="openAddBlock(currentObject)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                                    + Bino qo'shish
+                                </button>
                             </div>
                         </div>
-                        
-                        <div class="flex flex-col items-end gap-3 shrink-0">
-                            <div class="flex items-center gap-2">
-                                <button @click="openEditBuilding" class="px-3 py-1 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all flex items-center gap-1">
+                        <div>
+                            <h1 class="text-4xl font-extrabold tracking-tight">{{ currentObject }}</h1>
+                            <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full mt-2 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                Ish holatida
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid of Blocks under this Object -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-gray-800 uppercase tracking-wider">Bloklar / Korpuslar</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div v-for="building in groupedObjects[currentObject]" :key="building.id" 
+                             @click="selectedBuilding = building"
+                             class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
+                            <div class="h-40 overflow-hidden bg-gray-100 relative">
+                                <img src="/modern_apartment_render.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                <div class="absolute bottom-3 left-3 text-white">
+                                    <h4 class="font-bold uppercase tracking-wider text-sm">{{ building.block_name || building.corpus_name || 'Asosiy Blok' }}</h4>
+                                </div>
+                            </div>
+                            <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
+                                <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
+                                <button @click.stop="selectedBuilding = building; openEditBuilding();" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all">
+                                    Tahrirlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: Block Detail View with Chessboard (4th screenshot) -->
+            <div v-else-if="selectedBuilding !== null" class="space-y-8">
+                
+                <!-- Split columns details section -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Left column: Building card, edit details and filter button -->
+                    <div class="w-full md:w-1/3 flex flex-col gap-4">
+                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden relative">
+                            <div class="h-56 overflow-hidden bg-gray-100 relative">
+                                <img src="/modern_apartment_render.png" class="w-full h-full object-cover" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 text-white">
+                                    <h3 class="text-xl font-bold uppercase tracking-wider">{{ selectedBuilding.block_name || selectedBuilding.corpus_name || '1 Bino' }}</h3>
+                                </div>
+                            </div>
+                            <div class="p-4 flex gap-2">
+                                <button @click="openEditBuilding" class="flex-1 py-1.5 border border-gray-300 text-gray-700 text-xs font-sans rounded-lg hover:bg-gray-50 transition-all text-center">
                                     ✏️ Tahrirlash
                                 </button>
-                                <button v-if="isAdmin" @click="deleteBuilding" class="px-3 py-1 bg-indigo-50 border border-neon-magenta/50 text-indigo-600 text-[10px] font-mono rounded hover:bg-indigo-600 hover:text-black transition-all shadow-sm">
+                                <button v-if="isAdmin" @click="deleteBuilding" class="py-1.5 px-3 bg-red-50 text-red-600 border border-red-200 text-xs font-sans rounded-lg hover:bg-red-600 hover:text-white transition-all">
                                     🗑️ O'chirish
                                 </button>
                             </div>
+                        </div>
                         
-
+                        <!-- Filter Button and Legend below card -->
+                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col gap-4">
+                            <button @click="showFilterModal = true" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                </svg>
+                                Filter
+                            </button>
+                            
+                            <div class="flex flex-col gap-3 text-sm font-sans mt-2">
+                                <span class="flex items-center gap-3 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block shadow-sm"></span> Sotuvda
+                                </span>
+                                <span class="flex items-center gap-3 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block shadow-sm"></span> Sotilgan
+                                </span>
+                                <span class="flex items-center gap-3 text-gray-700 font-medium">
+                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block shadow-sm"></span> Bron qilingan
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Content Area -->
-                    <div class="flex-1 p-6 overflow-y-auto">
-                        
-                        <!-- TAB 1: Interactive Blueprint -->
-                        <div v-if="activeTab === 'blueprint'" class="h-full flex flex-col animate-fade-in relative">
-                            <!-- Premium Header with Building Name and Dynamic Date -->
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-gray-100">
-                                <div class="flex items-start gap-3">
-                                    <div class="mt-1">
-                                        <!-- Gold/Amber Layout Icon similar to screenshot -->
-                                        <svg class="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                                            <path d="M9 4v16M4 10h16" />
-                                        </svg>
+                    <!-- Right column: Bino haqidagi ma'lumot table -->
+                    <div class="w-full md:w-2/3">
+                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 h-full flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans">Bino haqidagi ma'lumot</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-sans">
+                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Qavatlar soni</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_floors }}</span>
                                     </div>
-                                    <div>
-                                        <h3 class="text-xl font-bold text-gray-900 font-sans tracking-tight">
-                                            {{ selectedBuilding.name }}
-                                        </h3>
-                                        <p class="text-xs text-gray-400 mt-1 font-sans">
-                                            {{ formattedCurrentDate }}
-                                        </p>
+                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Xonalar soni</span>
+                                        <span class="text-gray-900 font-bold">{{ maxRoomsCountForBuilding }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Podezdlar</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.entrances_count || 1 }}</span>
+                                    </div>
+                                    <!-- Dynamic rooms counts statistics -->
+                                    <div v-for="(count, rooms) in buildingRoomStats" :key="rooms" class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">{{ rooms }}-xonali</span>
+                                        <span class="text-gray-900 font-bold">{{ count }} ta</span>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 mt-4 md:mt-0">
+                            </div>
+                            
+                            <div class="mt-6 border-t border-gray-100 pt-6 flex flex-wrap gap-4 text-xs text-gray-400 font-mono">
+                                <span>📐 O'lchamlar (U×K×B): {{ selectedBuilding.length_m || 0 }}m × {{ selectedBuilding.width_m || 0 }}m × {{ selectedBuilding.height_m || 0 }}m</span>
+                                <span>💰 Smeta byudjeti: {{ $currency(selectedBuilding.estimated_budget) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs and Tab Contents -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+                    <!-- Tab selectors -->
+                    <div class="flex border-b border-gray-100 mb-6 gap-6 text-sm font-sans overflow-x-auto pb-1">
+                        <button @click="activeTab = 'blueprint'" :class="[activeTab === 'blueprint' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
+                            Shaxmatka
+                        </button>
+                        <button @click="activeTab = 'progress'" :class="[activeTab === 'progress' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
+                            Qurilish Jarayoni
+                        </button>
+                        <button @click="activeTab = 'finances'" :class="[activeTab === 'finances' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
+                            Smeta va Xarajatlar
+                        </button>
+                        <button @click="activeTab = 'analytics'" :class="[activeTab === 'analytics' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
+                            Tahlil (Analytics)
+                        </button>
+                        <button @click="activeTab = 'search'" :class="[activeTab === 'search' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
+                            Qidiruv
+                        </button>
+                    </div>
+
+                    <!-- Tab Content Area -->
+                    <div>
+                        <!-- Tab 1: Blueprint / Chessboard -->
+                        <div v-if="activeTab === 'blueprint'" class="animate-fade-in">
+                            <div class="flex justify-between items-center gap-4 mb-6">
+                                <h4 class="text-sm font-bold font-sans text-gray-800">Xonadonlar Shaxmatkasi</h4>
+                                <div class="flex items-center gap-2">
                                     <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                         EXCEL YUKLAB OLISH
@@ -872,30 +1095,15 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                 </div>
                             </div>
 
-                            <!-- Legend: circles and text on same card background -->
-                            <div class="flex gap-6 text-sm font-sans mb-8">
-                                <span class="flex items-center gap-2 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block"></span> Sotuvda
-                                </span>
-                                <span class="flex items-center gap-2 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block"></span> Sotilgan
-                                </span>
-                                <span class="flex items-center gap-2 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block"></span> Bron qilingan
-                                </span>
-                            </div>
-                            
-                            <div class="flex-1 overflow-y-auto custom-scrollbar pb-6">
+                            <!-- Chessboard Grid -->
+                            <div class="overflow-x-auto pb-4">
                                 <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
-                                    <!-- Podyezd Columns side-by-side without border/bg cards -->
                                     <div v-for="p in selectedBuilding.entrances_count || 1" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
-                                        <!-- Centered title without border and emoji -->
                                         <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
                                             {{ p }}-padezd
                                         </h4>
                                         <div class="space-y-4">
                                             <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
-                                                <!-- Floor label and edit/add buttons -->
                                                 <div class="w-20 flex items-center justify-between shrink-0">
                                                     <span class="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider">{{ floor.floor_number }}-QAVAT</span>
                                                     <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
@@ -904,11 +1112,10 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                                     </div>
                                                 </div>
 
-                                                <!-- Floor Units for this podyezd, aligned horizontally -->
                                                 <div class="flex gap-2 items-center">
                                                     <div v-for="unit in getUnitsByFloorAndPodyezd(floor, p)" :key="'unit-'+unit.id"
-                                                         class="unit-box w-12 h-12 flex flex-col items-center justify-center cursor-pointer transition-transform hover:-translate-y-0.5 rounded-lg shadow-sm relative shrink-0"
-                                                         :class="['status-' + unit.status]"
+                                                         class="unit-box w-12 h-12 flex flex-col items-center justify-center cursor-pointer rounded-lg shadow-sm relative shrink-0 transition-all duration-300"
+                                                         :class="['status-' + unit.status, { 'opacity-15 pointer-events-none scale-95': !isUnitMatchingFilters(unit) }]"
                                                          @mousemove="(e) => onUnitHover(unit, e)"
                                                          @mouseleave="onUnitLeave"
                                                          @click="openEditUnit(unit)">
@@ -928,59 +1135,59 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                     Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
                                 </div>
                             </div>
-                            
+
                             <!-- Unit Tooltip -->
                             <Teleport to="body">
                                 <div v-if="hoveredUnit" 
                                      class="fixed z-50 pointer-events-none bg-white border border-gray-200 p-4 rounded-xl shadow-lg"
                                      :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
-                                    <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2">
+                                    <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2 font-sans font-bold">
                                         {{ hoveredUnit.unit_number }} 
-                                        <span class="text-[10px] font-mono px-2 py-0.5 rounded text-gray-900">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
+                                        <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                     </h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-mono">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-sans">
                                         <span class="text-gray-500">Maydoni:</span>
-                                        <span class="text-gray-900 text-right">{{ hoveredUnit.area_sqm }} m²</span>
+                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.area_sqm }} m²</span>
                                         
                                         <span class="text-gray-500">Xonalar:</span>
-                                        <span class="text-gray-900 text-right">{{ hoveredUnit.rooms_count || 1 }} xona</span>
+                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.rooms_count || 1 }} xona</span>
                                         
                                         <span class="text-gray-500">Joylashuv:</span>
-                                        <span class="text-gray-900 text-right">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
+                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
                                         
                                         <span class="text-gray-500">Narxi:</span>
-                                        <span class="text-emerald-600 text-right">{{ $currency(hoveredUnit.price) }}</span>
+                                        <span class="text-emerald-600 text-right font-bold">{{ $currency(hoveredUnit.price) }}</span>
                                         
                                         <span class="text-gray-500">Status:</span>
-                                        <span :class="['text-right', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
+                                        <span :class="['text-right font-bold', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
                                     </div>
                                 </div>
                             </Teleport>
                         </div>
-                        
+
                         <!-- TAB: Search -->
                         <div v-if="activeTab === 'search'" class="animate-fade-in space-y-6">
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
-                                <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                                <h3 class="text-sm font-sans font-bold text-gray-900 uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                     <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyekt (Bino)</label>
-                                        <select v-model="searchFilters.building_id" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Obyekt (Bino)</label>
+                                        <select v-model="searchFilters.building_id" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
                                             <option value="">Barchasi</option>
-                                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }} - {{ b.block_name }}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi</label>
-                                        <select v-model="searchFilters.type" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Turi</label>
+                                        <select v-model="searchFilters.type" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
                                             <option value="">Barchasi</option>
                                             <option value="residential">Turar joy (Uy)</option>
                                             <option value="commercial">Tijorat (Do'kon)</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Holati</label>
-                                        <select v-model="searchFilters.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-white focus:ring-1 focus:ring-white transition-all text-sm">
+                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Holati</label>
+                                        <select v-model="searchFilters.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
                                             <option value="">Barchasi</option>
                                             <option value="available">Bo'sh</option>
                                             <option value="reserved">Band qilingan</option>
@@ -988,18 +1195,18 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                         </select>
                                     </div>
                                 </div>
-                                <button @click="performSearch" class="w-full py-2 bg-white text-black font-bold font-mono text-xs rounded hover:bg-gray-200 transition-colors shadow-sm">
+                                <button @click="performSearch" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-xs rounded-lg transition-colors shadow-sm">
                                     Qidirish
                                 </button>
                             </div>
                         
                             <!-- Results -->
-                            <div v-if="searchResults !== null" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-200">
-                                <h4 class="text-xs font-mono text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
+                            <div v-if="searchResults !== null" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4">
+                                <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
                                 <div class="overflow-x-auto">
-                                    <table class="w-full text-left text-sm font-mono">
+                                    <table class="w-full text-left text-sm font-sans">
                                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
                                                 <th class="py-3 px-2">Bino / Qavat</th>
                                                 <th class="py-3 px-2">Raqam</th>
                                                 <th class="py-3 px-2">Turi</th>
@@ -1009,15 +1216,15 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover: bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                                 <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number }}-qavat</td>
                                                 <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
                                                 <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
                                                 <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
                                                 <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
-                                                <td class="py-3 px-2 text-emerald-600 text-right">{{ $currency(unit.price) }}</td>
+                                                <td class="py-3 px-2 text-emerald-600 text-right font-bold">{{ $currency(unit.price) }}</td>
                                             </tr>
-                                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="searchResults.length === 0">
+                                            <tr v-if="searchResults.length === 0">
                                                 <td colspan="6" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Hech narsa topilmadi</td>
                                             </tr>
                                         </tbody>
@@ -1029,62 +1236,62 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                         <!-- TAB 2: Construction Progress -->
                         <div v-if="activeTab === 'progress'" class="animate-fade-in space-y-6">
                             <div class="flex justify-between items-center">
-                                <h3 class="text-sm font-mono text-amber-600 uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
-                                <button @click="showAddStageModal = true" class="px-3 py-1 border border-gray-300 text-gray-900 text-[10px] font-mono rounded hover:bg-white hover:text-black transition-all">
+                                <h3 class="text-sm font-sans font-bold text-amber-600 uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
+                                <button @click="showAddStageModal = true" class="px-3 py-1 border border-gray-300 text-gray-700 text-xs font-sans rounded hover:bg-gray-50 transition-all">
                                     + {{ $t('add_stage') }}
                                 </button>
                             </div>
 
                             <div v-if="selectedBuilding.stages?.length" class="space-y-4">
-                                <div v-for="stage in selectedBuilding.stages" :key="stage.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-200 relative overflow-hidden">
-                                    <!-- Progress Background Bar -->
+                                <div v-for="stage in selectedBuilding.stages" :key="stage.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 relative overflow-hidden">
                                     <div class="absolute left-0 top-0 bottom-0 bg-blue-50" :style="{ width: stage.progress_percentage + '%' }"></div>
                                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 shadow-sm" :style="{ left: stage.progress_percentage + '%' }"></div>
                                     
                                     <div class="relative z-10 flex justify-between items-center">
                                         <div>
-                                            <h4 class="text-gray-900 font-bold text-lg">{{ stage.name }}</h4>
+                                            <h4 class="text-gray-900 font-bold text-lg font-sans">{{ stage.name }}</h4>
                                             <p class="text-[10px] text-gray-500 font-mono uppercase">{{ stage.start_date || $t('tbd') }} {{ $t('to') }} {{ stage.end_date || $t('tbd') }}</p>
                                         </div>
                                         <div class="flex items-center gap-4">
-                                            <input type="range" v-model="stage.progress_percentage" class="w-32 accent-neon-cyan cursor-pointer" min="0" max="100">
-                                            <span class="text-xl font-display font-bold text-blue-600 w-12 text-right">{{ stage.progress_percentage }}%</span>
+                                            <input type="range" v-model="stage.progress_percentage" class="w-32 accent-blue-600 cursor-pointer" min="0" max="100">
+                                            <span class="text-xl font-sans font-bold text-blue-600 w-12 text-right">{{ stage.progress_percentage }}%</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div v-else class="text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-500 font-mono text-sm">
+                            </div>
+                            <div v-else class="text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-500 font-sans text-sm">
                                 {{ $t('no_stages_defined') }}
                             </div>
                         </div>
 
                         <!-- TAB 3: Estimates vs Expenses -->
                         <div v-if="activeTab === 'finances'" class="animate-fade-in">
-                            <h3 class="text-sm font-mono text-emerald-600 uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
+                            <h3 class="text-sm font-sans font-bold text-emerald-600 uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-blue-200 bg-blue-50">
-                                    <h4 class="text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('estimated_budget') }}</h4>
-                                    <p class="text-4xl font-display font-bold text-blue-600 tracking-tight drop-shadow-sm">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-blue-200 bg-blue-50">
+                                    <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-2">{{ $t('estimated_budget') }}</h4>
+                                    <p class="text-4xl font-sans font-bold text-blue-600 tracking-tight drop-shadow-sm">
                                         {{ $currency(selectedBuilding.estimated_budget) }}
                                     </p>
                                 </div>
-                                <div :class="['bg-white border border-gray-200 shadow-sm rounded-xl p-6 border', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'border-neon-magenta/50 bg-indigo-50' : 'border-emerald-200 bg-emerald-50']">
-                                    <h4 class="text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('actual_expenses') }}</h4>
-                                    <p :class="['text-4xl font-display font-bold tracking-tight', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'text-indigo-600 drop-shadow-sm animate-pulse' : 'text-emerald-600 drop-shadow-sm']">
+                                <div :class="['bg-white border border-gray-200 shadow-sm rounded-xl p-6', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'border-red-200 bg-red-50' : 'border-emerald-200 bg-emerald-50']">
+                                    <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-2">{{ $t('actual_expenses') }}</h4>
+                                    <p :class="['text-4xl font-sans font-bold tracking-tight', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'text-red-600 drop-shadow-sm animate-pulse' : 'text-emerald-600 drop-shadow-sm']">
                                         {{ $currency(selectedBuilding.actual_expenses) }}
                                     </p>
                                     <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="absolute top-4 right-4 text-xl">⚠️</div>
                                 </div>
                             </div>
 
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
-                                <h4 class="text-sm font-display text-gray-900 mb-4">{{ $t('budget_health') }}</h4>
-                                <div class="h-4 bg-black rounded-full overflow-hidden flex border border-gray-300">
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                                <h4 class="text-sm font-sans font-bold text-gray-900 mb-4">{{ $t('budget_health') }}</h4>
+                                <div class="h-4 bg-gray-100 rounded-full overflow-hidden flex border border-gray-200">
                                     <div class="h-full bg-emerald-600 shadow-sm" :style="{ width: Math.min(100, (selectedBuilding.actual_expenses / (selectedBuilding.estimated_budget || 1)) * 100) + '%' }"></div>
-                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="h-full bg-indigo-600 shadow-sm animate-pulse" :style="{ width: ((selectedBuilding.actual_expenses - selectedBuilding.estimated_budget) / selectedBuilding.estimated_budget) * 100 + '%' }"></div>
+                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="h-full bg-red-600 shadow-sm animate-pulse" :style="{ width: ((selectedBuilding.actual_expenses - selectedBuilding.estimated_budget) / selectedBuilding.estimated_budget) * 100 + '%' }"></div>
                                 </div>
-                                <div class="flex justify-between mt-2 text-[10px] font-mono text-gray-500">
+                                <div class="flex justify-between mt-2 text-[10px] font-sans font-bold text-gray-500">
                                     <span>$0</span>
                                     <span>{{ $t('target') }}: {{ $currency(selectedBuilding.estimated_budget) }}</span>
                                 </div>
@@ -1092,25 +1299,20 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                         </div>
 
                         <!-- TAB 4: Analytics -->
-                        <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
-                                <h3 class="text-sm font-mono text-neon-purple uppercase tracking-widest mb-6">{{ $t('unit_distribution') }}</h3>
+                        <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                                <h3 class="text-sm font-sans font-bold text-indigo-600 uppercase tracking-widest mb-6">{{ $t('unit_distribution') }}</h3>
                                 <VueApexCharts type="donut" height="300" :options="chartOptions" :series="chartSeries" />
                             </div>
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200">
-                                <h3 class="text-sm font-mono text-blue-600 uppercase tracking-widest mb-6">{{ $t('construction_velocity') }}</h3>
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                                <h3 class="text-sm font-sans font-bold text-blue-600 uppercase tracking-widest mb-6">{{ $t('construction_velocity') }}</h3>
                                 <VueApexCharts type="bar" height="300" :options="progressOptions" :series="progressSeries" />
                             </div>
                         </div>
-
                     </div>
                 </div>
-                
-                <div v-else class="h-full flex items-center justify-center text-gray-500 font-mono text-sm text-center px-4">
-                    {{ $t('select_building_command_center') }}
-                </div>
+
             </div>
-        </div>
 
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
@@ -1482,6 +1684,81 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                         <button type="submit" :disabled="isProcessingContract" class="px-6 py-2 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
                     </div>
                 </form>
+            </div>
+        </Modal>
+
+        <!-- Filter Modal -->
+        <Modal :show="showFilterModal" @close="showFilterModal = false">
+            <div class="p-6 w-full max-w-md bg-white rounded-2xl font-sans">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Filter</h2>
+                    <button @click="showFilterModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Option 1: Xonalar soni -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Xonalar soni</label>
+                        <div class="flex gap-3">
+                            <button v-for="room in availableRoomOptions" :key="room"
+                                    type="button"
+                                    @click="toggleTempRoom(room)"
+                                    :class="[
+                                        tempFilterRooms.includes(room)
+                                            ? 'bg-amber-500 text-white font-bold border-amber-500'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent',
+                                        'w-12 h-10 rounded-xl border flex items-center justify-center text-sm transition-all shadow-sm'
+                                    ]">
+                                {{ room }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Maydoni -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Maydoni (m²)</label>
+                        <!-- Decorative range slider bar similar to screenshot -->
+                        <div class="relative h-1 bg-amber-100 rounded-full my-4">
+                            <div class="absolute h-full bg-amber-500 rounded-full" style="left: 10%; right: 10%;"></div>
+                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 left-[10%] shadow cursor-pointer"></div>
+                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 right-[10%] shadow cursor-pointer"></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input v-model="tempFilterMinArea" type="number" placeholder="Min" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+                            <span class="text-gray-400">—</span>
+                            <input v-model="tempFilterMaxArea" type="number" placeholder="Max" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Option 3: Narxi -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Narx</label>
+                        <!-- Decorative range slider bar similar to screenshot -->
+                        <div class="relative h-1 bg-amber-100 rounded-full my-4">
+                            <div class="absolute h-full bg-amber-500 rounded-full" style="left: 5%; right: 15%;"></div>
+                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 left-[5%] shadow cursor-pointer"></div>
+                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 right-[15%] shadow cursor-pointer"></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input v-model="tempFilterMinPrice" type="number" placeholder="Min" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+                            <span class="text-gray-400">—</span>
+                            <input v-model="tempFilterMaxPrice" type="number" placeholder="Max" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-8">
+                    <button type="button" @click="showFilterModal = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-50 transition-all text-center">
+                        Yopish
+                    </button>
+                    <button type="button" @click="applyFilters" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm">
+                        Filterlash
+                    </button>
+                </div>
             </div>
         </Modal>
 

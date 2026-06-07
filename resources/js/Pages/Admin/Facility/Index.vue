@@ -206,7 +206,7 @@ function downloadUnitsCSV() {
             const buildingName = selectedBuilding.value.name;
             const floorNum = floor.floor_number;
             const unitType = unit.type === 'commercial' ? "Do'kon" : 'Xonadon';
-            const unitNumber = (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D-') ? 'D-' : '') + unit.unit_number;
+            const unitNumber = (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D') ? 'D-' : '') + unit.unit_number;
             const area = unit.area_sqm || 0;
             const rooms = unit.rooms_count || 1;
             const price = unit.price || 0;
@@ -887,7 +887,7 @@ const progressSeries = computed(() => {
                                                  @mouseleave="onUnitLeave"
                                                  @click="openEditUnit(unit)">
                                                 <span class="font-mono text-sm sm:text-base font-bold pointer-events-none z-10" :class="getUnitTextColor(unit.status)">
-                                                    {{ unit.type === 'commercial' ? 'D-' : '' }}{{ unit.unit_number }}
+                                                    {{ (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D')) ? 'D-' : '' }}{{ unit.unit_number }}
                                                 </span>
                                             </div>
                                             <div v-if="!floor.units?.length" class="col-span-full text-xs font-mono text-gray-500 italic py-4 border border-dashed border-gray-200 rounded-md text-center">

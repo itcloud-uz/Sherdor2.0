@@ -10,6 +10,77 @@ class FacilityController extends Controller
 {
     public function index()
     {
+        // Self-healing: auto-generate floors and units for any existing building/block that has 0 floors in DB
+        $emptyBuildings = Building::where('total_floors', '>', 0)
+            ->whereDoesntHave('floors')
+            ->get();
+
+        foreach ($emptyBuildings as $building) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($building) {
+                $totalFloors = (int) $building->total_floors;
+                $totalApartments = (int) ($building->total_apartments ?? 0);
+                $totalShops = (int) ($building->total_shops ?? 0);
+
+                for ($f = 1; $f <= $totalFloors; $f++) {
+                    $commercialCount = 0;
+                    $residentialCount = 0;
+
+                    if ($f === 1) {
+                        $commercialCount = $totalShops;
+                    }
+
+                    if ($totalApartments > 0) {
+                        if ($totalShops > 0 && $totalFloors > 1) {
+                            $residentialFloors = $totalFloors - 1;
+                            $baseUnitsPerFloor = (int) floor($totalApartments / $residentialFloors);
+                            $remainder = $totalApartments % $residentialFloors;
+
+                            if ($f > 1) {
+                                $residentialCount = $baseUnitsPerFloor + (($f - 2) < $remainder ? 1 : 0);
+                            }
+                        } else {
+                            $baseUnitsPerFloor = (int) floor($totalApartments / $totalFloors);
+                            $remainder = $totalApartments % $totalFloors;
+                            $residentialCount = $baseUnitsPerFloor + (($f - 1) < $remainder ? 1 : 0);
+                        }
+                    }
+
+                    $floor = \App\Models\Floor::create([
+                        'building_id' => $building->id,
+                        'floor_number' => $f,
+                        'total_units' => $residentialCount,
+                        'total_commercial_units' => $commercialCount,
+                    ]);
+
+                    for ($u = 1; $u <= $residentialCount; $u++) {
+                        $prefix = 'A' . $f;
+                        $unitNumber = $prefix . str_pad($u, 2, '0', STR_PAD_LEFT);
+                        \App\Models\Unit::create([
+                            'floor_id' => $floor->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'residential',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                        ]);
+                    }
+
+                    for ($c = 1; $c <= $commercialCount; $c++) {
+                        $prefix = 'D' . $f;
+                        $unitNumber = $prefix . str_pad($c, 2, '0', STR_PAD_LEFT);
+                        \App\Models\Unit::create([
+                            'floor_id' => $floor->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'commercial',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                        ]);
+                    }
+                }
+            });
+        }
+
         $buildings = Building::with(['floors.units', 'stages'])->get();
         $clients = \App\Models\Client::latest()->limit(500)->get();
         $partners = \App\Models\Partner::with('user')->get();

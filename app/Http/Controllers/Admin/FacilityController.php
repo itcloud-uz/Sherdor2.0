@@ -147,8 +147,8 @@ class FacilityController extends Controller
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
-            'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:10240',
+            'blueprint' => 'nullable|file|max:10240',
+            'photo' => 'nullable|file|max:10240',
             'model_3d' => 'nullable|file|max:51200',
             'basement_floors' => 'nullable|integer|min:0',
             'is_object_only' => 'nullable|boolean',
@@ -156,16 +156,28 @@ class FacilityController extends Controller
 
         $photoPath = null;
         if ($request->hasFile('photo')) {
+            $ext = strtolower($request->file('photo')->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+                return redirect()->back()->withErrors(['photo' => 'Rasm fayli formati noto\'g\'ri (faqat jpg, jpeg, png, webp, gif).']);
+            }
             $photoPath = $request->file('photo')->store('photos', 'public');
         }
 
         $blueprintPath = null;
         if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+                return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf).']);
+            }
             $blueprintPath = $request->file('blueprint')->store('blueprints', 'public');
         }
 
         $model3dPath = null;
         if ($request->hasFile('model_3d')) {
+            $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
+            if (!in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip'])) {
+                return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip).']);
+            }
             $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
         }
 
@@ -371,24 +383,36 @@ class FacilityController extends Controller
             'total_apartments' => 'nullable|integer|min:0',
             'total_shops' => 'nullable|integer|min:0',
             'estimated_budget' => 'nullable|numeric|min:0',
-            'blueprint' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:10240',
+            'blueprint' => 'nullable|file|max:10240',
+            'photo' => 'nullable|file|max:10240',
             'model_3d' => 'nullable|file|max:51200',
             'basement_floors' => 'nullable|integer|min:0',
         ]);
 
         $photoPath = $building->photo_path;
         if ($request->hasFile('photo')) {
+            $ext = strtolower($request->file('photo')->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+                return redirect()->back()->withErrors(['photo' => 'Rasm fayli formati noto\'g\'ri (faqat jpg, jpeg, png, webp, gif).']);
+            }
             $photoPath = $request->file('photo')->store('photos', 'public');
         }
 
         $blueprintPath = $building->blueprint_path;
         if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+                return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf).']);
+            }
             $blueprintPath = $request->file('blueprint')->store('blueprints', 'public');
         }
 
         $model3dPath = $building->model_3d_path;
         if ($request->hasFile('model_3d')) {
+            $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
+            if (!in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip'])) {
+                return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip).']);
+            }
             $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
         }
 

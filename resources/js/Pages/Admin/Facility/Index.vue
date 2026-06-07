@@ -682,6 +682,9 @@ function submitBuilding() {
                 showAddBuildingModal.value = false;
                 isEditingBuilding.value = false;
                 buildingForm.reset();
+            },
+            onError: (errors) => {
+                alert("Xatolik yuz berdi:\n" + Object.values(errors).join("\n"));
             }
         });
     } else {
@@ -695,6 +698,9 @@ function submitBuilding() {
                 if (props.buildings.length === 1) {
                     selectedBuilding.value = props.buildings[0];
                 }
+            },
+            onError: (errors) => {
+                alert("Xatolik yuz berdi:\n" + Object.values(errors).join("\n"));
             }
         });
     }

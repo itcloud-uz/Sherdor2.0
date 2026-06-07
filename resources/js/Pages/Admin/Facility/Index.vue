@@ -1689,10 +1689,10 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
 
         <!-- Filter Modal -->
         <Modal :show="showFilterModal" @close="showFilterModal = false">
-            <div class="p-6 w-full max-w-md bg-white rounded-2xl font-sans">
+            <div class="p-6 w-full max-w-md font-sans">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-gray-900">Filter</h2>
-                    <button @click="showFilterModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button @click="showFilterModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -1710,7 +1710,7 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                                     :class="[
                                         tempFilterRooms.includes(room)
                                             ? 'bg-amber-500 text-white font-bold border-amber-500'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent',
+                                             : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 border-transparent',
                                         'w-12 h-10 rounded-xl border flex items-center justify-center text-sm transition-all shadow-sm'
                                     ]">
                                 {{ room }}
@@ -1752,7 +1752,7 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
                 </div>
 
                 <div class="flex justify-end gap-3 mt-8">
-                    <button type="button" @click="showFilterModal = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-50 transition-all text-center">
+                    <button type="button" @click="showFilterModal = false" class="px-5 py-2.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all text-center">
                         Yopish
                     </button>
                     <button type="button" @click="applyFilters" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm">

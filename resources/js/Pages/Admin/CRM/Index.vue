@@ -2,6 +2,7 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import VueApexCharts from 'vue3-apexcharts';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -17,6 +18,9 @@ const props = defineProps({
     units: Array,
     overdueSchedules: Array,
     strictCollectionSchedules: Array,
+    posts: Array,
+    crmSettings: Object,
+    users: Array,
 });
 
 const isAdmin = computed(() => {
@@ -560,6 +564,179 @@ watch(() => contractForm.value.payment_type, (newType) => {
 const activeTab = ref('dashboard');
 const leadsViewMode = ref('kanban'); // 'kanban' or 'list'
 
+// Dashboard Stats & Charts Computeds
+const dashboardStats = computed(() => {
+    const leads = props.leads || [];
+    const today = new Date().toDateString();
+    
+    const total = leads.length;
+    const todayLeads = leads.filter(l => new Date(l.created_at).toDateString() === today).length;
+    const uncontacted = leads.filter(l => l.status === 'new').length;
+    const qualified = leads.filter(l => l.status === 'qualified').length;
+    
+    return { total, todayLeads, uncontacted, qualified };
+});
+
+const dashboardActivityChart = computed(() => {
+    const leads = props.leads || [];
+    const dates = [];
+    const data = [];
+    
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toDateString();
+        const label = d.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' });
+        dates.push(label);
+        
+        const count = leads.filter(l => new Date(l.created_at).toDateString() === dateStr).length;
+        data.push(count);
+    }
+    
+    return {
+        series: [{ name: 'Lidlar', data }],
+        options: {
+            chart: { type: 'area', toolbar: { show: false } },
+            stroke: { curve: 'smooth', width: 2 },
+            colors: ['#f2a900'],
+            fill: {
+                type: 'gradient',
+                gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 }
+            },
+            xaxis: { categories: dates },
+            dataLabels: { enabled: false },
+            tooltip: { theme: 'light' }
+        }
+    };
+});
+
+const dashboardSourceChart = computed(() => {
+    const leads = props.leads || [];
+    const telegram = leads.filter(l => l.source === 'telegram').length;
+    const partner = leads.filter(l => l.source === 'partner').length;
+    const manual = leads.filter(l => l.source === 'manual' || !l.source).length;
+    
+    return {
+        series: [telegram, partner, manual],
+        options: {
+            chart: { type: 'donut' },
+            labels: ['Telegram Bot', 'Hamkor Ilova', 'Qo\'lda kiritilgan'],
+            colors: ['#3b82f6', '#10b981', '#f2a900'],
+            legend: { position: 'bottom' },
+            dataLabels: { enabled: true }
+        }
+    };
+});
+
+// Posts Tab states and methods
+const showPostModal = ref(false);
+const isEditingPost = ref(false);
+const postForm = ref({
+    id: '',
+    title: '',
+    content: '',
+    status: 'draft',
+    image: null,
+    image_preview: null,
+});
+
+function openCreatePostModal() {
+    isEditingPost.value = false;
+    postForm.value = {
+        id: '',
+        title: '',
+        content: '',
+        status: 'draft',
+        image: null,
+        image_preview: null,
+    };
+    showPostModal.value = true;
+}
+
+function openEditPostModal(post) {
+    isEditingPost.value = true;
+    postForm.value = {
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        status: post.status,
+        image: null,
+        image_preview: post.image_path ? '/storage/' + post.image_path : null,
+    };
+    showPostModal.value = true;
+}
+
+function onPostImageChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+        postForm.value.image = file;
+        postForm.value.image_preview = URL.createObjectURL(file);
+    }
+}
+
+function submitPostForm() {
+    const data = new FormData();
+    if (postForm.value.id) data.append('id', postForm.value.id);
+    data.append('title', postForm.value.title);
+    data.append('content', postForm.value.content || '');
+    data.append('status', postForm.value.status);
+    if (postForm.value.image) {
+        data.append('image', postForm.value.image);
+    }
+    
+    router.post(route('admin.crm.posts.store'), data, {
+        onSuccess: () => {
+            showPostModal.value = false;
+            router.reload({ preserveScroll: true });
+        }
+    });
+}
+
+function deletePost(post) {
+    if (confirm('Rostdan ham ushbu postni o\'chirmoqchimisiz?')) {
+        router.delete(route('admin.crm.posts.destroy', post.id), {
+            onSuccess: () => {
+                router.reload({ preserveScroll: true });
+            }
+        });
+    }
+}
+
+// Settings Tab states and methods
+const settingsForm = ref({
+    telegram_bot_token: '',
+    telegram_chat_id: '',
+    facebook_page_id: '',
+    facebook_access_token: '',
+    google_analytics_id: '',
+    default_telegram_manager_id: '',
+    default_partner_manager_id: '',
+    default_manual_manager_id: '',
+});
+
+watch(() => props.crmSettings, (newSettings) => {
+    if (newSettings) {
+        settingsForm.value = {
+            telegram_bot_token: newSettings.telegram_bot_token || '',
+            telegram_chat_id: newSettings.telegram_chat_id || '',
+            facebook_page_id: newSettings.facebook_page_id || '',
+            facebook_access_token: newSettings.facebook_access_token || '',
+            google_analytics_id: newSettings.google_analytics_id || '',
+            default_telegram_manager_id: newSettings.default_telegram_manager_id || '',
+            default_partner_manager_id: newSettings.default_partner_manager_id || '',
+            default_manual_manager_id: newSettings.default_manual_manager_id || '',
+        };
+    }
+}, { immediate: true });
+
+function saveCrmSettings() {
+    router.post(route('admin.crm.settings.save'), settingsForm.value, {
+        onSuccess: () => {
+            alert('Sozlamalar muvaffaqiyatli saqlandi!');
+        }
+    });
+}
+
 // Synchronize activeTab with the URL tab parameter reactively
 watch(
     () => page.url,
@@ -572,7 +749,7 @@ watch(
                     activeTab.value = tabParam;
                 }
             } else {
-                activeTab.value = 'leads'; // Default tab is 'leads'
+                activeTab.value = 'dashboard'; // Default tab is 'dashboard'
             }
         } catch (e) {
             console.error('URL parse error in CRM tab watcher', e);
@@ -743,6 +920,24 @@ const availableManagers = computed(() => {
 
 const filteredClients = computed(() => {
     let result = props.clients || [];
+    
+    // Apply tab filter
+    if (activeTab.value === 'clients_new') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        result = result.filter(c => !c.is_blacklisted && (new Date(c.created_at) >= thirtyDaysAgo || !c.contracts || c.contracts.length === 0));
+    } else if (activeTab.value === 'clients_active') {
+        result = result.filter(c => !c.is_blacklisted && c.contracts?.some(contract => contract.status === 'active' || contract.status === 'approved'));
+    } else if (activeTab.value === 'clients_debtors') {
+        result = result.filter(c => !c.is_blacklisted && c.contracts?.some(contract => 
+            contract.payment_schedules?.some(s => s.status === 'overdue') || 
+            contract.paymentSchedules?.some(s => s.status === 'overdue')
+        ));
+    } else if (activeTab.value === 'clients_blacklist') {
+        result = result.filter(c => c.is_blacklisted);
+    } else {
+        result = result.filter(c => !c.is_blacklisted);
+    }
     
     if (searchQuery.value) {
         const lowerQuery = searchQuery.value.toLowerCase();

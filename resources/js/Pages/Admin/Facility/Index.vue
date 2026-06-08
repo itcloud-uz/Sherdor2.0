@@ -456,6 +456,50 @@ watch(activeTab, (newTab) => {
     }
 });
 
+// Synchronize URL query parameters with currentObject and selectedBuilding changes inside the component
+watch([currentObject, selectedBuilding], ([newObj, newBuilding]) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const url = new URL(window.location.href);
+        const currentView = url.searchParams.get('view');
+        const currentObjectParam = url.searchParams.get('object');
+        
+        let targetView = null;
+        let targetObject = null;
+        
+        if (newObj === null) {
+            targetView = 'objects';
+        } else if (newBuilding === null) {
+            targetView = 'object_detail';
+            targetObject = newObj;
+        } else {
+            targetView = 'blocks';
+        }
+        
+        if (currentView !== targetView || currentObjectParam !== targetObject) {
+            if (targetView) {
+                url.searchParams.set('view', targetView);
+            } else {
+                url.searchParams.delete('view');
+            }
+            
+            if (targetObject) {
+                url.searchParams.set('object', targetObject);
+            } else {
+                url.searchParams.delete('object');
+            }
+            
+            window.history.replaceState(
+                { ...window.history.state },
+                '',
+                url.pathname + url.search
+            );
+        }
+    } catch (e) {
+        console.error('URL replace error in Facility view sync watcher', e);
+    }
+});
+
 // Save selections in localStorage to survive F5/refresh and form updates in a unified watcher
 watch([currentObject, selectedBuilding, selectedFloor, selectedUnit], ([newObj, newBuilding, newFloor, newUnit], [oldObj, oldBuilding, oldFloor, oldUnit]) => {
     if (typeof window === 'undefined') return;
@@ -500,6 +544,14 @@ onMounted(() => {
     if (typeof window === 'undefined') return;
     
     try {
+        const url = new URL(window.location.href);
+        const viewParam = url.searchParams.get('view');
+        
+        // If the URL specifies a view parameter, respect the URL and skip restoring/defaulting
+        if (viewParam !== null) {
+            return;
+        }
+
         const savedObject = safeGetItem('fac_current_object');
         const savedBuildingId = safeGetItem('fac_building_id');
         const savedFloorId = safeGetItem('fac_floor_id');

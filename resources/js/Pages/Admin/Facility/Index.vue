@@ -399,7 +399,7 @@ function debounce(fn, delay) {
     };
 }
 
-// Synchronize activeTab with the URL tab parameter reactively
+// Synchronize activeTab and view/object parameters with the URL reactively
 watch(
     () => page.url,
     (newUrl) => {
@@ -412,8 +412,26 @@ watch(
                     activeTab.value = tabParam;
                 }
             }
+
+            const viewParam = url.searchParams.get('view');
+            const objectParam = url.searchParams.get('object');
+
+            if (viewParam === 'objects') {
+                currentObject.value = null;
+                selectedBuilding.value = null;
+            } else if (viewParam === 'object_detail') {
+                if (objectParam) {
+                    currentObject.value = objectParam;
+                } else if (!currentObject.value) {
+                    currentObject.value = 'SHER-DOR TJM';
+                }
+                selectedBuilding.value = null;
+            } else if (viewParam === 'blocks') {
+                // Keep currentObject. If a building is selected, it will show its chessboard.
+                // Otherwise it will show the list of blocks.
+            }
         } catch (e) {
-            console.error('URL parse error in Facility tab watcher', e);
+            console.error('URL parse error in Facility tab/view watcher', e);
         }
     },
     { immediate: true }

@@ -59,9 +59,30 @@ const isFacilityAsosiyActive = () => {
     try {
         const url = new URL(page.url, window.location.origin);
         const tabParam = url.searchParams.get('tab');
-        return tabParam === null;
+        const viewParam = url.searchParams.get('view');
+        return tabParam === null && viewParam === null;
     } catch (e) {
         return true;
+    }
+};
+
+const isFacilityViewActive = (view) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.facility') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const viewParam = url.searchParams.get('view');
+        return viewParam === view;
+    } catch (e) {
+        return false;
+    }
+};
+
+const currentActiveObject = ref(null);
+
+const updateSidebarState = () => {
+    if (typeof window !== 'undefined') {
+        currentActiveObject.value = localStorage.getItem('fac_current_object');
     }
 };
 
@@ -126,8 +147,17 @@ const currentNav = computed(() => {
 });
 
 let refreshInterval = null;
+let navigateUnregister = null;
 
 onMounted(() => {
+    updateSidebarState();
+    if (typeof window !== 'undefined') {
+        window.addEventListener('storage', updateSidebarState);
+    }
+    navigateUnregister = router.on('navigate', () => {
+        updateSidebarState();
+    });
+
     const currentRoute = route().current();
     if (currentRoute) {
         if (currentRoute.includes('finance') || currentRoute.includes('approvals')) {
@@ -148,6 +178,12 @@ onMounted(() => {
 onUnmounted(() => {
     if (refreshInterval) {
         clearInterval(refreshInterval);
+    }
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', updateSidebarState);
+    }
+    if (navigateUnregister) {
+        navigateUnregister();
     }
 });
 </script>
@@ -378,49 +414,31 @@ onUnmounted(() => {
                                 🏠 Asosiy
                             </Link>
 
-                            <!-- Blueprint -->
+                            <!-- Obyektlar -->
                             <Link
-                                :href="route('admin.facility', { tab: 'blueprint' })"
+                                :href="route('admin.facility', { view: 'objects' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityTabActive('blueprint') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :class="isFacilityViewActive('objects') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                🗺️ {{ $t('blueprint') }}
+                                🏢 Obyektlar
                             </Link>
                             
-                            <!-- Qidiruv -->
+                            <!-- Active Object (e.g. SHER-DOR TJM) -->
                             <Link
-                                :href="route('admin.facility', { tab: 'search' })"
+                                :href="route('admin.facility', { view: 'object_detail', object: currentActiveObject || 'SHER-DOR TJM' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityTabActive('search') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :class="isFacilityViewActive('object_detail') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                🔍 Qidiruv
+                                🏗️ {{ currentActiveObject || 'SHER-DOR TJM' }}
                             </Link>
-                            
-                            <!-- Progress -->
+
+                            <!-- Bloklar -->
                             <Link
-                                :href="route('admin.facility', { tab: 'progress' })"
+                                :href="route('admin.facility', { view: 'blocks' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityTabActive('progress') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :class="isFacilityViewActive('blocks') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                🏗️ {{ $t('progress') }}
-                            </Link>
-                            
-                            <!-- Finances -->
-                            <Link
-                                :href="route('admin.facility', { tab: 'finances' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityTabActive('finances') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                💰 {{ $t('finances') }}
-                            </Link>
-                            
-                            <!-- Analytics -->
-                            <Link
-                                :href="route('admin.facility', { tab: 'analytics' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityTabActive('analytics') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📊 {{ $t('analytics') }}
+                                📦 Bloklar
                             </Link>
                         </div>
                     </div>

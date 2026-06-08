@@ -84,6 +84,7 @@ const isFacilityViewActive = (view, objectName = null) => {
 
 const currentActiveObject = ref(null);
 const availableObjects = ref([]);
+const isObjectsListOpen = ref(true);
 
 const updateSidebarState = () => {
     if (typeof window !== 'undefined') {
@@ -427,25 +428,46 @@ onUnmounted(() => {
                                 🏠 Asosiy
                             </Link>
 
-                            <!-- Obyektlar -->
-                            <Link
-                                :href="route('admin.facility', { view: 'objects' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityViewActive('objects') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🏢 Obyektlar
-                            </Link>
-                            
-                            <!-- Dynamic list of available objects -->
-                            <template v-for="obj in (availableObjects.length > 0 ? availableObjects : ['SHER-DOR TJM'])" :key="obj">
-                                <Link
-                                    :href="route('admin.facility', { view: 'object_detail', object: obj })"
-                                    class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                    :class="isFacilityViewActive('object_detail', obj) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            <!-- Obyektlar Toggle and Link -->
+                            <div class="space-y-1">
+                                <div
+                                    class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors"
+                                    :class="isFacilityViewActive('objects') ? 'bg-blue-50/50 border border-blue-100/30' : ''"
                                 >
-                                    🏗️ {{ obj }}
-                                </Link>
-                            </template>
+                                    <Link
+                                        :href="route('admin.facility', { view: 'objects' })"
+                                        class="flex-1 flex items-center gap-2 py-2 px-3 text-xs font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                                        :class="isFacilityViewActive('objects') ? 'text-blue-600 font-semibold' : ''"
+                                    >
+                                        🏢 Obyektlar
+                                    </Link>
+                                    <button
+                                        @click="isObjectsListOpen = !isObjectsListOpen"
+                                        class="p-2 text-gray-400 hover:text-blue-600 focus:outline-none shrink-0"
+                                    >
+                                        <svg
+                                            class="w-3 h-3 transition-transform duration-200"
+                                            :class="isObjectsListOpen ? 'rotate-180' : ''"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Collapsible list of available objects -->
+                                <div v-show="isObjectsListOpen" class="pl-3 space-y-1 transition-all duration-300 border-l border-gray-100 ml-4">
+                                    <template v-for="obj in (availableObjects.length > 0 ? availableObjects : ['SHER-DOR TJM'])" :key="obj">
+                                        <Link
+                                            :href="route('admin.facility', { view: 'object_detail', object: obj })"
+                                            class="flex items-center gap-2 py-1.5 px-3 rounded-lg text-[11px] font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                            :class="isFacilityViewActive('object_detail', obj) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                        >
+                                            🏗️ {{ obj }}
+                                        </Link>
+                                    </template>
+                                </div>
+                            </div>
 
                             <!-- Bloklar -->
                             <Link

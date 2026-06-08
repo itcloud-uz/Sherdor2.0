@@ -36,6 +36,7 @@ const isAdmin = computed(() => {
 });
 
 const currentObject = ref(props.buildings?.length > 0 ? props.buildings[0].name : null);
+const currentView = ref('objects');
 const selectedBuilding = ref(null);
 const selectedFloor = ref(null);
 const activeTab = ref('blueprint');
@@ -429,6 +430,12 @@ watch(
             const viewParam = url.searchParams.get('view');
             const objectParam = url.searchParams.get('object');
 
+            if (viewParam) {
+                currentView.value = viewParam;
+            } else {
+                currentView.value = currentObject.value ? 'object_detail' : 'objects';
+            }
+
             if (viewParam === 'objects') {
                 currentObject.value = null;
                 selectedBuilding.value = null;
@@ -440,8 +447,12 @@ watch(
                 }
                 selectedBuilding.value = null;
             } else if (viewParam === 'blocks') {
-                // Keep currentObject. If a building is selected, it will show its chessboard.
-                // Otherwise it will show the list of blocks.
+                if (objectParam) {
+                    currentObject.value = objectParam;
+                } else {
+                    currentObject.value = null;
+                }
+                // Keep selectedBuilding if it is set, otherwise keep it null to show blocks list
             }
         } catch (e) {
             console.error('URL parse error in Facility tab/view watcher', e);
@@ -474,22 +485,27 @@ watch([currentObject, selectedBuilding], ([newObj, newBuilding]) => {
     if (typeof window === 'undefined') return;
     try {
         const url = new URL(window.location.href);
-        const currentView = url.searchParams.get('view');
+        const currentViewParam = url.searchParams.get('view');
         const currentObjectParam = url.searchParams.get('object');
         
         let targetView = null;
         let targetObject = null;
         
         if (newObj === null) {
-            targetView = 'objects';
+            if (currentView.value === 'blocks') {
+                targetView = 'blocks';
+            } else {
+                targetView = 'objects';
+            }
         } else if (newBuilding === null) {
             targetView = 'object_detail';
             targetObject = newObj;
         } else {
             targetView = 'blocks';
+            targetObject = newObj;
         }
         
-        if (currentView !== targetView || currentObjectParam !== targetObject) {
+        if (currentViewParam !== targetView || currentObjectParam !== targetObject) {
             if (targetView) {
                 url.searchParams.set('view', targetView);
             } else {
@@ -1567,13 +1583,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
     <AdminLayout>
         <!-- Dynamic Breadcrumbs -->
         <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6 font-sans">
-            <button @click="currentObject = null; selectedBuilding = null" class="hover:text-blue-600 transition-colors flex items-center gap-1.5 font-medium">
+            <button @click="currentObject = null; selectedBuilding = null; currentView = 'objects'" class="hover:text-blue-600 transition-colors flex items-center gap-1.5 font-medium">
                 🏠 Asosiy
             </button>
             <span class="text-gray-300">/</span>
-            <button @click="currentObject = null; selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
+            <button @click="currentObject = null; selectedBuilding = null; currentView = 'objects'" class="hover:text-blue-600 transition-colors font-medium">
                 Obyektlar
             </button>
+            <template v-if="currentObject === null && currentView === 'blocks'">
+                <span class="text-gray-300">/</span>
+                <span class="text-gray-800 font-semibold">Barcha Bloklar</span>
+            </template>
             <template v-if="currentObject">
                 <span class="text-gray-300">/</span>
                 <button @click="selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
@@ -1590,8 +1610,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
         <div class="w-full flex flex-col min-h-[600px] font-sans">
             
-            <!-- VIEW 1: Objects Page (If currentObject is null) -->
-            <div v-if="currentObject === null" class="space-y-6">
+            <!-- VIEW 1: Objects Page (If currentObject is null and currentView is objects) -->
+            <div v-if="currentObject === null && currentView === 'objects'" class="space-y-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-900">Mavjud Obyektlar</h2>
                     <button @click="showAddBuildingModal = true; isEditingBuilding = false; isAddingBlock = false; buildingForm.reset();" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all">
@@ -1619,6 +1639,38 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <div v-if="Object.keys(groupedObjects).length === 0" class="col-span-full bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
                         Hech qanday obyekt topilmadi. Yuqoridagi "+ Yangi Obyekt" orqali obyekt kiritishingiz mumkin.
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW 1.5: Flat Blocks Page (If currentObject is null and currentView is blocks) -->
+            <div v-else-if="currentObject === null && currentView === 'blocks'" class="space-y-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Barcha Obyektlar Bloklari / Korpuslari</h2>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div v-for="building in (props.buildings || []).filter(b => b.total_floors > 0)" :key="building.id" 
+                         @click="currentObject = building.name; selectedBuilding = building"
+                         class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
+                        <div class="h-40 overflow-hidden bg-gray-100 relative">
+                            <img :src="building.photo_path ? `/storage/${building.photo_path}` : getObjectPhoto(groupedObjects[building.name] || [])" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                            <div class="absolute bottom-3 left-3 text-white">
+                                <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-600/90 px-2 py-0.5 rounded-full block w-max mb-1 shadow-sm">{{ building.name }}</span>
+                                <h4 class="font-bold uppercase tracking-wider text-sm">{{ building.block_name || building.corpus_name || 'Asosiy Blok' }}</h4>
+                            </div>
+                        </div>
+                        <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
+                            <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
+                            <button @click.stop="currentObject = building.name; selectedBuilding = building; openEditBuilding();" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all">
+                                Tahrirlash
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="(props.buildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                    Hozirda hech qanday blok topilmadi.
                 </div>
             </div>
 

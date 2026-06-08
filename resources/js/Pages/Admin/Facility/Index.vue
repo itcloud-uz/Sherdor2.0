@@ -2233,12 +2233,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </button>
                                     </div>
                                     <div class="flex gap-2">
-                                        <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white font-bold font-sans rounded-full text-xs transition-all">
-                                            Sotish
-                                        </button>
-                                        <button type="button" @click="cancelEditUnit" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold font-sans rounded-full text-xs transition-all text-center">
-                                            Bekor qilish
-                                        </button>
                                         <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-xs shadow-sm transition-all text-center disabled:opacity-50">
                                             Saqlash
                                         </button>

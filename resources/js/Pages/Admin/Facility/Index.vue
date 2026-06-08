@@ -441,10 +441,7 @@ watch(
             
             const newSearch = url.search;
             if (window.location.search !== newSearch) {
-                router.replace(window.location.pathname + newSearch, {
-                    preserveState: true,
-                    preserveScroll: true
-                });
+                window.history.replaceState(null, '', window.location.pathname + newSearch);
             }
         } catch (e) {
             console.error('URL replace error in Facility activeTab watcher', e);

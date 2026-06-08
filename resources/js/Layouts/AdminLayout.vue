@@ -66,12 +66,16 @@ const isFacilityAsosiyActive = () => {
     }
 };
 
-const isFacilityViewActive = (view) => {
+const isFacilityViewActive = (view, objectName = null) => {
     const currentRoute = route().current();
     if (currentRoute !== 'admin.facility') return false;
     try {
         const url = new URL(page.url, window.location.origin);
         const viewParam = url.searchParams.get('view');
+        if (view === 'object_detail' && objectName) {
+            const objectParam = url.searchParams.get('object');
+            return viewParam === view && objectParam === objectName;
+        }
         return viewParam === view;
     } catch (e) {
         return false;
@@ -79,10 +83,19 @@ const isFacilityViewActive = (view) => {
 };
 
 const currentActiveObject = ref(null);
+const availableObjects = ref([]);
 
 const updateSidebarState = () => {
     if (typeof window !== 'undefined') {
         currentActiveObject.value = localStorage.getItem('fac_current_object');
+        try {
+            const objs = localStorage.getItem('fac_available_objects');
+            if (objs) {
+                availableObjects.value = JSON.parse(objs);
+            }
+        } catch (e) {
+            console.error('Error parsing fac_available_objects', e);
+        }
     }
 };
 
@@ -423,14 +436,16 @@ onUnmounted(() => {
                                 🏢 Obyektlar
                             </Link>
                             
-                            <!-- Active Object (e.g. SHER-DOR TJM) -->
-                            <Link
-                                :href="route('admin.facility', { view: 'object_detail', object: currentActiveObject || 'SHER-DOR TJM' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityViewActive('object_detail') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🏗️ {{ currentActiveObject || 'SHER-DOR TJM' }}
-                            </Link>
+                            <!-- Dynamic list of available objects -->
+                            <template v-for="obj in (availableObjects.length > 0 ? availableObjects : ['SHER-DOR TJM'])" :key="obj">
+                                <Link
+                                    :href="route('admin.facility', { view: 'object_detail', object: obj })"
+                                    class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                    :class="isFacilityViewActive('object_detail', obj) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                >
+                                    🏗️ {{ obj }}
+                                </Link>
+                            </template>
 
                             <!-- Bloklar -->
                             <Link

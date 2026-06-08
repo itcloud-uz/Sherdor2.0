@@ -14,6 +14,19 @@ const props = defineProps({
 });
 
 const page = usePage();
+
+// Save unique object names to localStorage
+watch(() => props.buildings, (newBuildings) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const availableObjectNames = [...new Set((newBuildings || []).map(b => b.name || 'Boshqa'))].filter(Boolean);
+        if (availableObjectNames.length > 0) {
+            localStorage.setItem('fac_available_objects', JSON.stringify(availableObjectNames));
+        }
+    } catch (e) {
+        console.error('Error saving fac_available_objects', e);
+    }
+}, { immediate: true });
 const isAdmin = computed(() => {
     const user = page.props.auth?.user;
     if (!user) return false;

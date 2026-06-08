@@ -425,6 +425,21 @@ watch(
             const updated = newBuildings.find(b => b.id === selectedBuilding.value.id);
             if (updated) {
                 selectedBuilding.value = updated;
+                // If selectedUnit is open, sync it with the fresh data from the building
+                if (selectedUnit.value) {
+                    let found = null;
+                    if (updated.floors) {
+                        updated.floors.forEach(f => {
+                            if (f.units) {
+                                const u = f.units.find(unit => unit.id === selectedUnit.value.id);
+                                if (u) found = u;
+                            }
+                        });
+                    }
+                    if (found) {
+                        selectedUnit.value = found;
+                    }
+                }
             }
         }
     },
@@ -702,7 +717,7 @@ function openSellUnit(unit) {
         contractForm.value.price_per_sqm = (Number(unit.price) / Number(unit.area_sqm)).toFixed(2);
     }
     
-    showSellUnitModal.value = true;
+    activeRightPanel.value = 'sell';
 }
 
 watch(() => contractForm.value.total_amount, (newTotal) => {
@@ -738,10 +753,13 @@ function submitContract() {
     }
 
     router.post(route('admin.contracts.store'), contractForm.value, {
+        preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
             showSellUnitModal.value = false;
             isProcessingContract.value = false;
-            // The server will have updated the unit status, so reload or wait for Inertia.
+            activeRightPanel.value = 'details';
+            selectedUnit.value = null; // Close side panel to force reload details on re-click
         },
         onError: (errors) => {
             isProcessingContract.value = false;
@@ -916,6 +934,8 @@ function openEditObjectContainer(blocksList) {
 function deleteBuilding() {
     if (confirm("Rostdan ham bu binoni o'chirmoqchimisiz? Ushbu amaliyot barcha qavatlar va xonadonlarni o'chirib yuboradi!")) {
         router.delete(route('admin.facility.buildings.destroy', selectedBuilding.value.id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 selectedBuilding.value = null;
             }
@@ -931,6 +951,8 @@ function submitBuilding() {
             is_object_only: 0,
             _method: 'put'
         })).post(route('admin.facility.buildings.update', selectedBuilding.value.id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddBuildingModal.value = false;
                 isEditingBuilding.value = false;
@@ -945,6 +967,8 @@ function submitBuilding() {
             ...data,
             is_object_only: isAddingBlock.value ? 0 : 1
         })).post(route('admin.facility.buildings.store'), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddBuildingModal.value = false;
                 buildingForm.reset();
@@ -978,6 +1002,8 @@ function submitFloor() {
             ...data,
             _method: 'put'
         })).post(route('admin.facility.floors.update', editingFloorId.value), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddFloorModal.value = false;
                 isEditingFloor.value = false;
@@ -988,6 +1014,8 @@ function submitFloor() {
     } else {
         floorForm.building_id = selectedBuilding.value?.id;
         floorForm.transform((data) => data).post(route('admin.facility.floors.store'), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddFloorModal.value = false;
                 floorForm.reset();
@@ -1004,6 +1032,8 @@ function submitFloor() {
 function deleteFloor(floorId) {
     if (confirm("Rostdan ham bu qavatni o'chirmoqchimisiz? O'chirsangiz barcha biriktirilgan xonadonlar ham o'chib ketadi!")) {
         router.delete(route('admin.facility.floors.destroy', floorId), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 if (selectedFloor.value?.id === floorId) {
                     selectedFloor.value = selectedBuilding.value?.floors?.length > 0 ? selectedBuilding.value.floors[0] : null;
@@ -1105,7 +1135,14 @@ function openEditUnit(unit) {
     unitForm.toilets_count = unit.toilets_count || 1;
     unitForm.orientation = unit.orientation || '';
     unitForm.podyezd = unit.podyezd || 1;
-    showAddUnitModal.value = true;
+    activeRightPanel.value = 'edit_unit';
+}
+
+function cancelEditUnit() {
+    isEditingUnit.value = false;
+    editingUnitId.value = null;
+    unitForm.reset();
+    activeRightPanel.value = 'details';
 }
 
 function submitUnit() {
@@ -1114,19 +1151,25 @@ function submitUnit() {
             ...data,
             _method: 'put'
         })).post(route('admin.facility.units.update', editingUnitId.value), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddUnitModal.value = false;
                 isEditingUnit.value = false;
                 editingUnitId.value = null;
                 unitForm.reset();
+                activeRightPanel.value = 'details';
             }
         });
     } else {
         unitForm.floor_id = selectedFloor.value?.id;
         unitForm.transform((data) => data).post(route('admin.facility.units.store'), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddUnitModal.value = false;
                 unitForm.reset();
+                activeRightPanel.value = 'details';
             }
         });
     }
@@ -1135,11 +1178,14 @@ function submitUnit() {
 function deleteUnit(unitId) {
     if (confirm("Rostdan ham bu xonadon/do'konni o'chirmoqchimisiz?")) {
         router.delete(route('admin.facility.units.destroy', unitId), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 showAddUnitModal.value = false;
                 isEditingUnit.value = false;
                 editingUnitId.value = null;
                 unitForm.reset();
+                selectedUnit.value = null; // Close side panel
             }
         });
     }
@@ -1901,6 +1947,265 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- PANEL 3: Sell (Sotish) -->
+                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="space-y-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-6">
+                                        <button type="button" @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                            ✕
+                                        </button>
+                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Sotish</h3>
+                                    </div>
+
+                                    <div class="space-y-4 font-sans">
+                                        <!-- Shartnoma sanasi & Shartnoma raqami -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Shartnoma sanasi</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="date" v-model="contractForm.created_at" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Shartnoma raqami</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="text" v-model="contractForm.contract_number" placeholder="Masalan: SH-001" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Buyer Type selection -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-2">Xaridor</label>
+                                            <div class="flex gap-6 mb-3">
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                    <span class="text-sm text-gray-905 font-medium">Mijoz</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                    <span class="text-sm text-gray-905 font-medium">Ta'sischi</span>
+                                                </label>
+                                            </div>
+                                            
+                                            <!-- Client / Partner Searchable select -->
+                                            <div class="relative">
+                                                <SearchableSelect 
+                                                    v-if="contractForm.buyer_type === 'client'" 
+                                                    v-model="contractForm.client_id" 
+                                                    :options="clientsOptions" 
+                                                    placeholder="Mijozni tanlang" 
+                                                    :required="contractForm.buyer_type === 'client'"
+                                                    class="w-full"
+                                                />
+                                                <SearchableSelect 
+                                                    v-if="contractForm.buyer_type === 'partner'" 
+                                                    v-model="contractForm.partner_id" 
+                                                    :options="partnersOptions" 
+                                                    placeholder="Ta'sischini tanlang" 
+                                                    :required="contractForm.buyer_type === 'partner'"
+                                                    class="w-full"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <!-- Umumiy narx & Kvadrat metr narxi (ReadOnly) -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Umumiy narxi (QQS bilan)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="contractForm.total_amount" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Kvadrat metri narxi</label>
+                                                <div class="relative flex items-center bg-[#f1f5f9] border border-gray-200 rounded-xl px-4 py-3 opacity-70">
+                                                    <input type="number" v-model="contractForm.price_per_sqm" readonly tabindex="-1" class="bg-transparent border-0 text-gray-500 text-sm outline-none focus:ring-0 w-full p-0 font-sans cursor-not-allowed" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Payment Type -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-2">To'lov turi</label>
+                                            <div class="flex gap-6">
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="radio" v-model="contractForm.payment_type" value="full" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                    <span class="text-sm text-gray-905 font-medium">Bir martalik umumiy to'lov</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                    <span class="text-sm text-gray-905 font-medium">Bo'lib to'lash</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Boshlang'ich to'lov & Muddat (oy) -->
+                                        <div class="grid grid-cols-2 gap-4" v-if="contractForm.payment_type === 'installment'">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Boshlang'ich to'lov</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="contractForm.down_payment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Muddat (oy)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="contractForm.term_months" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-3 justify-end mt-6">
+                                    <button type="button" @click="activeRightPanel = 'details'" class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold font-sans rounded-full text-base transition-all text-center">
+                                        Bekor qilish
+                                    </button>
+                                    <button type="submit" :disabled="isProcessingContract" class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center disabled:opacity-50">
+                                        SAVDO HUNISINI YARATISH
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- PANEL 4: Edit Unit (Tahrirlash) -->
+                            <form v-else-if="activeRightPanel === 'edit_unit'" @submit.prevent="submitUnit" class="space-y-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-6">
+                                        <button type="button" @click="cancelEditUnit" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                            ✕
+                                        </button>
+                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Tahrirlash</h3>
+                                    </div>
+
+                                    <div class="space-y-4 font-sans">
+                                        <!-- Raqami & Turi -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Raqami (Masalan: A501)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="text" v-model="unitForm.unit_number" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Turi</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <select v-model="unitForm.type" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
+                                                        <option value="residential">Turar joy (Xonadon)</option>
+                                                        <option value="commercial">Tijorat (Do'kon)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Maydoni & Jami Narxi -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Maydoni (kv.m)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" step="0.01" v-model.number="unitForm.area_sqm" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Jami Narxi</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" step="0.01" v-model.number="unitForm.price" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Xonalar & Oshxona & Hammom & Hojatxona -->
+                                        <div class="grid grid-cols-4 gap-2">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Xonalar</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
+                                                    <input type="number" min="1" v-model.number="unitForm.rooms_count" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Oshxona</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
+                                                    <input type="number" min="0" v-model.number="unitForm.kitchens_count" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Hammom</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
+                                                    <input type="number" min="0" v-model.number="unitForm.bathrooms_count" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Hojatxona</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
+                                                    <input type="number" min="0" v-model.number="unitForm.toilets_count" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Status & Podyezd & Joylashuvi -->
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
+                                                    <select v-model="unitForm.status" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
+                                                        <option value="available">Bo'sh</option>
+                                                        <option value="reserved">Band qilingan</option>
+                                                        <option value="sold">Sotilgan</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Podyezd</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
+                                                    <input type="number" min="1" v-model.number="unitForm.podyezd" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" required />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Joylashuvi</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
+                                                    <input type="text" v-model="unitForm.orientation" list="orientations" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" placeholder="Masalan: Burchak" />
+                                                    <datalist id="orientations">
+                                                        <option value="Burchak"></option>
+                                                        <option value="O'rtada"></option>
+                                                        <option value="Hovliga qaragan"></option>
+                                                        <option value="Kun chiqish taraf"></option>
+                                                        <option value="Kun botish taraf"></option>
+                                                        <option value="Ko'chaga qaragan"></option>
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Poligon -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Poligon Koordinatalari (Ixtiyoriy)</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="text" v-model="unitForm.svg_polygon" placeholder="e.g. 100,100 200,100..." class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-mono" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center mt-6">
+                                    <div>
+                                        <button type="button" v-if="isEditingUnit && isAdmin" @click="deleteUnit(editingUnitId)" class="px-4 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white font-bold font-sans rounded-full text-xs transition-all">
+                                            O'chirish
+                                        </button>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" v-if="isEditingUnit && unitForm.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white font-bold font-sans rounded-full text-xs transition-all">
+                                            Sotish
+                                        </button>
+                                        <button type="button" @click="cancelEditUnit" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold font-sans rounded-full text-xs transition-all text-center">
+                                            Bekor qilish
+                                        </button>
+                                        <button type="submit" :disabled="unitForm.processing" class="px-4 py-2 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-xs shadow-sm transition-all text-center disabled:opacity-50">
+                                            Saqlash
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -2352,132 +2657,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             </div>
         </Modal>
 
-        <!-- Sell Unit Modal (Create Contract) -->
-        <Modal :show="showSellUnitModal" @close="showSellUnitModal = false">
-            <div class="p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-green/50">
-                    {{ $t('add') }} {{ $t('contract') }}
-                </h2>
-                <form @submit.prevent="submitContract" class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
-                            <input v-model="contractForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" title="O'tmish sanada shartnoma tuzish uchun">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
-                            <input v-model="contractForm.contract_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" placeholder="Masalan: SH-001">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">Xaridor Turi</label>
-                        <div class="flex gap-4 mb-3">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan bg-white border-gray-300">
-                                <span class="text-xs text-gray-900">Mijoz (Client)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow bg-white border-gray-300">
-                                <span class="text-xs text-gray-900 text-amber-600">Ta'sischi Xaridi (Partner)</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Client Select -->
-                        <SearchableSelect 
-                            v-if="contractForm.buyer_type === 'client'" 
-                            v-model="contractForm.client_id" 
-                            :options="clientsOptions" 
-                            placeholder="Mijozni tanlang" 
-                            :required="contractForm.buyer_type === 'client'"
-                        />
-                        
-                        <!-- Partner Select -->
-                        <SearchableSelect 
-                            v-if="contractForm.buyer_type === 'partner'" 
-                            v-model="contractForm.partner_id" 
-                            :options="partnersOptions" 
-                            placeholder="Ta'sischini tanlang" 
-                            :required="contractForm.buyer_type === 'partner'"
-                        />
-                    </div>
 
-                    <div v-if="currentSellingUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-gray-200 rounded-xl bg-white">
-                        <div class="col-span-1 sm:col-span-2">
-                            <p class="text-[10px] font-mono text-gray-500 uppercase">{{ $t('object_block') }}</p>
-                            <p class="text-xs text-gray-900 font-bold">{{ selectedBuilding?.name || 'Noma\'lum' }} (Xonadon: {{ currentSellingUnit.unit_number }}, Maydon: {{ currentSellingUnit.area_sqm }} kv.m)</p>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('floor') }}</label>
-                            <input v-model="contractForm.floor" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qavatni kiriting">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
-                            <input v-model="contractForm.rooms" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Xonalar sonini kiriting">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="currentSellingUnit">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
-                            <input v-model="contractForm.total_amount" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" required placeholder="Umumiy summani kiriting">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik)</label>
-                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white opacity-70 cursor-not-allowed" readonly tabindex="-1">
-                        </div>
-                    </div>
-
-                    <!-- Payment Type Selection -->
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('payment_type') }}</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan bg-white border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('one_time_full_payment') }}</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan bg-white border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('installment_payment') }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('down_payment') }}</label>
-                            <input v-model="contractForm.down_payment" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('term_months') }}</label>
-                            <input v-model="contractForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-200 mt-4">
-                        <h3 class="text-sm font-bold text-blue-600 uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
-                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Usuli</label>
-                                <select v-model="contractForm.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white">
-                                    <option value="bank">{{ $t('bank_account') }}</option>
-                                    <option value="main">{{ $t('cash_account') }}</option>
-                                    <option value="credit">💳 Plastik / Terminal</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showSellUnitModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessingContract" class="px-6 py-2 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ $t('create_pipeline') }}</button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
 
         <!-- Filter Modal -->
         <Modal :show="showFilterModal" @close="showFilterModal = false">

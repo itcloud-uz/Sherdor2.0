@@ -242,7 +242,7 @@ class TransactionExportController extends Controller
         $filename = 'hisobot_' . \Str::slug($categoryName) . '.csv';
 
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type"        => "text/csv; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=$filename",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
@@ -255,6 +255,10 @@ class TransactionExportController extends Controller
             $file = fopen('php://output', 'w');
             // Add BOM to fix UTF-8 in Excel
             fputs($file, "\xEF\xBB\xBF");
+
+            // Tell Excel to use semicolon separator
+            fputs($file, "sep=;\r\n");
+
             fputcsv($file, $columns, ';');
 
             foreach ($transactions as $t) {

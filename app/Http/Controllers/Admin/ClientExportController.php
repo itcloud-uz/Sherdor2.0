@@ -25,9 +25,12 @@ class ClientExportController extends Controller
             $file = fopen('php://output', 'w');
             
             // Add BOM to fix UTF-8 in Excel
-            fputs($file, $bom =(chr(0xEF) . chr(0xBB) . chr(0xBF)));
+            fputs($file, "\xEF\xBB\xBF");
 
-            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Shartnomalar', 'Ro\'yxatga olingan sana']);
+            // Tell Excel to use semicolon separator
+            fputs($file, "sep=;\r\n");
+
+            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Shartnomalar', 'Ro\'yxatga olingan sana'], ';');
 
             foreach ($clients as $client) {
                 $contractsList = $client->contracts->map(function($c) {
@@ -44,7 +47,7 @@ class ClientExportController extends Controller
                     $client->pinfl,
                     $contractsList ?: 'Shartnoma yo\'q',
                     $client->created_at->format('Y-m-d H:i')
-                ]);
+                ], ';');
             }
 
             fclose($file);

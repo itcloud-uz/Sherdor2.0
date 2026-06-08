@@ -278,27 +278,88 @@ watch(
     { deep: true }
 );
 
-// Auto-calculate total_shops and total_apartments from per-floor values
+// Watch total_floors and basement_floors to sync floors_data list
 watch(
-    [
-        () => buildingForm.total_floors,
-        () => buildingForm.basement_floors,
-        () => buildingForm.shops_per_floor,
-        () => buildingForm.apartments_per_floor
-    ],
-    ([totalFloors, basementFloors, shopsPerFloor, apartmentsPerFloor]) => {
+    [() => buildingForm.total_floors, () => buildingForm.basement_floors],
+    ([totalFloors, basementFloors]) => {
         const tFloors = parseInt(totalFloors) || 0;
         const bFloors = parseInt(basementFloors) || 0;
-        const sPerFloor = parseInt(shopsPerFloor) || 0;
-        const aPerFloor = parseInt(apartmentsPerFloor) || 0;
 
+        const floorNumbers = [];
+        for (let b = -bFloors; b <= -1; b++) {
+            floorNumbers.push(b);
+        }
         const aboveGroundCount = tFloors - bFloors;
-        const commercialFloorCount = bFloors + (aboveGroundCount >= 1 ? 1 : 0);
-        buildingForm.total_shops = sPerFloor * commercialFloorCount;
+        for (let a = 1; a <= aboveGroundCount; a++) {
+            floorNumbers.push(a);
+        }
 
-        const residentialFloorCount = Math.max(0, aboveGroundCount - 1);
-        buildingForm.total_apartments = aPerFloor * residentialFloorCount;
+        const currentData = buildingForm.floors_data || [];
+        const currentMap = {};
+        currentData.forEach(item => {
+            currentMap[item.floor_number] = item;
+        });
+
+        buildingForm.floors_data = floorNumbers.map(f => {
+            const existing = currentMap[f];
+            if (existing) {
+                return existing;
+            }
+            const isCommercial = (f < 0 || f === 1);
+            return {
+                floor_number: f,
+                shops_count: isCommercial ? (parseInt(buildingForm.shops_per_floor) || 0) : 0,
+                apartments_count: !isCommercial ? (parseInt(buildingForm.apartments_per_floor) || 0) : 0
+            };
+        });
     }
+);
+
+// Propagate global shops template count to floors
+watch(
+    () => buildingForm.shops_per_floor,
+    (newVal) => {
+        const val = parseInt(newVal) || 0;
+        if (buildingForm.floors_data) {
+            buildingForm.floors_data.forEach(item => {
+                if (item.floor_number <= 1) {
+                    item.shops_count = val;
+                }
+            });
+        }
+    }
+);
+
+// Propagate global apartments template count to floors
+watch(
+    () => buildingForm.apartments_per_floor,
+    (newVal) => {
+        const val = parseInt(newVal) || 0;
+        if (buildingForm.floors_data) {
+            buildingForm.floors_data.forEach(item => {
+                if (item.floor_number >= 2) {
+                    item.apartments_count = val;
+                }
+            });
+        }
+    }
+);
+
+// Recalculate total_shops and total_apartments from floors_data sum
+watch(
+    () => buildingForm.floors_data,
+    (floors) => {
+        if (!floors) return;
+        let sumShops = 0;
+        let sumApartments = 0;
+        floors.forEach(item => {
+            sumShops += parseInt(item.shops_count) || 0;
+            sumApartments += parseInt(item.apartments_count) || 0;
+        });
+        buildingForm.total_shops = sumShops;
+        buildingForm.total_apartments = sumApartments;
+    },
+    { deep: true }
 );
 
 
@@ -571,6 +632,7 @@ const buildingForm = useForm({
     basement_floors: 0,
     photo: null,
     is_object_only: 0,
+    floors_data: [],
     // Detailed Attributes
     block_name: '',
     corpus_name: '',
@@ -685,6 +747,11 @@ function openEditBuilding() {
     buildingForm.average_area = 0;
     buildingForm.average_price = 0;
     buildingForm.commercial_units_first_floor = 0;
+    buildingForm.floors_data = (selectedBuilding.value.floors || []).map(f => ({
+        floor_number: f.floor_number,
+        shops_count: f.total_commercial_units || 0,
+        apartments_count: f.total_units || 0
+    }));
     showAddBuildingModal.value = true;
 }
 
@@ -1611,11 +1678,35 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">JAMI DO'KONLAR</label>
-                                <input v-model="buildingForm.total_shops" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
+                                <input v-model="buildingForm.total_shops" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">JAMI KVARTIRALAR</label>
-                                <input v-model="buildingForm.total_apartments" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
+                                <input v-model="buildingForm.total_apartments" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- QAVATLAR BO'YICHA SOZLAMALAR -->
+                        <div v-if="buildingForm.floors_data && buildingForm.floors_data.length > 0" class="bg-[#0f172a] p-3 rounded-lg border border-[#334155] space-y-2.5">
+                            <h4 class="text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase tracking-wider">QAVATLAR BO'YICHA DO'KONLAR VA UYLAR SONI</h4>
+                            <div class="max-h-[160px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                                <div v-for="item in buildingForm.floors_data" :key="item.floor_number" class="flex items-center justify-between bg-[#1e293b] p-2 rounded border border-[#334155] gap-3">
+                                    <span class="text-xs font-semibold text-gray-300 font-sans">
+                                        {{ item.floor_number < 0 ? `${item.floor_number} yerto'la` : `${item.floor_number}-qavat` }}
+                                    </span>
+                                    <div class="flex gap-2 items-center">
+                                        <!-- Shops input (only show for commercial floors) -->
+                                        <div v-if="item.floor_number <= 1" class="flex items-center gap-1.5">
+                                            <span class="text-[9px] text-gray-400 font-bold uppercase">Do'kon:</span>
+                                            <input v-model.number="item.shops_count" type="number" min="0" class="w-16 bg-[#0f172a] border border-[#334155] text-white text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                        </div>
+                                        <!-- Apartments input (only show for residential floors) -->
+                                        <div v-if="item.floor_number >= 2" class="flex items-center gap-1.5">
+                                            <span class="text-[9px] text-gray-400 font-bold uppercase">Uy:</span>
+                                            <input v-model.number="item.apartments_count" type="number" min="0" class="w-16 bg-[#0f172a] border border-[#334155] text-white text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1731,11 +1822,35 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Jami Do'konlar</label>
-                                    <input v-model="buildingForm.total_shops" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
+                                    <input v-model="buildingForm.total_shops" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Jami Kvartiralar</label>
-                                    <input v-model="buildingForm.total_apartments" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
+                                    <input v-model="buildingForm.total_apartments" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                                </div>
+                            </div>
+
+                            <!-- QAVATLAR BO'YICHA SOZLAMALAR -->
+                            <div v-if="buildingForm.floors_data && buildingForm.floors_data.length > 0" class="bg-[#0f172a] p-3 rounded-lg border border-[#334155] space-y-2.5">
+                                <h4 class="text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase tracking-wider">QAVATLAR BO'YICHA DO'KONLAR VA UYLAR SONI</h4>
+                                <div class="max-h-[160px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                                    <div v-for="item in buildingForm.floors_data" :key="item.floor_number" class="flex items-center justify-between bg-[#1e293b] p-2 rounded border border-[#334155] gap-3">
+                                        <span class="text-xs font-semibold text-gray-300 font-sans">
+                                            {{ item.floor_number < 0 ? `${item.floor_number} yerto'la` : `${item.floor_number}-qavat` }}
+                                        </span>
+                                        <div class="flex gap-2 items-center">
+                                            <!-- Shops input (only show for commercial floors) -->
+                                            <div v-if="item.floor_number <= 1" class="flex items-center gap-1.5">
+                                                <span class="text-[9px] text-gray-400 font-bold uppercase">Do'kon:</span>
+                                                <input v-model.number="item.shops_count" type="number" min="0" class="w-16 bg-[#0f172a] border border-[#334155] text-white text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                            </div>
+                                            <!-- Apartments input (only show for residential floors) -->
+                                            <div v-if="item.floor_number >= 2" class="flex items-center gap-1.5">
+                                                <span class="text-[9px] text-gray-400 font-bold uppercase">Uy:</span>
+                                                <input v-model.number="item.apartments_count" type="number" min="0" class="w-16 bg-[#0f172a] border border-[#334155] text-white text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

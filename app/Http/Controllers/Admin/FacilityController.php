@@ -62,6 +62,10 @@ class FacilityController extends Controller
                 'model_3d' => 'nullable|file|max:1024000',
                 'basement_floors' => 'nullable|integer|min:0',
                 'is_object_only' => 'nullable|boolean',
+                'floors_data' => 'nullable|array',
+                'floors_data.*.floor_number' => 'required|integer',
+                'floors_data.*.shops_count' => 'required|integer|min:0',
+                'floors_data.*.apartments_count' => 'required|integer|min:0',
             ]);
 
             $photoPath = null;
@@ -178,7 +182,7 @@ class FacilityController extends Controller
 
             // Generate floors and units outside the transaction above (generateFloorsAndUnits has its own transaction)
             if ($building) {
-                $this->generateFloorsAndUnits($building);
+                $this->generateFloorsAndUnits($building, $request->input('floors_data'));
             }
 
             return redirect()->back()->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
@@ -219,6 +223,10 @@ class FacilityController extends Controller
                 'photo' => 'nullable|file|max:102400',
                 'model_3d' => 'nullable|file|max:1024000',
                 'basement_floors' => 'nullable|integer|min:0',
+                'floors_data' => 'nullable|array',
+                'floors_data.*.floor_number' => 'required|integer',
+                'floors_data.*.shops_count' => 'required|integer|min:0',
+                'floors_data.*.apartments_count' => 'required|integer|min:0',
             ]);
 
             $photoPath = $building->photo_path;
@@ -273,7 +281,7 @@ class FacilityController extends Controller
                 'model_3d_path' => $model3dPath,
             ]);
 
-            $this->generateFloorsAndUnits($building);
+            $this->generateFloorsAndUnits($building, $request->input('floors_data'));
 
             return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');
         } catch (\Exception $e) {
@@ -294,9 +302,9 @@ class FacilityController extends Controller
      *
      * When regenerating, non-available units (reserved/sold) are preserved.
      */
-    private function generateFloorsAndUnits(Building $building): void
+    private function generateFloorsAndUnits(Building $building, ?array $floorsData = null): void
     {
-        DB::transaction(function () use ($building) {
+        DB::transaction(function () use ($building, $floorsData) {
             $totalFloors = (int) $building->total_floors;
             $basementFloors = (int) ($building->basement_floors ?? 0);
             $shopsPerFloor = (int) ($building->shops_per_floor ?? 0);
@@ -326,17 +334,40 @@ class FacilityController extends Controller
             // Count residential floors (floor 2 and above)
             $residentialFloorCount = max(0, $aboveGroundCount - 1); // floors 2..top
 
-            // Backward compatibility: calculate per-floor values from totals if not set
-            if ($shopsPerFloor == 0 && $totalShops > 0 && $commercialFloorCount > 0) {
-                $shopsPerFloor = (int) ceil($totalShops / $commercialFloorCount);
-            }
-            if ($apartmentsPerFloor == 0 && $totalApartments > 0 && $residentialFloorCount > 0) {
-                $apartmentsPerFloor = (int) ceil($totalApartments / $residentialFloorCount);
+            // Convert floorsData to a map keyed by floor_number for quick lookup
+            $floorsDataMap = [];
+            if ($floorsData) {
+                foreach ($floorsData as $item) {
+                    $floorsDataMap[(int)$item['floor_number']] = [
+                        'shops_count' => (int)$item['shops_count'],
+                        'apartments_count' => (int)$item['apartments_count']
+                    ];
+                }
             }
 
-            // Update building totals based on per-floor values
-            $newTotalShops = $commercialFloorCount > 0 ? $shopsPerFloor * $commercialFloorCount : 0;
-            $newTotalApartments = $residentialFloorCount > 0 ? $apartmentsPerFloor * $residentialFloorCount : 0;
+            if ($floorsData) {
+                // Sum up totals from floorsData Map
+                $newTotalShops = 0;
+                $newTotalApartments = 0;
+                foreach ($floorNumbers as $f) {
+                    if (isset($floorsDataMap[$f])) {
+                        $newTotalShops += $floorsDataMap[$f]['shops_count'];
+                        $newTotalApartments += $floorsDataMap[$f]['apartments_count'];
+                    }
+                }
+            } else {
+                // Backward compatibility: calculate per-floor values from totals if not set
+                if ($shopsPerFloor == 0 && $totalShops > 0 && $commercialFloorCount > 0) {
+                    $shopsPerFloor = (int) ceil($totalShops / $commercialFloorCount);
+                }
+                if ($apartmentsPerFloor == 0 && $totalApartments > 0 && $residentialFloorCount > 0) {
+                    $apartmentsPerFloor = (int) ceil($totalApartments / $residentialFloorCount);
+                }
+
+                // Update building totals based on per-floor values
+                $newTotalShops = $commercialFloorCount > 0 ? $shopsPerFloor * $commercialFloorCount : 0;
+                $newTotalApartments = $residentialFloorCount > 0 ? $apartmentsPerFloor * $residentialFloorCount : 0;
+            }
 
             $building->update([
                 'shops_per_floor' => $shopsPerFloor,
@@ -361,12 +392,17 @@ class FacilityController extends Controller
 
             // Create or sync each desired floor
             foreach ($floorNumbers as $f) {
-                // Determine target unit counts for this floor
-                $isCommercialFloor = ($f < 0 || $f === 1); // basement or 1st floor
-                $isResidentialFloor = ($f >= 2); // floor 2 and above
+                if ($floorsData && isset($floorsDataMap[$f])) {
+                    $targetCommercial = $floorsDataMap[$f]['shops_count'];
+                    $targetResidential = $floorsDataMap[$f]['apartments_count'];
+                } else {
+                    // Determine target unit counts for this floor
+                    $isCommercialFloor = ($f < 0 || $f === 1); // basement or 1st floor
+                    $isResidentialFloor = ($f >= 2); // floor 2 and above
 
-                $targetCommercial = $isCommercialFloor ? $shopsPerFloor : 0;
-                $targetResidential = $isResidentialFloor ? $apartmentsPerFloor : 0;
+                    $targetCommercial = $isCommercialFloor ? $shopsPerFloor : 0;
+                    $targetResidential = $isResidentialFloor ? $apartmentsPerFloor : 0;
+                }
 
                 $existingFloor = $existingFloors->get($f);
 

@@ -94,6 +94,116 @@ const activeFilters = ref({
     status: null // 'available', 'sold', or 'reserved'
 });
 
+const selectedBuildingUnits = computed(() => {
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return [];
+    let list = [];
+    selectedBuilding.value.floors.forEach(f => {
+        if (f.units) {
+            list.push(...f.units);
+        }
+    });
+    return list;
+});
+
+const minAvailableArea = computed(() => {
+    const units = selectedBuildingUnits.value;
+    if (units.length === 0) return 0;
+    const val = Math.min(...units.map(u => Number(u.area_sqm) || 0));
+    return isFinite(val) ? Math.floor(val) : 0;
+});
+
+const maxAvailableArea = computed(() => {
+    const units = selectedBuildingUnits.value;
+    if (units.length === 0) return 1000;
+    const val = Math.max(...units.map(u => Number(u.area_sqm) || 0));
+    return isFinite(val) ? Math.ceil(val) : 1000;
+});
+
+const minAvailablePrice = computed(() => {
+    const units = selectedBuildingUnits.value;
+    if (units.length === 0) return 0;
+    const val = Math.min(...units.map(u => Number(u.price) || 0));
+    return isFinite(val) ? Math.floor(val) : 0;
+});
+
+const maxAvailablePrice = computed(() => {
+    const units = selectedBuildingUnits.value;
+    if (units.length === 0) return 1000000;
+    const val = Math.max(...units.map(u => Number(u.price) || 0));
+    return isFinite(val) ? Math.ceil(val) : 1000000;
+});
+
+const areaLeftPercent = computed(() => {
+    const min = minAvailableArea.value;
+    const max = maxAvailableArea.value;
+    if (max <= min) return 0;
+    const val = tempFilterMinArea.value === '' ? min : Number(tempFilterMinArea.value);
+    return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+});
+
+const areaRightPercent = computed(() => {
+    const min = minAvailableArea.value;
+    const max = maxAvailableArea.value;
+    if (max <= min) return 100;
+    const val = tempFilterMaxArea.value === '' ? max : Number(tempFilterMaxArea.value);
+    return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+});
+
+const priceLeftPercent = computed(() => {
+    const min = minAvailablePrice.value;
+    const max = maxAvailablePrice.value;
+    if (max <= min) return 0;
+    const val = tempFilterMinPrice.value === '' ? min : Number(tempFilterMinPrice.value);
+    return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+});
+
+const priceRightPercent = computed(() => {
+    const min = minAvailablePrice.value;
+    const max = maxAvailablePrice.value;
+    if (max <= min) return 100;
+    const val = tempFilterMaxPrice.value === '' ? max : Number(tempFilterMaxPrice.value);
+    return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+});
+
+function validateAreaRange(isMin) {
+    const minLimit = minAvailableArea.value;
+    const maxLimit = maxAvailableArea.value;
+    let minVal = tempFilterMinArea.value === '' ? minLimit : Number(tempFilterMinArea.value);
+    let maxVal = tempFilterMaxArea.value === '' ? maxLimit : Number(tempFilterMaxArea.value);
+    
+    if (minVal > maxVal) {
+        if (isMin) {
+            tempFilterMinArea.value = maxVal;
+        } else {
+            tempFilterMaxArea.value = minVal;
+        }
+    }
+}
+
+function validatePriceRange(isMin) {
+    const minLimit = minAvailablePrice.value;
+    const maxLimit = maxAvailablePrice.value;
+    let minVal = tempFilterMinPrice.value === '' ? minLimit : Number(tempFilterMinPrice.value);
+    let maxVal = tempFilterMaxPrice.value === '' ? maxLimit : Number(tempFilterMaxPrice.value);
+    
+    if (minVal > maxVal) {
+        if (isMin) {
+            tempFilterMinPrice.value = maxVal;
+        } else {
+            tempFilterMaxPrice.value = minVal;
+        }
+    }
+}
+
+const hasActiveFilters = computed(() => {
+    return activeFilters.value.rooms.length > 0 ||
+           (activeFilters.value.minArea !== null && activeFilters.value.minArea !== '') ||
+           (activeFilters.value.maxArea !== null && activeFilters.value.maxArea !== '') ||
+           (activeFilters.value.minPrice !== null && activeFilters.value.minPrice !== '') ||
+           (activeFilters.value.maxPrice !== null && activeFilters.value.maxPrice !== '') ||
+           activeFilters.value.status !== null;
+});
+
 function toggleStatusFilter(statusVal) {
     if (activeFilters.value.status === statusVal) {
         activeFilters.value.status = null;
@@ -109,6 +219,15 @@ function toggleTempRoom(roomNum) {
     } else {
         tempFilterRooms.value.push(roomNum);
     }
+}
+
+function openFilterModal() {
+    tempFilterRooms.value = [...activeFilters.value.rooms];
+    tempFilterMinArea.value = activeFilters.value.minArea !== null ? activeFilters.value.minArea : minAvailableArea.value;
+    tempFilterMaxArea.value = activeFilters.value.maxArea !== null ? activeFilters.value.maxArea : maxAvailableArea.value;
+    tempFilterMinPrice.value = activeFilters.value.minPrice !== null ? activeFilters.value.minPrice : minAvailablePrice.value;
+    tempFilterMaxPrice.value = activeFilters.value.maxPrice !== null ? activeFilters.value.maxPrice : maxAvailablePrice.value;
+    showFilterModal.value = true;
 }
 
 function applyFilters() {
@@ -1265,12 +1384,20 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         
                         <!-- Filter Button and Legend below card -->
                         <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col gap-4">
-                            <button @click="showFilterModal = true" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                </svg>
-                                Filter
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button @click="openFilterModal" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                    </svg>
+                                    Filter
+                                </button>
+                                <button v-if="hasActiveFilters" @click="resetFilters" class="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Filterni tozalash
+                                </button>
+                            </div>
                             
                              <div class="flex flex-col gap-3 text-sm font-sans mt-2">
                                 <button @click="toggleStatusFilter('available')" 
@@ -2234,11 +2361,23 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <!-- Option 2: Maydoni -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-3">Maydoni (m²)</label>
-                        <!-- Decorative range slider bar similar to screenshot -->
-                        <div class="relative h-1 bg-amber-100 rounded-full my-4">
-                            <div class="absolute h-full bg-amber-500 rounded-full" style="left: 10%; right: 10%;"></div>
-                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 left-[10%] shadow cursor-pointer"></div>
-                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 right-[10%] shadow cursor-pointer"></div>
+                        <!-- Functional range slider bar -->
+                        <div class="relative h-1 bg-amber-100 dark:bg-zinc-800 rounded-full my-6">
+                            <div class="absolute h-full bg-amber-500 rounded-full" :style="{ left: areaLeftPercent + '%', right: (100 - areaRightPercent) + '%' }"></div>
+                            <input type="range" 
+                                   :min="minAvailableArea" 
+                                   :max="maxAvailableArea" 
+                                   v-model="tempFilterMinArea" 
+                                   @input="validateAreaRange(true)" 
+                                   class="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer range-slider-input" 
+                                   :style="{ zIndex: Number(tempFilterMinArea) > (minAvailableArea + maxAvailableArea) / 2 ? 12 : 10, marginTop: '-2px' }">
+                            <input type="range" 
+                                   :min="minAvailableArea" 
+                                   :max="maxAvailableArea" 
+                                   v-model="tempFilterMaxArea" 
+                                   @input="validateAreaRange(false)" 
+                                   class="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer range-slider-input" 
+                                   :style="{ zIndex: Number(tempFilterMinArea) > (minAvailableArea + maxAvailableArea) / 2 ? 10 : 12, marginTop: '-2px' }">
                         </div>
                         <div class="flex items-center gap-3">
                             <input v-model="tempFilterMinArea" type="number" placeholder="Min" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
@@ -2250,11 +2389,23 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <!-- Option 3: Narxi -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-3">Narx</label>
-                        <!-- Decorative range slider bar similar to screenshot -->
-                        <div class="relative h-1 bg-amber-100 rounded-full my-4">
-                            <div class="absolute h-full bg-amber-500 rounded-full" style="left: 5%; right: 15%;"></div>
-                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 left-[5%] shadow cursor-pointer"></div>
-                            <div class="absolute w-3.5 h-3.5 bg-white border-2 border-amber-500 rounded-full -top-1.5 right-[15%] shadow cursor-pointer"></div>
+                        <!-- Functional range slider bar -->
+                        <div class="relative h-1 bg-amber-100 dark:bg-zinc-800 rounded-full my-6">
+                            <div class="absolute h-full bg-amber-500 rounded-full" :style="{ left: priceLeftPercent + '%', right: (100 - priceRightPercent) + '%' }"></div>
+                            <input type="range" 
+                                   :min="minAvailablePrice" 
+                                   :max="maxAvailablePrice" 
+                                   v-model="tempFilterMinPrice" 
+                                   @input="validatePriceRange(true)" 
+                                   class="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer range-slider-input" 
+                                   :style="{ zIndex: Number(tempFilterMinPrice) > (minAvailablePrice + maxAvailablePrice) / 2 ? 12 : 10, marginTop: '-2px' }">
+                            <input type="range" 
+                                   :min="minAvailablePrice" 
+                                   :max="maxAvailablePrice" 
+                                   v-model="tempFilterMaxPrice" 
+                                   @input="validatePriceRange(false)" 
+                                   class="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer range-slider-input" 
+                                   :style="{ zIndex: Number(tempFilterMinPrice) > (minAvailablePrice + maxAvailablePrice) / 2 ? 10 : 12, marginTop: '-2px' }">
                         </div>
                         <div class="flex items-center gap-3">
                             <input v-model="tempFilterMinPrice" type="number" placeholder="Min" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
@@ -2279,6 +2430,30 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 </template>
 
 <style scoped>
+.range-slider-input {
+    outline: none;
+}
+.range-slider-input::-webkit-slider-thumb {
+    pointer-events: auto;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid #f59e0b;
+    cursor: pointer;
+    -webkit-appearance: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.range-slider-input::-moz-range-thumb {
+    pointer-events: auto;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid #f59e0b;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
 .unit-box.status-available {
     background-color: #00c853;
     border-bottom: 4px solid #009624;

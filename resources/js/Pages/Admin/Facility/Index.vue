@@ -1013,6 +1013,79 @@ function deleteFloor(floorId) {
     }
 }
 
+const selectedUnit = ref(null);
+const activeRightPanel = ref('details'); // 'details' or 'calculator'
+const calcPrice = ref(0);
+const calcDownPayment = ref(0);
+const calcTermMonths = ref(12);
+const calcDiscount = ref(0);
+const selectedUnitForFullscreenBlueprint = ref(null);
+
+function selectUnit(unit) {
+    selectedUnit.value = unit;
+    activeRightPanel.value = 'details';
+    
+    // Find and set the selectedFloor
+    if (selectedBuilding.value?.floors) {
+        const floor = selectedBuilding.value.floors.find(f => f.id === unit.floor_id);
+        selectedFloor.value = floor;
+    }
+    
+    // Set calculator inputs
+    calcPrice.value = unit.price || 0;
+    calcDownPayment.value = 0;
+    calcTermMonths.value = 12;
+    calcDiscount.value = 0;
+}
+
+function setDownPaymentPercent(percent) {
+    calcDownPayment.value = Math.round(Number(calcPrice.value || 0) * (percent / 100));
+}
+
+const calculatedTotalAmount = computed(() => {
+    return Math.max(0, Number(calcPrice.value || 0) - Number(calcDiscount.value || 0));
+});
+
+const calculatedRemainingBalance = computed(() => {
+    return Math.max(0, calculatedTotalAmount.value - Number(calcDownPayment.value || 0));
+});
+
+const calculatedMonthlyPayment = computed(() => {
+    const months = Number(calcTermMonths.value || 1);
+    if (months <= 0) return 0;
+    return Math.round(calculatedRemainingBalance.value / months);
+});
+
+const calculatedGrandTotal = computed(() => {
+    return Number(calcDownPayment.value || 0) + calculatedRemainingBalance.value;
+});
+
+function formatSoM(val) {
+    const num = Math.max(0, Math.round(Number(val) || 0));
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm";
+}
+
+const selectedUnitBlueprint = computed(() => {
+    if (!selectedUnit.value || !selectedBuilding.value || !selectedBuilding.value.floors) return '/modern_apartment_render.png';
+    const fl = selectedBuilding.value.floors.find(f => f.id === selectedUnit.value.floor_id);
+    return fl?.blueprint_path ? `/storage/${fl.blueprint_path}` : '/modern_apartment_render.png';
+});
+
+const fullscreenBlueprintSrc = computed(() => {
+    if (selectedUnitForFullscreenBlueprint.value) {
+        const fl = selectedBuilding.value?.floors?.find(f => f.id === selectedUnitForFullscreenBlueprint.value.floor_id);
+        return fl?.blueprint_path ? `/storage/${fl.blueprint_path}` : '/modern_apartment_render.png';
+    }
+    return currentBlueprintPath.value ? `/storage/${currentBlueprintPath.value}` : '/modern_apartment_render.png';
+});
+
+function openBlueprintFullscreenForUnit() {
+    if (selectedUnit.value) {
+        selectedUnitForFullscreenBlueprint.value = selectedUnit.value;
+        showBlueprintFullscreen.value = true;
+    }
+}
+
 const isEditingUnit = ref(false);
 const editingUnitId = ref(null);
 const showBlueprintModal = ref(false);
@@ -1465,164 +1538,367 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
 
                     <!-- Tab Content Area -->
-                    <div>
-                        <!-- Tab 1: Blueprint / Chessboard -->
-                        <div v-if="activeTab === 'blueprint'" class="animate-fade-in">
-                            <div class="flex justify-between items-center gap-4 mb-6">
-                                <h4 class="text-sm font-bold font-sans text-gray-800">Xonadonlar Shaxmatkasi</h4>
-                                <div class="flex items-center gap-2">
-                                    <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        EXCEL YUKLAB OLISH
-                                    </button>
-                                    <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-sans rounded hover:bg-gray-50 hover:text-black transition-all">
-                                        + QAVAT
-                                    </button>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left: Tab Contents (Chessboard / Search) -->
+                        <div :class="selectedUnit ? 'lg:col-span-2' : 'lg:col-span-3'">
+                            <!-- Tab 1: Blueprint / Chessboard -->
+                            <div v-if="activeTab === 'blueprint'" class="animate-fade-in">
+                                <div class="flex justify-between items-center gap-4 mb-6">
+                                    <h4 class="text-sm font-bold font-sans text-gray-800">Xonadonlar Shaxmatkasi</h4>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            EXCEL YUKLAB OLISH
+                                        </button>
+                                        <button @click="showAddFloorModal = true; isEditingFloor = false" class="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-sans rounded hover:bg-gray-50 hover:text-black transition-all">
+                                            + QAVAT
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Chessboard Grid -->
-                            <div class="overflow-x-auto pb-4">
-                                <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
-                                    <div v-for="p in selectedBuilding.entrances_count || 1" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
-                                        <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
-                                            {{ p }}-padezd
-                                        </h4>
-                                        <div class="space-y-4">
-                                            <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
-                                                <div class="w-24 flex flex-col shrink-0 justify-center">
-                                                    <div class="flex items-center justify-between">
-                                                        <span class="text-[10px] font-sans font-bold text-gray-500 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-QAVAT` }}</span>
-                                                        <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
-                                                            <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
-                                                            <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                <!-- Chessboard Grid -->
+                                <div class="overflow-x-auto pb-4">
+                                    <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
+                                        <div v-for="p in selectedBuilding.entrances_count || 1" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
+                                            <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
+                                                {{ p }}-padezd
+                                            </h4>
+                                            <div class="space-y-4">
+                                                <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
+                                                    <div class="w-24 flex flex-col shrink-0 justify-center">
+                                                        <div class="flex items-center justify-between">
+                                                            <span class="text-[10px] font-sans font-bold text-amber-600 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} YERTO'LA` : `${floor.floor_number}-QAVAT` }}</span>
+                                                            <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
+                                                                <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
+                                                                <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <span class="text-[9px] font-sans text-amber-600 font-semibold mt-0.5">
-                                                        <span v-if="floor.total_commercial_units > 0">{{ floor.total_commercial_units }} ta do'kon</span>
-                                                        <span v-if="floor.total_commercial_units > 0 && floor.total_units > 0">, </span>
-                                                        <span v-if="floor.total_units > 0">{{ floor.total_units }} ta uy</span>
-                                                        <span v-if="!floor.total_commercial_units && !floor.total_units" class="text-gray-300">Bo'sh</span>
-                                                    </span>
-                                                </div>
-
-                                                <div class="flex gap-2 items-center">
-                                                    <div v-for="unit in getUnitsByFloorAndPodyezd(floor, p)" :key="'unit-'+unit.id"
-                                                         class="unit-box w-12 h-12 flex flex-col items-center justify-center cursor-pointer rounded-lg shadow-sm relative shrink-0 transition-all duration-300"
-                                                         :class="['status-' + unit.status, { 'opacity-15 pointer-events-none scale-95': !isUnitMatchingFilters(unit) }]"
-                                                         @mousemove="(e) => onUnitHover(unit, e)"
-                                                         @mouseleave="onUnitLeave"
-                                                         @click="openEditUnit(unit)">
-                                                        <span class="font-sans text-xs font-bold pointer-events-none z-10 text-white">
-                                                            {{ unit.unit_number }}
+                                                        <span class="text-[9px] font-sans text-amber-600 font-semibold mt-0.5">
+                                                            <template v-if="floor.floor_number <= 1">
+                                                                {{ floor.total_commercial_units || 0 }} ta do'kon
+                                                            </template>
+                                                            <template v-else>
+                                                                {{ floor.total_units || 0 }} ta uy
+                                                            </template>
                                                         </span>
                                                     </div>
-                                                    <div v-if="!getUnitsByFloorAndPodyezd(floor, p).length" class="text-[10px] font-sans text-gray-300 italic">
-                                                        -
+
+                                                    <div class="flex gap-2 items-center">
+                                                        <div v-for="unit in getUnitsByFloorAndPodyezd(floor, p)" :key="'unit-'+unit.id"
+                                                             class="unit-box w-12 h-12 flex flex-col items-center justify-center cursor-pointer rounded-lg shadow-sm relative shrink-0 transition-all duration-300"
+                                                             :class="['status-' + unit.status, { 'opacity-15 pointer-events-none scale-95': !isUnitMatchingFilters(unit), 'ring-4 ring-amber-500 scale-105 z-20': selectedUnit && selectedUnit.id === unit.id }]"
+                                                             @mousemove="(e) => onUnitHover(unit, e)"
+                                                             @mouseleave="onUnitLeave"
+                                                             @click="selectUnit(unit)">
+                                                            <span class="font-sans text-xs font-bold pointer-events-none z-10 text-white">
+                                                                {{ (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D') ? 'D-' : '') + unit.unit_number }}
+                                                            </span>
+                                                        </div>
+                                                        <div v-if="!getUnitsByFloorAndPodyezd(floor, p).length" class="text-[10px] font-sans text-gray-300 italic">
+                                                            -
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div v-else class="text-center py-10 border border-dashed border-gray-300 rounded-xl text-gray-500 font-sans text-sm bg-gray-50">
-                                    Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
-                                </div>
-                            </div>
-
-                            <!-- Unit Tooltip -->
-                            <Teleport to="body">
-                                <div v-if="hoveredUnit" 
-                                     class="fixed z-50 pointer-events-none bg-white border border-gray-200 p-4 rounded-xl shadow-lg"
-                                     :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
-                                    <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2 font-sans font-bold">
-                                        {{ hoveredUnit.unit_number }} 
-                                        <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
-                                    </h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-sans">
-                                        <span class="text-gray-500">Maydoni:</span>
-                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.area_sqm }} m²</span>
-                                        
-                                        <span class="text-gray-500">Xonalar:</span>
-                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.rooms_count || 1 }} xona</span>
-                                        
-                                        <span class="text-gray-500">Joylashuv:</span>
-                                        <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
-                                        
-                                        <span class="text-gray-500">Narxi:</span>
-                                        <span class="text-emerald-600 text-right font-bold">{{ $currency(hoveredUnit.price) }}</span>
-                                        
-                                        <span class="text-gray-500">Status:</span>
-                                        <span :class="['text-right font-bold', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
+                                    <div v-else class="text-center py-10 border border-dashed border-gray-300 rounded-xl text-gray-500 font-sans text-sm bg-gray-50">
+                                        Qavatlar mavjud emas. Yuqoridagi "+ QAVAT" tugmasi orqali qo'shing.
                                     </div>
                                 </div>
-                            </Teleport>
+
+                                <!-- Unit Tooltip -->
+                                <Teleport to="body">
+                                    <div v-if="hoveredUnit" 
+                                         class="fixed z-50 pointer-events-none bg-white border border-gray-200 p-4 rounded-xl shadow-lg"
+                                         :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
+                                        <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2 font-sans font-bold">
+                                            {{ (hoveredUnit.type === 'commercial' && !String(hoveredUnit.unit_number).startsWith('D') ? 'D-' : '') + hoveredUnit.unit_number }} 
+                                            <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
+                                        </h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-sans">
+                                            <span class="text-gray-500">Maydoni:</span>
+                                            <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.area_sqm }} m²</span>
+                                            
+                                            <span class="text-gray-500">Xonalar:</span>
+                                            <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.rooms_count || 1 }} xona</span>
+                                            
+                                            <span class="text-gray-500">Joylashuv:</span>
+                                            <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.orientation || 'Noma\'lum' }}</span>
+                                            
+                                            <span class="text-gray-500">Narxi:</span>
+                                            <span class="text-emerald-600 text-right font-bold">{{ formatSoM(hoveredUnit.price) }}</span>
+                                            
+                                            <span class="text-gray-500">Status:</span>
+                                            <span :class="['text-right font-bold', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
+                                        </div>
+                                    </div>
+                                </Teleport>
+                            </div>
+
+                            <!-- TAB: Search -->
+                            <div v-if="activeTab === 'search'" class="animate-fade-in space-y-6">
+                                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                                    <h3 class="text-sm font-sans font-bold text-gray-900 uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Obyekt (Bino)</label>
+                                            <select v-model="searchFilters.building_id" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
+                                                <option value="">Barchasi</option>
+                                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }} - {{ b.block_name }}</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Turi</label>
+                                            <select v-model="searchFilters.type" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
+                                                <option value="">Barchasi</option>
+                                                <option value="residential">Turar joy (Uy)</option>
+                                                <option value="commercial">Tijorat (Do'kon)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Holati</label>
+                                            <select v-model="searchFilters.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
+                                                <option value="">Barchasi</option>
+                                                <option value="available">Bo'sh</option>
+                                                <option value="reserved">Band qilingan</option>
+                                                <option value="sold">Sotilgan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button @click="performSearch" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-xs rounded-lg transition-colors shadow-sm">
+                                        Qidirish
+                                    </button>
+                                </div>
+                            
+                                <!-- Results -->
+                                <div v-if="searchResults !== null" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4">
+                                    <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left text-sm font-sans">
+                                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                                <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
+                                                    <th class="py-3 px-2">Bino / Qavat</th>
+                                                    <th class="py-3 px-2">Raqam</th>
+                                                    <th class="py-3 px-2">Turi</th>
+                                                    <th class="py-3 px-2">Holati</th>
+                                                    <th class="py-3 px-2">Maydon</th>
+                                                    <th class="py-3 px-2 text-right">Narxi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="unit in searchResults" :key="unit.id" 
+                                                    class="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                                                    :class="{ 'bg-amber-50/50 font-semibold': selectedUnit && selectedUnit.id === unit.id }"
+                                                    @click="selectUnit(unit)">
+                                                    <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number < 0 ? `${unit.floor_number} yerto'la` : `${unit.floor_number}-qavat` }}</td>
+                                                    <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
+                                                    <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
+                                                    <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
+                                                    <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
+                                                    <td class="py-3 px-2 text-emerald-600 text-right font-bold">{{ $currency(unit.price) }}</td>
+                                                </tr>
+                                                <tr v-if="searchResults.length === 0">
+                                                    <td colspan="6" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Hech narsa topilmadi</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- TAB: Search -->
-                        <div v-if="activeTab === 'search'" class="animate-fade-in space-y-6">
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
-                                <h3 class="text-sm font-sans font-bold text-gray-900 uppercase tracking-widest mb-4">Obyekt va Xonadonlarni Qidirish</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Obyekt (Bino)</label>
-                                        <select v-model="searchFilters.building_id" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
-                                            <option value="">Barchasi</option>
-                                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }} - {{ b.block_name }}</option>
-                                        </select>
+                        <!-- Right: Unit Tafsilot / Calculator Panel -->
+                        <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between min-h-[480px]">
+                            <!-- PANEL 1: Details (Tafsilot) -->
+                            <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Tafsilot</h3>
+                                        <button @click="selectedUnit = null" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                            ✕
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Turi</label>
-                                        <select v-model="searchFilters.type" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
-                                            <option value="">Barchasi</option>
-                                            <option value="residential">Turar joy (Uy)</option>
-                                            <option value="commercial">Tijorat (Do'kon)</option>
-                                        </select>
+
+                                    <!-- Blueprint / Layout Image -->
+                                    <div class="flex items-center justify-center overflow-hidden bg-white p-2 min-h-[180px] max-h-[260px] mb-6">
+                                        <img :src="selectedUnitBlueprint" 
+                                             class="max-h-full max-w-full object-contain cursor-pointer hover:scale-102 transition-transform duration-300"
+                                             @click="openBlueprintFullscreenForUnit" />
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-sans font-bold text-gray-500 mb-1 uppercase">Holati</label>
-                                        <select v-model="searchFilters.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-sm">
-                                            <option value="">Barchasi</option>
-                                            <option value="available">Bo'sh</option>
-                                            <option value="reserved">Band qilingan</option>
-                                            <option value="sold">Sotilgan</option>
-                                        </select>
+
+                                    <h4 class="text-[#a8a29e] text-xl font-medium mb-6 font-sans">
+                                        {{ selectedUnit.type === 'commercial' ? "Do'kon haqida ma'lumot" : "Uy haqida ma'lumot" }}
+                                    </h4>
+                                    <div class="space-y-4 text-base font-sans text-gray-700">
+                                        <div>
+                                            <span class="text-gray-500">Xonadon:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ (selectedUnit.type === 'commercial' && !String(selectedUnit.unit_number).startsWith('D') ? 'D-' : '') + selectedUnit.unit_number }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Podezd:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.podyezd }}-padezd</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Qavat:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedFloor?.floor_number }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Tafsilot:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.orientation || '' }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Xonalar soni:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.rooms_count || 1 }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Maydoni:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.area_sqm }} m²</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Terrasa:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">
+                                                {{ selectedUnit.orientation?.toLowerCase().includes('terrasa') ? 'Terrasa mavjud' : 'Terrasa mavjud emas' }}
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Narx:</span>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ formatSoM(selectedUnit.price) }}</strong>
+                                        </div>
                                     </div>
                                 </div>
-                                <button @click="performSearch" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-xs rounded-lg transition-colors shadow-sm">
-                                    Qidirish
-                                </button>
+
+                                <!-- Actions Buttons -->
+                                <div class="flex gap-4 justify-end mt-6">
+                                    <button @click="activeRightPanel = 'calculator'" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
+                                        Hisoblash
+                                    </button>
+                                    <button v-if="selectedUnit.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
+                                        sotish
+                                    </button>
+                                    <button @click="openEditUnit(selectedUnit)" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
+                                        Tahrirlash
+                                    </button>
+                                </div>
                             </div>
-                        
-                            <!-- Results -->
-                            <div v-if="searchResults !== null" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4">
-                                <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-4">Natijalar: {{ searchResults.length }} ta topildi</h4>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left text-sm font-sans">
-                                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                            <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-widest">
-                                                <th class="py-3 px-2">Bino / Qavat</th>
-                                                <th class="py-3 px-2">Raqam</th>
-                                                <th class="py-3 px-2">Turi</th>
-                                                <th class="py-3 px-2">Holati</th>
-                                                <th class="py-3 px-2">Maydon</th>
-                                                <th class="py-3 px-2 text-right">Narxi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="unit in searchResults" :key="unit.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                                <td class="py-3 px-2 text-gray-900">{{ unit.building_name }} / {{ unit.floor_number < 0 ? `${unit.floor_number} yerto'la` : `${unit.floor_number}-qavat` }}</td>
-                                                <td class="py-3 px-2 font-bold text-gray-900">{{ unit.unit_number }}</td>
-                                                <td class="py-3 px-2">{{ unit.type === 'commercial' ? "Do'kon" : 'Uy' }}</td>
-                                                <td class="py-3 px-2" :class="getUnitTextColor(unit.status)">{{ $t(unit.status) || unit.status }}</td>
-                                                <td class="py-3 px-2">{{ unit.area_sqm }} m²</td>
-                                                <td class="py-3 px-2 text-emerald-600 text-right font-bold">{{ $currency(unit.price) }}</td>
-                                            </tr>
-                                            <tr v-if="searchResults.length === 0">
-                                                <td colspan="6" class="py-8 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded-xl">Hech narsa topilmadi</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+
+                            <!-- PANEL 2: Calculator (Kalkulyator) -->
+                            <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-6">
+                                        <button @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                            ✕
+                                        </button>
+                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Kalkulyator</h3>
+                                    </div>
+
+                                    <div class="space-y-4 font-sans">
+                                        <!-- Uy narxi -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Uy narxi</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcPrice" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                <span class="text-gray-400">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Boshlang'ich to'lov -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Boshlang'ich to'lov</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                            </div>
+                                            <div class="flex flex-wrap gap-2 mt-2">
+                                                <button type="button" @click="setDownPaymentPercent(0)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">0%</button>
+                                                <button type="button" @click="setDownPaymentPercent(0)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">0%</button>
+                                                <button type="button" @click="setDownPaymentPercent(30)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">30%</button>
+                                                <button type="button" @click="setDownPaymentPercent(100)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">100%</button>
+                                                <button type="button" @click="setDownPaymentPercent(50)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">50%</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bo'lib to'lash muddati (oy) -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcTermMonths" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                            </div>
+                                        </div>
+
+                                        <!-- Chegirma -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Chegirma</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcDiscount" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                <button type="button" @click="calcDiscount = 0" class="text-red-500 mx-2 hover:scale-110 transition-transform" title="Tozalash">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                </button>
+                                                <span class="text-gray-400">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Calculation Results Card -->
+                                <div class="bg-[#f8fafc] border border-gray-200 rounded-2xl p-6 space-y-4">
+                                    <div>
+                                        <span class="text-gray-500 text-sm font-sans block mb-1">Oylik to'lov</span>
+                                        <span class="text-3xl font-bold text-gray-900 font-sans">{{ formatSoM(calculatedMonthlyPayment) }}</span>
+                                    </div>
+                                    
+                                    <div class="space-y-3 pt-2 text-sm font-sans text-gray-600">
+                                        <!-- Boshlang'ich to'lov -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Boshlang'ich to'lov</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDownPayment) }}</span>
+                                        </div>
+                                        
+                                        <!-- Chegirma -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Chegirma</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDiscount) }}</span>
+                                        </div>
+                                        
+                                        <!-- Kredit miqdori -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Kredit miqdori</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
+                                        </div>
+                                        
+                                        <!-- Foiz summa -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Foiz summa</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">0 so'm</span>
+                                        </div>
+                                        
+                                        <!-- Umumiy summa -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Umumiy summa</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
+                                        </div>
+                                        
+                                        <!-- Jami (boshlang'ich to'lov bilan) -->
+                                        <div class="flex items-center justify-between font-semibold pt-1 border-t border-dashed border-gray-200">
+                                            <span class="whitespace-nowrap text-gray-800">Jami (boshlang'ich to'lov bilan)</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedGrandTotal) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

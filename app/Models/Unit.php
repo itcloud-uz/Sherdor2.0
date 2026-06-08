@@ -20,6 +20,9 @@ class Unit extends Model
         'toilets_count',
         'orientation',
         'podyezd',
+        'has_balcony',
+        'blueprint_path',
+        'model_3d_path',
     ];
 
     public function floor()

@@ -264,6 +264,7 @@ const currentBlueprintPath = computed(() => {
 });
 
 function openBlueprintFullscreen() {
+    selectedUnitForFullscreenBlueprint.value = null;
     showBlueprintFullscreen.value = true;
 }
 
@@ -842,6 +843,9 @@ const unitForm = useForm({
     toilets_count: 1,
     orientation: '',
     podyezd: 1,
+    has_balcony: false,
+    blueprint: null,
+    model_3d: null,
 });
 
 const isEditingBuilding = ref(false);
@@ -1109,8 +1113,18 @@ const selectedUnitBlueprint = computed(() => {
     return fl?.blueprint_path ? `/storage/${fl.blueprint_path}` : '/modern_apartment_render.png';
 });
 
+const selectedUnitDisplayImage = computed(() => {
+    if (selectedUnit.value?.model_3d_path) {
+        return `/storage/${selectedUnit.value.model_3d_path}`;
+    }
+    return selectedUnitBlueprint.value;
+});
+
 const fullscreenBlueprintSrc = computed(() => {
     if (selectedUnitForFullscreenBlueprint.value) {
+        if (selectedUnitForFullscreenBlueprint.value.blueprint_path) {
+            return `/storage/${selectedUnitForFullscreenBlueprint.value.blueprint_path}`;
+        }
         const fl = selectedBuilding.value?.floors?.find(f => f.id === selectedUnitForFullscreenBlueprint.value.floor_id);
         return fl?.blueprint_path ? `/storage/${fl.blueprint_path}` : '/modern_apartment_render.png';
     }
@@ -1143,6 +1157,9 @@ function openEditUnit(unit) {
     unitForm.toilets_count = unit.toilets_count || 1;
     unitForm.orientation = unit.orientation || '';
     unitForm.podyezd = unit.podyezd || 1;
+    unitForm.has_balcony = unit.has_balcony ? true : false;
+    unitForm.blueprint = null;
+    unitForm.model_3d = null;
     activeRightPanel.value = 'edit_unit';
 }
 
@@ -1776,7 +1793,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                                     <!-- Blueprint / Layout Image -->
                                     <div class="flex items-center justify-center overflow-hidden bg-white p-2 min-h-[180px] max-h-[260px] mb-6">
-                                        <img :src="selectedUnitBlueprint" 
+                                        <img :src="selectedUnitDisplayImage" 
                                              class="max-h-full max-w-full object-contain cursor-pointer hover:scale-102 transition-transform duration-300"
                                              @click="openBlueprintFullscreenForUnit" />
                                     </div>
@@ -1810,9 +1827,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.area_sqm }} m²</strong>
                                         </div>
                                         <div>
-                                            <span class="text-gray-500">Terrasa:</span>
+                                            <span class="text-gray-500">Balkon:</span>
                                             <strong class="text-gray-900 font-bold ml-1">
-                                                {{ selectedUnit.orientation?.toLowerCase().includes('terrasa') ? 'Terrasa mavjud' : 'Terrasa mavjud emas' }}
+                                                {{ selectedUnit.has_balcony ? 'Balkon bor' : 'Balkon yo\'q' }}
                                             </strong>
                                         </div>
                                         <div>
@@ -2144,8 +2161,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             </div>
                                         </div>
 
-                                        <!-- Status & Podyezd & Joylashuvi -->
-                                        <div class="grid grid-cols-3 gap-2">
+                                        <!-- Status & Podyezd -->
+                                        <div class="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
@@ -2162,6 +2179,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <input type="number" min="1" v-model.number="unitForm.podyezd" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans text-center" required />
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <!-- Joylashuvi & Balkon -->
+                                        <div class="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Joylashuvi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
@@ -2176,13 +2197,30 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     </datalist>
                                                 </div>
                                             </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">Balkon</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
+                                                    <select v-model="unitForm.has_balcony" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
+                                                        <option :value="false">Balkon yo'q</option>
+                                                        <option :value="true">Balkon bor</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <!-- Poligon -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Poligon Koordinatalari (Ixtiyoriy)</label>
-                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="text" v-model="unitForm.svg_polygon" placeholder="e.g. 100,100 200,100..." class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-mono" />
+                                        <!-- 2D Chizma & 3D Render -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">2D Chizma (Layout)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2.5">
+                                                    <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-500 mb-1">3D Render (Surat)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2.5">
+                                                    <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2600,7 +2638,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Status</label>
                             <select v-model="unitForm.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
@@ -2610,12 +2648,12 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Podyezd</label>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Podyezd</label>
                             <input v-model="unitForm.podyezd" type="number" min="1" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Joylashuvi (Orientation)</label>
-                            <input v-model="unitForm.orientation" type="text" list="orientations" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" placeholder="Masalan: Burchak, O'rtada">
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Joylashuvi</label>
+                            <input v-model="unitForm.orientation" type="text" list="orientations" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" placeholder="Masalan: Burchak">
                             <datalist id="orientations">
                                 <option value="Burchak"></option>
                                 <option value="O'rtada"></option>
@@ -2625,11 +2663,24 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <option value="Ko'chaga qaragan"></option>
                             </datalist>
                         </div>
+                        <div>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">Balkon</label>
+                            <select v-model="unitForm.has_balcony" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
+                                <option :value="false">Balkon yo'q</option>
+                                <option :value="true">Balkon bor</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-gray-500 mb-1">Poligon Koordinatalari (Ixtiyoriy, chizma ustida shakl chizish uchun)</label>
-                        <input v-model="unitForm.svg_polygon" type="text" placeholder="e.g. 100,100 200,100 200,200 100,200" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs font-mono text-gray-500">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">2D Chizma (Layout)</label>
+                            <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono text-gray-500 mb-1">3D Render (Surat)</label>
+                            <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
+                        </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" v-if="isEditingUnit && isAdmin" @click="deleteUnit(editingUnitId)" class="mr-auto px-4 py-2 bg-indigo-50 text-indigo-600 font-mono text-xs rounded hover:bg-indigo-600 hover:text-black transition-colors">{{ $t('delete') }}</button>
@@ -2771,7 +2822,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </button>
                 </div>
                 <div class="flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px] max-h-[80vh]">
-                    <img :src="currentBlueprintPath ? `/storage/${currentBlueprintPath}` : '/modern_apartment_render.png'" 
+                    <img :src="fullscreenBlueprintSrc" 
                          class="max-h-full max-w-full object-contain" />
                 </div>
             </div>

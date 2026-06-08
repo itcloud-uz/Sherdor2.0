@@ -831,6 +831,9 @@ class FacilityController extends Controller
             'toilets_count' => 'nullable|integer|min:0',
             'orientation' => 'nullable|string|max:255',
             'podyezd' => 'nullable|integer|min:1',
+            'has_balcony' => 'nullable|boolean',
+            'blueprint' => 'nullable|file|max:256000',
+            'model_3d' => 'nullable|file|max:1024000',
         ]);
 
         $floor = Floor::findOrFail($validated['floor_id']);
@@ -845,6 +848,26 @@ class FacilityController extends Controller
         } else {
             $validated['podyezd'] = $ec;
         }
+
+        $blueprintPath = null;
+        if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+                $blueprintPath = $request->file('blueprint')->store('blueprints/units', 'public');
+            }
+        }
+
+        $model3dPath = null;
+        if ($request->hasFile('model_3d')) {
+            $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
+            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf'])) {
+                $model3dPath = $request->file('model_3d')->store('models_3d/units', 'public');
+            }
+        }
+
+        $validated['blueprint_path'] = $blueprintPath;
+        $validated['model_3d_path'] = $model3dPath;
+        $validated['has_balcony'] = $request->boolean('has_balcony');
 
         Unit::create($validated);
 
@@ -867,6 +890,9 @@ class FacilityController extends Controller
             'toilets_count' => 'nullable|integer|min:0',
             'orientation' => 'nullable|string|max:255',
             'podyezd' => 'nullable|integer|min:1',
+            'has_balcony' => 'nullable|boolean',
+            'blueprint' => 'nullable|file|max:256000',
+            'model_3d' => 'nullable|file|max:1024000',
         ]);
 
         $floor = $unit->floor;
@@ -879,6 +905,26 @@ class FacilityController extends Controller
                 $validated['podyezd'] = $ec;
             }
         }
+
+        $blueprintPath = $unit->blueprint_path;
+        if ($request->hasFile('blueprint')) {
+            $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
+            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+                $blueprintPath = $request->file('blueprint')->store('blueprints/units', 'public');
+            }
+        }
+
+        $model3dPath = $unit->model_3d_path;
+        if ($request->hasFile('model_3d')) {
+            $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
+            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf'])) {
+                $model3dPath = $request->file('model_3d')->store('models_3d/units', 'public');
+            }
+        }
+
+        $validated['blueprint_path'] = $blueprintPath;
+        $validated['model_3d_path'] = $model3dPath;
+        $validated['has_balcony'] = $request->boolean('has_balcony');
 
         $unit->update($validated);
 

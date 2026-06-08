@@ -85,8 +85,14 @@ class CrmController extends Controller
                 $client->created_at = $validated['created_at'];
             }
             $client->save();
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'client' => $client]);
+            }
             return redirect()->back()->with('message', 'Client created successfully.');
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            }
             return back()->withErrors(['server_error' => $e->getMessage()]);
         }
     }

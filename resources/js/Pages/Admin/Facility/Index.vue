@@ -2186,15 +2186,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Joylashuvi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
-                                                    <input type="text" v-model="unitForm.orientation" list="orientations" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" placeholder="Masalan: Burchak" />
-                                                    <datalist id="orientations">
-                                                        <option value="Burchak"></option>
-                                                        <option value="O'rtada"></option>
-                                                        <option value="Hovliga qaragan"></option>
-                                                        <option value="Kun chiqish taraf"></option>
-                                                        <option value="Kun botish taraf"></option>
-                                                        <option value="Ko'chaga qaragan"></option>
-                                                    </datalist>
+                                                    <select v-model="unitForm.orientation" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
+                                                        <option value="">Tanlang (Ixtiyoriy)</option>
+                                                        <option value="Burchak">Burchak</option>
+                                                        <option value="O'rtada">O'rtada</option>
+                                                        <option value="Hovliga qaragan">Hovliga qaragan</option>
+                                                        <option value="Kun chiqish taraf">Kun chiqish taraf</option>
+                                                        <option value="Kun botish taraf">Kun botish taraf</option>
+                                                        <option value="Ko'chaga qaragan">Ko'chaga qaragan</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div>
@@ -2653,15 +2653,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Joylashuvi</label>
-                            <input v-model="unitForm.orientation" type="text" list="orientations" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" placeholder="Masalan: Burchak">
-                            <datalist id="orientations">
-                                <option value="Burchak"></option>
-                                <option value="O'rtada"></option>
-                                <option value="Hovliga qaragan"></option>
-                                <option value="Kun chiqish taraf"></option>
-                                <option value="Kun botish taraf"></option>
-                                <option value="Ko'chaga qaragan"></option>
-                            </datalist>
+                            <select v-model="unitForm.orientation" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
+                                <option value="">Tanlang (Ixtiyoriy)</option>
+                                <option value="Burchak">Burchak</option>
+                                <option value="O'rtada">O'rtada</option>
+                                <option value="Hovliga qaragan">Hovliga qaragan</option>
+                                <option value="Kun chiqish taraf">Kun chiqish taraf</option>
+                                <option value="Kun botish taraf">Kun botish taraf</option>
+                                <option value="Ko'chaga qaragan">Ko'chaga qaragan</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Balkon</label>

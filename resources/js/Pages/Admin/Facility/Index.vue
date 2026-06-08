@@ -1288,12 +1288,12 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <span class="text-gray-900 font-bold">{{ selectedBuilding.entrances_count || 1 }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Har bir qavatda do'konlar soni</span>
-                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.shops_per_floor || 0 }} ta (Yerto'lalar va 1-qavatda)</span>
+                                        <span class="text-gray-500">Do'konlar soni</span>
+                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.total_shops || 0 }} ta</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Qavatlardagi kvartiralar soni</span>
-                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.apartments_per_floor || 0 }} ta (2-qavatdan boshlab)</span>
+                                        <span class="text-gray-500">Kvartiralar soni</span>
+                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }} ta</span>
                                     </div>
                                     <!-- Dynamic rooms counts statistics -->
                                     <div v-for="(count, rooms) in buildingRoomStats" :key="rooms" class="flex justify-between border-b border-gray-100 py-2">

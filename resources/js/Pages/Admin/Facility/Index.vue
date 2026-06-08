@@ -27,6 +27,32 @@ const selectedBuilding = ref(null);
 const selectedFloor = ref(null);
 const activeTab = ref('blueprint');
 
+// Unit selection state (must be declared before watchers that reference them)
+const selectedUnit = ref(null);
+const activeRightPanel = ref('details'); // 'details' or 'calculator'
+const calcPrice = ref(0);
+const calcDownPayment = ref(0);
+const calcTermMonths = ref(12);
+const calcDiscount = ref(0);
+const selectedUnitForFullscreenBlueprint = ref(null);
+
+function selectUnit(unit) {
+    selectedUnit.value = unit;
+    activeRightPanel.value = 'details';
+    
+    // Find and set the selectedFloor
+    if (selectedBuilding.value?.floors) {
+        const floor = selectedBuilding.value.floors.find(f => f.id === unit.floor_id);
+        selectedFloor.value = floor;
+    }
+    
+    // Set calculator inputs
+    calcPrice.value = unit.price || 0;
+    calcDownPayment.value = 0;
+    calcTermMonths.value = 12;
+    calcDiscount.value = 0;
+}
+
 // Dynamic Building statistics
 const maxRoomsCountForBuilding = computed(() => {
     if (!selectedBuilding.value || !selectedBuilding.value.floors) return 0;
@@ -1177,30 +1203,7 @@ function deleteFloor(floorId) {
     }
 }
 
-const selectedUnit = ref(null);
-const activeRightPanel = ref('details'); // 'details' or 'calculator'
-const calcPrice = ref(0);
-const calcDownPayment = ref(0);
-const calcTermMonths = ref(12);
-const calcDiscount = ref(0);
-const selectedUnitForFullscreenBlueprint = ref(null);
-
-function selectUnit(unit) {
-    selectedUnit.value = unit;
-    activeRightPanel.value = 'details';
-    
-    // Find and set the selectedFloor
-    if (selectedBuilding.value?.floors) {
-        const floor = selectedBuilding.value.floors.find(f => f.id === unit.floor_id);
-        selectedFloor.value = floor;
-    }
-    
-    // Set calculator inputs
-    calcPrice.value = unit.price || 0;
-    calcDownPayment.value = 0;
-    calcTermMonths.value = 12;
-    calcDiscount.value = 0;
-}
+// selectedUnit, activeRightPanel, calc refs, selectUnit moved to top of script to avoid temporal dead zone
 
 function setDownPaymentPercent(percent) {
     calcDownPayment.value = Math.round(Number(calcPrice.value || 0) * (percent / 100));

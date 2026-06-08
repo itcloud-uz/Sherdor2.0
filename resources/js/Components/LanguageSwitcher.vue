@@ -2,6 +2,8 @@
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 
+import { loadLocaleMessages } from '../i18n';
+
 const { locale } = useI18n();
 const isOpen = ref(false);
 
@@ -11,7 +13,8 @@ const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' }
 ];
 
-function setLanguage(lang) {
+async function setLanguage(lang) {
+    await loadLocaleMessages(lang);
     locale.value = lang;
     localStorage.setItem('locale', lang);
     isOpen.value = false;

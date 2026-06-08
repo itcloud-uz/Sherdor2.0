@@ -275,7 +275,19 @@ function resetFilters() {
 }
 
 const showBlueprintFullscreen = ref(false);
+const showBuildingPhotoFullscreen = ref(false);
 const selectedFloorIdForBlueprint = ref(null);
+
+const buildingPhotoFullscreenSrc = computed(() => {
+    if (!selectedBuilding.value) return '/modern_apartment_render.png';
+    return selectedBuilding.value.photo_path 
+        ? `/storage/${selectedBuilding.value.photo_path}` 
+        : getObjectPhoto(groupedObjects.value[currentObject.value] || []);
+});
+
+function openBuildingPhotoFullscreen() {
+    showBuildingPhotoFullscreen.value = true;
+}
 
 const selectedFloorForBlueprint = computed(() => {
     if (!selectedFloorIdForBlueprint.value || !selectedBuilding.value || !selectedBuilding.value.floors) return null;
@@ -378,6 +390,15 @@ function safeRemoveItem(key) {
     } catch (e) {}
 }
 
+// Simple debounce helper function
+function debounce(fn, delay) {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+}
+
 // Synchronize activeTab with the URL tab parameter reactively
 watch(
     () => page.url,
@@ -417,42 +438,42 @@ watch(activeTab, (newTab) => {
     }
 });
 
-// Save selections in localStorage to survive F5/refresh and form updates
-watch(currentObject, (newVal) => {
+// Save selections in localStorage to survive F5/refresh and form updates in a unified watcher
+watch([currentObject, selectedBuilding, selectedFloor, selectedUnit], ([newObj, newBuilding, newFloor, newUnit], [oldObj, oldBuilding, oldFloor, oldUnit]) => {
     if (typeof window === 'undefined') return;
-    if (newVal) {
-        safeSetItem('fac_current_object', newVal);
-    } else {
-        safeRemoveItem('fac_current_object');
+    
+    if (newObj !== oldObj) {
+        if (newObj) {
+            safeSetItem('fac_current_object', newObj);
+        } else {
+            safeRemoveItem('fac_current_object');
+        }
     }
-});
-
-watch(selectedBuilding, (newVal) => {
-    if (typeof window === 'undefined') return;
-    if (newVal) {
-        safeSetItem('fac_building_id', newVal.id);
-    } else {
-        safeRemoveItem('fac_building_id');
-        safeRemoveItem('fac_floor_id');
-        safeRemoveItem('fac_unit_id');
+    
+    if (newBuilding !== oldBuilding) {
+        if (newBuilding) {
+            safeSetItem('fac_building_id', newBuilding.id);
+        } else {
+            safeRemoveItem('fac_building_id');
+            safeRemoveItem('fac_floor_id');
+            safeRemoveItem('fac_unit_id');
+        }
     }
-});
-
-watch(selectedFloor, (newVal) => {
-    if (typeof window === 'undefined') return;
-    if (newVal) {
-        safeSetItem('fac_floor_id', newVal.id);
-    } else {
-        safeRemoveItem('fac_floor_id');
+    
+    if (newFloor !== oldFloor) {
+        if (newFloor) {
+            safeSetItem('fac_floor_id', newFloor.id);
+        } else {
+            safeRemoveItem('fac_floor_id');
+        }
     }
-});
-
-watch(selectedUnit, (newVal) => {
-    if (typeof window === 'undefined') return;
-    if (newVal) {
-        safeSetItem('fac_unit_id', newVal.id);
-    } else {
-        safeRemoveItem('fac_unit_id');
+    
+    if (newUnit !== oldUnit) {
+        if (newUnit) {
+            safeSetItem('fac_unit_id', newUnit.id);
+        } else {
+            safeRemoveItem('fac_unit_id');
+        }
     }
 });
 
@@ -574,7 +595,7 @@ watch(selectedBuilding, (newBuilding, oldBuilding) => {
     }
 });
 
-// Reactively update selectedBuilding when props.buildings updates from the server
+// Reactively update selectedBuilding when props.buildings updates from the server (shallow watch without deep: true)
 watch(
     () => props.buildings,
     (newBuildings) => {
@@ -586,12 +607,15 @@ watch(
                 if (selectedUnit.value) {
                     let found = null;
                     if (updated.floors) {
-                        updated.floors.forEach(f => {
+                        for (const f of updated.floors) {
                             if (f.units) {
                                 const u = f.units.find(unit => unit.id === selectedUnit.value.id);
-                                if (u) found = u;
+                                if (u) {
+                                    found = u;
+                                    break;
+                                }
                             }
-                        });
+                        }
                     }
                     if (found) {
                         selectedUnit.value = found;
@@ -599,8 +623,7 @@ watch(
                 }
             }
         }
-    },
-    { deep: true }
+    }
 );
 
 // Watch total_floors and basement_floors to sync floors_data list
@@ -644,10 +667,10 @@ watch(
 
 
 
-// Recalculate total_shops and total_apartments from floors_data sum
+// Recalculate total_shops and total_apartments from floors_data sum with a 300ms debounce
 watch(
     () => buildingForm.floors_data,
-    (floors) => {
+    debounce((floors) => {
         if (!floors) return;
         let sumShops = 0;
         let sumApartments = 0;
@@ -657,7 +680,7 @@ watch(
         });
         buildingForm.total_shops = sumShops;
         buildingForm.total_apartments = sumApartments;
-    },
+    }, 300),
     { deep: true }
 );
 
@@ -1596,11 +1619,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <div class="lg:col-span-2 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row gap-6">
                         <!-- Building image on the left -->
                         <div class="w-full md:w-3/5 flex flex-col gap-4">
-                            <div class="h-[280px] md:h-[320px] overflow-hidden bg-gray-100 rounded-xl relative shadow-inner">
-                                <img :src="selectedBuilding.photo_path ? `/storage/${selectedBuilding.photo_path}` : getObjectPhoto(groupedObjects[currentObject] || [])" class="w-full h-full object-cover" />
+                            <div @click="openBuildingPhotoFullscreen" class="h-[280px] md:h-[320px] overflow-hidden bg-gray-100 rounded-xl relative shadow-inner cursor-pointer group">
+                                <img :src="selectedBuilding.photo_path ? `/storage/${selectedBuilding.photo_path}` : getObjectPhoto(groupedObjects[currentObject] || [])" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 <div class="absolute bottom-4 left-4 text-white">
                                     <h3 class="text-xl font-bold uppercase tracking-wider">{{ selectedBuilding.block_name || selectedBuilding.corpus_name || '1 Bino' }}</h3>
+                                </div>
+                                <!-- Magnifier overlay -->
+                                <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
+                                    <span class="bg-black/60 text-white px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-sm flex items-center gap-1.5 shadow-md">
+                                        🔍 Kattalashtirish
+                                    </span>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -2951,6 +2980,26 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 <div class="flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px] max-h-[80vh]">
                     <img :src="fullscreenBlueprintSrc" 
                          class="max-h-full max-w-full object-contain" />
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Building Photo Fullscreen Modal -->
+        <Modal :show="showBuildingPhotoFullscreen" @close="showBuildingPhotoFullscreen = false" maxWidth="4xl">
+            <div class="p-6 relative bg-white dark:bg-zinc-900 rounded-2xl font-sans">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                        {{ selectedBuilding?.block_name || selectedBuilding?.corpus_name || 'Bino' }} - Surat / Render
+                    </h3>
+                    <button @click="showBuildingPhotoFullscreen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px] max-h-[80vh]">
+                    <img :src="buildingPhotoFullscreenSrc" 
+                         class="max-h-full max-w-full object-contain rounded-lg shadow-sm" />
                 </div>
             </div>
         </Modal>

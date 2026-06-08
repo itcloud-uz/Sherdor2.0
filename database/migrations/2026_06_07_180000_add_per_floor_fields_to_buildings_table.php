@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('buildings', function (Blueprint $table) {
-            $table->integer('shops_per_floor')->nullable()->default(0)->after('total_shops');
-            $table->integer('apartments_per_floor')->nullable()->default(0)->after('total_apartments');
+            if (!Schema::hasColumn('buildings', 'shops_per_floor')) {
+                $table->integer('shops_per_floor')->nullable()->default(0)->after('total_shops');
+            }
+            if (!Schema::hasColumn('buildings', 'apartments_per_floor')) {
+                $table->integer('apartments_per_floor')->nullable()->default(0)->after('total_apartments');
+            }
         });
     }
 
@@ -23,7 +27,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('buildings', function (Blueprint $table) {
-            $table->dropColumn(['shops_per_floor', 'apartments_per_floor']);
+            $cols = [];
+            if (Schema::hasColumn('buildings', 'shops_per_floor')) {
+                $cols[] = 'shops_per_floor';
+            }
+            if (Schema::hasColumn('buildings', 'apartments_per_floor')) {
+                $cols[] = 'apartments_per_floor';
+            }
+            if (!empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
     }
 };

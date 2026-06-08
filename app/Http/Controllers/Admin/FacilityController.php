@@ -15,36 +15,9 @@ class FacilityController extends Controller
 {
     public function index()
     {
-        // Self-healing: clamp/cap unit podyezd to the building's entrances_count
-        $allBuildings = Building::with('floors')->get();
-        foreach ($allBuildings as $b) {
-            $ec = (int)($b->entrances_count ?? 1);
-            if ($ec < 1) $ec = 1;
-            $floorIds = $b->floors->pluck('id')->toArray();
-            if (!empty($floorIds)) {
-                DB::table('units')
-                    ->whereIn('floor_id', $floorIds)
-                    ->where(function($q) use ($ec) {
-                        $q->where('podyezd', '>', $ec)
-                          ->orWhere('podyezd', '<', 1)
-                          ->orWhereNull('podyezd');
-                    })
-                    ->update(['podyezd' => $ec]);
-            }
-        }
-
-        // Self-healing: auto-generate floors and units for any existing building/block that has 0 floors in DB
-        $emptyBuildings = Building::where('total_floors', '>', 0)
-            ->whereDoesntHave('floors')
-            ->get();
-
-        foreach ($emptyBuildings as $building) {
-            $this->generateFloorsAndUnits($building);
-        }
-
         $buildings = Building::with(['floors.units', 'stages'])->get();
-        $clients = \App\Models\Client::latest()->limit(500)->get();
-        $partners = \App\Models\Partner::with('user')->get();
+        $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->latest()->limit(200)->get();
+        $partners = \App\Models\Partner::with('user:id,name')->get();
 
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,
@@ -397,13 +370,17 @@ class FacilityController extends Controller
             // Get existing floors
             $existingFloors = $building->floors()->with('units')->get()->keyBy('floor_number');
 
-            // Clamp/fix podyezd for all existing units
+            // Clamp/fix podyezd for all existing units (bulk update)
+            $unitIds = [];
             foreach ($existingFloors as $floor) {
                 foreach ($floor->units as $unit) {
                     if ($unit->podyezd > $entrancesCount || $unit->podyezd < 1 || is_null($unit->podyezd)) {
-                        $unit->update(['podyezd' => $entrancesCount]);
+                        $unitIds[] = $unit->id;
                     }
                 }
+            }
+            if (!empty($unitIds)) {
+                DB::table('units')->whereIn('id', $unitIds)->update(['podyezd' => $entrancesCount]);
             }
 
             // Remove floors that should no longer exist (only if all units are available)
@@ -478,8 +455,11 @@ class FacilityController extends Controller
      */
     private function syncUnitsByType(Floor $floor, string $type, int $target, int $entrancesCount): void
     {
-        $currentTotal = $floor->units()->where('type', $type)->count();
-        $nonAvailableCount = $floor->units()->where('type', $type)->where('status', '!=', 'available')->count();
+        $counts = $floor->units()->where('type', $type)
+            ->selectRaw("COUNT(*) as total, SUM(CASE WHEN status != 'available' THEN 1 ELSE 0 END) as non_available")
+            ->first();
+        $currentTotal = (int) $counts->total;
+        $nonAvailableCount = (int) $counts->non_available;
 
         if ($currentTotal < $target) {
             // Need to add more units
@@ -675,7 +655,7 @@ class FacilityController extends Controller
 
     public function updateFloor(Request $request, $id)
     {
-        $floor = Floor::findOrFail($id);
+        $floor = Floor::with('units')->findOrFail($id);
         $validated = $request->validate([
             'floor_number' => 'required|integer',
             'total_units' => 'required|integer|min:0',

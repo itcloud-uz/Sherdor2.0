@@ -633,7 +633,7 @@ function downloadUnitsCSV() {
             const floorNum = floor.floor_number;
             const floorLabel = floorNum < 0 ? `${floorNum} yerto'la` : `${floorNum}-qavat`;
             const unitType = unit.type === 'commercial' ? "Do'kon" : 'Xonadon';
-            const unitNumber = (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D') ? 'D-' : '') + unit.unit_number;
+            const unitNumber = (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number;
             const area = unit.area_sqm || 0;
             const rooms = unit.rooms_count || 1;
             const price = unit.price || 0;
@@ -1662,7 +1662,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                              @mouseleave="onUnitLeave"
                                                              @click="selectUnit(unit)">
                                                             <span class="font-sans text-xs font-bold pointer-events-none z-10 text-white">
-                                                                {{ (unit.type === 'commercial' && !String(unit.unit_number).startsWith('D') ? 'D-' : '') + unit.unit_number }}
+                                                                {{ (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number }}
                                                             </span>
                                                         </div>
                                                         <div v-if="!getUnitsByFloorAndPodyezd(floor, p).length" class="text-[10px] font-sans text-gray-300 italic">
@@ -1684,7 +1684,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                          class="fixed z-50 pointer-events-none bg-white border border-gray-200 p-4 rounded-xl shadow-lg"
                                          :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
                                         <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2 font-sans font-bold">
-                                            {{ (hoveredUnit.type === 'commercial' && !String(hoveredUnit.unit_number).startsWith('D') ? 'D-' : '') + hoveredUnit.unit_number }} 
+                                            {{ (hoveredUnit.type === 'commercial' && /^\d+$/.test(String(hoveredUnit.unit_number).trim()) ? 'D-' : '') + hoveredUnit.unit_number }} 
                                             <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
                                         </h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-sans">
@@ -1804,7 +1804,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     <div class="space-y-4 text-base font-sans text-gray-700">
                                         <div>
                                             <span class="text-gray-500">Xonadon:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ (selectedUnit.type === 'commercial' && !String(selectedUnit.unit_number).startsWith('D') ? 'D-' : '') + selectedUnit.unit_number }}</strong>
+                                            <strong class="text-gray-900 font-bold ml-1">{{ (selectedUnit.type === 'commercial' && /^\d+$/.test(String(selectedUnit.unit_number).trim()) ? 'D-' : '') + selectedUnit.unit_number }}</strong>
                                         </div>
                                         <div>
                                             <span class="text-gray-500">Podezd:</span>

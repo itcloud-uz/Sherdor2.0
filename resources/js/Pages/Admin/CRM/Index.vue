@@ -396,7 +396,7 @@ const showUnitDropdown = ref(false);
 function formatUnitDisplay(u) {
     const isCommercial = u.type === 'commercial';
     const typeLabel = isCommercial ? "Do'kon" : 'Xonadon';
-    const prefix = isCommercial && !String(u.unit_number).startsWith('D-') ? 'D-' : '';
+    const prefix = isCommercial && /^\d+$/.test(String(u.unit_number).trim()) ? 'D-' : '';
     return `${typeLabel} ${prefix}${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number !== undefined && u.floor?.floor_number !== null ? u.floor.floor_number : ''})`;
 }
 

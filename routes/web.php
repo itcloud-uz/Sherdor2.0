@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');
+    Route::get('/crm/clients/{client}/details', [\App\Http\Controllers\Admin\CrmController::class, 'getClientDetails'])->name('crm.clients.details');
     Route::get('/crm/clients/export/excel', [\App\Http\Controllers\Admin\ClientExportController::class, 'exportExcel'])->name('crm.export.clients.excel');
     Route::get('/crm/clients/export/pdf', [\App\Http\Controllers\Admin\ClientExportController::class, 'exportPdf'])->name('crm.export.clients.pdf');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'updateLead'])->name('crm.leads.update');

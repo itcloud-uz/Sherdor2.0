@@ -5,6 +5,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import axios from 'axios';
 
 const { t } = useI18n();
 const page = usePage();
@@ -634,6 +635,84 @@ function getDummyBirthDate(client) {
     return `${years[yIndex]}-${months[mIndex]}-${days[dIndex]}`;
 }
 
+const selectedClientForDetail = ref(null);
+const clientDetailLoading = ref(false);
+const detailedClientData = ref(null);
+
+function selectClientForDetail(client) {
+    selectedClientForDetail.value = client;
+    clientDetailLoading.value = true;
+    detailedClientData.value = null;
+    
+    axios.get(route('admin.crm.clients.details', client.id))
+        .then(response => {
+            if (response.data.status === 'success') {
+                detailedClientData.value = response.data.client;
+            }
+        })
+        .catch(err => {
+            console.error('Mijoz ma\'lumotlarini yuklashda xatolik:', err);
+        })
+        .finally(() => {
+            clientDetailLoading.value = false;
+        });
+}
+
+function getUzFormattedDate() {
+    const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+    const now = new Date();
+    const dayName = days[now.getDay()];
+    const dateStr = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + now.getFullYear();
+    return `${dayName}, ${dateStr}`;
+}
+
+function getUzFormattedDateFromString(dateStr) {
+    if (!dateStr) return '—';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = d.getDate();
+    const monthName = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${monthName}, ${year}`;
+}
+
+function exportDocx(contract) {
+    if (!contract) return;
+    window.location.href = route('admin.contracts.export.docx', contract.id);
+}
+
+function exportExcel(contract) {
+    if (!contract) return;
+    window.location.href = route('admin.contracts.export.xlsx', contract.id);
+}
+
+function getClientGender(client) {
+    if (!client) return '—';
+    const ln = (client.last_name || '').toLowerCase();
+    const mn = (client.middle_name || '').toLowerCase();
+    const fn = (client.first_name || '').toLowerCase();
+    if (ln.endsWith('ova') || ln.endsWith('eva') || mn.endsWith('ovna') || mn.endsWith('evna') || mn.endsWith('qizi') || fn.endsWith('a')) {
+        return 'Ayol';
+    }
+    return 'Erkak';
+}
+
+function getContractFinancials(contract) {
+    if (!contract) return { total: 0, paid: 0, debt: 0, percent: 0 };
+    const total = Number(contract.total_amount || 0);
+    const schedules = contract.payment_schedules || contract.paymentSchedules || [];
+    const paid = schedules.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
+    const debt = Math.max(0, total - paid);
+    const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+    return { total, paid, debt, percent };
+}
+
+function getContractSchedules(contract) {
+    if (!contract) return [];
+    return contract.payment_schedules || contract.paymentSchedules || [];
+}
+
 const leadsByStatus = computed(() => {
     return {
         new: (props.leads || []).filter(l => l.status === 'new'),
@@ -1079,13 +1158,14 @@ function openQuickSmsModal(lead) {
 
         <!-- TAB 2: CLIENTS ROSTER -->
         <div v-if="activeTab === 'clients'" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
-            <!-- Breadcrumbs -->
-            <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
+            <div v-if="!selectedClientForDetail">
+                <!-- Breadcrumbs -->
+                <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
                 <span class="flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    Asosiy
+                    Mijozlar bazasi
                 </span>
                 <span class="text-gray-300 font-bold">&gt;</span>
                 <span class="text-gray-900 font-bold">Mijozlar</span>
@@ -1248,7 +1328,7 @@ function openQuickSmsModal(lead) {
                                         </svg>
                                     </button>
                                     <!-- View -->
-                                    <button @click="openScheduleModal(getClientLatestContract(client))" v-if="getClientLatestContract(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Ko'rish">
+                                    <button @click="selectClientForDetail(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
                                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -1270,6 +1350,309 @@ function openQuickSmsModal(lead) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            </div>
+            
+            <!-- If client is selected, show detail view -->
+            <div v-else class="space-y-6">
+                <!-- Breadcrumbs -->
+                <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
+                    <span @click="selectedClientForDetail = null" class="flex items-center gap-1 cursor-pointer hover:underline hover:text-gray-900 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Mijozlar bazasi
+                    </span>
+                    <span class="text-gray-300 font-bold">&gt;</span>
+                    <span class="text-gray-900 font-bold">{{ selectedClientForDetail.last_name }} {{ selectedClientForDetail.first_name }}</span>
+                </div>
+
+                <!-- Header Row -->
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-950 font-sans tracking-tight">{{ selectedClientForDetail.last_name }} {{ selectedClientForDetail.first_name }}</h1>
+                        <div class="text-xs text-gray-500 font-mono mt-1">{{ getUzFormattedDate() }}</div>
+                    </div>
+                    <!-- Go back button -->
+                    <button @click="selectedClientForDetail = null" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Orqaga
+                    </button>
+                </div>
+
+                <!-- Skeleton Loader -->
+                <div v-if="clientDetailLoading" class="animate-pulse space-y-6">
+                    <div class="h-40 bg-gray-200 rounded-3xl"></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="h-60 bg-gray-200 rounded-3xl col-span-2"></div>
+                        <div class="h-60 bg-gray-200 rounded-3xl"></div>
+                    </div>
+                </div>
+
+                <!-- Detailed Client View Content -->
+                <div v-else-if="detailedClientData" class="space-y-6">
+                    <!-- Card 1: Uy haqida ma'lumot -->
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
+                        <!-- Left: Layout Image Preview -->
+                        <div class="w-full md:w-64 h-48 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden relative group cursor-pointer flex items-center justify-center shrink-0">
+                            <!-- Floorplan Preview -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                                <svg class="w-12 h-12 text-[#f2a900]/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                <span class="text-xs font-bold text-gray-800">{{ detailedClientData.contracts[0]?.unit?.rooms || '2' }}-xonali xonadon</span>
+                                <span class="text-[10px] text-gray-400 font-mono mt-1">Maydoni: {{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.5' }} kv.m</span>
+                            </div>
+                            <!-- Hover overlay -->
+                            <div class="absolute inset-0 bg-[#0d1117]/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                <span class="px-4 py-2 bg-white/95 rounded-xl text-xs font-bold text-gray-900 shadow-lg flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Ko'rib chiqish
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Right: Info details -->
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Uy haqida ma'lumot</span>
+                                <h2 class="text-xl font-bold text-gray-950 font-sans mb-4">
+                                    {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'Farg\'ona City' }}
+                                </h2>
+
+                                <!-- Columns grid -->
+                                <div class="grid grid-cols-4 gap-4 max-w-lg mb-4">
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-900 leading-none">
+                                            {{ detailedClientData.contracts[0]?.unit?.floor?.building?.block_name || detailedClientData.contracts[0]?.unit?.floor?.building?.corpus_name || 'Г Блок' }}
+                                        </p>
+                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Bino/Blok</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-900 leading-none">
+                                            {{ detailedClientData.contracts[0]?.unit?.rooms || '2' }}
+                                        </p>
+                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Xona</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-900 leading-none">
+                                            {{ detailedClientData.contracts[0]?.unit?.podyezd ? detailedClientData.contracts[0].unit.podyezd + '-padezd' : '1-padezd' }}
+                                        </p>
+                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Podezd</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-900 leading-none">
+                                            {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '3' }}
+                                        </p>
+                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Qavat</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer details of the apartment -->
+                            <div class="border-t border-gray-100 pt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-sans text-gray-700">
+                                <div>Xonadon raqami: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}</strong></div>
+                                <div>Tafsilot: <strong class="text-gray-900">—</strong></div>
+                                <div>Maydoni: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.54' }} m²</strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Ma'lumotlar & Shartnomalar -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left: Profile and Personal Details (2 cols) -->
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm lg:col-span-2 flex flex-col md:flex-row gap-6">
+                            <!-- Profile Card -->
+                            <div class="w-full md:w-48 shrink-0 flex flex-col items-center text-center p-4 bg-slate-50 rounded-2xl border border-slate-100 justify-center">
+                                <div class="w-16 h-16 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-xl shadow-sm mb-3">
+                                    {{ getInitials(detailedClientData.first_name, detailedClientData.last_name) }}
+                                </div>
+                                <h3 class="text-sm font-bold text-gray-900 leading-tight">
+                                    {{ detailedClientData.last_name }} <br/> {{ detailedClientData.first_name }} {{ detailedClientData.middle_name || '' }}
+                                </h3>
+                                <span class="text-[10px] font-bold text-blue-600 mt-2 bg-blue-50 px-2 py-0.5 rounded-full uppercase">Mijoz</span>
+                            </div>
+
+                            <!-- Personal Details -->
+                            <div class="flex-1">
+                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Ma'lumotlar</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs font-sans text-gray-700">
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">ID:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.id }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">—</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 3:</span> <strong class="text-gray-900 font-mono">—</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Jinsi:</span> <strong class="text-gray-900">{{ getClientGender(detailedClientData) }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tug'ilgan sanasi:</span> <strong class="text-gray-900 font-mono">{{ getDummyBirthDate(detailedClientData) }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">Toshkent shahri</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">Mirobod tumani</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address || 'address' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Qo'shilgan sana:</span> <strong class="text-gray-900 font-mono">{{ getUzFormattedDateFromString(detailedClientData.created_at) }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number || 'AA1234567' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport rasmlari:</span> <strong class="text-gray-900">Rasmlar yo'q</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Contract details (1 col) -->
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Shartnomalar</h4>
+                                <div class="space-y-2 text-xs font-sans text-gray-700">
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tasdiqlangan:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.approver?.name || '—' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Sotuv menejeri:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.creator?.name || '—' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between">
+                                        <span class="text-gray-400">Holat:</span> 
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" 
+                                              :class="detailedClientData.contracts[0]?.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                                            {{ detailedClientData.contracts[0]?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
+                                        </span>
+                                    </div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">To'lov turi:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'installment' ? 'Bo\'lib to\'lash' : 'O\'z mablag\'' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Muddati:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Kadastr:</span> <strong class="text-gray-900">yo'q</strong></div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons below -->
+                            <div class="mt-6 pt-4 border-t border-gray-50 flex items-center gap-2">
+                                <button @click="exportDocx(detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors">
+                                    <svg class="w-8 h-8 text-amber-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                        <path d="M14 2v6h6" opacity="0.3"/>
+                                    </svg>
+                                    <span class="text-[10px] font-bold text-amber-800">Shartnoma</span>
+                                </button>
+                                <button @click="exportExcel(detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors">
+                                    <svg class="w-8 h-8 text-emerald-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                        <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
+                                    </svg>
+                                    <span class="text-[10px] font-bold text-emerald-800">Grafik</span>
+                                </button>
+                                <button @click="selectClientForDetail(detailedClientData)" class="flex-1 flex flex-col items-center justify-center p-2 border border-gray-200 hover:bg-gray-50 rounded-2xl transition-colors">
+                                    <svg class="w-8 h-8 text-gray-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" />
+                                    </svg>
+                                    <span class="text-[10px] font-bold text-gray-600">Yangilash</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Izohlar (Comments) -->
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Izoh qo'shish
+                            </button>
+                        </div>
+                        <a href="#" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                            Barchasi
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Card 4: Financial Overview Bar -->
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="flex flex-wrap items-center gap-x-8 gap-y-4 text-xs font-sans">
+                            <div>
+                                <span class="text-gray-400 block mb-1">Uy narxi</span>
+                                <strong class="text-emerald-600 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block mb-1">Chegirma</span>
+                                <strong class="text-gray-900 text-base font-bold">500,000 so'm</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block mb-1">To'langan</span>
+                                <strong class="text-amber-500 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block mb-1">Qarzdorlik</span>
+                                <strong class="text-red-500 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).debt).toLocaleString('en-US') }} so'm</strong>
+                            </div>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div class="w-full md:w-64 flex items-center gap-3">
+                            <div class="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="`width: ${getContractFinancials(detailedClientData.contracts[0]).percent}%`"></div>
+                            </div>
+                            <span class="text-xs font-bold text-gray-700 font-mono">{{ getContractFinancials(detailedClientData.contracts[0]).percent }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: To'lov jadvali -->
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-base font-bold text-gray-900 font-sans">To'lov jadvali</h3>
+                            <div class="flex items-center gap-2">
+                                <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                    To'lov izohi
+                                </button>
+                                <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                    To'lov tarixi
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Responsive Table -->
+                        <div class="overflow-x-auto border border-gray-100 rounded-2xl">
+                            <table class="w-full border-collapse text-left text-xs whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-slate-50 text-gray-500 font-bold border-b border-gray-100">
+                                        <th class="p-3 text-center w-12">№</th>
+                                        <th class="p-3 text-center">Sana</th>
+                                        <th class="p-3 text-right">Oylik to'lov</th>
+                                        <th class="p-3 text-right">To'langan summa</th>
+                                        <th class="p-3 text-right">Qarzdorlik</th>
+                                        <th class="p-3 text-center">Turi</th>
+                                        <th class="p-3 text-center">Holat</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 font-mono text-xs">
+                                    <tr v-for="(schedule, index) in getContractSchedules(detailedClientData.contracts[0])" :key="schedule.id" class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="p-3 text-center text-gray-500">{{ index + 1 }}</td>
+                                        <td class="p-3 text-center text-gray-700">{{ formatDateOnly(schedule.due_date) }}</td>
+                                        <td class="p-3 text-right font-bold text-gray-900">{{ Number(schedule.expected_amount || 0).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-right font-bold text-emerald-600">{{ Number(schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-right font-bold text-red-500">{{ Number(schedule.expected_amount - schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-center font-sans text-gray-700">
+                                            {{ schedule.payment_type || (index === 0 ? 'Bosh to\'lov' : 'Oylik to\'lov') }}
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-sans"
+                                                  :class="schedule.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'">
+                                                {{ schedule.status === 'paid' ? 'To\'langan' : 'Qarzdorlik' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="getContractSchedules(detailedClientData.contracts[0]).length === 0">
+                                        <td colspan="7" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- If no contract exists -->
+                <div v-else class="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                    <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="text-sm text-gray-500 font-medium">Mijozning shartnomalari topilmadi.</p>
+                </div>
             </div>
         </div>
 

@@ -135,6 +135,24 @@ class CrmController extends Controller
         return redirect()->back()->with('message', 'Client deleted successfully.');
     }
 
+    public function getClientDetails(\App\Models\Client $client)
+    {
+        $client->load([
+            'contracts.unit.floor.building',
+            'contracts.paymentSchedules' => function ($query) {
+                $query->orderBy('due_date', 'asc');
+            },
+            'contracts.transactions.creator',
+            'contracts.transactions.approver',
+            'contracts.transactions.category',
+        ]);
+        
+        return response()->json([
+            'status' => 'success',
+            'client' => $client
+        ]);
+    }
+
     public function logContact(Request $request, Lead $lead)
     {
         // Mock a CallLog entry

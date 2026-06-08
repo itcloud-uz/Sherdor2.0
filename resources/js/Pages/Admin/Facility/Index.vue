@@ -317,48 +317,22 @@ watch(
 
         buildingForm.floors_data = floorNumbers.map(f => {
             const existing = currentMap[f];
+            const isCommercial = (f <= 1);
             if (existing) {
+                existing.shops_count = isCommercial ? (existing.shops_count || 0) : 0;
+                existing.apartments_count = !isCommercial ? (existing.apartments_count || 0) : 0;
                 return existing;
             }
-            const isCommercial = (f < 0 || f === 1);
             return {
                 floor_number: f,
-                shops_count: isCommercial ? (parseInt(buildingForm.shops_per_floor) || 0) : 0,
-                apartments_count: !isCommercial ? (parseInt(buildingForm.apartments_per_floor) || 0) : 0
+                shops_count: 0,
+                apartments_count: 0
             };
         });
     }
 );
 
-// Propagate global shops template count to floors
-watch(
-    () => buildingForm.shops_per_floor,
-    (newVal) => {
-        const val = parseInt(newVal) || 0;
-        if (buildingForm.floors_data) {
-            buildingForm.floors_data.forEach(item => {
-                if (item.floor_number <= 1) {
-                    item.shops_count = val;
-                }
-            });
-        }
-    }
-);
 
-// Propagate global apartments template count to floors
-watch(
-    () => buildingForm.apartments_per_floor,
-    (newVal) => {
-        const val = parseInt(newVal) || 0;
-        if (buildingForm.floors_data) {
-            buildingForm.floors_data.forEach(item => {
-                if (item.floor_number >= 2) {
-                    item.apartments_count = val;
-                }
-            });
-        }
-    }
-);
 
 // Recalculate total_shops and total_apartments from floors_data sum
 watch(
@@ -791,11 +765,14 @@ function openEditBuilding() {
     buildingForm.average_area = 0;
     buildingForm.average_price = 0;
     buildingForm.commercial_units_first_floor = 0;
-    buildingForm.floors_data = (selectedBuilding.value.floors || []).map(f => ({
-        floor_number: f.floor_number,
-        shops_count: f.total_commercial_units || 0,
-        apartments_count: f.total_units || 0
-    }));
+    buildingForm.floors_data = (selectedBuilding.value.floors || []).map(f => {
+        const isCommercial = (f.floor_number <= 1);
+        return {
+            floor_number: f.floor_number,
+            shops_count: isCommercial ? (f.total_commercial_units || 0) : 0,
+            apartments_count: !isCommercial ? (f.total_units || 0) : 0
+        };
+    });
     showAddBuildingModal.value = true;
 }
 
@@ -1685,47 +1662,32 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <!-- YANGI BLOK QO'SHISH FORM -->
                     <div v-else-if="isAddingBlock && !isEditingBuilding" class="space-y-4">
                         <!-- ROW 1: BLOK NOMI & PODEZ NOMI -->
+                        <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">BLOK NOMI</label>
                                 <input v-model="buildingForm.block_name" type="text" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: A Blok" required>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">PODEZ NOMI</label>
-                                <input v-model="buildingForm.entrances_count" type="number" min="1" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
-                            </div>
-                        </div>
-
-                        <!-- ROW 2: KORPUS NOMI & QAVATLAR SONI -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">KORPUS NOMI</label>
                                 <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: 3-Korpus">
                             </div>
+                        </div>
+
+                        <!-- ROW 2: QAVATLAR SONI & YERTO'LA NECHA QAVATNI TASHKIL QILADI -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">QAVATLAR SONI</label>
                                 <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
                             </div>
-                        </div>
-
-                        <!-- ROW 3: YERTO'LA NECHA QAVATNI TASHKIL QILADI & HAR BIR QAVATDA NECHTADAN DO'KON SONI -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">YERTO'LA NECHA QAVATNI TASHKIL QILADI</label>
                                 <input v-model="buildingForm.basement_floors" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">HAR BIR QAVATDA NECHTADAN DO'KON SONI</label>
-                                <input v-model="buildingForm.shops_per_floor" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
                         </div>
 
-                        <!-- ROW 4: QAVATLARDA KVARTIRA SONI & JAMI DO'KONLAR & JAMI KVARTIRALAR -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">QAVATLARDA KVARTIRA SONI</label>
-                                <input v-model="buildingForm.apartments_per_floor" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
+                        <!-- ROW 3: JAMI DO'KONLAR & JAMI KVARTIRALAR -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">JAMI DO'KONLAR</label>
                                 <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
@@ -1828,48 +1790,32 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                         <!-- 2. TAHRIRLANAYOTGAN NAYSA BLOK BO'LSA (total_floors > 0) -->
                         <div v-else class="space-y-4">
-                            <!-- ROW 1: BLOK NOMI & PODEZ NOMI -->
+                            <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">Blok Nomi</label>
                                     <input v-model="buildingForm.block_name" type="text" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: A Blok" required>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">Podez Nomi</label>
-                                    <input v-model="buildingForm.entrances_count" type="number" min="1" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
-                                </div>
-                            </div>
-
-                            <!-- ROW 2: KORPUS NOMI & QAVATLAR SONI -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">Korpus Nomi</label>
                                     <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: 3-Korpus">
                                 </div>
+                            </div>
+
+                            <!-- ROW 2: QAVATLAR SONI & YERTO'LA NECHA QAVATNI TASHKIL QILADI -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase">Qavatlar soni</label>
                                     <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
                                 </div>
-                            </div>
-
-                            <!-- ROW 3: YERTO'LA NECHA QAVATNI TASHKIL QILADI & HAR BIR QAVATDA NECHTADAN DO'KON SONI -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Yerto'la necha qavatni tashkil qiladi</label>
                                     <input v-model="buildingForm.basement_floors" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Har bir qavatda nechtadan do'kon soni</label>
-                                    <input v-model="buildingForm.shops_per_floor" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
                             </div>
 
-                            <!-- ROW 4: QAVATLARDA KVARTIRA SONI & JAMI DO'KONLAR & JAMI KVARTIRALAR -->
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Qavatlarda kvartira soni</label>
-                                    <input v-model="buildingForm.apartments_per_floor" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
+                            <!-- ROW 3: JAMI DO'KONLAR & JAMI KVARTIRALAR -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Jami Do'konlar</label>
                                     <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">

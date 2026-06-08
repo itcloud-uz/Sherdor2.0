@@ -331,62 +331,17 @@ function getSortedUnits(units) {
     });
 }
 
-// Synchronize selected states with the URL parameters reactively on load/change
+// Synchronize activeTab with the URL tab parameter reactively
 watch(
     () => page.url,
     (newUrl) => {
         if (typeof window === 'undefined') return;
         try {
             const url = new URL(newUrl, window.location.origin);
-            const tabParam = url.searchParams.get('tab') || 'blueprint';
-            if (activeTab.value !== tabParam) {
-                activeTab.value = tabParam;
-            }
-
-            const objectParam = url.searchParams.get('object');
-            const buildingIdParam = url.searchParams.get('building_id');
-            const floorIdParam = url.searchParams.get('floor_id');
-            const unitIdParam = url.searchParams.get('unit_id');
-
-            if (objectParam && currentObject.value !== objectParam) {
-                currentObject.value = objectParam;
-            } else if (!objectParam && currentObject.value !== null) {
-                currentObject.value = null;
-            }
-
-            if (props.buildings && props.buildings.length > 0) {
-                if (buildingIdParam) {
-                    const bId = Number(buildingIdParam);
-                    const foundB = props.buildings.find(b => b.id === bId);
-                    if (foundB) {
-                        if (!selectedBuilding.value || selectedBuilding.value.id !== foundB.id) {
-                            selectedBuilding.value = foundB;
-                        }
-                        
-                        if (floorIdParam) {
-                            const fId = Number(floorIdParam);
-                            const foundF = foundB.floors?.find(f => f.id === fId);
-                            if (foundF) {
-                                if (!selectedFloor.value || selectedFloor.value.id !== foundF.id) {
-                                    selectedFloor.value = foundF;
-                                }
-                            }
-                        }
-                        
-                        if (unitIdParam && selectedFloor.value && selectedFloor.value.units) {
-                            const uId = Number(unitIdParam);
-                            const foundU = selectedFloor.value.units.find(u => u.id === uId);
-                            if (foundU && (!selectedUnit.value || selectedUnit.value.id !== foundU.id)) {
-                                selectUnit(foundU);
-                            }
-                        } else if (!unitIdParam && selectedUnit.value) {
-                            selectedUnit.value = null;
-                        }
-                    }
-                } else {
-                    if (selectedBuilding.value !== null) selectedBuilding.value = null;
-                    if (selectedFloor.value !== null) selectedFloor.value = null;
-                    if (selectedUnit.value !== null) selectedUnit.value = null;
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                if (activeTab.value !== tabParam) {
+                    activeTab.value = tabParam;
                 }
             }
         } catch (e) {
@@ -396,58 +351,106 @@ watch(
     { immediate: true }
 );
 
-// Synchronize URL query parameters with active selections inside the component
-watch(
-    [activeTab, currentObject, selectedBuilding, selectedFloor, selectedUnit],
-    ([newTab, newObj, newBuilding, newFloor, newUnit]) => {
-        if (typeof window === 'undefined') return;
-        try {
-            const url = new URL(window.location.href);
-            
-            // tab
-            if (newTab) {
-                url.searchParams.set('tab', newTab);
-            } else {
-                url.searchParams.delete('tab');
+// Synchronize URL query parameter with activeTab changes inside the component
+watch(activeTab, (newTab) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab === null || currentTab !== newTab) {
+            router.replace(route('admin.facility', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in Facility activeTab watcher', e);
+    }
+});
+
+// Save selections in localStorage to survive F5/refresh and form updates
+watch(currentObject, (newVal) => {
+    if (typeof window === 'undefined') return;
+    if (newVal) {
+        localStorage.setItem('fac_current_object', newVal);
+    } else {
+        localStorage.removeItem('fac_current_object');
+    }
+});
+
+watch(selectedBuilding, (newVal) => {
+    if (typeof window === 'undefined') return;
+    if (newVal) {
+        localStorage.setItem('fac_building_id', newVal.id);
+    } else {
+        localStorage.removeItem('fac_building_id');
+        localStorage.removeItem('fac_floor_id');
+        localStorage.removeItem('fac_unit_id');
+    }
+});
+
+watch(selectedFloor, (newVal) => {
+    if (typeof window === 'undefined') return;
+    if (newVal) {
+        localStorage.setItem('fac_floor_id', newVal.id);
+    } else {
+        localStorage.removeItem('fac_floor_id');
+    }
+});
+
+watch(selectedUnit, (newVal) => {
+    if (typeof window === 'undefined') return;
+    if (newVal) {
+        localStorage.setItem('fac_unit_id', newVal.id);
+    } else {
+        localStorage.removeItem('fac_unit_id');
+    }
+});
+
+// Restore selections on initial mount
+onMounted(() => {
+    if (typeof window === 'undefined') return;
+    
+    const savedObject = localStorage.getItem('fac_current_object');
+    const savedBuildingId = localStorage.getItem('fac_building_id');
+    const savedFloorId = localStorage.getItem('fac_floor_id');
+    const savedUnitId = localStorage.getItem('fac_unit_id');
+    
+    if (savedObject) {
+        currentObject.value = savedObject;
+    }
+    
+    if (props.buildings && props.buildings.length > 0) {
+        if (savedBuildingId) {
+            const bId = Number(savedBuildingId);
+            const foundB = props.buildings.find(b => b.id === bId);
+            if (foundB) {
+                selectedBuilding.value = foundB;
+                
+                if (savedFloorId) {
+                    const fId = Number(savedFloorId);
+                    const foundF = foundB.floors?.find(f => f.id === fId);
+                    if (foundF) {
+                        selectedFloor.value = foundF;
+                        
+                        if (savedUnitId && foundF.units) {
+                            const uId = Number(savedUnitId);
+                            const foundU = foundF.units.find(u => u.id === uId);
+                            if (foundU) {
+                                selectUnit(foundU);
+                            }
+                        }
+                    }
+                }
             }
-            
-            // object
-            if (newObj) {
-                url.searchParams.set('object', newObj);
-            } else {
-                url.searchParams.delete('object');
-            }
-            
-            // building_id
-            if (newBuilding) {
-                url.searchParams.set('building_id', newBuilding.id);
-            } else {
-                url.searchParams.delete('building_id');
-            }
-            
-            // floor_id
-            if (newFloor) {
-                url.searchParams.set('floor_id', newFloor.id);
-            } else {
-                url.searchParams.delete('floor_id');
-            }
-            
-            // unit_id
-            if (newUnit) {
-                url.searchParams.set('unit_id', newUnit.id);
-            } else {
-                url.searchParams.delete('unit_id');
-            }
-            
-            const newSearch = url.search;
-            if (window.location.search !== newSearch) {
-                window.history.replaceState(null, '', window.location.pathname + newSearch);
-            }
-        } catch (e) {
-            console.error('URL replace error in Facility activeTab watcher', e);
+        } else {
+            // Default: autoselect first building if nothing was saved
+            const firstBuilding = props.buildings[0];
+            selectedBuilding.value = firstBuilding;
+            currentObject.value = firstBuilding.name;
         }
     }
-);
+});
 
 const hoveredUnit = ref(null);
 const mouseX = ref(0);
@@ -463,7 +466,7 @@ function onUnitLeave() {
     hoveredUnit.value = null;
 }
 
-// Watch for building changes to select the first floor, while respecting URL parameters on initial load
+// Watch for building changes to select the first floor, while respecting localStorage parameters on initial load
 watch(selectedBuilding, (newBuilding, oldBuilding) => {
     selectedFloorIdForBlueprint.value = null;
     if (!newBuilding) {
@@ -474,24 +477,21 @@ watch(selectedBuilding, (newBuilding, oldBuilding) => {
     
     // Only reset floor/unit if we switched to a different building
     if (!oldBuilding || newBuilding.id !== oldBuilding.id) {
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            const urlFloorId = url.searchParams.get('floor_id');
-            const urlUnitId = url.searchParams.get('unit_id');
-            
-            if (urlFloorId && newBuilding.floors) {
-                const foundF = newBuilding.floors.find(f => f.id === Number(urlFloorId));
-                if (foundF) {
-                    selectedFloor.value = foundF;
-                    
-                    if (urlUnitId && foundF.units) {
-                        const foundU = foundF.units.find(u => u.id === Number(urlUnitId));
-                        if (foundU) {
-                            selectUnit(foundU);
-                        }
+        const savedFloorId = typeof window !== 'undefined' ? localStorage.getItem('fac_floor_id') : null;
+        const savedUnitId = typeof window !== 'undefined' ? localStorage.getItem('fac_unit_id') : null;
+        
+        if (savedFloorId && newBuilding.floors) {
+            const foundF = newBuilding.floors.find(f => f.id === Number(savedFloorId));
+            if (foundF) {
+                selectedFloor.value = foundF;
+                
+                if (savedUnitId && foundF.units) {
+                    const foundU = foundF.units.find(u => u.id === Number(savedUnitId));
+                    if (foundU) {
+                        selectUnit(foundU);
                     }
-                    return;
                 }
+                return;
             }
         }
         

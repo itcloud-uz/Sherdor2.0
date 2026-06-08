@@ -1277,7 +1277,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                     <div v-if="selectedBuilding.basement_floors > 0" class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">Yerto'lalar</span>
-                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.basement_floors }} ta yerto'la</span>
+                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.basement_floors }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">Xonalar soni</span>
@@ -1289,16 +1289,16 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">Do'konlar soni</span>
-                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.total_shops || 0 }} ta</span>
+                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.total_shops || 0 }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">Kvartiralar soni</span>
-                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }} ta</span>
+                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }}</span>
                                     </div>
                                     <!-- Dynamic rooms counts statistics -->
                                     <div v-for="(count, rooms) in buildingRoomStats" :key="rooms" class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">{{ rooms }}-xonali</span>
-                                        <span class="text-gray-900 font-bold">{{ count }} ta</span>
+                                        <span class="text-gray-900 font-bold">{{ count }}</span>
                                     </div>
                                 </div>
                             </div>

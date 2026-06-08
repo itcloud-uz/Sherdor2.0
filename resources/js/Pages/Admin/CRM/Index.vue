@@ -595,28 +595,80 @@ watch(activeTab, (newTab) => {
     }
 });
 const searchQuery = ref('');
-const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
+const selectedBuildingFilter = ref('');
+const selectedStatusFilter = ref('');
+const selectedManagerFilter = ref('');
 
 const leadsByStatus = computed(() => {
     return {
-        new: props.leads.filter(l => l.status === 'new'),
-        contacted: props.leads.filter(l => l.status === 'contacted'),
-        qualified: props.leads.filter(l => l.status === 'qualified'),
-        lost: props.leads.filter(l => l.status === 'lost')
+        new: (props.leads || []).filter(l => l.status === 'new'),
+        contacted: (props.leads || []).filter(l => l.status === 'contacted'),
+        qualified: (props.leads || []).filter(l => l.status === 'qualified'),
+        lost: (props.leads || []).filter(l => l.status === 'lost')
     };
 });
 
+const availableBuildings = computed(() => {
+    const names = new Set();
+    props.contracts?.forEach(c => {
+        const bName = c.unit?.floor?.building?.name;
+        if (bName) names.add(bName);
+    });
+    return [...names];
+});
+
+const availableManagers = computed(() => {
+    const names = new Set();
+    props.contracts?.forEach(c => {
+        const pName = c.partner?.user?.name;
+        if (pName) names.add(pName);
+    });
+    return [...names];
+});
+
 const filteredClients = computed(() => {
-    let result = props.clients;
+    let result = props.clients || [];
     
     if (searchQuery.value) {
         const lowerQuery = searchQuery.value.toLowerCase();
         result = result.filter(c => 
             (c.first_name && c.first_name.toLowerCase().includes(lowerQuery)) ||
             (c.last_name && c.last_name.toLowerCase().includes(lowerQuery)) ||
+            (c.middle_name && c.middle_name.toLowerCase().includes(lowerQuery)) ||
+            (c.phone && c.phone.includes(lowerQuery)) ||
             (c.pinfl && c.pinfl.includes(lowerQuery))
         );
     }
+
+    if (selectedBuildingFilter.value) {
+        result = result.filter(c => {
+            return c.contracts?.some(contract => 
+                contract.unit?.floor?.building?.name === selectedBuildingFilter.value
+            );
+        });
+    }
+
+    if (selectedManagerFilter.value) {
+        result = result.filter(c => {
+            return c.contracts?.some(contract => 
+                contract.partner?.user?.name === selectedManagerFilter.value
+            );
+        });
+    }
+
+    if (selectedStatusFilter.value) {
+        result = result.filter(c => {
+            if (selectedStatusFilter.value === 'approved') {
+                return c.contracts?.some(contract => contract.status === 'active' || contract.status === 'approved');
+            } else if (selectedStatusFilter.value === 'pending') {
+                return c.contracts?.some(contract => contract.status === 'draft' || contract.status === 'pending');
+            } else if (selectedStatusFilter.value === 'cancelled') {
+                return c.contracts?.some(contract => contract.status === 'cancelled' || contract.status === 'cancelled');
+            }
+            return true;
+        });
+    }
+    
     return result;
 });
 
@@ -682,6 +734,25 @@ function calculateProgress(contract) {
 function getInitials(first, last) {
     return ((first?.charAt(0) || '') + (last?.charAt(0) || '')).toUpperCase() || '?';
 }
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
+
+const getClientLatestContract = (client) => {
+    if (client.contracts && client.contracts.length > 0) {
+        return client.contracts[client.contracts.length - 1];
+    }
+    return null;
+};
 
 // Modal State
 const selectedContract = ref(null);
@@ -972,92 +1043,193 @@ function openQuickSmsModal(lead) {
         </div>
 
         <!-- TAB 2: CLIENTS ROSTER -->
-        <div v-if="activeTab === 'clients'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px]">
-            <div class="sticky top-0 z-20 bg-[#0d1117]/80 px-6 py-5 -mx-6 -mt-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 shadow-lg rounded-t-2xl">
-                <div class="flex items-center gap-4">
-                    <h2 class="text-xl font-display font-bold text-gray-900">{{ $t('clients_database') }}</h2>
-                    <a :href="route('admin.crm.export.clients.excel')" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> EXCEL
-                    </a>
-                    <a :href="route('admin.crm.export.clients.pdf')" target="_blank" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-gray-900 transition-all shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> PDF
-                    </a>
-                    <button @click="openCreateClientModal" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                        + {{ $t('add') }} {{ $t('client') }}
-                    </button>
-                </div>
-
-                <input 
-                    v-model="searchQuery" 
-                    type="text" 
-                    :placeholder="$t('search_clients_pinfl')" 
-                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-blue-200 focus:border-blue-500 focus:ring-neon-cyan shadow-sm focus:shadow-sm"
-                >
+        <div v-if="activeTab === 'clients'" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
+            <!-- Breadcrumbs -->
+            <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Asosiy
+                </span>
+                <span class="text-gray-300 font-bold">&gt;</span>
+                <span class="text-gray-900 font-bold">Mijozlar</span>
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-gray-200">
-                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                        <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
-                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Telefon</th>
-                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Pasport / PINFL</th>
-                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Shartnomalar</th>
-                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider text-right">Amallar</th>
+            <!-- Control bar -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <!-- Left controls: Add + Search -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <button @click="openCreateClientModal" class="px-5 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
+                        + Qo'shish
+                    </button>
+                    
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Qidirish" 
+                            class="bg-white border border-gray-200 text-gray-800 text-xs rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-64 transition-all"
+                        />
+                    </div>
+                </div>
+
+                <!-- Right controls: Dropdowns + Excel -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Obyektlar filter -->
+                    <div class="relative">
+                        <select v-model="selectedBuildingFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Obyektlar</option>
+                            <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Sotuv menejeri filter -->
+                    <div class="relative">
+                        <select v-model="selectedManagerFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Sotuv menejeri</option>
+                            <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Holat (Tasdiqlangan...) filter -->
+                    <div class="relative">
+                        <select v-model="selectedStatusFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Tasdiqlangan...</option>
+                            <option value="approved">Tasdiqlangan</option>
+                            <option value="pending">Kutilmoqda</option>
+                            <option value="cancelled">Bekor qilingan</option>
+                        </select>
+                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Excel Export -->
+                    <a :href="route('admin.crm.export.clients.excel')" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
+                        <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
+                        </svg>
+                        Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
+                    <thead>
+                        <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                            <th class="p-4 w-12 text-center">ID</th>
+                            <th class="p-4">Ism</th>
+                            <th class="p-4">Bino</th>
+                            <th class="p-4">Blok</th>
+                            <th class="p-4">Xonadon</th>
+                            <th class="p-4">Qavat</th>
+                            <th class="p-4">Uy narxi</th>
+                            <th class="p-4">Yaratilgan</th>
+                            <th class="p-4">Holat</th>
+                            <th class="p-4 text-right">Amallar</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100">
                         <tr 
                             v-for="client in filteredClients" 
                             :key="client.id" 
-                            class="border-b border-gray-100 hover:/[0.03] transition-colors group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                            class="hover:bg-gray-50/50 transition-colors"
                         >
-                            <td class="p-3">
+                            <!-- ID -->
+                            <td class="p-4 text-center font-medium text-gray-600">{{ client.id }}</td>
+                            
+                            <!-- Ism -->
+                            <td class="p-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-cyan/20 to-neon-blue/20 border border-blue-200 flex items-center justify-center text-blue-600 font-display font-bold text-sm shadow-sm shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
                                         {{ getInitials(client.first_name, client.last_name) }}
                                     </div>
                                     <div>
-                                        <h3 class="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors" :title="`${client.last_name} ${client.first_name} ${client.middle_name || ''}`">
+                                        <h3 class="text-sm font-bold text-gray-900 leading-tight">
                                             {{ client.last_name }} {{ client.first_name }}
                                         </h3>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[10px] font-mono text-gray-900/60">{{ client.middle_name || '' }}</span>
-                                            <span v-if="client.id === latestClientId" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 uppercase animate-pulse shadow-sm" title="Oxirgi qo'shilgan mijoz">Oxirgi qo'shilgan</span>
-                                            <span v-if="client.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
-                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1 font-medium">{{ client.phone || 'N/A' }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="p-3 text-sm font-mono text-blue-600">
-                                {{ client.phone || 'N/A' }}
+                            
+                            <!-- Bino -->
+                            <td class="p-4 text-[#0f766e] font-semibold">
+                                {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
                             </td>
-                            <td class="p-3 text-sm font-mono text-gray-900/80">
-                                <div>{{ client.passport_number || client.passport_series || 'N/A' }}</div>
-                                <div class="text-[10px] text-gray-500 mt-0.5">PINFL: {{ client.pinfl || 'N/A' }}</div>
+                            
+                            <!-- Blok -->
+                            <td class="p-4 text-[#0f766e] font-semibold">
+                                {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || (getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + ' Podezd' : '—') }}
                             </td>
-                            <td class="p-3">
-                                <div v-if="client.contracts && client.contracts.length > 0" class="flex flex-col gap-1 max-w-[250px] whitespace-normal">
-                                    <div v-for="contract in client.contracts" :key="contract.id" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium" @click="openScheduleModal(contract)">
-                                        <span class="text-gray-900 truncate" style="max-width: 120px;">🏠 Unit {{ contract.unit?.unit_number }}</span>
-                                        <span class="text-emerald-600 font-bold ml-2">{{ $currency(contract.total_amount) }}</span>
-                                    </div>
-                                </div>
-                                <span v-else class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ $t('no_purchases') }}</span>
+                            
+                            <!-- Xonadon -->
+                            <td class="p-4 text-[#0f766e] font-semibold">
+                                {{ getClientLatestContract(client)?.unit?.unit_number ? getClientLatestContract(client).unit.unit_number + '-Xonadon' : '—' }}
                             </td>
-                            <td class="p-3 text-right">
-                                <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-black transition-colors shadow-sm" title="Tahrirlash">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            
+                            <!-- Qavat -->
+                            <td class="p-4 text-[#0f766e] font-semibold">
+                                {{ getClientLatestContract(client)?.unit?.floor?.floor_number ? getClientLatestContract(client).unit.floor.floor_number + '-Qavat' : '—' }}
+                            </td>
+                            
+                            <!-- Uy narxi -->
+                            <td class="p-4 text-[#ef4444] font-bold">
+                                {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('uz-UZ') + " so'm" : '—' }}
+                            </td>
+                            
+                            <!-- Yaratilgan -->
+                            <td class="p-4 text-gray-600 font-medium">{{ formatDate(client.created_at) }}</td>
+                            
+                            <!-- Holat -->
+                            <td class="p-4">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ecfdf5] text-[#047857] border border-[#d1fae5] shadow-sm uppercase tracking-wide">
+                                    {{ getClientLatestContract(client) ? (getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Tasdiqlangan') : 'Tasdiqlangan' }}
+                                </span>
+                            </td>
+                            
+                            <!-- Amallar -->
+                            <td class="p-4 text-right">
+                                <div class="flex items-center justify-end gap-3">
+                                    <!-- Delete -->
+                                    <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors" title="O'chirish">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
                                     </button>
-                                    <button v-if="isAdmin" @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-indigo-50 border border-neon-magenta/30 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-gray-900 transition-colors shadow-sm" title="O'chirish">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <!-- View -->
+                                    <button @click="openScheduleModal(getClientLatestContract(client))" v-if="getClientLatestContract(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Ko'rish">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                    <!-- Edit -->
+                                    <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors" title="Tahrirlash">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="filteredClients.length === 0">
-                            <td colspan="5" class="py-20 text-center text-gray-500 font-mono text-sm border-dashed">
+                        <tr v-if="filteredClients.length === 0">
+                            <td colspan="10" class="py-20 text-center text-gray-400 font-mono text-sm border-dashed">
                                 {{ $t('no_clients_found') }}
                             </td>
                         </tr>

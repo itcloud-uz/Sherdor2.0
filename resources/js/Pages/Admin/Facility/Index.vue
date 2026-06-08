@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
-import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { useI18n } from 'vue-i18n';
@@ -766,7 +765,6 @@ const partnersOptions = computed(() => {
 });
 
 const showAddBuildingModal = ref(false);
-const showAddStageModal = ref(false);
 const showAddFloorModal = ref(false);
 const showAddUnitModal = ref(false);
 
@@ -801,13 +799,6 @@ const buildingForm = useForm({
     average_area: 0,
     average_price: 0,
     commercial_units_first_floor: 0,
-});
-
-const stageForm = useForm({
-    building_id: null,
-    name: '',
-    start_date: '',
-    end_date: '',
 });
 
 const floorForm = useForm({
@@ -966,16 +957,6 @@ function submitBuilding() {
             }
         });
     }
-}
-
-function submitStage() {
-    stageForm.building_id = selectedBuilding.value?.id;
-    stageForm.post(route('admin.facility.stages.store'), {
-        onSuccess: () => {
-            showAddStageModal.value = false;
-            stageForm.reset();
-        }
-    });
 }
 
 const isEditingFloor = ref(false);
@@ -1150,54 +1131,6 @@ function getUnitTextColor(status) {
     if (status === 'sold') return 'text-red-600 font-bold';
     return 'text-gray-900';
 }
-
-// Chart Options for Analytics
-const chartOptions = computed(() => {
-    return {
-        chart: { type: 'donut', background: 'transparent', foreColor: '#fff' },
-        theme: { mode: 'dark' },
-        labels: ['Available', 'Reserved', 'Sold'],
-        colors: ['#39FF14', '#FCEE09', '#FF003C'],
-        stroke: { show: true, colors: '#000000', width: 2 },
-        dataLabels: { enabled: true, style: { fontFamily: 'monospace' } },
-        legend: { position: 'bottom', fontFamily: 'monospace' }
-    };
-});
-
-const chartSeries = computed(() => {
-    if (!selectedBuilding.value) return [0, 0, 0];
-    let available = 0;
-    let reserved = 0;
-    let sold = 0;
-    
-    selectedBuilding.value.floors.forEach(floor => {
-        floor.units.forEach(unit => {
-            if (unit.status === 'available') available++;
-            if (unit.status === 'reserved') reserved++;
-            if (unit.status === 'sold') sold++;
-        });
-    });
-    
-    return [available, reserved, sold];
-});
-
-const progressOptions = computed(() => {
-    return {
-        chart: { type: 'bar', height: 300, background: 'transparent', foreColor: '#fff', toolbar: { show: false } },
-        theme: { mode: 'dark' },
-        colors: ['#00F0FF'],
-        plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
-        dataLabels: { enabled: true, textAnchor: 'start', style: { colors: ['#fff'], fontFamily: 'monospace' }, formatter: function (val, opt) { return val + "%" }, offsetX: 0 },
-        xaxis: { categories: selectedBuilding.value?.stages?.map(s => s.name) || [], max: 100 }
-    };
-});
-
-const progressSeries = computed(() => {
-    return [{
-        name: 'Progress',
-        data: selectedBuilding.value?.stages?.map(s => s.progress_percentage) || []
-    }];
-});
 
 function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
     if (!floor || !floor.units) return [];
@@ -1517,15 +1450,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <button @click="activeTab = 'blueprint'" :class="[activeTab === 'blueprint' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
                             Shaxmatka
                         </button>
-                        <button @click="activeTab = 'progress'" :class="[activeTab === 'progress' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
-                            Qurilish Jarayoni
-                        </button>
-                        <button @click="activeTab = 'finances'" :class="[activeTab === 'finances' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
-                            Smeta va Xarajatlar
-                        </button>
-                        <button @click="activeTab = 'analytics'" :class="[activeTab === 'analytics' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
-                            Tahlil (Analytics)
-                        </button>
                         <button @click="activeTab = 'search'" :class="[activeTab === 'search' ? 'border-amber-500 text-amber-600 font-bold border-b-2 pb-3' : 'text-gray-500 hover:text-gray-700 pb-3']">
                             Qidiruv
                         </button>
@@ -1693,87 +1617,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                             </div>
                         </div>
-
-                        <!-- TAB 2: Construction Progress -->
-                        <div v-if="activeTab === 'progress'" class="animate-fade-in space-y-6">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-sm font-sans font-bold text-amber-600 uppercase tracking-widest">{{ $t('construction_timeline') }}</h3>
-                                <button @click="showAddStageModal = true" class="px-3 py-1 border border-gray-300 text-gray-700 text-xs font-sans rounded hover:bg-gray-50 transition-all">
-                                    + {{ $t('add_stage') }}
-                                </button>
-                            </div>
-
-                            <div v-if="selectedBuilding.stages?.length" class="space-y-4">
-                                <div v-for="stage in selectedBuilding.stages" :key="stage.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 relative overflow-hidden">
-                                    <div class="absolute left-0 top-0 bottom-0 bg-blue-50" :style="{ width: stage.progress_percentage + '%' }"></div>
-                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 shadow-sm" :style="{ left: stage.progress_percentage + '%' }"></div>
-                                    
-                                    <div class="relative z-10 flex justify-between items-center">
-                                        <div>
-                                            <h4 class="text-gray-900 font-bold text-lg font-sans">{{ stage.name }}</h4>
-                                            <p class="text-[10px] text-gray-500 font-mono uppercase">{{ stage.start_date || $t('tbd') }} {{ $t('to') }} {{ stage.end_date || $t('tbd') }}</p>
-                                        </div>
-                                        <div class="flex items-center gap-4">
-                                            <input type="range" v-model="stage.progress_percentage" class="w-32 accent-blue-600 cursor-pointer" min="0" max="100">
-                                            <span class="text-xl font-sans font-bold text-blue-600 w-12 text-right">{{ stage.progress_percentage }}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                            <div v-else class="text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-500 font-sans text-sm">
-                                {{ $t('no_stages_defined') }}
-                            </div>
-                        </div>
-
-                        <!-- TAB 3: Estimates vs Expenses -->
-                        <div v-if="activeTab === 'finances'" class="animate-fade-in">
-                            <h3 class="text-sm font-sans font-bold text-emerald-600 uppercase tracking-widest mb-6">{{ $t('financial_summary') }}</h3>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-blue-200 bg-blue-50">
-                                    <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-2">{{ $t('estimated_budget') }}</h4>
-                                    <p class="text-4xl font-sans font-bold text-blue-600 tracking-tight drop-shadow-sm">
-                                        {{ $currency(selectedBuilding.estimated_budget) }}
-                                    </p>
-                                </div>
-                                <div :class="['bg-white border border-gray-200 shadow-sm rounded-xl p-6', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'border-red-200 bg-red-50' : 'border-emerald-200 bg-emerald-50']">
-                                    <h4 class="text-xs font-sans font-bold text-gray-500 uppercase mb-2">{{ $t('actual_expenses') }}</h4>
-                                    <p :class="['text-4xl font-sans font-bold tracking-tight', selectedBuilding.actual_expenses > selectedBuilding.estimated_budget ? 'text-red-600 drop-shadow-sm animate-pulse' : 'text-emerald-600 drop-shadow-sm']">
-                                        {{ $currency(selectedBuilding.actual_expenses) }}
-                                    </p>
-                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="absolute top-4 right-4 text-xl">⚠️</div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
-                                <h4 class="text-sm font-sans font-bold text-gray-900 mb-4">{{ $t('budget_health') }}</h4>
-                                <div class="h-4 bg-gray-100 rounded-full overflow-hidden flex border border-gray-200">
-                                    <div class="h-full bg-emerald-600 shadow-sm" :style="{ width: Math.min(100, (selectedBuilding.actual_expenses / (selectedBuilding.estimated_budget || 1)) * 100) + '%' }"></div>
-                                    <div v-if="selectedBuilding.actual_expenses > selectedBuilding.estimated_budget" class="h-full bg-red-600 shadow-sm animate-pulse" :style="{ width: ((selectedBuilding.actual_expenses - selectedBuilding.estimated_budget) / selectedBuilding.estimated_budget) * 100 + '%' }"></div>
-                                </div>
-                                <div class="flex justify-between mt-2 text-[10px] font-sans font-bold text-gray-500">
-                                    <span>$0</span>
-                                    <span>{{ $t('target') }}: {{ $currency(selectedBuilding.estimated_budget) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB 4: Analytics -->
-                        <div v-if="activeTab === 'analytics'" class="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
-                                <h3 class="text-sm font-sans font-bold text-indigo-600 uppercase tracking-widest mb-6">{{ $t('unit_distribution') }}</h3>
-                                <VueApexCharts type="donut" height="300" :options="chartOptions" :series="chartSeries" />
-                            </div>
-                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
-                                <h3 class="text-sm font-sans font-bold text-blue-600 uppercase tracking-widest mb-6">{{ $t('construction_velocity') }}</h3>
-                                <VueApexCharts type="bar" height="300" :options="progressOptions" :series="progressSeries" />
-                            </div>
-                        </div>
                     </div>
                 </div>
-
             </div>
+
+        </div>
 
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
@@ -2080,32 +1928,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             </div>
         </Modal>
 
-        <!-- Add Stage Modal -->
-        <Modal :show="showAddStageModal" @close="showAddStageModal = false">
-            <div class="p-6">
-                <h2 class="text-2xl font-display text-amber-600 mb-4">{{ $t('add_construction_stage') }}</h2>
-                <form @submit.prevent="submitStage" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('stage_name') }}</label>
-                        <input v-model="stageForm.name" type="text" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all" required :placeholder="$t('stage_name_placeholder')">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('start_date') }}</label>
-                            <input v-model="stageForm.start_date" type="date" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('end_date') }}</label>
-                            <input v-model="stageForm.end_date" type="date" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-neon-yellow transition-all">
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" @click="showAddStageModal = false" class="px-4 py-2 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="stageForm.processing" class="px-4 py-2 bg-amber-500 text-white font-bold font-mono text-xs rounded shadow-sm hover:bg-white transition-colors disabled:opacity-50">{{ $t('btn_add_stage') }}</button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
         <!-- Add Floor Modal -->
         <Modal :show="showAddFloorModal" @close="showAddFloorModal = false">
             <div class="p-6">

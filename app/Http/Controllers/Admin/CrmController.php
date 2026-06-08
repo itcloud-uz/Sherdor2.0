@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\Contract;
 use App\Models\CallLog;
+use App\Models\Post;
+use App\Models\CrmSetting;
+use App\Models\User;
 use App\Services\EskizService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,7 +17,7 @@ class CrmController extends Controller
 {
     public function index()
     {
-        $leads = Lead::latest()->limit(500)->get();
+        $leads = Lead::with('user')->latest()->limit(500)->get();
         $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
         $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
         $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
@@ -25,6 +28,10 @@ class CrmController extends Controller
                             ->orderBy('due_date', 'asc')
                             ->limit(500)
                             ->get();
+
+        $posts = Post::with('user')->latest()->limit(500)->get();
+        $crmSettings = CrmSetting::all()->pluck('value', 'key');
+        $users = User::orderBy('name', 'asc')->get();
 
         $overdueSchedules = [];
         $strictCollectionSchedules = [];
@@ -56,6 +63,9 @@ class CrmController extends Controller
             'partners' => $partners,
             'overdueSchedules' => $overdueSchedules,
             'strictCollectionSchedules' => $strictCollectionSchedules,
+            'posts' => $posts,
+            'crmSettings' => $crmSettings,
+            'users' => $users,
         ]);
     }
 
@@ -67,10 +77,11 @@ class CrmController extends Controller
             'middle_name' => 'nullable|string',
             'passport_series' => 'nullable|string',
             'pinfl' => 'nullable|string',
-            'phone' => 'required|string', // SQLite column is NOT NULL
+            'phone' => 'required|string',
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
+            'is_blacklisted' => 'nullable|boolean',
             'created_at' => 'nullable|date'
         ]);
 
@@ -81,6 +92,7 @@ class CrmController extends Controller
 
         try {
             $client = new \App\Models\Client($validated);
+            $client->is_blacklisted = $request->has('is_blacklisted') ? (bool)$request->is_blacklisted : false;
             if (!empty($validated['created_at'])) {
                 $client->created_at = $validated['created_at'];
             }
@@ -109,6 +121,7 @@ class CrmController extends Controller
             'address' => 'nullable|string',
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
+            'is_blacklisted' => 'nullable|boolean',
             'created_at' => 'nullable|date'
         ]);
 
@@ -119,6 +132,7 @@ class CrmController extends Controller
 
         try {
             $client->fill($validated);
+            $client->is_blacklisted = $request->has('is_blacklisted') ? (bool)$request->is_blacklisted : false;
             if (!empty($validated['created_at'])) {
                 $client->created_at = $validated['created_at'];
             }
@@ -208,10 +222,16 @@ class CrmController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'email' => 'nullable|string|email|max:255',
+            'source' => 'nullable|string|max:255',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         $lead->full_name = $validated['full_name'];
         $lead->phone = $validated['phone'];
+        $lead->email = $validated['email'] ?? null;
+        $lead->source = $validated['source'] ?? 'manual';
+        $lead->user_id = $validated['user_id'] ?? null;
         $lead->save();
 
         return redirect()->back()->with('message', 'Lid ma\'lumotlari yangilandi.');
@@ -356,5 +376,67 @@ class CrmController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['message' => 'SMS yuborishda xatolik: ' . $e->getMessage()]);
         }
+    }
+
+    public function storePost(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+            'status' => 'required|string|in:draft,published',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('posts', 'public');
+        }
+
+        $postData = [
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'status' => $validated['status'],
+            'published_at' => $validated['status'] === 'published' ? now() : null,
+            'user_id' => auth()->id(),
+        ];
+
+        if ($imagePath) {
+            $postData['image_path'] = $imagePath;
+        }
+
+        if (!empty($validated['id'])) {
+            $post = Post::findOrFail($validated['id']);
+            $post->update($postData);
+            $msg = 'Post muvaffaqiyatli tahrirlandi.';
+        } else {
+            Post::create($postData);
+            $msg = 'Post muvaffaqiyatli yaratildi.';
+        }
+
+        return redirect()->back()->with('message', $msg);
+    }
+
+    public function deletePost(Post $post)
+    {
+        $post->delete();
+        return redirect()->back()->with('message', 'Post o\'chirildi.');
+    }
+
+    public function saveSettings(Request $request)
+    {
+        $settings = $request->all();
+
+        foreach ($settings as $key => $value) {
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
+            CrmSetting::updateOrCreate(
+                ['key' => $key],
+                ['value' => $value]
+            );
+        }
+
+        return redirect()->back()->with('message', 'CRM sozlamalari muvaffaqiyatli saqlandi.');
     }
 }

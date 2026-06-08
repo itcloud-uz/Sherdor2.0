@@ -242,6 +242,8 @@
     "download_pdf": "PDF Yuklab Olish",
     "download_docx": "DOCX Yuklab Olish",
     "download_xlsx": "XLSX Yuklab Olish",
+    "crm": "CRM",
+    "clients_database": "Mijozlar bazasi",
     "sales_department": "Sotuv Bo'limi",
     "ledger_history": "Operatsiyalar Tarixi",
     "create_transaction": "Tranzaksiya Yaratish",

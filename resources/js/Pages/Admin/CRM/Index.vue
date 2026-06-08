@@ -557,7 +557,8 @@ watch(() => contractForm.value.payment_type, (newType) => {
     }
 });
 
-const activeTab = ref('leads');
+const activeTab = ref('dashboard');
+const leadsViewMode = ref('kanban'); // 'kanban' or 'list'
 
 // Synchronize activeTab with the URL tab parameter reactively
 watch(
@@ -1016,142 +1017,251 @@ function openQuickSmsModal(lead) {
             </div>
         </template>
 
-        <!-- TAB 1: LEADS KANBAN -->
-        <div v-if="activeTab === 'leads'" class="flex gap-4 h-full min-h-[600px] overflow-x-auto pb-4">
-            <!-- New Column -->
-            <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#00F0FF]"
-                 @dragover.prevent @drop="dropLead('new', $event)">
-                <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
-                    <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_new') }}</h3>
-                    <div class="flex items-center gap-2">
-                        <button @click="openCreateLeadModal" class="px-2 py-0.5 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                            + Yangi Lid
-                        </button>
-                        <span class="text-xs font-mono px-2 py-0.5 rounded-full text-blue-600">{{ leadsByStatus.new.length }}</span>
+        <!-- TAB 1: LEADS KANBAN / LIST VIEW -->
+        <div v-if="activeTab === 'leads'" class="space-y-4">
+            <!-- View Mode Switcher & Actions -->
+            <div class="flex items-center justify-between bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3">
+                <!-- Toggle Button Group -->
+                <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-lg">
+                    <button 
+                        @click="leadsViewMode = 'kanban'"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
+                        :class="leadsViewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
+                    >
+                        📋 Kanban doskasi
+                    </button>
+                    <button 
+                        @click="leadsViewMode = 'list'"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
+                        :class="leadsViewMode === 'list' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
+                    >
+                        📝 Jadval ko'rinishi
+                    </button>
+                </div>
+
+                <!-- Create Lead Button inside switcher -->
+                <button 
+                    @click="openCreateLeadModal"
+                    class="px-4 py-1.5 bg-blue-50 border border-blue-500 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
+                >
+                    + Yangi Lid qo'shish
+                </button>
+            </div>
+
+            <!-- VIEW 1: KANBAN -->
+            <div v-if="leadsViewMode === 'kanban'" class="flex gap-4 h-full min-h-[600px] overflow-x-auto pb-4">
+                <!-- New Column -->
+                <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#00F0FF]"
+                     @dragover.prevent @drop="dropLead('new', $event)">
+                    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
+                        <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_new') }}</h3>
+                        <div class="flex items-center gap-2">
+                            <button @click="openCreateLeadModal" class="px-2 py-0.5 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
+                                + Yangi Lid
+                            </button>
+                            <span class="text-xs font-mono px-2 py-0.5 rounded-full text-blue-600">{{ leadsByStatus.new.length }}</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        <div v-for="lead in leadsByStatus.new" :key="lead.id" 
+                             draggable="true" @dragstart="dragStart(lead, $event)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#00F0FF]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                            <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
+                            <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
+                            
+                            <!-- Action Bar -->
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                </button>
+                                <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    <div v-for="lead in leadsByStatus.new" :key="lead.id" 
-                         draggable="true" @dragstart="dragStart(lead, $event)"
-                         class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#00F0FF]/50 cursor-move transition-all hover:-translate-y-1 relative group">
-                        <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
-                        
-                        <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+
+                <!-- Contacted Column -->
+                <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FCEE09]"
+                     @dragover.prevent @drop="dropLead('contacted', $event)">
+                    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
+                        <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_contacted') }}</h3>
+                        <span class="text-xs font-mono px-2 py-0.5 rounded-full text-amber-600">{{ leadsByStatus.contacted.length }}</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        <div v-for="lead in leadsByStatus.contacted" :key="lead.id" 
+                             draggable="true" @dragstart="dragStart(lead, $event)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FCEE09]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                            <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
+                            <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
+                            
+                            <!-- Action Bar -->
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                </button>
+                                <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Qualified Column -->
+                <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#39FF14]"
+                     @dragover.prevent @drop="dropLead('qualified', $event)">
+                    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
+                        <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_qualified') }}</h3>
+                        <span class="text-xs font-mono px-2 py-0.5 rounded-full text-emerald-600">{{ leadsByStatus.qualified.length }}</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        <div v-for="lead in leadsByStatus.qualified" :key="lead.id" 
+                             draggable="true" @dragstart="dragStart(lead, $event)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#39FF14]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                            <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
+                            <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
+                            
+                            <!-- Action Bar -->
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                </button>
+                                <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lost Column -->
+                <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FF003C]"
+                     @dragover.prevent @drop="dropLead('lost', $event)">
+                    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
+                        <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_lost') }}</h3>
+                        <span class="text-xs font-mono px-2 py-0.5 rounded-full text-indigo-600">{{ leadsByStatus.lost.length }}</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        <div v-for="lead in leadsByStatus.lost" :key="lead.id" 
+                             draggable="true" @dragstart="dragStart(lead, $event)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FF003C]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                            <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
+                            <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
+                            
+                            <!-- Action Bar -->
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                </button>
+                                <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Contacted Column -->
-            <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FCEE09]"
-                 @dragover.prevent @drop="dropLead('contacted', $event)">
-                <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
-                    <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_contacted') }}</h3>
-                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-amber-600">{{ leadsByStatus.contacted.length }}</span>
-                </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    <div v-for="lead in leadsByStatus.contacted" :key="lead.id" 
-                         draggable="true" @dragstart="dragStart(lead, $event)"
-                         class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FCEE09]/50 cursor-move transition-all hover:-translate-y-1 relative group">
-                        <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
-                        
-                        <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Qualified Column -->
-            <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#39FF14]"
-                 @dragover.prevent @drop="dropLead('qualified', $event)">
-                <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
-                    <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_qualified') }}</h3>
-                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-emerald-600">{{ leadsByStatus.qualified.length }}</span>
-                </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    <div v-for="lead in leadsByStatus.qualified" :key="lead.id" 
-                         draggable="true" @dragstart="dragStart(lead, $event)"
-                         class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#39FF14]/50 cursor-move transition-all hover:-translate-y-1 relative group">
-                        <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
-                        
-                        <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lost Column -->
-            <div class="flex-1 min-w-[250px] bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl p-4 flex flex-col border-t-2 border-t-[#FF003C]"
-                 @dragover.prevent @drop="dropLead('lost', $event)">
-                <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
-                    <h3 class="text-sm font-bold uppercase text-gray-900 tracking-widest">{{ $t('lead_lost') }}</h3>
-                    <span class="text-xs font-mono px-2 py-0.5 rounded-full text-indigo-600">{{ leadsByStatus.lost.length }}</span>
-                </div>
-                <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    <div v-for="lead in leadsByStatus.lost" :key="lead.id" 
-                         draggable="true" @dragstart="dragStart(lead, $event)"
-                         class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FF003C]/50 cursor-move transition-all hover:-translate-y-1 relative group">
-                        <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
-                        <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
-                        
-                        <!-- Action Bar -->
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between gap-1 border-t border-gray-200 pt-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="initiateLeadCall(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq qilish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            </button>
-                            <button @click.stop="openQuickSmsModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                            </button>
-                            <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                    </div>
+            <!-- VIEW 2: LIST TABLE -->
+            <div v-else class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                <th class="px-6 py-3.5">Ism / Telefon</th>
+                                <th class="px-6 py-3.5">Manbaa</th>
+                                <th class="px-6 py-3.5">Qiziqish (Xonadon)</th>
+                                <th class="px-6 py-3.5">Holat</th>
+                                <th class="px-6 py-3.5">Kiritilgan sana</th>
+                                <th class="px-6 py-3.5 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            <tr v-for="lead in (leads || [])" :key="lead.id" class="hover:bg-gray-50/30 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="font-semibold text-gray-900">{{ lead.name }}</div>
+                                    <div class="text-xs text-gray-500 font-mono">{{ lead.phone }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-0.5 rounded-md text-xs font-medium"
+                                          :class="{
+                                              'bg-blue-50 text-blue-700': lead.source === 'telegram',
+                                              'bg-emerald-50 text-emerald-700': lead.source === 'partner',
+                                              'bg-gray-100 text-gray-700': lead.source === 'manual' || !lead.source
+                                          }">
+                                        {{ lead.source === 'telegram' ? 'Telegram Bot' : lead.source === 'partner' ? 'Hamkor Ilova' : 'Qo\'lda' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span v-if="lead.unit" class="font-semibold text-gray-700">
+                                        {{ lead.unit.podyezd }}-podyezd, {{ lead.unit.floor }}-qavat, {{ lead.unit.number }}-xonadon
+                                    </span>
+                                    <span v-else class="text-gray-400 font-mono">-</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                                          :class="{
+                                              'bg-[#00F0FF]/10 text-[#008B99]': lead.status === 'new',
+                                              'bg-blue-50 text-blue-700': lead.status === 'contacted',
+                                              'bg-emerald-50 text-emerald-700': lead.status === 'qualified',
+                                              'bg-rose-50 text-rose-700': lead.status === 'lost'
+                                          }">
+                                        {{ $t('lead_' + lead.status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-gray-500 font-mono">
+                                    {{ new Date(lead.created_at).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-1.5">
+                                        <button @click="initiateLeadCall(lead)" class="p-1.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 transition-colors shadow-sm text-xs" title="Qo'ng'iroq">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        </button>
+                                        <button @click="openQuickSmsModal(lead)" class="p-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition-colors shadow-sm text-xs" title="SMS Yuborish">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                        </button>
+                                        <button v-if="isAdmin" @click="openEditLeadModal(lead)" class="p-1.5 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                        </button>
+                                        <button v-if="isAdmin" @click="deleteLead(lead.id)" class="p-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="(leads || []).length === 0">
+                                <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                                    Hech qanday lidlar topilmadi.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

@@ -16,6 +16,7 @@ class Client extends Model
         'address',
         'passport_issued_date',
         'passport_issued_by',
+        'is_blacklisted',
     ];
 
     public function getFullNameAttribute()

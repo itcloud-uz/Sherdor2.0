@@ -242,6 +242,8 @@
     "download_pdf": "Скачать PDF",
     "download_docx": "Скачать DOCX",
     "download_xlsx": "Скачать XLSX",
+    "crm": "CRM",
+    "clients_database": "База клиентов",
     "sales_department": "Отдел Продаж",
     "ledger_history": "История Операций",
     "create_transaction": "Создать Транзакцию",

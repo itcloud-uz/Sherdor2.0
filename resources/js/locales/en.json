@@ -242,6 +242,8 @@
     "download_pdf": "Download PDF",
     "download_docx": "Download DOCX",
     "download_xlsx": "Download XLSX",
+    "crm": "CRM",
+    "clients_database": "Clients Database",
     "sales_department": "Sales Department",
     "ledger_history": "Ledger History",
     "create_transaction": "Create Transaction",

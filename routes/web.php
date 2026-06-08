@@ -50,6 +50,11 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/crm/leads/{lead}/update-status', [\App\Http\Controllers\Admin\CrmController::class, 'updateLeadStatus'])->name('crm.leads.update_status');
     Route::post('/crm/leads/{lead}/quick-sms', [\App\Http\Controllers\Admin\CrmController::class, 'quickSms'])->name('crm.leads.quick_sms');
 
+    // CRM Posts & Settings
+    Route::post('/crm/posts', [\App\Http\Controllers\Admin\CrmController::class, 'storePost'])->name('crm.posts.store');
+    Route::delete('/crm/posts/{post}', [\App\Http\Controllers\Admin\CrmController::class, 'deletePost'])->name('crm.posts.destroy');
+    Route::post('/crm/settings', [\App\Http\Controllers\Admin\CrmController::class, 'saveSettings'])->name('crm.settings.save');
+
     Route::post('/contracts', [\App\Http\Controllers\Admin\ContractController::class, 'store'])->name('contracts.store');
     Route::put('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'update'])->name('contracts.update');
     Route::delete('/contracts/{contract}', [\App\Http\Controllers\Admin\ContractController::class, 'destroy'])->name('contracts.destroy');

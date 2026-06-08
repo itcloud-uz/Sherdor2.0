@@ -8,6 +8,7 @@ const page = usePage();
 const isMobileMenuOpen = ref(false);
 const isFinanceMenuOpen = ref(false);
 const isCrmMenuOpen = ref(false);
+const isClientsMenuOpen = ref(false);
 const isFacilityMenuOpen = ref(false);
 const isHrMenuOpen = ref(false);
 
@@ -33,8 +34,20 @@ const isCrmTabActive = (tabId) => {
         const url = new URL(page.url, window.location.origin);
         const tabParam = url.searchParams.get('tab');
         if (tabParam === null) {
-            return tabId === 'leads';
+            return tabId === 'dashboard';
         }
+        return tabParam === tabId;
+    } catch (e) {
+        return false;
+    }
+};
+
+const isClientsTabActive = (tabId) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.crm') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const tabParam = url.searchParams.get('tab');
         return tabParam === tabId;
     } catch (e) {
         return false;
@@ -117,7 +130,8 @@ const isHrTabActive = (tabId) => {
 
 const navItems = [
     { name: 'dashboard', route: 'admin.dashboard', icon: '⬡' },
-    { name: 'sales_department', route: 'admin.crm', icon: '🛒' },
+    { name: 'crm', route: 'admin.crm', icon: '🛒' },
+    { name: 'clients_database', route: 'admin.crm', icon: '👥' },
     { name: 'facility_manager', route: 'admin.facility', icon: '🏗️' },
     { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
@@ -143,11 +157,11 @@ const filteredNavItems = computed(() => {
         if (isAdmin) return true;
         
         if (isPartner) {
-            return ['dashboard', 'sales_department', 'facility_manager', 'finance_core', 'partner_hub', 'Taminotchilar', 'hr_payroll'].includes(item.name);
+            return ['dashboard', 'crm', 'clients_database', 'facility_manager', 'finance_core', 'partner_hub', 'Taminotchilar', 'hr_payroll'].includes(item.name);
         }
         
         if (isOperator) {
-            return ['dashboard', 'sales_department', 'facility_manager', 'finance_core', 'Taminotchilar', 'hr_payroll'].includes(item.name);
+            return ['dashboard', 'crm', 'clients_database', 'facility_manager', 'finance_core', 'Taminotchilar', 'hr_payroll'].includes(item.name);
         }
 
         return false;
@@ -178,7 +192,17 @@ onMounted(() => {
             isFinanceMenuOpen.value = true;
         }
         if (currentRoute.includes('crm')) {
-            isCrmMenuOpen.value = true;
+            try {
+                const url = new URL(page.url, window.location.origin);
+                const tabParam = url.searchParams.get('tab') || 'dashboard';
+                if (['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(tabParam)) {
+                    isClientsMenuOpen.value = true;
+                } else {
+                    isCrmMenuOpen.value = true;
+                }
+            } catch (e) {
+                isCrmMenuOpen.value = true;
+            }
         }
         if (currentRoute.includes('facility')) {
             isFacilityMenuOpen.value = true;
@@ -330,16 +354,16 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <!-- Custom nested menu for sales_department (CRM) -->
-                    <div v-else-if="item.name === 'sales_department'" class="space-y-1" :key="item.name + '-group'">
+                    <!-- Custom nested menu for crm -->
+                    <div v-else-if="item.name === 'crm'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isCrmMenuOpen = !isCrmMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="route().current('admin.crm') ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.crm') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.crm') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">CRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -351,24 +375,33 @@ onUnmounted(() => {
                         </button>
                         
                         <div v-show="isCrmMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Lidlar / Kanban -->
+                            <!-- Dashboard -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'dashboard' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('dashboard') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📊 Dashboard
+                            </Link>
+
+                            <!-- Lidlar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'leads' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isCrmTabActive('leads') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                🛒 {{ $t('kanban_leads') }}
+                                🎯 Lidlar
                             </Link>
                             
-                            <!-- Mijozlar bazasi -->
+                            <!-- Postlar -->
                             <Link
-                                :href="route('admin.crm', { tab: 'clients' })"
+                                :href="route('admin.crm', { tab: 'posts' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('clients') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :class="isCrmTabActive('posts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                👥 {{ $t('clients_roster') }}
+                                📝 Postlar
                             </Link>
-                            
+
                             <!-- Shartnomalar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'contracts' })"
@@ -378,22 +411,90 @@ onUnmounted(() => {
                                 📄 Shartnomalar
                             </Link>
                             
-                            <!-- Bekor Qilinganlar -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'canceled' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('canceled') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ❌ Bekor Qilinganlar
-                            </Link>
-                            
                             <!-- Qarzdorlik radari -->
                             <Link
                                 :href="route('admin.crm', { tab: 'overdue' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isCrmTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                ⏳ {{ $t('overdue_radar') }}
+                                ⏳ Qarzdorlar radari
+                            </Link>
+
+                            <!-- Sozlamalar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'settings' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isCrmTabActive('settings') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ⚙️ Sozlamalar
+                            </Link>
+                        </div>
+                    </div>
+
+                    <!-- Custom nested menu for clients_database (Mijozlar bazasi) -->
+                    <div v-else-if="item.name === 'clients_database'" class="space-y-1" :key="item.name + '-group'">
+                        <button
+                            @click="isClientsMenuOpen = !isClientsMenuOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
+                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Mijozlar bazasi</span>
+                            </div>
+                            <svg
+                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
+                                :class="isClientsMenuOpen ? 'rotate-180' : ''"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div v-show="isClientsMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
+                            <!-- Yangi mijozlar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients_new' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('clients_new') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🟢 Yangi mijozlar
+                            </Link>
+
+                            <!-- Mijozlar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('clients') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                👥 Mijozlar
+                            </Link>
+                            
+                            <!-- Faol mijozlar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients_active' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('clients_active') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🤝 Faol mijozlar
+                            </Link>
+
+                            <!-- Qarzdor mijozlar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients_debtors' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('clients_debtors') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ⏳ Qarzdor mijozlar
+                            </Link>
+                            
+                            <!-- Qora ro'yxat -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'clients_blacklist' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('clients_blacklist') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                ❌ Qora ro'yxat
                             </Link>
                         </div>
                     </div>

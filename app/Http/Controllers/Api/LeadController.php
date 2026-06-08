@@ -17,22 +17,26 @@ class LeadController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'source' => 'nullable|string|in:manual,telegram,landing_page',
+            'email' => 'nullable|string|email|max:255',
+            'source' => 'nullable|string|max:255',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         try {
             $source = $validated['source'] ?? 'landing_page';
             
             // Override source if authenticated user is submitting it manually
-            if (auth()->check() && $request->is('admin/*') || $request->has('is_manual')) {
+            if ((auth()->check() && $request->is('admin/*') || $request->has('is_manual')) && empty($validated['source'])) {
                 $source = 'manual';
             }
 
             $lead = Lead::create([
                 'full_name' => $validated['full_name'],
                 'phone' => $validated['phone'],
+                'email' => $validated['email'] ?? null,
                 'source' => $source,
                 'status' => 'new',
+                'user_id' => $validated['user_id'] ?? null,
             ]);
 
             return response()->json([

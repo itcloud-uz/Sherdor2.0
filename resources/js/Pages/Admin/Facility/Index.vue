@@ -379,7 +379,7 @@ watch(activeTab, (newTab) => {
         const url = new URL(window.location.href);
         const currentTab = url.searchParams.get('tab');
         if (currentTab === null || currentTab !== newTab) {
-            router.replace(route('admin.facility', { tab: newTab }), {
+            router.replace('/admin/facility?tab=' + newTab, {
                 preserveState: true,
                 preserveScroll: true
             });
@@ -432,44 +432,48 @@ watch(selectedUnit, (newVal) => {
 onMounted(() => {
     if (typeof window === 'undefined') return;
     
-    const savedObject = safeGetItem('fac_current_object');
-    const savedBuildingId = safeGetItem('fac_building_id');
-    const savedFloorId = safeGetItem('fac_floor_id');
-    const savedUnitId = safeGetItem('fac_unit_id');
-    
-    if (savedObject) {
-        currentObject.value = savedObject;
-    }
-    
-    if (props.buildings && props.buildings.length > 0) {
-        if (savedBuildingId) {
-            const bId = Number(savedBuildingId);
-            const foundB = props.buildings.find(b => b.id === bId);
-            if (foundB) {
-                selectedBuilding.value = foundB;
-                
-                if (savedFloorId) {
-                    const fId = Number(savedFloorId);
-                    const foundF = foundB.floors?.find(f => f.id === fId);
-                    if (foundF) {
-                        selectedFloor.value = foundF;
-                        
-                        if (savedUnitId && foundF.units) {
-                            const uId = Number(savedUnitId);
-                            const foundU = foundF.units.find(u => u.id === uId);
-                            if (foundU) {
-                                selectUnit(foundU);
+    try {
+        const savedObject = safeGetItem('fac_current_object');
+        const savedBuildingId = safeGetItem('fac_building_id');
+        const savedFloorId = safeGetItem('fac_floor_id');
+        const savedUnitId = safeGetItem('fac_unit_id');
+        
+        if (savedObject) {
+            currentObject.value = savedObject;
+        }
+        
+        if (props.buildings && Array.isArray(props.buildings) && props.buildings.length > 0) {
+            if (savedBuildingId) {
+                const bId = Number(savedBuildingId);
+                const foundB = props.buildings.find(b => b.id === bId);
+                if (foundB) {
+                    selectedBuilding.value = foundB;
+                    
+                    if (savedFloorId) {
+                        const fId = Number(savedFloorId);
+                        const foundF = foundB.floors?.find(f => f.id === fId);
+                        if (foundF) {
+                            selectedFloor.value = foundF;
+                            
+                            if (savedUnitId && foundF.units && Array.isArray(foundF.units)) {
+                                const uId = Number(savedUnitId);
+                                const foundU = foundF.units.find(u => u.id === uId);
+                                if (foundU && typeof selectUnit === 'function') {
+                                    selectUnit(foundU);
+                                }
                             }
                         }
                     }
                 }
+            } else {
+                // Default: autoselect first building if nothing was saved
+                const firstBuilding = props.buildings[0];
+                selectedBuilding.value = firstBuilding;
+                currentObject.value = firstBuilding.name;
             }
-        } else {
-            // Default: autoselect first building if nothing was saved
-            const firstBuilding = props.buildings[0];
-            selectedBuilding.value = firstBuilding;
-            currentObject.value = firstBuilding.name;
         }
+    } catch (e) {
+        console.error("Error restoring facility state from localStorage:", e);
     }
 });
 

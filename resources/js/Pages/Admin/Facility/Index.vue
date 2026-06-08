@@ -1220,6 +1220,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <span class="text-gray-500">Podezdlar</span>
                                         <span class="text-gray-900 font-bold">{{ selectedBuilding.entrances_count || 1 }}</span>
                                     </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Har bir qavatda do'konlar soni</span>
+                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.shops_per_floor || 0 }} ta (Yerto'lalar va 1-qavatda)</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                        <span class="text-gray-500">Qavatlardagi kvartiralar soni</span>
+                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.apartments_per_floor || 0 }} ta (2-qavatdan boshlab)</span>
+                                    </div>
                                     <!-- Dynamic rooms counts statistics -->
                                     <div v-for="(count, rooms) in buildingRoomStats" :key="rooms" class="flex justify-between border-b border-gray-100 py-2">
                                         <span class="text-gray-500">{{ rooms }}-xonali</span>
@@ -1283,12 +1291,20 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </h4>
                                         <div class="space-y-4">
                                             <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
-                                                <div class="w-20 flex items-center justify-between shrink-0">
-                                                    <span class="text-xs font-sans font-medium text-gray-400 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-QAVAT` }}</span>
-                                                    <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
-                                                        <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
-                                                        <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                                <div class="w-24 flex flex-col shrink-0 justify-center">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-[10px] font-sans font-bold text-gray-500 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-QAVAT` }}</span>
+                                                        <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
+                                                            <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
+                                                            <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                                        </div>
                                                     </div>
+                                                    <span class="text-[9px] font-sans text-amber-600 font-semibold mt-0.5">
+                                                        <span v-if="floor.total_commercial_units > 0">{{ floor.total_commercial_units }} ta do'kon</span>
+                                                        <span v-if="floor.total_commercial_units > 0 && floor.total_units > 0">, </span>
+                                                        <span v-if="floor.total_units > 0">{{ floor.total_units }} ta uy</span>
+                                                        <span v-if="!floor.total_commercial_units && !floor.total_units" class="text-gray-300">Bo'sh</span>
+                                                    </span>
                                                 </div>
 
                                                 <div class="flex gap-2 items-center">

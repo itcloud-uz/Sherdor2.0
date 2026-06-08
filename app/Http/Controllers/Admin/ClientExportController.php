@@ -27,9 +27,6 @@ class ClientExportController extends Controller
             // Add BOM to fix UTF-8 in Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            // Tell Excel to use semicolon separator
-            fputs($file, "sep=;\r\n");
-
             fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Shartnomalar', 'Ro\'yxatga olingan sana'], ';');
 
             foreach ($clients as $client) {

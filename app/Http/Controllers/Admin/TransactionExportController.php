@@ -256,9 +256,6 @@ class TransactionExportController extends Controller
             // Add BOM to fix UTF-8 in Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            // Tell Excel to use semicolon separator
-            fputs($file, "sep=;\r\n");
-
             fputcsv($file, $columns, ';');
 
             foreach ($transactions as $t) {

@@ -1318,8 +1318,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <!-- Left: Building Card & Stats Table side-by-side -->
                     <div class="lg:col-span-2 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row gap-6">
                         <!-- Building image on the left -->
-                        <div class="w-full md:w-1/2 flex flex-col gap-4">
-                            <div class="h-56 overflow-hidden bg-gray-100 rounded-xl relative shadow-inner">
+                        <div class="w-full md:w-3/5 flex flex-col gap-4">
+                            <div class="h-[280px] md:h-[320px] overflow-hidden bg-gray-100 rounded-xl relative shadow-inner">
                                 <img :src="selectedBuilding.photo_path ? `/storage/${selectedBuilding.photo_path}` : getObjectPhoto(groupedObjects[currentObject] || [])" class="w-full h-full object-cover" />
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 <div class="absolute bottom-4 left-4 text-white">
@@ -1337,13 +1337,29 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
 
                         <!-- Building stats list on the right -->
-                        <div class="w-full md:w-1/2 flex flex-col justify-between">
+                        <div class="w-full md:w-2/5 flex flex-col justify-between">
                             <div>
                                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Bino haqidagi ma'lumot</h3>
                                 <div class="space-y-2 text-sm font-sans">
                                     <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">Qavatlar</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_floors }}</span>
+                                    </div>
+                                    <div v-if="selectedBuilding.basement_floors > 0" class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">Yerto'lalar</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.basement_floors }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">Podezdlar</span>
                                         <span class="text-gray-900 font-bold">{{ selectedBuilding.entrances_count || 1 }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">Kvartiralar</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_apartments || 0 }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">Do'konlar</span>
+                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_shops || 0 }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">1-xonali</span>
@@ -1368,13 +1384,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="mt-4 border-t border-gray-100 pt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400 font-mono">
-                                <span>📐 Qavatlar: {{ selectedBuilding.total_floors }}</span>
-                                <span v-if="selectedBuilding.basement_floors > 0">🚇 Yerto'lalar: {{ selectedBuilding.basement_floors }}</span>
-                                <span>Do'konlar: {{ selectedBuilding.total_shops || 0 }}</span>
-                                <span>Kvartiralar: {{ selectedBuilding.total_apartments || 0 }}</span>
                             </div>
                         </div>
                     </div>

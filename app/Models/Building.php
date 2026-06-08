@@ -21,6 +21,8 @@ class Building extends Model
         'entrances_count',
         'total_apartments',
         'total_shops',
+        'shops_per_floor',
+        'apartments_per_floor',
         'blueprint_path',
         'photo_path',
         'block_name',

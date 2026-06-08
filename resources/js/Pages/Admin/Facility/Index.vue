@@ -249,6 +249,25 @@ function resetFilters() {
     applyFilters();
 }
 
+const showBlueprintFullscreen = ref(false);
+const selectedFloorIdForBlueprint = ref(null);
+
+const selectedFloorForBlueprint = computed(() => {
+    if (!selectedFloorIdForBlueprint.value || !selectedBuilding.value || !selectedBuilding.value.floors) return null;
+    return selectedBuilding.value.floors.find(f => f.id === selectedFloorIdForBlueprint.value) || null;
+});
+
+const currentBlueprintPath = computed(() => {
+    if (selectedFloorForBlueprint.value && selectedFloorForBlueprint.value.blueprint_path) {
+        return selectedFloorForBlueprint.value.blueprint_path;
+    }
+    return selectedBuilding.value?.blueprint_path || null;
+});
+
+function openBlueprintFullscreen() {
+    showBlueprintFullscreen.value = true;
+}
+
 function isUnitMatchingFilters(unit) {
     if (!unit) return false;
     
@@ -374,6 +393,7 @@ function onUnitLeave() {
 // Watch for building changes to select the first floor
 
 watch(selectedBuilding, (newBuilding, oldBuilding) => {
+    selectedFloorIdForBlueprint.value = null;
     if (!newBuilding) {
         selectedFloor.value = null;
         return;
@@ -1360,108 +1380,133 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             <!-- VIEW 3: Block Detail View with Chessboard (4th screenshot) -->
             <div v-else-if="selectedBuilding !== null" class="space-y-8">
                 
-                <!-- Split columns details section -->
-                <div class="flex flex-col md:flex-row gap-6">
-                    <!-- Left column: Building card, edit details and filter button -->
-                    <div class="w-full md:w-1/3 flex flex-col gap-4">
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden relative">
-                            <div class="h-56 overflow-hidden bg-gray-100 relative">
+                <!-- Top details section: Building details card + 2D blueprint panel -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left: Building Card & Stats Table side-by-side -->
+                    <div class="lg:col-span-2 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row gap-6">
+                        <!-- Building image on the left -->
+                        <div class="w-full md:w-1/2 flex flex-col gap-4">
+                            <div class="h-56 overflow-hidden bg-gray-100 rounded-xl relative shadow-inner">
                                 <img :src="selectedBuilding.photo_path ? `/storage/${selectedBuilding.photo_path}` : getObjectPhoto(groupedObjects[currentObject] || [])" class="w-full h-full object-cover" />
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 <div class="absolute bottom-4 left-4 text-white">
                                     <h3 class="text-xl font-bold uppercase tracking-wider">{{ selectedBuilding.block_name || selectedBuilding.corpus_name || '1 Bino' }}</h3>
                                 </div>
                             </div>
-                            <div class="p-4 flex gap-2">
-                                <button @click="openEditBuilding" class="flex-1 py-1.5 border border-gray-300 text-gray-700 text-xs font-sans rounded-lg hover:bg-gray-50 transition-all text-center">
+                            <div class="flex gap-2">
+                                <button @click="openEditBuilding" class="flex-1 py-2 border border-gray-200 text-gray-700 bg-white text-xs font-sans rounded-xl hover:bg-gray-50 transition-all font-bold text-center">
                                     ✏️ Tahrirlash
                                 </button>
-                                <button v-if="isAdmin" @click="deleteBuilding" class="py-1.5 px-3 bg-red-50 text-red-600 border border-red-200 text-xs font-sans rounded-lg hover:bg-red-600 hover:text-white transition-all">
+                                <button v-if="isAdmin" @click="deleteBuilding" class="py-2 px-3 bg-red-50 text-red-600 border border-red-200 text-xs font-sans rounded-xl hover:bg-red-600 hover:text-white transition-all font-bold">
                                     🗑️ O'chirish
                                 </button>
                             </div>
                         </div>
-                        
-                        <!-- Filter Button and Legend below card -->
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col gap-4">
-                            <div class="flex items-center gap-2">
-                                <button @click="openFilterModal" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                    </svg>
-                                    Filter
-                                </button>
-                                <button v-if="hasActiveFilters" @click="resetFilters" class="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    Filterni tozalash
-                                </button>
-                            </div>
-                            
-                             <div class="flex flex-col gap-3 text-sm font-sans mt-2">
-                                <button @click="toggleStatusFilter('available')" 
-                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
-                                                 activeFilters.status === 'available' ? 'bg-emerald-50 border-emerald-200 text-emerald-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
-                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block shadow-sm shrink-0"></span> Sotuvda
-                                </button>
-                                <button @click="toggleStatusFilter('sold')" 
-                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
-                                                 activeFilters.status === 'sold' ? 'bg-red-50 border-red-200 text-red-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
-                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block shadow-sm shrink-0"></span> Sotilgan
-                                </button>
-                                <button @click="toggleStatusFilter('reserved')" 
-                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
-                                                 activeFilters.status === 'reserved' ? 'bg-amber-50 border-amber-200 text-amber-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
-                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block shadow-sm shrink-0"></span> Bron qilingan
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Right column: Bino haqidagi ma'lumot table -->
-                    <div class="w-full md:w-2/3">
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 h-full flex flex-col justify-between">
+                        <!-- Building stats list on the right -->
+                        <div class="w-full md:w-1/2 flex flex-col justify-between">
                             <div>
-                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans">Bino haqidagi ma'lumot</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-sans">
-                                    <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Qavatlar soni</span>
-                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_floors }}</span>
-                                    </div>
-                                    <div v-if="selectedBuilding.basement_floors > 0" class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Yerto'lalar</span>
-                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.basement_floors }}</span>
-                                    </div>
-                                    <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Xonalar soni</span>
-                                        <span class="text-gray-900 font-bold">{{ maxRoomsCountForBuilding }}</span>
-                                    </div>
-                                    <div class="flex justify-between border-b border-gray-100 py-2">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Bino haqidagi ma'lumot</h3>
+                                <div class="space-y-2 text-sm font-sans">
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">Podezdlar</span>
                                         <span class="text-gray-900 font-bold">{{ selectedBuilding.entrances_count || 1 }}</span>
                                     </div>
-                                    <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Do'konlar soni</span>
-                                        <span class="text-gray-900 font-bold text-amber-600">{{ selectedBuilding.total_shops || 0 }}</span>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">1-xonali</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingRoomStats[1] || 0 }}</span>
                                     </div>
-                                    <div class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">Kvartiralar soni</span>
-                                        <span class="text-gray-900 font-bold text-blue-600">{{ selectedBuilding.total_apartments || 0 }}</span>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">2-xonali</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingRoomStats[2] || 0 }}</span>
                                     </div>
-                                    <!-- Dynamic rooms counts statistics -->
-                                    <div v-for="(count, rooms) in buildingRoomStats" :key="rooms" class="flex justify-between border-b border-gray-100 py-2">
-                                        <span class="text-gray-500">{{ rooms }}-xonali</span>
-                                        <span class="text-gray-900 font-bold">{{ count }}</span>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">3-xonali</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingRoomStats[3] || 0 }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">4-xonali</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingRoomStats[4] || 0 }}</span>
+                                    </div>
+                                    <div v-for="(count, rooms) in buildingRoomStats" :key="rooms">
+                                        <div v-if="rooms != 1 && rooms != 2 && rooms != 3 && rooms != 4" class="flex justify-between border-b border-gray-100 py-1.5">
+                                            <span class="text-gray-500">{{ rooms }}-xonali</span>
+                                            <span class="text-gray-900 font-bold">{{ count }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="mt-6 border-t border-gray-100 pt-6 flex flex-wrap gap-4 text-xs text-gray-400 font-mono">
-                                <span>📐 O'lchamlar (U×K×B): {{ selectedBuilding.length_m || 0 }}m × {{ selectedBuilding.width_m || 0 }}m × {{ selectedBuilding.height_m || 0 }}m</span>
-                                <span>💰 Smeta byudjeti: {{ $currency(selectedBuilding.estimated_budget) }}</span>
+                            <div class="mt-4 border-t border-gray-100 pt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400 font-mono">
+                                <span>📐 Qavatlar: {{ selectedBuilding.total_floors }}</span>
+                                <span v-if="selectedBuilding.basement_floors > 0">🚇 Yerto'lalar: {{ selectedBuilding.basement_floors }}</span>
+                                <span>Do'konlar: {{ selectedBuilding.total_shops || 0 }}</span>
+                                <span>Kvartiralar: {{ selectedBuilding.total_apartments || 0 }}</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Right: 2D Blueprint Panel -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between relative min-h-[280px]">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest font-sans">2D Chizma</h3>
+                            <div class="flex items-center gap-2">
+                                <select v-if="selectedBuilding.floors?.length" 
+                                        v-model="selectedFloorIdForBlueprint" 
+                                        class="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2.5 py-1 focus:ring-amber-500 focus:border-amber-500 font-sans">
+                                    <option :value="null">Bino Chizmasi</option>
+                                    <option v-for="floor in sortedFloors" :key="'opt-'+floor.id" :value="floor.id">
+                                        {{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-qavat` }}
+                                    </option>
+                                </select>
+                                <button @click="openBlueprintFullscreen" class="text-gray-400 hover:text-amber-500 hover:scale-110 transition-all" title="Kattalashtirish">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center overflow-hidden bg-gray-50 rounded-xl relative border border-gray-100 p-2 min-h-[180px]">
+                            <img :src="currentBlueprintPath ? `/storage/${currentBlueprintPath}` : '/modern_apartment_render.png'" 
+                                 class="max-h-full max-w-full object-contain cursor-pointer hover:scale-102 transition-transform duration-300"
+                                 @click="openBlueprintFullscreen" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Horizontal Filter & Status Legend Row -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <button @click="openFilterModal" class="px-5 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                            Filter
+                        </button>
+                        <button v-if="hasActiveFilters" @click="resetFilters" class="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 font-bold font-sans text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Filterni tozalash
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-6 text-sm font-sans">
+                        <button @click="toggleStatusFilter('available')" 
+                                :class="['flex items-center gap-3 font-medium transition-all p-1.5 rounded-lg border', 
+                                         activeFilters.status === 'available' ? 'bg-emerald-50 border-emerald-200 text-emerald-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                            <span class="w-4 h-4 rounded-full bg-[#00c853] block shadow-sm shrink-0"></span> Sotuvda
+                        </button>
+                        <button @click="toggleStatusFilter('sold')" 
+                                :class="['flex items-center gap-3 font-medium transition-all p-1.5 rounded-lg border', 
+                                         activeFilters.status === 'sold' ? 'bg-red-50 border-red-200 text-red-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                            <span class="w-4 h-4 rounded-full bg-[#ef4444] block shadow-sm shrink-0"></span> Sotilgan
+                        </button>
+                        <button @click="toggleStatusFilter('reserved')" 
+                                :class="['flex items-center gap-3 font-medium transition-all p-1.5 rounded-lg border', 
+                                         activeFilters.status === 'reserved' ? 'bg-amber-50 border-amber-200 text-amber-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                            <span class="w-4 h-4 rounded-full bg-[#ffd600] block shadow-sm shrink-0"></span> Bron qilingan
+                        </button>
                     </div>
                 </div>
 
@@ -2422,6 +2467,24 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <button type="button" @click="applyFilters" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm">
                         Filterlash
                     </button>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Blueprint Fullscreen Modal -->
+        <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="4xl">
+            <div class="p-6 relative bg-white dark:bg-zinc-900 rounded-2xl font-sans">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">2D Chizma (Bino/Qavat Chizmasi)</h3>
+                    <button @click="showBlueprintFullscreen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px] max-h-[80vh]">
+                    <img :src="currentBlueprintPath ? `/storage/${currentBlueprintPath}` : '/modern_apartment_render.png'" 
+                         class="max-h-full max-w-full object-contain" />
                 </div>
             </div>
         </Modal>

@@ -12,6 +12,8 @@ Route::get('/', function () {
     return Inertia::render('Public/Landing');
 })->name('landing');
 
+Route::redirect('/dashboard', '/admin/dashboard')->name('dashboard');
+
 // Public Receipt Verification Route
 Route::get('/receipt/verify/{hash}', [\App\Http\Controllers\Public\PublicReceiptController::class, 'verify'])->name('public.receipt.verify');
 Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicReceiptController::class, 'authenticate'])->name('public.receipt.auth');

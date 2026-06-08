@@ -1462,7 +1462,7 @@ function openQuickSmsModal(lead) {
         </div>
 
         <!-- TAB 2: CLIENTS ROSTER -->
-        <div v-if="activeTab === 'clients'" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
+        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
             <div v-if="!selectedClientForDetail">
                 <!-- Breadcrumbs -->
                 <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
@@ -2240,6 +2240,305 @@ function openQuickSmsModal(lead) {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- TAB: DASHBOARD -->
+        <div v-if="activeTab === 'dashboard'" class="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-200/50 shadow-sm">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-white border border-gray-200/60 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 flex items-center justify-between group">
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Jami Lidlar</p>
+                        <p class="text-3xl font-display font-bold text-gray-900">{{ dashboardStats.total }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                        📞
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="bg-white border border-gray-200/60 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 flex items-center justify-between group">
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Bugungi Lidlar</p>
+                        <p class="text-3xl font-display font-bold text-gray-900">{{ dashboardStats.todayLeads }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                        📥
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="bg-white border border-gray-200/60 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 flex items-center justify-between group">
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Bog'lanilmagan</p>
+                        <p class="text-3xl font-display font-bold text-gray-900">{{ dashboardStats.uncontacted }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                        ⚠️
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div class="bg-white border border-gray-200/60 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 flex items-center justify-between group">
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Saralanganlar (Qualified)</p>
+                        <p class="text-3xl font-display font-bold text-gray-900">{{ dashboardStats.qualified }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
+                        🎯
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Activity Area Chart -->
+                <div class="bg-white border border-gray-200/60 shadow-sm rounded-2xl p-5 lg:col-span-2 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span>📈</span> Oxirgi 7 kunlik lidlar dinamikasi
+                    </h3>
+                    <div class="min-h-[300px]">
+                        <VueApexCharts 
+                            type="area" 
+                            height="300" 
+                            :options="dashboardActivityChart.options" 
+                            :series="dashboardActivityChart.series" 
+                        />
+                    </div>
+                </div>
+
+                <!-- Source Donut Chart -->
+                <div class="bg-white border border-gray-200/60 shadow-sm rounded-2xl p-5 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span>📊</span> Lidlar manbalari
+                    </h3>
+                    <div class="min-h-[300px] flex items-center justify-center">
+                        <VueApexCharts 
+                            type="donut" 
+                            height="300" 
+                            :options="dashboardSourceChart.options" 
+                            :series="dashboardSourceChart.series" 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Leads List -->
+            <div class="bg-white border border-gray-200/60 shadow-sm rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span>⏳</span> Oxirgi kelgan lidlar faolligi
+                    </h3>
+                    <button @click="activeTab = 'leads'" class="text-xs text-blue-600 font-bold hover:underline">
+                        Barcha lidlar &gt;
+                    </button>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-gray-100">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-semibold">
+                            <tr class="border-b border-gray-100">
+                                <th class="p-3">Mijoz ismi</th>
+                                <th class="p-3">Telefon</th>
+                                <th class="p-3">Manba</th>
+                                <th class="p-3">Menejer</th>
+                                <th class="p-3">Sana</th>
+                                <th class="p-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
+                            <tr v-for="lead in (leads || []).slice(0, 5)" :key="lead.id" class="hover:bg-gray-50/50 transition-colors">
+                                <td class="p-3 font-semibold text-gray-900">{{ lead.full_name }}</td>
+                                <td class="p-3 font-mono text-xs">{{ lead.phone }}</td>
+                                <td class="p-3">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold" 
+                                          :class="lead.source === 'telegram' ? 'bg-blue-50 text-blue-600' : lead.source === 'partner' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-600'">
+                                        {{ lead.source === 'telegram' ? 'Telegram Bot' : lead.source === 'partner' ? 'Hamkor Ilova' : 'Qo\'lda kiritilgan' }}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-xs text-gray-500">{{ lead.user?.name || 'Biriktirilmagan' }}</td>
+                                <td class="p-3 font-mono text-xs text-gray-500">{{ new Date(lead.created_at).toLocaleString() }}</td>
+                                <td class="p-3 text-right">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                          :class="lead.status === 'new' ? 'bg-blue-100 text-blue-800' : lead.status === 'contacted' ? 'bg-amber-100 text-amber-800' : lead.status === 'qualified' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
+                                        {{ lead.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr v-if="(leads || []).length === 0">
+                                <td colspan="6" class="p-6 text-center text-gray-400">Hech qanday lidlar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: POSTS -->
+        <div v-if="activeTab === 'posts'" class="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-200/50 shadow-sm">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <span>📢</span> Telegram & Ommaviy Postlar
+                </h2>
+                <button @click="openCreatePostModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    + Yangi Post yaratish
+                </button>
+            </div>
+
+            <!-- Posts Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="post in posts" :key="post.id" class="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden flex flex-col">
+                    <!-- Post Image -->
+                    <div v-if="post.image_path" class="h-48 bg-gray-100 overflow-hidden relative">
+                        <img :src="'/storage/' + post.image_path" class="w-full h-full object-cover" />
+                        <span class="absolute top-3 right-3 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow"
+                              :class="post.status === 'published' ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'">
+                            {{ post.status === 'published' ? 'Faol' : 'Qoralama' }}
+                        </span>
+                    </div>
+                    <div v-else class="h-48 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-4xl relative border-b border-gray-100">
+                        <span>📝</span>
+                        <span class="absolute top-3 right-3 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow"
+                              :class="post.status === 'published' ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'">
+                            {{ post.status === 'published' ? 'Faol' : 'Qoralama' }}
+                        </span>
+                    </div>
+
+                    <!-- Post Body -->
+                    <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ post.title }}</h3>
+                            <p class="text-xs text-gray-500 line-clamp-3 leading-relaxed">{{ post.content || 'Tafsilotlar kiritilmagan.' }}</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <span>Sana: {{ new Date(post.created_at).toLocaleDateString() }}</span>
+                            <div class="flex items-center gap-2">
+                                <button @click="openEditPostModal(post)" class="p-1.5 hover:bg-gray-100 rounded text-blue-600" title="Tahrirlash">✏️</button>
+                                <button @click="deletePost(post)" class="p-1.5 hover:bg-red-50 rounded text-red-600" title="O'chirish">❌</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="(posts || []).length === 0" class="col-span-full py-16 text-center bg-white border border-gray-100 rounded-2xl">
+                    <span class="text-4xl block mb-2">📭</span>
+                    <p class="text-sm text-gray-500">Hozircha hech qanday postlar yaratilmagan.</p>
+                </div>
+            </div>
+
+            <!-- Post Edit/Create Modal -->
+            <div v-if="showPostModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-lg rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <h3 class="text-sm font-bold text-gray-900">{{ isEditingPost ? 'Postni tahrirlash' : 'Yangi Post yaratish' }}</h3>
+                        <button @click="showPostModal = false" class="text-gray-400 hover:text-gray-600">❌</button>
+                    </div>
+                    <form @submit.prevent="submitPostForm" class="p-6 space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Sarlavha (Title)</label>
+                            <input v-model="postForm.title" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500" required />
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Post matni (Content)</label>
+                            <textarea v-model="postForm.content" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Post holati</label>
+                            <select v-model="postForm.status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500">
+                                <option value="draft">Draft (Qoralama)</option>
+                                <option value="published">Published (E'lon qilish)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-gray-600">Rasm biriktirish</label>
+                            <input type="file" @change="onPostImageChange" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <img v-if="postForm.image_preview" :src="postForm.image_preview" class="h-32 object-cover rounded-lg border border-gray-200 mt-2" />
+                        </div>
+                        <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                            <button type="button" @click="showPostModal = false" class="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-50">Bekor qilish</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shadow">Saqlash</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SETTINGS -->
+        <div v-if="activeTab === 'settings'" class="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-200/50 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
+                <span>⚙️</span> CRM Tizim sozlamalari
+            </h2>
+
+            <form @submit.prevent="saveCrmSettings" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Telegram Bot settings -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5 border-b border-gray-100 pb-3">
+                        <span>🤖</span> Telegram Bot Sozlamalari
+                    </h3>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Telegram Bot Token</label>
+                        <input v-model="settingsForm.telegram_bot_token" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="123456789:ABCdefGhI..." />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Telegram Chat ID (Guruh/Menejer)</label>
+                        <input v-model="settingsForm.telegram_chat_id" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="-100123456789" />
+                    </div>
+                </div>
+
+                <!-- Facebook API settings -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5 border-b border-gray-100 pb-3">
+                        <span>👥</span> Facebook & Google Analitika
+                    </h3>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Facebook Page ID</label>
+                        <input v-model="settingsForm.facebook_page_id" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="1029384756" />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Facebook Access Token</label>
+                        <input v-model="settingsForm.facebook_access_token" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="EAAAP..." />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Google Analytics (Measurement ID)</label>
+                        <input v-model="settingsForm.google_analytics_id" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="G-ABCDEF123" />
+                    </div>
+                </div>
+
+                <!-- Default manager assignment settings -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 md:col-span-2 space-y-4">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5 border-b border-gray-100 pb-3">
+                        <span>👨‍💼</span> Manbalar uchun Standart Biriktiriladigan Menejerlar
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Telegram Bot Menejeri</label>
+                            <select v-model="settingsForm.default_telegram_manager_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <option value="">Biriktirilmagan</option>
+                                <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Hamkor Ilova Menejeri</label>
+                            <select v-model="settingsForm.default_partner_manager_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <option value="">Biriktirilmagan</option>
+                                <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-gray-600">Qo'lda kiritilgan Lidlar Menejeri</label>
+                            <select v-model="settingsForm.default_manual_manager_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <option value="">Biriktirilmagan</option>
+                                <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form actions -->
+                <div class="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                        Sozlamalarni saqlash
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- CLIENT LEDGER MODAL (GLASSMORPHIC) -->

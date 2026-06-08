@@ -15,6 +15,24 @@ class FacilityController extends Controller
 {
     public function index()
     {
+        // Self-healing: clamp/cap unit podyezd to the building's entrances_count
+        $allBuildings = Building::with('floors')->get();
+        foreach ($allBuildings as $b) {
+            $ec = (int)($b->entrances_count ?? 1);
+            if ($ec < 1) $ec = 1;
+            $floorIds = $b->floors->pluck('id')->toArray();
+            if (!empty($floorIds)) {
+                DB::table('units')
+                    ->whereIn('floor_id', $floorIds)
+                    ->where(function($q) use ($ec) {
+                        $q->where('podyezd', '>', $ec)
+                          ->orWhere('podyezd', '<', 1)
+                          ->orWhereNull('podyezd');
+                    })
+                    ->update(['podyezd' => $ec]);
+            }
+        }
+
         // Self-healing: auto-generate floors and units for any existing building/block that has 0 floors in DB
         $emptyBuildings = Building::where('total_floors', '>', 0)
             ->whereDoesntHave('floors')
@@ -378,6 +396,15 @@ class FacilityController extends Controller
 
             // Get existing floors
             $existingFloors = $building->floors()->with('units')->get()->keyBy('floor_number');
+
+            // Clamp/fix podyezd for all existing units
+            foreach ($existingFloors as $floor) {
+                foreach ($floor->units as $unit) {
+                    if ($unit->podyezd > $entrancesCount || $unit->podyezd < 1 || is_null($unit->podyezd)) {
+                        $unit->update(['podyezd' => $entrancesCount]);
+                    }
+                }
+            }
 
             // Remove floors that should no longer exist (only if all units are available)
             foreach ($existingFloors as $floorNumber => $floor) {
@@ -806,6 +833,19 @@ class FacilityController extends Controller
             'podyezd' => 'nullable|integer|min:1',
         ]);
 
+        $floor = Floor::findOrFail($validated['floor_id']);
+        $building = $floor->building;
+        $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
+        if ($ec < 1) $ec = 1;
+
+        if (isset($validated['podyezd'])) {
+            if ($validated['podyezd'] > $ec) {
+                $validated['podyezd'] = $ec;
+            }
+        } else {
+            $validated['podyezd'] = $ec;
+        }
+
         Unit::create($validated);
 
         return redirect()->back()->with('message', 'Xonadon/Do\'kon qo\'shildi!');
@@ -828,6 +868,17 @@ class FacilityController extends Controller
             'orientation' => 'nullable|string|max:255',
             'podyezd' => 'nullable|integer|min:1',
         ]);
+
+        $floor = $unit->floor;
+        $building = $floor ? $floor->building : null;
+        $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
+        if ($ec < 1) $ec = 1;
+
+        if (isset($validated['podyezd'])) {
+            if ($validated['podyezd'] > $ec) {
+                $validated['podyezd'] = $ec;
+            }
+        }
 
         $unit->update($validated);
 

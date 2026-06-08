@@ -75,6 +75,17 @@
     color: var(--dropdown-text-color, #111827) !important;
   }
 
+  /* Force light colors on option dropdowns inside light-themed containers/selects */
+  select.bg-white option,
+  select.bg-white optgroup,
+  .bg-white select option,
+  .bg-white select optgroup,
+  .bg-\[\#f8fafc\] select option,
+  .bg-\[\#f8fafc\] select optgroup {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+
   .text-text-muted {
     color: var(--label-color, rgba(255, 255, 255, 0.4));
     transition: color 0.3s ease;

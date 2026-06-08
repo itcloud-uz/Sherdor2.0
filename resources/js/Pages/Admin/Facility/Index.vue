@@ -2134,7 +2134,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
 
                                         <!-- Xonalar & Oshxona & Hammom & Hojatxona -->
-                                        <div class="grid grid-cols-4 gap-2">
+                                        <div v-if="unitForm.type === 'residential'" class="grid grid-cols-4 gap-2">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Xonalar</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
@@ -2182,7 +2182,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
 
                                         <!-- Joylashuvi & Balkon -->
-                                        <div class="grid grid-cols-2 gap-4">
+                                        <div class="grid gap-4" :class="unitForm.type === 'residential' ? 'grid-cols-2' : 'grid-cols-1'">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Joylashuvi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
@@ -2197,7 +2197,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div>
+                                            <div v-if="unitForm.type === 'residential'">
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Balkon</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2.5 py-3">
                                                     <select v-model="unitForm.has_balcony" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
@@ -2619,7 +2619,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
 
                     <!-- Detailed Attributes -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div v-if="unitForm.type === 'residential'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonalar</label>
                             <input v-model="unitForm.rooms_count" type="number" min="1" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
@@ -2638,7 +2638,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" :class="unitForm.type === 'residential' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Status</label>
                             <select v-model="unitForm.status" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
@@ -2663,7 +2663,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <option value="Ko'chaga qaragan">Ko'chaga qaragan</option>
                             </select>
                         </div>
-                        <div>
+                        <div v-if="unitForm.type === 'residential'">
                             <label class="block text-xs font-mono text-gray-500 mb-1">Balkon</label>
                             <select v-model="unitForm.has_balcony" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all">
                                 <option :value="false">Balkon yo'q</option>

@@ -477,22 +477,24 @@ watch(selectedBuilding, (newBuilding, oldBuilding) => {
     
     // Only reset floor/unit if we switched to a different building
     if (!oldBuilding || newBuilding.id !== oldBuilding.id) {
-        const url = new URL(window.location.href);
-        const urlFloorId = url.searchParams.get('floor_id');
-        const urlUnitId = url.searchParams.get('unit_id');
-        
-        if (urlFloorId && newBuilding.floors) {
-            const foundF = newBuilding.floors.find(f => f.id === Number(urlFloorId));
-            if (foundF) {
-                selectedFloor.value = foundF;
-                
-                if (urlUnitId && foundF.units) {
-                    const foundU = foundF.units.find(u => u.id === Number(urlUnitId));
-                    if (foundU) {
-                        selectUnit(foundU);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            const urlFloorId = url.searchParams.get('floor_id');
+            const urlUnitId = url.searchParams.get('unit_id');
+            
+            if (urlFloorId && newBuilding.floors) {
+                const foundF = newBuilding.floors.find(f => f.id === Number(urlFloorId));
+                if (foundF) {
+                    selectedFloor.value = foundF;
+                    
+                    if (urlUnitId && foundF.units) {
+                        const foundU = foundF.units.find(u => u.id === Number(urlUnitId));
+                        if (foundU) {
+                            selectUnit(foundU);
+                        }
                     }
+                    return;
                 }
-                return;
             }
         }
         

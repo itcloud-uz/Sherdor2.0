@@ -331,27 +331,62 @@ function getSortedUnits(units) {
     });
 }
 
-// Synchronize activeTab with the URL tab parameter reactively
+// Synchronize selected states with the URL parameters reactively on load/change
 watch(
     () => page.url,
     (newUrl) => {
         try {
             const url = new URL(newUrl, window.location.origin);
-            const tabParam = url.searchParams.get('tab');
-            if (tabParam !== null) {
-                if (activeTab.value !== tabParam) {
-                    activeTab.value = tabParam;
-                }
-                // Autoselect the first building if none is selected
-                if (!selectedBuilding.value && props.buildings && props.buildings.length > 0) {
-                    const firstBuilding = props.buildings[0];
-                    selectedBuilding.value = firstBuilding;
-                    currentObject.value = firstBuilding.name;
-                }
-            } else {
-                // If no tab is specified in the URL, reset building selection to show main page
-                selectedBuilding.value = null;
+            const tabParam = url.searchParams.get('tab') || 'blueprint';
+            if (activeTab.value !== tabParam) {
+                activeTab.value = tabParam;
+            }
+
+            const objectParam = url.searchParams.get('object');
+            const buildingIdParam = url.searchParams.get('building_id');
+            const floorIdParam = url.searchParams.get('floor_id');
+            const unitIdParam = url.searchParams.get('unit_id');
+
+            if (objectParam && currentObject.value !== objectParam) {
+                currentObject.value = objectParam;
+            } else if (!objectParam && currentObject.value !== null) {
                 currentObject.value = null;
+            }
+
+            if (props.buildings && props.buildings.length > 0) {
+                if (buildingIdParam) {
+                    const bId = Number(buildingIdParam);
+                    const foundB = props.buildings.find(b => b.id === bId);
+                    if (foundB) {
+                        if (!selectedBuilding.value || selectedBuilding.value.id !== foundB.id) {
+                            selectedBuilding.value = foundB;
+                        }
+                        
+                        if (floorIdParam) {
+                            const fId = Number(floorIdParam);
+                            const foundF = foundB.floors?.find(f => f.id === fId);
+                            if (foundF) {
+                                if (!selectedFloor.value || selectedFloor.value.id !== foundF.id) {
+                                    selectedFloor.value = foundF;
+                                }
+                            }
+                        }
+                        
+                        if (unitIdParam && selectedFloor.value && selectedFloor.value.units) {
+                            const uId = Number(unitIdParam);
+                            const foundU = selectedFloor.value.units.find(u => u.id === uId);
+                            if (foundU && (!selectedUnit.value || selectedUnit.value.id !== foundU.id)) {
+                                selectUnit(foundU);
+                            }
+                        } else if (!unitIdParam && selectedUnit.value) {
+                            selectedUnit.value = null;
+                        }
+                    }
+                } else {
+                    if (selectedBuilding.value !== null) selectedBuilding.value = null;
+                    if (selectedFloor.value !== null) selectedFloor.value = null;
+                    if (selectedUnit.value !== null) selectedUnit.value = null;
+                }
             }
         } catch (e) {
             console.error('URL parse error in Facility tab watcher', e);
@@ -360,21 +395,60 @@ watch(
     { immediate: true }
 );
 
-// Synchronize URL query parameter with activeTab changes inside the component
-watch(activeTab, (newTab) => {
-    try {
-        const url = new URL(window.location.href);
-        const currentTab = url.searchParams.get('tab');
-        if (currentTab === null || currentTab !== newTab) {
-            router.replace(route('admin.facility', { tab: newTab }), {
-                preserveState: true,
-                preserveScroll: true
-            });
+// Synchronize URL query parameters with active selections inside the component
+watch(
+    [activeTab, currentObject, selectedBuilding, selectedFloor, selectedUnit],
+    ([newTab, newObj, newBuilding, newFloor, newUnit]) => {
+        try {
+            const url = new URL(window.location.href);
+            
+            // tab
+            if (newTab) {
+                url.searchParams.set('tab', newTab);
+            } else {
+                url.searchParams.delete('tab');
+            }
+            
+            // object
+            if (newObj) {
+                url.searchParams.set('object', newObj);
+            } else {
+                url.searchParams.delete('object');
+            }
+            
+            // building_id
+            if (newBuilding) {
+                url.searchParams.set('building_id', newBuilding.id);
+            } else {
+                url.searchParams.delete('building_id');
+            }
+            
+            // floor_id
+            if (newFloor) {
+                url.searchParams.set('floor_id', newFloor.id);
+            } else {
+                url.searchParams.delete('floor_id');
+            }
+            
+            // unit_id
+            if (newUnit) {
+                url.searchParams.set('unit_id', newUnit.id);
+            } else {
+                url.searchParams.delete('unit_id');
+            }
+            
+            const newSearch = url.search;
+            if (window.location.search !== newSearch) {
+                router.replace(route('admin.facility') + newSearch, {
+                    preserveState: true,
+                    preserveScroll: true
+                });
+            }
+        } catch (e) {
+            console.error('URL replace error in Facility activeTab watcher', e);
         }
-    } catch (e) {
-        console.error('URL replace error in Facility activeTab watcher', e);
     }
-});
+);
 
 const hoveredUnit = ref(null);
 const mouseX = ref(0);
@@ -390,29 +464,57 @@ function onUnitLeave() {
     hoveredUnit.value = null;
 }
 
-// Watch for building changes to select the first floor
-
+// Watch for building changes to select the first floor, while respecting URL parameters on initial load
 watch(selectedBuilding, (newBuilding, oldBuilding) => {
     selectedFloorIdForBlueprint.value = null;
     if (!newBuilding) {
         selectedFloor.value = null;
+        selectedUnit.value = null;
         return;
     }
-    // Only reset floor to first floor if we switched to a different building
+    
+    // Only reset floor/unit if we switched to a different building
     if (!oldBuilding || newBuilding.id !== oldBuilding.id) {
+        const url = new URL(window.location.href);
+        const urlFloorId = url.searchParams.get('floor_id');
+        const urlUnitId = url.searchParams.get('unit_id');
+        
+        if (urlFloorId && newBuilding.floors) {
+            const foundF = newBuilding.floors.find(f => f.id === Number(urlFloorId));
+            if (foundF) {
+                selectedFloor.value = foundF;
+                
+                if (urlUnitId && foundF.units) {
+                    const foundU = foundF.units.find(u => u.id === Number(urlUnitId));
+                    if (foundU) {
+                        selectUnit(foundU);
+                    }
+                }
+                return;
+            }
+        }
+        
         if (newBuilding.floors && newBuilding.floors.length > 0) {
             selectedFloor.value = newBuilding.floors[0];
         } else {
             selectedFloor.value = null;
         }
+        selectedUnit.value = null;
     } else {
-        // If same building (updated metadata), sync selectedFloor to the updated floor instance
+        // If same building (updated metadata), sync selectedFloor/selectedUnit to the updated instances
         if (selectedFloor.value && newBuilding.floors) {
             const updatedFloor = newBuilding.floors.find(f => f.id === selectedFloor.value.id);
             if (updatedFloor) {
                 selectedFloor.value = updatedFloor;
+                if (selectedUnit.value && updatedFloor.units) {
+                    const updatedUnit = updatedFloor.units.find(u => u.id === selectedUnit.value.id);
+                    if (updatedUnit) {
+                        selectedUnit.value = updatedUnit;
+                    }
+                }
             } else {
                 selectedFloor.value = newBuilding.floors[0] || null;
+                selectedUnit.value = null;
             }
         }
     }

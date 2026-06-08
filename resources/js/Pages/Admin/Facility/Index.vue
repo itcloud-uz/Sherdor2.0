@@ -335,6 +335,7 @@ function getSortedUnits(units) {
 watch(
     () => page.url,
     (newUrl) => {
+        if (typeof window === 'undefined') return;
         try {
             const url = new URL(newUrl, window.location.origin);
             const tabParam = url.searchParams.get('tab') || 'blueprint';
@@ -399,6 +400,7 @@ watch(
 watch(
     [activeTab, currentObject, selectedBuilding, selectedFloor, selectedUnit],
     ([newTab, newObj, newBuilding, newFloor, newUnit]) => {
+        if (typeof window === 'undefined') return;
         try {
             const url = new URL(window.location.href);
             
@@ -439,7 +441,7 @@ watch(
             
             const newSearch = url.search;
             if (window.location.search !== newSearch) {
-                router.replace(route('admin.facility') + newSearch, {
+                router.replace(window.location.pathname + newSearch, {
                     preserveState: true,
                     preserveScroll: true
                 });

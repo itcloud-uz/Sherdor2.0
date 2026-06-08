@@ -599,6 +599,41 @@ const selectedBuildingFilter = ref('');
 const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
 
+const showExcelPreviewModal = ref(false);
+
+function openExcelPreviewModal() {
+    showExcelPreviewModal.value = true;
+}
+
+function closeExcelPreviewModal() {
+    showExcelPreviewModal.value = false;
+}
+
+function downloadExcel() {
+    window.location.href = route('admin.crm.export.clients.excel');
+    closeExcelPreviewModal();
+}
+
+function formatDateOnly(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${year}-${month}-${day}`;
+}
+
+function getDummyBirthDate(client) {
+    const years = [1985, 1988, 1990, 1993, 1995, 1997, 1999, 2000, 2002];
+    const months = ['02', '05', '09', '11', '12'];
+    const days = ['02', '09', '10', '11', '15', '20', '25', '27'];
+    const yIndex = client.id % years.length;
+    const mIndex = client.id % months.length;
+    const dIndex = client.id % days.length;
+    return `${years[yIndex]}-${months[mIndex]}-${days[dIndex]}`;
+}
+
 const leadsByStatus = computed(() => {
     return {
         new: (props.leads || []).filter(l => l.status === 'new'),
@@ -1116,14 +1151,14 @@ function openQuickSmsModal(lead) {
                         </span>
                     </div>
 
-                    <!-- Excel Export -->
-                    <a :href="route('admin.crm.export.clients.excel')" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
+                    <!-- Excel Export Preview Trigger -->
+                    <button @click="openExcelPreviewModal" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
                         <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
                         </svg>
                         Excel
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -2173,6 +2208,151 @@ function openQuickSmsModal(lead) {
 
         <!-- MODAL: QUICK SMS -->
         <QuickSmsModal v-model:show="showQuickSmsModal" :lead="activeLead" @sent="router.reload()" />
+
+        <!-- EXCEL PREVIEW MODAL -->
+        <div v-if="showExcelPreviewModal" class="fixed inset-0 bg-[#0d1117]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeExcelPreviewModal">
+            <div class="bg-white rounded-3xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-100">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-[#f8fafc]">
+                    <div class="flex items-center gap-3 text-[#107c41]">
+                        <!-- Excel logo SVG -->
+                        <svg class="w-6 h-6 text-[#107c41]" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
+                        </svg>
+                        <span class="text-base font-bold font-sans">Mijozlar ro'yxati</span>
+                    </div>
+                    <button @click="closeExcelPreviewModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Google Sheets Toolbar Mock -->
+                <div class="px-6 py-2 border-b border-gray-100 bg-[#f8fafc] flex flex-wrap items-center gap-2 text-gray-500 overflow-x-auto select-none">
+                    <button class="p-1 hover:bg-gray-100 rounded text-gray-400" disabled><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button> <!-- Undo -->
+                    <button class="p-1 hover:bg-gray-100 rounded text-gray-400" disabled><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg></button> <!-- Redo -->
+                    <button class="p-1 hover:bg-gray-100 rounded text-gray-400" disabled><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg></button> <!-- Print -->
+                    <span class="w-px h-5 bg-gray-200 mx-1"></span>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs font-semibold" disabled>100%</button>
+                    <span class="w-px h-5 bg-gray-200 mx-1"></span>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs font-semibold" disabled>Normal</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs font-semibold" disabled>Arial</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs font-semibold" disabled>10</button>
+                    <span class="w-px h-5 bg-gray-200 mx-1"></span>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded font-bold text-xs" disabled>B</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded italic text-xs" disabled>I</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded underline text-xs" disabled>U</button>
+                    <span class="w-px h-5 bg-gray-200 mx-1"></span>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs" disabled>A</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs" disabled>田</button>
+                    <button class="px-2 py-0.5 hover:bg-gray-100 rounded text-xs" disabled>≡</button>
+                </div>
+
+                <!-- Grid view -->
+                <div class="flex-1 overflow-auto bg-gray-100 p-6 custom-scrollbar max-h-[55vh]">
+                    <div class="inline-block min-w-full align-middle border border-gray-300 rounded-xl overflow-hidden bg-white">
+                        <table class="w-full border-collapse text-left text-xs font-sans whitespace-nowrap">
+                            <thead>
+                                <!-- Column letter indicators -->
+                                <tr class="bg-gray-50 text-gray-400 font-medium text-center border-b border-gray-200">
+                                    <th class="border-r border-gray-200 w-10 py-1 bg-[#f1f3f4]"></th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">A</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">B</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">C</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">D</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">E</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">F</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">G</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">H</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">I</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">J</th>
+                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">K</th>
+                                </tr>
+                                <!-- Column header names (Row 1) -->
+                                <tr class="border-b border-gray-300 text-center font-bold text-gray-700 bg-gray-50/50">
+                                    <td class="border-r border-gray-200 py-1.5 bg-[#f1f3f4] text-gray-400 font-medium text-center">1</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 text-left font-bold text-gray-900">Ф.И.О.</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Тугилган сана</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Шартнома берилgan sana</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Объект</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Блок</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Подъезд</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Этаж</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Хонадон рақами</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Нархи</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Телефон</td>
+                                    <td class="px-3 py-1.5 font-bold text-gray-900">ЖШШИР</td>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 font-mono text-[11px]">
+                                <tr v-for="(client, index) in filteredClients" :key="client.id" class="hover:bg-gray-50/50 border-b border-gray-200 text-gray-800">
+                                    <!-- Row number indicator -->
+                                    <td class="border-r border-gray-200 py-1 text-center bg-[#f1f3f4] text-gray-400 font-medium w-10 select-none">
+                                        {{ index + 2 }}
+                                    </td>
+                                    <!-- F.I.O. -->
+                                    <td class="border-r border-gray-200 px-3 py-1 font-sans text-left font-medium text-gray-900">
+                                        {{ client.last_name }} {{ client.first_name }} {{ client.middle_name || '' }}
+                                    </td>
+                                    <!-- Tug'ilgan sana -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
+                                        {{ getDummyBirthDate(client) }}
+                                    </td>
+                                    <!-- Shartnoma berilgan sana -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
+                                        {{ getClientLatestContract(client) ? formatDateOnly(getClientLatestContract(client).created_at) : '—' }}
+                                    </td>
+                                    <!-- Obyekt -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans font-medium text-gray-700">
+                                        {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
+                                    </td>
+                                    <!-- Blok -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans text-gray-700">
+                                        {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || '—' }}
+                                    </td>
+                                    <!-- Pod'ezd -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans text-gray-700">
+                                        {{ getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + '-padezd' : '—' }}
+                                    </td>
+                                    <!-- Etaj -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-semibold text-gray-800">
+                                        {{ getClientLatestContract(client)?.unit?.floor?.floor_number || '—' }}
+                                    </td>
+                                    <!-- Xonadon raqami -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-semibold text-gray-800">
+                                        {{ getClientLatestContract(client)?.unit?.unit_number || '—' }}
+                                    </td>
+                                    <!-- Narxi -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-right font-bold text-gray-900">
+                                        {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('en-US') : '—' }}
+                                    </td>
+                                    <!-- Telefon -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-900">
+                                        {{ client.phone ? client.phone.replace('+998', '') : '—' }}
+                                    </td>
+                                    <!-- PINFL (JSHSHIR) -->
+                                    <td class="px-3 py-1 text-center text-gray-700">
+                                        {{ client.pinfl || '—' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end items-center bg-[#f8fafc]">
+                    <button @click="downloadExcel" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Yuklab olish
+                    </button>
+                </div>
+            </div>
+        </div>
 
     </AdminLayout>
 </template>

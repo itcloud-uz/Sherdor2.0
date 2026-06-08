@@ -104,7 +104,28 @@ onMounted(() => {
 });
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
-const clientForm = ref({ first_name: '', last_name: '', middle_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' });
+const clientForm = ref({
+    first_name: '',
+    last_name: '',
+    middle_name: '',
+    passport_series: '',
+    pinfl: '',
+    phone: '+998',
+    address: '',
+    passport_issued_date: '',
+    passport_issued_by: '',
+    created_at: '',
+    birth_date: '',
+    phone_2: '+998',
+    phone_3: '+998',
+    gender: 'erkak',
+    region: '',
+    district: '',
+    passport_photo: null,
+    source: '',
+    contract_language: 'O\'zbek tili',
+    contract_id: ''
+});
 const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true });
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
@@ -268,7 +289,28 @@ function deleteLead(id) {
 function openCreateClientModal() {
     isEditingClient.value = false;
     editingClientId.value = null;
-    clientForm.value = { first_name: '', last_name: '', middle_name: '', passport_series: '', pinfl: '', phone: '', address: '', passport_issued_date: '', passport_issued_by: '', created_at: '' };
+    clientForm.value = {
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        passport_series: '',
+        pinfl: '',
+        phone: '+998',
+        address: '',
+        passport_issued_date: '',
+        passport_issued_by: '',
+        created_at: new Date().toISOString().split('T')[0],
+        birth_date: '',
+        phone_2: '+998',
+        phone_3: '+998',
+        gender: 'erkak',
+        region: '',
+        district: '',
+        passport_photo: null,
+        source: '',
+        contract_language: 'O\'zbek tili',
+        contract_id: ''
+    };
     showCreateClientModal.value = true;
 }
 
@@ -281,11 +323,21 @@ function openEditClientModal(client) {
         middle_name: client.middle_name || '',
         passport_series: client.passport_number || client.passport_series, 
         pinfl: client.pinfl, 
-        phone: client.phone, 
+        phone: client.phone || '+998', 
         address: client.address || '',
         passport_issued_date: client.passport_issued_date || '',
         passport_issued_by: client.passport_issued_by || '',
-        created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : ''
+        created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : '',
+        birth_date: client.birth_date || '',
+        phone_2: client.phone_2 || '+998',
+        phone_3: client.phone_3 || '+998',
+        gender: client.gender || 'erkak',
+        region: client.region || '',
+        district: client.district || '',
+        passport_photo: null,
+        source: client.source || '',
+        contract_language: client.contract_language || 'O\'zbek tili',
+        contract_id: client.contract_id || ''
     };
     showCreateClientModal.value = true;
 }
@@ -1511,62 +1563,232 @@ function openQuickSmsModal(lead) {
         </div>
 
         <!-- MODAL: CREATE / EDIT CLIENT -->
-        <div v-if="showCreateClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-500/50" @click="showCreateClientModal = false"></div>
-            <div class="relative bg-white p-6 rounded-lg w-full max-w-lg border border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">
-                    {{ isEditingClient ? t('edit_client') : $t('add') + ' ' + $t('client') }}
-                </h2>
-                <form @submit.prevent="saveClient" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('registration_date_optional') }}</label>
-                        <input v-model="clientForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" title="O'tmish sanada ro'yxatdan o'tkazish uchun">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div v-if="showCreateClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
+            <div class="relative bg-[#f8fafc] p-8 rounded-3xl w-full max-w-6xl shadow-2xl border border-gray-100 transition-all font-sans my-8">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
+                        Mijoz qo'shish
+                    </h2>
+                    <button type="button" @click="showCreateClientModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveClient" class="space-y-6">
+                    <!-- Row 1: Familiya, Ism, Sharif, Tug'ilgan sanasi -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('first_name') }}</label>
-                            <input v-model="clientForm.first_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Familiya</label>
+                            <input v-model="clientForm.last_name" type="text" placeholder="Familiyangizni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('last_name') }}</label>
-                            <input v-model="clientForm.last_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ism</label>
+                            <input v-model="clientForm.first_name" type="text" placeholder="Ismingizni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">Otasining ismi</label>
-                            <input v-model="clientForm.middle_name" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_series') }}</label>
-                            <input v-model="clientForm.passport_series" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Sharif</label>
+                            <input v-model="clientForm.middle_name" type="text" placeholder="Sharifingizni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('pinfl') }}</label>
-                            <input v-model="clientForm.pinfl" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('address') }}</label>
-                        <input v-model="clientForm.address" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('passport_issue_date') }}</label>
-                            <input v-model="clientForm.passport_issued_date" type="date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('issued_by') }}</label>
-                            <input v-model="clientForm.passport_issued_by" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tug'ilgan sanasi</label>
+                            <input v-model="clientForm.birth_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1 uppercase">{{ $t('phone_number') }}</label>
-                        <input v-model="clientForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+
+                    <!-- Row 2: Shartnoma sanasi, Telefon raqami, Telefon raqami 2, Telefon raqami 3 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma sanasi</label>
+                            <input v-model="clientForm.created_at" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqami</label>
+                            <div class="relative">
+                                <input v-model="clientForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10" required>
+                                <button type="button" @click="clientForm.phone = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqami 2</label>
+                            <div class="relative">
+                                <input v-model="clientForm.phone_2" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
+                                <button type="button" @click="clientForm.phone_2 = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqami 3</label>
+                            <div class="relative">
+                                <input v-model="clientForm.phone_3" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
+                                <button type="button" @click="clientForm.phone_3 = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showCreateClientModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">{{ $t('save') }}</button>
+
+                    <!-- Row 3: Passport raqami, JSHSHIR, Kim tomonidan berilgan, Pasport berilgan kuni -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Passport raqami</label>
+                            <input v-model="clientForm.passport_series" type="text" placeholder="AA1234567" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">JSHSHIR</label>
+                            <input v-model="clientForm.pinfl" type="text" placeholder="JSHSHIR" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Kim tomonidan berilgan</label>
+                            <input v-model="clientForm.passport_issued_by" type="text" placeholder="Kim tomonidan berilgan" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Pasport berilgan kuni</label>
+                            <input v-model="clientForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Jinsi, Region, Tuman / Shahar, Manzil -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-4">Jinsi</label>
+                            <div class="flex items-center gap-6 text-xs text-gray-800 pt-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="clientForm.gender" value="erkak" class="w-4 h-4 text-[#f2a900] border-gray-300 focus:ring-[#f2a900] focus:ring-2 focus:ring-offset-0">
+                                    <span>Erkak</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="clientForm.gender" value="ayol" class="w-4 h-4 text-[#f2a900] border-gray-300 focus:ring-[#f2a900] focus:ring-2 focus:ring-offset-0">
+                                    <span>Ayol</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Region</label>
+                            <div class="relative">
+                                <select v-model="clientForm.region" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <option value="">Tanlang</option>
+                                    <option value="toshkent">Toshkent sh.</option>
+                                    <option value="samarqand">Samarqand</option>
+                                    <option value="fargona">Farg'ona</option>
+                                    <option value="namangan">Namangan</option>
+                                    <option value="andijon">Andijon</option>
+                                    <option value="buxoro">Buxoro</option>
+                                    <option value="qashqadaryo">Qashqadaryo</option>
+                                    <option value="surxondaryo">Surxondaryo</option>
+                                    <option value="jizzax">Jizzax</option>
+                                    <option value="sirdaryo">Sirdaryo</option>
+                                    <option value="navoiy">Navoiy</option>
+                                    <option value="xorazm">Xorazm</option>
+                                    <option value="qoraqalpogiston">Qoraqalpog'iston</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
+                            <div class="relative">
+                                <select v-model="clientForm.district" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <option value="">Tanlang</option>
+                                    <option value="tuman">Tuman / Shahar</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Manzil</label>
+                            <input v-model="clientForm.address" type="text" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Passport rasmlari, Biz haqimizda qayerdan bildingiz?, Shartnoma tili, Shartnoma id -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Passport rasmlari</label>
+                            <div class="flex items-center gap-3">
+                                <label class="w-24 h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
+                                    <template v-if="!clientForm.passport_photo">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span class="text-[10px] text-gray-500 font-medium">Old tomoni</span>
+                                    </template>
+                                    <template v-else>
+                                        <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientForm.passport_photo.name">{{ clientForm.passport_photo.name }}</span>
+                                    </template>
+                                    <input type="file" class="hidden" @change="e => { clientForm.passport_photo = e.target.files[0] }">
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Biz haqimizda qayerdan bildingiz?</label>
+                            <div class="relative">
+                                <select v-model="clientForm.source" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <option value="">Tanlang</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="tavsiya">Tavsiya</option>
+                                    <option value="banner">Tashqi reklama</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma tili</label>
+                            <div class="relative">
+                                <select v-model="clientForm.contract_language" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <option value="O'zbek tili">O'zbek tili</option>
+                                    <option value="Rus tili">Rus tili</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
+                            <div class="relative">
+                                <input v-model="clientForm.contract_id" type="text" placeholder="Shartnoma id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
+                                <span class="absolute right-3 top-3 text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-center gap-4 pt-4">
+                        <button type="button" @click="showCreateClientModal = false" class="px-8 py-3 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[140px]">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[140px] shadow-sm disabled:opacity-50">
+                            Qo'shish
+                        </button>
                     </div>
                 </form>
             </div>

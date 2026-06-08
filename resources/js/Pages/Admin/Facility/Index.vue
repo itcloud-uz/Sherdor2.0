@@ -331,6 +331,27 @@ function getSortedUnits(units) {
     });
 }
 
+// Safe localStorage helpers to prevent crashes in private mode or strict security browsers
+function safeGetItem(key) {
+    try {
+        return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function safeSetItem(key, value) {
+    try {
+        if (typeof window !== 'undefined') localStorage.setItem(key, value);
+    } catch (e) {}
+}
+
+function safeRemoveItem(key) {
+    try {
+        if (typeof window !== 'undefined') localStorage.removeItem(key);
+    } catch (e) {}
+}
+
 // Synchronize activeTab with the URL tab parameter reactively
 watch(
     () => page.url,
@@ -372,38 +393,38 @@ watch(activeTab, (newTab) => {
 watch(currentObject, (newVal) => {
     if (typeof window === 'undefined') return;
     if (newVal) {
-        localStorage.setItem('fac_current_object', newVal);
+        safeSetItem('fac_current_object', newVal);
     } else {
-        localStorage.removeItem('fac_current_object');
+        safeRemoveItem('fac_current_object');
     }
 });
 
 watch(selectedBuilding, (newVal) => {
     if (typeof window === 'undefined') return;
     if (newVal) {
-        localStorage.setItem('fac_building_id', newVal.id);
+        safeSetItem('fac_building_id', newVal.id);
     } else {
-        localStorage.removeItem('fac_building_id');
-        localStorage.removeItem('fac_floor_id');
-        localStorage.removeItem('fac_unit_id');
+        safeRemoveItem('fac_building_id');
+        safeRemoveItem('fac_floor_id');
+        safeRemoveItem('fac_unit_id');
     }
 });
 
 watch(selectedFloor, (newVal) => {
     if (typeof window === 'undefined') return;
     if (newVal) {
-        localStorage.setItem('fac_floor_id', newVal.id);
+        safeSetItem('fac_floor_id', newVal.id);
     } else {
-        localStorage.removeItem('fac_floor_id');
+        safeRemoveItem('fac_floor_id');
     }
 });
 
 watch(selectedUnit, (newVal) => {
     if (typeof window === 'undefined') return;
     if (newVal) {
-        localStorage.setItem('fac_unit_id', newVal.id);
+        safeSetItem('fac_unit_id', newVal.id);
     } else {
-        localStorage.removeItem('fac_unit_id');
+        safeRemoveItem('fac_unit_id');
     }
 });
 
@@ -411,10 +432,10 @@ watch(selectedUnit, (newVal) => {
 onMounted(() => {
     if (typeof window === 'undefined') return;
     
-    const savedObject = localStorage.getItem('fac_current_object');
-    const savedBuildingId = localStorage.getItem('fac_building_id');
-    const savedFloorId = localStorage.getItem('fac_floor_id');
-    const savedUnitId = localStorage.getItem('fac_unit_id');
+    const savedObject = safeGetItem('fac_current_object');
+    const savedBuildingId = safeGetItem('fac_building_id');
+    const savedFloorId = safeGetItem('fac_floor_id');
+    const savedUnitId = safeGetItem('fac_unit_id');
     
     if (savedObject) {
         currentObject.value = savedObject;
@@ -477,8 +498,8 @@ watch(selectedBuilding, (newBuilding, oldBuilding) => {
     
     // Only reset floor/unit if we switched to a different building
     if (!oldBuilding || newBuilding.id !== oldBuilding.id) {
-        const savedFloorId = typeof window !== 'undefined' ? localStorage.getItem('fac_floor_id') : null;
-        const savedUnitId = typeof window !== 'undefined' ? localStorage.getItem('fac_unit_id') : null;
+        const savedFloorId = safeGetItem('fac_floor_id');
+        const savedUnitId = safeGetItem('fac_unit_id');
         
         if (savedFloorId && newBuilding.floors) {
             const foundF = newBuilding.floors.find(f => f.id === Number(savedFloorId));

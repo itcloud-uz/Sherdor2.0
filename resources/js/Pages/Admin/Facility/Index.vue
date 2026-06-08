@@ -90,8 +90,17 @@ const activeFilters = ref({
     minArea: null,
     maxArea: null,
     minPrice: null,
-    maxPrice: null
+    maxPrice: null,
+    status: null // 'available', 'sold', or 'reserved'
 });
+
+function toggleStatusFilter(statusVal) {
+    if (activeFilters.value.status === statusVal) {
+        activeFilters.value.status = null;
+    } else {
+        activeFilters.value.status = statusVal;
+    }
+}
 
 function toggleTempRoom(roomNum) {
     const idx = tempFilterRooms.value.indexOf(roomNum);
@@ -117,11 +126,17 @@ function resetFilters() {
     tempFilterMaxArea.value = '';
     tempFilterMinPrice.value = '';
     tempFilterMaxPrice.value = '';
+    activeFilters.value.status = null;
     applyFilters();
 }
 
 function isUnitMatchingFilters(unit) {
     if (!unit) return false;
+    
+    // Status filter
+    if (activeFilters.value.status && unit.status !== activeFilters.value.status) {
+        return false;
+    }
     
     // Rooms count filter
     if (activeFilters.value.rooms.length > 0) {
@@ -1251,16 +1266,22 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 Filter
                             </button>
                             
-                            <div class="flex flex-col gap-3 text-sm font-sans mt-2">
-                                <span class="flex items-center gap-3 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block shadow-sm"></span> Sotuvda
-                                </span>
-                                <span class="flex items-center gap-3 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block shadow-sm"></span> Sotilgan
-                                </span>
-                                <span class="flex items-center gap-3 text-gray-700 font-medium">
-                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block shadow-sm"></span> Bron qilingan
-                                </span>
+                             <div class="flex flex-col gap-3 text-sm font-sans mt-2">
+                                <button @click="toggleStatusFilter('available')" 
+                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
+                                                 activeFilters.status === 'available' ? 'bg-emerald-50 border-emerald-200 text-emerald-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                                    <span class="w-4 h-4 rounded-full bg-[#00c853] block shadow-sm shrink-0"></span> Sotuvda
+                                </button>
+                                <button @click="toggleStatusFilter('sold')" 
+                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
+                                                 activeFilters.status === 'sold' ? 'bg-red-50 border-red-200 text-red-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                                    <span class="w-4 h-4 rounded-full bg-[#ef4444] block shadow-sm shrink-0"></span> Sotilgan
+                                </button>
+                                <button @click="toggleStatusFilter('reserved')" 
+                                        :class="['flex items-center gap-3 font-medium text-left transition-all p-1.5 rounded-lg border', 
+                                                 activeFilters.status === 'reserved' ? 'bg-amber-50 border-amber-200 text-amber-800 scale-102 font-bold' : 'border-transparent text-gray-700 hover:bg-gray-50']">
+                                    <span class="w-4 h-4 rounded-full bg-[#ffd600] block shadow-sm shrink-0"></span> Bron qilingan
+                                </button>
                             </div>
                         </div>
                     </div>

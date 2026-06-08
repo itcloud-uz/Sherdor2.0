@@ -39,9 +39,9 @@ class ClientExportController extends Controller
                     $client->last_name,
                     $client->first_name,
                     $client->middle_name,
-                    $client->phone,
+                    $client->phone ? '="' . $client->phone . '"' : '',
                     $client->passport_number ?? $client->passport_series,
-                    $client->pinfl,
+                    $client->pinfl ? '="' . $client->pinfl . '"' : '',
                     $contractsList ?: 'Shartnoma yo\'q',
                     $client->created_at->format('Y-m-d H:i')
                 ], ';');

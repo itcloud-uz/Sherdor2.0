@@ -1072,6 +1072,14 @@ function setDownPaymentPercent(percent) {
     calcDownPayment.value = Math.round(Number(calcPrice.value || 0) * (percent / 100));
 }
 
+const calcDownPaymentPercent = computed(() => {
+    const price = Number(calcPrice.value) || 0;
+    if (price <= 0) return 0;
+    const dp = Number(calcDownPayment.value) || 0;
+    const pct = (dp / price) * 100;
+    return pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1);
+});
+
 const calculatedTotalAmount = computed(() => {
     return Math.max(0, Number(calcPrice.value || 0) - Number(calcDiscount.value || 0));
 });
@@ -1854,16 +1862,16 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                                         <!-- Boshlang'ich to'lov -->
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Boshlang'ich to'lov</label>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">
+                                                Boshlang'ich to'lov <span v-if="calcDownPaymentPercent > 0" class="text-amber-500 font-bold ml-1">({{ calcDownPaymentPercent }}%)</span>
+                                            </label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                 <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
                                             </div>
-                                            <div class="flex flex-wrap gap-2 mt-2">
-                                                <button type="button" @click="setDownPaymentPercent(0)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">0%</button>
-                                                <button type="button" @click="setDownPaymentPercent(0)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">0%</button>
-                                                <button type="button" @click="setDownPaymentPercent(30)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">30%</button>
-                                                <button type="button" @click="setDownPaymentPercent(100)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">100%</button>
-                                                <button type="button" @click="setDownPaymentPercent(50)" class="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium">50%</button>
+                                            <div class="grid grid-cols-5 gap-2 mt-2">
+                                                <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
+                                                    {{ pct }}%
+                                                </button>
                                             </div>
                                         </div>
 
@@ -1903,6 +1911,20 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                     
                                     <div class="space-y-3 pt-2 text-sm font-sans text-gray-600">
+                                        <!-- Umumiy summa -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Umumiy summa</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
+                                        </div>
+                                        
+                                        <!-- Qoldiq summa -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="whitespace-nowrap">Qoldiq summa</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
+                                        </div>
+
                                         <!-- Boshlang'ich to'lov -->
                                         <div class="flex items-center justify-between">
                                             <span class="whitespace-nowrap">Boshlang'ich to'lov</span>
@@ -1915,27 +1937,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <span class="whitespace-nowrap">Chegirma</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
                                             <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDiscount) }}</span>
-                                        </div>
-                                        
-                                        <!-- Kredit miqdori -->
-                                        <div class="flex items-center justify-between">
-                                            <span class="whitespace-nowrap">Kredit miqdori</span>
-                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
-                                        </div>
-                                        
-                                        <!-- Foiz summa -->
-                                        <div class="flex items-center justify-between">
-                                            <span class="whitespace-nowrap">Foiz summa</span>
-                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">0 so'm</span>
-                                        </div>
-                                        
-                                        <!-- Umumiy summa -->
-                                        <div class="flex items-center justify-between">
-                                            <span class="whitespace-nowrap">Umumiy summa</span>
-                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
                                         </div>
                                         
                                         <!-- Jami (boshlang'ich to'lov bilan) -->

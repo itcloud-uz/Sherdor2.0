@@ -26,4 +26,8 @@ Route::middleware([\App\Http\Middleware\BotApiMiddleware::class])->prefix('bot/v
 // Telephony AMI API Endpoints
 Route::middleware(['auth:sanctum'])->prefix('telephony')->group(function () {
     Route::post('/call', [\App\Http\Controllers\Api\TelephonyController::class, 'triggerCall']);
+    Route::get('/logs', [\App\Http\Controllers\Admin\TelephonyController::class, 'getLogs']);
+    Route::get('/audios', [\App\Http\Controllers\Admin\TelephonyController::class, 'getAudios']);
+    Route::get('/ai-config', [\App\Http\Controllers\Admin\TelephonyController::class, 'getAiConfig']);
+    Route::post('/ai-config', [\App\Http\Controllers\Admin\TelephonyController::class, 'saveAiConfig']);
 });

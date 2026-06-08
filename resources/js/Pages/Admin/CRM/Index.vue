@@ -3,7 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import VueApexCharts from 'vue3-apexcharts';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
@@ -21,6 +21,12 @@ const props = defineProps({
     posts: Array,
     crmSettings: Object,
     users: Array,
+    smsTemplates: Array,
+    smsRules: Array,
+    smsCampaigns: Array,
+    smsSettings: Object,
+    smsLogs: Array,
+    isEskizConnected: Boolean,
 });
 
 const isAdmin = computed(() => {
@@ -106,6 +112,8 @@ onMounted(() => {
         contractForm.value.unit_id = Number(preselectUnit);
         showCreateContractModal.value = true;
     }
+    fetchTelephonyLogs();
+    fetchAudios();
 });
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
@@ -1190,6 +1198,381 @@ function openQuickSmsModal(lead) {
     showQuickSmsModal.value = true;
 }
 
+// Settings Sub-tab state
+const settingsSubTab = ref('general');
+
+// Telephony state
+const telephonyLogs = ref([]);
+const isLoadingLogs = ref(false); // Map to template's isLoadingLogs
+const isTelephonyLogsOpen = ref(false); // Map to template's isTelephonyLogsOpen
+const telephonyLogsPagination = ref({ current_page: 1, last_page: 1 });
+const availableAudios = ref([]);
+const isUploading = ref(false);
+const excelFile = ref(null);
+const scheduleTime = ref('09:00');
+const scheduleDays = ref([1, 2, 3, 4, 5]);
+const autoGroup = ref('debtors');
+const isAutoDialing = ref(false);
+const selectedAudio = ref('');
+const dialerPhone = ref('');
+const isCalling = ref(false);
+
+function openTelephonyLogsModal() {
+    settingsSubTab.value = 'ip_telephony';
+    activeTab.value = 'settings';
+    isTelephonyLogsOpen.value = true;
+    fetchTelephonyLogs();
+}
+
+function fetchTelephonyLogs(page = 1) {
+    isLoadingLogs.value = true;
+    axios.get('/api/telephony/logs')
+        .then(response => {
+            telephonyLogs.value = response.data;
+            telephonyLogsPagination.value = {
+                current_page: 1,
+                last_page: 1
+            };
+        })
+        .catch(err => {
+            console.error('Telephony logs fetch failed:', err);
+        })
+        .finally(() => {
+            isLoadingLogs.value = false;
+        });
+}
+
+function fetchAudios() {
+    axios.get('/api/telephony/audios')
+        .then(response => {
+            availableAudios.value = response.data;
+        })
+        .catch(err => {
+            console.error('Audio list fetch failed:', err);
+        });
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("Fayl hajmi 10MB dan oshmasligi kerak!");
+        return;
+    }
+
+    isUploading.value = true;
+    const formData = new FormData();
+    formData.append('audio', file);
+    formData.append('name', file.name);
+
+    axios.post(route('admin.telephony.audios.upload'), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    .then(() => {
+        alert('Audio muvaffaqiyatli yuklandi!');
+        fetchAudios();
+    })
+    .catch(err => {
+        console.error('Audio yuklashda xatolik:', err);
+        alert('Audio yuklashda xatolik yuz berdi.');
+    })
+    .finally(() => {
+        isUploading.value = false;
+        event.target.value = '';
+    });
+}
+
+function handleExcelUpload(event) {
+    excelFile.value = event.target.files[0];
+}
+
+function makeCall() {
+    if (!dialerPhone.value) return;
+    isCalling.value = true;
+    
+    axios.post('/api/telephony/call', { phone: dialerPhone.value })
+        .then(() => {
+            alert("Qo'ng'iroq muvaffaqiyatli amalga oshirildi!");
+            fetchTelephonyLogs();
+        })
+        .catch(err => {
+            console.error("Dialer call failed:", err);
+            alert("Qo'ng'iroqni amalga oshirishda xatolik.");
+        })
+        .finally(() => {
+            isCalling.value = false;
+        });
+}
+
+function startAutoDialer() {
+    if (!selectedAudio.value || !scheduleTime.value || scheduleDays.value.length === 0) {
+        alert("Iltimos, barcha maydonlarni (Audio, Vaqt, Hafta kunlari) to'ldiring.");
+        return;
+    }
+    if (autoGroup.value === 'new_leads' && !excelFile.value) {
+        alert("Iltimos, yangi mijozlar uchun Excel faylni yuklang.");
+        return;
+    }
+
+    isAutoDialing.value = true;
+    const formData = new FormData();
+    formData.append('target_group', autoGroup.value);
+    formData.append('audio_id', selectedAudio.value);
+    formData.append('schedule_time', scheduleTime.value);
+    scheduleDays.value.forEach(day => {
+        formData.append('schedule_days[]', day);
+    });
+    
+    if (autoGroup.value === 'new_leads' && excelFile.value) {
+        formData.append('excel_file', excelFile.value);
+    }
+
+    axios.post(route('admin.telephony.campaigns.store'), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    .then(() => {
+        alert('Avto-qo\'ng\'iroq kampaniyasi muvaffaqiyatli saqlandi va rejalashtirildi!');
+        excelFile.value = null;
+    })
+    .catch(err => {
+        console.error("Campaign store failed:", err);
+        alert("Kampaniyalarni saqlashda xatolik.");
+    })
+    .finally(() => {
+        isAutoDialing.value = false;
+    });
+}
+
+function getAudioUrl(filename) {
+    return `/api/telephony/audio-file?file=${encodeURIComponent(filename)}`;
+}
+
+// AI Voice Bot (Vapi) settings state
+const isAiSettingsOpen = ref(false); // Map to template
+const isSavingSettings = ref(false); // Map to template
+const aiForm = ref({
+    is_active: false,
+    openai_api_key: '',
+    vapi_api_key: '',
+    vapi_assistant_id: '',
+    system_prompt: '',
+    auto_call: false,
+    min_score: 50,
+    max_duration: 60
+});
+
+function openAiSettings() {
+    settingsSubTab.value = 'vapi_ai';
+    activeTab.value = 'settings';
+    isAiSettingsOpen.value = true;
+    isSavingSettings.value = true;
+    
+    axios.get('/api/telephony/ai-config')
+        .then(response => {
+            if (response.data) {
+                aiForm.value = {
+                    is_active: response.data.is_active || false,
+                    openai_api_key: response.data.openai_api_key || '',
+                    vapi_api_key: response.data.vapi_api_key || '',
+                    vapi_assistant_id: response.data.vapi_assistant_id || '',
+                    system_prompt: response.data.prompt || '',
+                    auto_call: response.data.auto_call || false,
+                    min_score: response.data.min_score !== undefined ? response.data.min_score : 50,
+                    max_duration: response.data.max_duration !== undefined ? response.data.max_duration : 60
+                };
+            }
+        })
+        .catch(err => {
+            console.error('AI config fetch failed:', err);
+        })
+        .finally(() => {
+            isSavingSettings.value = false;
+        });
+}
+
+function saveAiSettings() {
+    isSavingSettings.value = true;
+    axios.post('/api/telephony/ai-config', aiForm.value)
+        .then(() => {
+            isAiSettingsOpen.value = false;
+            alert('AI Agent sozlamalari muvaffaqiyatli saqlandi!');
+        })
+        .catch(err => {
+            console.error('AI config save failed:', err);
+            alert('Xatolik yuz berdi: ' + (err.response?.data?.message || err.message));
+        })
+        .finally(() => {
+            isSavingSettings.value = false;
+        });
+}
+
+// SMS AI (Eskiz.uz) states & methods
+const showEskizSettingsModal = ref(false);
+const showTestSmsModal = ref(false);
+const showTemplateModal = ref(false);
+const showRuleModal = ref(false);
+const showPromoModal = ref(false);
+const ruleType = ref('auto');
+
+const eskizSettingsForm = useForm({
+    email: props.smsSettings?.email || '',
+    password: ''
+});
+
+const testSmsForm = useForm({
+    phone: '',
+    message: 'Bu Eskiz dan test'
+});
+
+const templateForm = useForm({
+    id: null,
+    name: '',
+    content: ''
+});
+
+const ruleForm = useForm({
+    id: null,
+    name: '',
+    event_trigger: '',
+    template_id: '',
+    schedule_time: '',
+    schedule_days: ''
+});
+
+const promoRuleForm = useForm({
+    id: null,
+    name: '',
+    event_trigger: 'promo',
+    template_id: '',
+    schedule_time: '18:00',
+    schedule_days: '',
+    audience_type: 'system_clients',
+    manual_phone: '',
+    file: null
+});
+
+function submitEskizSettings() {
+    eskizSettingsForm.post(route('admin.ai_agents.settings'), {
+        onSuccess: () => {
+            showEskizSettingsModal.value = false;
+            alert('Eskiz.uz sozlamalari muvaffaqiyatli saqlandi!');
+        }
+    });
+}
+
+function submitTestSms() {
+    testSmsForm.post(route('admin.ai_agents.test_sms'), {
+        onSuccess: () => {
+            showTestSmsModal.value = false;
+            testSmsForm.reset('phone');
+            alert('Test SMS muvaffaqiyatli yuborildi!');
+        }
+    });
+}
+
+function openTemplateModal() {
+    templateForm.reset();
+    templateForm.id = null;
+    showTemplateModal.value = true;
+}
+
+function editTemplate(t) {
+    templateForm.id = t.id;
+    templateForm.name = t.name;
+    templateForm.content = t.content;
+    showTemplateModal.value = true;
+}
+
+function deleteTemplate(id) {
+    if (confirm("Rostdan ham ushbu shablonni o'chirmoqchimisiz?")) {
+        router.delete(route('admin.ai_agents.template.delete', id), {
+            onSuccess: () => alert('Shablon o\'chirildi.')
+        });
+    }
+}
+
+function submitTemplate() {
+    templateForm.post(route('admin.ai_agents.template.save'), {
+        onSuccess: () => {
+            showTemplateModal.value = false;
+            templateForm.reset();
+            alert('Shablon muvaffaqiyatli saqlandi!');
+        }
+    });
+}
+
+function openRuleModal(type) {
+    ruleForm.reset();
+    ruleForm.id = null;
+    ruleType.value = type;
+    ruleForm.event_trigger = type;
+    if (type === 'auto') {
+        ruleForm.schedule_time = 'immediate';
+        ruleForm.schedule_days = '';
+    } else {
+        ruleForm.schedule_time = '10:00';
+    }
+    showRuleModal.value = true;
+}
+
+function editRule(r) {
+    if (r.event_trigger === 'promo') {
+        promoRuleForm.id = r.id;
+        promoRuleForm.name = r.name;
+        promoRuleForm.event_trigger = r.event_trigger;
+        promoRuleForm.template_id = r.template_id;
+        promoRuleForm.schedule_time = r.schedule_time;
+        promoRuleForm.schedule_days = r.schedule_days;
+        promoRuleForm.audience_type = r.audience_type;
+        promoRuleForm.manual_phone = r.manual_phone;
+        showPromoModal.value = true;
+    } else {
+        ruleType.value = r.event_trigger;
+        ruleForm.id = r.id;
+        ruleForm.name = r.name;
+        ruleForm.event_trigger = r.event_trigger;
+        ruleForm.template_id = r.template_id;
+        ruleForm.schedule_time = r.schedule_time;
+        ruleForm.schedule_days = r.schedule_days;
+        showRuleModal.value = true;
+    }
+}
+
+function deleteRule(id) {
+    if (confirm("Rostdan ham ushbu qoidani o'chirmoqchimisiz?")) {
+        router.delete(route('admin.ai_agents.rule.delete', id), {
+            onSuccess: () => alert('Qoida o\'chirildi.')
+        });
+    }
+}
+
+function submitRule() {
+    ruleForm.post(route('admin.ai_agents.rule.save'), {
+        onSuccess: () => {
+            showRuleModal.value = false;
+            ruleForm.reset();
+            alert('Qoida muvaffaqiyatli saqlandi!');
+        }
+    });
+}
+
+function openPromoModal() {
+    promoRuleForm.reset();
+    promoRuleForm.id = null;
+    showPromoModal.value = true;
+}
+
+function submitPromoRule() {
+    promoRuleForm.post(route('admin.ai_agents.rule.save'), {
+        onSuccess: () => {
+            showPromoModal.value = false;
+            promoRuleForm.reset();
+            alert('Ommaviy rasilka saqlandi!');
+        }
+    });
+}
+
 </script>
 
 <template>
@@ -1234,13 +1617,27 @@ function openQuickSmsModal(lead) {
                     </button>
                 </div>
 
-                <!-- Create Lead Button inside switcher -->
-                <button 
-                    @click="openCreateLeadModal"
-                    class="px-4 py-1.5 bg-blue-50 border border-blue-500 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
-                >
-                    + Yangi Lid qo'shish
-                </button>
+                <!-- Action buttons -->
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="openAiSettings"
+                        class="px-4 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
+                    >
+                        🤖 AI Sozlamalari
+                    </button>
+                    <button 
+                        @click="openTelephonyLogsModal"
+                        class="px-4 py-1.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
+                    >
+                        📞 Qo'ng'iroqlar tarixi
+                    </button>
+                    <button 
+                        @click="openCreateLeadModal"
+                        class="px-4 py-1.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
+                    >
+                        + Yangi Lid qo'shish
+                    </button>
+                </div>
             </div>
 
             <!-- VIEW 1: KANBAN -->
@@ -3337,6 +3734,243 @@ function openQuickSmsModal(lead) {
                         </svg>
                         Yuklab olish
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🤖 AI Settings Modal -->
+        <div v-if="isAiSettingsOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white flex justify-between items-center">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <span>🤖</span> AI Ovozli Bot Sozlamalari (Vapi)
+                    </h3>
+                    <button @click="isAiSettingsOpen = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="p-6 overflow-y-auto space-y-5 flex-1">
+                    <div class="p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-xs text-blue-800 leading-relaxed">
+                        💡 Ushbu sozlamalar mijozlarga avtomatik tarzda yoki qo'lda AI ovozli bot orqali qo'ng'iroq qilishni ta'minlaydi. 
+                        <strong>Vapi.ai</strong> provayderi va <strong>OpenAI GPT-4o</strong> orqali ishlaydi.
+                    </div>
+
+                    <!-- API Keys Group -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">OpenAI API Key</label>
+                            <input 
+                                type="password" 
+                                v-model="aiForm.openai_api_key" 
+                                placeholder="sk-proj-..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Vapi API Public Key</label>
+                                <input 
+                                    type="password" 
+                                    v-model="aiForm.vapi_api_key" 
+                                    placeholder="vapi-public-key"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Vapi Assistant ID</label>
+                                <input 
+                                    type="text" 
+                                    v-model="aiForm.vapi_assistant_id" 
+                                    placeholder="uuid-format-id"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">AI Tizim Ko'rsatmasi (System Prompt)</label>
+                            <textarea 
+                                v-model="aiForm.system_prompt" 
+                                rows="5"
+                                placeholder="Mijozlar bilan qanday gaplashish bo'yicha yo'riqnoma..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all leading-relaxed"
+                            ></textarea>
+                            <span class="text-[10px] text-gray-400">Tizim ko'rsatmasida kompaniya nomi (Sherdor 2.0), xonadon narxi va shartlari haqida ma'lumot kiriting.</span>
+                        </div>
+
+                        <!-- Toggles -->
+                        <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                            <label class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-all flex-1">
+                                <input type="checkbox" v-model="aiForm.is_active" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300" />
+                                <div>
+                                    <span class="block text-xs font-bold text-gray-900">Botni Faollashtirish</span>
+                                    <span class="block text-[10px] text-gray-500">Tizimda AI bot xizmatidan foydalanish</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-all flex-1">
+                                <input type="checkbox" v-model="aiForm.auto_call" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300" />
+                                <div>
+                                    <span class="block text-xs font-bold text-gray-900">Avtomatik Qo'ng'iroq</span>
+                                    <span class="block text-[10px] text-gray-500">Yangi lidlar uchun darhol qo'ng'iroq qilish</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                    <button 
+                        @click="isAiSettingsOpen = false" 
+                        class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-100 transition-all"
+                    >
+                        Bekor qilish
+                    </button>
+                    <button 
+                        @click="saveAiSettings" 
+                        :disabled="isSavingSettings"
+                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                    >
+                        <span v-if="isSavingSettings" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Saqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📞 Telephony Logs Modal -->
+        <div v-if="isTelephonyLogsOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-5xl w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex justify-between items-center">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <span>📞</span> AI Bot Qo'ng'iroqlari tarixi
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <button 
+                            @click="fetchTelephonyLogs(1)" 
+                            class="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+                        >
+                            🔄 Yangilash
+                        </button>
+                        <button @click="isTelephonyLogsOpen = false" class="text-white/80 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="p-6 overflow-y-auto flex-1 space-y-4">
+                    <!-- Loading state -->
+                    <div v-if="isLoadingLogs" class="py-12 flex flex-col items-center justify-center gap-3">
+                        <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-sm font-medium text-gray-500">Qo'ng'iroqlar tarixi yuklanmoqda...</span>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div v-else-if="!telephonyLogs.length" class="py-16 text-center">
+                        <span class="text-4xl">📭</span>
+                        <h4 class="mt-2 text-sm font-bold text-gray-900">Qo'ng'iroqlar mavjud emas</h4>
+                        <p class="mt-1 text-xs text-gray-500">Hozircha AI bot orqali amalga oshirilgan qo'ng'iroqlar tarixi topilmadi.</p>
+                    </div>
+
+                    <!-- Table -->
+                    <div v-else class="overflow-x-auto border border-gray-100 rounded-xl shadow-sm">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-3">Lid</th>
+                                    <th class="px-4 py-3">Raqam</th>
+                                    <th class="px-4 py-3 text-center">Sana / Davomiyligi</th>
+                                    <th class="px-4 py-3 text-center">Status</th>
+                                    <th class="px-4 py-3 text-center">Yozuv</th>
+                                    <th class="px-4 py-3">AI Xulosa / Transcript</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                                <tr v-for="log in telephonyLogs" :key="log.id" class="hover:bg-gray-50/50 transition-colors">
+                                    <!-- Lead -->
+                                    <td class="px-4 py-3 font-semibold text-gray-900">
+                                        {{ log.lead ? log.lead.full_name : 'Noma\'lum Lid' }}
+                                    </td>
+                                    <!-- Phone -->
+                                    <td class="px-4 py-3 font-mono">
+                                        {{ log.phone }}
+                                    </td>
+                                    <!-- Date & Duration -->
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="font-medium">{{ formatDate(log.created_at) }}</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Davomiyligi: {{ log.duration ? log.duration + ' soniya' : '—' }}</div>
+                                    </td>
+                                    <!-- Status -->
+                                    <td class="px-4 py-3 text-center">
+                                        <span 
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                                            :class="{
+                                                'bg-emerald-50 text-emerald-700 border border-emerald-200': log.status === 'completed',
+                                                'bg-amber-50 text-amber-700 border border-amber-200': log.status === 'failed' || log.status === 'no-answer',
+                                                'bg-blue-50 text-blue-700 border border-blue-200': log.status === 'ringing' || log.status === 'in-progress'
+                                            }"
+                                        >
+                                            {{ log.status }}
+                                        </span>
+                                    </td>
+                                    <!-- Recording -->
+                                    <td class="px-4 py-3 text-center">
+                                        <div v-if="log.recording_url" class="flex justify-center">
+                                            <audio :src="log.recording_url" controls class="h-8 max-w-[150px] outline-none"></audio>
+                                        </div>
+                                        <span v-else class="text-gray-400">Yozuv yo'q</span>
+                                    </td>
+                                    <!-- Summary & Transcript -->
+                                    <td class="px-4 py-3 max-w-xs">
+                                        <div class="space-y-1">
+                                            <div v-if="log.summary" class="text-[11px] bg-indigo-50/50 p-2 rounded-lg text-indigo-950 border border-indigo-100/30">
+                                                <strong>AI Xulosa:</strong> {{ log.summary }}
+                                            </div>
+                                            <button 
+                                                v-if="log.transcript"
+                                                @click="log._showTranscript = !log._showTranscript"
+                                                class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline flex items-center gap-1 mt-1"
+                                            >
+                                                {{ log._showTranscript ? 'Yashirish' : 'Transcriptni ko\'rish' }}
+                                            </button>
+                                            <div v-if="log._showTranscript && log.transcript" class="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded-lg text-[10px] whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed text-gray-600">
+                                                {{ log.transcript }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div v-if="telephonyLogsPagination.last_page > 1" class="flex justify-between items-center pt-2">
+                        <span class="text-xs text-gray-500">
+                            Sahifa {{ telephonyLogsPagination.current_page }} / {{ telephonyLogsPagination.last_page }}
+                        </span>
+                        <div class="flex gap-1">
+                            <button 
+                                :disabled="telephonyLogsPagination.current_page === 1"
+                                @click="fetchTelephonyLogs(telephonyLogsPagination.current_page - 1)"
+                                class="px-3 py-1 border border-gray-300 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Oldingi
+                            </button>
+                            <button 
+                                :disabled="telephonyLogsPagination.current_page === telephonyLogsPagination.last_page"
+                                @click="fetchTelephonyLogs(telephonyLogsPagination.current_page + 1)"
+                                class="px-3 py-1 border border-gray-300 text-xs font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Keyingi
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

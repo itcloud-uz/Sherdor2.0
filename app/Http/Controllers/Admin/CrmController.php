@@ -33,6 +33,21 @@ class CrmController extends Controller
         $crmSettings = CrmSetting::all()->pluck('value', 'key');
         $users = User::orderBy('name', 'asc')->get();
 
+        // AI Agent settings and templates
+        $templates = \Illuminate\Support\Facades\DB::table('sms_templates')->get();
+        $rules = \Illuminate\Support\Facades\DB::table('sms_automation_rules')->get();
+        $campaigns = \Illuminate\Support\Facades\DB::table('sms_campaigns')->orderByDesc('id')->take(10)->get();
+        $settings = \Illuminate\Support\Facades\DB::table('eskiz_settings')->first();
+        $smsLogs = \App\Models\SmsLog::with('client')->orderByDesc('id')->take(50)->get();
+        $isConnected = false;
+        
+        if ($settings && $settings->bearer_token) {
+            $res = \Illuminate\Support\Facades\Http::withToken($settings->bearer_token)->get('https://notify.eskiz.uz/api/auth/user');
+            if ($res->successful()) {
+                $isConnected = true;
+            }
+        }
+
         $overdueSchedules = [];
         $strictCollectionSchedules = [];
         $now = now();
@@ -66,6 +81,12 @@ class CrmController extends Controller
             'posts' => $posts,
             'crmSettings' => $crmSettings,
             'users' => $users,
+            'smsTemplates' => $templates,
+            'smsRules' => $rules,
+            'smsCampaigns' => $campaigns,
+            'smsSettings' => $settings,
+            'smsLogs' => $smsLogs,
+            'isEskizConnected' => $isConnected,
         ]);
     }
 

@@ -137,8 +137,6 @@ const navItems = [
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
     { name: 'Taminotchilar', route: 'admin.warehouse.index', icon: '📦' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
-    { name: 'ai_agents', route: 'admin.ai_agents', icon: '🤖' },
-    { name: 'IP Telefoniya', route: 'admin.telephony.index', icon: '📞' },
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
@@ -191,7 +189,7 @@ onMounted(() => {
         if (currentRoute.includes('finance') || currentRoute.includes('approvals')) {
             isFinanceMenuOpen.value = true;
         }
-        if (currentRoute.includes('crm')) {
+        if (currentRoute.includes('crm') || currentRoute.includes('telephony')) {
             try {
                 const url = new URL(page.url, window.location.origin);
                 const tabParam = url.searchParams.get('tab') || 'dashboard';
@@ -359,11 +357,11 @@ onUnmounted(() => {
                         <button
                             @click="isCrmMenuOpen = !isCrmMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index')) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">CRM</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -427,6 +425,15 @@ onUnmounted(() => {
                                 :class="isCrmTabActive('settings') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
                                 ⚙️ Sozlamalar
+                            </Link>
+
+                            <!-- IP Telefoniya -->
+                            <Link
+                                :href="route('admin.telephony.index')"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="route().current('admin.telephony.index') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📞 IP Telefoniya
                             </Link>
                         </div>
                     </div>

@@ -22,6 +22,15 @@ class SystemSetting extends Model
         'promo_subtitle',
         'promo_description',
         'promo_image',
-        'background_image_path'
+        'background_image_path',
+        'ai_is_active',
+        'ai_prompt',
+        'ai_audio_path',
+        'ai_min_score',
+        'ai_max_duration',
+        'openai_api_key',
+        'vapi_api_key',
+        'vapi_assistant_id',
+        'ai_auto_call'
     ];
 }

@@ -16,12 +16,54 @@ class TelephonyController extends Controller
 
     public function getLogs()
     {
-        // Mocking logs since telephony logic is WIP
-        $logs = [
-            // Sample mock data for Pragmata design
-        ];
-
+        $logs = \App\Models\CallLog::orderByDesc('created_at')->take(50)->get();
         return response()->json($logs);
+    }
+
+    public function getAiConfig()
+    {
+        $settings = \App\Models\SystemSetting::first();
+        return response()->json([
+            'is_active' => (bool)($settings->ai_is_active ?? false),
+            'prompt' => $settings->ai_prompt ?? '',
+            'audio_path' => $settings->ai_audio_path ?? '',
+            'min_score' => (int)($settings->ai_min_score ?? 50),
+            'max_duration' => (int)($settings->ai_max_duration ?? 60),
+            'openai_api_key' => $settings->openai_api_key ?? '',
+            'vapi_api_key' => $settings->vapi_api_key ?? '',
+            'vapi_assistant_id' => $settings->vapi_assistant_id ?? '',
+            'auto_call' => (bool)($settings->ai_auto_call ?? false),
+        ]);
+    }
+
+    public function saveAiConfig(Request $request)
+    {
+        $validated = $request->validate([
+            'is_active' => 'required|boolean',
+            'prompt' => 'nullable|string',
+            'audio_path' => 'nullable|string',
+            'min_score' => 'required|integer|min:0|max:100',
+            'max_duration' => 'required|integer|min:0',
+            'openai_api_key' => 'nullable|string',
+            'vapi_api_key' => 'nullable|string',
+            'vapi_assistant_id' => 'nullable|string',
+            'auto_call' => 'required|boolean',
+        ]);
+
+        $settings = \App\Models\SystemSetting::first() ?? new \App\Models\SystemSetting();
+        $settings->fill([
+            'ai_is_active' => $validated['is_active'],
+            'ai_prompt' => $validated['prompt'] ?? '',
+            'ai_audio_path' => $validated['audio_path'] ?? '',
+            'ai_min_score' => $validated['min_score'],
+            'ai_max_duration' => $validated['max_duration'],
+            'openai_api_key' => $validated['openai_api_key'] ?? '',
+            'vapi_api_key' => $validated['vapi_api_key'] ?? '',
+            'vapi_assistant_id' => $validated['vapi_assistant_id'] ?? '',
+            'ai_auto_call' => $validated['auto_call'],
+        ])->save();
+
+        return response()->json(['message' => 'AI Configuration saved successfully.', 'status' => 'success']);
     }
 
     public function getAudios()

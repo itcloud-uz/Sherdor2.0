@@ -377,6 +377,35 @@ watch(
     { deep: true }
 );
 
+function onTotalShopsInput(e) {
+    const val = parseInt(e.target.value) || 0;
+    if (!buildingForm.floors_data) return;
+    const commFloors = buildingForm.floors_data.filter(item => item.floor_number <= 1);
+    const C = commFloors.length;
+    if (C > 0) {
+        const base = Math.floor(val / C);
+        let remainder = val % C;
+        commFloors.forEach(item => {
+            item.shops_count = base + (remainder-- > 0 ? 1 : 0);
+        });
+    }
+}
+
+function onTotalApartmentsInput(e) {
+    const val = parseInt(e.target.value) || 0;
+    if (!buildingForm.floors_data) return;
+    const resFloors = buildingForm.floors_data.filter(item => item.floor_number >= 2);
+    const R = resFloors.length;
+    if (R > 0) {
+        const base = Math.floor(val / R);
+        let remainder = val % R;
+        resFloors.forEach(item => {
+            item.apartments_count = base + (remainder-- > 0 ? 1 : 0);
+        });
+    }
+}
+
+
 
 const expandedObjects = ref({});
 const groupedObjects = computed(() => {
@@ -1699,11 +1728,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">JAMI DO'KONLAR</label>
-                                <input v-model="buildingForm.total_shops" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                                <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">JAMI KVARTIRALAR</label>
-                                <input v-model="buildingForm.total_apartments" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                                <input v-model="buildingForm.total_apartments" @input="onTotalApartmentsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                             </div>
                         </div>
 
@@ -1843,11 +1872,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Jami Do'konlar</label>
-                                    <input v-model="buildingForm.total_shops" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                                    <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-sans font-bold text-gray-400 mb-1 uppercase text-wrap">Jami Kvartiralar</label>
-                                    <input v-model="buildingForm.total_apartments" type="number" readonly class="w-full bg-[#1e293b] opacity-75 cursor-not-allowed border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner block p-2.5 outline-none transition-all">
+                                    <input v-model="buildingForm.total_apartments" @input="onTotalApartmentsInput" type="number" min="0" class="w-full bg-[#0f172a] border border-[#334155] text-white placeholder-gray-500 text-sm rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
                                 </div>
                             </div>
 

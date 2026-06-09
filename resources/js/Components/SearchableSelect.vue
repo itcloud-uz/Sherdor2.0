@@ -101,7 +101,7 @@ onUnmounted(() => {
         <!-- Main Select Button -->
         <div 
             @click="toggleDropdown"
-            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-500/50 pr-8 cursor-pointer flex items-center min-h-[42px]"
+            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full pl-3 pr-8 cursor-pointer flex items-center min-h-[42px]"
             :class="[disabled ? 'opacity-50 cursor-not-allowed' : '']"
             :style="{ 
                 borderColor: isOpen ? 'var(--color-neon-primary, #00F0FF)' : '',
@@ -134,17 +134,17 @@ onUnmounted(() => {
             v-if="isOpen" 
             class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-300"
             :style="{ 
-                backgroundColor: 'var(--dropdown-bg-color, #111111)',
-                color: 'var(--dropdown-text-color, #ffffff)'
+                backgroundColor: 'var(--dropdown-bg-color, #ffffff)',
+                color: 'var(--dropdown-text-color, #111827)'
             }"
         >
             <!-- Search Input -->
-            <div class="sticky top-0 p-2 z-10 border-b border-gray-200" :style="{ backgroundColor: 'var(--dropdown-bg-color, #111111)' }">
+            <div class="sticky top-0 p-2 z-10 border-b border-gray-200" :style="{ backgroundColor: 'var(--dropdown-bg-color, #ffffff)' }">
                 <div class="relative">
                     <input 
                         type="text" 
                         v-model="searchQuery" 
-                        class="w-full border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
+                        class="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
                         placeholder="Izlash..."
                         @click.stop
                     >

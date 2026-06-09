@@ -18,6 +18,7 @@ class LeadController extends Controller
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'email' => 'nullable|string|email|max:255',
+            'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
             'user_id' => 'nullable|exists:users,id',
         ]);
@@ -34,6 +35,7 @@ class LeadController extends Controller
                 'full_name' => $validated['full_name'],
                 'phone' => $validated['phone'],
                 'email' => $validated['email'] ?? null,
+                'social_url' => $validated['social_url'] ?? null,
                 'source' => $source,
                 'status' => 'new',
                 'user_id' => $validated['user_id'] ?? null,

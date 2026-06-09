@@ -10,6 +10,7 @@ class Lead extends Model
         'full_name',
         'phone',
         'email',
+        'social_url',
         'source',
         'status',
         'user_id',

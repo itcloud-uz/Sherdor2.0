@@ -139,7 +139,7 @@ const clientForm = ref({
     contract_language: 'O\'zbek tili',
     contract_id: ''
 });
-const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true });
+const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' });
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
 
@@ -249,7 +249,9 @@ function openEditLeadModal(lead) {
         full_name: lead.full_name, 
         phone: lead.phone, 
         source: lead.source || 'manual', 
-        is_manual: lead.source === 'manual' 
+        is_manual: lead.source === 'manual',
+        email: lead.email || '',
+        social_url: lead.social_url || ''
     };
     showCreateLeadModal.value = true;
 }
@@ -257,7 +259,7 @@ function openEditLeadModal(lead) {
 function openCreateLeadModal() {
     isEditingLead.value = false;
     editingLeadId.value = null;
-    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
+    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' };
     showCreateLeadModal.value = true;
 }
 
@@ -279,7 +281,7 @@ function submitNewLead() {
         axios.post(route('api.leads.store'), newLeadForm.value)
             .then(() => {
                 showCreateLeadModal.value = false;
-                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true };
+                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' };
                 router.reload({ preserveScroll: true });
             })
             .catch(error => {
@@ -1065,6 +1067,55 @@ function formatDate(dateStr) {
     return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
 
+const showLeadDetailModal = ref(false);
+const selectedLeadForDetail = ref(null);
+
+function openLeadDetailModal(lead) {
+    selectedLeadForDetail.value = lead;
+    showLeadDetailModal.value = true;
+}
+
+function getLeadInitials(fullName) {
+    if (!fullName) return '?';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + (parts[1] ? parts[1].charAt(0) : '')).toUpperCase();
+}
+
+const getStatusTimeline = (lead) => {
+    if (!lead) return [];
+    const timeline = [];
+    const managerName = lead.user?.name || 'Sotuv menejeri';
+    
+    // Always started as Yangi
+    timeline.push({
+        status: 'new',
+        label: 'Yangi',
+        date: lead.created_at,
+        user: managerName
+    });
+    
+    // If status is not new, or if updated_at is different from created_at
+    const createdTime = new Date(lead.created_at).getTime();
+    const updatedTime = new Date(lead.updated_at).getTime();
+    
+    if (lead.status !== 'new' || (updatedTime - createdTime > 60000)) {
+        let label = 'Yangi';
+        if (lead.status === 'contacted') label = 'Aloqaga chiqildi';
+        else if (lead.status === 'qualified') label = 'Sotildi';
+        else if (lead.status === 'lost') label = 'Yo\'qotilgan';
+        
+        timeline.push({
+            status: lead.status,
+            label: label,
+            date: lead.updated_at,
+            user: managerName
+        });
+    }
+    
+    return timeline;
+};
+
 const getClientLatestContract = (client) => {
     if (client.contracts && client.contracts.length > 0) {
         return client.contracts[client.contracts.length - 1];
@@ -1657,7 +1708,8 @@ function submitPromoRule() {
                     <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                         <div v-for="lead in leadsByStatus.new" :key="lead.id" 
                              draggable="true" @dragstart="dragStart(lead, $event)"
-                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#00F0FF]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                             @click="openLeadDetailModal(lead)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#00F0FF]/50 cursor-pointer cursor-move transition-all hover:-translate-y-1 relative group">
                             <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
                             <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
                             
@@ -1690,7 +1742,8 @@ function submitPromoRule() {
                     <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                         <div v-for="lead in leadsByStatus.contacted" :key="lead.id" 
                              draggable="true" @dragstart="dragStart(lead, $event)"
-                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FCEE09]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                             @click="openLeadDetailModal(lead)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FCEE09]/50 cursor-pointer cursor-move transition-all hover:-translate-y-1 relative group">
                             <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
                             <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
                             
@@ -1723,7 +1776,8 @@ function submitPromoRule() {
                     <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                         <div v-for="lead in leadsByStatus.qualified" :key="lead.id" 
                              draggable="true" @dragstart="dragStart(lead, $event)"
-                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#39FF14]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                             @click="openLeadDetailModal(lead)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#39FF14]/50 cursor-pointer cursor-move transition-all hover:-translate-y-1 relative group">
                             <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
                             <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
                             
@@ -1756,7 +1810,8 @@ function submitPromoRule() {
                     <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                         <div v-for="lead in leadsByStatus.lost" :key="lead.id" 
                              draggable="true" @dragstart="dragStart(lead, $event)"
-                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FF003C]/50 cursor-move transition-all hover:-translate-y-1 relative group">
+                             @click="openLeadDetailModal(lead)"
+                             class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-gray-100 hover:border-[#FF003C]/50 cursor-pointer cursor-move transition-all hover:-translate-y-1 relative group">
                             <h4 class="text-sm font-bold text-gray-900 mb-1">{{ lead.full_name }}</h4>
                             <p class="text-xs text-gray-500 font-mono mb-8">{{ lead.phone }}</p>
                             
@@ -1796,8 +1851,8 @@ function submitPromoRule() {
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm">
                             <tr v-for="lead in (leads || [])" :key="lead.id" class="hover:bg-gray-50/30 transition-colors">
-                                <td class="px-6 py-4">
-                                    <div class="font-semibold text-gray-900">{{ lead.name }}</div>
+                                <td class="px-6 py-4 cursor-pointer hover:bg-gray-50/50" @click="openLeadDetailModal(lead)">
+                                    <div class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">{{ lead.full_name || lead.name }}</div>
                                     <div class="text-xs text-gray-500 font-mono">{{ lead.phone }}</div>
                                 </td>
                                 <td class="px-6 py-4">
@@ -3594,6 +3649,217 @@ function submitPromoRule() {
             </div>
         </div>
 
+        <!-- LEAD DETAIL MODAL -->
+        <div v-if="showLeadDetailModal && selectedLeadForDetail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-4xl w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-[#f8fafc]">
+                    <span class="text-base font-bold text-gray-900 uppercase tracking-wider">Mijoz Batafsil Ma'lumotlari</span>
+                    <button @click="showLeadDetailModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content container -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-6 md:grid md:grid-cols-3 md:gap-6 md:space-y-0 text-left">
+                    <!-- Left Section: Details & House Info (2 cols) -->
+                    <div class="md:col-span-2 space-y-6">
+                        <!-- Lead Card Header (Avatar, Name, Phone, Source, Status) -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100/50">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-lg shadow-sm shrink-0 border border-amber-200">
+                                    {{ getLeadInitials(selectedLeadForDetail.full_name) }}
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900 leading-snug">
+                                        {{ selectedLeadForDetail.full_name }}
+                                    </h3>
+                                    <div class="text-sm text-gray-500 font-mono mt-0.5">{{ selectedLeadForDetail.phone }}</div>
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        Manba: <span class="font-semibold text-gray-600">{{ selectedLeadForDetail.source === 'telegram' ? 'Telegram' : selectedLeadForDetail.source === 'partner' ? 'Hamkor Ilova' : 'Qo\'lda kiritilgan' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status & Last Activity -->
+                            <div class="sm:text-right flex flex-row sm:flex-col justify-between items-center sm:items-end gap-2 flex-shrink-0">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                                      :class="{
+                                          'bg-[#00F0FF]/10 text-[#008B99]': selectedLeadForDetail.status === 'new',
+                                          'bg-blue-50 text-blue-700': selectedLeadForDetail.status === 'contacted',
+                                          'bg-emerald-50 text-emerald-700': selectedLeadForDetail.status === 'qualified',
+                                          'bg-rose-50 text-rose-700': selectedLeadForDetail.status === 'lost'
+                                      }">
+                                    {{ selectedLeadForDetail.status === 'new' ? 'Yangi' : selectedLeadForDetail.status === 'contacted' ? 'Aloqaga chiqildi' : selectedLeadForDetail.status === 'qualified' ? 'Sotildi' : 'Yo\'qotilgan' }}
+                                </span>
+                                <div class="text-[10px] text-gray-400 font-mono">
+                                    So'nggi faollik: {{ formatDate(selectedLeadForDetail.updated_at) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mijoz Ma'lumotlari -->
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Mijoz Ma'lumotlari</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border border-gray-100 rounded-2xl bg-white shadow-sm">
+                                <div>
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Mas'ul shaxs:</p>
+                                    <p class="text-xs text-gray-800 font-bold mt-0.5">
+                                        {{ selectedLeadForDetail.user?.name || 'Biriktirilmagan' }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Yaratilgan vaqti:</p>
+                                    <p class="text-xs text-gray-800 mt-0.5 font-semibold">
+                                        {{ formatDate(selectedLeadForDetail.created_at) }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Manzil:</p>
+                                    <p class="text-xs text-gray-800 mt-0.5 font-medium">
+                                        —
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Email:</p>
+                                    <p class="text-xs text-gray-800 mt-0.5 font-mono">
+                                        {{ selectedLeadForDetail.email || '—' }}
+                                    </p>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Ijtimoiy Tarmoq Havolasi:</p>
+                                    <div class="mt-1 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                        <a v-if="selectedLeadForDetail.social_url" :href="selectedLeadForDetail.social_url" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 hover:underline font-mono break-all">
+                                            {{ selectedLeadForDetail.social_url }}
+                                        </a>
+                                        <span v-else class="text-xs text-gray-500">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Uy Haqida Ma'lumot -->
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Uy Haqida Ma'lumot</h4>
+                            <div class="grid grid-cols-7 gap-1 text-center p-4 border border-gray-100 rounded-2xl bg-white shadow-sm overflow-x-auto min-w-[320px]">
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Bino</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Blok</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Bo'lim</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Qavat</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Xonadon</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Xonalar</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-800">-</p>
+                                    <p class="text-[9px] text-gray-400 font-mono mt-1">Maydoni</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Uchrashuvlar -->
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Uchrashuvlar</h4>
+                            <div class="p-6 border border-dashed border-gray-200 rounded-2xl bg-gray-50/50 text-center">
+                                <p class="text-xs text-gray-500 font-medium">Uchrashuv belgilanmagan!</p>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Action buttons -->
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button @click="showLeadDetailModal = false; initiateLeadCall(selectedLeadForDetail);" 
+                                    class="flex-1 min-w-[140px] px-4 py-2.5 bg-emerald-50 border border-emerald-300 text-emerald-600 font-semibold text-xs rounded-xl hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                Qo'ng'iroq qilish
+                            </button>
+                            <button @click="showLeadDetailModal = false; openQuickSmsModal(selectedLeadForDetail);"
+                                    class="flex-1 min-w-[140px] px-4 py-2.5 bg-blue-50 border border-blue-300 text-blue-600 font-semibold text-xs rounded-xl hover:bg-blue-100 transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                Xabar yuborish
+                            </button>
+                            <button @click="alert('Uchrashuv belgilash moduli loyiha talablariga ko\'ra keyingi bosqichda faollashtiriladi.')"
+                                    class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-50 border border-amber-300 text-amber-600 font-semibold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Meeting belgilash
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Section: Status History Timeline (1 col) -->
+                    <div class="border-t border-gray-100 pt-6 md:border-t-0 md:pt-0 md:border-l md:pl-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Status Tarixi</h4>
+                        <div class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
+                            <!-- Timeline Items -->
+                            <div v-for="(item, idx) in getStatusTimeline(selectedLeadForDetail)" :key="idx" class="relative">
+                                <!-- Icon / Circle indicator -->
+                                <div class="absolute -left-[21px] top-1 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center shadow-sm"
+                                     :class="{
+                                         'border-[#008B99]': item.status === 'new',
+                                         'border-blue-500': item.status === 'contacted',
+                                         'border-emerald-500': item.status === 'qualified',
+                                         'border-rose-500': item.status === 'lost'
+                                     }">
+                                    <svg v-if="idx < getStatusTimeline(selectedLeadForDetail).length - 1 || item.status === 'qualified'" 
+                                         class="w-2.5 h-2.5" 
+                                         :class="{
+                                             'text-[#008B99]': item.status === 'new',
+                                             'text-blue-500': item.status === 'contacted',
+                                             'text-emerald-500': item.status === 'qualified',
+                                             'text-rose-500': item.status === 'lost'
+                                         }"
+                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <div v-else class="w-1.5 h-1.5 rounded-full"
+                                         :class="{
+                                             'bg-[#008B99]': item.status === 'new',
+                                             'bg-blue-500': item.status === 'contacted',
+                                             'bg-emerald-500': item.status === 'qualified',
+                                             'bg-rose-500': item.status === 'lost'
+                                         }">
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-xs font-bold text-gray-800">{{ item.label }}</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">{{ formatDate(item.date) }}</span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-500 mt-0.5 font-sans">{{ item.user }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- CREATE LEAD MODAL -->
         <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50 transition-all">
             <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
@@ -3612,6 +3878,14 @@ function submitPromoRule() {
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('phone_number') }}</label>
                             <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">E-pochta (Ixtiyoriy)</label>
+                            <input v-model="newLeadForm.email" type="email" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: example@mail.com">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ijtimoiy tarmoq havolasi (Ixtiyoriy)</label>
+                            <input v-model="newLeadForm.social_url" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: https://t.me/username">
                         </div>
                         <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-blue-50 border border-blue-500 text-blue-600 py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">
                             {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}

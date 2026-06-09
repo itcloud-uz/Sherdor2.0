@@ -244,6 +244,7 @@ class CrmController extends Controller
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'email' => 'nullable|string|email|max:255',
+            'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
             'user_id' => 'nullable|exists:users,id',
         ]);
@@ -251,6 +252,7 @@ class CrmController extends Controller
         $lead->full_name = $validated['full_name'];
         $lead->phone = $validated['phone'];
         $lead->email = $validated['email'] ?? null;
+        $lead->social_url = $validated['social_url'] ?? null;
         $lead->source = $validated['source'] ?? 'manual';
         $lead->user_id = $validated['user_id'] ?? null;
         $lead->save();

@@ -13,12 +13,12 @@ class TelephonyController extends Controller
     public function triggerCall(Request $request, AsteriskAmiService $amiService)
     {
         $request->validate([
-            'lead_id' => 'required|exists:leads,id',
+            'lead_id' => 'nullable|exists:leads,id',
             'phone_number' => 'required|string',
             'worker_extension' => 'nullable|string'
         ]);
 
-        $lead = Lead::findOrFail($request->lead_id);
+        $lead = $request->lead_id ? Lead::find($request->lead_id) : null;
         
         // Use provided worker extension or fallback to a default (e.g. 100) or user's extension
         $workerExtension = $request->worker_extension ?? '100'; 
@@ -37,7 +37,7 @@ class TelephonyController extends Controller
             ]);
 
             // Update lead status
-            if ($lead->status === 'new') {
+            if ($lead && $lead->status === 'new') {
                 $lead->status = 'contacted';
                 $lead->save();
             }

@@ -1377,7 +1377,7 @@ function updateLeadStatusAPI(lead, status, reason = null) {
 
 function initiateLeadCall(lead) {
     // Initiate background telephony call via Asterisk
-    axios.post('/api/telephony/call', {
+    axios.post('/telephony/call', {
         lead_id: lead.id,
         phone_number: lead.phone
     }).catch(error => {
@@ -1414,14 +1414,13 @@ const isCalling = ref(false);
 
 function openTelephonyLogsModal() {
     settingsSubTab.value = 'ip_telephony';
-    activeTab.value = 'settings';
     isTelephonyLogsOpen.value = true;
     fetchTelephonyLogs();
 }
 
 function fetchTelephonyLogs(page = 1) {
     isLoadingLogs.value = true;
-    axios.get('/api/telephony/logs')
+    axios.get('/telephony/logs')
         .then(response => {
             telephonyLogs.value = response.data;
             telephonyLogsPagination.value = {
@@ -1438,7 +1437,7 @@ function fetchTelephonyLogs(page = 1) {
 }
 
 function fetchAudios() {
-    axios.get('/api/telephony/audios')
+    axios.get('/telephony/audios')
         .then(response => {
             availableAudios.value = response.data;
         })
@@ -1486,7 +1485,7 @@ function makeCall() {
     if (!dialerPhone.value) return;
     isCalling.value = true;
     
-    axios.post('/api/telephony/call', { phone: dialerPhone.value })
+    axios.post('/telephony/call', { phone_number: dialerPhone.value })
         .then(() => {
             alert("Qo'ng'iroq muvaffaqiyatli amalga oshirildi!");
             fetchTelephonyLogs();
@@ -1559,11 +1558,10 @@ const aiForm = ref({
 
 function openAiSettings() {
     settingsSubTab.value = 'vapi_ai';
-    activeTab.value = 'settings';
     isAiSettingsOpen.value = true;
     isSavingSettings.value = true;
     
-    axios.get('/api/telephony/ai-config')
+    axios.get('/telephony/ai-config')
         .then(response => {
             if (response.data) {
                 aiForm.value = {
@@ -1588,7 +1586,17 @@ function openAiSettings() {
 
 function saveAiSettings() {
     isSavingSettings.value = true;
-    axios.post('/api/telephony/ai-config', aiForm.value)
+    const payload = {
+        is_active: aiForm.value.is_active,
+        prompt: aiForm.value.system_prompt,
+        openai_api_key: aiForm.value.openai_api_key,
+        vapi_api_key: aiForm.value.vapi_api_key,
+        vapi_assistant_id: aiForm.value.vapi_assistant_id,
+        auto_call: aiForm.value.auto_call,
+        min_score: aiForm.value.min_score,
+        max_duration: aiForm.value.max_duration
+    };
+    axios.post('/telephony/ai-config', payload)
         .then(() => {
             isAiSettingsOpen.value = false;
             alert('AI Agent sozlamalari muvaffaqiyatli saqlandi!');

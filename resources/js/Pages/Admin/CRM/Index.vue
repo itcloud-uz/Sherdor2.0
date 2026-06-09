@@ -1070,6 +1070,153 @@ function formatDate(dateStr) {
 const showLeadDetailModal = ref(false);
 const selectedLeadForDetail = ref(null);
 
+const showCallPanelModal = ref(false);
+const activeCallPanelTab = ref('history');
+const clearedLeads = ref([]);
+
+const houseForm = ref({
+    source: '',
+    budget: '',
+    currency: 'USD',
+    payment_type: 'cash',
+    facility_id: '',
+    building_id: '',
+    podyezd: '',
+    floor: '',
+    rooms: '',
+    area: ''
+});
+
+const clientInfoForm = ref({
+    full_name: '',
+    phone: '',
+    email: '',
+    region: '',
+    district: '',
+    street: '',
+    apartment: ''
+});
+
+const meetingForm = ref({
+    type: 'office',
+    date: '',
+    time: ''
+});
+
+const leadCallLogs = computed(() => {
+    if (!selectedLeadForDetail.value) return [];
+    if (clearedLeads.value.includes(selectedLeadForDetail.value.id)) return [];
+    return props.telephonyLogs?.filter(log => log.lead_id === selectedLeadForDetail.value.id || log.phone === selectedLeadForDetail.value.phone) || [];
+});
+
+function clearLeadCallLogs() {
+    if (!confirm("Haqiqatan ham qo'ng'iroqlar tarixini tozalamoqchimisiz?")) return;
+    if (selectedLeadForDetail.value) {
+        clearedLeads.value.push(selectedLeadForDetail.value.id);
+    }
+}
+
+function openCallPanelModal(lead) {
+    selectedLeadForDetail.value = lead;
+    
+    // Initialize forms
+    houseForm.value = {
+        source: lead.source || 'manual',
+        budget: '',
+        currency: 'USD',
+        payment_type: 'cash',
+        facility_id: '',
+        building_id: '',
+        podyezd: '',
+        floor: '',
+        rooms: '',
+        area: ''
+    };
+    
+    clientInfoForm.value = {
+        full_name: lead.full_name || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        region: '',
+        district: '',
+        street: '',
+        apartment: ''
+    };
+    
+    meetingForm.value = {
+        type: 'office',
+        date: '',
+        time: ''
+    };
+    
+    activeCallPanelTab.value = 'history'; // default to call history as in Image 2
+    showLeadDetailModal.value = false;
+    showCallPanelModal.value = true;
+}
+
+function rejectLead(lead) {
+    if (!confirm("Haqiqatan ham ushbu lidni rad etmoqchimisiz?")) return;
+    isProcessing.value = true;
+    router.post(route('admin.crm.leads.update_status', lead.id), { status: 'lost', reason: 'Rad etildi' }, {
+        onSuccess: () => {
+            showCallPanelModal.value = false;
+            router.reload({ preserveScroll: true });
+        },
+        onFinish: () => {
+            isProcessing.value = false;
+        }
+    });
+}
+
+function saveCallPanelClientInfo() {
+    isProcessing.value = true;
+    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), {
+        full_name: clientInfoForm.value.full_name,
+        phone: clientInfoForm.value.phone,
+        email: clientInfoForm.value.email,
+        source: selectedLeadForDetail.value.source || 'manual',
+        user_id: selectedLeadForDetail.value.user_id || null
+    })
+    .then(() => {
+        alert("Mijoz ma'lumotlari muvaffaqiyatli saqlandi!");
+        showCallPanelModal.value = false;
+        router.reload({ preserveScroll: true });
+    })
+    .catch(error => {
+        alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+    })
+    .finally(() => {
+        isProcessing.value = false;
+    });
+}
+
+function saveCallPanelHouseInfo() {
+    isProcessing.value = true;
+    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), {
+        full_name: selectedLeadForDetail.value.full_name,
+        phone: selectedLeadForDetail.value.phone,
+        email: selectedLeadForDetail.value.email,
+        source: houseForm.value.source,
+        user_id: selectedLeadForDetail.value.user_id || null
+    })
+    .then(() => {
+        alert("Uy sotib olish qiziqishlari muvaffaqiyatli saqlandi!");
+        showCallPanelModal.value = false;
+        router.reload({ preserveScroll: true });
+    })
+    .catch(error => {
+        alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+    })
+    .finally(() => {
+        isProcessing.value = false;
+    });
+}
+
+function saveCallPanelMeeting() {
+    alert(`Uchrashuv belgilandi:\nSana: ${meetingForm.value.date}\nVaqt: ${meetingForm.value.time}\nTur: ${meetingForm.value.type}`);
+    showCallPanelModal.value = false;
+}
+
 function openLeadDetailModal(lead) {
     selectedLeadForDetail.value = lead;
     showLeadDetailModal.value = true;
@@ -1229,19 +1376,16 @@ function updateLeadStatusAPI(lead, status, reason = null) {
 }
 
 function initiateLeadCall(lead) {
-    if (!confirm(`${lead.phone} raqamiga qo'ng'iroq qilinmoqda... Davom etamizmi?`)) return;
-    
-    // Call new API endpoint for Asterisk AMI
+    // Initiate background telephony call via Asterisk
     axios.post('/api/telephony/call', {
         lead_id: lead.id,
         phone_number: lead.phone
-    }).then(response => {
-        alert(t('asterisk_call_initiated'));
-        router.reload({ preserveScroll: true }); // Reload to update kanban board
     }).catch(error => {
-        alert(t('error_making_call'));
-        console.error(error);
+        console.error("Telephony error:", error);
     });
+    
+    // Open the interaction Call Panel Modal
+    openCallPanelModal(lead);
 }
 
 function openQuickSmsModal(lead) {
@@ -3788,7 +3932,7 @@ function submitPromoRule() {
 
                         <!-- Bottom Action buttons -->
                         <div class="flex flex-wrap gap-3 pt-2">
-                            <button @click="showLeadDetailModal = false; initiateLeadCall(selectedLeadForDetail);" 
+                            <button @click="openCallPanelModal(selectedLeadForDetail)" 
                                     class="flex-1 min-w-[140px] px-4 py-2.5 bg-emerald-50 border border-emerald-300 text-emerald-600 font-semibold text-xs rounded-xl hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5 shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -3854,6 +3998,284 @@ function submitPromoRule() {
                                     <p class="text-[10px] text-gray-500 mt-0.5 font-sans">{{ item.user }}</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEAD INTERACTION CALL PANEL MODAL -->
+        <div v-if="showCallPanelModal && selectedLeadForDetail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-5xl w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-[#f8fafc]">
+                    <span class="text-base font-bold text-gray-900 uppercase tracking-wider font-sans">Lid bilan ishlash paneli</span>
+                    <button @click="showCallPanelModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="flex-1 overflow-y-auto p-6 flex flex-col lg:flex-row gap-6 min-h-[500px]">
+                    <!-- Left Menu: 4 block tabs (Image 2) -->
+                    <div class="w-full lg:w-1/3 flex flex-col gap-4 text-left">
+                        <!-- Tab 1: Uy sotib olish -->
+                        <div @click="activeCallPanelTab = 'house'" 
+                             class="p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 hover:bg-gray-50/50"
+                             :class="activeCallPanelTab === 'house' ? 'border-[#f2a900] bg-amber-50/30 shadow-sm' : 'border-gray-100 bg-white'">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 font-sans">Uy sotib olish</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Uy haqida ma'lumotni to'ldiring</p>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Mijoz malumotlari -->
+                        <div @click="activeCallPanelTab = 'client'" 
+                             class="p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 hover:bg-gray-50/50"
+                             :class="activeCallPanelTab === 'client' ? 'border-[#f2a900] bg-amber-50/30 shadow-sm' : 'border-gray-100 bg-white'">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 font-sans">Mijoz malumotlari</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Mijoz ma'lumotini to'ldirish</p>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Uchrashuv belgilash -->
+                        <div @click="activeCallPanelTab = 'meeting'" 
+                             class="p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 hover:bg-gray-50/50"
+                             :class="activeCallPanelTab === 'meeting' ? 'border-[#f2a900] bg-amber-50/30 shadow-sm' : 'border-gray-100 bg-white'">
+                            <div class="w-10 h-10 rounded-xl bg-[#ca8a04]/10 flex items-center justify-center text-[#ca8a04] shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 font-sans">Uchrashuv belgilash</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Mijoz bilan uchrashuv belgilash</p>
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Qong'iroqlar tarixi -->
+                        <div @click="activeCallPanelTab = 'history'" 
+                             class="p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 hover:bg-gray-50/50"
+                             :class="activeCallPanelTab === 'history' ? 'border-[#f2a900] bg-amber-50/30 shadow-sm' : 'border-gray-100 bg-white'">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 font-sans">Qong'iroqlar tarixi</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Qong'iroqlar tarixini ko'zdan kechirish</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Content Area: Forms based on active tab -->
+                    <div class="flex-1 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm min-h-[400px]">
+                        <!-- Tab Content: Qong'iroqlar tarixi (Image 2) -->
+                        <div v-if="activeCallPanelTab === 'history'" class="h-full flex flex-col text-left">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest font-mono">Qong'iroqlar tarixi</h3>
+                                <button @click="clearLeadCallLogs" class="text-xs font-bold text-[#f2a900] hover:text-[#d99700] hover:underline font-sans">
+                                    Tozalash
+                                </button>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center justify-center py-16 text-center" v-if="leadCallLogs.length === 0">
+                                <span class="text-3xl mb-3">📞</span>
+                                <p class="text-xs text-gray-400 font-medium font-sans">Qong'iroqlar tarixi mavjud emas</p>
+                            </div>
+                            <div class="flex-1 overflow-y-auto space-y-3" v-else>
+                                <div v-for="log in leadCallLogs" :key="log.id" class="p-4 border border-gray-100 rounded-2xl bg-gray-50/50 flex items-center justify-between text-left">
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-900 font-mono">{{ log.phone }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1 font-mono">{{ formatDate(log.created_at) }}</p>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide"
+                                          :class="log.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
+                                        {{ log.status }} ({{ log.duration || 0 }}s)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Mijoz malumotlari (Image 3) -->
+                        <div v-if="activeCallPanelTab === 'client'" class="space-y-6 text-left">
+                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">MA'LUMOTINI QO'SHISH</h3>
+                            <form @submit.prevent="saveCallPanelClientInfo" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Ism</label>
+                                        <input v-model="clientInfoForm.full_name" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Ismni kiriting">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Telefon raqami</label>
+                                        <input v-model="clientInfoForm.phone" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5">Elektron pochta</label>
+                                        <input v-model="clientInfoForm.email" type="email" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="example@mail.com">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Region</label>
+                                        <select v-model="clientInfoForm.region" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                            <option value="">Viloyatni tanlang</option>
+                                            <option value="toshkent">Toshkent sh.</option>
+                                            <option value="samarqand">Samarqand</option>
+                                            <option value="fargona">Farg'ona</option>
+                                            <option value="namangan">Namangan</option>
+                                            <option value="andijon">Andijon</option>
+                                            <option value="buxoro">Buxoro</option>
+                                            <option value="qashqadaryo">Qashqadaryo</option>
+                                            <option value="surxondaryo">Surxondaryo</option>
+                                            <option value="jizzax">Jizzax</option>
+                                            <option value="sirdaryo">Sirdaryo</option>
+                                            <option value="navoiy">Navoiy</option>
+                                            <option value="xorazm">Xorazm</option>
+                                            <option value="qoraqalpogiston">Qoraqalpog'iston</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Tuman</label>
+                                        <input v-model="clientInfoForm.district" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Tuman nomini kiriting">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5">Ko'cha</label>
+                                        <input v-model="clientInfoForm.street" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Ko'cha nomini kiriting">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5">Xonadon</label>
+                                        <input v-model="clientInfoForm.apartment" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Xonadon raqamini kiriting">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
+                                    <button type="button" @click="rejectLead(selectedLeadForDetail)" class="px-5 py-2.5 border border-[#f2a900] text-[#f2a900] text-xs font-bold rounded-xl hover:bg-amber-50/50 transition-all font-sans">
+                                        Lidni rad etish
+                                    </button>
+                                    <button type="submit" :disabled="isProcessing" class="px-6 py-2.5 bg-[#f2a900] text-white text-xs font-bold rounded-xl hover:bg-[#d99700] transition-all font-sans shadow-md">
+                                        Saqlash
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Tab Content: Uy sotib olish (Image 4) -->
+                        <div v-if="activeCallPanelTab === 'house'" class="space-y-6 text-left">
+                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">MA'LUMOTINI QO'SHISH</h3>
+                            <form @submit.prevent="saveCallPanelHouseInfo" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Manba</label>
+                                        <select v-model="houseForm.source" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                            <option value="facebook">Facebook</option>
+                                            <option value="telegram">Telegram</option>
+                                            <option value="instagram">Instagram</option>
+                                            <option value="manual">Qo'lda kiritilgan</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> COMMON.BUDGET</label>
+                                        <div class="flex">
+                                            <input v-model="houseForm.budget" required type="text" class="flex-1 border border-gray-200 rounded-l-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Budjet summasi">
+                                            <select v-model="houseForm.currency" class="border-t border-r border-b border-gray-200 rounded-r-xl px-4 py-3 bg-gray-50 text-gray-700 font-mono text-sm">
+                                                <option value="USD">USD</option>
+                                                <option value="UZS">UZS</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> To'lov turi</label>
+                                        <select v-model="houseForm.payment_type" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                            <option value="cash">Naqd pul</option>
+                                            <option value="installment">Muddatli to'lov</option>
+                                            <option value="bank">Bank orqali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Obyekt nomi</label>
+                                        <select v-model="houseForm.facility_id" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                            <option value="">Obyektni tanlang</option>
+                                            <option value="sherdor_1">Sherdor 1</option>
+                                            <option value="sherdor_2">Sherdor 2.0</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Bino nomi</label>
+                                        <input v-model="houseForm.building_id" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Bino blokini kiriting">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Podezd</label>
+                                        <input v-model="houseForm.podyezd" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Qavat</label>
+                                        <input v-model="houseForm.floor" required type="number" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 3">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Nechchi xonali</label>
+                                        <input v-model="houseForm.rooms" required type="number" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Maydoni</label>
+                                        <input v-model="houseForm.area" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Maydon kv.m">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
+                                    <button type="button" @click="rejectLead(selectedLeadForDetail)" class="px-5 py-2.5 border border-[#f2a900] text-[#f2a900] text-xs font-bold rounded-xl hover:bg-amber-50/50 transition-all font-sans">
+                                        Lidni rad etish
+                                    </button>
+                                    <button type="submit" :disabled="isProcessing" class="px-6 py-2.5 bg-[#f2a900] text-white text-xs font-bold rounded-xl hover:bg-[#d99700] transition-all font-sans shadow-md">
+                                        Saqlash
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Tab Content: Uchrashuv belgilash (Image 5) -->
+                        <div v-if="activeCallPanelTab === 'meeting'" class="space-y-6 text-left">
+                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">UCHRASHUV BELGILASH</h3>
+                            <form @submit.prevent="saveCallPanelMeeting" class="space-y-4">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Uchrashuv turi</label>
+                                        <select v-model="meetingForm.type" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                            <option value="office">Ofisda uchrashuv</option>
+                                            <option value="site">Obyektda uchrashuv</option>
+                                            <option value="phone">Telefon orqali suhbat</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Sana</label>
+                                        <input v-model="meetingForm.date" required type="date" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Vaqti</label>
+                                        <input v-model="meetingForm.time" required type="time" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
+                                    <button type="button" @click="rejectLead(selectedLeadForDetail)" class="px-5 py-2.5 border border-[#f2a900] text-[#f2a900] text-xs font-bold rounded-xl hover:bg-amber-50/50 transition-all font-sans">
+                                        Lidni rad etish
+                                    </button>
+                                    <button type="submit" :disabled="isProcessing" class="px-6 py-2.5 bg-[#f2a900] text-white text-xs font-bold rounded-xl hover:bg-[#d99700] transition-all font-sans shadow-md">
+                                        Saqlash
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

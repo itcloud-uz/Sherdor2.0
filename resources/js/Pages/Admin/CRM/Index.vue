@@ -1116,7 +1116,7 @@ function clearLeadCallLogs() {
     }
 }
 
-function openCallPanelModal(lead) {
+function openCallPanelModal(lead, defaultTab = 'history') {
     selectedLeadForDetail.value = lead;
     
     // Initialize forms
@@ -1149,7 +1149,7 @@ function openCallPanelModal(lead) {
         time: ''
     };
     
-    activeCallPanelTab.value = 'history'; // default to call history as in Image 2
+    activeCallPanelTab.value = defaultTab; // default to call history as in Image 2
     showLeadDetailModal.value = false;
     showCallPanelModal.value = true;
 }
@@ -3946,7 +3946,7 @@ function submitPromoRule() {
                                 </svg>
                                 Xabar yuborish
                             </button>
-                            <button @click="alert('Uchrashuv belgilash moduli loyiha talablariga ko\'ra keyingi bosqichda faollashtiriladi.')"
+                            <button @click="openCallPanelModal(selectedLeadForDetail, 'meeting')"
                                     class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-50 border border-amber-300 text-amber-600 font-semibold text-xs rounded-xl hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5 shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

@@ -2899,6 +2899,37 @@ function submitPromoRule() {
                     </div>
                 </div>
 
+                <!-- SMS Sozlamalari (Eskiz.uz) -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center justify-between border-b border-gray-100 pb-3">
+                        <span class="flex items-center gap-1.5">
+                            <span>💬</span> SMS Sozlamalari (Eskiz.uz)
+                        </span>
+                        <span v-if="isEskizConnected" class="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-mono">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                            Ulangan
+                        </span>
+                        <span v-else class="flex items-center gap-1.5 text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100 font-mono">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                            Ulanmagan
+                        </span>
+                    </h3>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Eskiz Email</label>
+                        <input v-model="eskizSettingsForm.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="email@example.com" />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-600">Eskiz Parol</label>
+                        <input v-model="eskizSettingsForm.password" type="password" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" placeholder="••••••••" />
+                        <p class="text-[10px] text-gray-500 mt-1">* Parolni faqat o'zgartirmoqchi bo'lsangiz kiriting.</p>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button type="button" @click="submitEskizSettings" :disabled="eskizSettingsForm.processing" class="px-4 py-2 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all shadow-sm">
+                            {{ eskizSettingsForm.processing ? 'Ulanmoqda...' : 'Eskizga Ulanish' }}
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Default manager assignment settings -->
                 <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 md:col-span-2 space-y-4">
                     <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5 border-b border-gray-100 pb-3">

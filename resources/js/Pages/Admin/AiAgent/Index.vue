@@ -1,6 +1,6 @@
 <template>
     <AdminLayout>
-        <Head title="AI Agent - Smart SMS" />
+        <Head title="SMS" />
 
         <div class="p-6 h-screen flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar">
             <!-- Header -->

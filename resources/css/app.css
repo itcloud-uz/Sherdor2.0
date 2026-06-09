@@ -129,3 +129,61 @@ select.bg-white optgroup,
   color: #111827 !important;
 }
 
+/* SearchableSelect Dropdown default light-theme styles */
+.searchable-select-dropdown {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important; /* border-gray-300 */
+}
+
+.searchable-select-dropdown .sticky {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.searchable-select-dropdown div {
+  color: #111827 !important;
+}
+
+.searchable-select-dropdown div:hover {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important;
+}
+
+/* Dark Theme overrides for SearchableSelect Dropdown */
+.theme-galaxy .searchable-select-dropdown,
+.theme-cyberpunk .searchable-select-dropdown,
+.theme-minimalist .searchable-select-dropdown,
+.theme-gold .searchable-select-dropdown,
+.theme-itcloud_cyberglass .searchable-select-dropdown {
+  background-color: var(--dropdown-bg-color, #111111) !important;
+  color: var(--dropdown-text-color, #ffffff) !important;
+  border-color: #374151 !important; /* border-gray-700 */
+}
+
+.theme-galaxy .searchable-select-dropdown .sticky,
+.theme-cyberpunk .searchable-select-dropdown .sticky,
+.theme-minimalist .searchable-select-dropdown .sticky,
+.theme-gold .searchable-select-dropdown .sticky,
+.theme-itcloud_cyberglass .searchable-select-dropdown .sticky {
+  background-color: var(--dropdown-bg-color, #111111) !important;
+  border-color: #374151 !important;
+}
+
+.theme-galaxy .searchable-select-dropdown div,
+.theme-cyberpunk .searchable-select-dropdown div,
+.theme-minimalist .searchable-select-dropdown div,
+.theme-gold .searchable-select-dropdown div,
+.theme-itcloud_cyberglass .searchable-select-dropdown div {
+  color: var(--dropdown-text-color, #ffffff) !important;
+}
+
+.theme-galaxy .searchable-select-dropdown div:hover,
+.theme-cyberpunk .searchable-select-dropdown div:hover,
+.theme-minimalist .searchable-select-dropdown div:hover,
+.theme-gold .searchable-select-dropdown div:hover,
+.theme-itcloud_cyberglass .searchable-select-dropdown div:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+

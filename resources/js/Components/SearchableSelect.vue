@@ -132,7 +132,7 @@ onUnmounted(() => {
         <!-- Dropdown Options -->
         <div 
             v-if="isOpen" 
-            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-300"
+            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-300 searchable-select-dropdown"
             :style="{ 
                 backgroundColor: 'var(--dropdown-bg-color, #ffffff)',
                 color: 'var(--dropdown-text-color, #111827)'

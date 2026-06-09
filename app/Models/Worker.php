@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Worker extends Model
 {
-    protected $fillable = ['name', 'type', 'rate', 'phone', 'role', 'salary_type', 'base_rate', 'building_id', 'floor_id', 'unit_id', 'photo_path', 'brigade_id'];
+    protected $fillable = ['name', 'type', 'rate', 'phone', 'role', 'salary_type', 'base_rate', 'building_id', 'floor_id', 'unit_id', 'photo_path', 'brigade_id', 'passport', 'pinfl', 'gender', 'birth_date', 'employment_date', 'status', 'specialty_id'];
 
     public function workLogs()
     {
@@ -21,5 +21,10 @@ class Worker extends Model
     public function salaryHistories()
     {
         return $this->hasMany(WorkerSalaryHistory::class)->orderBy('effective_date', 'desc');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(WorkerTransaction::class);
     }
 }

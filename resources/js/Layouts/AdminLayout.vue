@@ -606,7 +606,7 @@ onUnmounted(() => {
                         >
                             <div class="flex items-center gap-3">
                                 <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.hr') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.hr') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.hr') ? 'text-blue-700 font-semibold' : ''">HRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -618,58 +618,31 @@ onUnmounted(() => {
                         </button>
                         
                         <div v-show="isHrMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Xodimlar / Foydalanuvchilar -->
+                            <!-- Xodimlar -->
                             <Link
                                 :href="route('admin.hr', { tab: 0 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isHrTabActive(0) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                👥 {{ $t('user_management') }}
+                                👥 Xodimlar
                             </Link>
                             
-                            <!-- Face ID Hub -->
+                            <!-- Maoshlar -->
                             <Link
                                 :href="route('admin.hr', { tab: 1 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isHrTabActive(1) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                👁️ Face ID Hub
+                                💸 Maoshlar
                             </Link>
                             
-                            <!-- Davomat jurnali -->
+                            <!-- KPI -->
                             <Link
                                 :href="route('admin.hr', { tab: 2 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isHrTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                ⏱️ Davomat jurnali
-                            </Link>
-                            
-                            <!-- Texnika / Mashinalar -->
-                            <Link
-                                :href="route('admin.hr', { tab: 3 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(3) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🚜 {{ $t('machinery') }}
-                            </Link>
-                            
-                            <!-- Tabel / Jurnal -->
-                            <Link
-                                :href="route('admin.hr', { tab: 4 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(4) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📝 Tabel / Jurnal
-                            </Link>
-                            
-                            <!-- Ish haqi / Payroll -->
-                            <Link
-                                :href="route('admin.hr', { tab: 5 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(5) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                💸 Ish haqi / Payroll
+                                📈 KPI
                             </Link>
                         </div>
                     </div>

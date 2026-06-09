@@ -199,6 +199,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/hr/biometric', [\App\Http\Controllers\Admin\HrController::class, 'storeBiometric'])->name('hr.biometric.store');
     Route::post('/hr/payroll', [\App\Http\Controllers\Admin\HrController::class, 'generatePayroll'])->name('hr.payroll.generate');
     Route::get('/hr/payroll/{id}/print', [\App\Http\Controllers\Admin\HrController::class, 'printPayroll'])->name('hr.payroll.print');
+    Route::post('/hr/kpi-settings', [\App\Http\Controllers\Admin\HrController::class, 'storeKpiSettings'])->name('hr.kpi_settings.store');
 
     Route::post('/hr/cash-requests', [\App\Http\Controllers\Admin\HrController::class, 'storeCashRequest'])->name('hr.cash_requests.store');
     Route::post('/hr/cash-requests/{cashRequest}/approve', [\App\Http\Controllers\Admin\HrController::class, 'approveCashRequest'])->name('hr.cash_requests.approve');

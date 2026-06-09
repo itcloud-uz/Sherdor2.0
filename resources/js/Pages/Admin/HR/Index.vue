@@ -4,9 +4,6 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 
 const page = usePage();
-import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
-import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
-
 
 const props = defineProps({
     users: Array,
@@ -19,24 +16,13 @@ const props = defineProps({
     unpaidLogs: Array,
     unpaidTotal: [Number, String],
     payrolls: Array,
+    kpiSettings: Object,
     auth: Object
 });
 
-const isAdmin = computed(() => {
-    return props.auth?.user?.roles?.some(r => r.name === 'Admin' || r.name === 'Super_Admin') || false;
-});
-
-
-const filteredWorkers = computed(() => {
-    let result = props.workers || [];
-    return result;
-});
-
-
-
 const activeTab = ref(0);
 
-// Synchronize activeTab with the URL tab parameter reactively
+// Sync tab query parameter
 watch(
     () => page.url,
     (newUrl) => {
@@ -44,21 +30,17 @@ watch(
             const url = new URL(newUrl, window.location.origin);
             const tabParam = url.searchParams.get('tab');
             if (tabParam !== null) {
-                const tabVal = parseInt(tabParam, 10);
-                if (activeTab.value !== tabVal) {
-                    activeTab.value = tabVal;
-                }
+                activeTab.value = parseInt(tabParam, 10);
             } else {
-                activeTab.value = 0; // Default tab is 0
+                activeTab.value = 0;
             }
         } catch (e) {
-            console.error('URL parse error in HR tab watcher', e);
+            console.error(e);
         }
     },
     { immediate: true }
 );
 
-// Synchronize URL query parameter with activeTab changes inside the component
 watch(activeTab, (newTab) => {
     try {
         const url = new URL(window.location.href);
@@ -70,2673 +52,1433 @@ watch(activeTab, (newTab) => {
             });
         }
     } catch (e) {
-        console.error('URL replace error in HR activeTab watcher', e);
+        console.error(e);
     }
 });
+
+// Helper for formatting price
+const formatPrice = (val) => {
+    if (val === null || val === undefined || isNaN(val)) return "0 so'm";
+    return new Intl.NumberFormat('uz-UZ').format(Math.round(val)) + " so'm";
+};
+
+// Safe date formatter
+const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+    } catch (e) {
+        return dateStr;
+    }
+};
+
+// Compute Unified Employees List
+const allEmployees = computed(() => {
+    const list = [];
+    
+    // Map system users
+    if (props.users) {
+        props.users.forEach(u => {
+            const roleName = u.roles?.[0]?.name || 'direktor';
+            const displayRole = roleName === 'Super_Admin' ? 'Super Admin' : (roleName === 'Operator' ? 'operator' : (roleName === 'Partner' ? 'hamkor' : roleName));
+            list.push({
+                id: u.id,
+                type: 'user',
+                name: u.name,
+                email: u.email,
+                phone: u.phone || '',
+                role: roleName,
+                role_label: displayRole,
+                building_name: 'Barcha',
+                building_id: null,
+                employment_date: u.employment_date || (u.created_at ? u.created_at.split('T')[0] : '2025-10-29'),
+                status: u.status || 'active',
+                status_label: (u.status || 'active') === 'active' ? 'Ish holatida' : 'Bo\'shatilgan',
+                passport: u.passport || '',
+                pinfl: u.pinfl || '',
+                gender: u.gender || 'Erkak',
+                birth_date: u.birth_date || '',
+                specialty_id: u.specialty_id || '',
+                salary: u.salary_rate || 0,
+                photo_path: u.photo_path || '',
+                transactions: u.transactions || [],
+                leads_count: u.leads_count || 0
+            });
+        });
+    }
+    
+    // Map construction site workers
+    if (props.workers) {
+        props.workers.forEach(w => {
+            let bName = 'Barcha';
+            if (w.building) {
+                bName = w.building.name;
+            } else if (w.building_id) {
+                const b = props.buildings?.find(x => x.id === parseInt(w.building_id));
+                if (b) bName = b.name;
+            }
+            list.push({
+                id: w.id,
+                type: 'worker',
+                name: w.name,
+                phone: w.phone || '',
+                role: w.role || 'ishchi',
+                role_label: w.role === 'guard' ? 'qorovul' : (w.role === 'driver' ? 'haydovchi' : 'ishchi'),
+                building_name: bName,
+                building_id: w.building_id,
+                employment_date: w.employment_date || (w.created_at ? w.created_at.split('T')[0] : '2025-10-15'),
+                status: w.status || 'active',
+                status_label: (w.status || 'active') === 'active' ? 'Ish holatida' : 'Bo\'shatilgan',
+                passport: w.passport || '',
+                pinfl: w.pinfl || '',
+                gender: w.gender || 'Erkak',
+                birth_date: w.birth_date || '',
+                specialty_id: w.specialty_id || '',
+                salary: w.base_rate || w.rate || 0,
+                photo_path: w.photo_path || '',
+                transactions: w.transactions || [],
+                leads_count: 0
+            });
+        });
+    }
+    
+    return list;
+});
+
+// Search, Filter & Stats
+const searchQuery = ref('');
+const filterRole = ref('');
+const filterBuilding = ref('');
+const filterStatus = ref('');
+
+const filteredEmployees = computed(() => {
+    return allEmployees.value.filter(e => {
+        const matchesSearch = e.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+                             e.phone.includes(searchQuery.value) || 
+                             (e.passport && e.passport.toLowerCase().includes(searchQuery.value.toLowerCase()));
+        
+        const matchesRole = !filterRole.value || e.role === filterRole.value;
+        
+        const matchesBuilding = !filterBuilding.value || 
+                               (filterBuilding.value === 'all' && e.building_name === 'Barcha') ||
+                               (filterBuilding.value !== 'all' && e.building_id === parseInt(filterBuilding.value));
+        
+        const matchesStatus = !filterStatus.value || e.status === filterStatus.value;
+        
+        return matchesSearch && matchesRole && matchesBuilding && matchesStatus;
+    });
+});
+
+const stats = computed(() => {
+    const total = allEmployees.value.length;
+    const active = allEmployees.value.filter(e => e.status === 'active').length;
+    
+    // Permanent employees: Users + guards + fixed_monthly salary type
+    const permanent = allEmployees.value.filter(e => e.type === 'user' || e.role === 'guard').length;
+    
+    // Piece-rate or hourly workers
+    const contract = allEmployees.value.filter(e => e.type === 'worker' && e.role !== 'guard').length;
+    
+    const fired = allEmployees.value.filter(e => e.status === 'fired').length;
+    
+    return { total, active, permanent, contract, fired };
+});
+
+// Detailed view modal state
+const showDetailModal = ref(false);
+const selectedEmployee = ref(null);
+const rightTab = ref('ariza'); // 'ariza' or 'buyruq'
+
+function openDetailModal(emp) {
+    selectedEmployee.value = emp;
+    showDetailModal.value = true;
+}
+
+// Add/Edit employee modal state
+const showEmployeeModal = ref(false);
+const isEditMode = ref(false);
 const isProcessing = ref(false);
 
-const tabs = [
-    { id: 0, name: 'user_management', icon: '👥' },
-    { id: 1, name: 'face_id_hub', icon: '👁️' },
-    { id: 2, name: 'attendance_logs', icon: '⏱️' },
-    { id: 3, name: 'machinery', icon: '🚜' },
-    { id: 4, name: 'timesheets', icon: '📝' },
-    { id: 5, name: 'payroll', icon: '💸' }
-];
-
-
-// --- BRIGADE STATE & METHODS ---
-const showBrigadeForm = ref(false);
-const isBrigadeEditMode = ref(false);
-const brigadeForm = ref({ id: null, name: '', foreman_name: '', phone: '' });
-const activeBrigadeId = ref(null);
-
-function openBrigadeForm(b = null) {
-    if (b) {
-        isBrigadeEditMode.value = true;
-        brigadeForm.value = { id: b.id, name: b.name, foreman_name: b.foreman_name, phone: b.phone || '' };
-    } else {
-        isBrigadeEditMode.value = false;
-        brigadeForm.value = { id: null, name: '', foreman_name: '', phone: '' };
-    }
-    showBrigadeForm.value = true;
-}
-
-function saveBrigade() {
-    isProcessing.value = true;
-    if (isBrigadeEditMode.value) {
-        router.put(route('admin.hr.brigade.update', brigadeForm.value.id), brigadeForm.value, {
-            onSuccess: () => { isProcessing.value = false; showBrigadeForm.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.brigade.store'), brigadeForm.value, {
-            onSuccess: () => { isProcessing.value = false; showBrigadeForm.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    }
-}
-
-
-async function openBrigadeLedger(brigade) {
-    activeBrigadeForLedger.value = brigade;
-    try {
-        const response = await fetch(route('admin.hr.brigade.transactions', brigade.id));
-        if (!response.ok) {
-            const errText = await response.text();
-            alert("Server xatosi: " + response.status + " - " + errText.substring(0, 100));
-            return;
-        }
-        const data = await response.json();
-        
-        // Merge and sort
-        const items = [];
-        data.logs.forEach(l => {
-            const isHourly = l.worker?.salary_type === 'hourly' || true;
-            items.push({ 
-                date: new Date(l.date), 
-                desc: `Ish (Obyekt: ${l.building?.name || "Noma'lum"}) - ${l.hours_worked || l.volume_done} hajm/soat`, 
-                amount: `+ ${l.calculated_cost}` 
-            });
-        });
-        data.transactions.forEach(t => {
-            items.push({ 
-                date: new Date(t.date), 
-                desc: `${t.type === 'salary_accrual' ? 'Kirim' : (t.type === 'penalty' ? 'Ushlanma (Jarima)' : 'To\'lov / Avans')} (${t.description || ''})`, 
-                amount: t.type === 'salary_accrual' ? `+ ${t.amount}` : `- ${t.amount}` 
-            });
-        });
-        
-        items.sort((a, b) => a.date - b.date);
-        
-        brigadeLedgerData.value = {
-            balance: data.balance,
-            items: items
-        };
-        showBrigadeLedgerModal.value = true;
-    } catch(err) {
-        console.error(err);
-        alert("Ma'lumotlarni yuklashda xatolik!");
-    }
-}
-
-async function submitBrigadeLedger() {
-    if (!activeBrigadeForLedger.value) return;
-    try {
-        const response = await fetch(route('admin.hr.brigade.transaction.store', activeBrigadeForLedger.value.id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify(brigadeLedgerForm.value)
-        });
-        if (response.ok) {
-            brigadeLedgerForm.value = { amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] };
-            openBrigadeLedger(activeBrigadeForLedger.value); // refresh
-        } else {
-            alert('Tranzaksiyani saqlashda xatolik!');
-        }
-    } catch(err) {
-        console.error(err);
-        alert('Tranzaksiyani saqlashda xatolik!');
-    }
-}
-
-function saveBrigadeTransaction() {
-    if (!brigadeLedgerForm.value.amount || !brigadeLedgerForm.value.date || !brigadeLedgerForm.value.type) {
-        alert("Sana, tur va summani kiriting.");
-        return;
-    }
-    isProcessing.value = true;
-    router.post(route('admin.hr.brigade.transaction.store', activeBrigadeForLedger.value.id), brigadeLedgerForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            brigadeLedgerForm.value = { amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] };
-            openBrigadeLedger(activeBrigadeForLedger.value); // refresh data
-        }
-    });
-}
-
-function exportBrigadeLedger() {
-    if(activeBrigadeForLedger.value) {
-        window.location.href = route('admin.hr.brigade.ledger.export', activeBrigadeForLedger.value.id);
-    }
-}
-
-function deleteBrigade(id) {
-    if (confirm("Brigadani o'chirmoqchimisiz?")) {
-        router.delete(route('admin.hr.brigade.destroy', id));
-    }
-}
-
-// --- MACHINE OWNER STATE & METHODS ---
-const showOwnerForm = ref(false);
-const isOwnerEditMode = ref(false);
-const ownerForm = ref({ id: null, name: '', phone: '' });
-const activeOwnerId = ref(null);
-
-function openOwnerForm(o = null) {
-    if (o) {
-        isOwnerEditMode.value = true;
-        ownerForm.value = { id: o.id, name: o.name, phone: o.phone || '' };
-    } else {
-        isOwnerEditMode.value = false;
-        ownerForm.value = { id: null, name: '', phone: '' };
-    }
-    showOwnerForm.value = true;
-}
-
-function saveOwner() {
-    isProcessing.value = true;
-    if (isOwnerEditMode.value) {
-        router.put(route('admin.hr.machine_owner.update', ownerForm.value.id), ownerForm.value, {
-            onSuccess: () => { isProcessing.value = false; showOwnerForm.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.machine_owner.store'), ownerForm.value, {
-            onSuccess: () => { isProcessing.value = false; showOwnerForm.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    }
-}
-
-function deleteOwner(id) {
-    if (confirm("Texnika egasini o'chirmoqchimisiz?")) {
-        router.delete(route('admin.hr.machine_owner.destroy', id));
-    }
-}
-
-
-// User Management Modal State
-const showUserModal = ref(false);
-const userForm = ref({
+const employeeForm = useForm({
+    id: null,
+    type: 'worker', // 'user' or 'worker'
     name: '',
     email: '',
     password: '',
-    role: 'Operator',
-    pinfl: '',
-    passport: '',
-    salary_rate: ''
-});
-const isEditMode = ref(false);
-
-function openUserModal(user = null) {
-    if (user) {
-        isEditMode.value = true;
-        userForm.value = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            password: '',
-            role: user.roles?.[0]?.name || 'Operator',
-            pinfl: user.pinfl || '',
-            passport: user.passport || '',
-            salary_rate: user.salary_rate || ''
-        };
-    } else {
-        isEditMode.value = false;
-        userForm.value = { name: '', email: '', password: '', role: 'Operator', pinfl: '', passport: '', salary_rate: '' };
-    }
-    showUserModal.value = true;
-}
-
-function saveUser() {
-    isProcessing.value = true;
-    if (isEditMode.value) {
-        router.post(route('admin.hr.users.update', userForm.value.id), userForm.value, {
-            onSuccess: () => { showUserModal.value = false; isProcessing.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.users.store'), userForm.value, {
-            onSuccess: () => { showUserModal.value = false; isProcessing.value = false; },
-            onError: () => isProcessing.value = false
-        });
-    }
-}
-
-function deleteUser(id) {
-    if(!confirm("Haqiqatan ham ushbu foydalanuvchini o'chirmoqchimisiz?")) return;
-    router.delete(route('admin.hr.users.delete', id));
-}
-
-
-
-// TAB 1 Forms
-const workerForm = ref({ id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '', salary_periods: [] });
-const filteredMachineries = computed(() => {
-    if (!logForm.value.machine_owner_id) return props.machineries;
-    return props.machineries.filter(m => m.machine_owner_id === parseInt(logForm.value.machine_owner_id));
-});
-const isWorkerEditMode = ref(false);
-const showWorkerForm = ref(false);
-
-const isGuardEditMode = ref(false);
-const showGuardForm = ref(false);
-const guardForm = ref({ id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] });
-
-function openGuardForm(g = null) {
-    if (g && g.id) {
-        isGuardEditMode.value = true;
-        guardForm.value = {
-            id: g.id,
-            name: g.name,
-            phone: g.phone || '',
-            role: 'guard',
-            salary_type: 'fixed_monthly',
-            base_rate: g.base_rate || g.rate || '',
-            salary_periods: [] // we don't load existing periods in the edit form natively, but you can if needed
-        };
-    } else {
-        isGuardEditMode.value = false;
-        guardForm.value = { id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] };
-    }
-    showGuardForm.value = true;
-}
-
-function cancelGuardEdit() {
-    isGuardEditMode.value = false;
-    showGuardForm.value = false;
-    guardForm.value = { id: null, name: '', phone: '', role: 'guard', salary_type: 'fixed_monthly', base_rate: '', salary_periods: [] };
-}
-
-function saveGuard() {
-    isProcessing.value = true;
-    if (isGuardEditMode.value) {
-        router.post(route('admin.hr.worker.update', guardForm.value.id), guardForm.value, {
-            preserveScroll: true,
-            onSuccess: () => { isProcessing.value = false; cancelGuardEdit(); },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.worker.store'), guardForm.value, {
-            preserveScroll: true,
-            onSuccess: () => { isProcessing.value = false; cancelGuardEdit(); },
-            onError: () => isProcessing.value = false
-        });
-    }
-}
-
-function addGuardSalaryPeriod() {
-    guardForm.value.salary_periods.push({ start_month: '', end_month: '', salary: guardForm.value.base_rate || '' });
-}
-function removeGuardSalaryPeriod(index) {
-    guardForm.value.salary_periods.splice(index, 1);
-}
-
-function openWorkerEdit(w) {
-    isWorkerEditMode.value = !!w.id;
-    showWorkerForm.value = true;
-    workerForm.value = {
-        id: w.id,
-        name: w.name,
-        phone: w.phone || '',
-        role: w.role,
-        salary_type: w.salary_type || 'piece_rate',
-        metric_type: w.metric_type || 'dona',
-        base_rate: w.base_rate || w.rate || '',
-        brigade_id: w.brigade_id || '',
-        building_id: w.building_id || '',
-        floor_id: w.floor_id || '',
-        unit_id: w.unit_id || '',
-        salary_periods: []
-    };
-    // Scroll to form (optional) or just populate it
-}
-
-
-
-function addSalaryPeriod() {
-    workerForm.value.salary_periods.push({ start_month: '', end_month: '', salary: workerForm.value.base_rate || '' });
-}
-function removeSalaryPeriod(index) {
-    workerForm.value.salary_periods.splice(index, 1);
-}
-
-
-const showGuardHistoryModal = ref(false);
-const activeGuardHistory = ref(null);
-
-function viewGuardHistory(guard) {
-    activeGuardHistory.value = guard;
-    showGuardHistoryModal.value = true;
-}
-
-
-function cancelWorkerEdit() {
-    isWorkerEditMode.value = false;
-    showWorkerForm.value = false;
-    workerForm.value = { id: null, name: '', phone: '', role: 'builder', salary_type: 'piece_rate', metric_type: 'dona', base_rate: '', building_id: '', floor_id: '', unit_id: '', salary_periods: [] };
-}
-
-function saveWorker() {
-    isProcessing.value = true;
-    if (isWorkerEditMode.value) {
-        router.post(route('admin.hr.worker.update', workerForm.value.id), workerForm.value, {
-            preserveScroll: true,
-            onSuccess: () => { isProcessing.value = false; cancelWorkerEdit(); },
-            onError: () => isProcessing.value = false
-        });
-    } else {
-        router.post(route('admin.hr.worker.store'), workerForm.value, {
-            preserveScroll: true,
-            onSuccess: () => { isProcessing.value = false; cancelWorkerEdit(); },
-            onError: () => isProcessing.value = false
-        });
-    }
-}
-
-function deleteWorker(id) {
-    if (confirm("Haqiqatan ham ushbu xodimni o'chirmoqchimisiz?")) {
-        router.delete(route('admin.hr.worker.destroy', id));
-    }
-}
-
-// Ledger Modal
-const showLedgerModal = ref(false);
-const ledgerWorker = ref(null);
-const ledgerData = ref({ balance: 0, category_balances: {}, transactions: [], logs: [] });
-const ledgerForm = ref({ type: 'payment', amount: '', description: '', work_category: '', date: new Date().toISOString().split('T')[0] });
-const workerLogForm = ref({ building_id: '', measurement_unit: '', work_category: '', volume: '', custom_rate: '', date: new Date().toISOString().split('T')[0] });
-
-const workCategoryMap = {
-    'dona': ["G'isht terish", "Blok terish", "Eshik o'rnatish", "Deraza o'rnatish", "Boshqa"],
-    'kv_m': ["Kafel terish", "Sement suvoq", "Malyarka", "Tyopliy pol", "Laminat", "Boshqa"],
-    'kub_m': ["Beton quyish", "Tuproq qazish", "Boshqa"],
-    'metr': ["Truba tortish", "Sim tortish", "Plintus", "Boshqa"],
-    'soat': ["Vaqtbay ish", "Boshqa"],
-    'kun': ["Kunlik ish", "Boshqa"]
-};
-
-const availableWorkCategories = computed(() => {
-    return workCategoryMap[workerLogForm.value.measurement_unit] || [];
-});
-
-function openLedger(w) {
-    ledgerWorker.value = w;
-    fetchLedger(w.id);
-    showLedgerModal.value = true;
-}
-
-function fetchLedger(id) {
-    fetch(route('admin.hr.worker.ledger', id))
-        .then(res => res.json())
-        .then(data => {
-            ledgerData.value = data;
-        });
-}
-
-function saveLedgerTransaction() {
-    isProcessing.value = true;
-    router.post(route('admin.hr.worker.transaction.store', ledgerWorker.value.id), ledgerForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            ledgerForm.value.amount = '';
-            ledgerForm.value.description = '';
-            fetchLedger(ledgerWorker.value.id);
-            // Wait for Inertia to finish then update global workers array if needed (Inertia reloads props automatically on post)
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function saveWorkerLog() {
-    let payload = {
-        type: 'worker',
-        worker_id: ledgerWorker.value.id,
-        building_id: workerLogForm.value.building_id,
-        measurement_unit: workerLogForm.value.measurement_unit,
-        work_category: workerLogForm.value.work_category,
-        date: workerLogForm.value.date
-    };
-    if (ledgerWorker.value.salary_type === 'hourly') {
-        payload.hours_worked = workerLogForm.value.volume;
-    } else {
-        payload.volume_done = workerLogForm.value.volume;
-    }
-    if (workerLogForm.value.custom_rate) {
-        payload.custom_rate = workerLogForm.value.custom_rate;
-    }
-
-    isProcessing.value = true;
-    router.post(route('admin.hr.log.store'), payload, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            workerLogForm.value.volume = '';
-            workerLogForm.value.custom_rate = '';
-            workerLogForm.value.measurement_unit = '';
-            workerLogForm.value.work_category = '';
-            fetchLedger(ledgerWorker.value.id);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-// User Ledger Modal
-const showUserLedgerModal = ref(false);
-const ledgerUser = ref(null);
-const userLedgerData = ref({ balance: 0, transactions: [] });
-const userLedgerForm = ref({ type: 'salary_accrual', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
-
-function openUserLedger(u) {
-    ledgerUser.value = u;
-    fetchUserLedger(u.id);
-    showUserLedgerModal.value = true;
-}
-
-function fetchUserLedger(id) {
-    fetch(route('admin.hr.users.ledger', id))
-        .then(res => res.json())
-        .then(data => {
-            userLedgerData.value = data;
-        });
-}
-
-function saveUserLedgerTransaction() {
-    isProcessing.value = true;
-    router.post(route('admin.hr.users.transaction.store', ledgerUser.value.id), userLedgerForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            userLedgerForm.value.amount = '';
-            userLedgerForm.value.description = '';
-            fetchUserLedger(ledgerUser.value.id);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-const showMachineryForm = ref(false);
-const machineryForm = ref({ name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
-
-function addMachinery() {
-    isProcessing.value = true;
-    router.post(route('admin.hr.machinery.store'), machineryForm.value, {
-        onSuccess: () => { isProcessing.value = false; machineryForm.value = { name: '', owner_name: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' }; },
-        onError: () => isProcessing.value = false
-    });
-}
-
-const editMachineryId = ref(null);
-const editMachineryForm = useForm({ name: '', machine_owner_id: '', machinery_type: '', driver_name: '', payment_type: 'hourly', license_plate: '', cost_per_hour: '' });
-
-function startEditMachinery(m) {
-    editMachineryId.value = m.id;
-    editMachineryForm.name = m.name;
-    editMachineryForm.machine_owner_id = m.machine_owner_id;
-    editMachineryForm.machinery_type = m.machinery_type;
-    editMachineryForm.driver_name = m.driver_name;
-    editMachineryForm.payment_type = m.payment_type;
-    editMachineryForm.license_plate = m.license_plate;
-    editMachineryForm.cost_per_hour = m.cost_per_hour;
-}
-
-function updateMachinery() {
-    isProcessing.value = true;
-    editMachineryForm.post(route('admin.hr.machinery.update', editMachineryId.value), {
-        onSuccess: () => {
-            isProcessing.value = false;
-            editMachineryId.value = null;
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function deleteMachinery(id) {
-    if(confirm("Ushbu texnikani haqiqatan ham o'chirasizmi?")) {
-        router.delete(route('admin.hr.machinery.destroy', id));
-    }
-}
-
-const showOwnerLedgerModal = ref(false);
-const ownerLedgerData = ref({ balance: 0, logs: [], transactions: [] });
-const activeOwnerForLedger = ref(null);
-const ownerLedgerForm = ref({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
-
-
-const showBrigadeLedgerModal = ref(false);
-const activeBrigadeForLedger = ref(null);
-const brigadeLedgerData = ref({ balance: 0, logs: [], transactions: [] });
-const brigadeLedgerForm = ref({ amount: '', description: '', type: 'payment', date: new Date().toISOString().split('T')[0] });
-
-const showMachineryLedgerModal = ref(false);
-const machineryLedgerData = ref({ logs: [], transactions: [], total_earned: 0, unpaid_balance: 0 });
-const activeMachinery = ref(null);
-const machineryLedgerForm = ref({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
-const machineryLogForm = ref({ building_id: '', volume: '', custom_rate: '', date: new Date().toISOString().split('T')[0] });
-
-const editLogId = ref(null);
-const editLogForm = ref({ hours_worked: '', volume_done: '', custom_rate: '', date: '', description: '', deductions: '' });
-const editTxId = ref(null);
-const editTxForm = ref({ amount: '', description: '', date: '' });
-
-function startEditLog(log) {
-    editLogId.value = log.id;
-    editLogForm.value.hours_worked = log.hours_worked || '';
-    editLogForm.value.volume_done = log.volume_done || '';
-    editLogForm.value.custom_rate = log.rate || '';
-    editLogForm.value.description = log.description || '';
-    editLogForm.value.deductions = log.deductions || '';
-    editLogForm.value.date = log.date ? log.date.split('T')[0] : '';
-}
-
-function submitEditLog() {
-    isProcessing.value = true;
-    router.put(route('admin.hr.log.update', editLogId.value), editLogForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            editLogId.value = null;
-            if (showMachineryLedgerModal.value) {
-                openMachineryLedger(activeMachinery.value);
-            } else if (showLedgerModal.value) {
-                fetchLedger(ledgerWorker.value.id);
-            }
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function destroyLog(id) {
-    if(!confirm("Ish hajmini o'chirmoqchimisiz?")) return;
-    isProcessing.value = true;
-    router.delete(route('admin.hr.log.destroy', id), {
-        onSuccess: () => {
-            isProcessing.value = false;
-            if (showMachineryLedgerModal.value) {
-                openMachineryLedger(activeMachinery.value);
-            } else if (showLedgerModal.value) {
-                fetchLedger(ledgerWorker.value.id);
-            }
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function startEditTx(tx) {
-    editTxId.value = tx.id;
-    editTxForm.value.amount = tx.amount;
-    editTxForm.value.description = tx.description || '';
-    editTxForm.value.date = tx.date ? tx.date.split('T')[0] : '';
-}
-
-function submitEditTx(type) {
-    isProcessing.value = true;
-    router.put(route('admin.hr.transactions.update', { type: type, id: editTxId.value }), editTxForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            editTxId.value = null;
-            if (type === 'machinery') openMachineryLedger(activeMachinery.value);
-            else if (type === 'worker') fetchLedger(ledgerWorker.value.id);
-            else if (type === 'user') fetchUserLedger(ledgerUser.value.id);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function destroyTx(type, id) {
-    if(!confirm("Tranzaksiyani o'chirmoqchimisiz?")) return;
-    isProcessing.value = true;
-    router.delete(route('admin.hr.transactions.destroy', { type: type, id: id }), {
-        onSuccess: () => {
-            isProcessing.value = false;
-            if (type === 'machinery') openMachineryLedger(activeMachinery.value);
-            else if (type === 'worker') fetchLedger(ledgerWorker.value.id);
-            else if (type === 'user') fetchUserLedger(ledgerUser.value.id);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-
-async function openOwnerLedger(owner) {
-    activeOwnerForLedger.value = owner;
-    try {
-        const response = await fetch(route('admin.hr.owner.transactions', owner.id));
-        const data = await response.json();
-        
-        let allItems = [];
-        if(data.logs) {
-            data.logs.forEach(l => {
-                allItems.push({
-                    type: 'log',
-                    date: l.date,
-                    created_at: l.created_at,
-                    item: l
-                });
-            });
-        }
-        if(data.transactions) {
-            data.transactions.forEach(t => {
-                allItems.push({
-                    type: 'tx',
-                    date: t.date,
-                    created_at: t.created_at,
-                    item: t
-                });
-            });
-        }
-        
-        allItems.sort((a, b) => {
-            let d1 = new Date(a.date);
-            let d2 = new Date(b.date);
-            if (d1.getTime() !== d2.getTime()) return d1 - d2;
-            return new Date(a.created_at) - new Date(b.created_at);
-        });
-        
-        ownerLedgerData.value = {
-            balance: data.balance,
-            items: allItems,
-            owner: data.owner
-        };
-        showOwnerLedgerModal.value = true;
-    } catch(err) {
-        console.error(err);
-        alert("Ma\'lumotlarni yuklashda xatolik!");
-    }
-}
-
-async function openMachineryLedger(m) {
-    activeMachinery.value = m;
-    try {
-        const response = await fetch(route('admin.hr.machinery.ledger', m.id));
-        const data = await response.json();
-        machineryLedgerData.value = data;
-        showMachineryLedgerModal.value = true;
-    } catch(err) {
-        console.error(err);
-        alert("Ma'lumotlarni yuklashda xatolik!");
-    }
-}
-
-function saveMachineryTransaction() {
-    isProcessing.value = true;
-    router.post(route('admin.hr.machinery.transaction.store', activeMachinery.value.id), machineryLedgerForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            machineryLedgerForm.value.amount = '';
-            machineryLedgerForm.value.description = '';
-            openMachineryLedger(activeMachinery.value);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function saveMachineryLog() {
-    isProcessing.value = true;
-    const payload = {
-        type: 'machinery',
-        machinery_id: activeMachinery.value.id,
-        building_id: machineryLogForm.value.building_id,
-        date: machineryLogForm.value.date
-    };
-    if (activeMachinery.value.payment_type === 'hourly') {
-        payload.hours_worked = machineryLogForm.value.volume;
-    } else {
-        payload.volume_done = machineryLogForm.value.volume;
-    }
-    if (machineryLogForm.value.custom_rate) {
-        payload.custom_rate = machineryLogForm.value.custom_rate;
-    }
-
-    router.post(route('admin.hr.log.store'), payload, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            machineryLogForm.value.volume = '';
-            machineryLogForm.value.custom_rate = '';
-            openMachineryLedger(activeMachinery.value);
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-function printLedger() {
-    const m = activeMachinery.value;
-    const data = machineryLedgerData.value;
-    
-    // Combine logs and transactions
-    const items = [];
-    data.logs.forEach(l => {
-        items.push({ date: new Date(l.date), desc: `Ish (Obyekt: ${l.building?.name || "Noma'lum"}) - ${l.hours_worked || l.volume_done} ${m.payment_type==='hourly'?'soat':'hajm'}`, amount: `- ${l.calculated_cost}` });
-    });
-    data.transactions.forEach(t => {
-        items.push({ date: new Date(t.date), desc: `To'lov: ${t.description || 'Izohsiz'}`, amount: `+ ${t.amount}` });
-    });
-    items.sort((a,b) => b.date - a.date); // Sort descending
-    
-    let rowsHtml = items.map((i, idx) => `
-        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-            <td style="padding: 8px; border: 1px solid #ccc;">${idx+1}</td>
-            <td style="padding: 8px; border: 1px solid #ccc;">${i.date.toLocaleDateString()}</td>
-            <td style="padding: 8px; border: 1px solid #ccc;">${i.desc}</td>
-            <td style="padding: 8px; border: 1px solid #ccc; text-align: right; font-weight: bold;">${i.amount}</td>
-        </tr>
-    `).join('');
-
-    const html = `
-        <html>
-        <head>
-            <title>Dalolatnoma (Sverka) - ${m.name}</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
-                h1 { text-align: center; font-size: 20px; text-transform: uppercase; margin-bottom: 5px; }
-                p.sub { text-align: center; font-size: 14px; margin-top: 0; margin-bottom: 20px; color: #555; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
-                th { background: #f0f0f0; padding: 8px; border: 1px solid #ccc; text-align: left; }
-                .summary { width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 40px; box-sizing: border-box;}
-                .summary div { margin-bottom: 5px; font-weight: bold; }
-                .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-                .sig-box { width: 40%; text-align: center; }
-                .line { border-bottom: 1px solid #000; margin-top: 40px; margin-bottom: 10px; }
-            </style>
-        </head>
-        <body>
-            <h1>Hisob-kitob solishtirma dalolatnomasi (Sverka)</h1>
-            <p class="sub">Yaratilgan sana: ${new Date().toLocaleDateString()}</p>
-            
-            <div class="summary">
-                <div>TEXNIKA: ${m.machinery_type || ''} ${m.name} (${m.license_plate || 'Raqamsiz'})</div>
-                <div>EGASI (Arendator): ${m.owner_name || "Noma'lum"}</div>
-                <div style="margin-top:10px;">Jami Ishlagan Summa: ${data.total_earned}</div>
-                <div style="color: red;">To'lanmagan Qoldiq Qarz: ${data.unpaid_balance}</div>
-            </div>
-
-            <table>
-                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <th width="5%">№</th>
-                        <th width="15%">{{ $t('date_label') }}</th>
-                        <th width="55%">Izoh / Obyekt</th>
-                        <th width="25%" style="text-align: right;">{{ $t('amount') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                </tbody>
-            </table>
-
-            <div class="signatures">
-                <div class="sig-box">
-                    <p><b>"BUYURTMACHI" (Kompaniya)</b></p>
-                    <div class="line"></div>
-                    <p>(Imzo / Muhr)</p>
-                </div>
-                <div class="sig-box">
-                    <p><b>"BAJARUVCHI" (Texnika Egasi)</b></p>
-                    <div class="line"></div>
-                    <p>${m.owner_name || '_________________'}</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const win = window.open('', '_blank');
-    win.document.write(html);
-    win.document.close();
-    setTimeout(() => {
-        win.print();
-    }, 500);
-}
-
-function exportToExcel() {
-    const m = activeMachinery.value;
-    const data = machineryLedgerData.value;
-    
-    let csv = 'Sana,Izoh,Summa\n';
-    
-    data.logs.forEach(l => {
-        csv += `${new Date(l.date).toLocaleDateString()},Ish - ${l.building?.name || "Noma'lum"},-${l.calculated_cost}\n`;
-    });
-    data.transactions.forEach(t => {
-        csv += `${new Date(t.date).toLocaleDateString()},To'lov: ${t.description || ''},+${t.amount}\n`;
-    });
-    
-    const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Sverka_${m.name}.csv`;
-    link.click();
-}
-
-// AI Log Modal
-const showLogModal = ref(false);
-const activeLog = ref(null);
-
-function openLogModal(log) {
-    activeLog.value = log;
-    showLogModal.value = true;
-}
-
-// Manual AI Web Scanner
-const showScannerModal = ref(false);
-const scannerVideo = ref(null);
-const isScannerActive = ref(false);
-const scannerSnapshot = ref(null);
-const scannerForm = useForm({
-    subject_type: 'Worker',
-    subject_id: '',
-    type: 'entry',
-    image: ''
-});
-
-async function startScanner() {
-    showScannerModal.value = true;
-    scannerSnapshot.value = null;
-    scannerForm.reset();
-    setTimeout(async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            if (scannerVideo.value) {
-                scannerVideo.value.srcObject = stream;
-                isScannerActive.value = true;
-            }
-        } catch (err) {
-            console.error("Camera error:", err);
-            alert("Kameraga ulanishda xatolik. Ruxsatlarni tekshiring.");
-        }
-    }, 100);
-}
-
-function stopScanner() {
-    if (scannerVideo.value && scannerVideo.value.srcObject) {
-        scannerVideo.value.srcObject.getTracks().forEach(t => t.stop());
-    }
-    isScannerActive.value = false;
-    scannerSnapshot.value = null;
-    showScannerModal.value = false;
-}
-
-function takeScannerSnapshot() {
-    if (!scannerVideo.value) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = scannerVideo.value.videoWidth;
-    canvas.height = scannerVideo.value.videoHeight;
-    canvas.getContext('2d').drawImage(scannerVideo.value, 0, 0);
-    scannerSnapshot.value = canvas.toDataURL('image/jpeg', 0.8);
-    scannerForm.image = scannerSnapshot.value;
-}
-
-function submitManualLog() {
-    scannerForm.post(route('admin.hr.manual_log.store'), {
-        onSuccess: () => stopScanner(),
-    });
-}
-
-// Biometric integration
-const videoElement = ref(null);
-const isCameraActive = ref(false);
-const biometricForm = ref({ person_type: 'worker', person_id: '' });
-
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoElement.value) {
-            videoElement.value.srcObject = stream;
-            isCameraActive.value = true;
-        }
-    } catch (err) {
-        console.error("Camera error:", err);
-        alert("Kameraga ulanishda xatolik. Qurilma ruxsatlarini tekshiring.");
-    }
-}
-
-function stopCamera() {
-    if (videoElement.value && videoElement.value.srcObject) {
-        videoElement.value.srcObject.getTracks().forEach(track => track.stop());
-        videoElement.value.srcObject = null;
-        isCameraActive.value = false;
-    }
-}
-
-function scanNewFace() {
-    if (!biometricForm.value.person_id) {
-        alert("Iltimos, avval xodimni tanlang.");
-        return;
-    }
-    if (!isCameraActive.value || !videoElement.value) {
-        alert("Kamera faol emas. 'Kamerani Yoqish' tugmasini bosing.");
-        return;
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.value.videoWidth;
-    canvas.height = videoElement.value.videoHeight;
-    canvas.getContext('2d').drawImage(videoElement.value, 0, 0);
-    const imageData = canvas.toDataURL('image/jpeg');
-
-    isProcessing.value = true;
-    router.post(route('admin.hr.biometric.store'), {
-        person_type: biometricForm.value.person_type,
-        person_id: biometricForm.value.person_id,
-        image: imageData
-    }, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            alert("Biometrik surat muvaffaqiyatli saqlandi!");
-        },
-        onError: () => isProcessing.value = false
-    });
-}
-
-// TAB 2 Form
-const logForm = ref({
-    type: 'worker',
-    worker_id: '',
-    machine_owner_id: '',
-    machinery_id: '',
+    phone: '',
+    role: 'builder',
+    salary_type: 'piece_rate',
+    base_rate: '',
+    salary_rate: '',
     building_id: '',
-    floor_id: '',
-    unit_id: '',
-    hours_worked: '',
-    volume_done: '',
-    custom_rate: '',
+    passport: '',
+    pinfl: '',
+    gender: 'Erkak',
+    birth_date: '',
+    employment_date: '',
+    status: 'active',
+    specialty_id: ''
+});
+
+function openAddEmployee() {
+    isEditMode.value = false;
+    employeeForm.reset();
+    employeeForm.type = 'worker';
+    employeeForm.role = 'builder';
+    employeeForm.salary_type = 'piece_rate';
+    employeeForm.status = 'active';
+    employeeForm.gender = 'Erkak';
+    showEmployeeModal.value = true;
+}
+
+function openEditEmployee(emp) {
+    isEditMode.value = true;
+    employeeForm.id = emp.id;
+    employeeForm.type = emp.type;
+    employeeForm.name = emp.name;
+    employeeForm.email = emp.email || '';
+    employeeForm.password = '';
+    employeeForm.phone = emp.phone;
+    employeeForm.role = emp.role;
+    employeeForm.salary_type = emp.type === 'worker' ? (emp.salary_type || 'piece_rate') : 'fixed_monthly';
+    employeeForm.base_rate = emp.salary;
+    employeeForm.salary_rate = emp.salary;
+    employeeForm.building_id = emp.building_id || '';
+    employeeForm.passport = emp.passport;
+    employeeForm.pinfl = emp.pinfl;
+    employeeForm.gender = emp.gender || 'Erkak';
+    employeeForm.birth_date = emp.birth_date;
+    employeeForm.employment_date = emp.employment_date;
+    employeeForm.status = emp.status;
+    employeeForm.specialty_id = emp.specialty_id;
+    showEmployeeModal.value = true;
+}
+
+function saveEmployee() {
+    isProcessing.value = true;
+    if (employeeForm.type === 'user') {
+        employeeForm.salary_rate = employeeForm.base_rate;
+        if (isEditMode.value) {
+            employeeForm.post(route('admin.hr.users.update', employeeForm.id), {
+                onSuccess: () => { showEmployeeModal.value = false; isProcessing.value = false; },
+                onError: () => isProcessing.value = false
+            });
+        } else {
+            employeeForm.post(route('admin.hr.users.store'), {
+                onSuccess: () => { showEmployeeModal.value = false; isProcessing.value = false; },
+                onError: () => isProcessing.value = false
+            });
+        }
+    } else {
+        if (isEditMode.value) {
+            employeeForm.post(route('admin.hr.worker.update', employeeForm.id), {
+                onSuccess: () => { showEmployeeModal.value = false; isProcessing.value = false; },
+                onError: () => isProcessing.value = false
+            });
+        } else {
+            employeeForm.post(route('admin.hr.worker.store'), {
+                onSuccess: () => { showEmployeeModal.value = false; isProcessing.value = false; },
+                onError: () => isProcessing.value = false
+            });
+        }
+    }
+}
+
+// Upload biometric photos
+const photoInput = ref(null);
+const uploadTarget = ref('photo'); // 'photo' or 'passport'
+
+function triggerPhotoUpload(target) {
+    uploadTarget.value = target;
+    photoInput.value.click();
+}
+
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file || !selectedEmployee.value) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64 = e.target.result;
+        isProcessing.value = true;
+        
+        router.post(route('admin.hr.biometric.store'), {
+            person_type: selectedEmployee.value.type,
+            person_id: selectedEmployee.value.id,
+            image: base64
+        }, {
+            onSuccess: () => {
+                isProcessing.value = false;
+                alert("Rasm yuklandi!");
+                // Update local UI
+                if (uploadTarget.value === 'photo') {
+                    selectedEmployee.value.photo_path = base64.replace(/^data:image\/[a-z]+;base64,/, "");
+                }
+            },
+            onError: () => {
+                isProcessing.value = false;
+                alert("Rasmni yuklashda xatolik yuz berdi.");
+            }
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+// Tab 1: Salaries calculations
+const salaryList = computed(() => {
+    return allEmployees.value.map((e, idx) => {
+        const txs = e.transactions || [];
+        
+        // Bonus: salary accruals containing "bonus" in description
+        const bonus = txs.filter(t => t.type === 'salary_accrual' && t.description?.toLowerCase().includes('bonus'))
+                         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                         
+        // Penalty: penalty transactions
+        const penalty = txs.filter(t => t.type === 'penalty')
+                           .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                           
+        // Advance: advance payment transactions
+        const advance = txs.filter(t => t.type === 'advance_payment')
+                           .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                           
+        // Paid: payment transactions
+        const paid = txs.filter(t => t.type === 'payment')
+                         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                         
+        // Last payment date
+        const payDates = txs.filter(t => t.type === 'payment').map(t => new Date(t.date));
+        let lastPayDate = "-";
+        if (payDates.length > 0) {
+            const maxDate = new Date(Math.max(...payDates));
+            lastPayDate = formatDate(maxDate.toISOString().split('T')[0]);
+        }
+        
+        // Outstanding Debt (Company owes employee)
+        const balance = parseFloat(e.salary || 0) + bonus - penalty - advance - paid;
+        
+        // Status: Kutilmoqda, Qisman to'langan, To'langan
+        let status = "Kutilmoqda";
+        if (balance <= 0) {
+            status = "To'langan";
+        } else if (paid > 0 || advance > 0) {
+            status = "Qisman to'langan";
+        }
+        
+        return {
+            index: idx + 1,
+            employee: e,
+            base_salary: e.salary,
+            bonus,
+            penalty,
+            advance,
+            paid,
+            payment_date: lastPayDate,
+            debt: balance,
+            status
+        };
+    });
+});
+
+// Transaction Adjustment Modal State (`+` button)
+const showAdjModal = ref(false);
+const adjEmployee = ref(null);
+const adjForm = useForm({
+    type: 'salary_accrual', // or 'penalty', 'advance_payment'
     amount: '',
-    target_type: 'building',
-    target_id: '',
     description: '',
-    deductions: '',
     date: new Date().toISOString().split('T')[0]
 });
 
-const workerFloors = computed(() => {
-    if (!workerForm.value.building_id) return [];
-    const b = props.buildings.find(x => x.id === parseInt(workerForm.value.building_id));
-    return b ? b.floors : [];
+function openAdjModal(emp) {
+    adjEmployee.value = emp;
+    adjForm.reset();
+    adjForm.type = 'salary_accrual';
+    adjForm.date = new Date().toISOString().split('T')[0];
+    showAdjModal.value = true;
+}
+
+function submitAdj() {
+    if (!adjForm.amount || adjForm.amount <= 0) {
+        alert("Summani to'g'ri kiriting!");
+        return;
+    }
+    isProcessing.value = true;
+    
+    // Add "Bonus" to description if type is salary_accrual for tracking
+    let desc = adjForm.description;
+    if (adjForm.type === 'salary_accrual' && !desc.toLowerCase().includes('bonus')) {
+        desc = "Bonus: " + desc;
+    }
+
+    const payload = {
+        type: adjForm.type,
+        amount: adjForm.amount,
+        description: desc,
+        date: adjForm.date
+    };
+
+    if (adjEmployee.value.type === 'worker') {
+        router.post(route('admin.hr.worker.transaction.store', adjEmployee.value.id), payload, {
+            onSuccess: () => { showAdjModal.value = false; isProcessing.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.hr.users.transaction.store', adjEmployee.value.id), payload, {
+            onSuccess: () => { showAdjModal.value = false; isProcessing.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+// Payment Modal State (`To'lov` button)
+const showPayModal = ref(false);
+const payEmployee = ref(null);
+const payForm = useForm({
+    amount: '',
+    description: 'Oylik maosh to\'lovi',
+    payment_method: 'cash',
+    account_type: 'main',
+    date: new Date().toISOString().split('T')[0]
 });
 
-const workerUnits = computed(() => {
-    if (!workerForm.value.floor_id) return [];
-    const f = workerFloors.value.find(x => x.id === parseInt(workerForm.value.floor_id));
-    return f ? f.units : [];
+function openPayModal(sal) {
+    payEmployee.value = sal.employee;
+    payForm.reset();
+    payForm.amount = sal.debt > 0 ? sal.debt : '';
+    payForm.description = 'Oylik maosh to\'lovi';
+    payForm.payment_method = 'cash';
+    payForm.account_type = 'main';
+    payForm.date = new Date().toISOString().split('T')[0];
+    showPayModal.value = true;
+}
+
+function submitPay() {
+    if (!payForm.amount || payForm.amount <= 0) {
+        alert("Summani to'g'ri kiriting!");
+        return;
+    }
+    isProcessing.value = true;
+    
+    const payload = {
+        type: 'payment',
+        amount: payForm.amount,
+        description: `${payForm.description} (${payForm.payment_method === 'cash' ? 'Naqd' : (payForm.payment_method === 'card' ? 'Karta' : 'Bank o\'tkazmasi')})`,
+        date: payForm.date,
+        payment_method: payForm.payment_method,
+        account_type: payForm.account_type
+    };
+
+    if (payEmployee.value.type === 'worker') {
+        router.post(route('admin.hr.worker.transaction.store', payEmployee.value.id), payload, {
+            onSuccess: () => { showPayModal.value = false; isProcessing.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.hr.users.transaction.store', payEmployee.value.id), payload, {
+            onSuccess: () => { showPayModal.value = false; isProcessing.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+// Tab 2: KPI calculations and Settings Drawer
+const showKpiDrawer = ref(false);
+const kpiForm = useForm({
+    comparison_type: '<=',
+    start_val: '2',
+    end_val: '0',
+    bonus_amount: '1000',
+    fixed_salary: '0'
 });
 
-const logFloors = computed(() => {
-    if (!logForm.value.building_id) return [];
-    const b = props.buildings.find(x => x.id === parseInt(logForm.value.building_id));
-    return b ? b.floors : [];
-});
-
-const logUnits = computed(() => {
-    if (!logForm.value.floor_id) return [];
-    const f = logFloors.value.find(x => x.id === parseInt(logForm.value.floor_id));
-    return f ? f.units : [];
-});
-
-const logPreviewCost = computed(() => {
-    if (!logForm.value.building_id) return 0;
-    let cost = 0;
-    if (logForm.value.type === 'worker' && logForm.value.worker_id) {
-        const w = props.workers.find(x => x.id === parseInt(logForm.value.worker_id));
-        if (w) {
-            if (logForm.value.custom_rate) {
-                cost = (Number(logForm.value.hours_worked) || Number(logForm.value.volume_done) || 0) * Number(logForm.value.custom_rate);
-            } else {
-                if (w.salary_type === 'hourly') cost = (Number(logForm.value.hours_worked) || 0) * Number(w.base_rate || w.rate);
-                if (w.salary_type === 'piece_rate') cost = (Number(logForm.value.volume_done) || 0) * Number(w.base_rate || w.rate);
-            }
-        }
-    } else if (logForm.value.type === 'machinery' && logForm.value.machinery_id) {
-        const m = props.machineries.find(x => x.id === parseInt(logForm.value.machinery_id));
-        if (m) {
-            if (logForm.value.custom_rate) {
-            cost = (Number(logForm.value.hours_worked) || 0) * Number(logForm.value.custom_rate);
-        } else {
-            cost = (Number(logForm.value.hours_worked) || 0) * Number(m.cost_per_hour);
-        }
+// Load KPI Settings
+watch(() => props.kpiSettings, (settings) => {
+    if (settings && settings.value) {
+        try {
+            const data = JSON.parse(settings.value);
+            kpiForm.comparison_type = data.comparison_type || '<=';
+            kpiForm.start_val = data.start_val || '2';
+            kpiForm.end_val = data.end_val || '0';
+            kpiForm.bonus_amount = data.bonus_amount || '1000';
+            kpiForm.fixed_salary = data.fixed_salary || '0';
+        } catch (e) {
+            console.error("KPI parse error", e);
         }
     }
-    cost = cost - (Number(logForm.value.deductions) || 0);
-    return cost;
-});
+}, { immediate: true });
 
-function submitLog() {
+function submitKpiSettings() {
     isProcessing.value = true;
-    router.post(route('admin.hr.log.store'), logForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            logForm.value.hours_worked = '';
-            logForm.value.volume_done = '';
-            logForm.value.custom_rate = '';
-            logForm.value.description = '';
-            logForm.value.deductions = '';
-            logForm.value.date = new Date().toISOString().split('T')[0];
-        },
+    router.post(route('admin.hr.kpi_settings.store'), kpiForm, {
+        onSuccess: () => { showKpiDrawer.value = false; isProcessing.value = false; },
         onError: () => isProcessing.value = false
     });
 }
 
-// TAB 3 Action
-function generatePayroll() {
-    isProcessing.value = true;
-    router.post(route('admin.hr.payroll.generate'), {}, {
-        onSuccess: () => {
-            isProcessing.value = false;
-        },
-        onError: () => {
-            isProcessing.value = false;
-            alert("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
-        }
+const calculateKpiAndExpectedSalary = (leadsCount) => {
+    const comp = kpiForm.comparison_type;
+    const start = parseFloat(kpiForm.start_val) || 0;
+    const bonus = parseFloat(kpiForm.bonus_amount) || 0;
+    const fixed = parseFloat(kpiForm.fixed_salary) || 0;
+    
+    let conditionMet = false;
+    if (comp === '<=') conditionMet = leadsCount <= start;
+    else if (comp === '>=') conditionMet = leadsCount >= start;
+    else if (comp === '=') conditionMet = leadsCount === start;
+    else if (comp === '<') conditionMet = leadsCount < start;
+    else if (comp === '>') conditionMet = leadsCount > start;
+    
+    const kpiBonus = conditionMet ? (leadsCount * bonus) : 0;
+    return {
+        kpi: kpiBonus,
+        salary: fixed + kpiBonus
+    };
+};
+
+const kpiManagers = computed(() => {
+    // Return all system users having leads or roles related to sales
+    return allEmployees.value.filter(e => e.type === 'user').map(u => {
+        const kpiCalc = calculateKpiAndExpectedSalary(u.leads_count);
+        return {
+            id: u.id,
+            name: u.name,
+            leads_count: u.leads_count,
+            kpi: kpiCalc.kpi,
+            expected_salary: kpiCalc.salary
+        };
     });
-}
-
-// Decentralized Import Modal
-
-// Handlers for the new Ledger Components
-async function submitBrigadeLedgerFromEvent(payload) {
-    if (!payload.target_id) return;
-    try {
-        const response = await fetch(route('admin.hr.brigade.transaction.store', payload.target_id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify(payload)
-        });
-        if (response.ok) {
-            openBrigadeLedger(activeBrigadeForLedger.value); // refresh
-        } else {
-            alert('Tranzaksiyani saqlashda xatolik!');
-        }
-    } catch(err) {
-        console.error(err);
-        alert('Tranzaksiyani saqlashda xatolik!');
-    }
-}
-
-function exportBrigadePdf(id) {
-    if (id) window.open(route('admin.hr.brigade.ledger.export', id), '_blank');
-}
-
-async function submitOwnerLedgerFromEvent(payload) {
-    if (!payload.target_id) return;
-    try {
-        const response = await fetch(route('admin.hr.machine-owners.ledger.store', payload.target_id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify(payload)
-        });
-        if (response.ok) {
-            openOwnerLedger(activeOwnerForLedger.value); // refresh
-        } else {
-            alert('Tranzaksiyani saqlashda xatolik!');
-        }
-    } catch(err) {
-        console.error(err);
-        alert('Tranzaksiyani saqlashda xatolik!');
-    }
-}
-
-function exportOwnerPdf(id) {
-    if (id) window.open(route('admin.hr.owner.ledger.export', id), '_blank');
-}
-
+});
 </script>
 
 <template>
-    <Head :title="$t('hr_hub')" />
+    <Head title="HRM & Ish Haqlar" />
     
     <AdminLayout>
-
-
-        <div class="w-full">
-            <!-- Content Area -->
-            <div class="w-full min-h-[700px]">
-                <!-- TAB 0: GLOBAL USER MANAGEMENT -->
-                <div v-if="activeTab === 0" class="space-y-8 animate-[fadeIn_0.5s_ease-out] w-full">
-                    <!-- 1. Tizim Xodimlari Section -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                                👥 Tizim Xodimlari
-                            </h2>
-                            <button @click="showUserModal = true" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                                + Tizim Xodimi
-                            </button>
+        <div class="p-6 space-y-6 max-w-7xl mx-auto">
+            
+            <!-- Tab 0: Xodimlar (Employees) -->
+            <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                
+                <!-- 5 Premium Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+                    <!-- card 1 -->
+                    <div class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-semibold text-blue-700 font-display">Umumiy xodimlar soni</span>
+                            <span class="text-blue-500 text-lg">👤</span>
                         </div>
+                        <h2 class="text-4xl font-extrabold text-blue-900 font-display">{{ stats.total }}</h2>
+                    </div>
+                    
+                    <!-- card 2 -->
+                    <div class="bg-teal-50/70 border border-teal-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-semibold text-teal-700 font-display">Faol xodimlar soni</span>
+                            <span class="text-teal-500 text-lg">👥</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-teal-800 font-display">{{ stats.active }}</h2>
+                    </div>
+                    
+                    <!-- card 3 -->
+                    <div class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-semibold text-purple-700 font-display">Doimiy ishchilar soni</span>
+                            <span class="text-purple-500 text-lg">🛡️</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-purple-800 font-display">{{ stats.permanent }}</h2>
+                    </div>
+                    
+                    <!-- card 4 -->
+                    <div class="bg-amber-50/70 border border-amber-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-semibold text-amber-700 font-display">Yollanma ishchilar soni</span>
+                            <span class="text-amber-500 text-lg">🚜</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-amber-800 font-display">{{ stats.contract }}</h2>
+                    </div>
+                    
+                    <!-- card 5 -->
+                    <div class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-semibold text-rose-700 font-display">Bo'shatilgan ishchilar soni</span>
+                            <span class="text-rose-500 text-lg">⚠️</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-rose-800 font-display">{{ stats.fired }}</h2>
+                    </div>
+                </div>
+
+                <!-- Search & Filters Bar -->
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="flex-1 w-full relative">
+                        <span class="absolute left-3.5 top-2.5 text-gray-400">🔍</span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Qidirish..." 
+                            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50/50"
+                        />
+                    </div>
+                    
+                    <div class="flex flex-wrap md:flex-nowrap gap-3 items-center w-full md:w-auto">
+                        <!-- Filters popup or selector -->
+                        <select v-model="filterRole" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
+                            <option value="">Barcha lavozimlar</option>
+                            <option value="Super_Admin">Super Admin</option>
+                            <option value="Operator">Operator</option>
+                            <option value="Partner">Hamkor</option>
+                            <option value="builder">Quruvchi / Usta</option>
+                            <option value="driver">Haydovchi</option>
+                            <option value="guard">Qorovul</option>
+                        </select>
                         
-                        <div class="overflow-x-auto rounded-xl border border-gray-200">
-                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
-                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <th class="p-3 font-normal uppercase tracking-widest">Xodim</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest">Rol</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Stavka</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="user in users" :key="user.id" class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
-                                        <td class="p-3">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
-                                                    <img v-if="user.photo_path" :src="'/storage/' + user.photo_path" class="w-full h-full object-cover">
-                                                    <span v-else class="text-lg">👤</span>
-                                                </div>
-                                                <div>
-                                                    <h3 class="text-xs font-bold text-gray-900 line-clamp-1" :title="user.name">{{ user.name }}</h3>
-                                                    <p class="text-[9px] text-gray-500 line-clamp-1" :title="user.email">{{ user.email }}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="p-3">
-                                            <span class="inline-block px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest border"
-                                                :class="{ 'bg-red-50 text-red-600 border-red-200': user.roles?.[0]?.name === 'Super_Admin', 'bg-blue-50 text-blue-600 border-blue-200': user.roles?.[0]?.name === 'Operator', 'bg-amber-50 text-amber-600 border-amber-200': user.roles?.[0]?.name === 'Partner', ' text-gray-500 border-gray-300': user.roles?.[0]?.name === 'Worker' || !user.roles?.length }">
-                                                {{ user.roles?.[0]?.name || 'None' }}
-                                            </span>
-                                        </td>
-                                        <td class="p-3 text-right font-bold text-emerald-600">
-                                            {{ $currency(user.salary_rate || 0) }}
-                                        </td>
-                                        <td class="p-3">
-                                            <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                                                <button @click="openUserLedger(user)" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="Karta">💳</button>
-                                                <button v-if="isAdmin" @click="openUserModal(user)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
-                                                <button v-if="isAdmin" @click="deleteUser(user.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 2. Yollanma Ishchilar & Brigadalar Section -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                                👷‍♂️ Yollanma Ishchilar & Brigadalar
-                            </h2>
-                            <button @click="showBrigadeForm = !showBrigadeForm" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                                {{ showBrigadeForm ? '- Yopish' : "+ Brigada Qo'shish" }}
-                            </button>
-                        </div>
-
-                        <form v-if="showBrigadeForm" @submit.prevent="saveBrigade" class="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                            <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isBrigadeEditMode ? 'Brigadani Tahrirlash' : "Yangi Brigada Qo'shish" }}</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <input v-model="brigadeForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Brigada Nomi (Masalan: G'isht teruvchilar)" required>
-                                <input v-model="brigadeForm.foreman_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Boshqaruvchi Usta (Prorab)" required>
-                                <input v-model="brigadeForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
-                            </div>
-                            <div class="flex gap-3 items-center justify-end pt-2">
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                                    {{ isBrigadeEditMode ? 'Saqlash' : "Qo'shish" }}
-                                </button>
-                            </div>
-                        </form>
-
-                        <div class="overflow-x-auto rounded-xl border border-gray-200">
-                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
-                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <th class="p-3 font-normal uppercase tracking-widest">Brigada</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest">Boshqaruvchi (Usta)</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-center">Ishchilar Soni</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Brigada Balansi</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <template v-for="b in brigades" :key="b.id">
-                                        <tr class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors cursor-pointer group" @click="activeBrigadeId = activeBrigadeId === b.id ? null : b.id">
-                                            <td class="p-3 font-bold text-gray-900">
-                                                <span class="text-blue-600 mr-2">{{ activeBrigadeId === b.id ? '▼' : '▶' }}</span>
-                                                {{ b.name }}
-                                            </td>
-                                            <td class="p-3 text-gray-700">
-                                                <div>{{ b.foreman_name }}</div>
-                                                <div class="text-[9px] text-gray-500 mt-0.5" v-if="b.phone">{{ b.phone }}</div>
-                                            </td>
-                                            <td class="p-3 text-center text-gray-700 font-bold">
-                                                {{ b.workers ? b.workers.length : 0 }}
-                                            </td>
-                                            <td class="p-3 text-right font-bold" :class="b.balance > 0 ? 'text-emerald-600' : (b.balance < 0 ? 'text-red-600' : 'text-gray-900')">
-                                                {{ $currency(b.balance || 0) }}
-                                            </td>
-                                            <td class="p-3">
-                                                <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity" @click.stop>
-                                                    <button v-if="isAdmin" @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors text-[9px] font-bold uppercase tracking-wider" title="+ Ishchi">+ Ishchi</button>
-                                                    <button v-if="isAdmin" @click="openBrigadeLedger(b)" class="px-2 py-1 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors text-[9px] font-bold uppercase tracking-wider" title="Hisob-kitob Jurnali">📊 Jurnal</button>
-                                                    <button v-if="isAdmin" @click="openBrigadeForm(b)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
-                                                    <button v-if="isAdmin" @click="deleteBrigade(b.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <!-- Collapsible Inner Workers Row -->
-                                        <tr v-if="activeBrigadeId === b.id" class="bg-gray-50/50">
-                                            <td colspan="5" class="p-4 border-b border-gray-200">
-                                                <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-inner" @click.stop>
-                                                    <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-                                                        <h4 class="text-xs font-mono text-gray-700 uppercase tracking-wider font-bold">Brigada Ishchilari</h4>
-                                                        <button v-if="isAdmin" @click="openWorkerEdit({ brigade_id: b.id })" class="px-2 py-1 bg-blue-50 border border-blue-500 text-blue-600 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">+ Ishchi Qo'shish</button>
-                                                    </div>
-                                                    <div class="overflow-x-auto">
-                                                        <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
-                                                            <thead class="bg-gray-50 text-gray-500 uppercase text-[9px] font-medium">
-                                                                <tr class="border-b border-gray-100">
-                                                                    <th class="p-2">Ishchi F.I.SH</th>
-                                                                    <th class="p-2">Roli / Kasbi</th>
-                                                                    <th class="p-2">Telefon</th>
-                                                                    <th class="p-2">To'lov turi</th>
-                                                                    <th class="p-2 text-right">Stavka</th>
-                                                                    <th class="p-2 text-right">Amallar</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="divide-y divide-gray-100 text-[11px]">
-                                                                <tr v-for="w in b.workers" :key="w.id" class="hover:bg-gray-50/30 transition-colors">
-                                                                    <td class="p-2 font-bold text-gray-800">{{ w.name }}</td>
-                                                                    <td class="p-2 text-gray-700">
-                                                                        {{ w.role === 'builder' ? 'Quruvchi' : (w.role === 'driver' ? 'Haydovchi' : (w.role === 'guard' ? 'Qorovul' : 'Boshqa')) }}
-                                                                    </td>
-                                                                    <td class="p-2 text-gray-600">{{ w.phone || '-' }}</td>
-                                                                    <td class="p-2 text-gray-600">
-                                                                        {{ w.salary_type === 'piece_rate' ? 'Ishbay' : (w.salary_type === 'hourly' ? 'Soatbay' : 'Oylik Maosh') }} ({{ w.metric_type || '-' }})
-                                                                    </td>
-                                                                    <td class="p-2 text-right font-bold text-blue-600">{{ $currency(w.base_rate || w.rate) }}</td>
-                                                                    <td class="p-2">
-                                                                        <div class="flex justify-end gap-1.5">
-                                                                            <button v-if="isAdmin" @click="openWorkerEdit(w)" class="w-5 h-5 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors text-[10px]" title="Tahrirlash">✏️</button>
-                                                                            <button v-if="isAdmin" @click="deleteWorker(w.id)" class="w-5 h-5 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors text-[10px]" title="O'chirish">🗑️</button>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr v-if="!b.workers || b.workers.length === 0">
-                                                                    <td colspan="6" class="text-center p-4 text-gray-400">Ishchilar mavjud emas</td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 3. Qorovullar Section -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                                🛡️ Qorovullar
-                            </h2>
-                            <button @click="openGuardForm()" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm">
-                                + Qorovul
-                            </button>
-                        </div>
-
-                        <div class="overflow-x-auto rounded-xl border border-gray-200">
-                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs font-mono">
-                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <th class="p-3 font-normal uppercase tracking-widest">Qorovul</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest">Telefon</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Maosh</th>
-                                        <th class="p-3 font-normal uppercase tracking-widest text-right">Amallar</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="g in workers.filter(w => w.role === 'guard')" :key="g.id" class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
-                                        <td class="p-3 font-bold text-gray-900">
-                                            <div class="flex items-center gap-2">
-                                                <span>🛡️</span>
-                                                <span>{{ g.name }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="p-3 text-gray-700">{{ g.phone || '-' }}</td>
-                                        <td class="p-3 text-right font-bold text-emerald-600">{{ $currency(g.base_rate) }}</td>
-                                        <td class="p-3">
-                                            <div class="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                                                <button @click="viewGuardHistory(g)" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="Maosh Tarixi">📅</button>
-                                                <button @click="openGuardForm(g)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-gray-100 transition-colors" title="Tahrirlash">✏️</button>
-                                                <button v-if="isAdmin" @click="deleteWorker(g.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors" title="O'chirish">🗑️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="workers.filter(w => w.role === 'guard').length === 0">
-                                        <td colspan="4" class="text-center p-8 text-gray-500 font-mono">Qorovullar yo'q</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Hidden Worker Form for reuse -->
-                    <Teleport to="body">
-                        <div v-if="showWorkerForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div class="absolute inset-0 bg-gray-50" @click="cancelWorkerEdit"></div>
-                            <form @submit.prevent="saveWorker" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
-                                <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : "Yangi Ishchi Qo'shish" }}</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input v-model="workerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
-                                    <input v-model="workerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
-                                    <select v-show="workerForm.role !== 'guard'" v-model="workerForm.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900" :required="workerForm.role !== 'guard'">
-                                        <option value="" disabled>-- Brigada --</option>
-                                        <option v-for="br in brigades" :key="br.id" :value="br.id">{{ br.name }}</option>
-                                    </select>
-                                    <select v-model="workerForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                        <option value="builder">Quruvchi / Usta</option>
-                                        <option value="driver">Haydovchi</option>
-                                        <option value="guard">Qorovul</option>
-                                        <option value="office">Boshqa</option>
-                                    </select>
-                                    <select v-model="workerForm.salary_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                        <option value="piece_rate">Ishbay</option>
-                                        <option value="hourly">Soatbay</option>
-                                        <option value="fixed_monthly">Oylik Maosh</option>
-                                    </select>
-                                    <select v-if="workerForm.salary_type === 'piece_rate'" v-model="workerForm.metric_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-gray-50 text-gray-900">
-                                        <option value="dona">Dona</option>
-                                        <option value="kv_m">Kvadrat Metr</option>
-                                        <option value="kub_m">Kub Metr</option>
-                                        <option value="metr">Metr</option>
-                                        <option value="soat">Soat</option>
-                                        <option value="kun">Kun</option>
-                                        <option value="reys">Reys</option>
-                                    </select>
-                                    <input v-model="workerForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Narxi (Stavka)" required>
-
-                                    <div v-if="workerForm.role === 'guard' && workerForm.salary_type === 'fixed_monthly'" class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
-                                        <div class="flex justify-between items-center">
-                                            <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                            <button type="button" @click="addSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
-                                        </div>
-                                        <div v-if="workerForm.salary_periods && workerForm.salary_periods.length > 0" class="space-y-3">
-                                            <div v-for="(period, idx) in workerForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
-                                                <button type="button" @click="removeSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                    <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                    <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
-                                                    <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
-                                            O'tgan davrlar kiritilmagan.
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div class="flex justify-end gap-3 mt-4">
-                                    <button type="button" @click="cancelWorkerEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
-                                    <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                    </Teleport>
-
-                    <!-- Guard Form Modal -->
-                    <Teleport to="body">
-                        <div v-if="showGuardForm" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                            <div class="absolute inset-0 bg-gray-50" @click="cancelGuardEdit"></div>
-                            <form @submit.prevent="saveGuard" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-sm">
-                                <h3 class="text-lg font-bold text-gray-900 uppercase">{{ isGuardEditMode ? 'Qorovulni Tahrirlash' : "Yangi Qorovul Qo'shish" }}</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input v-model="guardForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="F.I.SH" required>
-                                    <input v-model="guardForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqam">
-                                    <input v-model="guardForm.base_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Oylik Maosh (Stavka)" required>
-
-                                    <div class="col-span-1 sm:col-span-2 p-4 border border-gray-200 rounded-xl space-y-4">
-                                        <div class="flex justify-between items-center">
-                                            <h4 class="text-[10px] font-mono text-blue-600 uppercase">O'tgan Davrlar Maoshini Kiritish</h4>
-                                            <button type="button" @click="addGuardSalaryPeriod" class="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-widest">+ Davr Qo'shish</button>
-                                        </div>
-                                        <div v-if="guardForm.salary_periods && guardForm.salary_periods.length > 0" class="space-y-3">
-                                            <div v-for="(period, idx) in guardForm.salary_periods" :key="idx" class="flex flex-wrap md:flex-nowrap gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100 relative group">
-                                                <button type="button" @click="removeGuardSalaryPeriod(idx)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm">✕</button>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Dan (Oy/Yil)</label>
-                                                    <input type="month" v-model="period.start_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Gacha (Oy/Yil)</label>
-                                                    <input type="month" v-model="period.end_month" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" required>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">Oylik Miqdori</label>
-                                                    <input type="number" v-model="period.salary" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50" placeholder="Summa" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div v-else class="text-center text-[10px] font-mono text-gray-500 p-4 border border-dashed border-gray-200 rounded-lg">
-                                            O'tgan davrlar kiritilmagan.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex justify-end gap-3 mt-4">
-                                    <button type="button" @click="cancelGuardEdit" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
-                                    <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                    </Teleport>
-                </div>
-          
-          <!-- TAB 1: FACE-ID HUB -->
-        <div v-if="activeTab === 1" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
-            <h2 class="text-xl font-display font-bold text-gray-900 mb-6 flex items-center gap-2">
-                👁️ {{ $t('biometric_registration') }}
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-8">
-                <!-- Camera Feed Placeholder -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl border border-blue-200 overflow-hidden relative min-h-[400px] flex items-center justify-center bg-gray-50 group">
-                    <video ref="videoElement" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0" v-show="isCameraActive"></video>
-                    
-                    <div v-if="!isCameraActive" class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                    <!-- Crosshair UI -->
-                    <div class="absolute inset-8 border border-blue-200 rounded-[40px] pointer-events-none z-10"></div>
-                    <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-blue-500 pointer-events-none z-10"></div>
-                    <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-blue-500 pointer-events-none z-10"></div>
-                    <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-blue-500 pointer-events-none z-10"></div>
-                    <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-blue-500 pointer-events-none z-10"></div>
-                    
-                    <div v-if="!isCameraActive" class="text-center z-10">
-                        <div class="text-6xl mb-4 animate-pulse">📷</div>
-                        <p class="text-blue-600 font-mono text-sm tracking-widest uppercase mb-2">Kamera faol emas</p>
-                        <button @click="startCamera" class="px-4 py-2 mt-2 bg-blue-50 border border-blue-500 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-600 hover:text-black transition-colors">Kamerani Yoqish</button>
-                    </div>
-                </div>
-
-                <!-- Registration Actions -->
-                <div class="space-y-6">
-                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-100">
-                        <h3 class="text-sm font-mono text-gray-900 mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Yuzni Xodimga Biriktirish</h3>
-                        <div class="space-y-4">
-                            <div class="flex gap-4">
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" v-model="biometricForm.person_type" value="worker" class="hidden peer" @change="biometricForm.person_id = ''">
-                                    <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-[10px] uppercase tracking-widest font-mono">
-                                        👷 Yollanma Ishchi
-                                    </div>
-                                </label>
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" v-model="biometricForm.person_type" value="user" class="hidden peer" @change="biometricForm.person_id = ''">
-                                    <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-[10px] uppercase tracking-widest font-mono">
-                                        👨‍💻 Tizim Xodimi
-                                    </div>
-                                </label>
-                            </div>
-                            
-                            <div v-if="biometricForm.person_type === 'worker'">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Ishchini Tanlang</label>
-                                <select v-model="biometricForm.person_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50">
-                                    <option value="" disabled selected>-- Ishchi --</option>
-                                    <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
-                                </select>
-                            </div>
-                            
-                            <div v-if="biometricForm.person_type === 'user'">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tizim Xodimini Tanlang</label>
-                                <select v-model="biometricForm.person_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50">
-                                    <option value="" disabled selected>-- Xodim --</option>
-                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} ({{ user.role }})</option>
-                                </select>
-                            </div>
-
-                            <button @click="scanNewFace" :disabled="!isCameraActive || isProcessing" class="w-full mt-4 py-3 bg-blue-50 border border-blue-500 text-blue-600 text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
-                                {{ isProcessing ? 'Saqlanmoqda...' : '📷 Yangi Yuzni Skanerlash' }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 2: ATTENDANCE LOGS (AI HUB) -->
-        <div v-if="activeTab === 2" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                    ⏱️ AI Davomat va Nazorat Jurnali
-                </h2>
-                <div class="flex gap-2">
-                    <button @click="startScanner" class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-mono uppercase tracking-widest rounded shadow-sm hover:bg-blue-600 hover:text-black transition-colors cursor-pointer relative z-10 flex items-center gap-2">
-                        <span>📷</span> Mobil Skaner (Qo'lda)
-                    </button>
-                    <span class="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-mono uppercase tracking-widest rounded shadow-sm flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Live Tizim
-                    </span>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <th class="pb-3 w-16">Isbot</th>
-                            <th class="pb-3">Vaqti</th>
-                            <th class="pb-3">Obyekt / Shaxs</th>
-                            <th class="pb-3">Kategoriya</th>
-                            <th class="pb-3">Holat</th>
-                            <th class="pb-3 text-right">Kamera</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="log in attendanceLogs" :key="log.id" @click="openLogModal(log)" class="border-b border-gray-100 hover: transition-colors cursor-pointer group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td class="py-3">
-                                <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shadow-inner flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
-                                    <img v-if="log.proof_image" :src="log.proof_image" class="w-full h-full object-cover">
-                                    <span v-else class="text-xs opacity-50">N/A</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-gray-900 font-bold">{{ new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }} <span class="text-gray-500 text-[10px] block">{{ new Date(log.timestamp).toLocaleDateString() }}</span></td>
-                            <td class="py-3">
-                                <p class="text-gray-900 font-bold text-sm">{{ log.subject?.name || log.subject?.company_or_name || "Noma'lum" }}</p>
-                                <p v-if="log.subject?.license_plate" class="text-blue-600 text-[10px] tracking-widest">{{ log.subject.license_plate }}</p>
-                            </td>
-                            <td class="py-3">
-                                <span v-if="log.subject_type?.includes('User')" class="text-blue-600/80 text-[10px] uppercase tracking-widest">👨‍💻 Xodim</span>
-                                <span v-else-if="log.subject_type?.includes('Worker')" class="text-indigo-600/80 text-[10px] uppercase tracking-widest">👷 Ishchi</span>
-                                <span v-else-if="log.subject_type?.includes('Machinery')" class="text-amber-600/80 text-[10px] uppercase tracking-widest">🚜 Texnika</span>
-                                <span v-else-if="log.subject_type?.includes('VisitorDelivery')" class="text-gray-500 text-[10px] uppercase tracking-widest">🚚 Tashrif buyuruvchi</span>
-                                <span v-else class="text-gray-500 text-[10px] uppercase tracking-widest">❓ Noma'lum</span>
-                            </td>
-                            <td class="py-3">
-                                <span v-if="log.type === 'entry'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm">
-                                    ➡️ Keldi
-                                </span>
-                                <span v-else-if="log.type === 'exit'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm">
-                                    🚪 Ketdi
-                                </span>
-                                <span v-else-if="log.type === 'start_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-neon-blue/20 text-blue-600 border-blue-200 shadow-sm">
-                                    ⚙️ Ish Boshladi
-                                </span>
-                                <span v-else-if="log.type === 'stop_work'" class="inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border bg-red-50 text-red-600 border-red-200 shadow-sm">
-                                    🛑 Ish To'xtadi
-                                </span>
-                            </td>
-                            <td class="py-3 text-right text-gray-500 text-[10px] uppercase tracking-widest">
-                                {{ log.camera_id }}<br>
-                                <span class="opacity-50">Acc: {{ log.confidence_score }}%</span>
-                            </td>
-                        </tr>
-                        <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!attendanceLogs || attendanceLogs.length === 0">
-                            <td colspan="6" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl block w-full mt-4">
-                                Hozircha AI jurnali bo'sh
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- TAB 3: Machinery -->
-        <div v-if="activeTab === 3" class="max-w-4xl mx-auto animate-[fadeIn_0.5s_ease-out]">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
-                        🚜 Og'ir Texnika va Egaslari (Arendatorlar)
-                    </h2>
-                    <button @click="showOwnerForm = !showOwnerForm" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-mono tracking-widest uppercase rounded hover:bg-blue-50 transition-colors border border-blue-200">
-                        {{ showOwnerForm ? '- Yopish' : "+ Texnika Egasi Qo'shish" }}
-                    </button>
-                </div>
-
-                <form v-if="showOwnerForm" @submit.prevent="saveOwner" class="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 flex-shrink-0 animate-[fadeIn_0.3s_ease-out]">
-                    <h3 class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{{ isOwnerEditMode ? 'Egasini Tahrirlash' : 'Yangi Texnika Egasi' }}</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input v-model="ownerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Tashkilot / Ism" required>
-                        <input v-model="ownerForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs" placeholder="Telefon Raqami">
-                    </div>
-                    <div class="flex gap-3 items-center justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded transition-colors disabled:opacity-50">
-                            {{ isOwnerEditMode ? 'Saqlash' : "Qo'shish" }}
+                        <select v-model="filterBuilding" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
+                            <option value="">Barcha binolar</option>
+                            <option value="all">Faqat Barcha</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                        
+                        <select v-model="filterStatus" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
+                            <option value="">Barcha holatlar</option>
+                            <option value="active">Ish holatida</option>
+                            <option value="fired">Bo'shatilgan</option>
+                        </select>
+                        
+                        <button 
+                            @click="openAddEmployee" 
+                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl transition-colors shrink-0 shadow-sm flex items-center gap-1.5"
+                        >
+                            <span>+</span> Xodim qo'shish
                         </button>
                     </div>
-                </form>
-
-                <div class="space-y-4">
-                    <div v-for="owner in machineOwners" :key="owner.id" class="border border-gray-200 bg-gray-50 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                        <!-- Owner Header -->
-                        <div class="p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center transition-colors" @click="activeOwnerId = activeOwnerId === owner.id ? null : owner.id">
-                            <div>
-                                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                    <span class="text-blue-600">{{ activeOwnerId === owner.id ? '▼' : '▶' }}</span>
-                                    {{ owner.name }}
-                                </h3>
-                                <p class="text-[10px] font-mono text-gray-500 mt-1">{{ owner.phone }}</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <button @click.stop="openOwnerLedger(owner)" class="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-mono tracking-widest uppercase rounded border border-amber-200 hover:bg-amber-500 hover:text-black transition-colors flex items-center gap-2">
-                                    <span>📊</span> Xisobot (Jurnal)
-                                </button>
-                                <div class="text-right">
-                                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-0.5">Umumiy Balans (Haqi)</p>
-                                    <p class="text-sm font-bold" :class="owner.balance > 0 ? 'text-red-600' : (owner.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">{{ $currency(owner.balance || 0) }}</p>
-                                </div>
-                                <div class="flex gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click.stop="openOwnerForm(owner)" class="w-6 h-6 flex items-center justify-center text-gray-900 rounded hover:bg-white/20 transition-colors" title="Tahrirlash">✏️</button>
-
-                                    <button v-if="isAdmin" @click.stop="deleteOwner(owner.id)" class="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded hover:bg-red-50 transition-colors" title="O'chirish">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Inner Machineries -->
-                        <div v-if="activeOwnerId === owner.id" class="bg-gray-50 p-4 border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-xs font-mono text-gray-500 uppercase">Tegishli Texnikalar</h4>
-                                <button @click="machineryForm.machine_owner_id = owner.id; showMachineryForm = true" class="px-2 py-1 text-gray-900 text-[9px] font-mono tracking-widest uppercase rounded hover:bg-white/20 transition-colors">
-                                    + Texnika Qo'shish
-                                </button>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div v-for="m in owner.machineries" :key="m.id" class="p-3 rounded-lg border border-gray-100 flex flex-col justify-between hover:border-gray-300 transition-colors">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <p class="text-xs font-bold text-gray-900">{{ m.machinery_type }} - {{ m.name }}</p>
-                                            <p class="text-[9px] font-mono text-blue-600 uppercase mt-0.5">{{ m.license_plate }}</p>
-                                        </div>
-                                        <div class="flex gap-1">
-                                            <button v-if="isAdmin" @click="startEditMachinery(m); showMachineryForm = true" class="text-[10px] px-1 hover:text-gray-900 text-gray-500">✏️</button>
-                                            <button v-if="isAdmin" @click="deleteMachinery(m.id)" class="text-[10px] px-1 hover:text-red-600 text-gray-500">🗑️</button>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-end mt-3">
-                                        <p class="text-[10px] font-mono text-gray-500 uppercase">{{ m.payment_type === 'hourly' ? 'Soatbay' : 'Hajm' }}</p>
-                                        <p class="text-xs font-bold text-emerald-600">{{ $currency(m.cost_per_hour) }}</p>
-                                    </div>
-                                </div>
-                                <div v-if="!owner.machineries || owner.machineries.length === 0" class="col-span-2 text-center text-[10px] font-mono text-gray-500 py-4 border border-dashed border-gray-200 rounded-lg">
-                                    Texnikalar mavjud emas
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Add/Edit Machinery Modal -->
-                <div v-if="showMachineryForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-gray-50" @click="showMachineryForm = false; editMachineryId = null"></div>
-                    <form @submit.prevent="editMachineryId ? updateMachinery() : addMachinery()" class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-lg w-full space-y-4">
-                        <h3 class="text-lg font-bold text-gray-900 uppercase">{{ editMachineryId ? 'Texnikani Tahrirlash' : "Yangi Texnika Qo'shish" }}</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Egasi (Tanlang)</label>
-                                <select v-if="editMachineryId" v-model="editMachineryForm.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50 text-gray-900" required>
-                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                                </select>
-                                <select v-else v-model="machineryForm.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50 text-gray-900" required>
-                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Turi (Yo'nalishi)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.machinery_type" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Kran, Buldozer...">
-                                <input v-else v-model="machineryForm.machinery_type" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Kran, Buldozer...">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Haydovchi Ismi (ixtiyoriy)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.driver_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Eshmatov Toshmat">
-                                <input v-else v-model="machineryForm.driver_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Eshmatov Toshmat">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Model / Rusumi</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                                <input v-else v-model="machineryForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Davlat Raqami</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.license_plate" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
-                                <input v-else v-model="machineryForm.license_plate" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">To'lov Turi</label>
-                                <select v-if="editMachineryId" v-model="editMachineryForm.payment_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50 text-gray-900" required>
-                                    <option value="hourly">Soatbay</option>
-                                    <option value="volume">Hajm bo'yicha</option>
-                                </select>
-                                <select v-else v-model="machineryForm.payment_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full bg-gray-50 text-gray-900" required>
-                                    <option value="hourly">Soatbay</option>
-                                    <option value="volume">Hajm bo'yicha</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 uppercase mb-1">Narxi (Stavka)</label>
-                                <input v-if="editMachineryId" v-model="editMachineryForm.cost_per_hour" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                                <input v-else v-model="machineryForm.cost_per_hour" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-3 mt-4">
-                            <button type="button" @click="showMachineryForm = false; editMachineryId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor qilish</button>
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded hover:shadow-sm">{{ $t('save') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 4: Timesheets & Logistics / Cash Requests --><!-- TAB 4: Timesheets & Logistics / Cash Requests -->
-        <div v-if="activeTab === 4" class="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            
-            <!-- Existing Work Log Form -->
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-2xl border border-blue-200 shadow-sm">
-                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">{{ $t('log_work') }}</h2>
-                <p class="text-xs font-mono text-gray-500 mb-8">{{ $t('log_work_desc') }}</p>
-
-                <form @submit.prevent="submitLog" class="space-y-6">
-                    <div class="flex gap-4 flex-wrap md:flex-nowrap">
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="logForm.type" value="worker" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all text-sm uppercase tracking-widest font-mono">
-                                👷 {{ $t('worker') }}
-                            </div>
-                        </label>
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" v-model="logForm.type" value="machinery" class="hidden peer">
-                            <div class="text-center p-3 rounded-xl border border-gray-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-600 text-gray-500 transition-all text-sm uppercase tracking-widest font-mono">
-                                🚜 {{ $t('machinery') }}
-                            </div>
-                        </label>
+                <!-- Xodimlar Table -->
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                    <div class="p-5 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900 font-display">Xodimlar</h3>
                     </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        <!-- chap ustun -->
-                        <div class="space-y-6">
-                            <!-- Worker/Machinery Select -->
-                            <div v-if="logForm.type === 'worker'">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('select_worker') }}</label>
-                                <select v-model="logForm.worker_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50" required>
-                                    <option value="" disabled>-- {{ $t('select') }} --</option>
-                                    <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
-                                </select>
-                            </div>
-                            <div v-if="logForm.type === 'machinery'" class="space-y-3">
-                                <div>
-                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Texnika Egasi (Ixtiyoriy)</label>
-                                    <select v-model="logForm.machine_owner_id" @change="logForm.machinery_id = ''" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50">
-                                        <option value="">-- Barcha Texnikalar --</option>
-                                        <option v-for="o in machineOwners" :key="o.id" :value="o.id">
-                                            {{ o.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('select_machinery') }}</label>
-                                    <select v-model="logForm.machinery_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50" required>
-                                        <option value="" disabled>-- {{ $t('select') }} --</option>
-                                        <option v-for="m in filteredMachineries" :key="m.id" :value="m.id">{{ m.name }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Ish Hajmi & Obyom & Sana -->
-                            <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ logForm.type === 'machinery' ? 'Ish Hajmi / Qatnov / Soat' : $t('hours_worked') }}</label>
-                                <input v-model="logForm.hours_worked" type="number" step="0.5" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="0.0">
-                            </div>
-                            <div v-if="logForm.type === 'worker'">
-                                <label class="block text-[10px] font-mono text-amber-600 mb-1 uppercase">Obyom / Hajm</label>
-                                <input v-model="logForm.volume_done" type="number" step="0.1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="0.0">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('date') }}</label>
-                                <input v-model="logForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" required>
-                            </div>
-                        </div>
-
-                        <!-- o'ng ustun -->
-                        <div class="space-y-6">
-                            <!-- Bino Target -->
-                            <div class="space-y-3">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('building_target') }} ({{ $t('expense_link') }})</label>
-                                <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    <select v-model="logForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50" :required="logForm.type === 'worker' || logForm.type === 'machinery'" @change="logForm.floor_id = ''; logForm.unit_id = ''">
-                                        <option value="" disabled>-- Bino --</option>
-                                        <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                                    </select>
-                                    <select v-model="logForm.floor_id" :disabled="!logForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50" @change="logForm.unit_id = ''">
-                                        <option value="" disabled selected>-- Qavat --</option>
-                                        <option v-for="f in logFloors" :key="f.id" :value="f.id">{{ f.floor_number }}-qavat</option>
-                                    </select>
-                                    <select v-model="logForm.unit_id" :disabled="!logForm.floor_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50">
-                                        <option value="" disabled selected>-- Xonadon --</option>
-                                        <option v-for="u in logUnits" :key="u.id" :value="u.id">{{ u.unit_number }}-xonadon</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Maxsus Narx -->
-                            <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-indigo-600 mb-1 uppercase">Maxsus Narx (Ixtiyoriy)</label>
-                                <input v-model="logForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Kelishilgan narx">
-                            </div>
-
-                            <!-- Texnika Xarajati (Deductions) -->
-                            <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-amber-600 mb-1 uppercase">
-                                    {{ logForm.type === 'machinery' ? 'Texnika Xarajati (Chegirma)' : 'Ushlanma / Jarima' }}
-                                </label>
-                                <input v-model="logForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 border-amber-200 focus:border-amber-500 focus:ring-neon-yellow/50" placeholder="0.00">
-                            </div>
-
-                            <!-- Izoh -->
-                            <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Izoh (Ixtiyoriy)</label>
-                                <input v-model="logForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qo'shimcha ma'lumot yoki sabab...">
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="logForm.type === 'worker' || logForm.type === 'machinery'" class="mt-8 bg-gray-50 p-4 rounded-xl border border-blue-200 flex justify-between items-center">
-                        <span class="text-xs font-mono text-gray-500 uppercase tracking-widest">{{ $t('calculated_cost_preview') }}:</span>
-                        <span class="text-2xl font-display font-bold text-blue-600">{{ $currency(logPreviewCost) }}</span>
-                    </div>
-
-                    <button type="submit" :disabled="isProcessing" class="w-full py-4 rounded-xl text-black font-bold font-mono tracking-widest uppercase hover:shadow-sm transition-all disabled:opacity-50 bg-neon-blue">
-                        <span>{{ $t('save_log') }}</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- TAB 5: Payroll & Disbursement -->
-        <div v-if="activeTab === 5" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 border border-amber-200 shadow-sm rounded-2xl text-center relative overflow-hidden group">
-                <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-mono text-gray-500 uppercase tracking-widest mb-2">{{ $t('total_unpaid_payroll') }}</h3>
-                <h1 class="text-6xl font-display font-bold text-gray-900 drop-shadow-sm mb-8">
-                    {{ $currency(unpaidTotal) }}
-                </h1>
-                
-                <button @click="generatePayroll" :disabled="isProcessing || unpaidTotal <= 0" class="px-8 py-4 bg-amber-500 text-white font-bold font-mono text-lg uppercase tracking-widest rounded-xl hover:shadow-sm active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:hover:shadow-none inline-flex items-center gap-3">
-                    <span v-if="isProcessing" class="animate-spin text-xl">⚙️</span>
-                    <span v-else class="text-xl group-hover:-translate-y-1 transition-transform">📄</span>
-                    <span>{{ isProcessing ? 'HISOBLANMOQDA...' : 'OYLIK HISOBOTINI SHAKLLANTIRISH' }}</span>
-                </button>
-                <p class="text-[10px] font-mono text-gray-500 mt-4">Ushbu tugma barcha ishlarni bitta rasmiy hisobotga (Vekselga) yig'adi va to'lov uchun Kassaga jo'natadi.</p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Unpaid Logs -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100">
-                    <h2 class="text-xl font-display font-bold text-gray-900 mb-6">Hisoblanmagan Jurnallar</h2>
-                    <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
-                        <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <th class="pb-3">{{ $t('date_label') }}</th>
-                                    <th class="pb-3">Xodim / Texnika</th>
-                                    <th class="pb-3 text-right">{{ $t('amount') }}</th>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
+                            <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs border-b border-gray-100">
+                                <tr>
+                                    <th class="p-4 w-12">ID</th>
+                                    <th class="p-4">Ism</th>
+                                    <th class="p-4">Lavozim</th>
+                                    <th class="p-4">Bino</th>
+                                    <th class="p-4">Ishga olingan kun</th>
+                                    <th class="p-4">Holat</th>
+                                    <th class="p-4 text-right">Amallar</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr v-for="log in unpaidLogs" :key="log.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 text-gray-500 text-xs">{{ log.date }}</td>
-                                    <td class="py-3">
-                                        <div class="flex items-center gap-2">
-                                            <span v-if="log.worker_id" class="text-blue-600">👷</span>
-                                            <span v-else class="text-amber-600">🚜</span>
-                                            <span class="text-gray-900 text-xs font-bold">{{ log.worker?.name || log.machinery?.name }}</span>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="emp in filteredEmployees" :key="emp.id + '-' + emp.type" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 font-mono text-gray-500">{{ emp.id }}</td>
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center font-bold text-orange-700 shrink-0 uppercase">
+                                                {{ emp.name.substring(0, 2) }}
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-sm uppercase">{{ emp.name }}</h4>
+                                                <p class="text-xs text-gray-500 font-medium mt-0.5">{{ emp.phone }}</p>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td class="py-3 text-right text-amber-600 font-bold text-xs">{{ $currency(log.calculated_cost) }}</td>
-                                </tr>
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="unpaidLogs.length === 0">
-                                    <td colspan="3" class="py-8 text-center text-gray-500 font-mono text-xs border-dashed border border-gray-200 rounded-xl mt-4 block w-full">
-                                        {{ $t('no_unpaid_logs') }}
+                                    <td class="p-4 text-gray-700 capitalize">{{ emp.role_label }}</td>
+                                    <td class="p-4 text-gray-700">{{ emp.building_name }}</td>
+                                    <td class="p-4 text-gray-700">{{ formatDate(emp.employment_date) }}</td>
+                                    <td class="p-4">
+                                        <span 
+                                            class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"
+                                            :class="emp.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                                        >
+                                            {{ emp.status_label }}
+                                        </span>
                                     </td>
+                                    <td class="p-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button 
+                                                @click="openDetailModal(emp)" 
+                                                class="p-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors shadow-sm"
+                                                title="Ko'rish"
+                                            >
+                                                👁️
+                                            </button>
+                                            <button 
+                                                @click="openEditEmployee(emp)" 
+                                                class="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors shadow-sm"
+                                                title="Tahrirlash"
+                                            >
+                                                ✏️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredEmployees.length === 0">
+                                    <td colspan="7" class="p-10 text-center text-gray-400 font-medium">Xodimlar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Payroll History -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-blue-200">
-                    <h2 class="text-xl font-display font-bold text-gray-900 mb-6">Yaratilgan Oyliklar (Tarix)</h2>
-                    <div class="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        <div v-for="payroll in payrolls" :key="payroll.id" class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex justify-between items-center group hover:border-blue-200 transition-colors">
-                            <div>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] uppercase font-mono tracking-widest rounded">PAY-{{ String(payroll.id).padStart(5, '0') }}</span>
-                                    <span class="text-xs font-mono text-gray-500">{{ new Date(payroll.created_at).toLocaleDateString() }}</span>
-                                </div>
-                                <p class="text-lg text-gray-900 font-bold">{{ $currency(payroll.total_amount) }}</p>
-                                <p class="text-[10px] font-mono mt-1 uppercase" :class="payroll.status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
-                                    Status: {{ payroll.status === 'paid' ? "To'langan" : 'Shakllantirildi (Hisobot)' }}
-                                </p>
-                            </div>
-                            <div class="text-right flex gap-2">
-                                <a :href="route('admin.hr.payroll.print', payroll.id)" target="_blank" class="px-3 py-2 text-gray-900 border border-gray-300 text-xs uppercase font-mono rounded-lg hover:bg-gray-100 hover:border-white/40 transition-all flex items-center gap-2">
-                                    🖨️ PDF / Chop etish
-                                </a>
-                            </div>
-                        </div>
-                        <div v-if="payrolls.length === 0" class="text-center py-8 text-gray-500 font-mono text-xs border-dashed border border-gray-200 rounded-xl">
-                            Hech qanday oylik tarixi yo'q
-                        </div>
-                    </div>
-                </div>
             </div>
 
-        </div>
-
-        <!-- MODAL: CREATE USER -->
-        <div v-if="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showUserModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-lg border border-blue-200">
-                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserModal = false">✖</button>
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-cyan/50">
-                    {{ $t('add_user') }}
-                </h2>
-                <form @submit.prevent="saveUser" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('full_name') }}</label>
-                        <input v-model="userForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('email') }}</label>
-                        <input v-model="userForm.email" type="email" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('password') }} <span v-if="isEditMode" class="text-amber-600 lowercase">(Leave empty to keep)</span></label>
-                        <input v-model="userForm.password" type="password" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="!isEditMode">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('system_role') }}</label>
-                        <select v-model="userForm.role" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50" required>
-                            <option value="Super_Admin">Super Admin</option>
-                            <option value="Partner">Partner</option>
-                            <option value="Operator">Operator</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('pinfl') }}</label>
-                            <input v-model="userForm.pinfl" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('passport') }}</label>
-                            <input v-model="userForm.passport" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('salary_rate') }}</label>
-                        <input v-model="userForm.salary_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                    </div>
-                    <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" @click="showUserModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ $t('save_user') }}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- MODAL: LEDGER -->
-        <div v-if="showLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showLedgerModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-blue-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showLedgerModal = false">✖</button>
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
-                    <div>
-                        <h3 class="text-lg font-mono text-gray-900 font-bold tracking-widest uppercase">{{ ledgerWorker?.first_name }} {{ ledgerWorker?.last_name }}</h3>
-                        <p class="text-xs text-blue-600 font-mono mt-1">- SHAXSIY KARTA</p>
-                        <p class="text-[10px] text-gray-500 uppercase mt-2 font-mono tracking-wider">{{ ledgerWorker?.department }} | {{ ledgerWorker?.salary_type }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-500 font-mono uppercase mb-1">Joriy Balans</p>
-                        <p class="text-2xl font-mono" :class="ledgerData.balance >= 0 ? 'text-emerald-600' : 'text-red-600'">
-                            {{ new Intl.NumberFormat('fr-FR').format(ledgerData.balance) }} so'm
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Category Balances -->
-                <div v-if="ledgerData.category_balances && Object.keys(ledgerData.category_balances).length > 0" class="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                    <h4 class="text-[10px] text-blue-600 uppercase tracking-widest mb-2 font-mono">Yo'nalishlar bo'yicha balans:</h4>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <div v-for="(amount, cat) in ledgerData.category_balances" :key="cat" class="bg-gray-50 p-2 rounded flex justify-between items-center">
-                            <span class="text-xs text-gray-500 font-mono">{{ cat }}</span>
-                            <span class="text-xs font-mono" :class="amount >= 0 ? 'text-emerald-600' : 'text-red-600'">{{ new Intl.NumberFormat('fr-FR').format(amount) }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <!-- Manual Work Log Form -->
-                    <form @submit.prevent="saveWorkerLog" class="flex flex-col gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                        <h4 class="text-[10px] font-mono text-blue-600 uppercase tracking-widest border-b border-blue-200 pb-2">➕ Ish Hajmini Kiritish</h4>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt (Bino)</label>
-                                <select v-model="workerLogForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50" required>
-                                    <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                                </select>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">O'lchov Birligi</label>
-                                <select v-model="workerLogForm.measurement_unit" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50" required>
-                                    <option value="" disabled>Tanlang</option>
-                                    <option value="dona">Dona</option>
-                                    <option value="kv_m">Kvadrat metr (m2)</option>
-                                    <option value="kub_m">Kub metr (m3)</option>
-                                    <option value="metr">Metr (m)</option>
-                                    <option value="soat">Soat</option>
-                                    <option value="kun">Kun</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ish Turi</label>
-                                <select v-model="workerLogForm.work_category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50" required :disabled="!workerLogForm.measurement_unit">
-                                    <option value="" disabled>Tanlang</option>
-                                    <option v-for="cat in availableWorkCategories" :key="cat" :value="cat">{{ cat }}</option>
-                                </select>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Hajm (Obyom)</label>
-                                <input v-model="workerLogForm.volume" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
-                            </div>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Maxsus Narx</label>
-                                <input v-model="workerLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Ixtiyoriy">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="workerLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                            </div>
-                        </div>
-                        <div class="flex justify-end pt-1">
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-blue-600 text-[10px] font-mono uppercase tracking-widest rounded border border-blue-500/50 hover:bg-neon-blue hover:text-black transition-colors disabled:opacity-50">
-                                Qo'shish
-                            </button>
-                        </div>
-                    </form>
-
-                    <!-- Ledger Transaction Form -->
-                    <form @submit.prevent="saveLedgerTransaction" class="flex flex-col gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                        <h4 class="text-[10px] font-mono text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-2">💸 Tranzaksiya Qo'shish</h4>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Turi</label>
-                                <select v-model="ledgerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50">
-                                    <option value="payment">To'lov (Chiqim)</option>
-                                    <option value="advance_payment">Avans (Chiqim)</option>
-                                    <option value="penalty">Jarima (Chiqim)</option>
-                                    <option value="salary_accrual">Qo'shimcha Ish haqi (Kirim)</option>
-                                </select>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Ish Turi (Kategoriya)</label>
-                                <select v-model="ledgerForm.work_category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50">
-                                    <option value="">Umumiy (Kategoriyasiz)</option>
-                                    <option v-for="(amount, cat) in ledgerData.category_balances" :key="cat" :value="cat">
-                                        {{ cat }} ({{ new Intl.NumberFormat('fr-FR').format(amount) }} so'm)
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Miqdori</label>
-                                <input v-model="ledgerForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="ledgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('notes') }}</label>
-                            <input v-model="ledgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full">
-                        </div>
-                        <div class="flex justify-end pt-1">
-                            <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 text-emerald-600 text-[10px] font-mono uppercase tracking-widest rounded border border-emerald-200 hover:bg-emerald-600 hover:text-black transition-colors disabled:opacity-50">{{ $t('save') }}</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                    <div v-for="t in ledgerData.transactions" :key="'tx'+t.id" class="flex flex-col gap-2 p-3 border border-gray-100 rounded-lg bg-gray-50 hover:border-gray-300 transition-colors group">
-                        <div v-if="editTxId === t.id" class="w-full bg-gray-50 p-2 rounded border border-blue-200 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
-                            <button @click="submitEditTx('worker')" class="bg-neon-blue/20 text-blue-600 px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
-                        </div>
-                        <div v-else class="flex justify-between items-center w-full">
-                            <div>
-                                <p class="text-[10px] font-mono text-gray-500">{{ new Date(t.date).toLocaleDateString() }}</p>
-                                <p class="text-sm text-gray-900">{{ t.description || t.type }}</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-emerald-600' : 'text-red-600'">
-                                        {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
-                                    </p>
-                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
-                                </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyTx('worker', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div v-for="log in ledgerData.logs" :key="'log'+log.id" class="p-3 border border-gray-100 rounded-lg bg-gray-50 hover:border-amber-200 transition-colors group">
-                        <div v-if="editLogId === log.id" class="w-full bg-gray-50 p-2 rounded border border-blue-200 flex flex-wrap items-center gap-2">
-                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-20" placeholder="Soat/Hajm">
-                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24" placeholder="Maxsus narx">
-                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24 border-amber-500" placeholder="Chegirma">
-                            <input v-model="editLogForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32" placeholder="Izoh">
-                            <input v-model="editLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-28">
-                            <div class="flex-1 text-[10px] font-mono text-gray-500 uppercase">Tahrirlanmoqda...</div>
-                            <button @click="submitEditLog" class="bg-neon-blue/20 text-blue-600 px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editLogId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
-                        </div>
-                        <div v-else class="flex justify-between items-center w-full">
-                            <div>
-                                <p class="text-[10px] font-mono text-gray-900 mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ ledgerWorker?.salary_type === 'hourly' ? 'soat' : 'hajm' }} <span v-if="log.rate" class="text-blue-600">@ {{ log.rate }} so'm</span></p>
-                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || "Noma'lum" }}
-                                    <span v-if="log.description" class="text-blue-600 block mt-1">Izoh: {{ log.description }}</span>
-                                    <span v-if="log.deductions" class="text-amber-600 block mt-1">Ushlanma: {{ log.deductions }} so'm</span>
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-red-600' : 'text-emerald-600'">
-                                        - {{ $currency(log.calculated_cost) }}
-                                    </p>
-                                    <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
-                                        :class="log.status === 'unpaid' ? 'border-red-500 text-red-600 bg-red-50' : 'border-emerald-500 text-emerald-600 bg-emerald-50'">
-                                        {{ log.status === 'unpaid' ? "To'lanmagan" : "To'langan" }}
-                                    </span>
-                                </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditLog(log)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div v-if="!ledgerData.transactions.length && !ledgerData.logs.length" class="text-center py-6 text-gray-500 text-xs font-mono border border-dashed border-gray-200 rounded-xl">
-                        Tarix topilmadi.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL: USER LEDGER -->
-        <div v-if="showUserLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showUserLedgerModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-[90vw] max-w-[1200px] border border-blue-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-red-600 text-white text-[10px] rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showUserLedgerModal = false">✖</button>
-                <div class="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
-                    <div class="flex-1 pr-4">
-                        <h2 class="text-lg font-bold text-gray-900 uppercase tracking-widest shadow-neon-cyan/50 leading-tight">
-                            <span class="block mb-1 break-words">{{ ledgerUser?.name }}</span>
-                            <span class="block text-sm text-blue-600/80">- SHAXSIY KARTA</span>
-                        </h2>
-                        <p class="text-[10px] font-mono text-gray-500 mt-2 uppercase">{{ ledgerUser?.roles?.[0]?.name || 'User' }}</p>
-                    </div>
-                    <div class="text-right shrink-0 mr-8 mt-1">
-                        <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Joriy Balans</p>
-                        <p class="text-xl font-bold font-mono" :class="userLedgerData.balance >= 0 ? 'text-emerald-600' : 'text-red-600'">
-                            {{ $currency(userLedgerData.balance) }}
-                        </p>
-                    </div>
-                </div>
-
-                <form @submit.prevent="saveUserLedgerTransaction" class="mb-8 p-4 bg-gray-50 border border-gray-100 rounded-xl space-y-4">
-                    <h3 class="text-xs font-mono text-gray-500 uppercase tracking-widest">Yangi Tranzaksiya qo'shish</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('type_label') }}</label>
-                            <select v-model="userLedgerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50" required>
-                                <option value="salary_accrual">Oylik/Ish xaqi hisoblash (Kirim)</option>
-                                <option value="advance_payment">Avans berish (Chiqim)</option>
-                                <option value="payment">To'lov (Chiqim)</option>
-                                <option value="penalty">Jarima (Chiqim)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('amount') }}</label>
-                            <input v-model="userLedgerForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs" required>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('date_label') }}</label>
-                            <input v-model="userLedgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs" required>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('notes') }}</label>
-                            <input v-model="userLedgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
-                        </div>
-                    </div>
-                    <div class="flex justify-end pt-2">
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 font-bold uppercase tracking-widest text-xs rounded hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">{{ $t('save') }}</button>
-                    </div>
-                </form>
-
-                <div class="space-y-2">
-                    <h3 class="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Tranzaksiyalar Tarixi</h3>
-                    <div v-for="t in userLedgerData.transactions" :key="t.id" class="flex flex-col gap-2 p-3 border border-gray-100 rounded-lg hover:bg-white/[0.02] transition-colors">
-                        <div v-if="editTxId === t.id" class="w-full bg-gray-50 p-2 rounded border border-blue-200 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
-                            <button @click="submitEditTx('user')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-600 hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
-                        </div>
-                        <div v-else class="flex justify-between items-center w-full group">
-                            <div>
-                                <p class="text-[10px] font-mono text-gray-500">{{ t.date }}</p>
-                                <p class="text-sm text-gray-900">{{ t.description || t.type }}</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-xs font-bold font-mono" :class="t.type === 'salary_accrual' ? 'text-emerald-600' : 'text-red-600'">
-                                        {{ t.type === 'salary_accrual' ? '+' : '-' }}{{ $currency(t.amount) }}
-                                    </p>
-                                    <p class="text-[10px] font-mono uppercase tracking-widest" :class="t.type === 'salary_accrual' ? 'text-emerald-600/50' : 'text-red-600/50'">{{ t.type }}</p>
-                                </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button v-if="isAdmin" @click="startEditTx(t)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button v-if="isAdmin" @click="destroyTx('user', t.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="!userLedgerData.transactions.length" class="text-center py-6 text-gray-500 text-xs font-mono border border-dashed border-gray-200 rounded-xl">
-                        Tranzaksiyalar topilmadi.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL: AI LOG DETAILS -->
-        <div v-if="showLogModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showLogModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-0 rounded-2xl w-full max-w-sm border border-blue-200 overflow-hidden flex flex-col items-center">
+            <!-- Tab 1: Maoshlar (Salaries) -->
+            <div v-if="activeTab === 1" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 
-                <!-- ID Card Header / Photo -->
-                <div class="w-full bg-gray-50 relative border-b border-gray-200 flex flex-col items-center p-6 pt-8 group">
-                    <div class="absolute top-4 right-4 cursor-pointer text-gray-500 hover:text-gray-900" @click="showLogModal = false">✖</div>
-                    
-                    <div class="w-32 h-32 rounded-full border-4 overflow-hidden shadow-sm mb-4" 
-                         :class="{ 'border-emerald-500': activeLog.type === 'entry', 'border-neon-magenta': activeLog.type === 'exit', 'border-blue-500': activeLog.type === 'start_work', 'border-red-500': activeLog.type === 'stop_work' }">
-                        <img v-if="activeLog.proof_image" :src="activeLog.proof_image" class="w-full h-full object-cover">
-                        <span v-else class="text-4xl w-full h-full flex items-center justify-center">N/A</span>
-                    </div>
-
-                    <h2 class="text-xl font-bold text-gray-900 text-center">{{ activeLog.subject?.name || activeLog.subject?.company_or_name || "Noma'lum Shaxs" }}</h2>
-                    <p class="text-[10px] font-mono text-blue-600 tracking-widest uppercase mt-1">
-                        {{ activeLog.subject_type?.split(String.fromCharCode(92)).pop() || 'Unidentified' }}
-                        <span v-if="activeLog.subject?.license_plate"> • {{ activeLog.subject.license_plate }}</span>
-                    </p>
-                </div>
-
-                <!-- ID Card Body -->
-                <div class="w-full p-6 space-y-4 bg-gradient-to-b from-transparent to-black/40">
-                    
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Sana / Vaqt</span>
-                        <span class="text-sm font-bold text-gray-900">{{ new Date(activeLog.timestamp).toLocaleString() }}</span>
-                    </div>
-
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Kamera (Nuqta)</span>
-                        <span class="text-sm font-mono text-gray-900">{{ activeLog.camera_id }}</span>
-                    </div>
-
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Aniqlik (AI)</span>
-                        <span class="text-sm font-mono text-gray-900" :class="activeLog.confidence_score > 90 ? 'text-emerald-600' : 'text-amber-600'">
-                            {{ activeLog.confidence_score }}%
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-2">
-                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Harakat</span>
-                        <span v-if="activeLog.type === 'entry'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-200">➡️ Kirdi</span>
-                        <span v-else-if="activeLog.type === 'exit'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-indigo-50 text-indigo-600 border-neon-magenta/30">🚪 Chiqdi</span>
-                        <span v-else-if="activeLog.type === 'start_work'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-neon-blue/20 text-blue-600 border-blue-200">⚙️ Ish Boshladi</span>
-                        <span v-else-if="activeLog.type === 'stop_work'" class="px-3 py-1 rounded text-[10px] uppercase tracking-widest border bg-red-50 text-red-600 border-red-200">🛑 Ish To'xtadi</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL: MANUAL WEB SCANNER -->
-        <div v-if="showScannerModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="stopScanner"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-3xl w-full max-w-lg border border-blue-200 shadow-sm flex flex-col items-center">
-                <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="stopScanner">✖</button>
-                <h2 class="text-xl font-display font-bold text-gray-900 mb-6 flex items-center gap-2">📷 Mobil Skaner (Davomat)</h2>
-
-                <div class="w-full relative rounded-2xl overflow-hidden border-2 border-blue-500 mb-6 bg-white flex items-center justify-center min-h-[300px]">
-                    <video v-if="!scannerSnapshot" ref="scannerVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-                    <img v-else :src="scannerSnapshot" class="w-full h-full object-cover">
-                    
-                    <!-- Scanner overlay effect -->
-                    <div v-if="!scannerSnapshot" class="absolute inset-0 pointer-events-none">
-                        <div class="w-full h-full border-[10px] border-black/50"></div>
-                        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-blue-50 shadow-sm animate-[scan_2s_ease-in-out_infinite_alternate]"></div>
-                        <!-- Viewfinder corners -->
-                        <div class="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-blue-500"></div>
-                        <div class="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-blue-500"></div>
-                        <div class="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-blue-500"></div>
-                        <div class="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-blue-500"></div>
-                    </div>
-                </div>
-
-                <div v-if="!scannerSnapshot" class="w-full flex justify-center">
-                    <button @click="takeScannerSnapshot" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center group hover:border-blue-500 transition-colors">
-                        <div class="w-12 h-12 rounded-full bg-white group-hover:bg-blue-600 transition-colors"></div>
-                    </button>
-                </div>
-
-                <div v-else class="w-full space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shaxs Kategoriyasi</label>
-                            <select v-model="scannerForm.subject_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900" @change="scannerForm.subject_id = ''">
-                                <option value="Worker">👷 Quruvchi / Ishchi</option>
-                                <option value="User">👨‍💻 Tizim Xodimi</option>
-                                <option value="Machinery">🚜 Maxsus Texnika</option>
-                                <option value="VisitorDelivery">🚚 Tashrif / Yuk</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shaxsni / Texnikani Tanlang</label>
-                            <!-- Worker -->
-                            <select v-if="scannerForm.subject_type === 'Worker'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900">
-                                <option value="" disabled selected>-- Tanlang --</option>
-                                <option v-for="w in workers.filter(w => w.role !== 'guard')" :key="w.id" :value="w.id">{{ w.name }} ({{ w.brigade ? w.brigade.name : w.role }})</option>
-                            </select>
-                            <!-- User -->
-                            <select v-if="scannerForm.subject_type === 'User'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900">
-                                <option value="" disabled selected>-- Tanlang --</option>
-                                <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.role }})</option>
-                            </select>
-                            <!-- Machinery -->
-                            <select v-if="scannerForm.subject_type === 'Machinery'" v-model="scannerForm.subject_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900">
-                                <option value="" disabled selected>-- Tanlang --</option>
-                                <option v-for="m in machineries" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
-                            </select>
-                            <!-- Visitor -->
-                            <input v-if="scannerForm.subject_type === 'VisitorDelivery'" v-model="scannerForm.subject_id" placeholder="Mashina raqami yoki ismi..." type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Harakat (Action)</label>
-                        <select v-model="scannerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900">
-                            <option value="entry">➡️ Kirdi (Entry)</option>
-                            <option value="exit">🚪 Chiqdi (Exit)</option>
-                            <option value="start_work">⚙️ Ish boshladi</option>
-                            <option value="stop_work">🛑 Ishni to'xtatdi</option>
-                        </select>
-                    </div>
-
-                    <div class="flex gap-4 pt-4">
-                        <button @click="scannerSnapshot = null" type="button" class="flex-1 py-3 border border-gray-200 text-gray-900 text-sm font-mono uppercase tracking-widest rounded hover:bg-gray-100 transition-colors">
-                            Qayta Olish
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900 font-display">Maoshlar</h3>
+                        <button 
+                            @click="generatePayroll" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors"
+                        >
+                            Oylik hisobotini shakllantirish
                         </button>
-                        <button @click="submitManualLog" :disabled="scannerForm.processing || (!scannerForm.subject_id && scannerForm.subject_type !== 'VisitorDelivery')" class="flex-1 py-3 bg-emerald-50 border border-emerald-500 text-emerald-600 text-sm font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
-                            {{ scannerForm.processing ? 'Yuborilmoqda...' : 'Tizimga Yozish' }}
-                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
+                            <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs border-b border-gray-100">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Xodim</th>
+                                    <th class="p-4">Asosiy maosh</th>
+                                    <th class="p-4">Bonus</th>
+                                    <th class="p-4">Jarima</th>
+                                    <th class="p-4">Avans</th>
+                                    <th class="p-4">To'langan summa</th>
+                                    <th class="p-4">To'lov sana</th>
+                                    <th class="p-4">Qarzdorlik</th>
+                                    <th class="p-4">Holat</th>
+                                    <th class="p-4 text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="sal in salaryList" :key="sal.employee.id + '-' + sal.employee.type" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 font-mono text-gray-500">{{ sal.index }}</td>
+                                    <td class="p-4 font-bold text-gray-900 uppercase">{{ sal.employee.name }}</td>
+                                    <td class="p-4 text-gray-700 font-medium">{{ formatPrice(sal.base_salary) }}</td>
+                                    <td class="p-4 text-emerald-600 font-semibold">+ {{ formatPrice(sal.bonus) }}</td>
+                                    <td class="p-4 text-rose-600 font-semibold">- {{ formatPrice(sal.penalty) }}</td>
+                                    <td class="p-4 text-amber-600 font-semibold">- {{ formatPrice(sal.advance) }}</td>
+                                    <td class="p-4 text-blue-600 font-semibold">{{ formatPrice(sal.paid) }}</td>
+                                    <td class="p-4 text-gray-500 font-medium">{{ sal.payment_date }}</td>
+                                    <td class="p-4 font-bold" :class="sal.debt > 0 ? 'text-rose-600' : 'text-gray-900'">{{ formatPrice(sal.debt) }}</td>
+                                    <td class="p-4">
+                                        <span 
+                                            class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"
+                                            :class="sal.status === 'To\'langan' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (sal.status === 'Qisman to\'langan' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200')"
+                                        >
+                                            {{ sal.status }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <!-- Adjustment button -->
+                                            <button 
+                                                @click="openAdjModal(sal.employee)" 
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                                title="Bonus / Jarima / Avans"
+                                            >
+                                                +
+                                            </button>
+                                            <!-- Payout button -->
+                                            <button 
+                                                @click="openPayModal(sal)" 
+                                                class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+                                            >
+                                                💵 To'lov
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="salaryList.length === 0">
+                                    <td colspan="11" class="p-10 text-center text-gray-400 font-medium">Xodimlar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
             </div>
-        </div>
 
-        <!-- MODAL: MACHINERY LEDGER -->
-        
-
-        
-
-        
-
-        <div v-if="showMachineryLedgerModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showMachineryLedgerModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-4xl border border-amber-200 shadow-sm flex flex-col max-h-[90vh]">
-                <button class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900" @click="showMachineryLedgerModal = false">✖</button>
+            <!-- Tab 2: KPI -->
+            <div v-if="activeTab === 2" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 
-                <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-2xl font-display font-bold text-gray-900 flex items-center gap-2">
-                        🚜 {{ activeMachinery?.name }} (Daftar)
-                    </h2>
-                    <div class="flex gap-2 mr-8">
-                        <button @click="printLedger" class="px-3 py-1.5 hover:bg-white/20 text-gray-900 text-[10px] font-mono tracking-widest uppercase rounded border border-gray-300 transition-colors">
-                            🖨️ PDF / Chop etish
-                        </button>
-                        <button @click="exportToExcel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-50 text-emerald-600 text-[10px] font-mono tracking-widest uppercase rounded border border-emerald-200 transition-colors">
-                            📊 Excel (CSV)
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900 font-display">KPI</h3>
+                        <button 
+                            @click="showKpiDrawer = true" 
+                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                        >
+                            ⚙️ Sozlamalar
                         </button>
                     </div>
-                </div>
-                <p class="text-[10px] font-mono text-amber-600 tracking-widest uppercase border-b border-gray-200 pb-4 mb-4">
-                    Davlat Raqami: {{ activeMachinery?.license_plate || 'N/A' }} | {{ activeMachinery?.payment_type === 'hourly' ? 'Soatbay' : 'Obyom' }}: {{ $currency(activeMachinery?.cost_per_hour) }}
-                </p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div class="p-4 rounded-xl border border-gray-200">
-                        <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Umumiy Ishlagan (Topilgan)</p>
-                        <p class="text-xl font-bold text-gray-900">{{ $currency(machineryLedgerData.total_earned) }}</p>
-                    </div>
-                    <div class="p-4 bg-red-50 rounded-xl border border-red-200 flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] font-mono text-red-600 uppercase tracking-widest mb-1">To'lanmagan Qarz</p>
-                            <p class="text-xl font-bold text-red-600">{{ $currency(machineryLedgerData.unpaid_balance) }}</p>
-                        </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
+                            <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs border-b border-gray-100">
+                                <tr>
+                                    <th class="p-4 w-16">ID</th>
+                                    <th class="p-4">Sotuv menejeri</th>
+                                    <th class="p-4 text-center">Sotuv bo'lgan lidlar soni</th>
+                                    <th class="p-4">Umumiy KPI</th>
+                                    <th class="p-4">Kutilgan maosh</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="mgr in kpiManagers" :key="mgr.id" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 font-mono text-gray-500">{{ mgr.id }}</td>
+                                    <td class="p-4 font-bold text-gray-900 uppercase">{{ mgr.name }}</td>
+                                    <td class="p-4 text-center text-gray-700 font-semibold">{{ mgr.leads_count }}</td>
+                                    <td class="p-4 text-emerald-600 font-bold">{{ formatPrice(mgr.kpi) }}</td>
+                                    <td class="p-4 text-gray-900 font-extrabold">{{ formatPrice(mgr.expected_salary) }}</td>
+                                </tr>
+                                <tr v-if="kpiManagers.length === 0">
+                                    <td colspan="5" class="p-10 text-center text-gray-400 font-medium">Ma'lumot topilmadi</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <!-- Manual Work Log Form -->
-                    <form @submit.prevent="saveMachineryLog" class="flex flex-col gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                        <h4 class="text-[10px] font-mono text-blue-600 uppercase tracking-widest border-b border-blue-200 pb-2">➕ Ish Hajmini Kiritish</h4>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt (Building)</label>
-                                <select v-model="machineryLogForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full text-gray-900 bg-gray-50" required>
-                                    <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                                </select>
+            </div>
+
+        </div>
+
+        <!-- 1. Employee Detail Modal (Image 2) -->
+        <div v-if="showDetailModal && selectedEmployee" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+            <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <h3 class="text-base font-bold text-gray-900 font-display">Xodim ma'lumotlari</h3>
+                    <button @click="showDetailModal = false" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-500 font-bold">✕</button>
+                </div>
+                
+                <!-- Content -->
+                <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Column 1 (Left): 4/12 -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <!-- Profile Card -->
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center lg:text-left flex flex-col lg:flex-row items-center gap-4">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-500 flex items-center justify-center font-bold text-white text-2xl uppercase shrink-0">
+                                {{ selectedEmployee.name.substring(0,2) }}
                             </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ activeMachinery?.payment_type === 'hourly' ? 'Soat' : 'Hajm (Obyom)' }}</label>
-                                <input v-model="machineryLogForm.volume" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Maxsus Narx</label>
-                                <input v-model="machineryLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Ixtiyoriy">
+                            <div class="space-y-1">
+                                <h4 class="text-base font-black text-gray-900 uppercase line-clamp-2 leading-tight">{{ selectedEmployee.name }}</h4>
+                                <div class="flex items-center gap-2 mt-1 justify-center lg:justify-start">
+                                    <span class="text-xs text-gray-500 font-bold capitalize">{{ selectedEmployee.role_label }}</span>
+                                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                    <span class="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">{{ selectedEmployee.status_label }}</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="machineryLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
+
+                        <!-- General Information -->
+                        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm divide-y divide-gray-100 text-sm">
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">Telefon raqam</span>
+                                <span class="font-bold text-gray-900">{{ selectedEmployee.phone || '-' }}</span>
                             </div>
-                            <div class="flex items-end">
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-neon-blue/20 text-blue-600 text-[10px] font-mono uppercase tracking-widest rounded border border-blue-500/50 hover:bg-neon-blue hover:text-black transition-colors disabled:opacity-50 h-[38px]">
-                                    Qo'shish
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">Jinsi</span>
+                                <span class="font-bold text-gray-900 capitalize">{{ selectedEmployee.gender }}</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">Tug'ilgan sanasi</span>
+                                <span class="font-bold text-gray-900">{{ formatDate(selectedEmployee.birth_date) }}</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">A'zolik sanasi</span>
+                                <span class="font-bold text-gray-900">{{ formatDate(selectedEmployee.employment_date) }}</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">Mutaxassislik id</span>
+                                <span class="font-bold text-gray-900">{{ selectedEmployee.specialty_id || '-' }}</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center">
+                                <span class="text-gray-500 font-medium">Maosh</span>
+                                <span class="font-extrabold text-emerald-600">{{ formatPrice(selectedEmployee.salary) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 2 (Middle): 4/12 -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <!-- Passport Info Card -->
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">Passport ma'lumotlari</h4>
+                            
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">📄</div>
+                                <div class="flex-1">
+                                    <p class="text-xs text-gray-400 font-medium">Passport ID:</p>
+                                    <p class="text-sm font-bold text-gray-900 uppercase">{{ selectedEmployee.passport || '-' }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 mt-3">
+                                <div class="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">❓</div>
+                                <div class="flex-1">
+                                    <p class="text-xs text-gray-400 font-medium">JSHSHR:</p>
+                                    <p class="text-sm font-bold text-gray-900">{{ selectedEmployee.pinfl || '-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image attachments -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div 
+                                @click="triggerPhotoUpload('photo')" 
+                                class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer transition-colors p-4 relative group"
+                            >
+                                <img 
+                                    v-if="selectedEmployee.photo_path" 
+                                    :src="'/storage/' + selectedEmployee.photo_path" 
+                                    class="w-full h-full object-cover rounded-xl"
+                                />
+                                <template v-else>
+                                    <span class="text-gray-400 text-lg mb-1">📷</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">No Image</span>
+                                </template>
+                                <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">Yuklash</div>
+                            </div>
+
+                            <div 
+                                @click="triggerPhotoUpload('passport')" 
+                                class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer transition-colors p-4 relative group"
+                            >
+                                <span class="text-gray-400 text-lg mb-1">📑</span>
+                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">No Image</span>
+                                <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">Yuklash</div>
+                            </div>
+                        </div>
+                        
+                        <input ref="photoInput" type="file" class="hidden" accept="image/*" @change="handlePhotoUpload" />
+
+                        <!-- Assigned building -->
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">Ishlayotgan binosi</h4>
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">🏢</div>
+                                <div>
+                                    <p class="text-sm font-extrabold text-gray-900">{{ selectedEmployee.building_name }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Kod: {{ selectedEmployee.building_id || 'Barchaga ruxsat' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 3 (Right): 4/12 -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <!-- Contract card -->
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4 min-h-[120px]">
+                            <h4 class="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">Shartnoma</h4>
+                            <div class="text-center py-4 text-xs text-gray-400 font-semibold">
+                                Ma'lumot mavjud emas
+                            </div>
+                        </div>
+
+                        <!-- Order & application tabs -->
+                        <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col h-56">
+                            <div class="flex border-b border-gray-100 shrink-0">
+                                <button 
+                                    @click="rightTab = 'ariza'" 
+                                    class="flex-1 py-3 text-xs font-bold border-b-2 text-center transition-colors"
+                                    :class="rightTab === 'ariza' ? 'border-amber-500 text-gray-900 bg-gray-50/20' : 'border-transparent text-gray-400 hover:text-gray-600'"
+                                >
+                                    Ariza
+                                </button>
+                                <button 
+                                    @click="rightTab = 'buyruq'" 
+                                    class="flex-1 py-3 text-xs font-bold border-b-2 text-center transition-colors"
+                                    :class="rightTab === 'buyruq' ? 'border-amber-500 text-gray-900 bg-gray-50/20' : 'border-transparent text-gray-400 hover:text-gray-600'"
+                                >
+                                    Buyruq
                                 </button>
                             </div>
-                        </div>
-                    </form>
-
-                    <!-- Payment Form -->
-                    <form @submit.prevent="saveMachineryTransaction" class="flex flex-col gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                        <h4 class="text-[10px] font-mono text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-2">💸 To'lov Qilish</h4>
-                        <div class="flex gap-2 mt-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('amount') }}</label>
-                                <input v-model="machineryLedgerForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="0.00" required>
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('date_label') }}</label>
-                                <input v-model="machineryLedgerForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" required>
+                            <div class="p-6 flex-1 flex items-center justify-center text-xs text-gray-400 font-semibold">
+                                Ma'lumot mavjud emas
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">{{ $t('notes') }}</label>
-                                <input v-model="machineryLedgerForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full" placeholder="Masalan: Naqd pul orqali...">
-                            </div>
-                            <div class="flex items-end">
-                                <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 text-emerald-600 text-[10px] font-mono uppercase tracking-widest rounded border border-emerald-200 hover:bg-emerald-600 hover:text-black transition-colors disabled:opacity-50 h-[38px]">{{ $t('pay_button') }}</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                    <div v-for="tx in machineryLedgerData.transactions" :key="'tx'+tx.id" class="p-4 border border-emerald-200 rounded-xl bg-emerald-50 group transition-colors">
-                        <div v-if="editTxId === tx.id" class="w-full bg-gray-50 p-2 rounded border border-blue-200 flex items-center gap-2">
-                            <input v-model="editTxForm.amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24">
-                            <input v-model="editTxForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
-                            <input v-model="editTxForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs flex-1" :placeholder="$t('notes')">
-                            <button @click="submitEditTx('machinery')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-600 hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editTxId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
-                        </div>
-                        <div v-else class="flex justify-between items-center w-full">
-                            <div>
-                                <p class="text-xs font-mono text-gray-900 mb-1">{{ new Date(tx.date).toLocaleDateString() }} | 💸 To'lov Qilindi</p>
-                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">{{ tx.description || 'Izohsiz' }}</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-sm font-bold text-emerald-600">+ {{ $currency(tx.amount) }}</p>
-                                </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditTx(tx)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyTx('machinery', tx.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-for="log in machineryLedgerData.logs" :key="log.id" class="p-4 border border-gray-200 rounded-xl bg-gray-50 group hover:border-amber-200 transition-colors">
-                        <div v-if="editLogId === log.id" class="w-full bg-gray-50 p-2 rounded border border-blue-200 flex flex-wrap items-center gap-2">
-                            <input v-model="editLogForm.hours_worked" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-20" placeholder="Soat/Hajm">
-                            <input v-model="editLogForm.custom_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24" placeholder="Maxsus narx">
-                            <input v-model="editLogForm.deductions" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-24 border-amber-500" placeholder="Chegirma">
-                            <input v-model="editLogForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32" placeholder="Izoh">
-                            <input v-model="editLogForm.date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-28">
-                            <div class="flex-1 text-[10px] font-mono text-gray-500 uppercase">Tahrirlanmoqda...</div>
-                            <button @click="submitEditLog" class="bg-neon-blue/20 text-blue-600 px-2 py-1 rounded text-xs hover:bg-neon-blue hover:text-black">{{ $t('save') }}</button>
-                            <button @click="editLogId = null" class="text-gray-500 text-xs hover:text-gray-900">Bekor</button>
-                        </div>
-                        <div v-else class="flex justify-between items-center w-full">
-                            <div>
-                                <p class="text-xs font-mono text-gray-900 mb-1">{{ new Date(log.date).toLocaleDateString() }} | ⏳ {{ log.hours_worked || log.volume_done }} {{ activeMachinery?.payment_type === 'hourly' ? 'soat' : 'hajm' }}</p>
-                                <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">
-                                    Obyekt: {{ log.building?.name || "Noma'lum" }}
-                                    <span v-if="log.description" class="text-blue-600 block mt-1">Izoh: {{ log.description }}</span>
-                                    <span v-if="log.deductions" class="text-amber-600 block mt-1">Chegirma / Xarajat: {{ log.deductions }} so'm</span>
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <p class="text-sm font-bold" :class="log.status === 'unpaid' ? 'text-red-600' : 'text-emerald-600'">
-                                        - {{ $currency(log.calculated_cost) }}
-                                    </p>
-                                    <span class="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded border"
-                                        :class="log.status === 'unpaid' ? 'border-red-500 text-red-600 bg-red-50' : 'border-emerald-500 text-emerald-600 bg-emerald-50'">
-                                        {{ log.status === 'unpaid' ? "To'lanmagan" : "To'langan" }}
-                                    </span>
-                                </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="startEditLog(log)" class="text-xs hover:bg-white/20 p-1 rounded">✏️</button>
-                                    <button @click="destroyLog(log.id)" class="text-xs bg-red-50 text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="!machineryLedgerData.logs.length && !machineryLedgerData.transactions?.length" class="text-center py-8 text-gray-500 font-mono text-xs border border-dashed border-gray-200 rounded-xl">
-                        Hozircha hisob-kitob tarixi yo'q
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- 2. Employee Add/Edit Modal -->
+        <div v-if="showEmployeeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+            <div class="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <h3 class="text-base font-bold text-gray-900 font-display">
+                        {{ isEditMode ? 'Xodim ma\'lumotlarini tahrirlash' : 'Yangi xodim qo\'shish' }}
+                    </h3>
+                    <button @click="showEmployeeModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                
+                <form @submit.prevent="saveEmployee" class="p-6 space-y-4 overflow-y-auto flex-1">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Employee Type -->
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
+                            <select 
+                                v-model="employeeForm.type" 
+                                :disabled="isEditMode"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                            >
+                                <option value="worker">Qurilish ishchisi (Site Worker)</option>
+                                <option value="user">Tizim xodimi (System User)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Name -->
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">F.I.SH (To'liq ism)</label>
+                            <input 
+                                v-model="employeeForm.name" 
+                                type="text" 
+                                required
+                                placeholder="Masalan: IRMATOV BAXROM"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Email (User only) -->
+                        <div v-if="employeeForm.type === 'user'" class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Elektron pochta (Email)</label>
+                            <input 
+                                v-model="employeeForm.email" 
+                                type="email" 
+                                required
+                                placeholder="email@domain.com"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Password (User only) -->
+                        <div v-if="employeeForm.type === 'user' && !isEditMode" class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Parol</label>
+                            <input 
+                                v-model="employeeForm.password" 
+                                type="password" 
+                                required
+                                placeholder="Kamida 6 xonali parol"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Telefon</label>
+                            <input 
+                                v-model="employeeForm.phone" 
+                                type="text" 
+                                placeholder="+998991234567"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Role -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Lavozim</label>
+                            <select 
+                                v-if="employeeForm.type === 'worker'" 
+                                v-model="employeeForm.role"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                                <option value="builder">Quruvchi / Usta</option>
+                                <option value="driver">Haydovchi</option>
+                                <option value="guard">Qorovul</option>
+                                <option value="office">Office xodimi</option>
+                            </select>
+                            <select 
+                                v-else 
+                                v-model="employeeForm.role"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                                <option value="Super_Admin">Super Admin</option>
+                                <option value="Operator">Operator</option>
+                                <option value="Partner">Hamkor</option>
+                            </select>
+                        </div>
+
+                        <!-- Salary Type -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Maosh turi</label>
+                            <select 
+                                v-model="employeeForm.salary_type" 
+                                :disabled="employeeForm.type === 'user'"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                                <option value="fixed_monthly">Fixed monthly (Oylik maosh)</option>
+                                <option value="piece_rate" v-if="employeeForm.type === 'worker'">Piece-rate (Ishbay)</option>
+                                <option value="hourly" v-if="employeeForm.type === 'worker'">Hourly (Soatbay)</option>
+                            </select>
+                        </div>
+
+                        <!-- Base Rate -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Maosh miqdori / Stavka</label>
+                            <input 
+                                v-model="employeeForm.base_rate" 
+                                type="number" 
+                                required
+                                placeholder="Summa"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Passport -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Passport ID</label>
+                            <input 
+                                v-model="employeeForm.passport" 
+                                type="text" 
+                                placeholder="AA1234567"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- PINFL -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">JSHSHR (PINFL)</label>
+                            <input 
+                                v-model="employeeForm.pinfl" 
+                                type="text" 
+                                placeholder="14 xonali son"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Gender -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jinsi</label>
+                            <select v-model="employeeForm.gender" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="Erkak">Erkak</option>
+                                <option value="Ayol">Ayol</option>
+                            </select>
+                        </div>
+
+                        <!-- Specialty ID -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mutaxassislik ID / Nomi</label>
+                            <input 
+                                v-model="employeeForm.specialty_id" 
+                                type="text" 
+                                placeholder="49"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <!-- Birth date -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tug'ilgan sanasi</label>
+                            <input 
+                                v-model="employeeForm.birth_date" 
+                                type="date" 
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            />
+                        </div>
+
+                        <!-- Employment date -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">A'zolik / Ishga olingan kun</label>
+                            <input 
+                                v-model="employeeForm.employment_date" 
+                                type="date" 
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            />
+                        </div>
+
+                        <!-- Assigned building (Worker only) -->
+                        <div v-if="employeeForm.type === 'worker'" class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Ishlayotgan binosi</label>
+                            <select v-model="employeeForm.building_id" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="">Barchaga ruxsat (Barcha)</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
+                            <select v-model="employeeForm.status" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="active">Ish holatida (Active)</option>
+                                <option value="fired">Bo'shatilgan (Fired)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showEmployeeModal = false" class="px-4 py-2 text-gray-500 hover:text-gray-700 text-xs font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm">Saqlash</button>
+                    </div>
+                </form>
             </div>
         </div>
 
+        <!-- 3. Adjustment Modal (+ button) -->
+        <div v-if="showAdjModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out]">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-gray-900 font-display">Kirim-chiqim kiritish</h3>
+                    <button @click="showAdjModal = false" class="text-gray-500">✕</button>
+                </div>
+                
+                <form @submit.prevent="submitAdj" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tranzaksiya turi</label>
+                        <select v-model="adjForm.type" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="salary_accrual">Bonus (Maosh qo'shish)</option>
+                            <option value="penalty">Jarima (Ushlanma)</option>
+                            <option value="advance_payment">Avans (Kechikkan to'lov/Avans)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Summa (so'm)</label>
+                        <input 
+                            v-model="adjForm.amount" 
+                            type="number" 
+                            required
+                            placeholder="Summa kiriting"
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Izoh</label>
+                        <textarea 
+                            v-model="adjForm.description" 
+                            rows="2"
+                            placeholder="Izoh kiriting"
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        ></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sana</label>
+                        <input 
+                            v-model="adjForm.date" 
+                            type="date" 
+                            required
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                        />
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showAdjModal = false" class="px-4 py-2 text-gray-500 hover:text-gray-700 text-xs font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm">Saqlash</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <BrigadeLedgerModal 
-            :show="showBrigadeLedgerModal"
-            :brigade-id="activeBrigadeForLedger?.id"
-            @close="showBrigadeLedgerModal = false"
-            @exportPdf="exportBrigadePdf"
-        />
+        <!-- 4. Payment Modal (To'lov button) -->
+        <div v-if="showPayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out]">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-gray-900 font-display">Maosh to'lash</h3>
+                    <button @click="showPayModal = false" class="text-gray-500">✕</button>
+                </div>
+                
+                <form @submit.prevent="submitPay" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">To'lov summasi (so'm)</label>
+                        <input 
+                            v-model="payForm.amount" 
+                            type="number" 
+                            required
+                            placeholder="To'lov summasi"
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">To'lov turi / uslubi</label>
+                        <select v-model="payForm.payment_method" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="cash">Naqd pul (Cash)</option>
+                            <option value="card">Karta (Card)</option>
+                            <option value="bank_transfer">Bank o'tkazmasi (Bank transfer)</option>
+                        </select>
+                    </div>
 
-        <OwnerLedgerModal 
-            :show="showOwnerLedgerModal"
-            :owner-id="activeOwnerForLedger?.id"
-            @close="showOwnerLedgerModal = false"
-            @exportPdf="exportOwnerPdf"
-        />
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kassa / Hisob turi</label>
+                        <select v-model="payForm.account_type" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="main">Asosiy Kassa</option>
+                            <option value="bank">Bank Hisob raqami</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Izoh</label>
+                        <input 
+                            v-model="payForm.description" 
+                            type="text" 
+                            placeholder="Masalan: Maosh to'lovi"
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sana</label>
+                        <input 
+                            v-model="payForm.date" 
+                            type="date" 
+                            required
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                        />
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showPayModal = false" class="px-4 py-2 text-gray-500 hover:text-gray-700 text-xs font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
+        <!-- 5. KPI Settings Drawer (Image 5) -->
+        <div v-if="showKpiDrawer" class="fixed inset-0 z-50 flex justify-end bg-gray-900/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-[slideInRight_0.25s_ease-out] relative">
+                <!-- Header -->
+                <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button @click="showKpiDrawer = false" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+                        <h3 class="text-lg font-black text-gray-900 font-display">Sozlamalar</h3>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <form @submit.prevent="submitKpiSettings" class="p-6 overflow-y-auto flex-1 space-y-6">
+                    <!-- Section: Sotuv menejeri sozlamalari -->
+                    <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                        <h4 class="text-sm font-extrabold text-gray-900">Sotuv menejeri sozlamalari</h4>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                <span class="text-rose-500 mr-0.5">*</span>Qiyoslash turi
+                            </label>
+                            <select v-model="kpiForm.comparison_type" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="<=">&le; Kichik yoki teng</option>
+                                <option value=">=">&ge; Katta yoki teng</option>
+                                <option value="=">= Teng</option>
+                                <option value="<">&lt; Kichik</option>
+                                <option value=">">&gt; Katta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                    <span class="text-rose-500 mr-0.5">*</span>Boshlanish qiymati
+                                </label>
+                                <input 
+                                    v-model="kpiForm.start_val" 
+                                    type="number" 
+                                    required
+                                    class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tugash qiymati</label>
+                                <input 
+                                    v-model="kpiForm.end_val" 
+                                    type="number" 
+                                    class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                <span class="text-rose-500 mr-0.5">*</span>Bonus miqdori
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    v-model="kpiForm.bonus_amount" 
+                                    type="number" 
+                                    required
+                                    class="w-full border border-gray-200 rounded-xl pl-3 pr-12 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span class="absolute right-3 top-2.5 text-xs text-gray-400 font-bold">UZS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Malumot (Qozgalmas maosh) -->
+                    <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                        <h4 class="text-sm font-extrabold text-gray-900">Malumot:</h4>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                <span class="text-rose-500 mr-0.5">*</span>Qo'zg'almas maosh
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    v-model="kpiForm.fixed_salary" 
+                                    type="number" 
+                                    required
+                                    class="w-full border border-gray-200 rounded-xl pl-3 pr-12 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span class="absolute right-3 top-2.5 text-xs text-gray-400 font-bold">UZS</span>
+                            </div>
+                            <p class="text-[10px] text-gray-400 font-medium mt-1">Har oylik qo'zg'almas maosh miqdori</p>
+                        </div>
+                    </div>
+
+                    <!-- Help Box / Information -->
+                    <div class="bg-blue-50/60 border border-blue-100/50 rounded-2xl p-4 space-y-2 text-xs text-blue-800">
+                        <h5 class="font-extrabold text-blue-900">Ma'lumot:</h5>
+                        <ul class="list-disc list-inside space-y-1 font-medium pl-1">
+                            <li>Bonus sozlamalari KPI asosida hisoblanadi</li>
+                            <li>Qo'zg'almas maosh har oy to'lanadi</li>
+                            <li>Barcha maydonlarni to'ldirish majburiy</li>
+                            <li>Oxirgi qiymat nofaol axboroti</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="flex gap-4 pt-4 border-t border-gray-100 shrink-0">
+                        <button 
+                            type="button" 
+                            @click="showKpiDrawer = false" 
+                            class="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors text-center"
+                        >
+                            Bekor qilish
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="isProcessing" 
+                            class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition-colors text-center"
+                        >
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </AdminLayout>
-
-        <!-- Guard Salary History Modal -->
-        <div v-if="showGuardHistoryModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-gray-50" @click="showGuardHistoryModal = false"></div>
-            <div class="relative bg-white border border-blue-200 p-6 rounded-2xl max-w-2xl w-full shadow-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-display font-bold text-gray-900 flex items-center gap-2">
-                        🛡️ {{ activeGuardHistory?.name }} - Maosh Tarixi
-                    </h2>
-                    <button @click="showGuardHistoryModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
-                        ✕
-                    </button>
-                </div>
-                
-                <div class="overflow-x-auto rounded-xl border border-gray-200">
-                    <table class="w-full text-left text-xs font-mono">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <th class="p-3 font-normal uppercase tracking-widest">Sana</th>
-                                <th class="p-3 font-normal uppercase tracking-widest text-right">Oylik Miqdori</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-white/5">
-                            <tr v-for="hist in activeGuardHistory?.salary_histories" :key="hist.id" class="hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <td class="p-3 text-gray-900">{{ new Date(hist.effective_date).toLocaleDateString() }}</td>
-                                <td class="p-3 text-blue-600 text-right font-bold">{{ $currency(hist.salary) }} so'm</td>
-                            </tr>
-                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!activeGuardHistory?.salary_histories || activeGuardHistory.salary_histories.length === 0">
-                                <td colspan="2" class="p-6 text-center text-gray-500">Tarix mavjud emas</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mt-6 flex justify-end">
-                    <button @click="showGuardHistoryModal = false" class="px-4 py-2 text-gray-900 font-bold uppercase tracking-widest text-xs rounded hover:bg-white/20 transition-colors">Yopish</button>
-                </div>
-            </div>
-        </div>
-
 </template>
 
-<style>
+<style scoped>
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
 </style>
-
-

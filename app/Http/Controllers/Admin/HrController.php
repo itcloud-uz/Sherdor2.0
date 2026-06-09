@@ -18,16 +18,19 @@ class HrController extends Controller
     public function index()
     {
         return Inertia::render('Admin/HR/Index', [
-            'users' => \App\Models\User::with('roles')->get(),
+            'users' => \App\Models\User::with(['roles', 'transactions'])->withCount(['leads' => function($q) {
+                $q->where('status', 'qualified');
+            }])->get(),
             'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
-            'workers' => Worker::with(['brigade', 'salaryHistories'])->get(),
+            'workers' => Worker::with(['brigade', 'salaryHistories', 'transactions'])->get(),
             'brigades' => \App\Models\Brigade::with('workers')->get(),
             'machineries' => Machinery::all(),
             'machineOwners' => \App\Models\MachineOwner::with('machineries')->get(),
             'buildings' => Building::with('floors.units')->get(),
             'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get(),
             'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
-            'payrolls' => Payroll::with('transaction')->latest()->limit(500)->get()
+            'payrolls' => Payroll::with('transaction')->latest()->limit(500)->get(),
+            'kpiSettings' => \App\Models\CrmSetting::where('key', 'kpi_settings')->first()
         ]);
     }
 
@@ -38,18 +41,30 @@ class HrController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
             'role' => 'required|string|exists:roles,name',
+            'phone' => 'nullable|string',
             'pinfl' => 'nullable|string',
             'passport' => 'nullable|string',
-            'salary_rate' => 'nullable|numeric'
+            'salary_rate' => 'nullable|numeric',
+            'gender' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'employment_date' => 'nullable|date',
+            'status' => 'nullable|string',
+            'specialty_id' => 'nullable|string',
         ]);
 
         $user = \App\Models\User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
-            'pinfl' => $validated['pinfl'],
-            'passport' => $validated['passport'],
-            'salary_rate' => $validated['salary_rate'],
+            'phone' => $validated['phone'] ?? null,
+            'pinfl' => $validated['pinfl'] ?? null,
+            'passport' => $validated['passport'] ?? null,
+            'salary_rate' => $validated['salary_rate'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'birth_date' => $validated['birth_date'] ?? null,
+            'employment_date' => $validated['employment_date'] ?? null,
+            'status' => $validated['status'] ?? 'active',
+            'specialty_id' => $validated['specialty_id'] ?? null,
         ]);
 
         $user->assignRole($validated['role']);
@@ -68,7 +83,14 @@ class HrController extends Controller
             'building_id' => 'nullable|exists:buildings,id',
             'floor_id' => 'nullable|exists:floors,id',
             'unit_id' => 'nullable|exists:units,id',
-            'brigade_id' => 'nullable|exists:brigades,id'
+            'brigade_id' => 'nullable|exists:brigades,id',
+            'passport' => 'nullable|string',
+            'pinfl' => 'nullable|string',
+            'gender' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'employment_date' => 'nullable|date',
+            'status' => 'nullable|string',
+            'specialty_id' => 'nullable|string',
         ]);
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
@@ -600,17 +622,29 @@ class HrController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'role' => 'nullable|string|exists:roles,name',
+            'phone' => 'nullable|string',
             'pinfl' => 'nullable|string',
             'passport' => 'nullable|string',
-            'salary_rate' => 'nullable|numeric'
+            'salary_rate' => 'nullable|numeric',
+            'gender' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'employment_date' => 'nullable|date',
+            'status' => 'nullable|string',
+            'specialty_id' => 'nullable|string',
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'],
             'pinfl' => $validated['pinfl'],
             'passport' => $validated['passport'],
             'salary_rate' => $validated['salary_rate'],
+            'gender' => $validated['gender'] ?? $user->gender,
+            'birth_date' => $validated['birth_date'] ?? $user->birth_date,
+            'employment_date' => $validated['employment_date'] ?? $user->employment_date,
+            'status' => $validated['status'] ?? $user->status,
+            'specialty_id' => $validated['specialty_id'] ?? $user->specialty_id,
         ]);
 
         if (!empty($validated['role'])) {
@@ -678,7 +712,14 @@ class HrController extends Controller
             'salary_type' => 'required|in:fixed_monthly,piece_rate,hourly',
             'metric_type' => 'nullable|string',
             'base_rate' => 'required|numeric|min:0',
-            'brigade_id' => 'nullable|exists:brigades,id'
+            'brigade_id' => 'nullable|exists:brigades,id',
+            'passport' => 'nullable|string',
+            'pinfl' => 'nullable|string',
+            'gender' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'employment_date' => 'nullable|date',
+            'status' => 'nullable|string',
+            'specialty_id' => 'nullable|string',
         ]);
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
@@ -1336,5 +1377,23 @@ class HrController extends Controller
         });
 
         return response()->json(['success' => true, 'message' => 'Tranzaksiya muvaffaqiyatli saqlandi.']);
+    }
+
+    public function storeKpiSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'comparison_type' => 'required|string',
+            'start_val' => 'required|numeric',
+            'end_val' => 'required|numeric',
+            'bonus_amount' => 'required|numeric',
+            'fixed_salary' => 'required|numeric'
+        ]);
+
+        \App\Models\CrmSetting::updateOrCreate(
+            ['key' => 'kpi_settings'],
+            ['value' => json_encode($validated)]
+        );
+
+        return redirect()->back()->with('message', 'KPI sozlamalari muvaffaqiyatli saqlandi.');
     }
 }

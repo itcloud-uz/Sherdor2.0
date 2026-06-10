@@ -2797,8 +2797,8 @@ function formatMoney(amount, currency = 'UZS') {
                                     </option>
                                 </select>
                             </div>
-                            <!-- Invoice Selection Area for expense -->
-                            <div v-if="form.type === 'expense' && form.counterparty_id" class="mt-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
+                            <!-- Invoice Selection Area -->
+                            <div v-if="form.counterparty_id" class="mt-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-semibold text-slate-700">Hisob-faktura</span>
                                     <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">

@@ -33,9 +33,9 @@ Route::get('/view-logs-secure-123456', function(\Illuminate\Http\Request $reques
     if (!file_exists($logPath)) {
         return response()->json(['status' => 'error', 'message' => 'Log file not found']);
     }
-    $lines = file($logPath);
-    $lastLines = array_slice($lines, -150);
-    return response(implode("", $lastLines), 200, ['Content-Type' => 'text/plain']);
+    $content = file_get_contents($logPath);
+    $recentContent = substr($content, -10000);
+    return response($recentContent, 200, ['Content-Type' => 'text/plain']);
 });
 
 Route::get('/', function () {

@@ -141,27 +141,33 @@ const navItems = [
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
 
+const hasPerm = (perm) => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    const rawRoles = user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
+    if (roles.includes('Super_Admin') || roles.includes('Admin')) return true;
+    const permissions = user.permissions || [];
+    return permissions.includes(perm);
+};
+
 const filteredNavItems = computed(() => {
     const user = page.props.auth?.user;
     if (!user) return [];
     
     const rawRoles = user.roles || [];
     const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
-    const isAdmin = roles.includes('Super_Admin') || roles.includes('Admin');
-    const isPartner = roles.includes('Partner');
-    const isOperator = roles.includes('Operator');
 
     return navItems.filter(item => {
-        if (isAdmin) return true;
-        
-        if (isPartner) {
-            return ['dashboard', 'crm', 'clients_database', 'facility_manager', 'finance_core', 'partner_hub', 'Taminotchilar', 'hr_payroll'].includes(item.name);
-        }
-        
-        if (isOperator) {
-            return ['dashboard', 'crm', 'clients_database', 'facility_manager', 'finance_core', 'Taminotchilar', 'hr_payroll'].includes(item.name);
-        }
-
+        if (item.name === 'dashboard') return hasPerm('access dashboard');
+        if (item.name === 'crm' || item.name === 'clients_database') return hasPerm('access clients');
+        if (item.name === 'facility_manager') return hasPerm('access objects');
+        if (item.name === 'finance_core') return hasPerm('access finance');
+        if (item.name === 'partner_hub') return hasPerm('access finance');
+        if (item.name === 'Taminotchilar') return hasPerm('access objects') || hasPerm('access finance');
+        if (item.name === 'hr_payroll') return hasPerm('access hr');
+        if (item.name === 'settings') return hasPerm('access settings');
+        if (item.name === 'Developer') return roles.includes('Super_Admin');
         return false;
     });
 });
@@ -289,6 +295,7 @@ onUnmounted(() => {
                             
                             <!-- Tranzaksiya Yaratish -->
                             <Link
+                                v-if="hasPerm('access transactions')"
                                 :href="route('admin.finance', { tab: 3 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isTabActive(3) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
@@ -298,6 +305,7 @@ onUnmounted(() => {
                             
                             <!-- Qarzlar -->
                             <Link
+                                v-if="hasPerm('access debtors')"
                                 :href="route('admin.finance', { tab: 4 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isTabActive(4) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
@@ -325,6 +333,7 @@ onUnmounted(() => {
                             
                             <!-- Hisobot (Kategoriya) -->
                             <Link
+                                v-if="hasPerm('access reports')"
                                 :href="route('admin.finance', { tab: 7 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isTabActive(7) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
@@ -343,6 +352,7 @@ onUnmounted(() => {
                             
                             <!-- Jurnal -->
                             <Link
+                                v-if="hasPerm('access transactions')"
                                 :href="route('admin.finance', { tab: 2 })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
@@ -411,6 +421,7 @@ onUnmounted(() => {
                             
                             <!-- Qarzdorlik radari -->
                             <Link
+                                v-if="hasPerm('access debtors')"
                                 :href="route('admin.crm', { tab: 'overdue' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isCrmTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
@@ -497,6 +508,7 @@ onUnmounted(() => {
 
                             <!-- Qarzdor mijozlar -->
                             <Link
+                                v-if="hasPerm('access debtors')"
                                 :href="route('admin.crm', { tab: 'clients_debtors' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isClientsTabActive('clients_debtors') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"

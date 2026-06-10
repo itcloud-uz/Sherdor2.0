@@ -226,6 +226,14 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     // Migration Hub routes removed
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/lead-sources', [\App\Http\Controllers\Admin\SettingsController::class, 'storeLeadSource'])->name('settings.lead_sources.store');
+    Route::put('/settings/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\SettingsController::class, 'updateLeadSource'])->name('settings.lead_sources.update');
+    Route::delete('/settings/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\SettingsController::class, 'destroyLeadSource'])->name('settings.lead_sources.destroy');
+    Route::post('/settings/users', [\App\Http\Controllers\Admin\SettingsController::class, 'storeUser'])->name('settings.users.store');
+    Route::put('/settings/users/{user}', [\App\Http\Controllers\Admin\SettingsController::class, 'updateUser'])->name('settings.users.update');
+    Route::delete('/settings/users/{user}', [\App\Http\Controllers\Admin\SettingsController::class, 'destroyUser'])->name('settings.users.destroy');
+    Route::post('/settings/roles-permissions', [\App\Http\Controllers\Admin\SettingsController::class, 'updateRolesPermissions'])->name('settings.roles_permissions.update');
+    Route::post('/settings/sms/send', [\App\Http\Controllers\Admin\SettingsController::class, 'sendSms'])->name('settings.sms.send');
 
     // Receipts / Cheklar
     Route::get('/receipts', [\App\Http\Controllers\Admin\ReceiptController::class, 'index'])->name('receipts');

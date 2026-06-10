@@ -27,6 +27,7 @@ const props = defineProps({
     smsSettings: Object,
     smsLogs: Array,
     isEskizConnected: Boolean,
+    leadSources: Array,
 });
 
 const isAdmin = computed(() => {
@@ -3574,11 +3575,7 @@ function submitPromoRule() {
                             <div class="relative">
                                 <select v-model="clientForm.source" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                     <option value="">Tanlang</option>
-                                    <option value="instagram">Instagram</option>
-                                    <option value="telegram">Telegram</option>
-                                    <option value="facebook">Facebook</option>
-                                    <option value="tavsiya">Tavsiya</option>
-                                    <option value="banner">Tashqi reklama</option>
+                                    <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
                                 </select>
                                 <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -4187,9 +4184,7 @@ function submitPromoRule() {
                                     <div>
                                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Manba</label>
                                         <select v-model="houseForm.source" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
-                                            <option value="facebook">Facebook</option>
-                                            <option value="telegram">Telegram</option>
-                                            <option value="instagram">Instagram</option>
+                                            <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
                                             <option value="manual">Qo'lda kiritilgan</option>
                                         </select>
                                     </div>
@@ -4316,6 +4311,13 @@ function submitPromoRule() {
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ijtimoiy tarmoq havolasi (Ixtiyoriy)</label>
                             <input v-model="newLeadForm.social_url" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: https://t.me/username">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Manba</label>
+                            <select v-model="newLeadForm.source" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                                <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
+                                <option value="manual">Qo'lda kiritilgan</option>
+                            </select>
                         </div>
                         <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-blue-50 border border-blue-500 text-blue-600 py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">
                             {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}

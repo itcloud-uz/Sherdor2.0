@@ -87,6 +87,7 @@ class CrmController extends Controller
             'smsSettings' => $settings,
             'smsLogs' => $smsLogs,
             'isEskizConnected' => $isConnected,
+            'leadSources' => \App\Models\LeadSource::orderBy('name', 'asc')->get(),
         ]);
     }
 

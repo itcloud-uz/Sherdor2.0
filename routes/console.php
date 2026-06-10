@@ -11,6 +11,7 @@ Artisan::command('inspire', function () {
 // Schedule::command('hr:accrue-daily-salaries')->daily(); // Qorovullar (va boshqalar) uchun kunlik hisoblash o'chirildi
 Schedule::command('sms:debtors')->hourly();
 Schedule::command('sms:promo')->hourly();
+Schedule::command('sms:send-scheduled')->everyMinute();
 
 // Zaxiralash (Backup) jadvali - Ertalabki vaqt
 Schedule::command('backup:clean')->dailyAt('07:00');

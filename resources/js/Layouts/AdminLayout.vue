@@ -311,14 +311,15 @@ const formattedDate = computed(() => {
                     <div v-if="item.name === 'finance_core'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isFinanceMenuOpen = !isFinanceMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 text-left bg-[#F2994A] text-white hover:bg-[#e08e43] shadow-sm font-semibold"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
+                            :class="route().current('admin.finance') ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg font-bold text-white">$</span>
-                                <span class="text-sm font-semibold text-white tracking-wide">Moliya</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors font-bold" :class="route().current('admin.finance') ? 'text-blue-600' : ''">$</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.finance') ? 'text-blue-700 font-semibold' : ''">Moliya</span>
                             </div>
                             <svg
-                                class="w-4 h-4 text-white transition-transform duration-200"
+                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
                                 :class="isFinanceMenuOpen ? 'rotate-180' : ''"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor"
                             >

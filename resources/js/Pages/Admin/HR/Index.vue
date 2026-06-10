@@ -56,9 +56,30 @@ watch(activeTab, (newTab) => {
     }
 });
 
+const salarySearchQuery = ref('');
+const salarySelectedMonth = ref('2025-11'); // Default to Noyabr 2025 to match mockup exactly
+const salaryCurrency = ref("so'm");
+const conversionRate = 12800; // 1 USD = 12800 UZS
+
+const monthNamesUz = [
+    "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+    "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr"
+];
+
+const selectedMonthLabel = computed(() => {
+    if (!salarySelectedMonth.value) return "";
+    const [year, month] = salarySelectedMonth.value.split('-');
+    return `${monthNamesUz[parseInt(month, 10) - 1]} ${year}`;
+});
+
 // Helper for formatting price
 const formatPrice = (val) => {
-    if (val === null || val === undefined || isNaN(val)) return "0 so'm";
+    if (val === null || val === undefined || isNaN(val)) {
+        return salaryCurrency.value === 'usd' ? "$0" : "0 so'm";
+    }
+    if (salaryCurrency.value === 'usd') {
+        return "$" + new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val / conversionRate);
+    }
     return new Intl.NumberFormat('uz-UZ').format(Math.round(val)) + " so'm";
 };
 
@@ -330,39 +351,46 @@ function handlePhotoUpload(event) {
 
 // Tab 1: Salaries calculations
 const salaryList = computed(() => {
-    return allEmployees.value.map((e, idx) => {
+    const [selYear, selMonth] = salarySelectedMonth.value.split('-').map(Number);
+    
+    return allEmployees.value.filter(e => {
+        const matchesSearch = e.name.toLowerCase().includes(salarySearchQuery.value.toLowerCase()) || 
+                             e.phone.includes(salarySearchQuery.value);
+        return matchesSearch;
+    }).map((e, idx) => {
         const txs = e.transactions || [];
         
-        // Bonus: salary accruals containing "bonus" in description
-        const bonus = txs.filter(t => t.type === 'salary_accrual' && t.description?.toLowerCase().includes('bonus'))
-                         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-                         
-        // Penalty: penalty transactions
-        const penalty = txs.filter(t => t.type === 'penalty')
-                           .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-                           
-        // Advance: advance payment transactions
-        const advance = txs.filter(t => t.type === 'advance_payment')
-                           .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-                           
-        // Paid: payment transactions
-        const paid = txs.filter(t => t.type === 'payment')
-                         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-                         
-        // Last payment date
-        const payDates = txs.filter(t => t.type === 'payment').map(t => new Date(t.date));
+        // Filter transactions by selected month
+        const monthlyTxs = txs.filter(t => {
+            if (!t.date) return false;
+            const d = new Date(t.date);
+            return d.getFullYear() === selYear && (d.getMonth() + 1) === selMonth;
+        });
+        
+        const bonus = monthlyTxs.filter(t => t.type === 'salary_accrual' && t.description?.toLowerCase().includes('bonus'))
+                                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                                
+        const penalty = monthlyTxs.filter(t => t.type === 'penalty')
+                                  .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                                  
+        const advance = monthlyTxs.filter(t => t.type === 'advance_payment')
+                                  .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                                  
+        const paid = monthlyTxs.filter(t => t.type === 'payment')
+                               .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                               
+        const payDates = monthlyTxs.filter(t => t.type === 'payment').map(t => new Date(t.date));
         let lastPayDate = "-";
         if (payDates.length > 0) {
             const maxDate = new Date(Math.max(...payDates));
             lastPayDate = formatDate(maxDate.toISOString().split('T')[0]);
         }
         
-        // Outstanding Debt (Company owes employee)
-        const balance = parseFloat(e.salary || 0) + bonus - penalty - advance - paid;
+        const base_salary = parseFloat(e.salary || 0);
+        const debt = base_salary + bonus - penalty - advance - paid;
         
-        // Status: Kutilmoqda, Qisman to'langan, To'langan
         let status = "Kutilmoqda";
-        if (balance <= 0) {
+        if (debt <= 0) {
             status = "To'langan";
         } else if (paid > 0 || advance > 0) {
             status = "Qisman to'langan";
@@ -371,17 +399,52 @@ const salaryList = computed(() => {
         return {
             index: idx + 1,
             employee: e,
-            base_salary: e.salary,
+            base_salary,
             bonus,
             penalty,
             advance,
             paid,
             payment_date: lastPayDate,
-            debt: balance,
+            debt: Math.max(0, debt),
             status
         };
     });
 });
+
+const salaryTotals = computed(() => {
+    let base = 0;
+    let paid = 0;
+    let penalty = 0;
+    let debt = 0;
+    
+    salaryList.value.forEach(s => {
+        base += s.base_salary;
+        paid += s.paid;
+        penalty += s.penalty;
+        debt += s.debt;
+    });
+    
+    return { base, paid, penalty, debt };
+});
+
+function exportSalariesToExcel() {
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += "№,Xodim,Asosiy maosh,Bonus,Jarima,Avans,To'langan summa,To'lov sana,Qarzdorlik,Holat\n";
+    
+    salaryList.value.forEach(s => {
+        csvContent += `${s.index},"${s.employee.name}",${s.base_salary},${s.bonus},${s.penalty},${s.advance},${s.paid},"${s.payment_date}",${s.debt},"${s.status}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Maosh_Hisoboti_${salarySelectedMonth.value}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
 // Transaction Adjustment Modal State (`+` button)
 const showAdjModal = ref(false);
@@ -731,9 +794,116 @@ const kpiManagers = computed(() => {
             <!-- Tab 1: Maoshlar (Salaries) -->
             <div v-if="activeTab === 1" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 
+                <!-- Title & Excel Export -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-gray-900 font-display">Maosh hisobotlari</h2>
+                        <p class="text-sm text-gray-500 font-medium mt-1">Oy kesimida maosh, jarimalar, avanslar va qarzdorlik.</p>
+                    </div>
+                    <button 
+                        @click="exportSalariesToExcel" 
+                        class="flex items-center gap-2 px-4 py-2 border border-green-600 hover:border-green-700 text-green-700 hover:bg-green-50 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                        <!-- Excel Icon -->
+                        <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Excel</span>
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <!-- Search -->
+                    <div class="md:col-span-6 space-y-1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Qidirish</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-2.5 text-gray-400">🔍</span>
+                            <input 
+                                v-model="salarySearchQuery" 
+                                type="text" 
+                                placeholder="F.I.O yoki telefon..." 
+                                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50/50"
+                            />
+                        </div>
+                    </div>
+                    
+                    <!-- Month Selector -->
+                    <div class="md:col-span-3 space-y-1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Oy</label>
+                        <input 
+                            v-model="salarySelectedMonth" 
+                            type="month" 
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-700"
+                        />
+                    </div>
+                    
+                    <!-- Currency Selector -->
+                    <div class="md:col-span-3 space-y-1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Valyuta</label>
+                        <select 
+                            v-model="salaryCurrency" 
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-700"
+                        >
+                            <option value="so'm">So'm</option>
+                            <option value="usd">Dollar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4 Statistics Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <!-- Card 1: Jami asosiy maosh -->
+                    <div class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-xl shrink-0">
+                            📄
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-xs font-semibold text-blue-700 font-display">Jami asosiy maosh</p>
+                            <h3 class="text-xl font-extrabold text-blue-900 font-display">{{ formatPrice(salaryTotals.base) }}</h3>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 2: Jami to'langan -->
+                    <div class="bg-emerald-50/70 border border-emerald-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-xl shrink-0">
+                            💵
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-xs font-semibold text-emerald-700 font-display">Jami to'langan</p>
+                            <h3 class="text-xl font-extrabold text-emerald-800 font-display">{{ formatPrice(salaryTotals.paid) }}</h3>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 3: Jami jarima -->
+                    <div class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center font-bold text-rose-700 text-xl shrink-0">
+                            ⚠️
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-xs font-semibold text-rose-700 font-display">Jami jarima</p>
+                            <h3 class="text-xl font-extrabold text-rose-800 font-display">{{ formatPrice(salaryTotals.penalty) }}</h3>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 4: Jami qoldiq -->
+                    <div class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center font-bold text-purple-700 text-xl shrink-0">
+                            🏛️
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-xs font-semibold text-purple-700 font-display">Jami qoldiq</p>
+                            <h3 class="text-xl font-extrabold text-purple-900 font-display">{{ formatPrice(salaryTotals.debt) }}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Salaries Table List -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
                     <div class="p-5 border-b border-gray-100 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900 font-display">Maoshlar</h3>
+                        <h3 class="text-base font-extrabold text-gray-900 font-display uppercase tracking-wider">
+                            Maoshlar ro'yxati - {{ selectedMonthLabel }} ({{ salaryCurrency === 'usd' ? 'USD' : 'UZS' }})
+                        </h3>
                         <button 
                             @click="generatePayroll" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors"

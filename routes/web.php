@@ -34,8 +34,16 @@ Route::get('/view-logs-secure-123456', function(\Illuminate\Http\Request $reques
         return response()->json(['status' => 'error', 'message' => 'Log file not found']);
     }
     $content = file_get_contents($logPath);
-    $recentContent = substr($content, -10000);
-    return response($recentContent, 200, ['Content-Type' => 'text/plain']);
+    $recentContent = substr($content, -150000);
+    $lines = explode("\n", $recentContent);
+    $filtered = [];
+    foreach ($lines as $line) {
+        if (str_contains($line, 'local.ERROR:') || str_contains($line, 'production.ERROR:') || !str_contains($line, 'vendor/')) {
+            $filtered[] = $line;
+        }
+    }
+    $outputLines = array_slice($filtered, -200);
+    return response(implode("\n", $outputLines), 200, ['Content-Type' => 'text/plain']);
 });
 
 Route::get('/', function () {

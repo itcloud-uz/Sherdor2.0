@@ -136,6 +136,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         // Excel Exports
         Route::get('/invoices/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportInvoicesExcel'])->name('invoices.export.xlsx');
         Route::get('/transactions/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportTransactionsExcel'])->name('transactions.export.xlsx');
+        Route::post('/rates', [\App\Http\Controllers\Admin\FinanceController::class, 'updateRates'])->name('rates.update');
     });
 
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');

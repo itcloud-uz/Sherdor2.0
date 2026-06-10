@@ -3,14 +3,13 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, router, Link, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
-import VueApexCharts from 'vue3-apexcharts';
 import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
 import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
 import GuardLedgerModal from '@/Components/Ledger/GuardLedgerModal.vue';
 import Modal from '@/Components/Modal.vue';
+import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 
 const page = usePage();
-
 const gpsCoords = ref({ latitude: null, longitude: null });
 
 onMounted(() => {
@@ -23,6 +22,10 @@ onMounted(() => {
             (err) => console.warn('GPS Error: ', err),
             { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
+    }
+    // Initialize selected register for Tab 8
+    if (props.registers && props.registers.length > 0) {
+        selectedRegisterId.value = props.registers[0].id;
     }
 });
 
@@ -46,13 +49,18 @@ const props = defineProps({
     registers: Array,
     counterparties: Array,
     invoices: Array,
-    moneyTransfers: Array
+    moneyTransfers: Array,
+    rates: Array
 });
 
 const activeTab = ref(0);
 const isProcessing = ref(false);
 
-// Synchronize activeTab with the URL tab parameter reactively
+// Sub-tabs states
+const transferSubTab = ref('transfers'); // 'transfers' or 'exchanges'
+const invoiceSubTab = ref('payments'); // 'payments' or 'debts'
+
+// Synchronize activeTab with URL tab parameter
 watch(
     () => page.url,
     (newUrl) => {
@@ -65,7 +73,7 @@ watch(
                     activeTab.value = tabVal;
                 }
             } else {
-                activeTab.value = 0; // Default tab is 0
+                activeTab.value = 0;
             }
         } catch (e) {
             console.error('URL parse error in Finance tab watcher', e);
@@ -74,7 +82,7 @@ watch(
     { immediate: true }
 );
 
-// Synchronize URL query parameter with activeTab changes inside the component
+// Synchronize URL query parameter with activeTab changes
 watch(activeTab, (newTab) => {
     try {
         const url = new URL(window.location.href);
@@ -86,75 +94,248 @@ watch(activeTab, (newTab) => {
             });
         }
     } catch (e) {
-        console.error('URL replace error in Finance activeTab watcher', e);
+        console.error('URL replace error in activeTab watcher', e);
     }
 });
 
-const tabs = [
-    { id: 0, name: 'dashboard', icon: '🏦' },
-    { id: 1, name: 'action_center', icon: '⚖️' },
-    { id: 2, name: 'ledger_history', icon: '📜' },
-    { id: 3, name: 'create_transaction', icon: '💸' },
-    { id: 4, name: 'qarzlar', icon: '📉' },
-    { id: 5, name: 'Ta\'minotchilar', icon: '🏢' },
-    { id: 6, name: 'O\'tkazmalar', icon: '🔄' },
-    { id: 7, name: 'Hisobot (Kategoriya)', icon: '📊' },
-    { id: 8, name: 'Kassalar', icon: '🏦' },
-    { id: 9, name: 'Kontragentlar', icon: '👥' },
-    { id: 10, name: 'Hisob-fakturalar', icon: '📄' }
-];
+// Exchange Rates State & Actions
+const editingRate = ref(null);
+const usdRateInput = ref(12350);
+const eurRateInput = ref(16890);
 
-// Split transactions
-const legacyFilter = ref('all'); // 'all', 'native', 'legacy'
-
-const isAdmin = computed(() => {
-    const user = page.props.auth?.user;
-    if (!user) return false;
-    const rawRoles = user.roles || [];
-    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
-    return roles.includes('Super_Admin') || roles.includes('Admin');
+const usdRate = computed(() => {
+    const r = props.rates?.find(x => x.code === 'USD');
+    return r ? parseFloat(r.rate) : 12350;
+});
+const eurRate = computed(() => {
+    const r = props.rates?.find(x => x.code === 'EUR');
+    return r ? parseFloat(r.rate) : 16890;
 });
 
-const filteredTransactions = computed(() => {
-    let result = props.transactions || [];
-    if (legacyFilter.value === 'native') {
-        result = result.filter(t => !t.is_legacy);
-    } else if (legacyFilter.value === 'legacy') {
-        result = result.filter(t => t.is_legacy);
+function editRate(code) {
+    editingRate.value = code;
+    if (code === 'USD') usdRateInput.value = usdRate.value;
+    if (code === 'EUR') eurRateInput.value = eurRate.value;
+}
+
+function saveRate(code) {
+    const rateVal = code === 'USD' ? usdRateInput.value : eurRateInput.value;
+    isProcessing.value = true;
+    router.post(route('admin.finance.rates.update'), {
+        rates: [
+            { code: code, rate: rateVal }
+        ]
+    }, {
+        onSuccess: () => {
+            editingRate.value = null;
+            isProcessing.value = false;
+        },
+        onError: () => {
+            isProcessing.value = false;
+        }
+    });
+}
+
+// Tab 8 selected register logic
+const selectedRegisterId = ref(null);
+const selectedRegister = computed(() => {
+    return props.registers?.find(r => r.id === selectedRegisterId.value) || null;
+});
+
+const selectedRegisterTransactions = computed(() => {
+    if (!selectedRegisterId.value) return [];
+    return (props.transactions || []).filter(t => t.account_id === selectedRegisterId.value && t.status === 'approved');
+});
+
+// Selected Register Totals
+const selectedRegisterKirimUzs = computed(() => {
+    return selectedRegisterTransactions.value
+        .filter(t => t.type === 'income' && t.currency === 'UZS')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const selectedRegisterKirimUsd = computed(() => {
+    return selectedRegisterTransactions.value
+        .filter(t => t.type === 'income' && t.currency === 'USD')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const selectedRegisterChiqimUzs = computed(() => {
+    return selectedRegisterTransactions.value
+        .filter(t => t.type === 'expense' && t.currency === 'UZS')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const selectedRegisterChiqimUsd = computed(() => {
+    return selectedRegisterTransactions.value
+        .filter(t => t.type === 'expense' && t.currency === 'USD')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+
+// Tab 8 register specific search / filter states
+const registerSearchQuery = ref('');
+const registerDateFrom = ref('');
+const registerDateTo = ref('');
+const registerTypeFilter = ref('');
+
+const filteredRegisterTransactions = computed(() => {
+    let txs = selectedRegisterTransactions.value;
+    if (registerSearchQuery.value) {
+        const query = registerSearchQuery.value.toLowerCase();
+        txs = txs.filter(t => 
+            (t.notes || '').toLowerCase().includes(query) ||
+            (t.counterparty?.name || '').toLowerCase().includes(query)
+        );
     }
+    if (registerDateFrom.value) {
+        txs = txs.filter(t => t.transaction_date >= registerDateFrom.value);
+    }
+    if (registerDateTo.value) {
+        txs = txs.filter(t => t.transaction_date <= registerDateTo.value);
+    }
+    if (registerTypeFilter.value) {
+        txs = txs.filter(t => t.type === registerTypeFilter.value);
+    }
+    return txs;
+});
+
+// Tab 2 Jurnal Filters & Computeds
+const jurnalDateFrom = ref('');
+const jurnalDateTo = ref('');
+const jurnalAccountId = ref('');
+const jurnalTypeFilter = ref('');
+const jurnalCounterpartyId = ref('');
+const jurnalBuildingId = ref('');
+const jurnalSearchQuery = ref('');
+
+const filteredJurnalTransactions = computed(() => {
+    let result = (props.transactions || []).filter(t => t.status === 'approved');
+
+    if (jurnalSearchQuery.value) {
+        const query = jurnalSearchQuery.value.toLowerCase();
+        result = result.filter(t => 
+            (t.notes || '').toLowerCase().includes(query) ||
+            (t.counterparty?.name || '').toLowerCase().includes(query)
+        );
+    }
+    if (jurnalDateFrom.value) {
+        result = result.filter(t => t.transaction_date >= jurnalDateFrom.value);
+    }
+    if (jurnalDateTo.value) {
+        result = result.filter(t => t.transaction_date <= jurnalDateTo.value);
+    }
+    if (jurnalAccountId.value) {
+        result = result.filter(t => t.account_id === parseInt(jurnalAccountId.value));
+    }
+    if (jurnalTypeFilter.value) {
+        result = result.filter(t => t.type === jurnalTypeFilter.value);
+    }
+    if (jurnalCounterpartyId.value) {
+        result = result.filter(t => t.counterparty_id === parseInt(jurnalCounterpartyId.value));
+    }
+    if (jurnalBuildingId.value) {
+        result = result.filter(t => t.building_id === parseInt(jurnalBuildingId.value));
+    }
+
     return result;
 });
 
-const pendingTransactions = computed(() => (filteredTransactions.value || []).filter(t => t.status === 'pending'));
-const historicalTransactions = computed(() => (filteredTransactions.value || []).filter(t => t.status !== 'pending'));
-
-const recentIncomes = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'income'));
-const recentExpenses = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'expense'));
-const totalApprovedExpenses = computed(() => (recentExpenses.value || []).reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
-
-const incomePage = ref(1);
-const expensePage = ref(1);
-const itemsPerPage = 15;
-
-const paginatedIncomes = computed(() => {
-    const start = (incomePage.value - 1) * itemsPerPage;
-    return recentIncomes.value.slice(start, start + itemsPerPage);
+// Jurnal Summaries
+const totalTushumUzs = computed(() => {
+    return (props.transactions || [])
+        .filter(t => t.type === 'income' && t.status === 'approved' && t.currency === 'UZS')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const totalTushumUsd = computed(() => {
+    return (props.transactions || [])
+        .filter(t => t.type === 'income' && t.status === 'approved' && t.currency === 'USD')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const totalTolovUzs = computed(() => {
+    return (props.transactions || [])
+        .filter(t => t.type === 'expense' && t.status === 'approved' && t.currency === 'UZS')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+const totalBalansUzs = computed(() => {
+    return (props.registers || []).reduce((sum, r) => sum + parseFloat(r.balance_uzs || 0), 0);
+});
+const totalBalansUsd = computed(() => {
+    return (props.registers || []).reduce((sum, r) => sum + parseFloat(r.balance_usd || 0), 0);
 });
 
-const paginatedExpenses = computed(() => {
-    const start = (expensePage.value - 1) * itemsPerPage;
-    return recentExpenses.value.slice(start, start + itemsPerPage);
+// Tab 9 Counterparty filter & search
+const counterpartySearch = ref('');
+const counterpartyTypeFilter = ref('');
+
+const filteredCounterpartiesList = computed(() => {
+    if (!props.counterparties) return [];
+    let list = props.counterparties;
+    
+    if (counterpartySearch.value) {
+        const query = counterpartySearch.value.toLowerCase();
+        list = list.filter(c => 
+            (c.name || '').toLowerCase().includes(query) ||
+            (c.phone || '').toLowerCase().includes(query) ||
+            (c.email || '').toLowerCase().includes(query)
+        );
+    }
+    if (counterpartyTypeFilter.value) {
+        list = list.filter(c => c.type === counterpartyTypeFilter.value);
+    }
+    return list;
 });
 
-const totalIncomesPages = computed(() => Math.max(1, Math.ceil(recentIncomes.value.length / itemsPerPage)));
-const totalExpensesPages = computed(() => Math.max(1, Math.ceil(recentExpenses.value.length / itemsPerPage)));
+// Tab 6 money transfer filter & search
+const transferSearch = ref('');
+const filteredTransfers = computed(() => {
+    if (!props.moneyTransfers) return [];
+    if (!transferSearch.value) return props.moneyTransfers;
+    const q = transferSearch.value.toLowerCase();
+    return props.moneyTransfers.filter(t => 
+        (t.description || '').toLowerCase().includes(q) ||
+        (t.fromAccount?.name || '').toLowerCase().includes(q) ||
+        (t.toAccount?.name || '').toLowerCase().includes(q)
+    );
+});
 
-const totalIncomeAmount = computed(() => recentIncomes.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
-const totalExpenseAmount = computed(() => recentExpenses.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+const totalTransfersCount = computed(() => filteredTransfers.value.length);
+const totalTransfersSumUzs = computed(() => {
+    return filteredTransfers.value
+        .filter(t => t.sent_currency === 'UZS')
+        .reduce((sum, t) => sum + parseFloat(t.sent_amount || 0), 0);
+});
+const activeRegistersCount = computed(() => (props.registers || []).filter(r => r.is_active).length);
 
-import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
-const showExpensesModal = ref(false);
+// Tab 10 Client Payments & Debts computations
+const clientPayments = computed(() => {
+    return (props.transactions || [])
+        .filter(t => t.counterparty?.type === 'client' && t.status === 'approved');
+});
 
+const clientDebts = computed(() => {
+    return (props.counterparties || []).filter(c => c.type === 'client');
+});
+
+const clientPaymentsSearch = ref('');
+const filteredClientPayments = computed(() => {
+    if (!clientPayments.value) return [];
+    if (!clientPaymentsSearch.value) return clientPayments.value;
+    const q = clientPaymentsSearch.value.toLowerCase();
+    return clientPayments.value.filter(t => 
+        (t.counterparty?.name || '').toLowerCase().includes(q) ||
+        (t.notes || '').toLowerCase().includes(q)
+    );
+});
+
+const clientDebtsSearch = ref('');
+const filteredClientDebts = computed(() => {
+    if (!clientDebts.value) return [];
+    if (!clientDebtsSearch.value) return clientDebts.value;
+    const q = clientDebtsSearch.value.toLowerCase();
+    return clientDebts.value.filter(c => 
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q)
+    );
+});
+
+// Edit & Delete Transaction actions
 const showEditTransactionModal = ref(false);
 const editTransactionForm = ref({
     id: null,
@@ -194,7 +375,36 @@ function deleteTransaction(id) {
     }
 }
 
-// Tab 4 Form
+// Maker/Checker action queues
+const pendingTransactions = computed(() => (props.transactions || []).filter(t => t.status === 'pending'));
+const historicalTransactions = computed(() => (props.transactions || []).filter(t => t.status !== 'pending'));
+
+const recentIncomes = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'income'));
+const recentExpenses = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'expense'));
+const totalApprovedExpenses = computed(() => (recentExpenses.value || []).reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+
+const incomePage = ref(1);
+const expensePage = ref(1);
+const itemsPerPage = 10;
+
+const paginatedIncomes = computed(() => {
+    const start = (incomePage.value - 1) * itemsPerPage;
+    return recentIncomes.value.slice(start, start + itemsPerPage);
+});
+
+const paginatedExpenses = computed(() => {
+    const start = (expensePage.value - 1) * itemsPerPage;
+    return recentExpenses.value.slice(start, start + itemsPerPage);
+});
+
+const totalIncomesPages = computed(() => Math.max(1, Math.ceil(recentIncomes.value.length / itemsPerPage)));
+const totalExpensesPages = computed(() => Math.max(1, Math.ceil(recentExpenses.value.length / itemsPerPage)));
+
+const totalIncomeAmount = computed(() => recentIncomes.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+const totalExpenseAmount = computed(() => recentExpenses.value.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0));
+
+const showExpensesModal = ref(false);
+
 const form = ref({
     type: 'income',
     amount: '',
@@ -215,7 +425,7 @@ const form = ref({
     fixed_asset_id: '',
     category_id: '',
     category_name: '',
-    transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16),
+    transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16),
     attachment: null,
     notes: '',
     auto_approve: true,
@@ -259,22 +469,32 @@ watch(() => form.value.counterparty_id, (newVal) => {
     }
 });
 
-// Modals State and CRUD helpers
+// Registers Modal & CRUD helpers
 const showRegisterModal = ref(false);
 const registerForm = ref({
     id: null,
     name: '',
     type: 'cash',
+    initial_balance_uzs: 0,
+    initial_balance_usd: 0,
+    initial_balance_eur: 0,
     currency: 'UZS',
     building_id: '',
-    balance: 0,
-    is_active: true
+    is_active: true,
+    bank_name: '',
+    account_number: '',
+    mfo_code: ''
 });
 const isEditRegister = ref(false);
 
 function openNewRegisterModal() {
     isEditRegister.value = false;
-    registerForm.value = { id: null, name: '', type: 'cash', currency: 'UZS', building_id: '', balance: 0, is_active: true };
+    registerForm.value = { 
+        id: null, name: '', type: 'cash', 
+        initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
+        currency: 'UZS', building_id: '', is_active: true,
+        bank_name: '', account_number: '', mfo_code: ''
+    };
     showRegisterModal.value = true;
 }
 
@@ -305,54 +525,7 @@ function deleteRegister(id) {
     }
 }
 
-const counterpartySearch = ref('');
-
-const filteredCounterpartiesList = computed(() => {
-    if (!props.counterparties) return [];
-    const query = counterpartySearch.value.toLowerCase();
-    if (!query) return props.counterparties;
-    return props.counterparties.filter(c => 
-        (c.name || '').toLowerCase().includes(query) ||
-        (c.type || '').toLowerCase().includes(query) ||
-        (c.phone || '').toLowerCase().includes(query) ||
-        (c.email || '').toLowerCase().includes(query)
-    );
-});
-
-const invoiceFilters = ref({
-    start_date: '',
-    end_date: '',
-    status: '',
-    counterparty_id: '',
-    building_id: ''
-});
-
-const filteredInvoicesList = computed(() => {
-    if (!props.invoices) return [];
-    return props.invoices.filter(inv => {
-        if (invoiceFilters.value.status && inv.status !== invoiceFilters.value.status) return false;
-        if (invoiceFilters.value.counterparty_id && inv.counterparty_id && inv.counterparty_id !== parseInt(invoiceFilters.value.counterparty_id)) return false;
-        if (invoiceFilters.value.building_id && inv.building_id && inv.building_id !== parseInt(invoiceFilters.value.building_id)) return false;
-        if (invoiceFilters.value.start_date) {
-            const invDate = new Date(inv.created_at);
-            const startDate = new Date(invoiceFilters.value.start_date);
-            startDate.setHours(0,0,0,0);
-            if (invDate < startDate) return false;
-        }
-        if (invoiceFilters.value.end_date) {
-            const invDate = new Date(inv.created_at);
-            const endDate = new Date(invoiceFilters.value.end_date);
-            endDate.setHours(23,59,59,999);
-            if (invDate > endDate) return false;
-        }
-        return true;
-    });
-});
-
-const invoiceExportUrl = computed(() => {
-    return route('admin.finance.invoices.export.xlsx', invoiceFilters.value);
-});
-
+// Counterparties Modal & CRUD helpers
 const showCounterpartyModal = ref(false);
 const counterpartyForm = ref({
     id: null,
@@ -360,13 +533,17 @@ const counterpartyForm = ref({
     type: 'client',
     phone: '',
     email: '',
-    balance: 0
+    balance: 0,
+    account_number: '',
+    bank_name: '',
+    inn: '',
+    is_active: true
 });
 const isEditCounterparty = ref(false);
 
 function openNewCounterpartyModal() {
     isEditCounterparty.value = false;
-    counterpartyForm.value = { id: null, name: '', type: 'client', phone: '', email: '', balance: 0 };
+    counterpartyForm.value = { id: null, name: '', type: 'client', phone: '', email: '', balance: 0, account_number: '', bank_name: '', inn: '', is_active: true };
     showCounterpartyModal.value = true;
 }
 
@@ -397,6 +574,7 @@ function deleteCounterparty(id) {
     }
 }
 
+// Invoices CRUD & Modals
 const showInvoiceModal = ref(false);
 const invoiceForm = ref({
     id: null,
@@ -454,17 +632,28 @@ function deleteInvoice(id) {
     }
 }
 
-function fillTransferFromRefund(refund) {
-    transferForm.value.amount = refund.amount;
-    transferForm.value.contract_id = refund.contract_id;
-    transferForm.value.refund_request_id = refund.id;
-    transferForm.value.from_account = refund.account_type || 'bank';
-    transferForm.value.to_account = 'main';
-    transferForm.value.notes = 'Kutayotgan qaytim: ' + refund.notes;
-}
+// Invoice dynamic filters for Tab 10
+const invoiceFilters = ref({
+    start_date: '',
+    end_date: '',
+    status: '',
+    counterparty_id: '',
+    building_id: ''
+});
+const filteredInvoicesList = computed(() => {
+    if (!props.invoices) return [];
+    return props.invoices.filter(inv => {
+        if (invoiceFilters.value.status && inv.status !== invoiceFilters.value.status) return false;
+        if (invoiceFilters.value.counterparty_id && inv.counterparty_id !== parseInt(invoiceFilters.value.counterparty_id)) return false;
+        if (invoiceFilters.value.building_id && inv.building_id !== parseInt(invoiceFilters.value.building_id)) return false;
+        if (invoiceFilters.value.start_date && inv.created_at < invoiceFilters.value.start_date) return false;
+        if (invoiceFilters.value.end_date && inv.created_at > invoiceFilters.value.end_date) return false;
+        return true;
+    });
+});
+const invoiceExportUrl = computed(() => route('admin.finance.invoices.export.xlsx', invoiceFilters.value));
 
 const isNewCategory = ref(false);
-
 const selectedCategoryName = computed(() => {
     if (isNewCategory.value) return form.value.category_name?.toLowerCase() || '';
     if (!props.categories) return '';
@@ -497,29 +686,19 @@ function handleFileUpload(e) {
     }
 }
 
+// Search Contract for client transactions
 const scheduleSearch = ref('');
 const showScheduleDropdown = ref(false);
 
-function handleBlur() {
-    setTimeout(() => {
-        showScheduleDropdown.value = false;
-    }, 200);
-}
-
 const filteredContracts = computed(() => {
     if (!props.contracts) return [];
-    
     let baseContracts = props.contracts || [];
-    
-    // Mijozga pulni qaytarish uchun faqat bekor qilingan shartnomalar
     if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'mijozga to\'lov qilish' || selectedCategoryName.value === 'client_refund') {
         baseContracts = baseContracts.filter(c => c.status === 'cancelled');
     } else {
         baseContracts = baseContracts.filter(c => c.status !== 'cancelled');
     }
-
     if (!scheduleSearch.value) return baseContracts;
-    
     const query = scheduleSearch.value.toLowerCase();
     return baseContracts.filter(c => {
         const clientName = String(c.client?.first_name + ' ' + c.client?.last_name).toLowerCase();
@@ -559,12 +738,10 @@ function submitTransaction() {
         alert("Iltimos, ushbu kategoriya uchun aniq bir Mijoz Shartnomasini tanlang (Qidiruv qatoridan).");
         return;
     }
-
     isProcessing.value = true;
     form.value.latitude = gpsCoords.value.latitude;
     form.value.longitude = gpsCoords.value.longitude;
     
-    // Auto-fill target_type and target_id based on requires flags
     if (requiresPartner.value || form.value.account_type === 'partner') {
         form.value.target_type = 'partner';
         form.value.target_id = form.value.partner_id;
@@ -590,38 +767,14 @@ function submitTransaction() {
         onSuccess: () => {
             isProcessing.value = false;
             form.value = { 
-                type: 'income', 
-                category_id: '', 
-                category_name: '', 
-                amount: '', 
-                currency: 'UZS', 
-                payment_method: 'cash', 
-                account_id: '', 
-                counterparty_id: '', 
-                invoice_id: '', 
-                contract_id: '', 
-                client_id: '', 
-                worker_id: '',
-                brigade_id: '', 
-                partner_id: '', 
-                machinery_id: '',
-                machine_owner_id: '', 
-                building_id: '', 
-                supplier_id: '', 
-                fixed_asset_id: '', 
-                transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), 
-                attachment: null, 
-                auto_approve: true, 
-                notes: '', 
-                latitude: null, 
-                longitude: null, 
-                source: 'admin_panel', 
-                target_type: null, 
-                target_id: null,
-                exchange_rate: 1.0,
-                converted_amount: ''
+                type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', 
+                account_id: '', counterparty_id: '', invoice_id: '', contract_id: '', client_id: '', worker_id: '',
+                brigade_id: '', partner_id: '', machinery_id: '', machine_owner_id: '', building_id: '', supplier_id: '', 
+                fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16), 
+                attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', 
+                target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
             };
-            activeTab.value = 1; // Go to Action Center
+            activeTab.value = 1;
         },
         onError: () => isProcessing.value = false
     });
@@ -632,18 +785,23 @@ function submitTransfer() {
     router.post(route('admin.finance.internal_transfer'), transferForm.value, {
         onSuccess: () => {
             isProcessing.value = false;
-            transferForm.value = { 
-                from_account_id: '', 
-                to_account_id: '', 
-                sent_amount: '', 
-                exchange_rate: 1.0, 
-                description: '' 
-            };
-            activeTab.value = 0; // Go to Dashbod
+            transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, description: '' };
+            activeTab.value = 6;
         },
         onError: () => isProcessing.value = false
     });
 }
+
+// Contract Approve Details
+const showContractApproveModal = ref(false);
+const selectedContractTxn = ref(null);
+const contractApproveForm = ref({ applied_amount: 0, refund_amount: 0 });
+
+watch(() => contractApproveForm.value.applied_amount, (newVal) => {
+    if (selectedContractTxn.value) {
+        contractApproveForm.value.refund_amount = Math.max(0, selectedContractTxn.value.amount - newVal);
+    }
+});
 
 function approve(id) {
     const txn = (props.transactions || []).find(t => t.id === id);
@@ -654,26 +812,12 @@ function approve(id) {
         showContractApproveModal.value = true;
         return;
     }
-
     isProcessing.value = true;
     router.post(route('admin.finance.transactions.approve', id), {}, {
         onSuccess: () => isProcessing.value = false,
         onError: () => isProcessing.value = false
     });
 }
-
-const showContractApproveModal = ref(false);
-const selectedContractTxn = ref(null);
-const contractApproveForm = ref({
-    applied_amount: 0,
-    refund_amount: 0
-});
-
-watch(() => contractApproveForm.value.applied_amount, (newVal) => {
-    if (selectedContractTxn.value) {
-        contractApproveForm.value.refund_amount = Math.max(0, selectedContractTxn.value.amount - newVal);
-    }
-});
 
 function submitContractApprove() {
     isProcessing.value = true;
@@ -694,31 +838,22 @@ function reject(id) {
     });
 }
 
-// Receipt Modal
+// Receipt Modal details
 const showReceiptModal = ref(false);
 const receiptData = ref(null);
-
 function openReceipt(transaction) {
     receiptData.value = transaction;
     showReceiptModal.value = true;
 }
 
-// Qarzlar (Liabilities) Logic
+// Qarzlar (Liabilities) CRUD
 const showLiabilityModal = ref(false);
 const isEditMode = ref(false);
 const editingLiabilityId = ref(null);
 const liabilityForm = ref({
-    type: 'bank_loan',
-    creditor_name: '',
-    total_amount: '',
-    interest_rate: '',
-    term_months: 12,
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
-    monthly_payment: '',
-    description: '',
-    status: 'active',
-    fund_account: 'main'
+    type: 'bank_loan', creditor_name: '', total_amount: '', interest_rate: '', 
+    term_months: 12, start_date: new Date().toISOString().split('T')[0], 
+    end_date: '', monthly_payment: '', description: '', status: 'active', fund_account: 'main'
 });
 
 function openNewLiabilityModal() {
@@ -736,17 +871,10 @@ function openEditLiability(liability) {
     isEditMode.value = true;
     editingLiabilityId.value = liability.id;
     liabilityForm.value = {
-        type: liability.type,
-        creditor_name: liability.creditor_name,
-        total_amount: liability.total_amount,
-        interest_rate: liability.interest_rate,
-        term_months: liability.term_months,
-        start_date: liability.start_date,
-        end_date: liability.end_date,
-        monthly_payment: liability.monthly_payment,
-        description: liability.description,
-        status: liability.status,
-        fund_account: '' // Not applicable for edits
+        type: liability.type, creditor_name: liability.creditor_name, total_amount: liability.total_amount,
+        interest_rate: liability.interest_rate, term_months: liability.term_months, start_date: liability.start_date,
+        end_date: liability.end_date, monthly_payment: liability.monthly_payment, description: liability.description,
+        status: liability.status, fund_account: ''
     };
     showLiabilityModal.value = true;
 }
@@ -755,24 +883,18 @@ function submitLiability() {
     isProcessing.value = true;
     if (isEditMode.value) {
         router.put(route('admin.finance.liabilities.update', editingLiabilityId.value), liabilityForm.value, {
-            onSuccess: () => {
-                isProcessing.value = false;
-                showLiabilityModal.value = false;
-            },
+            onSuccess: () => { isProcessing.value = false; showLiabilityModal.value = false; },
             onError: () => isProcessing.value = false
         });
     } else {
         router.post(route('admin.finance.liabilities.store'), liabilityForm.value, {
-            onSuccess: () => {
-                isProcessing.value = false;
-                showLiabilityModal.value = false;
-            },
+            onSuccess: () => { isProcessing.value = false; showLiabilityModal.value = false; },
             onError: () => isProcessing.value = false
         });
     }
 }
 
-// Payment Schedule Modal
+// Payment Schedule calculations
 const showScheduleModal = ref(false);
 const selectedLiabilityForSchedule = ref(null);
 const generatedSchedule = ref([]);
@@ -780,7 +902,6 @@ const generatedSchedule = ref([]);
 function openScheduleModal(liability) {
     selectedLiabilityForSchedule.value = liability;
     generatedSchedule.value = [];
-    
     let p = parseFloat(liability.total_amount);
     let n = parseInt(liability.term_months);
     let r_annual = parseFloat(liability.interest_rate || 0);
@@ -789,42 +910,25 @@ function openScheduleModal(liability) {
     if (p && n) {
         let balance = p;
         let r = (r_annual / 100) / 12;
-        
         if (!m) {
-            if (r > 0) {
-                m = p * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-            } else {
-                m = p / n;
-            }
+            m = r > 0 ? (p * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)) : (p / n);
         }
-        
         let currentDate = new Date(liability.start_date);
-        
         for (let i = 1; i <= n; i++) {
             let interest = balance * r;
             let principal = m - interest;
-            
-            // For the last month, adjust to exact remaining balance
             if (i === n) {
                 principal = balance;
                 m = principal + interest;
             }
-            
             balance -= principal;
-            
             currentDate.setMonth(currentDate.getMonth() + 1);
-            
             generatedSchedule.value.push({
-                month: i,
-                date: currentDate.toISOString().split('T')[0],
-                payment: m,
-                principal: principal,
-                interest: interest,
-                balance: Math.max(0, balance)
+                month: i, date: currentDate.toISOString().split('T')[0],
+                payment: m, principal: principal, interest: interest, balance: Math.max(0, balance)
             });
         }
     }
-    
     showScheduleModal.value = true;
 }
 
@@ -838,74 +942,47 @@ function deleteLiability(id) {
     }
 }
 
+// Liability payments
 const showPaymentModal = ref(false);
 const selectedLiability = ref(null);
-const paymentForm = ref({
-    amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    notes: '',
-    account_type: 'main'
-});
+const paymentForm = ref({ amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '', account_type: 'main' });
 
 function openPaymentModal(liability) {
     selectedLiability.value = liability;
-    paymentForm.value.amount = liability.monthly_payment || '';
-    paymentForm.value.account_type = 'main';
+    paymentForm.value = { amount: liability.monthly_payment || '', payment_date: new Date().toISOString().split('T')[0], notes: '', account_type: 'main' };
     showPaymentModal.value = true;
 }
 
 function submitPayment() {
     isProcessing.value = true;
     router.post(route('admin.finance.liabilities.payments.store', selectedLiability.value.id), paymentForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            showPaymentModal.value = false;
-            paymentForm.value = { amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '', account_type: 'main' };
-        },
+        onSuccess: () => { isProcessing.value = false; showPaymentModal.value = false; },
         onError: () => isProcessing.value = false
     });
 }
 
-// Supplier Payments
+// Supplier payments
 const showSupplierPaymentModal = ref(false);
 const selectedSupplier = ref(null);
-const supplierPaymentForm = ref({
-    supplier_id: '',
-    amount: '',
-    account_type: 'main',
-    notes: ''
-});
+const supplierPaymentForm = ref({ supplier_id: '', amount: '', account_type: 'main', notes: '' });
 
 function openSupplierPaymentModal(supplier) {
     selectedSupplier.value = supplier;
-    supplierPaymentForm.value = {
-        supplier_id: supplier.id,
-        amount: Math.max(0, supplier.balance),
-        account_type: 'main',
-        notes: ''
-    };
+    supplierPaymentForm.value = { supplier_id: supplier.id, amount: Math.max(0, supplier.balance), account_type: 'main', notes: '' };
     showSupplierPaymentModal.value = true;
 }
 
 function submitSupplierPayment() {
     isProcessing.value = true;
     router.post(route('admin.finance.suppliers.pay'), supplierPaymentForm.value, {
-        onSuccess: () => {
-            isProcessing.value = false;
-            showSupplierPaymentModal.value = false;
-        },
+        onSuccess: () => { isProcessing.value = false; showSupplierPaymentModal.value = false; },
         onError: () => isProcessing.value = false
     });
 }
 
-// Edit Supplier (specifically balance)
+// Edit supplier
 const showEditSupplierModal = ref(false);
-const editSupplierForm = useForm({
-    id: '',
-    name: '',
-    company_name: '',
-    balance: 0
-});
+const editSupplierForm = useForm({ id: '', name: '', company_name: '', balance: 0 });
 
 function openEditSupplierModal(supplier) {
     editSupplierForm.id = supplier.id;
@@ -918,10 +995,7 @@ function openEditSupplierModal(supplier) {
 function submitEditSupplier() {
     isProcessing.value = true;
     editSupplierForm.put(route('admin.warehouse.suppliers.update', editSupplierForm.id), {
-        onSuccess: () => {
-            isProcessing.value = false;
-            showEditSupplierModal.value = false;
-        },
+        onSuccess: () => { isProcessing.value = false; showEditSupplierModal.value = false; },
         onError: () => isProcessing.value = false
     });
 }
@@ -931,1697 +1005,1478 @@ function deleteSupplier(id) {
         router.delete(route('admin.warehouse.suppliers.destroy', id));
     }
 }
+
+// Categories report summary
 const categoriesSummary = computed(() => {
     if (!props.transactions) return [];
-    
     const approvedTxns = props.transactions.filter(t => t.status === 'approved');
     const groups = {};
-    
     approvedTxns.forEach(t => {
         const catName = t.category?.name || 'Noma\'lum';
         if (!groups[catName]) {
-            groups[catName] = {
-                name: catName,
-                total_income: 0,
-                total_expense: 0,
-                transactions: []
-            };
+            groups[catName] = { name: catName, total_income: 0, total_expense: 0, transactions: [] };
         }
-        
         if (t.type === 'income') {
             groups[catName].total_income += parseFloat(t.amount);
         } else if (t.type === 'expense') {
             groups[catName].total_expense += parseFloat(t.amount);
         }
-        
         groups[catName].transactions.push(t);
     });
-    
     return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
 });
 
+// Format money values
+function formatMoney(amount, currency = 'UZS') {
+    if (amount === undefined || amount === null) return '0.00 ' + currency;
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' ' + currency;
+}
 </script>
 
 <template>
     <Head :title="$t('finance_core')" />
     <AdminLayout>
-        
-
-
-        <div class="flex flex-col gap-4">
-            
-
-            <!-- Content Area -->
-            <div class="w-full overflow-x-hidden">
-
-        <!-- TAB 1: Main Dashboard -->
-        <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- KASSA (CASH) -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-t-4 border-t-neon-green relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-sm font-mono text-gray-500">{{ $t('total_balance') }} (Kassa)</p>
-                    <h2 class="text-3xl font-display font-bold text-gray-900 mt-2 drop-shadow-sm">
-                        {{ $currency(balance?.total_balance || 0) }}
-                    </h2>
-                </div>
-                
-                <!-- BANK ACCOUNT (CREDIT) -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-t-4 border-t-neon-yellow relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-sm font-mono text-gray-500 uppercase tracking-widest">Bank Hisobi</p>
-                    <h2 class="text-3xl font-display font-bold text-gray-900 mt-2 drop-shadow-sm">
-                        {{ $currency(balance?.credit_balance || 0) }}
-                    </h2>
-                </div>
-                
-                <!-- PENDING INCOMES -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-t-4 border-t-neon-cyan relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-sm font-mono text-gray-500">{{ $t('pending_incomes') }}</p>
-                    <h2 class="text-3xl font-display font-bold text-gray-900 mt-2 drop-shadow-sm">
-                        + {{ $currency(pendingIncomes || 0) }}
-                    </h2>
-                </div>
-
-                <!-- PENDING EXPENSES -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-t-4 border-t-neon-red relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-sm font-mono text-gray-500">{{ $t('pending_expenses') }}</p>
-                    <h2 class="text-3xl font-display font-bold text-gray-900 mt-2 drop-shadow-sm">
-                        - {{ $currency(pendingExpenses || 0) }}
-                    </h2>
-                </div>
-                
-                <div @click="showExpensesModal = true" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border-t-4 border-neon-purple relative overflow-hidden group cursor-pointer hover:bg-neon-purple/5 transition-colors border-gray-100 hover:border-neon-purple/30">
-                    <div class="absolute inset-0 bg-neon-purple/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest flex justify-between">
-                        <span>Jami Tasdiqlangan Chiqimlar</span>
-                        <span class="text-neon-purple underline">batafsil</span>
-                    </p>
-                    <h2 class="text-3xl font-display font-bold text-gray-900 mt-2 drop-shadow-sm">
-                        - {{ $currency(totalApprovedExpenses || 0) }}
-                    </h2>
-                </div>
-            </div>
-
-            <!-- Transaction Lists -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Incomes -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-6 rounded-2xl border border-blue-200 h-auto max-h-[500px] flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-display text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-blue-600"></span>{{ $t('incomes_from') }}</h3>
-                        <!-- LEGACY FILTERS -->
-                        <div class="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
-                            <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
-                            <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
-                            <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
+        <div class="space-y-6">
+            <!-- TAB 0: Boshqaruv Paneli (Dashboard) -->
+            <div v-if="activeTab === 0" class="space-y-6">
+                <!-- Summary Metrics (Screenshot 2 Style but for dashboard) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Jami tushumlar -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center font-bold">✓</div>
+                            <span class="text-sm font-semibold text-gray-500">Jami tushumlar</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-bold font-display text-emerald-600">
+                                {{ formatMoney(totalTushumUsd, 'USD') }}
+                            </h2>
+                            <h2 class="text-2xl font-bold font-display text-emerald-600">
+                                {{ formatMoney(totalTushumUzs, 'UZS') }}
+                            </h2>
                         </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                        <table class="w-full text-left text-[12px] font-mono">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <th class="p-3">Sana</th>
-                                    <th class="p-3">Izoh</th>
-                                    <th class="p-3">Kategoriya</th>
-                                    <th class="p-3">Hisob</th>
-                                    <th class="p-3 text-right">Summa</th>
-                                    <th class="p-3 text-center">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover: transition-colors group relative bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td class="p-3">
-                                        <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
-                                        {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
-                                    </td>
-                                    <td class="p-3 whitespace-normal max-w-xs">{{ txn.notes || (txn.payment_schedule_id ? 'Shartnoma to\'lovi' : '-') }}</td>
-                                    <td class="p-3">{{ txn.category?.name || '-' }}</td>
-                                    <td class="p-3">
-                                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
-                                            {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
-                                        </span>
-                                    </td>
-                                    <td class="p-3 text-right font-bold text-blue-600 whitespace-nowrap">+ {{ $currency(txn.amount) }}</td>
-                                    <td class="p-3 text-center">
-                                        <div class="flex justify-center gap-2">
-                                            <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
-                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-500 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!paginatedIncomes.length">
-                                    <td colspan="6" class="p-4 text-center text-gray-500 text-sm">Kirimlar mavjud emas</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="mt-auto border-t border-gray-200 pt-4 pb-2">
-                            <div class="flex justify-between items-center px-4 font-mono">
-                                <div class="font-bold text-gray-900 text-sm">JAMI: <span class="text-blue-600">+ {{ $currency(totalIncomeAmount) }}</span></div>
-                                <div class="flex items-center gap-4 text-xs">
-                                    <button @click="incomePage > 1 && incomePage--" :disabled="incomePage === 1" class="text-gray-900 hover:text-blue-600 disabled:opacity-30">◄</button>
-                                    <span>{{ incomePage }} / {{ totalIncomesPages }}</span>
-                                    <button @click="incomePage < totalIncomesPages && incomePage++" :disabled="incomePage === totalIncomesPages" class="text-gray-900 hover:text-blue-600 disabled:opacity-30">►</button>
-                                </div>
+                    <!-- Jami to'lovlar -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-bold">✕</div>
+                            <span class="text-sm font-semibold text-gray-500">Jami to'lovlar</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-bold font-display text-red-600">
+                                {{ formatMoney(totalTolovUzs, 'UZS') }}
+                            </h2>
+                            <p class="text-xs text-gray-400 font-mono">Barcha tasdiqlangan xarajatlar summasi</p>
+                        </div>
+                    </div>
+                    <!-- Balans -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center font-bold">🏦</div>
+                            <span class="text-sm font-semibold text-gray-500">Balans</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-bold font-display text-orange-500">
+                                {{ formatMoney(totalBalansUsd, 'USD') }}
+                            </h2>
+                            <h2 class="text-2xl font-bold font-display text-orange-500">
+                                {{ formatMoney(totalBalansUzs, 'UZS') }}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kirimlar & Chiqimlar Tables Side by Side -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Incomes Card -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col h-[500px]">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Kirimlar (Qayerdan)
+                        </h3>
+                        <div class="flex-1 overflow-y-auto">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase">
+                                    <tr>
+                                        <th class="p-3">Sana</th>
+                                        <th class="p-3">Izoh</th>
+                                        <th class="p-3">Kategoriya</th>
+                                        <th class="p-3 text-right">Summa</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-gray-500">{{ new Date(txn.transaction_date).toLocaleDateString() }}</td>
+                                        <td class="p-3 truncate max-w-xs">{{ txn.notes || '-' }}</td>
+                                        <td class="p-3">{{ txn.category?.name || '-' }}</td>
+                                        <td class="p-3 text-right font-bold text-emerald-600">+ {{ formatMoney(txn.amount, txn.currency) }}</td>
+                                    </tr>
+                                    <tr v-if="!paginatedIncomes.length">
+                                        <td colspan="4" class="p-4 text-center text-gray-400">Kirimlar mavjud emas</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="border-t border-gray-100 pt-4 flex justify-between items-center text-xs mt-auto">
+                            <div class="font-bold text-gray-900">Jami Kirimlar: <span class="text-emerald-600">{{ formatMoney(totalIncomeAmount, 'UZS') }}</span></div>
+                            <div class="flex items-center gap-3">
+                                <button @click="incomePage > 1 && incomePage--" :disabled="incomePage === 1" class="disabled:opacity-30 p-1">◄</button>
+                                <span>{{ incomePage }} / {{ totalIncomesPages }}</span>
+                                <button @click="incomePage < totalIncomesPages && incomePage++" :disabled="incomePage === totalIncomesPages" class="disabled:opacity-30 p-1">►</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Expenses -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-6 rounded-2xl border border-red-200 h-auto max-h-[500px] flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-display text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-red-600"></span>{{ $t('expenses_to') }}</h3>
-                        
-                        <div class="flex items-center gap-4">
-                            <button @click="showExpensesModal = true" class="px-2 py-1 text-[10px] font-mono uppercase bg-neon-purple/20 text-neon-purple border border-neon-purple/50 rounded hover:bg-neon-purple hover:text-gray-900 transition-colors flex items-center gap-1 shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                                Analitika
-                            </button>
-                            <!-- LEGACY FILTERS -->
-                            <div class="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
-                                <button @click="legacyFilter = 'all'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'all' ? ' text-gray-900' : 'text-gray-500 hover:text-gray-900']">{{ $t('all') }}</button>
-                                <button @click="legacyFilter = 'native'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'native' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'text-gray-500 hover:text-gray-900']">{{ $t('new_native') }}</button>
-                                <button @click="legacyFilter = 'legacy'" :class="['px-2 py-1 text-[8px] font-mono uppercase rounded transition-all', legacyFilter === 'legacy' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' : 'text-gray-500 hover:text-gray-900']">{{ $t('imported') }}</button>
-                            </div>
+                    <!-- Expenses Card -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col h-[500px]">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Chiqimlar (Qayerga)
+                        </h3>
+                        <div class="flex-1 overflow-y-auto">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase">
+                                    <tr>
+                                        <th class="p-3">Sana</th>
+                                        <th class="p-3">Izoh</th>
+                                        <th class="p-3">Kategoriya</th>
+                                        <th class="p-3 text-right">Summa</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-gray-500">{{ new Date(txn.transaction_date).toLocaleDateString() }}</td>
+                                        <td class="p-3 truncate max-w-xs">{{ txn.notes || '-' }}</td>
+                                        <td class="p-3">{{ txn.category?.name || '-' }}</td>
+                                        <td class="p-3 text-right font-bold text-red-600">- {{ formatMoney(txn.amount, txn.currency) }}</td>
+                                    </tr>
+                                    <tr v-if="!paginatedExpenses.length">
+                                        <td colspan="4" class="p-4 text-center text-gray-400">Chiqimlar mavjud emas</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                        <table class="w-full text-left text-[12px] font-mono">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <th class="p-3">Sana</th>
-                                    <th class="p-3">Izoh</th>
-                                    <th class="p-3">Kategoriya</th>
-                                    <th class="p-3">Hisob</th>
-                                    <th class="p-3">To'lov Usuli</th>
-                                    <th class="p-3 text-right">Summa</th>
-                                    <th class="p-3 text-center">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover: transition-colors group relative bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td class="p-3">
-                                        <span v-if="txn.is_legacy" class="mr-1 px-1 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase">Import</span>
-                                        {{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}
-                                    </td>
-                                    <td class="p-3 whitespace-normal max-w-xs">{{ txn.notes || '-' }}</td>
-                                    <td class="p-3">{{ txn.category?.name || '-' }}</td>
-                                    <td class="p-3">
-                                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded" :class="txn.account_type === 'credit' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
-                                            {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
-                                        </span>
-                                    </td>
-                                    <td class="p-3 uppercase text-[10px]">{{ txn.payment_method || 'cash' }}</td>
-                                    <td class="p-3 text-right font-bold text-red-600 whitespace-nowrap">- {{ $currency(txn.amount) }}</td>
-                                    <td class="p-3 text-center">
-                                        <div class="flex justify-center gap-2">
-                                            <button v-if="isAdmin" @click="openEditTransactionModal(txn)" class="text-[10px] uppercase text-blue-400 hover:text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Tahrir</button>
-                                            <button v-if="isAdmin" @click="deleteTransaction(txn.id)" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">O'chir</button>
-                                            <a :href="route('admin.finance.transactions.export.pdf', txn.id)" target="_blank" class="text-[10px] uppercase text-gray-500 hover:text-gray-900 px-2 py-1 rounded">Yuklash</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="!paginatedExpenses.length">
-                                    <td colspan="7" class="p-4 text-center text-gray-500 text-sm">Chiqimlar mavjud emas</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="mt-auto border-t border-gray-200 pt-4 pb-2">
-                            <div class="flex justify-between items-center px-4 font-mono">
-                                <div class="font-bold text-gray-900 text-sm">JAMI: <span class="text-red-600">- {{ $currency(totalExpenseAmount) }}</span></div>
-                                <div class="flex items-center gap-4 text-xs">
-                                    <button @click="expensePage > 1 && expensePage--" :disabled="expensePage === 1" class="text-gray-900 hover:text-red-600 disabled:opacity-30">◄</button>
-                                    <span>{{ expensePage }} / {{ totalExpensesPages }}</span>
-                                    <button @click="expensePage < totalExpensesPages && expensePage++" :disabled="expensePage === totalExpensesPages" class="text-gray-900 hover:text-red-600 disabled:opacity-30">►</button>
-                                </div>
+                        <div class="border-t border-gray-100 pt-4 flex justify-between items-center text-xs mt-auto">
+                            <div class="font-bold text-gray-900">Jami Chiqimlar: <span class="text-red-600">- {{ formatMoney(totalExpenseAmount, 'UZS') }}</span></div>
+                            <div class="flex items-center gap-3">
+                                <button @click="expensePage > 1 && expensePage--" :disabled="expensePage === 1" class="disabled:opacity-30 p-1">◄</button>
+                                <span>{{ expensePage }} / {{ totalExpensesPages }}</span>
+                                <button @click="expensePage < totalExpensesPages && expensePage++" :disabled="expensePage === totalExpensesPages" class="disabled:opacity-30 p-1">►</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Edit Transaction Modal -->
-            <Modal :show="showEditTransactionModal" @close="showEditTransactionModal = false" maxWidth="md">
-                <div class="p-6">
-                    <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                    <h3 class="text-xl font-display text-gray-900 mb-6">{{ $t('edit_transaction') }}</h3>
-                    
-                    <form @submit.prevent="submitEditTransaction" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-500 mb-1 text-sm">{{ $t('amount') }}</label>
-                            <input v-model="editTransactionForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 mb-1 text-sm">{{ $t('account') }}</label>
-                            <select v-model="editTransactionForm.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                                <option value="main">{{ $t('main_account') }}</option>
-                                <option value="credit">{{ $t('credit_account') }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 mb-1 text-sm">{{ $t('notes_direction') }}</label>
-                            <textarea v-model="editTransactionForm.notes" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="flex justify-end pt-4 gap-4">
-                            <button type="button" @click="showEditTransactionModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">{{ $t('cancel') }}</button>
-                            <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm disabled:opacity-50">{{ $t('save') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
-        </div>
-
-        <!-- TAB 2: Action Center (Maker/Checker) -->
-        <div v-if="activeTab === 1" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-amber-200 shadow-sm">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
+            <!-- TAB 1: Maker/Checker Queue (Harakatlar Markazi) -->
+            <div v-if="activeTab === 1" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-                        {{ $t('maker_checker_queue') }}
+                        Tasdiqlash Kutilayotgan Tranzaksiyalar
                     </h2>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-gray-50 border border-gray-200 hover:border-amber-200 transition-all flex flex-col gap-4 relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        
-                        <div class="flex justify-between items-start z-10">
-                            <span class="px-2 py-1 rounded text-[10px] uppercase tracking-wider" :class="txn.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'">
-                                {{ txn.type === 'income' ? 'Kirim' : 'Chiqim' }}
-                            </span>
-                            <span class="text-xs text-gray-500">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</span>
-                        </div>
-                        
-                        <div class="z-10 flex items-center gap-3">
-                            <h3 class="text-2xl font-bold font-display" :class="txn.type === 'income' ? 'text-blue-600' : 'text-red-600'">
-                                {{ txn.type === 'income' ? '+' : '-' }} {{ $currency(txn.amount) }}
-                            </h3>
-                            <span v-if="txn.is_legacy" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm">{{ $t('imported') }}</span>
-                        </div>
-                        <div class="z-10">
-                            <p class="text-[10px] uppercase font-bold mt-1" :class="txn.account_type === 'credit' ? 'text-amber-600' : 'text-emerald-600'">
-                                Hisob: {{ txn.account_type === 'credit' ? 'KREDIT (KASSA)' : 'MAIN (KOMPANIYA)' }}
-                            </p>
-                        </div>
-                        
-                        <div class="p-3 rounded-lg text-xs font-mono text-gray-900/80 z-10">
-                            <p class="mb-1"><span class="text-gray-500">{{ $t('notes_label') }}</span> {{ txn.notes || 'Kiritilmagan' }}</p>
-                            <p v-if="txn.payment_schedule_id" class="mb-1"><span class="text-gray-500">{{ $t('client_label') }}</span> {{ txn.payment_schedule?.contract?.client?.first_name }} {{ txn.payment_schedule?.contract?.client?.last_name }}</p>
-                            <p><span class="text-gray-500">{{ $t('maker_label') }}</span> <span class="text-gray-900 font-bold">{{ txn.creator?.name }}</span></p>
-                            
-                            <div class="mt-2 pt-2 border-t border-gray-200">
-                                <p class="text-[10px] uppercase font-bold tracking-widest flex items-center gap-1"
-                                   :class="{ 'text-blue-400': txn.source === 'telegram', 'text-neon-purple': txn.source === 'admin_panel' || !txn.source, 'text-amber-600': txn.source === 'partner_app' }">
-                                    <span v-if="txn.source === 'telegram'">{{ $t('source_telegram') }}</span>
-                                    <span v-else-if="txn.source === 'partner_app'">{{ $t('source_partner_app') }}</span>
-                                    <span v-else>{{ $t('source_admin_panel') }}</span>
-                                </p>
-                                
-                                <p v-if="txn.latitude && txn.longitude" class="mt-1">
-                                    <a :href="'https://maps.google.com/?q=' + txn.latitude + ',' + txn.longitude" target="_blank" class="text-[10px] text-blue-600 hover:text-gray-900 flex items-center gap-1 transition-colors">{{ $t('exact_gps_location') }}</a>
-                                </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-gray-50 border border-gray-200 hover:border-amber-300 transition-all flex flex-col gap-4 relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider" :class="txn.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'">
+                                    {{ txn.type === 'income' ? 'Kirim' : 'Chiqim' }}
+                                </span>
+                                <span class="text-xs text-gray-500 font-mono">{{ new Date(txn.transaction_date).toLocaleDateString() }}</span>
                             </div>
-                        </div>
-                        
-                        <div class="flex flex-col gap-2 mt-auto z-10 pt-2 border-t border-gray-200">
-                            <!-- Bog'lanish Button -->
-                            <a :href="'tel:' + (txn.creator?.phone || '+998900000000')" class="w-full text-center px-4 py-2 text-xs uppercase tracking-widest bg-blue-500/20 border border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-gray-900 transition-all rounded">
-                                📞 Bog'lanish {{ txn.creator?.phone ? '('+txn.creator.phone+')' : '' }}
-                            </a>
-                            
-                            <div class="flex gap-2">
-                                <button v-if="isAdmin" @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-black hover:shadow-sm transition-all rounded disabled:opacity-50">{{ $t('approve_check') }}</button>
-                                <button v-if="isAdmin" @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 px-4 py-2 text-xs uppercase tracking-widest bg-red-50 border border-red-500 text-red-600 hover:bg-red-600 hover:text-gray-900 hover:shadow-sm transition-all rounded disabled:opacity-50">{{ $t('reject_cross') }}</button>
+                            <div>
+                                <h3 class="text-2xl font-bold font-display" :class="txn.type === 'income' ? 'text-blue-600' : 'text-red-600'">
+                                    {{ txn.type === 'income' ? '+' : '-' }} {{ formatMoney(txn.amount, txn.currency) }}
+                                </h3>
+                                <p class="text-[10px] uppercase font-bold text-gray-400 mt-1">Hisob: {{ txn.cashRegister?.name || 'Asosiy' }}</p>
+                            </div>
+                            <div class="p-3 bg-white border border-gray-150 rounded-xl text-xs font-mono space-y-1">
+                                <p><span class="text-gray-400">Izoh:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
+                                <p v-if="txn.counterparty"><span class="text-gray-400">Kontragent:</span> {{ txn.counterparty.name }}</p>
+                                <p><span class="text-gray-400">Yaratuvchi:</span> {{ txn.creator?.name }}</p>
+                            </div>
+                            <div class="flex flex-col gap-2 mt-auto pt-2 border-t border-gray-100">
+                                <a :href="'tel:' + (txn.creator?.phone || '')" class="w-full text-center py-2 text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all rounded-xl">
+                                    📞 Bog'lanish
+                                </a>
+                                <div class="flex gap-2">
+                                    <button v-if="isAdmin" @click="approve(txn.id)" :disabled="isProcessing" class="flex-1 py-2 text-xs font-bold uppercase bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all rounded-xl">Tasdiqlash</button>
+                                    <button v-if="isAdmin" @click="reject(txn.id)" :disabled="isProcessing" class="flex-1 py-2 text-xs font-bold uppercase bg-red-50 border border-red-500 text-red-600 hover:bg-red-600 hover:text-white transition-all rounded-xl">Rad Etish</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div v-if="pendingTransactions.length === 0" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl mt-4 w-full">
-                    {{ $t('queue_empty') }}
+                    <div v-if="!pendingTransactions.length" class="py-12 text-center text-gray-400 font-mono text-sm border-dashed border border-gray-200 rounded-xl mt-4">
+                        Tasdiqlash kutilayotgan so'rovlar mavjud emas.
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB 3: Ledger History -->
-        <div v-if="activeTab === 2" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-display font-bold text-gray-900">{{ $t('ledger_history') }}</h2>
-                <a :href="route('admin.finance.transactions.export.xlsx')" target="_blank" class="px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
-                    <span>📊 Excel (CSV) Yuklash</span>
-                </a>
-            </div>
-            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
-                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <th class="pb-3">{{ $t('date') }}</th>
-                        <th class="pb-3">{{ $t('type') }}</th>
-                        <th class="pb-3">{{ $t('amount') }}</th>
-                        <th class="pb-3">{{ $t('account') }}</th>
-                        <th class="pb-3">{{ $t('status') }}</th>
-                        <th class="pb-3">{{ $t('checker') }}</th>
-                        <th class="pb-3 text-right">{{ $t('receipt') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="txn in historicalTransactions" :key="txn.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td class="py-4 text-gray-500">{{ new Date(txn.transaction_date || txn.updated_at).toLocaleDateString() }}</td>
-                        <td class="py-4">
-                            <span class="px-2 py-1 rounded text-[10px] uppercase tracking-wider" :class="txn.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'">
-                                {{ txn.type }}
-                            </span>
-                        </td>
-                        <td class="py-4 text-gray-900">{{ $currency(txn.amount) }}</td>
-                        <td class="py-4">
-                            <span class="text-[10px] uppercase font-bold" :class="txn.account_type === 'credit' ? 'text-amber-600' : 'text-emerald-600'">
-                                {{ txn.account_type === 'credit' ? 'KREDIT' : 'MAIN' }}
-                            </span>
-                        </td>
-                        <td class="py-4">
-                            <span class="text-xs" :class="txn.status === 'approved' ? 'text-emerald-600' : 'text-red-600'">
-                                {{ txn.status }}
-                            </span>
-                        </td>
-                        <td class="py-4 text-gray-500 text-xs">{{ txn.approver?.name || 'N/A' }}</td>
-                        <td class="py-4 text-right">
-                            <button v-if="txn.status === 'approved'" @click="openReceipt(txn)" class="text-blue-600 hover:text-gray-900 hover:underline decoration-neon-cyan transition-all text-xs uppercase tracking-widest">
-                                🖨️ {{ $t('view_receipt') }}
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- TAB 4: Create Transaction -->
-        <div v-if="activeTab === 3" class="w-full max-w-[780px] mx-auto bg-white border border-gray-200 shadow-sm rounded-xl p-8 rounded-2xl border border-blue-200 shadow-sm animate-[fadeIn_0.5s_ease-out]">
-            <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">{{ $t('log_transaction') }}</h2>
-            <p class="text-xs font-mono text-gray-500 mb-8">{{ $t('log_transaction_desc') }}</p>
-
-            <form @submit.prevent="submitTransaction" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <!-- TYPE (Full width) -->
-                <div class="col-span-1 md:col-span-2 flex gap-4">
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" v-model="form.type" value="income" class="hidden peer">
-                        <div class="text-center p-4 rounded-xl border border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 text-gray-500 transition-all">
-                            📥 {{ $t('income') }}
-                        </div>
-                    </label>
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" v-model="form.type" value="expense" class="hidden peer">
-                        <div class="text-center p-4 rounded-xl border border-gray-200 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-600 text-gray-500 transition-all">
-                            📤 {{ $t('expense') }}
-                        </div>
-                    </label>
-                </div>
-
-                <!-- CASH REGISTER (Half width) -->
-                <div>
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Kassa / Bank (Account) *</label>
-                    <select v-model="form.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold text-gray-900 bg-gray-50" required>
-                        <option value="" disabled>-- Kassani tanlang --</option>
-                        <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                            {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
-                        </option>
-                    </select>
-                </div>
-
-                <!-- CATEGORY (Half width) -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-mono text-gray-500">Kategoriya</label>
-                        <button type="button" @click="isNewCategory = !isNewCategory" class="text-[10px] uppercase font-bold text-blue-600 hover:text-gray-900 transition-colors border border-blue-200 px-2 py-1 rounded">
-                            {{ isNewCategory ? 'Ro\'yxatdan tanlash' : '+ Yangi Qo\'shish' }}
+            <!-- TAB 2: Tranzaksiyalar (Jurnal) - Screenshot 2 Style -->
+            <div v-if="activeTab === 2" class="space-y-6">
+                <!-- Title & Actions Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Tranzaksiyalar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Jami {{ filteredJurnalTransactions.length }} ta tranzaksiya</p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <input v-model="jurnalSearchQuery" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
+                        <a :href="route('admin.finance.transactions.export.xlsx')" target="_blank" class="px-5 py-2.5 border border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                            <span>📊 Excel</span>
+                        </a>
+                        <button @click="activeTab = 3; form.type = 'income'" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
+                            <span>+ Kirim</span>
+                        </button>
+                        <button @click="activeTab = 3; form.type = 'expense'" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
+                            <span>- Chiqim</span>
                         </button>
                     </div>
-                    
-                    <div v-if="isNewCategory">
-                        <input v-model="form.category_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900" placeholder="Yangi kategoriya nomini kiriting" required>
+                </div>
+
+                <!-- Currency Exchange Rates row -->
+                <div class="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 flex-wrap">
+                    <!-- UZS -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+                        <span class="text-xs font-bold text-orange-500">UZS</span>
+                        <span class="text-xs text-gray-500">Asosiy valyuta</span>
+                        <button class="text-gray-400 hover:text-orange-600">✏️</button>
                     </div>
-                    <div v-else>
-                        <select v-model="form.category_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
-                            <option value="" disabled>-- Kategoriya tanlang --</option>
-                            <option v-for="cat in categories.filter(c => c.type === form.type || c.type === 'both')" :key="cat.id" :value="cat.id">
-                                {{ cat.name }}
-                            </option>
+                    <!-- USD -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+                        <span class="text-xs font-bold text-orange-500">USD</span>
+                        <span class="text-xs text-gray-700">1 USD =</span>
+                        <input v-if="editingRate === 'USD'" v-model="usdRateInput" type="number" class="w-24 px-2 py-0.5 text-xs border border-orange-300 rounded" @keydown.enter="saveRate('USD')">
+                        <span v-else class="text-xs font-bold text-gray-900">{{ usdRate.toLocaleString() }} UZS</span>
+                        <button @click="editingRate === 'USD' ? saveRate('USD') : editRate('USD')" class="text-gray-400 hover:text-orange-500">
+                            {{ editingRate === 'USD' ? '💾' : '✏️' }}
+                        </button>
+                    </div>
+                    <!-- EUR -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+                        <span class="text-xs font-bold text-orange-500">EUR</span>
+                        <span class="text-xs text-gray-700">1 EUR =</span>
+                        <input v-if="editingRate === 'EUR'" v-model="eurRateInput" type="number" class="w-24 px-2 py-0.5 text-xs border border-orange-300 rounded" @keydown.enter="saveRate('EUR')">
+                        <span v-else class="text-xs font-bold text-gray-900">{{ eurRate.toLocaleString() }} UZS</span>
+                        <button @click="editingRate === 'EUR' ? saveRate('EUR') : editRate('EUR')" class="text-gray-400 hover:text-orange-500">
+                            {{ editingRate === 'EUR' ? '💾' : '✏️' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summaries Cards (Jami tushumlar, Jami to'lovlar, Balans) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Jami tushumlar -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center font-bold">✓</div>
+                            <span class="text-sm font-semibold text-gray-500">Jami tushumlar</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold font-display text-emerald-600">
+                                {{ formatMoney(totalTushumUsd, 'USD') }}
+                            </h2>
+                            <h2 class="text-xl font-bold font-display text-emerald-600">
+                                {{ formatMoney(totalTushumUzs, 'UZS') }}
+                            </h2>
+                        </div>
+                    </div>
+                    <!-- Jami to'lovlar -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-bold">✕</div>
+                            <span class="text-sm font-semibold text-gray-500">Jami to'lovlar</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold font-display text-red-600">
+                                {{ formatMoney(totalTolovUzs, 'UZS') }}
+                            </h2>
+                            <p class="text-xs text-gray-400 font-mono">Tasdiqlangan chiqimlar</p>
+                        </div>
+                    </div>
+                    <!-- Balans -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center font-bold">🏦</div>
+                            <span class="text-sm font-semibold text-gray-500">Balans</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold font-display text-orange-500">
+                                {{ formatMoney(totalBalansUsd, 'USD') }}
+                            </h2>
+                            <h2 class="text-xl font-bold font-display text-orange-500">
+                                {{ formatMoney(totalBalansUzs, 'UZS') }}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multi-Level Filter Row -->
+                <div class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Sanadan</label>
+                        <input v-model="jurnalDateFrom" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Sanagacha</label>
+                        <input v-model="jurnalDateTo" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Kassa / Bank</label>
+                        <select v-model="jurnalAccountId" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                            <option value="">Barchasi</option>
+                            <option v-for="r in registers" :key="r.id" :value="r.id">{{ r.name }}</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- COUNTERPARTY (Half width) -->
-                <div>
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Kontragent (Mijoz, Ta'minotchi, Xodim)</label>
-                    <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm text-gray-900 bg-gray-50">
-                        <option value="">-- Kontragentni tanlang (Ixtiyoriy) --</option>
-                        <option v-for="c in counterparties" :key="c.id" :value="c.id">
-                            [{{ c.type.toUpperCase() }}] {{ c.name }}
-                        </option>
-                    </select>
-                </div>
-
-                <!-- AMOUNT (Half width) -->
-                <div v-show="!requiresMachineOwner && !requiresBrigade">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Summa (Kassa valyutasida: {{ form.currency || 'UZS' }})</label>
-                    <input v-model="form.amount" type="number" step="0.01" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-xl font-bold font-mono tracking-wider text-blue-600" placeholder="0">
-                </div>
-
-                <!-- INVOICE SELECT (Half width) -->
-                <div v-if="form.counterparty_id && invoices.filter(i => i.counterparty_id === form.counterparty_id && i.status !== 'paid').length > 0">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Hisob-faktura (Invoice) bog'lash</label>
-                    <select v-model="form.invoice_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm text-gray-900 bg-gray-50">
-                        <option value="">-- Hisob-faktura bog'lash (Ixtiyoriy) --</option>
-                        <option v-for="inv in invoices.filter(i => i.counterparty_id === form.counterparty_id && i.status !== 'paid')" :key="inv.id" :value="inv.id">
-                            {{ inv.invoice_number }} (Qoldiq: {{ $currency(inv.amount - inv.paid_amount) }} {{ inv.currency }})
-                        </option>
-                    </select>
-                </div>
-
-                <!-- EXCHANGE RATE & CONVERTED AMOUNT (Half width each, shown when currency is not UZS) -->
-                <div v-if="form.currency && form.currency !== 'UZS'">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Valyuta kursi (Exchange Rate) *</label>
-                    <input v-model="form.exchange_rate" type="number" step="0.0001" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold font-mono text-amber-600 bg-gray-50" placeholder="12700.00">
-                </div>
-                <div v-if="form.currency && form.currency !== 'UZS'">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Konvertatsiya qilingan summa (UZS) *</label>
-                    <input :value="form.amount * form.exchange_rate" type="number" readonly class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold font-mono text-emerald-600 bg-gray-50" placeholder="UZS ekvivalenti">
-                </div>
-
-                <!-- DYNAMIC FIELDS (Full width) -->
-                <div v-if="requiresWorker" class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Ishchini Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.worker_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
-                        <option value="" disabled>-- Tanlang --</option>
-                        <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.name }} ({{ w.role }})</option>
-                    </select>
-
-                    <div v-if="form.worker_id && isGuardSelected" class="mt-6 border-t border-blue-200 pt-4">
-                        <button type="button" @click.prevent="showGuardLedgerInline = true" class="w-full h-12 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
-                            💡 QOROVUL JURNALI
-                        </button>
-                        
-                        <GuardLedgerModal 
-                            :show="showGuardLedgerInline" 
-                            :inline="false" 
-                            :guardId="form.worker_id" 
-                            @close="showGuardLedgerInline = false" 
-                        />
-                    </div>
-                </div>
-
-                <div v-if="requiresBrigade" class="col-span-1 md:col-span-2 p-6 bg-blue-50 border border-blue-200 rounded-xl">
-                    <h3 class="text-blue-600 font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                        👷 BRIGADA MA'LUMOTLARI
-                    </h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-mono mb-1 text-blue-600">Brigada</label>
-                            <select v-model="form.brigade_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-blue-200">
-                                <option value="">-- Tanlang --</option>
-                                <option v-for="b in brigades" :key="b.id" :value="b.id">{{ b.name }}</option>
-                            </select>
-                        </div>
-                        
-                        <div v-if="form.brigade_id" class="mt-6 border-t border-blue-200 pt-4">
-                            <button type="button" @click.prevent="showBrigadeLedgerInline = true" class="w-full h-12 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
-                                💡 BRIGADA JURNALI
-                            </button>
-                            
-                            <BrigadeLedgerModal 
-                                :show="showBrigadeLedgerInline" 
-                                :inline="false" 
-                                :brigadeId="form.brigade_id" 
-                                @close="showBrigadeLedgerInline = false" 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="requiresPartner || form.account_type === 'partner'" class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1 text-amber-600">Ta'sischini Tanlang (Hamkor)</label>
-                    <select v-model="form.partner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200" :required="requiresPartner || form.account_type === 'partner'">
-                        <option value="" disabled>-- Tanlang --</option>
-                        <option v-for="p in partners" :key="p.id" :value="p.id">{{ p.user?.name }} (Ulush: {{ p.investment_share_percentage }}%)</option>
-                    </select>
-                </div>
-
-                <div v-if="requiresFixedAsset" class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1 text-blue-600">Asosiy Vosita Tanlang (Texnika/Uskuna)</label>
-                    <select v-model="form.fixed_asset_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-blue-200" required>
-                        <option value="" disabled>-- Tanlang --</option>
-                        <option v-for="f in fixedAssets" :key="f.id" :value="f.id">{{ f.name }} ({{ f.type }})</option>
-                    </select>
-                </div>
-
-                <div v-if="requiresMachineOwner" class="col-span-1 md:col-span-2 p-6 bg-amber-50 border border-amber-200 rounded-xl">
-                    <h3 class="text-amber-600 font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                        🔧 TEXNIKA TO'LOVI MA'LUMOTLARI
-                    </h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-mono mb-1 text-amber-600">Texnika Egasi</label>
-                            <select v-model="form.machine_owner_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200">
-                                <option value="">-- Tanlang --</option>
-                                <option v-for="o in machineOwners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-mono mb-1 text-amber-600">Texnika</label>
-                            <select v-model="form.machinery_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 border-amber-200">
-                                <option value="" disabled>-- Tanlang --</option>
-                                <option v-for="m in machineries.filter(x => !form.machine_owner_id || x.machine_owner_id === form.machine_owner_id)" :key="m.id" :value="m.id">{{ m.name }} ({{ m.license_plate }})</option>
-                            </select>
-                        </div>
-
-                        <div v-if="form.machine_owner_id" class="mt-6 border-t border-amber-200 pt-4">
-                            <button type="button" @click.prevent="showOwnerLedgerInline = true" class="w-full h-12 bg-amber-50 border border-amber-500 text-amber-600 hover:bg-amber-500 hover:text-black font-bold uppercase tracking-widest text-xs rounded transition-colors flex items-center justify-center gap-2">
-                                💡 TEXNIKA EGASI JURNALI
-                            </button>
-                            
-                            <OwnerLedgerModal 
-                                :show="showOwnerLedgerInline" 
-                                :inline="false" 
-                                :ownerId="form.machine_owner_id" 
-                                @close="showOwnerLedgerInline = false" 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="requiresSupplier" class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Ta'minotchini Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.supplier_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
-                        <option value="" disabled>-- Tanlang --</option>
-                        <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.company_name || s.name }}</option>
-                    </select>
-                </div>
-
-                <div v-if="requiresBuilding" class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Bino/Obyektni Tanlang (Neyron bog'lama)</label>
-                    <select v-model="form.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" required>
-                        <option value="" disabled>-- Tanlang --</option>
-                        <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                    </select>
-                </div>
-
-
-
-                <!-- PAYMENT METHOD (Half width) -->
-                <div v-show="!requiresMachineOwner && !requiresBrigade">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('payment_method') }}</label>
-                    <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50">
-                        <option value="cash">{{ $t('cash') }}</option>
-                        <option value="card">{{ $t('card') }}</option>
-                        <option value="bank_transfer">{{ $t('bank_transfer') }}</option>
-                    </select>
-                </div>
-
-                <!-- DATE (Half width) -->
-                <div v-show="!requiresMachineOwner && !requiresBrigade">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Sana va Vaqt</label>
-                    <input v-model="form.transaction_date" type="datetime-local" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50 [color-scheme:dark]">
-                </div>
-
-                <!-- FILE (Half width) -->
-                <div>
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Hujjat / Chek biriktirish (Ixtiyoriy)</label>
-                    <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-50 pt-[10px]">
-                </div>
-
-                <!-- CONTRACT (Full width conditionally) -->
-                <div class="col-span-1 md:col-span-2 relative" v-if="form.type === 'income' || requiresClient">
-                    <label class="block text-xs font-mono mb-1" :class="requiresClient ? 'text-blue-600 font-bold' : 'text-gray-500'">
-                        Qaysi Shartnomaga <span v-if="requiresClient">* (Qidirib tanlang)</span><span v-else>(Ixtiyoriy)</span>
-                    </label>
-                    <div class="relative">
-                        <input 
-                            v-model="scheduleSearch" 
-                            @focus="showScheduleDropdown = true" 
-                            @blur="handleBlur"
-                            type="text" 
-                            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-gray-900 bg-gray-50" 
-                            placeholder="Ism yoki Kvartira bo'yicha qidiring..."
-                        >
-                        <button v-if="form.contract_id" @click.prevent="form.contract_id=''; scheduleSearch=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 text-xl leading-none">&times;</button>
-                    </div>
-                    
-                    <div v-if="showScheduleDropdown && filteredContracts.length > 0" class="absolute z-50 w-full mt-1 bg-[#111] border border-gray-300 rounded-xl max-h-60 overflow-y-auto custom-scrollbar">
-                        <div 
-                            v-for="c in filteredContracts" 
-                            :key="c.id" 
-                            @mousedown.prevent="selectContract(c)"
-                            class="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
-                        >
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-900">{{ c.client?.first_name }} {{ c.client?.last_name }}</span>
-                                <span class="text-blue-600">{{ $currency(c.total_amount) }}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 flex justify-between mt-1 font-mono">
-                                <span>Uy: {{ c.unit?.unit_number || 'N/A' }}</span>
-                                <span v-if="c.status === 'cancelled'" class="text-[10px] text-red-600 bg-red-50 px-1 rounded uppercase">Bekor qilingan</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else-if="showScheduleDropdown && scheduleSearch" class="absolute z-50 w-full mt-1 bg-[#111] border border-gray-300 rounded-xl p-4 text-center text-sm text-gray-500">
-                        Natija topilmadi
-                    </div>
-                </div>
-
-                <!-- NOTES (Full width) -->
-                <div class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Izohlar</label>
-                    <textarea v-model="form.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900 bg-gray-50 pt-3" placeholder="Maqsad va tafsilotlar..."></textarea>
-                </div>
-
-                <!-- AUTO APPROVE (Full width) -->
-                <div class="col-span-1 md:col-span-2 flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
-                    <span class="text-sm font-mono text-gray-900">Avtomatik tasdiqlash</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="form.auto_approve" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                    </label>
-                </div>
-
-                <!-- SUBMIT (Full width) -->
-                <button type="submit" :disabled="isProcessing" class="col-span-1 md:col-span-2 w-full h-12 text-sm bg-blue-50 border border-blue-500 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-black transition-all font-mono uppercase tracking-widest font-bold">
-                    <span v-if="isProcessing">Yuklanmoqda...</span>
-                    <span v-else>{{ form.auto_approve ? "Tasdiqlash va Saqlash" : "Tasdiqlashga Yuborish" }}</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- TAB 5: Bank Krediti va Taminotchilar qarzida (Financial Liabilities) -->
-        <div v-if="activeTab === 4" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">{{ $t('qarzlar') || 'Kreditlar va Qarzlar' }}</h2>
-                <button @click="openNewLiabilityModal" class="px-4 py-2 bg-blue-50 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-black font-mono text-sm tracking-widest transition-all">
-                    + YANGI QARZ QO'SHISH
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Active Liabilities List -->
-                <div v-for="liability in financialLiabilities" :key="liability.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
-                    <div class="absolute right-0 top-0 p-4 flex gap-2">
-                        <button @click="openEditLiability(liability)" class="px-3 py-1 rounded hover:bg-white/20 text-gray-900 text-[10px] uppercase tracking-widest font-mono transition-all">
-                            ✏️ Tahrirlash
-                        </button>
-                        <button @click="deleteLiability(liability.id)" class="px-3 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-[10px] uppercase tracking-widest font-mono transition-all" title="O'chirish">
-                            🗑️
-                        </button>
-                        <span class="px-3 py-1 rounded text-[10px] uppercase tracking-widest font-mono" :class="liability.status === 'active' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
-                            {{ liability.status }}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="text-2xl">{{ liability.type === 'bank_loan' ? '🏦' : '🏭' }}</span>
-                        <div>
-                            <h3 class="text-lg text-gray-900 font-bold">{{ liability.creditor_name }}</h3>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase">{{ liability.type }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Umumiy Qarz</p>
-                            <p class="text-xl text-gray-900 font-bold">{{ $currency(liability.total_amount) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Oylik To'lov</p>
-                            <p class="text-lg text-blue-600">{{ liability.monthly_payment ? $currency(liability.monthly_payment) : 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Foiz</p>
-                            <p class="text-sm text-gray-900">{{ liability.interest_rate ? liability.interest_rate + '%' : '0%' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Muddat</p>
-                            <p class="text-sm text-gray-900">{{ liability.term_months }} oy <span v-if="liability.end_date">({{ new Date(liability.end_date).toLocaleDateString() }}gacha)</span></p>
-                        </div>
-                    </div>
-
-                    <!-- Payment Progress -->
-                    <div class="mb-4">
-                        <div class="flex justify-between text-[10px] font-mono text-gray-500 mb-1">
-                            <span>To'langan: {{ $currency((liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span>
-                            <span>Qoldiq: {{ $currency(liability.total_amount - (liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span>
-                        </div>
-                        <div class="w-full rounded-full h-1.5">
-                            <div class="bg-emerald-600 h-1.5 rounded-full" :style="{ width: Math.min(100, ((liability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0) / (liability.total_amount || 1)) * 100) + '%' }"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-2">
-                        <div class="flex gap-2">
-                            <button v-if="liability.status === 'active'" @click="openPaymentModal(liability)" class="flex-1 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded text-[10px] font-bold font-mono uppercase hover:bg-emerald-600 hover:text-black transition-all">
-                                To'lov Qilish
-                            </button>
-                            <button @click="openScheduleModal(liability)" class="flex-1 py-2 bg-blue-50 border border-blue-200 text-blue-600 rounded text-[10px] font-bold font-mono uppercase hover:bg-blue-600 hover:text-black transition-all">
-                                📅 To'lov Grafigi
-                            </button>
-                        </div>
-
-                        <!-- Export Buttons -->
-                        <div class="flex justify-between gap-2 mt-2 border-t border-gray-200 pt-4">
-                            <a :href="route('admin.finance.liabilities.export.pdf', liability.id)" target="_blank" class="flex-1 py-1.5 text-center bg-red-500/10 border border-red-200 text-red-400 rounded text-[10px] font-mono uppercase hover:bg-red-500 hover:text-gray-900 transition-all">
-                                📄 PDF
-                            </a>
-                            <a :href="route('admin.finance.liabilities.export.docx', liability.id)" target="_blank" class="flex-1 py-1.5 text-center bg-blue-500/10 border border-blue-200 text-blue-400 rounded text-[10px] font-mono uppercase hover:bg-blue-500 hover:text-gray-900 transition-all">
-                                📝 Word
-                            </a>
-                            <a :href="route('admin.finance.liabilities.export.xlsx', liability.id)" target="_blank" class="flex-1 py-1.5 text-center bg-green-500/10 border border-green-500/30 text-green-400 rounded text-[10px] font-mono uppercase hover:bg-green-500 hover:text-gray-900 transition-all">
-                                📊 Excel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div v-if="!financialLiabilities || financialLiabilities.length === 0" class="col-span-full py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">
-                    Hozircha qarzlar va kreditlar mavjud emas.
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 5: Bank Krediti va Taminotchilar qarzida (Financial Liabilities) -->
-        <div v-if="activeTab === 5" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Ta'minotchilar (Qarzlar Ledger)</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="s in suppliers" :key="s.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-200 hover:border-amber-200 transition-all group">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900 font-display">{{ s.company_name || s.name }}</h3>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mt-1">Vakil: {{ s.name }}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button @click="openEditSupplierModal(s)" class="text-blue-600 hover:scale-110 transition-transform" title="Tahrirlash">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            </button>
-                            <button @click="deleteSupplier(s.id)" class="text-red-600 hover:scale-110 transition-transform" title="O'chirish">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="pt-4 border-t border-gray-200 flex justify-between items-center mb-6">
-                        <span class="text-[10px] font-mono text-gray-500 uppercase">Joriy Balans</span>
-                        <div class="text-right">
-                            <span class="block text-xl font-bold font-mono" :class="s.balance > 0 ? 'text-red-600' : (s.balance < 0 ? 'text-emerald-600' : 'text-gray-900')">
-                                {{ $currency(Math.abs(s.balance)) }}
-                            </span>
-                            <span class="text-[10px] font-mono uppercase tracking-widest" :class="s.balance > 0 ? 'text-red-600/70' : (s.balance < 0 ? 'text-emerald-600/70' : 'text-gray-500')">
-                                {{ s.balance > 0 ? 'Qarzimiz bor' : (s.balance < 0 ? 'Haqimiz bor' : 'Nol') }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <button v-if="s.balance > 0" @click="openSupplierPaymentModal(s)" class="w-full py-3 bg-emerald-50 border border-emerald-500 text-emerald-600 font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-emerald-600 hover:text-black transition-all">{{ $t('pay_liability') }}</button>
-                    <button v-else-if="s.balance < 0" class="w-full py-3 border border-gray-200 text-gray-900 font-bold font-mono text-sm uppercase tracking-widest rounded-xl cursor-not-allowed opacity-50">{{ $t('withdraw_money') }}</button>
-                </div>
-                
-                <div v-if="!suppliers || suppliers.length === 0" class="col-span-full py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">{{ $t('no_suppliers') }}</div>
-            </div>
-        </div>
-
-            <!-- TAB 6: Ichki O'tkazma / Naqdlashtirish -->
-            <div v-if="activeTab === 6" class="w-full space-y-6 animate-[fadeIn_0.5s_ease-out]">
-                
-                <!-- KUTAYOTGAN SO'ROVLAR -->
-                <div v-if="pendingRefunds && pendingRefunds.length > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-amber-200 shadow-sm">
-                    <h3 class="text-lg font-display font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>{{ $t('pending_withdrawals') }}</h3>
-                    <div class="space-y-3">
-                        <div v-for="refund in pendingRefunds" :key="refund.id" class="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-amber-200 transition-all">
-                            <div>
-                                <p class="text-sm font-bold text-gray-900 font-mono">Shartnoma #{{ refund.contract_id }}</p>
-                                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">{{ refund.notes }}</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <span class="text-amber-600 font-bold font-mono">{{ $currency(refund.amount) }}</span>
-                                <button @click="fillTransferFromRefund(refund)" class="px-4 py-2 bg-amber-50 text-amber-600 border border-amber-500 rounded font-mono text-xs uppercase tracking-widest hover:bg-amber-500 hover:text-black transition-all">{{ $t('accept') }}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-8 rounded-2xl border border-blue-200 shadow-sm">
-                    <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">{{ $t('internal_transfer_withdrawal') }}</h2>
-                    <p class="text-xs font-mono text-gray-500 mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
-
-                    <form @submit.prevent="submitTransfer" class="space-y-6">
-                        <div class="flex items-center gap-4 py-4">
-                            <div class="flex-1">
-                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Chiqish Kassasi (From Account) *</label>
-                                <select v-model="transferForm.from_account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
-                                    <option value="" disabled>-- Kassani tanlang --</option>
-                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                        {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-xl mt-6 text-blue-600 shrink-0 animate-pulse">
-                                🔄
-                            </div>
-
-                            <div class="flex-1">
-                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Kirish Kassasi (To Account) *</label>
-                                <select v-model="transferForm.to_account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
-                                    <option value="" disabled>-- Kassani tanlang --</option>
-                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                        {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                            <div>
-                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">O'tkazma Summasi *</label>
-                                <input v-model="transferForm.sent_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-3xl font-display text-gray-900 font-bold h-16 bg-gray-50" placeholder="0.00" required>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Konvertatsiya Kursi *</label>
-                                <input v-model="transferForm.exchange_rate" type="number" step="0.0001" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-display text-amber-600 font-bold h-16 bg-gray-50" placeholder="1.0000" required>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Tafsilotlar (Izoh)</label>
-                            <textarea v-model="transferForm.description" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900" placeholder="Masalan: Konvertatsiya USD -> UZS, yoki Ichki kassa to'ldirish"></textarea>
-                        </div>
-
-                        <!-- O'tkazma hisob-kitobi xulosasi -->
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-blue-200 bg-blue-50 rounded-xl">
-                            <h3 class="text-xs font-mono text-gray-500 uppercase mb-2">Xulosa</h3>
-                            <div class="space-y-1 font-mono text-sm">
-                                <div class="flex justify-between text-red-600">
-                                    <span>Chiqadigan summa:</span>
-                                    <span>{{ transferForm.sent_amount ? transferForm.sent_amount : 0 }} {{ props.registers?.find(r => r.id === transferForm.from_account_id)?.currency || '' }}</span>
-                                </div>
-                                <div class="flex justify-between text-amber-600">
-                                    <span>Konvertatsiya kursi:</span>
-                                    <span>{{ transferForm.exchange_rate }}</span>
-                                </div>
-                                <div class="flex justify-between border-t border-gray-200 pt-1 mt-1 text-emerald-600 font-bold text-base">
-                                    <span>Kiradigan summa:</span>
-                                    <span>{{ transferForm.sent_amount * transferForm.exchange_rate }} {{ props.registers?.find(r => r.id === transferForm.to_account_id)?.currency || '' }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                    <div class="flex justify-end pt-6 border-t border-gray-200">
-                        <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-blue-600 text-white font-bold font-mono uppercase tracking-widest rounded-xl hover:shadow-sm transition-all disabled:opacity-50 text-sm">
-                            {{ isProcessing ? 'O\'tkazilmoqda...' : 'Tasdiqlash va O\'tkazish' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TAB 7: Kategoriya Hisoboti -->
-            <div v-if="activeTab === 7" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Hisobotlar (Kategoriya bo'yicha)</h2>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div v-for="cat in categoriesSummary" :key="cat.name" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-200 relative overflow-hidden group">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-xl font-bold text-gray-900 font-display uppercase tracking-widest">{{ cat.name }}</h3>
-                            <div class="flex gap-2">
-                                <a :href="route('admin.finance.transactions.export.category.excel', { category: cat.name })" target="_blank" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">EXCEL</a>
-                                <a :href="route('admin.finance.transactions.export.category.pdf', { category: cat.name })" target="_blank" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">PDF</a>
-                            </div>
-                        </div>
-                        <div class="space-y-2 font-mono text-sm">
-                            <div class="flex justify-between text-blue-600" v-if="cat.total_income > 0">
-                                <span>Kirim (Jami):</span>
-                                <span>{{ $currency(cat.total_income) }}</span>
-                            </div>
-                            <div class="flex justify-between text-red-600" v-if="cat.total_expense > 0">
-                                <span>Chiqim (Jami):</span>
-                                <span>{{ $currency(cat.total_expense) }}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                                Tranzaksiyalar soni: {{ cat.transactions.length }} ta
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div v-if="categoriesSummary.length === 0" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">
-                    Hozircha hisobot mavjud emas.
-                </div>
-            </div>
-
-            <!-- TAB 8: Kassalar va Banklar -->
-            <div v-if="activeTab === 8" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-                <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
                     <div>
-                        <h2 class="text-2xl font-display font-bold text-gray-900">Kassalar va Bank hisoblari</h2>
-                        <p class="text-xs text-gray-500 font-mono mt-1">Real vaqt rejimida kassalar va bank hisoblaridagi qoldiqlar.</p>
-                    </div>
-                    <button @click="openNewRegisterModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
-                        <span>+ Yangi Kassa</span>
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div v-for="reg in registers" :key="reg.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl hover:border-blue-200 transition-all group relative overflow-hidden flex flex-col justify-between">
-                        <div class="absolute inset-x-0 top-0 h-1" :class="reg.type === 'bank' ? 'bg-amber-500' : 'bg-emerald-500'"></div>
-                        
-                        <div>
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase tracking-wider" :class="reg.type === 'bank' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'">
-                                        {{ reg.type === 'bank' ? 'Bank Hisobi' : 'Naqd Kassa' }}
-                                    </span>
-                                    <h3 class="text-xl font-bold text-gray-900 font-display mt-2 group-hover:text-blue-600 transition-colors">{{ reg.name }}</h3>
-                                </div>
-                                <span class="px-2 py-1 rounded-md text-xs font-mono font-bold" :class="reg.is_active ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'">
-                                    {{ reg.is_active ? 'Faol' : 'Nofaol' }}
-                                </span>
-                            </div>
-
-                            <div class="py-4 border-y border-gray-100 my-4 flex justify-between items-center">
-                                <span class="text-sm font-mono text-gray-500 uppercase">Joriy Balans</span>
-                                <div class="text-right">
-                                    <span class="block text-2xl font-bold font-mono text-gray-900">
-                                        {{ $currency(reg.balance) }} {{ reg.currency }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div v-if="reg.building" class="mb-4 text-xs font-mono text-gray-600 flex items-center gap-1.5">
-                                <span>🏢 Obyekt:</span>
-                                <span class="font-bold text-gray-900">{{ reg.building.name }}</span>
-                            </div>
-                            <div v-else class="mb-4 text-xs font-mono text-gray-400">
-                                🏢 Obyekt: Biriktirilmagan (Umumiy kassa)
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2 mt-4 pt-4 border-t border-gray-150">
-                            <button @click="openEditRegisterModal(reg)" class="flex-1 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
-                                Tahrirlash
-                            </button>
-                            <button @click="deleteRegister(reg.id)" class="px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-xs font-bold transition-all" title="O'chirish">
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="!registers || registers.length === 0" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">
-                    Kassalar mavjud emas.
-                </div>
-            </div>
-
-            <!-- TAB 9: Kontragentlar -->
-            <div v-if="activeTab === 9" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                    <div>
-                        <h2 class="text-2xl font-display font-bold text-gray-900">Kontragentlar</h2>
-                        <p class="text-xs text-gray-500 font-mono mt-1">Mijozlar, ta'minotchilar va xodimlar ro'yxati hamda ularning o'zaro hisob-kitob balansi.</p>
-                    </div>
-                    <div class="flex gap-3 w-full sm:w-auto">
-                        <input v-model="counterpartySearch" type="text" placeholder="Qidiruv..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
-                        <button @click="openNewCounterpartyModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
-                            <span>+ Kontragent</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden rounded-2xl border border-gray-150">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm font-mono">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium border-b border-gray-200">
-                                <tr>
-                                    <th class="p-4">Nomi / F.I.O</th>
-                                    <th class="p-4">Turi</th>
-                                    <th class="p-4">Telefon</th>
-                                    <th class="p-4">Email</th>
-                                    <th class="p-4 text-right">Balans</th>
-                                    <th class="p-4 text-center">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <tr v-for="c in filteredCounterpartiesList" :key="c.id" class="hover:bg-gray-50 transition-colors">
-                                    <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
-                                    <td class="p-4">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" 
-                                              :class="c.type === 'client' ? 'bg-blue-50 text-blue-600 border border-blue-200' : (c.type === 'supplier' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-purple-50 text-purple-600 border border-purple-200')">
-                                            {{ c.type === 'client' ? 'Mijoz' : (c.type === 'supplier' ? 'Ta\'minotchi' : 'Xodim') }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
-                                    <td class="p-4 text-gray-600">{{ c.email || '-' }}</td>
-                                    <td class="p-4 text-right font-bold" :class="c.balance > 0 ? 'text-emerald-600' : (c.balance < 0 ? 'text-red-600' : 'text-gray-900')">
-                                        {{ $currency(c.balance) }} UZS
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <div class="flex justify-center gap-2">
-                                            <button @click="openEditCounterpartyModal(c)" class="text-xs uppercase text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md font-bold transition-all">Tahrirlash</button>
-                                            <button @click="deleteCounterparty(c.id)" class="text-xs uppercase text-red-600 hover:text-red-800 bg-red-50 border border-red-100 px-2 py-1 rounded-md font-bold transition-all">O'chirish</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="filteredCounterpartiesList.length === 0">
-                                    <td colspan="6" class="p-8 text-center text-gray-500 text-sm">Kontragentlar topilmadi.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 10: Hisob-fakturalar -->
-            <div v-if="activeTab === 10" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                    <div>
-                        <h2 class="text-2xl font-display font-bold text-gray-900">Hisob-fakturalar (Invoices)</h2>
-                        <p class="text-xs text-gray-500 font-mono mt-1">Manual yoki to'lov grafiklaridan shakllangan schyot-fakturalarni boshqarish va to'lovlarini nazorat qilish.</p>
-                    </div>
-                    <div class="flex gap-3 w-full sm:w-auto">
-                        <a :href="invoiceExportUrl" target="_blank" class="px-5 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
-                            <span>📊 Excel (CSV) yuklash</span>
-                        </a>
-                        <button @click="openNewInvoiceModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
-                            <span>+ Yangi Schyot</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Filters Section -->
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-150 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Boshlanish sanasi</label>
-                        <input v-model="invoiceFilters.start_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Tugash sanasi</label>
-                        <input v-model="invoiceFilters.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Turi</label>
+                        <select v-model="jurnalTypeFilter" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                            <option value="">Barchasi</option>
+                            <option value="income">Kirim</option>
+                            <option value="expense">Chiqim</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Kontragent</label>
-                        <select v-model="invoiceFilters.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
-                            <option value="">-- Barchasi --</option>
+                        <select v-model="jurnalCounterpartyId" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                            <option value="">Barchasi</option>
                             <option v-for="c in counterparties" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt</label>
-                        <select v-model="invoiceFilters.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
-                            <option value="">-- Barchasi --</option>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Bino / Obyekt</label>
+                        <select v-model="jurnalBuildingId" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                            <option value="">Barchasi</option>
                             <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Holati</label>
-                        <select v-model="invoiceFilters.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
-                            <option value="">-- Barchasi --</option>
-                            <option value="new">Yangi (To'lanmagan)</option>
-                            <option value="partially_paid">Kisman To'langan</option>
-                            <option value="paid">To'langan</option>
-                            <option value="cancelled">Bekor qilingan</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden rounded-2xl border border-gray-150">
+                <!-- Transaction Log Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm font-mono">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium border-b border-gray-200">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                                 <tr>
-                                    <th class="p-4">Faktura raqami</th>
+                                    <th class="p-4">Hujjat raqami</th>
+                                    <th class="p-4">Sana</th>
                                     <th class="p-4">Kontragent</th>
                                     <th class="p-4">Obyekt</th>
                                     <th class="p-4 text-right">Summa</th>
-                                    <th class="p-4 text-right">To'langan</th>
-                                    <th class="p-4">Progress</th>
-                                    <th class="p-4">Muddati</th>
-                                    <th class="p-4">Holati</th>
+                                    <th class="p-4">Tranzaksiya turi</th>
                                     <th class="p-4 text-center">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="inv in filteredInvoicesList" :key="inv.id" class="hover:bg-gray-50 transition-colors">
-                                    <td class="p-4 font-bold text-gray-900">
-                                        {{ inv.invoice_number }}
-                                        <span class="block text-[9px] text-gray-400 font-normal">Turi: {{ inv.type }}</span>
+                                <tr v-for="t in filteredJurnalTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
+                                    <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
+                                    <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
+                                    <td class="p-4 text-gray-700">{{ t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                    <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
                                     </td>
                                     <td class="p-4">
-                                        <span v-if="inv.counterparty" class="font-bold text-gray-800">{{ inv.counterparty.name }}</span>
-                                        <span v-else class="text-gray-400">-</span>
-                                    </td>
-                                    <td class="p-4 text-gray-700">{{ inv.building?.name || 'Umumiy' }}</td>
-                                    <td class="p-4 text-right font-bold text-gray-900">{{ $currency(inv.amount) }} {{ inv.currency }}</td>
-                                    <td class="p-4 text-right font-bold text-emerald-600">{{ $currency(inv.paid_amount) }} {{ inv.currency }}</td>
-                                    <td class="p-4">
-                                        <div class="w-24 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                            <div class="bg-emerald-500 h-1.5 rounded-full" :style="{ width: Math.min(100, (inv.paid_amount / inv.amount) * 100) + '%' }"></div>
-                                        </div>
-                                        <span class="text-[9px] text-gray-500 font-bold block mt-1">{{ Math.round((inv.paid_amount / inv.amount) * 100) }}%</span>
-                                    </td>
-                                    <td class="p-4 text-gray-600">{{ new Date(inv.due_date).toLocaleDateString() }}</td>
-                                    <td class="p-4">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" 
-                                              :class="inv.status === 'paid' ? 'bg-green-50 text-green-700 border border-green-200' : (inv.status === 'partially_paid' ? 'bg-amber-50 text-amber-600 border border-amber-200' : (inv.status === 'cancelled' ? 'bg-gray-50 text-gray-400 border border-gray-200' : 'bg-blue-50 text-blue-600 border border-blue-200'))">
-                                            {{ inv.status === 'paid' ? 'To\'langan' : (inv.status === 'partially_paid' ? 'Kisman' : (inv.status === 'cancelled' ? 'Bekor qilingan' : 'Yangi')) }}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
                                         </span>
                                     </td>
                                     <td class="p-4 text-center">
                                         <div class="flex justify-center gap-2">
-                                            <button @click="openEditInvoiceModal(inv)" class="text-xs uppercase text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md font-bold transition-all">Tahrirlash</button>
-                                            <button @click="deleteInvoice(inv.id)" class="text-xs uppercase text-red-600 hover:text-red-800 bg-red-50 border border-red-100 px-2 py-1 rounded-md font-bold transition-all" :disabled="inv.paid_amount > 0" :class="inv.paid_amount > 0 ? 'opacity-50 cursor-not-allowed' : ''">O'chirish</button>
+                                            <!-- View -->
+                                            <button @click="openReceipt(t)" class="p-1 text-gray-500 hover:text-blue-600 border border-gray-200 rounded-md hover:bg-blue-50 transition-all" title="Ko'rish">
+                                                👁️
+                                            </button>
+                                            <!-- Edit -->
+                                            <button v-if="isAdmin" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
+                                                ✏️
+                                            </button>
+                                            <!-- Delete -->
+                                            <button v-if="isAdmin" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
+                                                🗑️
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="filteredInvoicesList.length === 0">
-                                    <td colspan="9" class="p-8 text-center text-gray-500 text-sm">Hisob-fakturalar topilmadi.</td>
+                                <tr v-if="!filteredJurnalTransactions.length">
+                                    <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-        <!-- Edit Supplier Modal -->
-        <Modal :show="showEditSupplierModal" @close="showEditSupplierModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">Tahrirlash: {{ editSupplierForm.company_name || editSupplierForm.name }}</h3>
-                
-                <form @submit.prevent="submitEditSupplier" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kompaniya nomi</label>
-                        <input v-model="editSupplierForm.company_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold text-gray-900" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Vakil F.I.O</label>
-                        <input v-model="editSupplierForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm text-gray-900" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Joriy Balans (UZS)</label>
-                        <input v-model="editSupplierForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg font-bold font-mono text-blue-600" required>
-                        <p class="text-[10px] text-amber-600 mt-1 font-mono">Diqqat: Balansni qo'lda o'zgartirish faqat to'lov bekor qilinganda yoki boshqa zarurat tug'ilganda amalga oshirilishi kerak!</p>
-                    </div>
-                    
-                    <div class="pt-4 border-t border-gray-200 mt-6">
-                        <button type="submit" :disabled="isProcessing" class="w-full py-3 bg-blue-50 border border-blue-500 text-blue-600 font-bold font-mono text-sm uppercase tracking-widest rounded-xl hover:bg-blue-600 hover:text-black transition-all">Saqlash</button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
+            <!-- TAB 3: Create Transaction Form -->
+            <div v-if="activeTab === 3" class="max-w-[800px] mx-auto bg-white border border-gray-150 p-8 rounded-2xl shadow-sm">
+                <h2 class="text-xl font-bold font-display text-gray-900 mb-2">Tranzaksiya Kiritish</h2>
+                <p class="text-xs font-mono text-gray-500 mb-6">Moliya markaziga yangi kirim yoki chiqim operatsiyasini yozish.</p>
 
-        <!-- Supplier Payment Modal -->
-        <Modal :show="showSupplierPaymentModal" @close="showSupplierPaymentModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showSupplierPaymentModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">To'lov: {{ selectedSupplier?.company_name || selectedSupplier?.name }}</h3>
-                
-                <form @submit.prevent="submitSupplierPayment" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('payment_amount_uzs') }}</label>
-                        <input v-model="supplierPaymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-bold font-mono text-emerald-600" required>
-                        <p class="text-[10px] text-gray-500 mt-1 font-mono">Qarz: {{ $currency(selectedSupplier?.balance || 0) }}</p>
+                <form @submit.prevent="submitTransaction" class="space-y-6 font-mono text-xs">
+                    <!-- Type Selector -->
+                    <div class="flex gap-4">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" v-model="form.type" value="income" class="hidden peer">
+                            <div class="text-center p-4 rounded-xl border border-gray-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-600 text-gray-500 font-bold transition-all">
+                                📥 KIRIM (INFLOW)
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" v-model="form.type" value="expense" class="hidden peer">
+                            <div class="text-center p-4 rounded-xl border border-gray-200 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-600 text-gray-500 font-bold transition-all">
+                                📤 CHIQIM (OUTFLOW)
+                            </div>
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('which_account_withdraw') }}</label>
-                        <select v-model="supplierPaymentForm.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg text-gray-900" required>
-                            <option value="main">{{ $t('main_cash') }}</option>
-                            <option value="bank">{{ $t('bank_account_label') }}</option>
-                            <option value="credit">{{ $t('credit_cash') }}</option>
-                            <option value="debt">{{ $t('liability_cash') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('notes') }}</label>
-                        <textarea v-model="supplierPaymentForm.notes" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" rows="3" placeholder="Sement uchun to'lov..."></textarea>
-                    </div>
-                    
-                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-4">
-                        <button type="button" @click="showSupplierPaymentModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900 font-mono text-sm">{{ $t('cancel_button') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-emerald-600 text-white rounded font-bold font-mono text-sm hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
-                            {{ isProcessing ? 'To\'lanmoqda...' : 'To\'lovni Tasdiqlash' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
 
-        <!-- RECEIPT MODAL -->
-        <Modal :show="showReceiptModal && receiptData !== null" @close="showReceiptModal = false" maxWidth="md">
-            <div class="p-6">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold font-display uppercase tracking-widest">{{ $t('sher_dor') }}</h2>
-                    <p class="text-xs font-mono text-gray-500">{{ $t('receipt') }}</p>
-                </div>
-                
-                <div class="space-y-2 text-sm font-mono border-y border-dashed border-gray-300 py-4 mb-6">
-                    <div class="flex justify-between"><span>{{ $t('date') }}:</span> <span>{{ new Date(receiptData.updated_at).toLocaleDateString() }}</span></div>
-                    <div class="flex justify-between" v-if="receiptData.contract?.client || receiptData.paymentSchedule?.contract?.client">
-                        <span>{{ $t('client_label') }}</span> 
-                        <span class="font-bold text-right">
-                            {{ (receiptData.contract || receiptData.paymentSchedule?.contract).client.first_name }} 
-                            {{ (receiptData.contract || receiptData.paymentSchedule?.contract).client.last_name }}
-                        </span>
-                    </div>
-                    <div class="flex justify-between" v-if="receiptData.contract?.unit || receiptData.paymentSchedule?.contract?.unit">
-                        <span>{{ $t('object_label') }}</span> 
-                        <span class="font-bold text-right">
-                            {{ (receiptData.contract || receiptData.paymentSchedule?.contract).unit.unit_number }}
-                        </span>
-                    </div>
-                    <div class="flex justify-between"><span>{{ $t('type') }}:</span> <span class="uppercase">{{ receiptData.payment_method }}</span></div>
-                    <div class="flex justify-between"><span>{{ $t('maker') }}:</span> <span>{{ receiptData.creator?.name }}</span></div>
-                    <div class="flex justify-between"><span>{{ $t('checker') }}:</span> <span>{{ receiptData.approver?.name }}</span></div>
-                </div>
-
-                <div class="flex justify-between items-end mb-6">
-                    <span class="text-sm font-mono font-bold">{{ $t('total') }}:</span>
-                    <span class="text-3xl font-bold">{{ $currency(receiptData.amount) }}</span>
-                </div>
-
-                <div class="flex flex-col items-center border-t border-dashed border-gray-300 pt-6">
-                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(route('public.receipt.verify', receiptData.receipt_hash))" width="100" height="100" alt="QR Code" class="mb-2">
-                    <p class="text-[10px] font-mono mt-2 tracking-widest">{{ receiptData.receipt_hash }}</p>
-                </div>
-
-                <div class="mt-8 flex justify-center gap-4">
-                    <button @click="showReceiptModal = false" class="px-4 py-2 text-xs border border-gray-400 rounded hover:bg-gray-100 font-mono uppercase">{{ $t('cancel') }}</button>
-                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-mono uppercase text-center flex items-center justify-center">{{ $t('print_button') }}</a>
-                </div>
-            </div>
-        </Modal>
-
-        <!-- CONTRACT APPROVE MODAL -->
-        <Modal :show="showContractApproveModal" @close="showContractApproveModal = false" maxWidth="lg">
-            <div class="p-6">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('contract_payment_distribution') }}</h2>
-                <div class="mb-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100 text-sm font-mono text-gray-500">
-                    <p>Kiritilgan summa: <strong class="text-blue-600 text-lg">{{ $currency(selectedContractTxn?.amount) }}</strong></p>
-                </div>
-                <form @submit.prevent="submitContractApprove" class="space-y-6 font-mono text-xs">
-                    <div>
-                        <label class="block text-gray-500 mb-2 uppercase">Shartnoma Qarziga Yo'naltirish</label>
-                        <input type="number" step="0.01" v-model="contractApproveForm.applied_amount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xl font-bold text-gray-900 h-12" required max="1000000000000">
-                        <p class="text-[10px] text-gray-500 mt-2">Bu summa mijozning to'lov grafigidagi qarzini yopishga ketadi.</p>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-2 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
-                        <input type="number" step="0.01" v-model="contractApproveForm.refund_amount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xl font-bold text-amber-600 h-12 bg-gray-50" readonly>
-                        <p class="text-[10px] text-gray-500 mt-2">Bu summa "O'tkazmalar" bo'limiga kutayotgan so'rov bo'lib tushadi.</p>
-                    </div>
-                    <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-                        <button type="button" @click="showContractApproveModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900 font-mono uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold uppercase tracking-widest hover:shadow-sm transition-all disabled:opacity-50">
-                            {{ isProcessing ? 'Yuklanmoqda...' : 'Tasdiqlash' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- NEW LIABILITY MODAL -->
-        <Modal :show="showLiabilityModal" @close="showLiabilityModal = false" maxWidth="lg">
-            <div class="p-6">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('add_new_liability') }}</h2>
-                <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('type_label') }}</label>
-                        <select v-model="liabilityForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                            <option value="bank_loan">{{ $t('bank_credit') }}</option>
-                            <option value="supplier_debt">{{ $t('supplier_debt') }}</option>
-                            <option value="partner_debt">{{ $t('partner_debt') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('creditor_name') }}</label>
-                        <input v-model="liabilityForm.creditor_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1 text-amber-600">{{ $t('liability_receive_account') }}</label>
-                        <select v-model="liabilityForm.fund_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                            <option value="">-- Hisobga tushmasin --</option>
-                            <option value="main">{{ $t('main_account') }}</option>
-                            <option value="credit">{{ $t('credit_account') }}</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Account selection -->
                         <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('total_amount') }}</label>
-                            <input v-model="liabilityForm.total_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('annual_percentage') }}</label>
-                            <input v-model="liabilityForm.interest_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" placeholder="Masalan: 24">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('term_months') }}</label>
-                            <input v-model="liabilityForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('monthly_payment') }}</label>
-                            <input v-model="liabilityForm.monthly_payment" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('start_date') }}</label>
-                            <input v-model="liabilityForm.start_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 mb-1">{{ $t('end_date') }}</label>
-                            <input v-model="liabilityForm.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('notes') }}</label>
-                        <textarea v-model="liabilityForm.description" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
-                        <button type="button" @click="showLiabilityModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-blue-600 text-white font-bold font-mono text-xs rounded hover:bg-blue-700 transition-colors">{{ $t('save') }}</button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- PAYMENT MODAL -->
-        <Modal :show="showPaymentModal && selectedLiability !== null" @close="showPaymentModal = false" maxWidth="sm">
-            <div class="p-6">
-                <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4">{{ $t('liability_payment') }}</h2>
-                <div class="mb-6 font-mono text-xs">
-                    <p class="text-gray-500 mb-1">{{ $t('creditor_label') }}<span class="text-gray-900">{{ selectedLiability.creditor_name }}</span></p>
-                    <p class="text-gray-500">{{ $t('balance_remaining_label') }}<span class="text-emerald-600 text-sm font-bold">{{ $currency(selectedLiability.total_amount - (selectedLiability.payments || []).filter(p => p.status === 'paid').reduce((a, b) => a + Number(b.amount), 0)) }}</span></p>
-                </div>
-                <form @submit.prevent="submitPayment" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('payment_amount_label') }}</label>
-                        <input v-model="paymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('which_account_pay') }}</label>
-                        <select v-model="paymentForm.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                            <option value="main">{{ $t('main_account') }}</option>
-                            <option value="credit">{{ $t('credit_account') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('date_label') }}</label>
-                        <input v-model="paymentForm.payment_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">{{ $t('notes') }}</label>
-                        <textarea v-model="paymentForm.notes" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
-                        <button type="button" @click="showPaymentModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-black rounded uppercase">{{ $t('pay_button') }}</button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- SCHEDULE MODAL -->
-        <Modal :show="showScheduleModal && selectedLiabilityForSchedule !== null" @close="showScheduleModal = false" maxWidth="2xl">
-            <div class="p-6 flex flex-col max-h-[90vh]">
-                <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-                    <div>
-                        <h2 class="text-xl font-display font-bold uppercase tracking-widest text-blue-600">{{ $t('payment_schedule_label') }}</h2>
-                        <p class="text-[10px] font-mono text-gray-500 mt-1">{{ selectedLiabilityForSchedule.creditor_name }} ({{ selectedLiabilityForSchedule.term_months }} oy, {{ selectedLiabilityForSchedule.interest_rate || 0 }}%)</p>
-                    </div>
-                    <button @click="showScheduleModal = false" class="text-gray-900 hover:text-red-600">✖</button>
-                </div>
-                
-                <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-100 rounded-xl">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <th class="p-3">#</th>
-                                <th class="p-3">{{ $t('date_label') }}</th>
-                                <th class="p-3">{{ $t('main_debt') }}</th>
-                                <th class="p-3">Foiz</th>
-                                <th class="p-3">{{ $t('total_payment_label') }}</th>
-                                <th class="p-3">{{ $t('balance_remaining') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-white/5">
-                            <tr v-for="row in generatedSchedule" :key="row.month" class="hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <td class="p-3 text-gray-500">{{ row.month }}</td>
-                                <td class="p-3">{{ row.date }}</td>
-                                <td class="p-3 text-gray-900">{{ $currency(row.principal) }}</td>
-                                <td class="p-3 text-amber-600">{{ $currency(row.interest) }}</td>
-                                <td class="p-3 text-emerald-600 font-bold">{{ $currency(row.payment) }}</td>
-                                <td class="p-3 text-gray-500">{{ $currency(row.balance) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-200 text-right">
-                    <button @click="showScheduleModal = false" class="px-6 py-2 bg-blue-50 border border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-black rounded uppercase font-mono text-xs font-bold transition-all">{{ $t('close_button') }}</button>
-                </div>
-            </div>
-        </Modal>
-        </div>
-
-        <ExpensesBreakdownModal :show="showExpensesModal" @close="showExpensesModal = false" />
-
-        <BrigadeLedgerModal 
-            :show="showBrigadeLedger" 
-            :brigade-id="selectedBrigadeId" 
-            @close="showBrigadeLedger = false" 
-        />
-        <OwnerLedgerModal 
-            :show="showOwnerLedger" 
-            :owner-id="selectedOwnerId" 
-            @close="showOwnerLedger = false" 
-        />
-
-        <!-- CASH REGISTER CRUD MODAL -->
-        <Modal :show="showRegisterModal" @close="showRegisterModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showRegisterModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
-                    {{ isEditRegister ? 'Kassani tahrirlash' : 'Yangi kassa qo\'shish' }}
-                </h3>
-                
-                <form @submit.prevent="submitRegister" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassa nomi *</label>
-                        <input v-model="registerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi *</label>
-                            <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                                <option value="cash">Naqd (Cash)</option>
-                                <option value="bank">Bank hisobi</option>
+                            <label class="block text-gray-500 mb-1">KASSA / BANK HISOBI *</label>
+                            <select v-model="form.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
+                                <option value="" disabled>-- Tanlang --</option>
+                                <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                    {{ r.name }} ({{ r.currency }}) - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                </option>
                             </select>
                         </div>
+
+                        <!-- Category selection -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Valyuta *</label>
-                            <select v-model="registerForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                                <option value="UZS">UZS</option>
-                                <option value="USD">USD</option>
+                            <label class="block text-gray-500 mb-1">KATEGORIYA *</label>
+                            <select v-model="form.category_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
+                                <option value="" disabled>-- Tanlang --</option>
+                                <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
                             </select>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Bino / Obyekt (Ixtiyoriy lock)</label>
-                        <select v-model="registerForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                            <option value="">-- Obyektga bog'lamaslik --</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                        <p class="text-[9px] text-gray-400 mt-1">Ushbu kassa tanlansa, faqat tanlangan obyekt uchun tranzaksiyalarga ruxsat beriladi.</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Balans *</label>
-                        <input v-model="registerForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold text-sm text-blue-600" required>
-                    </div>
-
-                    <div v-if="isEditRegister" class="flex items-center gap-2 py-2">
-                        <input type="checkbox" id="register_active" v-model="registerForm.is_active" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <label for="register_active" class="text-sm text-gray-900 font-bold">Faol holatda (Active)</label>
-                    </div>
-                    
-                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-4">
-                        <button type="button" @click="showRegisterModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
-                            Saqlash
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- COUNTERPARTY CRUD MODAL -->
-        <Modal :show="showCounterpartyModal" @close="showCounterpartyModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showCounterpartyModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
-                    {{ isEditCounterparty ? 'Kontragentni tahrirlash' : 'Yangi kontragent qo\'shish' }}
-                </h3>
-                
-                <form @submit.prevent="submitCounterparty" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">F.I.O / Kompaniya nomi *</label>
-                        <input v-model="counterpartyForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi *</label>
-                        <select v-model="counterpartyForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold" required>
-                            <option value="client">Mijoz (Client)</option>
-                            <option value="supplier">Ta'minotchi (Supplier)</option>
-                            <option value="employee">Xodim (Employee)</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Counterparty selection -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Telefon raqami</label>
-                            <input v-model="counterpartyForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Email</label>
-                            <input v-model="counterpartyForm.email" type="email" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Dastlabki Balans (UZS) *</label>
-                        <input v-model="counterpartyForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold text-sm text-blue-600" required>
-                        <p class="text-[9px] text-gray-400 mt-1">Mijoz uchun: musbat balans = oldindan to'lov (haqi bor), manfiy = qarzi bor. Ta'minotchi uchun teskari.</p>
-                    </div>
-                    
-                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-4">
-                        <button type="button" @click="showCounterpartyModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
-                            Saqlash
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- INVOICE CRUD MODAL -->
-        <Modal :show="showInvoiceModal" @close="showInvoiceModal = false" maxWidth="lg">
-            <div class="p-6">
-                <button @click="showInvoiceModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
-                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
-                    {{ isEditInvoice ? 'Hisob-fakturani tahrirlash' : 'Yangi hisob-faktura (Invoice) yaratish' }}
-                </h3>
-                
-                <form @submit.prevent="submitInvoice" class="space-y-4 font-mono text-xs">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura raqami *</label>
-                            <input v-model="invoiceForm.invoice_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura turi *</label>
-                            <select v-model="invoiceForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                                <option value="monthly_schedule">Shartnoma oylik to'lovi (Monthly Schedule)</option>
-                                <option value="manual_expense">Qo'lda xarajat schyoti (Manual Expense)</option>
-                                <option value="procurement">Ta'minot / Xarid schyoti (Procurement)</option>
-                                <option value="loan">Qarz / Kredit schyoti (Loan)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kontragent *</label>
-                            <select v-model="invoiceForm.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold bg-gray-50" required>
-                                <option value="" disabled>-- Kontragent tanlang --</option>
+                            <label class="block text-gray-500 mb-1">KONTRAGENT (IXTIYORIY)</label>
+                            <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10">
+                                <option value="">-- Tanlang --</option>
                                 <option v-for="c in counterparties" :key="c.id" :value="c.id">
                                     [{{ c.type.toUpperCase() }}] {{ c.name }}
                                 </option>
                             </select>
                         </div>
+
+                        <!-- Amount input -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyekt (Ixtiyoriy)</label>
-                            <select v-model="invoiceForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50">
-                                <option value="">-- Obyektga bog'lamaslik --</option>
-                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                            </select>
+                            <label class="block text-gray-500 mb-1">SUMMA *</label>
+                            <input v-model="form.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10 font-bold" required placeholder="0.00">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <!-- Client Contract Search -->
+                    <div v-if="requiresClient" class="border border-blue-150 p-4 rounded-xl bg-blue-50/30">
+                        <label class="block text-gray-600 mb-1 font-bold">MIJOZ SHARTNOMASINI BOG'LASH *</label>
+                        <div class="relative">
+                            <input v-model="scheduleSearch" @focus="showScheduleDropdown = true" type="text" placeholder="Mijoz nomi yoki xona raqami bo'yicha qidiruv..." class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10">
+                            <div v-show="showScheduleDropdown && filteredContracts.length" class="absolute z-50 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                <div v-for="c in filteredContracts" :key="c.id" @click="selectContract(c)" class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex justify-between">
+                                    <span>{{ c.client?.first_name }} {{ c.client?.last_name }}</span>
+                                    <span class="font-bold text-blue-600">{{ c.unit?.unit_number }} - xona</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date & Notes -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Jami summa *</label>
-                            <input v-model="invoiceForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg font-bold text-blue-600" required>
+                            <label class="block text-gray-500 mb-1">SANASI</label>
+                            <input v-model="form.transaction_date" type="datetime-local" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Valyuta *</label>
-                            <select v-model="invoiceForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                            <label class="block text-gray-500 mb-1">IZOH</label>
+                            <input v-model="form.notes" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" placeholder="Tranzaksiya tafsilotlari...">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="activeTab = 2" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor Qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold font-mono uppercase tracking-widest transition-all">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 4: Qarzlar & Kreditlar (Liabilities) -->
+            <div v-if="activeTab === 4" class="space-y-6">
+                <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Qarzlar va Kreditlar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Kompaniyaning tashqi moliyaviy majburiyatlari.</p>
+                    </div>
+                    <button @click="openNewLiabilityModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm">
+                        + Yangi Majburiyat
+                    </button>
+                </div>
+
+                <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4">Kreditor</th>
+                                <th class="p-4">Turi</th>
+                                <th class="p-4 text-right">Umumiy Summa</th>
+                                <th class="p-4 text-right">Oylik To'lov</th>
+                                <th class="p-4">Muddati</th>
+                                <th class="p-4">Holat</th>
+                                <th class="p-4 text-center">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="l in financialLiabilities" :key="l.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 font-bold text-gray-900">{{ l.creditor_name }}</td>
+                                <td class="p-4 uppercase text-[10px]">{{ l.type }}</td>
+                                <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(l.total_amount) }}</td>
+                                <td class="p-4 text-right font-bold text-gray-900">{{ formatMoney(l.monthly_payment) }}</td>
+                                <td class="p-4 text-gray-500">{{ l.term_months }} oy</td>
+                                <td class="p-4">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="l.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'">
+                                        {{ l.status }}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <button @click="openScheduleModal(l)" class="px-2.5 py-1 text-[10px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
+                                        <button @click="openPaymentModal(l)" class="px-2.5 py-1 text-[10px] uppercase font-bold border border-emerald-500 text-emerald-600 bg-emerald-50/30 rounded hover:bg-emerald-600 hover:text-white transition-all">To'lov</button>
+                                        <button v-if="isAdmin" @click="deleteLiability(l.id)" class="px-2 py-1 text-xs border border-red-500 text-red-600 hover:bg-red-600 hover:text-white rounded-md transition-all">✖</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!financialLiabilities.length">
+                                <td colspan="7" class="p-8 text-center text-gray-400">Majburiyatlar mavjud emas.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 5: Ta'minotchilar (Suppliers) -->
+            <div v-if="activeTab === 5" class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <h2 class="text-xl font-bold font-display text-gray-900">Ta'minotchilar Qoldiqlari</h2>
+                    <p class="text-xs text-gray-500 font-mono mt-1">Material yetkazib beruvchilar va ulardan bo'lgan hisob-kitoblar.</p>
+                </div>
+
+                <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4">Kompaniya nomi</th>
+                                <th class="p-4">Vakil</th>
+                                <th class="p-4 text-right">Balans (UZS)</th>
+                                <th class="p-4 text-center">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="s in suppliers" :key="s.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 font-bold text-gray-900">{{ s.company_name }}</td>
+                                <td class="p-4 text-gray-700">{{ s.name }}</td>
+                                <td class="p-4 text-right font-bold" :class="s.balance > 0 ? 'text-red-600' : 'text-emerald-600'">
+                                    {{ formatMoney(s.balance) }}
+                                </td>
+                                <td class="p-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <button @click="openSupplierPaymentModal(s)" class="px-3 py-1 bg-emerald-50 border border-emerald-500 text-emerald-600 font-bold rounded-lg text-xs hover:bg-emerald-600 hover:text-white transition-all">To'lov qilish</button>
+                                        <button @click="openEditSupplierModal(s)" class="px-3 py-1 bg-blue-50 border border-blue-500 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-600 hover:text-white transition-all">Tahrirlash</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!suppliers.length">
+                                <td colspan="4" class="p-8 text-center text-gray-400">Ta'minotchilar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 6: Pul O'tkazmalari - Screenshot 4 Style -->
+            <div v-if="activeTab === 6" class="space-y-6">
+                <!-- Title & Filter row -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Pul o'tkazmalari</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Bank hisobidan pul o'tkazmalari ro'yxati</p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                            🔍 Filtr
+                        </button>
+                        <button @click="openNewRegisterModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
+                            + Pul o'tkazmasi qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sub tabs for transfers -->
+                <div class="flex border-b border-gray-200">
+                    <button @click="transferSubTab = 'transfers'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="transferSubTab === 'transfers' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                        Pul o'tkazmalari
+                    </button>
+                    <button @click="transferSubTab = 'exchanges'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="transferSubTab === 'exchanges' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                        Valuta ayirboshlashlar
+                    </button>
+                </div>
+
+                <!-- Summaries Cards (Jami o'tkazmalar, Jami summa (USD), Faol kassalar) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Jami o'tkazmalar</span>
+                        <h2 class="text-2xl font-bold font-display text-gray-900 mt-2">{{ totalTransfersCount }}</h2>
+                    </div>
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Jami summa (USD)</span>
+                        <h2 class="text-2xl font-bold font-display text-emerald-600 mt-2">{{ totalTransfersSumUzs.toLocaleString() }} UZS</h2>
+                    </div>
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Faol kassalar</span>
+                        <h2 class="text-2xl font-bold font-display text-gray-900 mt-2">{{ activeRegistersCount }}</h2>
+                    </div>
+                </div>
+
+                <!-- Transfer card list (Screenshot 4 layout) -->
+                <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div v-for="t in filteredTransfers" :key="t.id" class="p-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between flex-wrap gap-4 font-mono text-sm hover:border-orange-300 transition-all">
+                        <!-- Left Details -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center font-bold">💳</div>
+                            <div>
+                                <span class="font-bold text-gray-900">#{{ t.id }}</span>
+                                <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700 uppercase">{{ t.sent_currency }}</span>
+                            </div>
+                        </div>
+                        <!-- Flow arrow details -->
+                        <div class="flex items-center gap-3 px-4 py-1.5 bg-white border border-gray-150 rounded-lg shadow-sm">
+                            <span class="font-bold text-gray-700">{{ t.from_account?.name || 'Naqd Kassa' }}</span>
+                            <span class="text-orange-500 font-bold">→</span>
+                            <span class="font-bold text-gray-700">{{ t.to_account?.name || 'Aloqa Bank Hisobi' }}</span>
+                        </div>
+                        <!-- Right Price and Date -->
+                        <div class="text-right">
+                            <span class="block text-emerald-600 font-bold text-lg">{{ formatMoney(t.sent_amount, t.sent_currency) }}</span>
+                            <span class="text-xs text-gray-400 flex items-center gap-1 justify-end mt-1">
+                                📅 {{ new Date(t.created_at).toLocaleString() }}
+                            </span>
+                        </div>
+                    </div>
+                    <div v-if="!filteredTransfers.length" class="py-12 text-center text-gray-400">Pul o'tkazmalari topilmadi.</div>
+                </div>
+            </div>
+
+            <!-- TAB 7: Kategoriya Hisoboti -->
+            <div v-if="activeTab === 7" class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <h2 class="text-xl font-bold font-display text-gray-900">Hisobotlar (Kategoriya bo'yicha)</h2>
+                    <p class="text-xs text-gray-500 font-mono mt-1">Kirim va chiqimlar kategoriyalar tasnifida.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div v-for="cat in categoriesSummary" :key="cat.name" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm relative overflow-hidden group">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-widest">{{ cat.name }}</h3>
+                            <div class="flex gap-2">
+                                <a :href="route('admin.finance.transactions.export.category.excel', { category: cat.name })" target="_blank" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-0.5 text-[10px] font-medium">EXCEL</a>
+                                <a :href="route('admin.finance.transactions.export.category.pdf', { category: cat.name })" target="_blank" class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-0.5 text-[10px] font-medium">PDF</a>
+                            </div>
+                        </div>
+                        <div class="space-y-2 font-mono text-xs text-gray-700">
+                            <div class="flex justify-between text-blue-600" v-if="cat.total_income > 0">
+                                <span>Kirim:</span>
+                                <span>{{ formatMoney(cat.total_income) }}</span>
+                            </div>
+                            <div class="flex justify-between text-red-600" v-if="cat.total_expense > 0">
+                                <span>Chiqim:</span>
+                                <span>{{ formatMoney(cat.total_expense) }}</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100 flex justify-between">
+                                <span>Tranzaksiyalar soni:</span>
+                                <span class="font-bold">{{ cat.transactions.length }} ta</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: Kassalar va Banklar - Screenshot 1 Style -->
+            <div v-if="activeTab === 8" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left registers sidebar column -->
+                <div class="lg:col-span-3 bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Kassalar ro'yxati</h3>
+                        <button @click="openNewRegisterModal" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            +
+                        </button>
+                    </div>
+                    <!-- Search bar -->
+                    <input v-model="registerSearchQuery" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-1.5 text-xs w-full">
+                    
+                    <!-- Registers Cards List -->
+                    <div class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                        <div v-for="r in registers.filter(x => x.name.toLowerCase().includes(registerSearchQuery.toLowerCase()))" :key="r.id" @click="selectedRegisterId = r.id" class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between h-32 relative group" :class="selectedRegisterId === r.id ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border-transparent shadow-lg' : 'bg-gray-50 border-gray-200 text-gray-900 hover:bg-gray-100'">
+                            <div class="flex justify-between items-start">
+                                <span class="text-sm font-bold font-display uppercase tracking-wide truncate max-w-[80%]">{{ r.name }}</span>
+                                <!-- dot menu -->
+                                <button @click.stop="openEditRegisterModal(r)" class="text-gray-400 group-hover:text-gray-700" :class="selectedRegisterId === r.id ? 'text-white/80 group-hover:text-white' : ''">
+                                    ⋮
+                                </button>
+                            </div>
+                            <!-- Balances (screenshot style UZS and USD both on card) -->
+                            <div class="font-mono text-xs mt-4 space-y-0.5">
+                                <div class="flex justify-between">
+                                    <span>USD:</span>
+                                    <span class="font-bold">{{ r.balance_usd.toLocaleString() }} USD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>UZS:</span>
+                                    <span class="font-bold">{{ r.balance_uzs.toLocaleString() }} UZS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right detailed register panel column -->
+                <div class="lg:col-span-9 space-y-6">
+                    <div v-if="selectedRegister" class="space-y-6">
+                        <!-- Details box -->
+                        <div class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Hisob nomi:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Bank nomi:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.bank_name || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Holati:</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
+                                        {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Valyuta:</span>
+                                    <div class="flex gap-1">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 uppercase">USD</span>
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 uppercase">UZS</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Hisob raqami:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.account_number || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">MFO kodi:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.mfo_code || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Bino:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || 'Nuovo' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kirim & Chiqim totals row (screenshot style) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Kirim -->
+                            <div class="bg-[#f2fcf6] border border-[#d2f3df] p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm">↑</div>
+                                    <span class="text-sm font-bold text-emerald-800">Kirim</span>
+                                </div>
+                                <div class="text-right font-mono">
+                                    <span class="block text-emerald-600 font-bold text-sm">USD: {{ formatMoney(selectedRegisterKirimUsd, 'USD') }}</span>
+                                    <span class="block text-emerald-600 font-bold text-sm">UZS: {{ formatMoney(selectedRegisterKirimUzs, 'UZS') }}</span>
+                                </div>
+                            </div>
+                            <!-- Chiqim -->
+                            <div class="bg-[#fdf3f3] border border-[#fbd4d4] p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm">↓</div>
+                                    <span class="text-sm font-bold text-red-800">Chiqim</span>
+                                </div>
+                                <div class="text-right font-mono">
+                                    <span class="block text-red-600 font-bold text-sm">UZS: {{ formatMoney(selectedRegisterChiqimUzs, 'UZS') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons row (screenshot style) -->
+                        <div class="flex gap-3">
+                            <button @click="activeTab = 3; form.type = 'income'; form.account_id = selectedRegister.id" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                                <span>+ Kirim</span>
+                            </button>
+                            <button @click="activeTab = 3; form.type = 'expense'; form.account_id = selectedRegister.id" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                                <span>+ Chiqim</span>
+                            </button>
+                            <button @click="activeTab = 6; transferForm.from_account_id = selectedRegister.id" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                                <span>+ O'tkazma</span>
+                            </button>
+                        </div>
+
+                        <!-- Register Filters row (screenshot style) -->
+                        <div class="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 flex-wrap">
+                            <div class="flex items-center gap-2 text-xs">
+                                <input v-model="registerDateFrom" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-1 px-2">
+                                <span class="text-gray-400">→</span>
+                                <input v-model="registerDateTo" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-1 px-2">
+                            </div>
+                            <input v-model="registerSearchQuery" type="text" placeholder="Barcha tranzaksiya..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-1.5 text-xs w-48">
+                            <select v-model="registerTypeFilter" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-1.5 px-2">
+                                <option value="">Barcha turlar</option>
+                                <option value="income">Kirim</option>
+                                <option value="expense">Chiqim</option>
+                            </select>
+                        </div>
+
+                        <!-- Register Specific Transactions Table -->
+                        <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-4">Hujjat raqami</th>
+                                        <th class="p-4">Sana</th>
+                                        <th class="p-4">Kontragent</th>
+                                        <th class="p-4">Obyekt</th>
+                                        <th class="p-4 text-right">Tushum</th>
+                                        <th class="p-4">Tranzaksiya turi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="t in filteredRegisterTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
+                                        <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
+                                        <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
+                                        <td class="p-4 text-gray-600">{{ t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                        <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                                {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!filteredRegisterTransactions.length">
+                                        <td colspan="6" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 9: Kontragentlar - Screenshot 3 Style -->
+            <div v-if="activeTab === 9" class="space-y-6">
+                <!-- Header Actions row -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Kontragentlar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Mijozlar, ta'minotchilar va boshqa kontragentlar</p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <input v-model="counterpartySearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
+                        <select v-model="counterpartyTypeFilter" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3">
+                            <option value="">Tranzaksiya turi</option>
+                            <option value="client">Mijoz to'lovi</option>
+                            <option value="supplier">Ta'minotchi</option>
+                            <option value="employee">Xodim</option>
+                        </select>
+                        <button @click="openNewCounterpartyModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
+                            + Yangi kontragent yaratish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4 w-12">№</th>
+                                <th class="p-4">Kontragent nomi</th>
+                                <th class="p-4">Tranzaksiya turi</th>
+                                <th class="p-4">Holat</th>
+                                <th class="p-4">Hisob raqami</th>
+                                <th class="p-4">Bank</th>
+                                <th class="p-4">INN</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(c, idx) in filteredCounterpartiesList" :key="c.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <!-- Initials Avatar -->
+                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                            {{ c.name.charAt(0) }}
+                                        </div>
+                                        <div>
+                                            <span class="block font-bold text-gray-900">{{ c.name }}</span>
+                                            <span class="text-xs text-gray-400">{{ c.phone || '-' }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                        {{ c.type === 'client' ? 'Mijoz to\'lovi' : (c.type === 'employee' ? 'Xodim Oylik maoshi' : 'Ta\'minotchi') }}
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'">
+                                        {{ c.is_active ? 'Faol' : 'Faol emas' }}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-gray-600">{{ c.account_number || '-' }}</td>
+                                <td class="p-4 text-gray-600">{{ c.bank_name || '-' }}</td>
+                                <td class="p-4 text-gray-600">{{ c.inn || '-' }}</td>
+                            </tr>
+                            <tr v-if="!filteredCounterpartiesList.length">
+                                <td colspan="7" class="p-8 text-center text-gray-400">Kontragentlar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 10: Hisob-fakturalar & Mijoz to'lovlari - Screenshot 5 Style -->
+            <div v-if="activeTab === 10" class="space-y-6">
+                <!-- Sub tabs -->
+                <div class="flex border-b border-gray-200 bg-white px-6 pt-4 rounded-t-2xl border-x border-t border-gray-150">
+                    <button @click="invoiceSubTab = 'payments'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="invoiceSubTab === 'payments' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                        Mijoz to'lovlari
+                    </button>
+                    <button @click="invoiceSubTab = 'debts'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="invoiceSubTab === 'debts' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                        Mijozdan qarzdorlik
+                    </button>
+                </div>
+
+                <!-- Main Payments Sub-Tab -->
+                <div v-if="invoiceSubTab === 'payments'" class="space-y-6 bg-white p-6 rounded-b-2xl border-x border-b border-gray-150 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <input v-model="clientPaymentsSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
+                        <button @click="activeTab = 3; form.type = 'income'" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm">
+                            + To'lov qilish
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Ism</th>
+                                    <th class="p-4 text-right">Summa</th>
+                                    <th class="p-4">To'lov sanasi</th>
+                                    <th class="p-4">To'lov turi</th>
+                                    <th class="p-4">Hujjat raqami</th>
+                                    <th class="p-4 text-center">To'lov kvitantsiyasi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(t, idx) in filteredClientPayments" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm">
+                                                {{ t.counterparty?.name.charAt(0) || 'M' }}
+                                            </div>
+                                            <span>{{ t.counterparty?.name || '-' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(t.amount, t.currency) }}</td>
+                                    <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-gray-700 font-bold">#{{ t.id }}</td>
+                                    <td class="p-4 text-center">
+                                        <button @click="openReceipt(t)" class="text-orange-500 hover:text-orange-700 font-bold hover:underline inline-flex items-center gap-1.5">
+                                            📥 Yuklab olish
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="!filteredClientPayments.length">
+                                    <td colspan="7" class="p-8 text-center text-gray-400">To'lovlar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Debts Sub-Tab -->
+                <div v-if="invoiceSubTab === 'debts'" class="space-y-6 bg-white p-6 rounded-b-2xl border-x border-b border-gray-150 shadow-sm">
+                    <div class="flex">
+                        <input v-model="clientDebtsSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
+                    </div>
+                    <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Ism</th>
+                                    <th class="p-4">Telefon</th>
+                                    <th class="p-4 text-right">Qarzdorlik (UZS)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(c, idx) in filteredClientDebts" :key="c.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
+                                    <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
+                                    <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.balance) }}</td>
+                                </tr>
+                                <tr v-if="!filteredClientDebts.length">
+                                    <td colspan="4" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODALS & PORTALS -->
+
+        <!-- RECEIPT VIEW MODAL -->
+        <Modal :show="showReceiptModal && receiptData !== null" @close="showReceiptModal = false" maxWidth="md">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold uppercase tracking-widest text-gray-900">SHERDOR ERP</h2>
+                    <p class="text-[10px] font-mono text-gray-500 uppercase mt-1">To'lov kvitantsiyasi (Receipt)</p>
+                </div>
+                
+                <div class="space-y-2.5 text-xs font-mono border-y border-dashed border-gray-300 py-4 mb-6 text-gray-700">
+                    <div class="flex justify-between">
+                        <span>Tranzaksiya ID:</span>
+                        <span class="font-bold">#{{ receiptData.id }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Sana:</span>
+                        <span>{{ new Date(receiptData.transaction_date || receiptData.updated_at).toLocaleString() }}</span>
+                    </div>
+                    <div class="flex justify-between" v-if="receiptData.counterparty">
+                        <span>Foydalanuvchi/Mijoz:</span>
+                        <span class="font-bold text-right">{{ receiptData.counterparty.name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Kassa/Bank:</span>
+                        <span>{{ receiptData.cashRegister?.name || 'Asosiy' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>To'lov usuli:</span>
+                        <span class="uppercase font-bold">{{ receiptData.payment_method }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Operatsiya turi:</span>
+                        <span class="uppercase font-bold" :class="receiptData.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                            {{ receiptData.type === 'income' ? 'Kirim' : 'Chiqim' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end mb-6 bg-gray-50 p-4 rounded-xl border border-gray-150">
+                    <span class="text-xs font-bold text-gray-500">JAMI TO'LOV:</span>
+                    <span class="text-2xl font-bold font-display text-gray-900">{{ formatMoney(receiptData.amount, receiptData.currency) }}</span>
+                </div>
+
+                <div class="flex flex-col items-center border-t border-dashed border-gray-300 pt-6">
+                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(route('public.receipt.verify', receiptData.receipt_hash || 'TXN'))" width="100" height="100" alt="QR Code" class="mb-2">
+                    <p class="text-[9px] font-mono text-gray-400 tracking-wider uppercase mt-1">{{ receiptData.receipt_hash || 'TXN-SHERDOR-APPROVED' }}</p>
+                </div>
+
+                <div class="mt-8 flex justify-center gap-3">
+                    <button @click="showReceiptModal = false" class="px-5 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 font-bold uppercase">Yopish</button>
+                    <a :href="`/admin/finance/transactions/${receiptData.id}/print`" target="_blank" class="px-5 py-2 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold uppercase text-center flex items-center justify-center">Chop etish</a>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- KASSA ADD/EDIT MODAL -->
+        <Modal :show="showRegisterModal" @close="showRegisterModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showRegisterModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">
+                    {{ isEditRegister ? 'Kassani tahrirlash' : 'Yangi kassa qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitRegister" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kassa nomi *</label>
+                        <input v-model="registerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Turi *</label>
+                            <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                                <option value="cash">Naqd (Cash)</option>
+                                <option value="bank">Bank hisobi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Valyuta *</label>
+                            <select v-model="registerForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                                 <option value="UZS">UZS</option>
                                 <option value="USD">USD</option>
                             </select>
                         </div>
                     </div>
 
-                    <div v-if="isEditInvoice" class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'langan summa *</label>
-                            <input v-model="invoiceForm.paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg font-bold text-emerald-600" required>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans UZS</label>
+                            <input v-model="registerForm.initial_balance_uzs" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura holati *</label>
-                            <select v-model="invoiceForm.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                                <option value="new">Yangi (To'lanmagan)</option>
-                                <option value="partially_paid">Kisman to'langan</option>
-                                <option value="paid">To'liq to'langan</option>
-                                <option value="cancelled">Bekor qilingan</option>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans USD</label>
+                            <input v-model="registerForm.initial_balance_usd" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans EUR</label>
+                            <input v-model="registerForm.initial_balance_eur" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Bino / Obyekt</label>
+                        <select v-model="registerForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                            <option value="">-- Umumiy kassa --</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Bank Nomi</label>
+                            <input v-model="registerForm.bank_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">MFO Kodi</label>
+                            <input v-model="registerForm.mfo_code" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob raqami</label>
+                        <input v-model="registerForm.account_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showRegisterModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- EDIT TRANSACTION MODAL -->
+        <Modal :show="showEditTransactionModal" @close="showEditTransactionModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Tranzaksiyani tahrirlash</h3>
+                
+                <form @submit.prevent="submitEditTransaction" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Summa *</label>
+                        <input v-model="editTransactionForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
+                        <textarea v-model="editTransactionForm.notes" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" rows="3"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showEditTransactionModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- KONTRAgent ADD/EDIT MODAL -->
+        <Modal :show="showCounterpartyModal" @close="showCounterpartyModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showCounterpartyModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">
+                    {{ isEditCounterparty ? 'Kontragentni tahrirlash' : 'Yangi kontragent qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitCounterparty" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">F.I.O / Nomi *</label>
+                        <input v-model="counterpartyForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Telefon</label>
+                            <input v-model="counterpartyForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Email</label>
+                            <input v-model="counterpartyForm.email" type="email" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Turi *</label>
+                            <select v-model="counterpartyForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                                <option value="client">Mijoz (Client)</option>
+                                <option value="supplier">Ta'minotchi (Supplier)</option>
+                                <option value="employee">Xodim (Employee)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Dastlabki Balans</label>
+                            <input v-model="counterpartyForm.balance" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob raqami</label>
+                            <input v-model="counterpartyForm.account_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Bank Nomi</label>
+                            <input v-model="counterpartyForm.bank_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">INN</label>
+                        <input v-model="counterpartyForm.inn" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showCounterpartyModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- QARZLAR DETAILS MODAL -->
+        <Modal :show="showLiabilityModal" @close="showLiabilityModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showLiabilityModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">
+                    {{ isEditMode ? 'Qarzni tahrirlash' : 'Yangi Qarz/Kredit qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitLiability" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kreditor nomi *</label>
+                        <input v-model="liabilityForm.creditor_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Turi *</label>
+                            <select v-model="liabilityForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                                <option value="bank_loan">Bank loan</option>
+                                <option value="supplier_debt">Supplier debt</option>
+                                <option value="partner_debt">Partner debt</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Qabul qiluvchi hisob *</label>
+                            <select v-model="liabilityForm.fund_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                                <option value="main">Main (Asosiy)</option>
+                                <option value="credit">Credit (Kredit)</option>
                             </select>
                         </div>
                     </div>
-
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Muddati (Due Date) *</label>
-                        <input v-model="invoiceForm.due_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Umumiy Summa *</label>
+                            <input v-model="liabilityForm.total_amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Foiz stavkasi (%)</label>
+                            <input v-model="liabilityForm.interest_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
                     </div>
-
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tafsilotlar (Izoh)</label>
-                        <textarea v-model="invoiceForm.description" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"></textarea>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Muddati (oy) *</label>
+                            <input v-model="liabilityForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik to'lov</label>
+                            <input v-model="liabilityForm.monthly_payment" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Boshlanish sanasi *</label>
+                            <input v-model="liabilityForm.start_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
+                            <input v-model="liabilityForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showLiabilityModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
-                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-6">
-                        <button type="button" @click="showInvoiceModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
-                            Saqlash
-                        </button>
+        <!-- QARZLAR SCHEDULE MODAL -->
+        <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="lg">
+            <div class="p-6">
+                <button @click="showScheduleModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">To'lovlar grafigi</h3>
+                
+                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-xl">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-gray-50 text-gray-500">
+                            <tr>
+                                <th class="p-3">Oy</th>
+                                <th class="p-3">Sana</th>
+                                <th class="p-3 text-right">To'lov</th>
+                                <th class="p-3 text-right">Asosiy qarz</th>
+                                <th class="p-3 text-right">Qoldiq</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="row in generatedSchedule" :key="row.month" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-3 text-gray-400 font-bold">{{ row.month }}</td>
+                                <td class="p-3">{{ row.date }}</td>
+                                <td class="p-3 text-right font-bold text-emerald-600">{{ formatMoney(row.payment) }}</td>
+                                <td class="p-3 text-right text-gray-700">{{ formatMoney(row.principal) }}</td>
+                                <td class="p-3 text-right text-gray-500">{{ formatMoney(row.balance) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- QARZLAR TO'LOV MODAL -->
+        <Modal :show="showPaymentModal" @close="showPaymentModal = false" maxWidth="sm">
+            <div class="p-6">
+                <button @click="showPaymentModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Qarz to'lovi</h3>
+                
+                <form @submit.prevent="submitPayment" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Summa *</label>
+                        <input v-model="paymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob turi *</label>
+                        <select v-model="paymentForm.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            <option value="main">Main (Asosiy)</option>
+                            <option value="credit">Credit (Kredit)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Sana *</label>
+                        <input v-model="paymentForm.payment_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
+                        <input v-model="paymentForm.notes" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showPaymentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold">To'lash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- SUPPLIER PAYMENT MODAL -->
+        <Modal :show="showSupplierPaymentModal" @close="showSupplierPaymentModal = false" maxWidth="sm">
+            <div class="p-6">
+                <button @click="showSupplierPaymentModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Ta'minotchiga to'lov</h3>
+                
+                <form @submit.prevent="submitSupplierPayment" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">To'lov Summasi *</label>
+                        <input v-model="supplierPaymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob turi *</label>
+                        <select v-model="supplierPaymentForm.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            <option value="main">Main (Naqd kassa)</option>
+                            <option value="bank">Bank hisobi</option>
+                            <option value="credit">Credit (Kredit)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
+                        <input v-model="supplierPaymentForm.notes" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showSupplierPaymentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold">To'lash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- SUPPLIER EDIT MODAL -->
+        <Modal :show="showEditSupplierModal" @close="showEditSupplierModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showEditSupplierModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Ta'minotchi tahrirlash</h3>
+                
+                <form @submit.prevent="submitEditSupplier" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kompaniya nomi *</label>
+                        <input v-model="editSupplierForm.company_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Vakil nomi *</label>
+                        <input v-model="editSupplierForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Joriy balans (qarz) *</label>
+                        <input v-model="editSupplierForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showEditSupplierModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- CONTRACT APPROVE MODAL -->
+        <Modal :show="showContractApproveModal" @close="showContractApproveModal = false" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Mijoz to'lovini taqsimlash</h3>
+                <div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono text-gray-500">
+                    Kiritilgan summa: <strong class="text-emerald-600 text-sm">{{ formatMoney(selectedContractTxn?.amount, selectedContractTxn?.currency) }}</strong>
+                </div>
+                <form @submit.prevent="submitContractApprove" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1 uppercase">Shartnoma Qarziga Yo'naltirish *</label>
+                        <input v-model="contractApproveForm.applied_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
+                        <input :value="contractApproveForm.refund_amount" type="number" readonly class="bg-gray-100 border border-gray-200 text-gray-500 rounded-md w-full h-9 font-bold">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showContractApproveModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold">Tasdiqlash</button>
                     </div>
                 </form>
             </div>
         </Modal>
     </AdminLayout>
 </template>
-
-<style>
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-</style>

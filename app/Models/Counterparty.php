@@ -14,10 +14,15 @@ class Counterparty extends Model
         'customable_type',
         'customable_id',
         'balance',
+        'account_number',
+        'bank_name',
+        'inn',
+        'is_active',
     ];
 
     protected $casts = [
         'balance' => 'decimal:2',
+        'is_active' => 'boolean',
     ];
 
     public function customable()

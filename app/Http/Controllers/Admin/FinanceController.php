@@ -85,6 +85,7 @@ class FinanceController extends Controller
             'counterparties' => Counterparty::with('customable')->get(),
             'invoices' => Invoice::with(['counterparty', 'building'])->latest()->get(),
             'moneyTransfers' => MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get(),
+            'rates' => DB::table('currency_rates')->get(),
         ]);
     }
 
@@ -1280,5 +1281,25 @@ class FinanceController extends Controller
         });
 
         return back()->with('success', 'Ta\'minotchiga to\'lov muvaffaqiyatli amalga oshirildi.');
+    }
+
+    public function updateRates(Request $request)
+    {
+        $validated = $request->validate([
+            'rates' => 'required|array',
+            'rates.*.code' => 'required|string|size:3',
+            'rates.*.rate' => 'required|numeric|min:0',
+        ]);
+
+        foreach ($validated['rates'] as $rateData) {
+            DB::table('currency_rates')
+                ->where('code', $rateData['code'])
+                ->update([
+                    'rate' => $rateData['rate'],
+                    'updated_at' => now()
+                ]);
+        }
+
+        return redirect()->back()->with('message', 'Valyuta kurslari muvaffaqiyatli yangilandi.');
     }
 }

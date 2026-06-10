@@ -229,11 +229,14 @@ const employeeForm = useForm({
     id: null,
     type: 'worker', // 'user' or 'worker'
     name: '',
+    first_name: '',
+    last_name: '',
+    middle_name: '',
     email: '',
     password: '',
     phone: '',
-    role: 'builder',
-    salary_type: 'piece_rate',
+    role: '',
+    salary_type: 'fixed_monthly',
     base_rate: '',
     salary_rate: '',
     building_id: '',
@@ -243,17 +246,32 @@ const employeeForm = useForm({
     birth_date: '',
     employment_date: '',
     status: 'active',
-    specialty_id: ''
+    specialty_id: '',
+    contract_type: 'labor',
+    currency: 'UZS',
+    passport_front: null,
+    passport_back: null,
+    additional_documents: [],
+    characteristics: []
 });
 
 function openAddEmployee() {
     isEditMode.value = false;
     employeeForm.reset();
     employeeForm.type = 'worker';
-    employeeForm.role = 'builder';
-    employeeForm.salary_type = 'piece_rate';
+    employeeForm.role = '';
+    employeeForm.salary_type = 'fixed_monthly';
     employeeForm.status = 'active';
     employeeForm.gender = 'Erkak';
+    employeeForm.first_name = '';
+    employeeForm.last_name = '';
+    employeeForm.middle_name = '';
+    employeeForm.currency = 'UZS';
+    employeeForm.contract_type = 'labor';
+    employeeForm.passport_front = null;
+    employeeForm.passport_back = null;
+    employeeForm.additional_documents = [];
+    employeeForm.characteristics = [];
     showEmployeeModal.value = true;
 }
 
@@ -262,26 +280,73 @@ function openEditEmployee(emp) {
     employeeForm.id = emp.id;
     employeeForm.type = emp.type;
     employeeForm.name = emp.name;
+    const nameParts = emp.name ? emp.name.trim().split(/\s+/) : [];
+    employeeForm.last_name = nameParts[0] || '';
+    employeeForm.first_name = nameParts[1] || '';
+    employeeForm.middle_name = nameParts.slice(2).join(' ') || '';
     employeeForm.email = emp.email || '';
     employeeForm.password = '';
-    employeeForm.phone = emp.phone;
-    employeeForm.role = emp.role;
+    employeeForm.phone = emp.phone || '';
+    employeeForm.role = emp.role || '';
     employeeForm.salary_type = emp.type === 'worker' ? (emp.salary_type || 'piece_rate') : 'fixed_monthly';
-    employeeForm.base_rate = emp.salary;
-    employeeForm.salary_rate = emp.salary;
+    employeeForm.base_rate = emp.salary_rate || emp.salary || '';
+    employeeForm.salary_rate = emp.salary_rate || emp.salary || '';
     employeeForm.building_id = emp.building_id || '';
-    employeeForm.passport = emp.passport;
-    employeeForm.pinfl = emp.pinfl;
+    employeeForm.passport = emp.passport || '';
+    employeeForm.pinfl = emp.pinfl || '';
     employeeForm.gender = emp.gender || 'Erkak';
-    employeeForm.birth_date = emp.birth_date;
-    employeeForm.employment_date = emp.employment_date;
-    employeeForm.status = emp.status;
-    employeeForm.specialty_id = emp.specialty_id;
+    employeeForm.birth_date = emp.birth_date || '';
+    employeeForm.employment_date = emp.employment_date || '';
+    employeeForm.status = emp.status || 'active';
+    employeeForm.specialty_id = emp.specialty_id || '';
+    employeeForm.contract_type = emp.contract_type || 'labor';
+    employeeForm.currency = emp.currency || 'UZS';
+    employeeForm.passport_front = emp.passport_front || null;
+    employeeForm.passport_back = emp.passport_back || null;
+
+    if (emp.characteristics) {
+        if (typeof emp.characteristics === 'string') {
+            try {
+                employeeForm.characteristics = JSON.parse(emp.characteristics);
+            } catch (e) {
+                employeeForm.characteristics = [];
+            }
+        } else if (Array.isArray(emp.characteristics)) {
+            employeeForm.characteristics = emp.characteristics;
+        } else {
+            employeeForm.characteristics = [];
+        }
+    } else {
+        employeeForm.characteristics = [];
+    }
+
+    if (emp.additional_documents) {
+        if (typeof emp.additional_documents === 'string') {
+            try {
+                employeeForm.additional_documents = JSON.parse(emp.additional_documents);
+            } catch (e) {
+                employeeForm.additional_documents = [];
+            }
+        } else if (Array.isArray(emp.additional_documents)) {
+            employeeForm.additional_documents = emp.additional_documents;
+        } else {
+            employeeForm.additional_documents = [];
+        }
+    } else {
+        employeeForm.additional_documents = [];
+    }
+
     showEmployeeModal.value = true;
 }
 
 function saveEmployee() {
     isProcessing.value = true;
+    const parts = [];
+    if (employeeForm.last_name) parts.push(employeeForm.last_name.trim());
+    if (employeeForm.first_name) parts.push(employeeForm.first_name.trim());
+    if (employeeForm.middle_name) parts.push(employeeForm.middle_name.trim());
+    employeeForm.name = parts.join(' ');
+
     if (employeeForm.type === 'user') {
         employeeForm.salary_rate = employeeForm.base_rate;
         if (isEditMode.value) {
@@ -347,6 +412,55 @@ function handlePhotoUpload(event) {
         });
     };
     reader.readAsDataURL(file);
+}
+
+const isDragging = ref(false);
+
+function uploadPassportFile(event, field) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        employeeForm[field] = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleFileDrop(event) {
+    isDragging.value = false;
+    const files = event.dataTransfer.files;
+    processFiles(files);
+}
+
+function handleFileSelect(event) {
+    const files = event.target.files;
+    processFiles(files);
+}
+
+function processFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            employeeForm.additional_documents.push({
+                name: file.name,
+                data: e.target.result
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeDocument(index) {
+    employeeForm.additional_documents.splice(index, 1);
+}
+
+function addCharacteristic() {
+    employeeForm.characteristics.push('');
+}
+
+function removeCharacteristic(index) {
+    employeeForm.characteristics.splice(index, 1);
 }
 
 // Tab 1: Salaries calculations
@@ -1109,23 +1223,35 @@ const kpiManagers = computed(() => {
                             >
                                 <img 
                                     v-if="selectedEmployee.photo_path" 
-                                    :src="'/storage/' + selectedEmployee.photo_path" 
+                                    :src="selectedEmployee.photo_path.startsWith('data:') || selectedEmployee.photo_path.startsWith('/') ? selectedEmployee.photo_path : '/storage/' + selectedEmployee.photo_path" 
                                     class="w-full h-full object-cover rounded-xl"
                                 />
                                 <template v-else>
                                     <span class="text-gray-400 text-lg mb-1">📷</span>
-                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">No Image</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Profil rasmi</span>
                                 </template>
                                 <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">Yuklash</div>
                             </div>
 
-                            <div 
-                                @click="triggerPhotoUpload('passport')" 
-                                class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer transition-colors p-4 relative group"
-                            >
-                                <span class="text-gray-400 text-lg mb-1">📑</span>
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">No Image</span>
-                                <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">Yuklash</div>
+                            <div class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 p-2 relative">
+                                <img 
+                                    v-if="selectedEmployee.passport_front" 
+                                    :src="selectedEmployee.passport_front" 
+                                    class="w-full h-full object-cover rounded-xl"
+                                />
+                                <template v-else>
+                                    <span class="text-gray-400 text-lg mb-1">📄</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Passport (oldi)</span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div v-if="selectedEmployee.passport_back" class="grid grid-cols-1">
+                            <div class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 p-2 relative">
+                                <img 
+                                    :src="selectedEmployee.passport_back" 
+                                    class="w-full h-full object-cover rounded-xl"
+                                />
                             </div>
                         </div>
                         
@@ -1147,10 +1273,37 @@ const kpiManagers = computed(() => {
                     <!-- Column 3 (Right): 4/12 -->
                     <div class="lg:col-span-4 space-y-6">
                         <!-- Contract card -->
-                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4 min-h-[120px]">
-                            <h4 class="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">Shartnoma</h4>
-                            <div class="text-center py-4 text-xs text-gray-400 font-semibold">
-                                Ma'lumot mavjud emas
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">Shartnoma va Hujjatlar</h4>
+                            <div class="text-xs space-y-2 text-gray-700">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Shartnoma turi:</span>
+                                    <span class="font-bold">
+                                        {{ selectedEmployee.contract_type === 'labor' ? 'Mexnat shartnomasi' : (selectedEmployee.contract_type === 'civil' ? 'FHSH' : 'Kiritilmagan') }}
+                                    </span>
+                                </div>
+                                <div v-if="selectedEmployee.characteristics && (typeof selectedEmployee.characteristics === 'string' ? JSON.parse(selectedEmployee.characteristics) : selectedEmployee.characteristics).length > 0" class="mt-3">
+                                    <span class="text-gray-500 block mb-1">Xarakterlar:</span>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span v-for="(char, cIdx) in (typeof selectedEmployee.characteristics === 'string' ? JSON.parse(selectedEmployee.characteristics) : selectedEmployee.characteristics)" :key="cIdx" class="px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-semibold text-gray-600">
+                                            {{ char }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div v-if="selectedEmployee.additional_documents && (typeof selectedEmployee.additional_documents === 'string' ? JSON.parse(selectedEmployee.additional_documents) : selectedEmployee.additional_documents).length > 0" class="mt-3">
+                                    <span class="text-gray-500 block mb-1">Qo'shimcha hujjatlar:</span>
+                                    <div class="space-y-1.5">
+                                        <a 
+                                            v-for="(doc, dIdx) in (typeof selectedEmployee.additional_documents === 'string' ? JSON.parse(selectedEmployee.additional_documents) : selectedEmployee.additional_documents)" 
+                                            :key="dIdx" 
+                                            :href="doc.path" 
+                                            target="_blank"
+                                            class="flex items-center gap-1.5 text-blue-600 hover:underline font-semibold"
+                                        >
+                                            📄 <span class="truncate max-w-[180px]">{{ doc.name }}</span>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1183,210 +1336,406 @@ const kpiManagers = computed(() => {
 
         <!-- 2. Employee Add/Edit Modal -->
         <div v-if="showEmployeeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
-            <div class="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <h3 class="text-base font-bold text-gray-900 font-display">
-                        {{ isEditMode ? 'Xodim ma\'lumotlarini tahrirlash' : 'Yangi xodim qo\'shish' }}
-                    </h3>
-                    <button @click="showEmployeeModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+            <div class="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="showEmployeeModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <h3 class="text-xl font-bold text-gray-900 font-display">
+                            {{ isEditMode ? 'Xodim ma\'lumotlarini tahrirlash' : 'Xodim qo\'shish' }}
+                        </h3>
+                    </div>
                 </div>
                 
-                <form @submit.prevent="saveEmployee" class="p-6 space-y-4 overflow-y-auto flex-1">
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Employee Type -->
-                        <div class="col-span-2">
+                <form @submit.prevent="saveEmployee" class="p-6 space-y-6 overflow-y-auto flex-1">
+                    <!-- Employee Type Selection (User vs Worker) -->
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
                             <select 
                                 v-model="employeeForm.type" 
                                 :disabled="isEditMode"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             >
                                 <option value="worker">Qurilish ishchisi (Site Worker)</option>
                                 <option value="user">Tizim xodimi (System User)</option>
                             </select>
                         </div>
-                        
-                        <!-- Name -->
-                        <div class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">F.I.SH (To'liq ism)</label>
-                            <input 
-                                v-model="employeeForm.name" 
-                                type="text" 
-                                required
-                                placeholder="Masalan: IRMATOV BAXROM"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <!-- Email (User only) -->
-                        <div v-if="employeeForm.type === 'user'" class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Elektron pochta (Email)</label>
+                        <div v-if="employeeForm.type === 'user'">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Elektron pochta (Email) *</label>
                             <input 
                                 v-model="employeeForm.email" 
                                 type="email" 
                                 required
                                 placeholder="email@domain.com"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             />
                         </div>
-
-                        <!-- Password (User only) -->
-                        <div v-if="employeeForm.type === 'user' && !isEditMode" class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Parol</label>
+                        <div v-if="employeeForm.type === 'user' && !isEditMode">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Parol *</label>
                             <input 
                                 v-model="employeeForm.password" 
                                 type="password" 
                                 required
                                 placeholder="Kamida 6 xonali parol"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             />
                         </div>
+                    </div>
 
-                        <!-- Phone -->
+                    <!-- Ism, Familiya, Sharif -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Telefon</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                <span class="text-red-500">*</span> Ism
+                            </label>
+                            <input 
+                                v-model="employeeForm.first_name" 
+                                type="text" 
+                                required
+                                placeholder="Ismni kiriting"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                <span class="text-red-500">*</span> Familiya
+                            </label>
+                            <input 
+                                v-model="employeeForm.last_name" 
+                                type="text" 
+                                required
+                                placeholder="Familiyani kiriting"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Sharif
+                            </label>
+                            <input 
+                                v-model="employeeForm.middle_name" 
+                                type="text" 
+                                placeholder="Sharifni kiriting"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Passport raqami, JSHSHIR -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Passport raqami
+                            </label>
+                            <input 
+                                v-model="employeeForm.passport" 
+                                type="text" 
+                                placeholder="AD1234567"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white uppercase"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                JSHSHIR
+                            </label>
+                            <input 
+                                v-model="employeeForm.pinfl" 
+                                type="text" 
+                                maxlength="14"
+                                placeholder="12345678901234"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Tug'ilgan sana, Qo'shilgan sana -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Tug'ilgan sana
+                            </label>
+                            <input 
+                                v-model="employeeForm.birth_date" 
+                                type="date" 
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white text-gray-600"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Qo'shilgan sana
+                            </label>
+                            <input 
+                                v-model="employeeForm.employment_date" 
+                                type="date" 
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white text-gray-600"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Telefon raqami, Jinsi -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Telefon raqami
+                            </label>
                             <input 
                                 v-model="employeeForm.phone" 
                                 type="text" 
-                                placeholder="+998991234567"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="+998 XX XXX XX XX"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             />
                         </div>
-
-                        <!-- Role -->
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Lavozim</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                <span class="text-red-500">*</span> Jinsi
+                            </label>
+                            <div class="flex items-center gap-6 py-2.5">
+                                <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        value="Erkak" 
+                                        v-model="employeeForm.gender"
+                                        class="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                                    />
+                                    Erkak
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        value="Ayol" 
+                                        v-model="employeeForm.gender"
+                                        class="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                                    />
+                                    Ayol
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ishlayotgan binosi, Lavozim -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                <span class="text-red-500">*</span> Ishlayotgan binosi
+                            </label>
                             <select 
-                                v-if="employeeForm.type === 'worker'" 
-                                v-model="employeeForm.role"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                                v-model="employeeForm.building_id"
+                                :disabled="employeeForm.type === 'user'"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white disabled:bg-gray-50 disabled:text-gray-400"
                             >
+                                <option value="">Binoni tanlang</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                <span class="text-red-500">*</span> Lavozim
+                            </label>
+                            <select 
+                                v-if="employeeForm.type === 'worker'"
+                                v-model="employeeForm.role"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            >
+                                <option value="">Lavozimni tanlang</option>
                                 <option value="builder">Quruvchi / Usta</option>
                                 <option value="driver">Haydovchi</option>
                                 <option value="guard">Qorovul</option>
                                 <option value="office">Office xodimi</option>
                             </select>
                             <select 
-                                v-else 
+                                v-else
                                 v-model="employeeForm.role"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             >
+                                <option value="">Lavozimni tanlang</option>
                                 <option value="Super_Admin">Super Admin</option>
                                 <option value="Operator">Operator</option>
                                 <option value="Partner">Hamkor</option>
                             </select>
                         </div>
+                    </div>
 
-                        <!-- Salary Type -->
+                    <!-- Maosh, Valyuta -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Maosh turi</label>
-                            <select 
-                                v-model="employeeForm.salary_type" 
-                                :disabled="employeeForm.type === 'user'"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                                <option value="fixed_monthly">Fixed monthly (Oylik maosh)</option>
-                                <option value="piece_rate" v-if="employeeForm.type === 'worker'">Piece-rate (Ishbay)</option>
-                                <option value="hourly" v-if="employeeForm.type === 'worker'">Hourly (Soatbay)</option>
-                            </select>
-                        </div>
-
-                        <!-- Base Rate -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Maosh miqdori / Stavka</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Maosh
+                            </label>
                             <input 
                                 v-model="employeeForm.base_rate" 
                                 type="number" 
-                                required
-                                placeholder="Summa"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="Maoshni kiriting"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
                             />
                         </div>
-
-                        <!-- Passport -->
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Passport ID</label>
-                            <input 
-                                v-model="employeeForm.passport" 
-                                type="text" 
-                                placeholder="AA1234567"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <!-- PINFL -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">JSHSHR (PINFL)</label>
-                            <input 
-                                v-model="employeeForm.pinfl" 
-                                type="text" 
-                                placeholder="14 xonali son"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <!-- Gender -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jinsi</label>
-                            <select v-model="employeeForm.gender" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="Erkak">Erkak</option>
-                                <option value="Ayol">Ayol</option>
-                            </select>
-                        </div>
-
-                        <!-- Specialty ID -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mutaxassislik ID / Nomi</label>
-                            <input 
-                                v-model="employeeForm.specialty_id" 
-                                type="text" 
-                                placeholder="49"
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <!-- Birth date -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tug'ilgan sanasi</label>
-                            <input 
-                                v-model="employeeForm.birth_date" 
-                                type="date" 
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
-                            />
-                        </div>
-
-                        <!-- Employment date -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">A'zolik / Ishga olingan kun</label>
-                            <input 
-                                v-model="employeeForm.employment_date" 
-                                type="date" 
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
-                            />
-                        </div>
-
-                        <!-- Assigned building (Worker only) -->
-                        <div v-if="employeeForm.type === 'worker'" class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Ishlayotgan binosi</label>
-                            <select v-model="employeeForm.building_id" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="">Barchaga ruxsat (Barcha)</option>
-                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                            </select>
-                        </div>
-
-                        <!-- Status -->
-                        <div class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
-                            <select v-model="employeeForm.status" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="active">Ish holatida (Active)</option>
-                                <option value="fired">Bo'shatilgan (Fired)</option>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Valyuta
+                            </label>
+                            <select 
+                                v-model="employeeForm.currency"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                            >
+                                <option value="">Valyutani tanlang</option>
+                                <option value="UZS">UZS (So'm)</option>
+                                <option value="USD">USD (Dollar)</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                        <button type="button" @click="showEmployeeModal = false" class="px-4 py-2 text-gray-500 hover:text-gray-700 text-xs font-bold">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm">Saqlash</button>
+                    <!-- Passport photo uploads (front / back) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-2">Passport rasmi (oldi)</label>
+                            <div 
+                                @click="$refs.passportFrontInput.click()" 
+                                class="border border-dashed border-gray-200 rounded-2xl h-28 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative overflow-hidden group p-2"
+                            >
+                                <img v-if="employeeForm.passport_front" :src="employeeForm.passport_front" class="w-full h-full object-contain rounded-xl" />
+                                <div v-else class="text-center">
+                                    <span class="text-gray-400 text-2xl block mb-1">+</span>
+                                    <span class="text-xs text-gray-500 font-bold">Yuklash</span>
+                                </div>
+                                <div v-if="employeeForm.passport_front" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                    Rasmni almashtirish
+                                </div>
+                            </div>
+                            <input ref="passportFrontInput" type="file" class="hidden" accept="image/*" @change="uploadPassportFile($event, 'passport_front')" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-2">Passport rasmi (orqasi)</label>
+                            <div 
+                                @click="$refs.passportBackInput.click()" 
+                                class="border border-dashed border-gray-200 rounded-2xl h-28 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative overflow-hidden group p-2"
+                            >
+                                <img v-if="employeeForm.passport_back" :src="employeeForm.passport_back" class="w-full h-full object-contain rounded-xl" />
+                                <div v-else class="text-center">
+                                    <span class="text-gray-400 text-2xl block mb-1">+</span>
+                                    <span class="text-xs text-gray-500 font-bold">Yuklash</span>
+                                </div>
+                                <div v-if="employeeForm.passport_back" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                    Rasmni almashtirish
+                                </div>
+                            </div>
+                            <input ref="passportBackInput" type="file" class="hidden" accept="image/*" @change="uploadPassportFile($event, 'passport_back')" />
+                        </div>
+                    </div>
+
+                    <!-- Shartnoma turi -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-2">Shartnoma turi</label>
+                        <div class="flex items-center gap-6 py-1">
+                            <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    value="labor" 
+                                    v-model="employeeForm.contract_type"
+                                    class="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                                />
+                                Mexnat shartnomasi
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    value="civil" 
+                                    v-model="employeeForm.contract_type"
+                                    class="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                                />
+                                FHSH (fuqorolik huquqiy shartnomasi)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Holat -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">
+                            <span class="text-red-500">*</span> Holat
+                        </label>
+                        <select v-model="employeeForm.status" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white">
+                            <option value="active">Ish holatida</option>
+                            <option value="fired">Bo'shatilgan</option>
+                        </select>
+                    </div>
+
+                    <!-- Drag and Drop Additional Documents -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-2">Qo'shimcha hujjatlarni yuklash</label>
+                        <div 
+                            @dragover.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false"
+                            @drop.prevent="handleFileDrop"
+                            @click="$refs.docFileInput.click()"
+                            class="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors"
+                            :class="isDragging ? 'border-amber-500 bg-amber-50/50' : 'border-gray-200 bg-gray-50/30 hover:bg-gray-50'"
+                        >
+                            <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
+                                <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-700 text-center">Fayllarni bu yerga tortib tashlang yoki yuklash uchun bosing</p>
+                            <p class="text-xs text-gray-400 mt-1">Bitta yoki bir nechta faylni yuklashingiz mumkin</p>
+                        </div>
+                        <input ref="docFileInput" type="file" multiple class="hidden" @change="handleFileSelect" />
+
+                        <!-- List of documents -->
+                        <div v-if="employeeForm.additional_documents.length > 0" class="mt-3 space-y-2">
+                            <div v-for="(doc, idx) in employeeForm.additional_documents" :key="idx" class="flex items-center justify-between bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    <span class="text-gray-400 text-lg">📄</span>
+                                    <span class="text-xs font-bold text-gray-700 truncate">{{ doc.name }}</span>
+                                </div>
+                                <button type="button" @click="removeDocument(idx)" class="text-red-500 hover:text-red-700 font-bold text-xs p-1">O'chirish</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Characteristics -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-2">Xarakterlari</label>
+                        <div class="space-y-2">
+                            <div v-for="(char, idx) in employeeForm.characteristics" :key="idx" class="flex gap-2 items-center">
+                                <input 
+                                    v-model="employeeForm.characteristics[idx]" 
+                                    type="text" 
+                                    placeholder="Xarakterni kiriting"
+                                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                                />
+                                <button type="button" @click="removeCharacteristic(idx)" class="w-9 h-9 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center font-bold">
+                                    ✕
+                                </button>
+                            </div>
+                            <button 
+                                type="button" 
+                                @click="addCharacteristic"
+                                class="w-full py-2.5 border border-dashed border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50/50 flex items-center justify-center gap-1.5 transition-colors"
+                            >
+                                <span class="text-lg">+</span> Xarakter qo'shish
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="flex gap-3 pt-6 border-t border-gray-100">
+                        <button 
+                            type="button" 
+                            @click="showEmployeeModal = false" 
+                            class="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-bold text-center hover:bg-gray-50 transition-colors"
+                        >
+                            Bekor qilish
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="isProcessing" 
+                            class="flex-1 py-3 bg-[#f39c12] hover:bg-[#e67e22] disabled:bg-gray-300 text-white rounded-xl text-sm font-bold text-center shadow-md transition-colors"
+                        >
+                            {{ isEditMode ? 'Saqlash' : 'Qo\'shish' }}
+                        </button>
                     </div>
                 </form>
             </div>

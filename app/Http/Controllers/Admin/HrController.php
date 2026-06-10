@@ -50,7 +50,49 @@ class HrController extends Controller
             'employment_date' => 'nullable|date',
             'status' => 'nullable|string',
             'specialty_id' => 'nullable|string',
+            'contract_type' => 'nullable|string',
+            'characteristics' => 'nullable',
+            'passport_front' => 'nullable|string',
+            'passport_back' => 'nullable|string',
+            'additional_documents' => 'nullable|array',
         ]);
+
+        if (is_array($request->input('characteristics'))) {
+            $validated['characteristics'] = json_encode($request->input('characteristics'), JSON_UNESCAPED_UNICODE);
+        }
+
+        $passportFrontPath = $this->saveBase64File($request->input('passport_front'), 'passport_photos');
+        $passportBackPath = $this->saveBase64File($request->input('passport_back'), 'passport_photos');
+
+        $additionalDocs = [];
+        if ($request->has('additional_documents') && is_array($request->input('additional_documents'))) {
+            foreach ($request->input('additional_documents') as $doc) {
+                if (is_array($doc) && isset($doc['data'])) {
+                    $path = $this->saveBase64File($doc['data'], 'hr_documents');
+                    if ($path) {
+                        $additionalDocs[] = [
+                            'name' => $doc['name'] ?? basename($path),
+                            'path' => $path
+                        ];
+                    }
+                } elseif (is_string($doc)) {
+                    if (str_starts_with($doc, '/storage/') || str_starts_with($doc, 'storage/')) {
+                        $additionalDocs[] = [
+                            'name' => basename($doc),
+                            'path' => $doc
+                        ];
+                    } else {
+                        $path = $this->saveBase64File($doc, 'hr_documents');
+                        if ($path) {
+                            $additionalDocs[] = [
+                                'name' => basename($path),
+                                'path' => $path
+                            ];
+                        }
+                    }
+                }
+            }
+        }
 
         $user = \App\Models\User::create([
             'name' => $validated['name'],
@@ -65,6 +107,11 @@ class HrController extends Controller
             'employment_date' => $validated['employment_date'] ?? null,
             'status' => $validated['status'] ?? 'active',
             'specialty_id' => $validated['specialty_id'] ?? null,
+            'contract_type' => $validated['contract_type'] ?? null,
+            'characteristics' => $validated['characteristics'] ?? null,
+            'passport_front' => $passportFrontPath,
+            'passport_back' => $passportBackPath,
+            'additional_documents' => empty($additionalDocs) ? null : json_encode($additionalDocs, JSON_UNESCAPED_UNICODE),
         ]);
 
         $user->assignRole($validated['role']);
@@ -91,7 +138,49 @@ class HrController extends Controller
             'employment_date' => 'nullable|date',
             'status' => 'nullable|string',
             'specialty_id' => 'nullable|string',
+            'contract_type' => 'nullable|string',
+            'characteristics' => 'nullable',
+            'passport_front' => 'nullable|string',
+            'passport_back' => 'nullable|string',
+            'additional_documents' => 'nullable|array',
         ]);
+
+        if (is_array($request->input('characteristics'))) {
+            $validated['characteristics'] = json_encode($request->input('characteristics'), JSON_UNESCAPED_UNICODE);
+        }
+
+        $passportFrontPath = $this->saveBase64File($request->input('passport_front'), 'passport_photos');
+        $passportBackPath = $this->saveBase64File($request->input('passport_back'), 'passport_photos');
+
+        $additionalDocs = [];
+        if ($request->has('additional_documents') && is_array($request->input('additional_documents'))) {
+            foreach ($request->input('additional_documents') as $doc) {
+                if (is_array($doc) && isset($doc['data'])) {
+                    $path = $this->saveBase64File($doc['data'], 'hr_documents');
+                    if ($path) {
+                        $additionalDocs[] = [
+                            'name' => $doc['name'] ?? basename($path),
+                            'path' => $path
+                        ];
+                    }
+                } elseif (is_string($doc)) {
+                    if (str_starts_with($doc, '/storage/') || str_starts_with($doc, 'storage/')) {
+                        $additionalDocs[] = [
+                            'name' => basename($doc),
+                            'path' => $doc
+                        ];
+                    } else {
+                        $path = $this->saveBase64File($doc, 'hr_documents');
+                        if ($path) {
+                            $additionalDocs[] = [
+                                'name' => basename($path),
+                                'path' => $path
+                            ];
+                        }
+                    }
+                }
+            }
+        }
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
         $validated['rate'] = $validated['base_rate'];
@@ -100,6 +189,10 @@ class HrController extends Controller
         $validated['floor_id'] = empty($validated['floor_id']) ? null : $validated['floor_id'];
         $validated['unit_id'] = empty($validated['unit_id']) ? null : $validated['unit_id'];
         $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
+        
+        $validated['passport_front'] = $passportFrontPath;
+        $validated['passport_back'] = $passportBackPath;
+        $validated['additional_documents'] = empty($additionalDocs) ? null : json_encode($additionalDocs, JSON_UNESCAPED_UNICODE);
 
         \Illuminate\Support\Facades\DB::transaction(function() use ($validated, $request) {
             $worker = Worker::create($validated);
@@ -631,7 +724,56 @@ class HrController extends Controller
             'employment_date' => 'nullable|date',
             'status' => 'nullable|string',
             'specialty_id' => 'nullable|string',
+            'contract_type' => 'nullable|string',
+            'characteristics' => 'nullable',
+            'passport_front' => 'nullable|string',
+            'passport_back' => 'nullable|string',
+            'additional_documents' => 'nullable|array',
         ]);
+
+        if (is_array($request->input('characteristics'))) {
+            $validated['characteristics'] = json_encode($request->input('characteristics'), JSON_UNESCAPED_UNICODE);
+        }
+
+        $passportFrontPath = $user->passport_front;
+        if ($request->has('passport_front')) {
+            $passportFrontPath = $this->saveBase64File($request->input('passport_front'), 'passport_photos');
+        }
+
+        $passportBackPath = $user->passport_back;
+        if ($request->has('passport_back')) {
+            $passportBackPath = $this->saveBase64File($request->input('passport_back'), 'passport_photos');
+        }
+
+        $additionalDocs = [];
+        if ($request->has('additional_documents') && is_array($request->input('additional_documents'))) {
+            foreach ($request->input('additional_documents') as $doc) {
+                if (is_array($doc) && isset($doc['data'])) {
+                    $path = $this->saveBase64File($doc['data'], 'hr_documents');
+                    if ($path) {
+                        $additionalDocs[] = [
+                            'name' => $doc['name'] ?? basename($path),
+                            'path' => $path
+                        ];
+                    }
+                } elseif (is_string($doc)) {
+                    if (str_starts_with($doc, '/storage/') || str_starts_with($doc, 'storage/')) {
+                        $additionalDocs[] = [
+                            'name' => basename($doc),
+                            'path' => $doc
+                        ];
+                    } else {
+                        $path = $this->saveBase64File($doc, 'hr_documents');
+                        if ($path) {
+                            $additionalDocs[] = [
+                                'name' => basename($path),
+                                'path' => $path
+                            ];
+                        }
+                    }
+                }
+            }
+        }
 
         $user->update([
             'name' => $validated['name'],
@@ -645,6 +787,11 @@ class HrController extends Controller
             'employment_date' => $validated['employment_date'] ?? $user->employment_date,
             'status' => $validated['status'] ?? $user->status,
             'specialty_id' => $validated['specialty_id'] ?? $user->specialty_id,
+            'contract_type' => $validated['contract_type'] ?? $user->contract_type,
+            'characteristics' => $validated['characteristics'] ?? null,
+            'passport_front' => $passportFrontPath,
+            'passport_back' => $passportBackPath,
+            'additional_documents' => empty($additionalDocs) ? null : json_encode($additionalDocs, JSON_UNESCAPED_UNICODE),
         ]);
 
         if (!empty($validated['role'])) {
@@ -720,11 +867,64 @@ class HrController extends Controller
             'employment_date' => 'nullable|date',
             'status' => 'nullable|string',
             'specialty_id' => 'nullable|string',
+            'contract_type' => 'nullable|string',
+            'characteristics' => 'nullable',
+            'passport_front' => 'nullable|string',
+            'passport_back' => 'nullable|string',
+            'additional_documents' => 'nullable|array',
         ]);
+
+        if (is_array($request->input('characteristics'))) {
+            $validated['characteristics'] = json_encode($request->input('characteristics'), JSON_UNESCAPED_UNICODE);
+        }
+
+        $passportFrontPath = $worker->passport_front;
+        if ($request->has('passport_front')) {
+            $passportFrontPath = $this->saveBase64File($request->input('passport_front'), 'passport_photos');
+        }
+
+        $passportBackPath = $worker->passport_back;
+        if ($request->has('passport_back')) {
+            $passportBackPath = $this->saveBase64File($request->input('passport_back'), 'passport_photos');
+        }
+
+        $additionalDocs = [];
+        if ($request->has('additional_documents') && is_array($request->input('additional_documents'))) {
+            foreach ($request->input('additional_documents') as $doc) {
+                if (is_array($doc) && isset($doc['data'])) {
+                    $path = $this->saveBase64File($doc['data'], 'hr_documents');
+                    if ($path) {
+                        $additionalDocs[] = [
+                            'name' => $doc['name'] ?? basename($path),
+                            'path' => $path
+                        ];
+                    }
+                } elseif (is_string($doc)) {
+                    if (str_starts_with($doc, '/storage/') || str_starts_with($doc, 'storage/')) {
+                        $additionalDocs[] = [
+                            'name' => basename($doc),
+                            'path' => $doc
+                        ];
+                    } else {
+                        $path = $this->saveBase64File($doc, 'hr_documents');
+                        if ($path) {
+                            $additionalDocs[] = [
+                                'name' => basename($path),
+                                'path' => $path
+                            ];
+                        }
+                    }
+                }
+            }
+        }
 
         $validated['type'] = $validated['salary_type'] === 'fixed_monthly' ? 'fixed' : 'piece_rate';
         $validated['rate'] = $validated['base_rate'];
         $validated['brigade_id'] = empty($validated['brigade_id']) ? null : $validated['brigade_id'];
+        
+        $validated['passport_front'] = $passportFrontPath;
+        $validated['passport_back'] = $passportBackPath;
+        $validated['additional_documents'] = empty($additionalDocs) ? null : json_encode($additionalDocs, JSON_UNESCAPED_UNICODE);
 
         \Illuminate\Support\Facades\DB::transaction(function() use ($worker, $validated, $request) {
             $oldRate = $worker->base_rate;
@@ -1395,5 +1595,50 @@ class HrController extends Controller
         );
 
         return redirect()->back()->with('message', 'KPI sozlamalari muvaffaqiyatli saqlandi.');
+    }
+
+    private function saveBase64File($base64String, $subDir = 'hr')
+    {
+        if (empty($base64String)) {
+            return null;
+        }
+
+        // If it's already a saved path, return it as-is
+        if (str_starts_with($base64String, '/storage/') || str_starts_with($base64String, 'storage/')) {
+            return $base64String;
+        }
+
+        if (preg_match('/^data:([^;]+);base64,(.*)$/', $base64String, $matches)) {
+            $mimeType = $matches[1];
+            $data = $matches[2];
+            
+            $extensions = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'application/pdf' => 'pdf',
+                'application/msword' => 'doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            ];
+            
+            $ext = $extensions[$mimeType] ?? 'bin';
+            $decodedData = base64_decode($data);
+        } else {
+            $decodedData = base64_decode($base64String, true);
+            if ($decodedData === false) {
+                return null;
+            }
+            $ext = 'jpg';
+        }
+
+        if (!$decodedData) {
+            return null;
+        }
+
+        $fileName = $subDir . '/' . uniqid() . '_' . time() . '.' . $ext;
+        \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decodedData);
+        
+        return '/storage/' . $fileName;
     }
 }

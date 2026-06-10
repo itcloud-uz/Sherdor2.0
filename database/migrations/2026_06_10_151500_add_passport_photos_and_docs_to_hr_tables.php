@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('workers', function (Blueprint $table) {
+            $table->string('passport_front')->nullable();
+            $table->string('passport_back')->nullable();
+            $table->text('additional_documents')->nullable(); // JSON array of file paths
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('passport_front')->nullable();
+            $table->string('passport_back')->nullable();
+            $table->text('additional_documents')->nullable(); // JSON array of file paths
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('workers', function (Blueprint $table) {
+            $table->dropColumn(['passport_front', 'passport_back', 'additional_documents']);
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['passport_front', 'passport_back', 'additional_documents']);
+        });
+    }
+};

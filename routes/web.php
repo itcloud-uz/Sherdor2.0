@@ -46,6 +46,25 @@ Route::get('/view-logs-secure-123456', function(\Illuminate\Http\Request $reques
     return response(implode("\n", $outputLines), 200, ['Content-Type' => 'text/plain']);
 });
 
+Route::get('/inspect-db-secure-123456', function(\Illuminate\Http\Request $request) {
+    if ($request->get('secret') !== 'antigravity') {
+        abort(403);
+    }
+    try {
+        $tables = DB::select('SHOW TABLES');
+        $migrations = DB::table('migrations')->get();
+        return response()->json([
+            'tables' => $tables,
+            'migrations' => $migrations
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');

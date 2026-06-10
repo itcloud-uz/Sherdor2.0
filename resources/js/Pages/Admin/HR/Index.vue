@@ -375,6 +375,23 @@ function saveEmployee() {
     }
 }
 
+function deleteEmployee(emp) {
+    if (confirm(`${emp.name}ni o'chirishga ishonchingiz komilmi?`)) {
+        const url = emp.type === 'user' 
+            ? route('admin.hr.users.delete', emp.id) 
+            : route('admin.hr.worker.destroy', emp.id);
+
+        router.delete(url, {
+            onSuccess: () => {
+                alert("Xodim muvaffaqiyatli o'chirildi!");
+            },
+            onError: () => {
+                alert("O'chirishda xatolik yuz berdi.");
+            }
+        });
+    }
+}
+
 // Upload biometric photos
 const photoInput = ref(null);
 const uploadTarget = ref('photo'); // 'photo' or 'passport'
@@ -891,6 +908,13 @@ const kpiManagers = computed(() => {
                                                 title="Tahrirlash"
                                             >
                                                 ✏️
+                                            </button>
+                                            <button 
+                                                @click="deleteEmployee(emp)" 
+                                                class="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors shadow-sm"
+                                                title="O'chirish"
+                                            >
+                                                🗑️
                                             </button>
                                         </div>
                                     </td>

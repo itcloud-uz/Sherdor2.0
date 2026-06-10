@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     settings: Object,
@@ -19,6 +19,43 @@ const page = usePage();
 const user = page.props.auth.user;
 
 const activeTab = ref('branding');
+
+// Synchronize activeTab with URL tab parameter
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const tabParam = url.searchParams.get('tab');
+            if (tabParam !== null) {
+                if (activeTab.value !== tabParam) {
+                    activeTab.value = tabParam;
+                }
+            } else {
+                activeTab.value = 'branding';
+            }
+        } catch (e) {
+            console.error('URL parse error in Settings tab watcher', e);
+        }
+    },
+    { immediate: true }
+);
+
+// Synchronize URL query parameter with activeTab changes
+watch(activeTab, (newTab) => {
+    try {
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+        if (currentTab !== newTab) {
+            router.replace(route('admin.settings.index', { tab: newTab }), {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
+    } catch (e) {
+        console.error('URL replace error in Settings activeTab watcher', e);
+    }
+});
 
 // Basic settings forms
 const form = useForm({
@@ -315,43 +352,10 @@ const saveRolePermissions = () => {
     <Head title="System Settings" />
 
     <AdminLayout>
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 animate-[fadeIn_0.5s_ease-out]">
-            
-            <!-- Sidebar Tabs -->
-            <div class="w-full md:w-72 space-y-3 shrink-0">
-                <button @click="activeTab = 'branding'" :class="activeTab === 'branding' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">🎨</span> Brending va Tashqi Ko'rinish
-                </button>
-                
-                <button @click="activeTab = 'financial'" :class="activeTab === 'financial' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">🏦</span> Financial Defaults
-                </button>
-
-                <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">👤</span> Profil va Dizayn
-                </button>
-
-                <button @click="activeTab = 'lead_sources'" :class="activeTab === 'lead_sources' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">🎯</span> Manbalar (Lead Sources)
-                </button>
-
-                <button @click="activeTab = 'sms_broadcast'" :class="activeTab === 'sms_broadcast' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">💬</span> SMS Xabarnoma
-                </button>
-
-                <button @click="activeTab = 'users_management'" :class="activeTab === 'users_management' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">👥</span> Xodimlar (Users)
-                </button>
-
-                <button @click="activeTab = 'roles_permissions'" :class="activeTab === 'roles_permissions' ? 'bg-neon-primary/20 border-neon-primary text-neon-primary shadow-sm' : 'bg-gray-500/50 border-gray-200 hover:border-white/30 text-gray-900/70'" class="w-full text-left px-5 py-4 rounded-2xl border transition-all font-display text-xs uppercase tracking-wider flex items-center gap-4">
-                    <span class="text-2xl drop-shadow">🔐</span> Rollar va Ruxsatlar
-                </button>
-            </div>
-
+        <div class="max-w-5xl mx-auto animate-[fadeIn_0.5s_ease-out]">
             <!-- Content Area -->
-            <div class="flex-1 min-w-0">
-                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 md:p-8 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-neon-primary/10 blur-[100px] group-hover:bg-neon-primary/20 transition-all pointer-events-none"></div>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 md:p-8 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-neon-primary/10 blur-[100px] group-hover:bg-neon-primary/20 transition-all pointer-events-none"></div>
 
                     <!-- Branding Tab -->
                     <div v-show="activeTab === 'branding'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
@@ -801,7 +805,6 @@ const saveRolePermissions = () => {
                         </div>
                     </div>
 
-                </div>
             </div>
             
         </div>

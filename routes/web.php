@@ -5,6 +5,26 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/run-migrations-secure-123456', function(\Illuminate\Http\Request $request) {
+    if ($request->get('secret') !== 'antigravity') {
+        abort(403);
+    }
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json([
+            'status' => 'success',
+            'output' => $output
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');

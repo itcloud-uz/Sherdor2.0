@@ -58,6 +58,88 @@ const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
+const selectedInvoiceIds = ref([]);
+const invoiceSearchQuery = ref('');
+const invoiceCurrencyFilter = ref('');
+const showInvoiceSelectorModal = ref(false);
+const documentNumberInput = ref('');
+const isEditingDocNumber = ref(false);
+const extraNotesInput = ref('');
+const fileInput = ref(null);
+
+const nextDocNumber = computed(() => {
+    if (!props.transactions || props.transactions.length === 0) return 1;
+    return Math.max(...props.transactions.map(t => t.id)) + 1;
+});
+
+const selectedCounterpartyObj = computed(() => {
+    if (!form.value.counterparty_id) return null;
+    return props.counterparties?.find(c => c.id === form.value.counterparty_id) || null;
+});
+
+const availableInvoices = computed(() => {
+    if (!form.value.counterparty_id || !props.invoices) return [];
+    return props.invoices.filter(inv => {
+        if (inv.counterparty_id !== form.value.counterparty_id) return false;
+        if (inv.status === 'paid') return false;
+        
+        if (invoiceSearchQuery.value) {
+            const q = invoiceSearchQuery.value.toLowerCase();
+            if (!inv.invoice_number.toLowerCase().includes(q)) return false;
+        }
+        
+        if (invoiceCurrencyFilter.value) {
+            if (inv.currency !== invoiceCurrencyFilter.value) return false;
+        }
+        
+        return true;
+    });
+});
+
+const availableInvoicesCurrencies = computed(() => {
+    if (!form.value.counterparty_id || !props.invoices) return [];
+    const filtered = props.invoices.filter(inv => inv.counterparty_id === form.value.counterparty_id && inv.status !== 'paid');
+    return [...new Set(filtered.map(inv => inv.currency))];
+});
+
+const isAllInvoicesSelected = computed({
+    get() {
+        if (availableInvoices.value.length === 0) return false;
+        return availableInvoices.value.every(inv => selectedInvoiceIds.value.includes(inv.id));
+    },
+    set(val) {
+        if (val) {
+            availableInvoices.value.forEach(inv => {
+                if (!selectedInvoiceIds.value.includes(inv.id)) {
+                    selectedInvoiceIds.value.push(inv.id);
+                }
+            });
+        } else {
+            availableInvoices.value.forEach(inv => {
+                const idx = selectedInvoiceIds.value.indexOf(inv.id);
+                if (idx > -1) {
+                    selectedInvoiceIds.value.splice(idx, 1);
+                }
+            });
+        }
+    }
+});
+
+function confirmInvoiceSelection() {
+    if (selectedInvoiceIds.value.length > 0) {
+        let totalUnpaid = 0;
+        selectedInvoiceIds.value.forEach(id => {
+            const inv = props.invoices?.find(i => i.id === id);
+            if (inv) {
+                const unpaid = parseFloat(inv.amount) - parseFloat(inv.paid_amount || 0);
+                totalUnpaid += unpaid;
+            }
+        });
+        form.value.amount = totalUnpaid.toFixed(2);
+    }
+    showInvoiceSelectorModal.value = false;
+}
+
 // Sub-tabs states
 const transferSubTab = ref('transfers'); // 'transfers' or 'exchanges'
 const invoiceSubTab = ref('payments'); // 'payments' or 'debts'
@@ -787,6 +869,22 @@ function submitTransaction() {
     form.value.latitude = gpsCoords.value.latitude;
     form.value.longitude = gpsCoords.value.longitude;
     
+    // Combine extraNotesInput with form.notes
+    if (extraNotesInput.value) {
+        form.value.notes = form.value.notes ? (form.value.notes + ' | Izoh: ' + extraNotesInput.value) : extraNotesInput.value;
+    }
+
+    // Add selected invoices detail to notes and set primary invoice_id
+    if (selectedInvoiceIds.value.length > 0) {
+        form.value.invoice_id = selectedInvoiceIds.value[0]; // Set primary invoice ID
+        const invoiceCodes = selectedInvoiceIds.value.map(id => {
+            const inv = props.invoices?.find(i => i.id === id);
+            return inv ? inv.invoice_number : `#${id}`;
+        });
+        const invoiceNotes = `Fakturalar: ${invoiceCodes.join(', ')}`;
+        form.value.notes = form.value.notes ? `${form.value.notes} (${invoiceNotes})` : invoiceNotes;
+    }
+
     if (requiresPartner.value || form.value.account_type === 'partner') {
         form.value.target_type = 'partner';
         form.value.target_id = form.value.partner_id;
@@ -820,6 +918,10 @@ function submitTransaction() {
                 attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', 
                 target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
             };
+            selectedInvoiceIds.value = [];
+            extraNotesInput.value = '';
+            documentNumberInput.value = '';
+            isEditingDocNumber.value = false;
             activeTab.value = 1;
         },
         onError: () => isProcessing.value = false
@@ -848,6 +950,12 @@ function openQuickTransaction(type) {
         attachment: null, auto_approve: true, notes: '', latitude: gpsCoords.value.latitude, longitude: gpsCoords.value.longitude, source: 'admin_panel', 
         target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
     };
+    selectedInvoiceIds.value = [];
+    invoiceSearchQuery.value = '';
+    invoiceCurrencyFilter.value = '';
+    documentNumberInput.value = String(nextDocNumber.value);
+    isEditingDocNumber.value = false;
+    extraNotesInput.value = '';
     showQuickTransactionModal.value = true;
 }
 
@@ -2566,93 +2674,269 @@ function formatMoney(amount, currency = 'UZS') {
             </div>
         </Modal>
         <!-- QUICK TRANSACTION MODAL (Kirim / Chiqim) -->
-        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="md">
+        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="3xl">
             <div class="p-6">
-                <button @click="showQuickTransactionModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
-                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">
-                    {{ form.type === 'income' ? 'Kirim operatsiyasi' : 'Chiqim operatsiyasi' }}
-                </h3>
+                <!-- Header with Title & Close Icon -->
+                <div class="flex items-center gap-3 mb-6">
+                    <button type="button" @click="showQuickTransactionModal = false" class="text-gray-400 hover:text-gray-600 text-lg">
+                        ✕
+                    </button>
+                    <h2 class="text-xl font-bold text-gray-900 font-sans">
+                        {{ form.type === 'income' ? 'Yangi kirim' : 'Yangi chiqim' }}
+                    </h2>
+                </div>
                 
-                <form @submit.prevent="submitTransaction" class="space-y-4 font-mono text-xs">
-                    <!-- Read-only selected register info -->
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kassa / Bank hisobi</label>
-                        <input :value="selectedRegister ? `${selectedRegister.name} (${selectedRegister.currency})` : ''" type="text" readonly class="bg-gray-100 border border-gray-200 text-gray-500 rounded-md w-full h-9 font-bold">
-                    </div>
+                <form @submit.prevent="submitTransaction" class="space-y-6 font-sans text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-4">
+                            <!-- Tranzaksiya turi -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Tranzaksiya turi
+                                </label>
+                                <select v-model="form.category_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Tranzaksiya turini tanlang</option>
+                                    <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
+                                        {{ c.name }}
+                                    </option>
+                                </select>
+                            </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Category selection -->
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kategoriya *</label>
-                            <select v-model="form.category_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
-                                <option value="" disabled>-- Tanlang --</option>
-                                <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
-                                    {{ c.name }}
-                                </option>
-                            </select>
-                        </div>
+                            <!-- Bank hisobi -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Bank hisobi
+                                </label>
+                                <select v-model="form.account_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Bank hisobini tanlang</option>
+                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                        {{ r.name }} ({{ r.currency }})
+                                    </option>
+                                </select>
+                            </div>
 
-                        <!-- Amount input -->
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Summa *</label>
-                            <input v-model="form.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 font-bold" required placeholder="0.00">
-                        </div>
-                    </div>
+                            <!-- Shartnoma sanasi -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Shartnoma sanasi
+                                </label>
+                                <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Counterparty selection -->
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kontragent (Ixtiyoriy)</label>
-                            <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                                <option value="">-- Tanlang --</option>
-                                <option v-for="c in counterparties" :key="c.id" :value="c.id">
-                                    [{{ c.type.toUpperCase() }}] {{ c.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Payment method -->
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">To'lov usuli *</label>
-                            <select v-model="form.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
-                                <option value="cash">Naqd (Cash)</option>
-                                <option value="card">Plastik (Card)</option>
-                                <option value="bank_transfer">Bank o'tkazmasi</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Client Contract Search -->
-                    <div v-if="requiresClient" class="border border-blue-150 p-4 rounded-xl bg-blue-50/30">
-                        <label class="block text-gray-600 mb-1 font-bold text-[10px] uppercase">Mijoz shartnomasini bog'lash *</label>
-                        <div class="relative">
-                            <input v-model="scheduleSearch" @focus="showScheduleDropdown = true" type="text" placeholder="Mijoz nomi yoki xona..." class="bg-white border border-gray-300 text-gray-900 rounded-md w-full h-9">
-                            <div v-show="showScheduleDropdown && filteredContracts.length" class="absolute z-50 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                <div v-for="c in filteredContracts" :key="c.id" @click="selectContract(c)" class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex justify-between">
-                                    <span>{{ c.client?.first_name }} {{ c.client?.last_name }}</span>
-                                    <span class="font-bold text-blue-600">{{ c.unit?.unit_number }} - xona</span>
+                            <!-- Hujjat raqami -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    Hujjat raqami
+                                </label>
+                                <div class="relative flex items-center">
+                                    <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
+                                    <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-gray-400 hover:text-gray-600">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
                                 </div>
+                            </div>
+
+                            <!-- Kontragent -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Kontragent
+                                </label>
+                                <select v-model="form.counterparty_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Kontragentni tanlang</option>
+                                    <option v-for="c in counterparties" :key="c.id" :value="c.id">
+                                        {{ c.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Invoice Selection Area for expense -->
+                            <div v-if="form.type === 'expense' && form.counterparty_id" class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-semibold text-gray-700">Hisob-faktura</span>
+                                    <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">
+                                        Tanlash ({{ selectedInvoiceIds.length }} ta tanlangan)
+                                    </button>
+                                </div>
+                                <div v-if="selectedInvoiceIds.length > 0" class="flex flex-wrap gap-1.5">
+                                    <span v-for="id in selectedInvoiceIds" :key="id" class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-0.5 text-[10px] text-gray-700 font-mono shadow-sm">
+                                        {{ props.invoices?.find(i => i.id === id)?.invoice_number || `#${id}` }}
+                                        <button type="button" @click="selectedInvoiceIds = selectedInvoiceIds.filter(x => x !== id)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                                    </span>
+                                </div>
+                                <span v-else class="text-[10px] text-gray-400 block font-mono">Tanlanmagan</span>
+                            </div>
+
+                            <!-- Summa -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Summa
+                                </label>
+                                <input v-model="form.amount" type="number" step="0.01" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-4">
+                            <!-- Qurilish obyekti -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Qurilish obyekti
+                                </label>
+                                <select v-model="form.building_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Qurilish obyekti tanlang</option>
+                                    <option v-for="b in buildings" :key="b.id" :value="b.id">
+                                        {{ b.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Valyuta -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * Valyuta
+                                </label>
+                                <select v-model="form.currency" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Valyutani tanlang</option>
+                                    <option value="UZS">UZS</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+
+                            <!-- To'lov maqsadi -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    * To'lov maqsadi
+                                </label>
+                                <textarea v-model="form.notes" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
+                            </div>
+
+                            <!-- Ilovalar -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    Ilovalar
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
+                                    <button type="button" @click="$refs.fileInput.click()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-bold bg-white hover:bg-gray-50 transition-colors shadow-sm text-xs">
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Fayl yuklash
+                                    </button>
+                                    <span v-if="form.attachment" class="text-xs text-gray-500 truncate max-w-[200px]" :title="form.attachment.name">
+                                        {{ form.attachment.name }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Izohlar -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                    Izohlar
+                                </label>
+                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izohlarni kiriting"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Date & Notes -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Sana</label>
-                            <input v-model="form.transaction_date" type="datetime-local" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showQuickTransactionModal = false" class="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- HISOB-FAKTURALARNI TANLASH SUB-MODAL -->
+        <Modal :show="showInvoiceSelectorModal" @close="showInvoiceSelectorModal = false" maxWidth="2xl">
+            <div class="p-6 space-y-6">
+                <!-- Header with Title & Close Icon -->
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900 font-sans">
+                        Hisob-fakturalarni tanlash
+                    </h3>
+                    <button type="button" @click="showInvoiceSelectorModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="flex gap-4">
+                    <!-- Search input -->
+                    <div class="relative flex-1">
+                        <input v-model="invoiceSearchQuery" type="text" placeholder="Hisob-faktura raqami bo'yicha qidirish..." class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                        <span class="absolute left-3 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Currency filter dropdown -->
+                    <div class="w-48">
+                        <select v-model="invoiceCurrencyFilter" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                            <option value="">Barcha valyutalar</option>
+                            <option v-for="c in availableInvoicesCurrencies" :key="c" :value="c">
+                                {{ c }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Invoices Container -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    <!-- Hammasini tanlash row -->
+                    <div class="p-3 bg-gray-50 flex items-center gap-3">
+                        <input type="checkbox" v-model="isAllInvoicesSelected" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                        <span class="text-xs font-semibold text-gray-700">Hammasini tanlash</span>
+                    </div>
+
+                    <!-- List rows -->
+                    <div v-for="inv in availableInvoices" :key="inv.id" class="p-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" :value="inv.id" v-model="selectedInvoiceIds" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                            <div>
+                                <span class="block text-xs font-bold text-gray-900 font-mono">{{ inv.invoice_number }}</span>
+                                <span class="text-[10px] text-gray-400 mt-0.5 block font-mono">{{ new Date(inv.due_date).toLocaleDateString() }}</span>
+                            </div>
+                            <!-- badge "Yangi" -->
+                            <span class="ml-2 px-2 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-100 uppercase">
+                                {{ inv.status === 'new' ? 'Yangi' : inv.status }}
+                            </span>
                         </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
-                            <input v-model="form.notes" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" placeholder="Tranzaksiya tafsilotlari...">
+
+                        <!-- Amounts info -->
+                        <div class="flex gap-6 font-mono text-xs">
+                            <div class="text-right">
+                                <span class="block text-[10px] text-gray-400 uppercase">Umumiy summa</span>
+                                <span class="font-bold text-gray-900">{{ parseFloat(inv.amount).toLocaleString(undefined, {minimumFractionDigits: 2}) }} {{ inv.currency }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-[10px] text-gray-400 uppercase">To'lanishi kerak</span>
+                                <span class="font-bold text-orange-600">{{ (parseFloat(inv.amount) - parseFloat(inv.paid_amount || 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) }} {{ inv.currency }}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showQuickTransactionModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Saqlash</button>
+                    <div v-if="availableInvoices.length === 0" class="p-8 text-center text-gray-400 text-xs font-mono">
+                        Hisob-fakturalar topilmadi.
                     </div>
-                </form>
+                </div>
+
+                <!-- Footer buttons -->
+                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    <button type="button" @click="showInvoiceSelectorModal = false" class="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                        Bekor qilish
+                    </button>
+                    <button type="button" @click="confirmInvoiceSelection" :disabled="selectedInvoiceIds.length === 0" class="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">
+                        Tasdiqlash
+                    </button>
+                </div>
             </div>
         </Modal>
 

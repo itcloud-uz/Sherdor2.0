@@ -247,6 +247,16 @@ onUnmounted(() => {
         navigateUnregister();
     }
 });
+
+const formattedDate = computed(() => {
+    const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+    const now = new Date();
+    const dayName = days[now.getDay()];
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${dayName}, ${day}.${month}.${year}`;
+});
 </script>
 
 <template>
@@ -807,60 +817,58 @@ onUnmounted(() => {
         <!-- Main Content -->
         <main class="flex-1 flex flex-col z-10 h-screen overflow-hidden relative">
             <!-- Top Header -->
-            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 relative z-30 shrink-0 shadow-sm">
+            <header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-6 md:px-8 relative z-30 shrink-0 shadow-sm">
                 <!-- Left side: Title/Icon -->
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-2 text-gray-500 hover:text-blue-600 focus:outline-none shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
                     <slot name="header">
-                        <h2 class="text-lg md:text-xl font-display font-semibold text-gray-900 flex items-center gap-3 truncate">
-                            <span class="text-xl md:text-2xl text-gray-500">{{ currentNav?.icon || '⬡' }}</span> 
-                            <span class="truncate">{{ currentNav ? $t(currentNav.name) : 'Dashboard' }}</span>
-                        </h2>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-white shrink-0 shadow-sm border border-amber-300">
+                                <svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="5" />
+                                    <path d="M9 3v18M15 3v18" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900 leading-tight">
+                                    {{ currentNav ? $t(currentNav.name) : 'Dashboard' }}
+                                </h2>
+                                <p class="text-xs text-gray-500 font-medium mt-0.5">{{ formattedDate }}</p>
+                            </div>
+                        </div>
                     </slot>
                 </div>
                 
-                <!-- Center: Date -->
-                <div class="hidden md:flex items-center justify-center flex-1 shrink-0">
-                    <p class="text-xs font-medium text-gray-500 bg-gray-50 px-4 py-1.5 rounded-full border border-gray-200">{{ new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
-                </div>
+                <!-- Right side: User Profile & Lang Switcher -->
+                <div class="flex items-center gap-4 justify-end flex-1 shrink-0">
+                    <!-- Language Switcher Directly Visible -->
+                    <LanguageSwitcher />
 
-                <!-- Right side: User Profile -->
-                <div class="flex items-center gap-6 justify-end flex-1 shrink-0">
                     <!-- User Profile Dropdown -->
                     <div class="relative group">
-                        <button class="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 cursor-default">
-                            <div class="text-right hidden sm:block">
-                                <p class="text-sm font-semibold text-gray-900 leading-tight">{{ $page.props.auth?.user?.name }}</p>
-                                <p class="text-[10px] font-medium text-gray-500 mt-0.5">{{ ($page.props.auth?.user?.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name).toUpperCase() : 'USER' }}</p>
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 overflow-hidden">
+                        <button class="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200 cursor-default">
+                            <div class="w-9 h-9 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-sm border border-amber-400 overflow-hidden shadow-sm shrink-0">
                                 <img v-if="$page.props.auth?.user?.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
-                                <span v-else class="text-xs font-bold text-gray-600">{{ $page.props.auth?.user?.name?.charAt(0) }}</span>
+                                <span v-else>{{ $page.props.auth?.user?.name?.charAt(0).toUpperCase() }}</span>
+                            </div>
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-semibold text-gray-800 leading-tight">{{ $page.props.auth?.user?.name }}</p>
+                                <p class="text-[10px] font-medium text-gray-400 mt-0.5">{{ ($page.props.auth?.user?.roles && $page.props.auth.user.roles.length > 0) ? (typeof $page.props.auth.user.roles[0] === 'string' ? $page.props.auth.user.roles[0] : $page.props.auth.user.roles[0].name) : 'Administrator' }}</p>
                             </div>
                         </button>
 
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50 p-2 space-y-2">
-                            
-                            <!-- Global Language Switcher -->
-                            <div class="p-2">
-                                <p class="text-[10px] font-semibold text-gray-500 mb-2 uppercase">Interfeys Tili</p>
-                                <LanguageSwitcher />
+                        <div class="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50 p-2 space-y-1">
+                            <div class="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-green-200 bg-green-50/50 cursor-default">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <span class="text-[9px] font-bold text-green-700 uppercase tracking-wider">SYSTEM ONLINE</span>
                             </div>
-
-                            <hr class="border-gray-100">
-
-                            <!-- Live Server Status Indicator -->
-                            <div class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-green-200 bg-green-50 mx-2 cursor-default">
-                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                                <span class="text-[10px] font-semibold text-green-700 uppercase tracking-wider">SYSTEM ONLINE</span>
-                            </div>
-                            
-                            <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <hr class="border-gray-100 my-1">
+                            <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                                 TIZIMDAN CHIQISH
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             </Link>
                         </div>
                     </div>

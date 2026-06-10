@@ -158,34 +158,61 @@ class AdminController extends Controller
 
         // Buildings Summary for Object Cards
         $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) {
-            $totalUnits = 0;
-            $soldUnits = 0;
-            $totalArea = 0;
-            $expectedRevenue = 0;
+            $unitsQuery = \App\Models\Unit::whereHas('floor', function($q) use ($building) {
+                $q->where('building_id', $building->id);
+            });
             
-            foreach($building->floors as $floor) {
-                foreach($floor->units as $unit) {
-                    $totalUnits++;
-                    $totalArea += (float)$unit->area_sqm;
-                    if ($unit->status === 'sold') {
-                        $soldUnits++;
-                        $expectedRevenue += (float)$unit->price;
-                    }
-                }
-            }
+            $totalUnits = $unitsQuery->count();
+            $soldUnits = (clone $unitsQuery)->where('status', 'sold')->count();
+            $reservedUnits = (clone $unitsQuery)->where('status', 'reserved')->count();
+            $availableUnits = (clone $unitsQuery)->where('status', 'available')->count();
+            
+            $totalArea = $unitsQuery->sum('area_sqm');
+            $soldArea = (clone $unitsQuery)->where('status', 'sold')->sum('area_sqm');
+            $availableArea = (clone $unitsQuery)->where('status', 'available')->sum('area_sqm');
+            
+            $roomsDistribution = (clone $unitsQuery)->whereIn('status', ['sold', 'reserved'])
+                ->selectRaw('rooms_count, count(*) as count')
+                ->groupBy('rooms_count')
+                ->orderBy('rooms_count')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'rooms' => $item->rooms_count,
+                        'count' => $item->count
+                    ];
+                })->toArray();
+                
+            $totalSum = $unitsQuery->sum('price');
+            
+            $contractIds = \App\Models\Contract::whereHas('unit.floor', function($q) use ($building) {
+                $q->where('building_id', $building->id);
+            })->where('status', '!=', 'cancelled')->pluck('id');
+
+            $soldSum = \App\Models\Transaction::whereIn('contract_id', $contractIds)
+                ->where('status', 'approved')
+                ->where('type', 'income')
+                ->sum('amount');
+                
+            $totalContractAmount = \App\Models\Contract::whereIn('id', $contractIds)->sum('total_amount');
+            $debtSum = max(0, $totalContractAmount - $soldSum);
             
             return [
                 'id' => $building->id,
                 'name' => $building->name,
                 'block_name' => $building->block_name ?? 'Asosiy Blok',
+                'photo_path' => $building->photo_path,
                 'total_units' => $totalUnits,
                 'sold_units' => $soldUnits,
+                'reserved_units' => $reservedUnits,
+                'available_units' => $availableUnits,
                 'total_area' => round($totalArea, 2),
-                'expected_revenue' => $expectedRevenue,
-                // Mocking debt/income split for the UI since we don't have unit-level contract linking here easily
-                // Usually this is calculated via contracts/transactions associated with this building.
-                'income' => $expectedRevenue * 0.7, // 70% paid
-                'debt' => $expectedRevenue * 0.3    // 30% debt
+                'sold_area' => round($soldArea, 2),
+                'available_area' => round($availableArea, 2),
+                'rooms_distribution' => $roomsDistribution,
+                'total_sum' => $totalSum,
+                'sold_sum' => $soldSum,
+                'debt_sum' => $debtSum,
             ];
         });
 

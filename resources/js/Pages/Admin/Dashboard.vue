@@ -31,6 +31,16 @@ const props = defineProps({
 });
 
 
+const selectedBuildingName = ref('');
+const startMonth = ref('');
+const endMonth = ref('');
+
+const uniqueBuildingNames = computed(() => {
+    if (!props.buildingsSummary) return [];
+    const names = props.buildingsSummary.map(b => b.name || 'Noma\'lum Obyekt');
+    return [...new Set(names)];
+});
+
 const groupedBuildingsSummary = computed(() => {
     if (!props.buildingsSummary) return [];
     const groups = {};
@@ -38,27 +48,65 @@ const groupedBuildingsSummary = computed(() => {
         const name = b.name || 'Noma\'lum Obyekt';
         if (!groups[name]) {
             groups[name] = {
-                id: b.id, // Use the first block's id as group id
+                id: b.id,
                 name: name,
+                photo_path: b.photo_path,
                 total_units: 0,
                 sold_units: 0,
+                reserved_units: 0,
+                available_units: 0,
                 total_area: 0,
-                income: 0,
-                debt: 0
+                sold_area: 0,
+                available_area: 0,
+                rooms_distribution: {},
+                total_sum: 0,
+                sold_sum: 0,
+                debt_sum: 0
             };
         }
         groups[name].total_units += b.total_units || 0;
         groups[name].sold_units += b.sold_units || 0;
+        groups[name].reserved_units += b.reserved_units || 0;
+        groups[name].available_units += b.available_units || 0;
         groups[name].total_area += b.total_area || 0;
-        groups[name].income += b.income || 0;
-        groups[name].debt += b.debt || 0;
+        groups[name].sold_area += b.sold_area || 0;
+        groups[name].available_area += b.available_area || 0;
+        groups[name].total_sum += b.total_sum || 0;
+        groups[name].sold_sum += b.sold_sum || 0;
+        groups[name].debt_sum += b.debt_sum || 0;
+        if (b.photo_path && !groups[name].photo_path) {
+            groups[name].photo_path = b.photo_path;
+        }
+        // merge rooms distribution
+        if (b.rooms_distribution && Array.isArray(b.rooms_distribution)) {
+            b.rooms_distribution.forEach(rd => {
+                const r = rd.rooms || 0;
+                groups[name].rooms_distribution[r] = (groups[name].rooms_distribution[r] || 0) + (rd.count || 0);
+            });
+        }
     });
     
-    // Convert back to array
-    return Object.values(groups).map(g => ({
-        ...g,
-        total_area: Math.round(g.total_area * 100) / 100 // rounding
-    }));
+    return Object.values(groups).map(g => {
+        const roomsArr = Object.entries(g.rooms_distribution)
+            .map(([rooms, count]) => ({ rooms: parseInt(rooms), count }))
+            .sort((a, b) => a.rooms - b.rooms);
+            
+        return {
+            ...g,
+            total_area: Math.round(g.total_area * 100) / 100,
+            sold_area: Math.round(g.sold_area * 100) / 100,
+            available_area: Math.round(g.available_area * 100) / 100,
+            rooms_distribution: roomsArr
+        };
+    });
+});
+
+const filteredBuildingsSummary = computed(() => {
+    let list = groupedBuildingsSummary.value;
+    if (selectedBuildingName.value) {
+        list = list.filter(b => b.name === selectedBuildingName.value);
+    }
+    return list;
 });
 
 const showLostLeadsModal = ref(false);
@@ -149,47 +197,166 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
 
 
 
-        <!-- OBYEKTLAR KARTASI -->
-        <div class="mb-8">
-            <h3 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-blue-500"></span> Obyektlar Statistikasi
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                <div v-for="building in groupedBuildingsSummary" :key="building.id" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-4">
-                        <h4 class="text-gray-900 font-bold text-lg">{{ building.name }}</h4>
-                        
-                    </div>
-                    
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">XONALAR</p>
-                            <p class="text-lg font-bold text-gray-900">{{ building.total_units }}</p>
-                        </div>
-                        <div class="flex-1 border-l border-gray-100 pl-4">
-                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">MAYDON</p>
-                            <p class="text-lg font-bold text-gray-900">{{ building.total_area }} kv.m</p>
+        <!-- OBYEKTLAR KARTASI (BINO STATISTIKASI) -->
+        <div class="mb-8 bg-white/50 backdrop-blur-sm p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-800 tracking-tight">Bino statistikasi</h3>
+                    <p class="text-xs text-gray-400 mt-1 font-medium">Barcha binolarning umumiy ko'rinishi</p>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Object Selector Dropdown -->
+                    <div class="relative">
+                        <select 
+                            v-model="selectedBuildingName" 
+                            class="rounded-full border border-gray-200 pl-4 pr-10 py-2 text-xs bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-sm appearance-none cursor-pointer font-medium"
+                        >
+                            <option value="">Obyektni tanlang</option>
+                            <option v-for="name in uniqueBuildingNames" :key="name" :value="name">{{ name }}</option>
+                        </select>
+                        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
                         </div>
                     </div>
 
+                    <!-- Date Range selector -->
+                    <div class="relative flex items-center bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm text-gray-500 select-none">
+                        <input 
+                            type="month" 
+                            v-model="startMonth" 
+                            class="text-xs bg-transparent border-none outline-none text-gray-600 focus:ring-0 w-28 p-0 cursor-pointer font-medium" 
+                            placeholder="Boshlanish oyi" 
+                        />
+                        <span class="mx-2 text-gray-300 text-xs">→</span>
+                        <input 
+                            type="month" 
+                            v-model="endMonth" 
+                            class="text-xs bg-transparent border-none outline-none text-gray-600 focus:ring-0 w-28 p-0 cursor-pointer font-medium" 
+                            placeholder="Tugash oyi" 
+                        />
+                        <div class="ml-2 text-gray-400 shrink-0">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Horizontal Flex Scrollable Row -->
+            <div class="flex overflow-x-auto gap-6 pb-4 scrollbar-thin snap-x">
+                <div 
+                    v-for="building in filteredBuildingsSummary" 
+                    :key="building.id" 
+                    class="w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 snap-start"
+                >
+                    <!-- Building Card Header -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
+                            <img v-if="building.photo_path" :src="'/storage/' + building.photo_path" class="w-full h-full object-cover" />
+                            <div v-else class="w-full h-full bg-gradient-to-tr from-amber-500/10 to-yellow-500/5 flex items-center justify-center text-amber-500">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-gray-900 font-bold text-lg tracking-tight leading-tight">{{ building.name }}</h4>
+                        </div>
+                    </div>
+
+                    <!-- Progress bar -->
                     <div>
-                        <div class="flex justify-between text-[11px] font-bold uppercase mb-2">
-                            <span class="text-gray-400">Sotilgan: {{ building.sold_units }} ta</span>
-                            <span class="text-orange-500">{{ building.total_units > 0 ? Math.round((building.sold_units / building.total_units) * 100) : 0 }}%</span>
+                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2">
+                            <span class="text-gray-400">Sotilgan</span>
+                            <span class="text-amber-500">
+                                {{ building.sold_units }} 
+                                <span class="font-semibold">{{ (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                            </span>
                         </div>
                         <div class="w-full bg-gray-100 rounded-full h-2">
-                            <div class="bg-orange-500 h-2 rounded-full" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units) * 100 : 0) + '%' }"></div>
+                            <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0) + '%' }"></div>
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-gray-100 flex justify-between">
-                        <div>
-                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Tushum</p>
-                            <p class="text-sm font-bold text-emerald-500">{{ $currency(building.income) }}</p>
+                    <!-- XONALAR section -->
+                    <div class="space-y-2">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR</p>
+                        
+                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                            <span class="text-gray-500">Bron qilingan</span>
+                            <span class="text-gray-900 font-semibold">
+                                {{ building.reserved_units }} 
+                                <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.reserved_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                            </span>
                         </div>
-                        <div class="text-right">
-                            <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Qarzdorlik</p>
-                            <p class="text-sm font-bold text-red-500">{{ $currency(building.debt) }}</p>
+                        
+                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                            <span class="text-gray-500">Sotuvda mavjud</span>
+                            <span class="text-gray-900 font-semibold">
+                                {{ building.available_units }}
+                                <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.available_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between text-xs pt-0.5">
+                            <span class="text-gray-500">Jami</span>
+                            <span class="text-gray-900 font-bold text-sm">{{ building.total_units }}</span>
+                        </div>
+                    </div>
+
+                    <!-- MAYDON (M2) section -->
+                    <div class="space-y-2">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">MAYDON (M²)</p>
+                        
+                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                            <span class="text-gray-500">Sotilgan</span>
+                            <span class="text-gray-900 font-semibold">
+                                {{ building.sold_area }}
+                                <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.sold_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between text-xs pt-0.5">
+                            <span class="text-gray-500">Sotuvda mavjud</span>
+                            <span class="text-gray-900 font-semibold">
+                                {{ building.available_area }}
+                                <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.available_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- XONALAR TAQSIMOTI section -->
+                    <div class="space-y-2">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR TAQSIMOTI</p>
+                        
+                        <div v-if="building.rooms_distribution && building.rooms_distribution.length > 0" class="flex flex-wrap gap-2 pt-1">
+                            <div v-for="rd in building.rooms_distribution" :key="rd.rooms" class="flex-1 min-w-[70px] bg-gray-50/50 border border-gray-100 rounded-xl p-2 text-center shadow-sm">
+                                <p class="text-sm font-bold text-gray-800 leading-none mb-1">{{ rd.count }}</p>
+                                <p class="text-[10px] text-gray-400 font-medium leading-none">{{ rd.rooms }}-xonali</p>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-2 text-gray-400 font-medium text-xs">
+                            -
+                        </div>
+                    </div>
+
+                    <!-- Bottom finances block -->
+                    <div class="mt-auto pt-4 border-t border-gray-100 space-y-1.5 font-mono text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 uppercase text-[10px] font-bold">Sotilgan</span>
+                            <span class="text-emerald-500 font-bold text-sm">{{ $currency(building.sold_sum) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 uppercase text-[10px] font-bold">Qarzdorlik</span>
+                            <span class="text-red-500 font-bold text-sm">{{ $currency(building.debt_sum) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-gray-500 uppercase text-[10px] font-bold">Umumiy summa</span>
+                            <span class="text-gray-900 font-bold text-sm font-display">{{ $currency(building.total_sum) }}</span>
                         </div>
                     </div>
                 </div>

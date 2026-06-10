@@ -25,16 +25,23 @@ class AppServiceProvider extends ServiceProvider
 
         URL::forceScheme('https'); // <-- 2. VA SHU QATORNI QO'SHING
 
-        // Auto-migrate if new tables are missing
-        if (!\Illuminate\Support\Facades\Cache::has('migrations_run_v4')) {
-            if (!\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
-                try {
-                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Auto-migration failed: ' . $e->getMessage());
-                }
-            } else {
-                \Illuminate\Support\Facades\Cache::forever('migrations_run_v4', true);
+        // Self-healing check for currency_rates table
+        if (!\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
+            try {
+                \Illuminate\Support\Facades\Schema::create('currency_rates', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->id();
+                    $table->string('code', 3)->unique();
+                    $table->decimal('rate', 12, 4)->default(1.0000);
+                    $table->timestamps();
+                });
+
+                \Illuminate\Support\Facades\DB::table('currency_rates')->insert([
+                    ['code' => 'UZS', 'rate' => 1.0000, 'created_at' => now(), 'updated_at' => now()],
+                    ['code' => 'USD', 'rate' => 12800.0000, 'created_at' => now(), 'updated_at' => now()],
+                    ['code' => 'EUR', 'rate' => 13800.0000, 'created_at' => now(), 'updated_at' => now()],
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to create currency_rates table: ' . $e->getMessage());
             }
         }
 

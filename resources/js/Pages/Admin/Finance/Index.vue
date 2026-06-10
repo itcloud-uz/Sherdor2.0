@@ -2674,7 +2674,7 @@ function formatMoney(amount, currency = 'UZS') {
             </div>
         </Modal>
         <!-- QUICK TRANSACTION MODAL (Kirim / Chiqim) -->
-        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="3xl">
+        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="3xl" class="quick-transaction-modal-override">
             <div class="p-6">
                 <!-- Header with Title & Close Icon -->
                 <div class="flex items-center gap-3 mb-6">
@@ -2820,7 +2820,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
-                                    <button type="button" @click="$refs.fileInput.click()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-bold bg-white hover:bg-gray-50 transition-colors shadow-sm text-xs">
+                                    <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-bold bg-white hover:bg-gray-50 transition-colors shadow-sm text-xs">
                                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
@@ -2843,10 +2843,10 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
 
                     <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showQuickTransactionModal = false" class="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                        <button type="button" @click="showQuickTransactionModal = false" class="btn-cancel px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
                             Bekor qilish
                         </button>
-                        <button type="submit" :disabled="isProcessing" class="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md">
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md">
                             Saqlash
                         </button>
                     </div>
@@ -2855,7 +2855,7 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- HISOB-FAKTURALARNI TANLASH SUB-MODAL -->
-        <Modal :show="showInvoiceSelectorModal" @close="showInvoiceSelectorModal = false" maxWidth="2xl">
+        <Modal :show="showInvoiceSelectorModal" @close="showInvoiceSelectorModal = false" maxWidth="2xl" class="quick-transaction-modal-override">
             <div class="p-6 space-y-6">
                 <!-- Header with Title & Close Icon -->
                 <div class="flex justify-between items-center">
@@ -2930,10 +2930,10 @@ function formatMoney(amount, currency = 'UZS') {
 
                 <!-- Footer buttons -->
                 <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                    <button type="button" @click="showInvoiceSelectorModal = false" class="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                    <button type="button" @click="showInvoiceSelectorModal = false" class="btn-cancel px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
                         Bekor qilish
                     </button>
-                    <button type="button" @click="confirmInvoiceSelection" :disabled="selectedInvoiceIds.length === 0" class="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">
+                    <button type="button" @click="confirmInvoiceSelection" :disabled="selectedInvoiceIds.length === 0" class="btn-save px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">
                         Tasdiqlash
                     </button>
                 </div>
@@ -2994,3 +2994,97 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
     </AdminLayout>
 </template>
+
+<style>
+/* CSS overrides to force a premium, clean light theme matching the mockup exactly */
+dialog.quick-transaction-modal-override,
+.quick-transaction-modal-override {
+    --modal-bg-color: #ffffff !important;
+    --modal-text-color: #111827 !important;
+    --glass-input-bg: #ffffff !important;
+    --glass-input-border: #d1d5db !important;
+    --glass-input-text: #111827 !important;
+    --glass-input-placeholder: #9ca3af !important;
+    --label-color: #374151 !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal h1,
+dialog.quick-transaction-modal-override .theme-modal h2,
+dialog.quick-transaction-modal-override .theme-modal h3,
+dialog.quick-transaction-modal-override .theme-modal h4,
+dialog.quick-transaction-modal-override .theme-modal p,
+dialog.quick-transaction-modal-override .theme-modal span,
+dialog.quick-transaction-modal-override .theme-modal label,
+dialog.quick-transaction-modal-override .theme-modal th,
+dialog.quick-transaction-modal-override .theme-modal td {
+    color: #111827 !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal input,
+dialog.quick-transaction-modal-override .theme-modal select,
+dialog.quick-transaction-modal-override .theme-modal textarea {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal input:focus,
+dialog.quick-transaction-modal-override .theme-modal select:focus,
+dialog.quick-transaction-modal-override .theme-modal textarea:focus {
+    border-color: #f97316 !important; /* orange-500 */
+    box-shadow: 0 0 0 1px #f97316 !important;
+    outline: none !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal select option {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .bg-gray-50 {
+    background-color: #f9fafb !important;
+    border-color: #f3f4f6 !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .bg-orange-50 {
+    background-color: #fff7ed !important;
+    border-color: #ffedd5 !important;
+    color: #ea580c !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .btn-cancel {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+    color: #374151 !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .btn-cancel:hover {
+    background-color: #f9fafb !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .btn-save {
+    background-color: #f97316 !important; /* orange-500 */
+    color: #ffffff !important;
+    border: none !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal .btn-save:hover {
+    background-color: #ea580c !important; /* orange-600 */
+}
+
+/* Styled upload button */
+dialog.quick-transaction-modal-override .theme-modal .btn-upload {
+    background-color: #ffffff !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+}
+dialog.quick-transaction-modal-override .theme-modal .btn-upload:hover {
+    background-color: #f9fafb !important;
+}
+</style>

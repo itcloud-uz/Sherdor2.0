@@ -136,5 +136,23 @@ class Contract extends Model
         if ($this->unit) {
             $this->unit->update(['status' => 'available']);
         }
+
+        // Calculate total amount paid for this contract
+        $totalPaid = \App\Models\Transaction::where('contract_id', $this->id)
+            ->where('status', 'approved')
+            ->where('type', 'income')
+            ->sum('amount');
+
+        if ($totalPaid > 0 && $this->client_id) {
+            $counterparty = \App\Models\Counterparty::where([
+                'customable_type' => 'App\Models\Client',
+                'customable_id' => $this->client_id,
+            ])->first();
+
+            if ($counterparty) {
+                // Deduct the paid amount to represent refund obligation (negative balance / liability)
+                $counterparty->decrement('balance', $totalPaid);
+            }
+        }
     }
 }

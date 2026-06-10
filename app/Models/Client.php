@@ -29,6 +29,30 @@ class Client extends Model
         return $this->passport_number;
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($client) {
+            \App\Models\Counterparty::updateOrCreate(
+                [
+                    'customable_type' => get_class($client),
+                    'customable_id' => $client->id,
+                ],
+                [
+                    'name' => trim("{$client->last_name} {$client->first_name} {$client->middle_name}") ?: "Mijoz #{$client->id}",
+                    'type' => 'client',
+                    'phone' => $client->phone,
+                ]
+            );
+        });
+
+        static::deleted(function ($client) {
+            \App\Models\Counterparty::where([
+                'customable_type' => get_class($client),
+                'customable_id' => $client->id,
+            ])->delete();
+        });
+    }
+
     public function contracts()
     {
         return $this->hasMany(Contract::class);

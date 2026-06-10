@@ -51,4 +51,29 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Warehouse::class);
     }
+
+    protected static function booted()
+    {
+        static::saved(function ($user) {
+            \App\Models\Counterparty::updateOrCreate(
+                [
+                    'customable_type' => get_class($user),
+                    'customable_id' => $user->id,
+                ],
+                [
+                    'name' => $user->name ?: "Tizim xodimi #{$user->id}",
+                    'type' => 'employee',
+                    'phone' => $user->phone,
+                    'email' => $user->email,
+                ]
+            );
+        });
+
+        static::deleted(function ($user) {
+            \App\Models\Counterparty::where([
+                'customable_type' => get_class($user),
+                'customable_id' => $user->id,
+            ])->delete();
+        });
+    }
 }

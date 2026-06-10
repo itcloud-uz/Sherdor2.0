@@ -117,6 +117,25 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/categories', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCategory'])->name('categories.store');
         Route::post('/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('liabilities.store');
         Route::post('/internal-transfer', [\App\Http\Controllers\Admin\FinanceController::class, 'internalTransfer'])->name('internal_transfer');
+
+        // Cash Registers
+        Route::post('/registers', [\App\Http\Controllers\Admin\FinanceController::class, 'storeRegister'])->name('registers.store');
+        Route::put('/registers/{register}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateRegister'])->name('registers.update');
+        Route::delete('/registers/{register}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyRegister'])->name('registers.destroy');
+
+        // Counterparties
+        Route::post('/counterparties', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCounterparty'])->name('counterparties.store');
+        Route::put('/counterparties/{counterparty}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateCounterparty'])->name('counterparties.update');
+        Route::delete('/counterparties/{counterparty}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyCounterparty'])->name('counterparties.destroy');
+
+        // Invoices
+        Route::post('/invoices', [\App\Http\Controllers\Admin\FinanceController::class, 'storeInvoice'])->name('invoices.store');
+        Route::put('/invoices/{invoice}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateInvoice'])->name('invoices.update');
+        Route::delete('/invoices/{invoice}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyInvoice'])->name('invoices.destroy');
+
+        // Excel Exports
+        Route::get('/invoices/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportInvoicesExcel'])->name('invoices.export.xlsx');
+        Route::get('/transactions/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportTransactionsExcel'])->name('transactions.export.xlsx');
     });
 
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');

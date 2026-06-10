@@ -42,7 +42,11 @@ const props = defineProps({
     partners: Array,
     fixedAssets: Array,
     brigades: Array,
-    machineOwners: Array
+    machineOwners: Array,
+    registers: Array,
+    counterparties: Array,
+    invoices: Array,
+    moneyTransfers: Array
 });
 
 const activeTab = ref(0);
@@ -89,11 +93,15 @@ watch(activeTab, (newTab) => {
 const tabs = [
     { id: 0, name: 'dashboard', icon: '🏦' },
     { id: 1, name: 'action_center', icon: '⚖️' },
+    { id: 2, name: 'ledger_history', icon: '📜' },
     { id: 3, name: 'create_transaction', icon: '💸' },
     { id: 4, name: 'qarzlar', icon: '📉' },
     { id: 5, name: 'Ta\'minotchilar', icon: '🏢' },
     { id: 6, name: 'O\'tkazmalar', icon: '🔄' },
-    { id: 7, name: 'Hisobot (Kategoriya)', icon: '📊' }
+    { id: 7, name: 'Hisobot (Kategoriya)', icon: '📊' },
+    { id: 8, name: 'Kassalar', icon: '🏦' },
+    { id: 9, name: 'Kontragentlar', icon: '👥' },
+    { id: 10, name: 'Hisob-fakturalar', icon: '📄' }
 ];
 
 // Split transactions
@@ -192,7 +200,9 @@ const form = ref({
     amount: '',
     currency: 'UZS',
     payment_method: 'cash',
-    account_type: 'main',
+    account_id: '',
+    counterparty_id: '',
+    invoice_id: '',
     contract_id: '',
     client_id: '',
     partner_id: '',
@@ -211,18 +221,238 @@ const form = ref({
     auto_approve: true,
     latitude: null,
     longitude: null,
-    source: 'admin_panel'
+    source: 'admin_panel',
+    exchange_rate: 1.0,
+    converted_amount: ''
 });
 
 const transferForm = ref({
-    amount: '',
-    from_account: 'bank',
-    to_account: 'main',
-    fee_amount: '',
-    contract_id: '',
-    refund_request_id: '',
-    notes: ''
+    from_account_id: '',
+    to_account_id: '',
+    sent_amount: '',
+    exchange_rate: 1.0,
+    description: ''
 });
+
+// Watch account selection to default the currency
+watch(() => form.value.account_id, (newVal) => {
+    if (newVal && props.registers) {
+        const reg = props.registers.find(r => r.id === newVal);
+        if (reg) {
+            form.value.currency = reg.currency;
+            if (reg.building_id) {
+                form.value.building_id = reg.building_id;
+            }
+        }
+    }
+});
+
+// Watch counterparty selection to sync polymorphic fields
+watch(() => form.value.counterparty_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => x.id === newVal);
+        if (c) {
+            form.value.client_id = c.type === 'client' ? c.customable_id : '';
+            form.value.supplier_id = c.type === 'supplier' ? c.customable_id : '';
+            form.value.worker_id = c.type === 'employee' ? c.customable_id : '';
+        }
+    }
+});
+
+// Modals State and CRUD helpers
+const showRegisterModal = ref(false);
+const registerForm = ref({
+    id: null,
+    name: '',
+    type: 'cash',
+    currency: 'UZS',
+    building_id: '',
+    balance: 0,
+    is_active: true
+});
+const isEditRegister = ref(false);
+
+function openNewRegisterModal() {
+    isEditRegister.value = false;
+    registerForm.value = { id: null, name: '', type: 'cash', currency: 'UZS', building_id: '', balance: 0, is_active: true };
+    showRegisterModal.value = true;
+}
+
+function openEditRegisterModal(reg) {
+    isEditRegister.value = true;
+    registerForm.value = { ...reg, building_id: reg.building_id || '' };
+    showRegisterModal.value = true;
+}
+
+function submitRegister() {
+    isProcessing.value = true;
+    if (isEditRegister.value) {
+        router.put(route('admin.finance.registers.update', registerForm.value.id), registerForm.value, {
+            onSuccess: () => { isProcessing.value = false; showRegisterModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.finance.registers.store'), registerForm.value, {
+            onSuccess: () => { isProcessing.value = false; showRegisterModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function deleteRegister(id) {
+    if (confirm("Ushbu kassani o'chirishni tasdiqlaysizmi?")) {
+        router.delete(route('admin.finance.registers.destroy', id));
+    }
+}
+
+const counterpartySearch = ref('');
+
+const filteredCounterpartiesList = computed(() => {
+    if (!props.counterparties) return [];
+    const query = counterpartySearch.value.toLowerCase();
+    if (!query) return props.counterparties;
+    return props.counterparties.filter(c => 
+        (c.name || '').toLowerCase().includes(query) ||
+        (c.type || '').toLowerCase().includes(query) ||
+        (c.phone || '').toLowerCase().includes(query) ||
+        (c.email || '').toLowerCase().includes(query)
+    );
+});
+
+const invoiceFilters = ref({
+    start_date: '',
+    end_date: '',
+    status: '',
+    counterparty_id: '',
+    building_id: ''
+});
+
+const filteredInvoicesList = computed(() => {
+    if (!props.invoices) return [];
+    return props.invoices.filter(inv => {
+        if (invoiceFilters.value.status && inv.status !== invoiceFilters.value.status) return false;
+        if (invoiceFilters.value.counterparty_id && inv.counterparty_id && inv.counterparty_id !== parseInt(invoiceFilters.value.counterparty_id)) return false;
+        if (invoiceFilters.value.building_id && inv.building_id && inv.building_id !== parseInt(invoiceFilters.value.building_id)) return false;
+        if (invoiceFilters.value.start_date) {
+            const invDate = new Date(inv.created_at);
+            const startDate = new Date(invoiceFilters.value.start_date);
+            startDate.setHours(0,0,0,0);
+            if (invDate < startDate) return false;
+        }
+        if (invoiceFilters.value.end_date) {
+            const invDate = new Date(inv.created_at);
+            const endDate = new Date(invoiceFilters.value.end_date);
+            endDate.setHours(23,59,59,999);
+            if (invDate > endDate) return false;
+        }
+        return true;
+    });
+});
+
+const invoiceExportUrl = computed(() => {
+    return route('admin.finance.invoices.export.xlsx', invoiceFilters.value);
+});
+
+const showCounterpartyModal = ref(false);
+const counterpartyForm = ref({
+    id: null,
+    name: '',
+    type: 'client',
+    phone: '',
+    email: '',
+    balance: 0
+});
+const isEditCounterparty = ref(false);
+
+function openNewCounterpartyModal() {
+    isEditCounterparty.value = false;
+    counterpartyForm.value = { id: null, name: '', type: 'client', phone: '', email: '', balance: 0 };
+    showCounterpartyModal.value = true;
+}
+
+function openEditCounterpartyModal(c) {
+    isEditCounterparty.value = true;
+    counterpartyForm.value = { ...c };
+    showCounterpartyModal.value = true;
+}
+
+function submitCounterparty() {
+    isProcessing.value = true;
+    if (isEditCounterparty.value) {
+        router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, {
+            onSuccess: () => { isProcessing.value = false; showCounterpartyModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.finance.counterparties.store'), counterpartyForm.value, {
+            onSuccess: () => { isProcessing.value = false; showCounterpartyModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function deleteCounterparty(id) {
+    if (confirm("Ushbu kontragentni o'chirishni tasdiqlaysizmi?")) {
+        router.delete(route('admin.finance.counterparties.destroy', id));
+    }
+}
+
+const showInvoiceModal = ref(false);
+const invoiceForm = ref({
+    id: null,
+    invoice_number: '',
+    counterparty_id: '',
+    building_id: '',
+    amount: '',
+    currency: 'UZS',
+    due_date: new Date().toISOString().split('T')[0],
+    type: 'monthly_schedule',
+    description: ''
+});
+const isEditInvoice = ref(false);
+
+function openNewInvoiceModal() {
+    isEditInvoice.value = false;
+    invoiceForm.value = {
+        id: null,
+        invoice_number: 'INV-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
+        counterparty_id: '',
+        building_id: '',
+        amount: '',
+        currency: 'UZS',
+        due_date: new Date().toISOString().split('T')[0],
+        type: 'monthly_schedule',
+        description: ''
+    };
+    showInvoiceModal.value = true;
+}
+
+function openEditInvoiceModal(inv) {
+    isEditInvoice.value = true;
+    invoiceForm.value = { ...inv, building_id: inv.building_id || '' };
+    showInvoiceModal.value = true;
+}
+
+function submitInvoice() {
+    isProcessing.value = true;
+    if (isEditInvoice.value) {
+        router.put(route('admin.finance.invoices.update', invoiceForm.value.id), invoiceForm.value, {
+            onSuccess: () => { isProcessing.value = false; showInvoiceModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.finance.invoices.store'), invoiceForm.value, {
+            onSuccess: () => { isProcessing.value = false; showInvoiceModal.value = false; },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function deleteInvoice(id) {
+    if (confirm("Ushbu hisob-fakturani o'chirishni tasdiqlaysizmi?")) {
+        router.delete(route('admin.finance.invoices.destroy', id));
+    }
+}
 
 function fillTransferFromRefund(refund) {
     transferForm.value.amount = refund.amount;
@@ -338,7 +568,7 @@ function submitTransaction() {
     if (requiresPartner.value || form.value.account_type === 'partner') {
         form.value.target_type = 'partner';
         form.value.target_id = form.value.partner_id;
-        } else if (requiresMachineOwner.value) {
+    } else if (requiresMachineOwner.value) {
         form.value.target_type = 'machine_owner';
         form.value.target_id = form.value.machine_owner_id;
     } else if (requiresBrigade.value) {
@@ -359,9 +589,38 @@ function submitTransaction() {
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
-            form.value = { type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', account_type: 'main', contract_id: '', client_id: '', worker_id: '',
-    brigade_id: '', partner_id: '', machinery_id: '',
-    machine_owner_id: '', building_id: '', supplier_id: '', fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', target_type: null, target_id: null };
+            form.value = { 
+                type: 'income', 
+                category_id: '', 
+                category_name: '', 
+                amount: '', 
+                currency: 'UZS', 
+                payment_method: 'cash', 
+                account_id: '', 
+                counterparty_id: '', 
+                invoice_id: '', 
+                contract_id: '', 
+                client_id: '', 
+                worker_id: '',
+                brigade_id: '', 
+                partner_id: '', 
+                machinery_id: '',
+                machine_owner_id: '', 
+                building_id: '', 
+                supplier_id: '', 
+                fixed_asset_id: '', 
+                transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0,16), 
+                attachment: null, 
+                auto_approve: true, 
+                notes: '', 
+                latitude: null, 
+                longitude: null, 
+                source: 'admin_panel', 
+                target_type: null, 
+                target_id: null,
+                exchange_rate: 1.0,
+                converted_amount: ''
+            };
             activeTab.value = 1; // Go to Action Center
         },
         onError: () => isProcessing.value = false
@@ -373,8 +632,14 @@ function submitTransfer() {
     router.post(route('admin.finance.internal_transfer'), transferForm.value, {
         onSuccess: () => {
             isProcessing.value = false;
-            transferForm.value = { amount: '', from_account: 'bank', to_account: 'main', fee_amount: '', notes: '' };
-            activeTab.value = 2; // Go to Ledger History
+            transferForm.value = { 
+                from_account_id: '', 
+                to_account_id: '', 
+                sent_amount: '', 
+                exchange_rate: 1.0, 
+                description: '' 
+            };
+            activeTab.value = 0; // Go to Dashbod
         },
         onError: () => isProcessing.value = false
     });
@@ -1006,7 +1271,12 @@ const categoriesSummary = computed(() => {
 
         <!-- TAB 3: Ledger History -->
         <div v-if="activeTab === 2" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-100 animate-[fadeIn_0.5s_ease-out]">
-            <h2 class="text-xl font-display font-bold text-gray-900 mb-6">{{ $t('ledger_history') }}</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-display font-bold text-gray-900">{{ $t('ledger_history') }}</h2>
+                <a :href="route('admin.finance.transactions.export.xlsx')" target="_blank" class="px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                    <span>📊 Excel (CSV) Yuklash</span>
+                </a>
+            </div>
             <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left text-sm font-mono">
                 <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
                     <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -1072,6 +1342,17 @@ const categoriesSummary = computed(() => {
                     </label>
                 </div>
 
+                <!-- CASH REGISTER (Half width) -->
+                <div>
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Kassa / Bank (Account) *</label>
+                    <select v-model="form.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold text-gray-900 bg-gray-50" required>
+                        <option value="" disabled>-- Kassani tanlang --</option>
+                        <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                            {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
+                        </option>
+                    </select>
+                </div>
+
                 <!-- CATEGORY (Half width) -->
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -1094,10 +1375,42 @@ const categoriesSummary = computed(() => {
                     </div>
                 </div>
 
+                <!-- COUNTERPARTY (Half width) -->
+                <div>
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Kontragent (Mijoz, Ta'minotchi, Xodim)</label>
+                    <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm text-gray-900 bg-gray-50">
+                        <option value="">-- Kontragentni tanlang (Ixtiyoriy) --</option>
+                        <option v-for="c in counterparties" :key="c.id" :value="c.id">
+                            [{{ c.type.toUpperCase() }}] {{ c.name }}
+                        </option>
+                    </select>
+                </div>
+
                 <!-- AMOUNT (Half width) -->
                 <div v-show="!requiresMachineOwner && !requiresBrigade">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">{{ $t('amount') }} (UZS)</label>
-                    <input v-model="form.amount" type="number" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-xl font-bold font-mono tracking-wider text-blue-600" placeholder="0">
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Summa (Kassa valyutasida: {{ form.currency || 'UZS' }})</label>
+                    <input v-model="form.amount" type="number" step="0.01" :required="!requiresMachineOwner && !requiresBrigade" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-xl font-bold font-mono tracking-wider text-blue-600" placeholder="0">
+                </div>
+
+                <!-- INVOICE SELECT (Half width) -->
+                <div v-if="form.counterparty_id && invoices.filter(i => i.counterparty_id === form.counterparty_id && i.status !== 'paid').length > 0">
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Hisob-faktura (Invoice) bog'lash</label>
+                    <select v-model="form.invoice_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm text-gray-900 bg-gray-50">
+                        <option value="">-- Hisob-faktura bog'lash (Ixtiyoriy) --</option>
+                        <option v-for="inv in invoices.filter(i => i.counterparty_id === form.counterparty_id && i.status !== 'paid')" :key="inv.id" :value="inv.id">
+                            {{ inv.invoice_number }} (Qoldiq: {{ $currency(inv.amount - inv.paid_amount) }} {{ inv.currency }})
+                        </option>
+                    </select>
+                </div>
+
+                <!-- EXCHANGE RATE & CONVERTED AMOUNT (Half width each, shown when currency is not UZS) -->
+                <div v-if="form.currency && form.currency !== 'UZS'">
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Valyuta kursi (Exchange Rate) *</label>
+                    <input v-model="form.exchange_rate" type="number" step="0.0001" required class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold font-mono text-amber-600 bg-gray-50" placeholder="12700.00">
+                </div>
+                <div v-if="form.currency && form.currency !== 'UZS'">
+                    <label class="block text-xs font-mono text-gray-500 mb-1">Konvertatsiya qilingan summa (UZS) *</label>
+                    <input :value="form.amount * form.exchange_rate" type="number" readonly class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-sm font-bold font-mono text-emerald-600 bg-gray-50" placeholder="UZS ekvivalenti">
                 </div>
 
                 <!-- DYNAMIC FIELDS (Full width) -->
@@ -1218,16 +1531,7 @@ const categoriesSummary = computed(() => {
                     </select>
                 </div>
 
-                <!-- ACCOUNT (Half width) -->
-                <div v-show="!requiresMachineOwner && !requiresBrigade">
-                    <label class="block text-xs font-mono text-gray-500 mb-1">Hisob (Account)</label>
-                    <select v-model="form.account_type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-12 text-base font-bold text-gray-900 bg-gray-50">
-                        <option value="main">{{ $t('main_account') }}</option>
-                        <option value="bank">Bank Hisobi (Bank)</option>
-                        <option value="credit">Kredit Hisobi (Credit)</option>
-                        <option value="partner">Ta'sischi Hisobi (Partner)</option>
-                    </select>
-                </div>
+
 
                 <!-- PAYMENT METHOD (Half width) -->
                 <div v-show="!requiresMachineOwner && !requiresBrigade">
@@ -1474,76 +1778,67 @@ const categoriesSummary = computed(() => {
                     <p class="text-xs font-mono text-gray-500 mb-8">Bu modul orqali siz mijozlarning hisob raqamga tushirgan pullarini boshqa hisoblarga (Naqd kassa) komissiyasiz yoki komissiya ushlab o'tkazishingiz mumkin.</p>
 
                     <form @submit.prevent="submitTransfer" class="space-y-6">
-                    <div>
-                        <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('link_client_contract') }}</label>
-                        <select v-model="transferForm.contract_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12">
-                            <option value="">Hech qaysi (Faqat Ichki O'tkazma)</option>
-                            <option v-for="c in contracts" :key="c.id" :value="c.id">
-                                {{ c.client?.first_name }} {{ c.client?.last_name }} - {{ c.unit?.unit_number }} (Shartnoma #{{ c.id }})
-                            </option>
-                        </select>
-                        <p class="text-[10px] text-gray-500 mt-1 font-mono">Agar mijoz tanlansa, kassadan yechilgan pul (99 mln) mijozning hisobidan (qaytim sifatida) yechiladi va balans to'g'rilanadi.</p>
-                    </div>
+                        <div class="flex items-center gap-4 py-4">
+                            <div class="flex-1">
+                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Chiqish Kassasi (From Account) *</label>
+                                <select v-model="transferForm.from_account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
+                                    <option value="" disabled>-- Kassani tanlang --</option>
+                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                        {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
+                                    </option>
+                                </select>
+                            </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-xl mt-6 text-blue-600 shrink-0 animate-pulse">
+                                🔄
+                            </div>
+
+                            <div class="flex-1">
+                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Kirish Kassasi (To Account) *</label>
+                                <select v-model="transferForm.to_account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
+                                    <option value="" disabled>-- Kassani tanlang --</option>
+                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                        {{ r.name }} ({{ r.currency }}) - Balans: {{ $currency(r.balance) }} {{ r.currency }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div>
+                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">O'tkazma Summasi *</label>
+                                <input v-model="transferForm.sent_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-3xl font-display text-gray-900 font-bold h-16 bg-gray-50" placeholder="0.00" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Konvertatsiya Kursi *</label>
+                                <input v-model="transferForm.exchange_rate" type="number" step="0.0001" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-display text-amber-600 font-bold h-16 bg-gray-50" placeholder="1.0000" required>
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('transfer_amount') }}</label>
-                            <input v-model="transferForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-3xl font-display text-gray-900 font-bold h-16 bg-gray-50" placeholder="0.00" required>
+                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">Tafsilotlar (Izoh)</label>
+                            <textarea v-model="transferForm.description" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900" placeholder="Masalan: Konvertatsiya USD -> UZS, yoki Ichki kassa to'ldirish"></textarea>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('commission_fee') }}</label>
-                            <input v-model="transferForm.fee_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-2xl font-display text-amber-600 font-bold h-16 bg-gray-50" placeholder="Masalan: 100000">
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-4 py-4">
-                        <div class="flex-1">
-                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('from_account') }}</label>
-                            <select v-model="transferForm.from_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
-                                <option value="bank">{{ $t('bank_account') }}</option>
-                                <option value="main">{{ $t('cash_account') }}</option>
-                                <option value="credit">{{ $t('card_account') }}</option>
-                            </select>
-                        </div>
-
-                        <div class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-xl mt-6 text-blue-600 shrink-0 animate-pulse">
-                            🔄
-                        </div>
-
-                        <div class="flex-1">
-                            <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('to_account') }}</label>
-                            <select v-model="transferForm.to_account" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900 font-bold h-12" required>
-                                <option value="main">{{ $t('cash_account') }}</option>
-                                <option value="bank">{{ $t('bank_account') }}</option>
-                                <option value="credit">{{ $t('card_account') }}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('notes') }}</label>
-                        <textarea v-model="transferForm.notes" rows="3" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50 text-gray-900" placeholder="Masalan: Falonchi uchun qaytim (Naqdlashtirish)"></textarea>
-                    </div>
-
-                    <!-- O'tkazma hisob-kitobi xulosasi -->
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-blue-200 bg-blue-50 rounded-xl">
-                        <h3 class="text-xs font-mono text-gray-500 uppercase mb-2">{{ $t('transfer_summary') }}</h3>
-                        <div class="space-y-1 font-mono text-sm">
-                            <div class="flex justify-between text-red-600">
-                                <span>Jami yechiladigan summa:</span>
-                                <span>{{ transferForm.amount ? $currency(transferForm.amount) : '0 UZS' }}</span>
-                            </div>
-                            <div class="flex justify-between text-amber-600">
-                                <span>Komissiya (Sizga qoladigan foyda):</span>
-                                <span>{{ transferForm.fee_amount ? $currency(transferForm.fee_amount) : '0 UZS' }}</span>
-                            </div>
-                            <div class="flex justify-between border-t border-gray-200 pt-1 mt-1 text-emerald-600 font-bold text-base">
-                                <span>Manzilga borib tushadigan sof summa:</span>
-                                <span>{{ $currency((transferForm.amount || 0) - (transferForm.fee_amount || 0)) }}</span>
+                        <!-- O'tkazma hisob-kitobi xulosasi -->
+                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 border border-blue-200 bg-blue-50 rounded-xl">
+                            <h3 class="text-xs font-mono text-gray-500 uppercase mb-2">Xulosa</h3>
+                            <div class="space-y-1 font-mono text-sm">
+                                <div class="flex justify-between text-red-600">
+                                    <span>Chiqadigan summa:</span>
+                                    <span>{{ transferForm.sent_amount ? transferForm.sent_amount : 0 }} {{ props.registers?.find(r => r.id === transferForm.from_account_id)?.currency || '' }}</span>
+                                </div>
+                                <div class="flex justify-between text-amber-600">
+                                    <span>Konvertatsiya kursi:</span>
+                                    <span>{{ transferForm.exchange_rate }}</span>
+                                </div>
+                                <div class="flex justify-between border-t border-gray-200 pt-1 mt-1 text-emerald-600 font-bold text-base">
+                                    <span>Kiradigan summa:</span>
+                                    <span>{{ transferForm.sent_amount * transferForm.exchange_rate }} {{ props.registers?.find(r => r.id === transferForm.to_account_id)?.currency || '' }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                     <div class="flex justify-end pt-6 border-t border-gray-200">
                         <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-blue-600 text-white font-bold font-mono uppercase tracking-widest rounded-xl hover:shadow-sm transition-all disabled:opacity-50 text-sm">
@@ -1585,6 +1880,238 @@ const categoriesSummary = computed(() => {
                 </div>
                 <div v-if="categoriesSummary.length === 0" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">
                     Hozircha hisobot mavjud emas.
+                </div>
+            </div>
+
+            <!-- TAB 8: Kassalar va Banklar -->
+            <div v-if="activeTab === 8" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-2xl font-display font-bold text-gray-900">Kassalar va Bank hisoblari</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Real vaqt rejimida kassalar va bank hisoblaridagi qoldiqlar.</p>
+                    </div>
+                    <button @click="openNewRegisterModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                        <span>+ Yangi Kassa</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-for="reg in registers" :key="reg.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl hover:border-blue-200 transition-all group relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute inset-x-0 top-0 h-1" :class="reg.type === 'bank' ? 'bg-amber-500' : 'bg-emerald-500'"></div>
+                        
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase tracking-wider" :class="reg.type === 'bank' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'">
+                                        {{ reg.type === 'bank' ? 'Bank Hisobi' : 'Naqd Kassa' }}
+                                    </span>
+                                    <h3 class="text-xl font-bold text-gray-900 font-display mt-2 group-hover:text-blue-600 transition-colors">{{ reg.name }}</h3>
+                                </div>
+                                <span class="px-2 py-1 rounded-md text-xs font-mono font-bold" :class="reg.is_active ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'">
+                                    {{ reg.is_active ? 'Faol' : 'Nofaol' }}
+                                </span>
+                            </div>
+
+                            <div class="py-4 border-y border-gray-100 my-4 flex justify-between items-center">
+                                <span class="text-sm font-mono text-gray-500 uppercase">Joriy Balans</span>
+                                <div class="text-right">
+                                    <span class="block text-2xl font-bold font-mono text-gray-900">
+                                        {{ $currency(reg.balance) }} {{ reg.currency }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div v-if="reg.building" class="mb-4 text-xs font-mono text-gray-600 flex items-center gap-1.5">
+                                <span>🏢 Obyekt:</span>
+                                <span class="font-bold text-gray-900">{{ reg.building.name }}</span>
+                            </div>
+                            <div v-else class="mb-4 text-xs font-mono text-gray-400">
+                                🏢 Obyekt: Biriktirilmagan (Umumiy kassa)
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4 pt-4 border-t border-gray-150">
+                            <button @click="openEditRegisterModal(reg)" class="flex-1 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
+                                Tahrirlash
+                            </button>
+                            <button @click="deleteRegister(reg.id)" class="px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-xs font-bold transition-all" title="O'chirish">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="!registers || registers.length === 0" class="py-12 text-center text-gray-500 font-mono text-sm border-dashed border border-gray-200 rounded-xl">
+                    Kassalar mavjud emas.
+                </div>
+            </div>
+
+            <!-- TAB 9: Kontragentlar -->
+            <div v-if="activeTab === 9" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-2xl font-display font-bold text-gray-900">Kontragentlar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Mijozlar, ta'minotchilar va xodimlar ro'yxati hamda ularning o'zaro hisob-kitob balansi.</p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <input v-model="counterpartySearch" type="text" placeholder="Qidiruv..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
+                        <button @click="openNewCounterpartyModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
+                            <span>+ Kontragent</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden rounded-2xl border border-gray-150">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4">Nomi / F.I.O</th>
+                                    <th class="p-4">Turi</th>
+                                    <th class="p-4">Telefon</th>
+                                    <th class="p-4">Email</th>
+                                    <th class="p-4 text-right">Balans</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="c in filteredCounterpartiesList" :key="c.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" 
+                                              :class="c.type === 'client' ? 'bg-blue-50 text-blue-600 border border-blue-200' : (c.type === 'supplier' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-purple-50 text-purple-600 border border-purple-200')">
+                                            {{ c.type === 'client' ? 'Mijoz' : (c.type === 'supplier' ? 'Ta\'minotchi' : 'Xodim') }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
+                                    <td class="p-4 text-gray-600">{{ c.email || '-' }}</td>
+                                    <td class="p-4 text-right font-bold" :class="c.balance > 0 ? 'text-emerald-600' : (c.balance < 0 ? 'text-red-600' : 'text-gray-900')">
+                                        {{ $currency(c.balance) }} UZS
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex justify-center gap-2">
+                                            <button @click="openEditCounterpartyModal(c)" class="text-xs uppercase text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md font-bold transition-all">Tahrirlash</button>
+                                            <button @click="deleteCounterparty(c.id)" class="text-xs uppercase text-red-600 hover:text-red-800 bg-red-50 border border-red-100 px-2 py-1 rounded-md font-bold transition-all">O'chirish</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredCounterpartiesList.length === 0">
+                                    <td colspan="6" class="p-8 text-center text-gray-500 text-sm">Kontragentlar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 10: Hisob-fakturalar -->
+            <div v-if="activeTab === 10" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-2xl font-display font-bold text-gray-900">Hisob-fakturalar (Invoices)</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Manual yoki to'lov grafiklaridan shakllangan schyot-fakturalarni boshqarish va to'lovlarini nazorat qilish.</p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <a :href="invoiceExportUrl" target="_blank" class="px-5 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                            <span>📊 Excel (CSV) yuklash</span>
+                        </a>
+                        <button @click="openNewInvoiceModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold font-mono text-sm uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
+                            <span>+ Yangi Schyot</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl border border-gray-150 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Boshlanish sanasi</label>
+                        <input v-model="invoiceFilters.start_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Tugash sanasi</label>
+                        <input v-model="invoiceFilters.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Kontragent</label>
+                        <select v-model="invoiceFilters.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
+                            <option value="">-- Barchasi --</option>
+                            <option v-for="c in counterparties" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Obyekt</label>
+                        <select v-model="invoiceFilters.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
+                            <option value="">-- Barchasi --</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Holati</label>
+                        <select v-model="invoiceFilters.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs bg-gray-50">
+                            <option value="">-- Barchasi --</option>
+                            <option value="new">Yangi (To'lanmagan)</option>
+                            <option value="partially_paid">Kisman To'langan</option>
+                            <option value="paid">To'langan</option>
+                            <option value="cancelled">Bekor qilingan</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden rounded-2xl border border-gray-150">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4">Faktura raqami</th>
+                                    <th class="p-4">Kontragent</th>
+                                    <th class="p-4">Obyekt</th>
+                                    <th class="p-4 text-right">Summa</th>
+                                    <th class="p-4 text-right">To'langan</th>
+                                    <th class="p-4">Progress</th>
+                                    <th class="p-4">Muddati</th>
+                                    <th class="p-4">Holati</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="inv in filteredInvoicesList" :key="inv.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">
+                                        {{ inv.invoice_number }}
+                                        <span class="block text-[9px] text-gray-400 font-normal">Turi: {{ inv.type }}</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span v-if="inv.counterparty" class="font-bold text-gray-800">{{ inv.counterparty.name }}</span>
+                                        <span v-else class="text-gray-400">-</span>
+                                    </td>
+                                    <td class="p-4 text-gray-700">{{ inv.building?.name || 'Umumiy' }}</td>
+                                    <td class="p-4 text-right font-bold text-gray-900">{{ $currency(inv.amount) }} {{ inv.currency }}</td>
+                                    <td class="p-4 text-right font-bold text-emerald-600">{{ $currency(inv.paid_amount) }} {{ inv.currency }}</td>
+                                    <td class="p-4">
+                                        <div class="w-24 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-emerald-500 h-1.5 rounded-full" :style="{ width: Math.min(100, (inv.paid_amount / inv.amount) * 100) + '%' }"></div>
+                                        </div>
+                                        <span class="text-[9px] text-gray-500 font-bold block mt-1">{{ Math.round((inv.paid_amount / inv.amount) * 100) }}%</span>
+                                    </td>
+                                    <td class="p-4 text-gray-600">{{ new Date(inv.due_date).toLocaleDateString() }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" 
+                                              :class="inv.status === 'paid' ? 'bg-green-50 text-green-700 border border-green-200' : (inv.status === 'partially_paid' ? 'bg-amber-50 text-amber-600 border border-amber-200' : (inv.status === 'cancelled' ? 'bg-gray-50 text-gray-400 border border-gray-200' : 'bg-blue-50 text-blue-600 border border-blue-200'))">
+                                            {{ inv.status === 'paid' ? 'To\'langan' : (inv.status === 'partially_paid' ? 'Kisman' : (inv.status === 'cancelled' ? 'Bekor qilingan' : 'Yangi')) }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex justify-center gap-2">
+                                            <button @click="openEditInvoiceModal(inv)" class="text-xs uppercase text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md font-bold transition-all">Tahrirlash</button>
+                                            <button @click="deleteInvoice(inv.id)" class="text-xs uppercase text-red-600 hover:text-red-800 bg-red-50 border border-red-100 px-2 py-1 rounded-md font-bold transition-all" :disabled="inv.paid_amount > 0" :class="inv.paid_amount > 0 ? 'opacity-50 cursor-not-allowed' : ''">O'chirish</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredInvoicesList.length === 0">
+                                    <td colspan="9" class="p-8 text-center text-gray-500 text-sm">Hisob-fakturalar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1885,6 +2412,210 @@ const categoriesSummary = computed(() => {
             :owner-id="selectedOwnerId" 
             @close="showOwnerLedger = false" 
         />
+
+        <!-- CASH REGISTER CRUD MODAL -->
+        <Modal :show="showRegisterModal" @close="showRegisterModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showRegisterModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
+                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
+                    {{ isEditRegister ? 'Kassani tahrirlash' : 'Yangi kassa qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitRegister" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassa nomi *</label>
+                        <input v-model="registerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi *</label>
+                            <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="cash">Naqd (Cash)</option>
+                                <option value="bank">Bank hisobi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Valyuta *</label>
+                            <select v-model="registerForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="UZS">UZS</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Bino / Obyekt (Ixtiyoriy lock)</label>
+                        <select v-model="registerForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+                            <option value="">-- Obyektga bog'lamaslik --</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                        <p class="text-[9px] text-gray-400 mt-1">Ushbu kassa tanlansa, faqat tanlangan obyekt uchun tranzaksiyalarga ruxsat beriladi.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Balans *</label>
+                        <input v-model="registerForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold text-sm text-blue-600" required>
+                    </div>
+
+                    <div v-if="isEditRegister" class="flex items-center gap-2 py-2">
+                        <input type="checkbox" id="register_active" v-model="registerForm.is_active" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="register_active" class="text-sm text-gray-900 font-bold">Faol holatda (Active)</label>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-4">
+                        <button type="button" @click="showRegisterModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- COUNTERPARTY CRUD MODAL -->
+        <Modal :show="showCounterpartyModal" @close="showCounterpartyModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showCounterpartyModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
+                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
+                    {{ isEditCounterparty ? 'Kontragentni tahrirlash' : 'Yangi kontragent qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitCounterparty" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">F.I.O / Kompaniya nomi *</label>
+                        <input v-model="counterpartyForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Turi *</label>
+                        <select v-model="counterpartyForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold" required>
+                            <option value="client">Mijoz (Client)</option>
+                            <option value="supplier">Ta'minotchi (Supplier)</option>
+                            <option value="employee">Xodim (Employee)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Telefon raqami</label>
+                            <input v-model="counterpartyForm.phone" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Email</label>
+                            <input v-model="counterpartyForm.email" type="email" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Dastlabki Balans (UZS) *</label>
+                        <input v-model="counterpartyForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full font-bold text-sm text-blue-600" required>
+                        <p class="text-[9px] text-gray-400 mt-1">Mijoz uchun: musbat balans = oldindan to'lov (haqi bor), manfiy = qarzi bor. Ta'minotchi uchun teskari.</p>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-4">
+                        <button type="button" @click="showCounterpartyModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- INVOICE CRUD MODAL -->
+        <Modal :show="showInvoiceModal" @close="showInvoiceModal = false" maxWidth="lg">
+            <div class="p-6">
+                <button @click="showInvoiceModal = false" class="absolute top-4 right-4 text-gray-900/50 hover:text-gray-900">✕</button>
+                <h3 class="text-xl font-display font-bold text-gray-900 mb-6 uppercase tracking-widest">
+                    {{ isEditInvoice ? 'Hisob-fakturani tahrirlash' : 'Yangi hisob-faktura (Invoice) yaratish' }}
+                </h3>
+                
+                <form @submit.prevent="submitInvoice" class="space-y-4 font-mono text-xs">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura raqami *</label>
+                            <input v-model="invoiceForm.invoice_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura turi *</label>
+                            <select v-model="invoiceForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="monthly_schedule">Shartnoma oylik to'lovi (Monthly Schedule)</option>
+                                <option value="manual_expense">Qo'lda xarajat schyoti (Manual Expense)</option>
+                                <option value="procurement">Ta'minot / Xarid schyoti (Procurement)</option>
+                                <option value="loan">Qarz / Kredit schyoti (Loan)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kontragent *</label>
+                            <select v-model="invoiceForm.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm font-bold bg-gray-50" required>
+                                <option value="" disabled>-- Kontragent tanlang --</option>
+                                <option v-for="c in counterparties" :key="c.id" :value="c.id">
+                                    [{{ c.type.toUpperCase() }}] {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyekt (Ixtiyoriy)</label>
+                            <select v-model="invoiceForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-gray-50">
+                                <option value="">-- Obyektga bog'lamaslik --</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Jami summa *</label>
+                            <input v-model="invoiceForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg font-bold text-blue-600" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Valyuta *</label>
+                            <select v-model="invoiceForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="UZS">UZS</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div v-if="isEditInvoice" class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'langan summa *</label>
+                            <input v-model="invoiceForm.paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg font-bold text-emerald-600" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Faktura holati *</label>
+                            <select v-model="invoiceForm.status" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="new">Yangi (To'lanmagan)</option>
+                                <option value="partially_paid">Kisman to'langan</option>
+                                <option value="paid">To'liq to'langan</option>
+                                <option value="cancelled">Bekor qilingan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Muddati (Due Date) *</label>
+                        <input v-model="invoiceForm.due_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Tafsilotlar (Izoh)</label>
+                        <textarea v-model="invoiceForm.description" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"></textarea>
+                    </div>
+
+                    <div class="flex justify-end pt-4 gap-4 border-t border-gray-200 mt-6">
+                        <button type="button" @click="showInvoiceModal = false" class="px-6 py-2 text-gray-500 hover:text-gray-900">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:shadow-sm transition-all disabled:opacity-50 uppercase tracking-widest">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     </AdminLayout>
 </template>
 

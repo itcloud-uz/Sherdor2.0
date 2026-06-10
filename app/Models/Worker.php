@@ -23,6 +23,30 @@ class Worker extends Model
         return $this->hasMany(WorkerSalaryHistory::class)->orderBy('effective_date', 'desc');
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($worker) {
+            \App\Models\Counterparty::updateOrCreate(
+                [
+                    'customable_type' => get_class($worker),
+                    'customable_id' => $worker->id,
+                ],
+                [
+                    'name' => $worker->name ?: "Xodim #{$worker->id}",
+                    'type' => 'employee',
+                    'phone' => $worker->phone,
+                ]
+            );
+        });
+
+        static::deleted(function ($worker) {
+            \App\Models\Counterparty::where([
+                'customable_type' => get_class($worker),
+                'customable_id' => $worker->id,
+            ])->delete();
+        });
+    }
+
     public function transactions()
     {
         return $this->hasMany(WorkerTransaction::class);

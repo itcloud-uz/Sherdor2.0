@@ -292,7 +292,33 @@ onUnmounted(() => {
                             >
                                 ⚖️ Harakatlar Markazi
                             </Link>
-                            
+                            <!-- Kassalar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 8 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isTabActive(8) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🏦 Kassalar va Banklar
+                            </Link>
+
+                            <!-- Kontragentlar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 9 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isTabActive(9) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                👥 Kontragentlar
+                            </Link>
+
+                            <!-- Hisob-fakturalar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 10 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isTabActive(10) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📄 Hisob-fakturalar
+                            </Link>
+
                             <!-- Tranzaksiya Yaratish -->
                             <Link
                                 v-if="hasPerm('access transactions')"

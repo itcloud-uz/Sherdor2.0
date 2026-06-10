@@ -25,6 +25,19 @@ Route::get('/run-migrations-secure-123456', function(\Illuminate\Http\Request $r
     }
 });
 
+Route::get('/view-logs-secure-123456', function(\Illuminate\Http\Request $request) {
+    if ($request->get('secret') !== 'antigravity') {
+        abort(403);
+    }
+    $logPath = storage_path('logs/laravel.log');
+    if (!file_exists($logPath)) {
+        return response()->json(['status' => 'error', 'message' => 'Log file not found']);
+    }
+    $lines = file($logPath);
+    $lastLines = array_slice($lines, -150);
+    return response(implode("", $lastLines), 200, ['Content-Type' => 'text/plain']);
+});
+
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');

@@ -74,6 +74,15 @@ Route::get('/inspect-db-secure-123456', function(\Illuminate\Http\Request $reque
     }
 });
 
+Route::get('/inspect-columns-secure-123456', function(\Illuminate\Http\Request $request) {
+    if ($request->get('secret') !== 'antigravity') {
+        abort(403);
+    }
+    return response()->json([
+        'columns' => Schema::getColumnListing('transactions')
+    ]);
+});
+
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');

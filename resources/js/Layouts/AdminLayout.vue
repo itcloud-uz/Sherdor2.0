@@ -43,6 +43,30 @@ const isTabActive = (tabId) => {
     }
 };
 
+const isFinanceSubTabActive = (tabId, subVal = null) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.finance') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const tabParam = url.searchParams.get('tab');
+        const activeTabVal = tabParam === null ? 0 : parseInt(tabParam, 10);
+        if (activeTabVal !== tabId) return false;
+        
+        const subParam = url.searchParams.get('sub');
+        if (tabId === 2) {
+            if (subVal === 'currency') return subParam === 'currency';
+            return subParam !== 'currency';
+        }
+        if (tabId === 10) {
+            if (subVal === 'payments') return subParam === 'payments' || subParam === null;
+            if (subVal === 'debts') return subParam === 'debts';
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
 const isCrmTabActive = (tabId) => {
     const currentRoute = route().current();
     if (currentRoute !== 'admin.crm') return false;
@@ -287,15 +311,14 @@ const formattedDate = computed(() => {
                     <div v-if="item.name === 'finance_core'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isFinanceMenuOpen = !isFinanceMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="(route().current('admin.finance') || route().current('admin.approvals')) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 text-left bg-[#F2994A] text-white hover:bg-[#e08e43] shadow-sm font-semibold"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.finance') || route().current('admin.approvals')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.finance') || route().current('admin.approvals')) ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-lg font-bold text-white">$</span>
+                                <span class="text-sm font-semibold text-white tracking-wide">Moliya</span>
                             </div>
                             <svg
-                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
+                                class="w-4 h-4 text-white transition-transform duration-200"
                                 :class="isFinanceMenuOpen ? 'rotate-180' : ''"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor"
                             >
@@ -303,116 +326,101 @@ const formattedDate = computed(() => {
                             </svg>
                         </button>
                         
-                        <div v-show="isFinanceMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Boshqaruv paneli -->
-                            <Link
-                                :href="route('admin.finance', { tab: 0 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(0) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📊 Boshqaruv paneli
-                            </Link>
-                            
-                            <!-- Harakatlar Markazi -->
-                            <Link
-                                :href="route('admin.finance', { tab: 1 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(1) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ⚖️ Harakatlar Markazi
-                            </Link>
+                        <div v-show="isFinanceMenuOpen" class="pl-4 pr-1 py-1 space-y-1.5 transition-all duration-300 ml-1">
                             <!-- Kassalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 8 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(8) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(8)
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
                             >
-                                🏦 Kassalar va Banklar
+                                <span :class="isFinanceSubTabActive(8) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Kassalar
+                            </Link>
+
+                            <!-- Tranzaksiyalar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 2 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(2, 'transactions')
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(2, 'transactions') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Tranzaksiyalar
                             </Link>
 
                             <!-- Kontragentlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 9 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(9) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(9)
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
                             >
-                                👥 Kontragentlar
+                                <span :class="isFinanceSubTabActive(9) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Kontragentlar
+                            </Link>
+
+                            <!-- Pul o'tkazmalari -->
+                            <Link
+                                :href="route('admin.finance', { tab: 6 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(6)
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(6) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Pul o'tkazmalari
+                            </Link>
+
+                            <!-- Mijoz to'lovlari -->
+                            <Link
+                                :href="route('admin.finance', { tab: 10, sub: 'payments' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(10, 'payments')
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(10, 'payments') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Mijoz to'lovlari
+                            </Link>
+
+                            <!-- Valyuta -->
+                            <Link
+                                :href="route('admin.finance', { tab: 2, sub: 'currency' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(2, 'currency')
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(2, 'currency') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Valyuta
+                            </Link>
+
+                            <!-- Qo'shimcha operatsiyalar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 1 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(1)
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(1) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Qo'shimcha operatsiyalar
                             </Link>
 
                             <!-- Hisob-fakturalar -->
                             <Link
-                                :href="route('admin.finance', { tab: 10 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(10) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :href="route('admin.finance', { tab: 10, sub: 'debts' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(10, 'debts')
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
                             >
-                                📄 Hisob-fakturalar
-                            </Link>
-
-                            <!-- Tranzaksiya Yaratish -->
-                            <Link
-                                v-if="hasPerm('access transactions')"
-                                :href="route('admin.finance', { tab: 3 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(3) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                💸 Tranzaksiya Yaratish
-                            </Link>
-                            
-                            <!-- Qarzlar -->
-                            <Link
-                                v-if="hasPerm('access debtors')"
-                                :href="route('admin.finance', { tab: 4 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(4) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📉 Qarzlar
-                            </Link>
-                            
-                            <!-- Ta'minotchilar -->
-                            <Link
-                                :href="route('admin.finance', { tab: 5 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(5) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🏢 Ta'minotchilar
-                            </Link>
-                            
-                            <!-- O'tkazmalar -->
-                            <Link
-                                :href="route('admin.finance', { tab: 6 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(6) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🔄 O'tkazmalar
-                            </Link>
-                            
-                            <!-- Hisobot (Kategoriya) -->
-                            <Link
-                                v-if="hasPerm('access reports')"
-                                :href="route('admin.finance', { tab: 7 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(7) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📊 Hisobot (Kategoriya)
-                            </Link>
-                            
-                            <!-- Tasdiqlar -->
-                            <Link
-                                :href="route('admin.approvals')"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="route().current('admin.approvals') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ✔️ Tasdiqlar
-                            </Link>
-                            
-                            <!-- Jurnal -->
-                            <Link
-                                v-if="hasPerm('access transactions')"
-                                :href="route('admin.finance', { tab: 2 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📜 Jurnal
+                                <span :class="isFinanceSubTabActive(10, 'debts') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Hisob-fakturalar
                             </Link>
                         </div>
                     </div>

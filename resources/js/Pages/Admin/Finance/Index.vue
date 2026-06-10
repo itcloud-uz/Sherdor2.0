@@ -60,7 +60,7 @@ const isProcessing = ref(false);
 const transferSubTab = ref('transfers'); // 'transfers' or 'exchanges'
 const invoiceSubTab = ref('payments'); // 'payments' or 'debts'
 
-// Synchronize activeTab with URL tab parameter
+// Synchronize activeTab and subTab with URL parameters
 watch(
     () => page.url,
     (newUrl) => {
@@ -75,6 +75,12 @@ watch(
             } else {
                 activeTab.value = 0;
             }
+            const subParam = url.searchParams.get('sub');
+            if (subParam !== null) {
+                if (activeTab.value === 10) {
+                    invoiceSubTab.value = subParam;
+                }
+            }
         } catch (e) {
             console.error('URL parse error in Finance tab watcher', e);
         }
@@ -82,13 +88,29 @@ watch(
     { immediate: true }
 );
 
-// Synchronize URL query parameter with activeTab changes
-watch(activeTab, (newTab) => {
+// Synchronize URL query parameters with activeTab and subTab changes
+watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
     try {
         const url = new URL(window.location.href);
         const currentTab = url.searchParams.get('tab');
-        if (currentTab === null || parseInt(currentTab, 10) !== newTab) {
-            router.replace(route('admin.finance', { tab: newTab }), {
+        const currentSub = url.searchParams.get('sub');
+        
+        let subVal = null;
+        if (newTab === 10) {
+            subVal = newSub;
+        } else if (newTab === 2 && currentSub === 'currency') {
+            subVal = 'currency';
+        }
+        
+        const isTabDiff = currentTab === null || parseInt(currentTab, 10) !== newTab;
+        const isSubDiff = currentSub !== subVal;
+        
+        if (isTabDiff || isSubDiff) {
+            const params = { tab: newTab };
+            if (subVal) {
+                params.sub = subVal;
+            }
+            router.replace(route('admin.finance', params), {
                 preserveState: true,
                 preserveScroll: true
             });

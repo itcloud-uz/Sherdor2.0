@@ -2674,28 +2674,31 @@ function formatMoney(amount, currency = 'UZS') {
             </div>
         </Modal>
         <!-- QUICK TRANSACTION MODAL (Kirim / Chiqim) -->
-        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="3xl" class="quick-transaction-modal-override">
-            <div class="p-6">
+        <Modal :show="showQuickTransactionModal" @close="showQuickTransactionModal = false" maxWidth="2xl" class="quick-transaction-modal-override">
+            <div class="p-5">
                 <!-- Header with Title & Close Icon -->
-                <div class="flex items-center gap-3 mb-6">
-                    <button type="button" @click="showQuickTransactionModal = false" class="text-gray-400 hover:text-gray-600 text-lg">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800 font-sans">
+                            {{ form.type === 'income' ? 'Yangi kirim' : 'Yangi chiqim' }}
+                        </h2>
+                    </div>
+                    <button type="button" @click="showQuickTransactionModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
                         ✕
                     </button>
-                    <h2 class="text-xl font-bold text-gray-900 font-sans">
-                        {{ form.type === 'income' ? 'Yangi kirim' : 'Yangi chiqim' }}
-                    </h2>
                 </div>
                 
-                <form @submit.prevent="submitTransaction" class="space-y-6 font-sans text-xs">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form @submit.prevent="submitTransaction" class="space-y-4 font-sans text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
                         <!-- Left Column -->
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <!-- Tranzaksiya turi -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Tranzaksiya turi
                                 </label>
-                                <select v-model="form.category_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <select v-model="form.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Tranzaksiya turini tanlang</option>
                                     <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
                                         {{ c.name }}
@@ -2705,10 +2708,10 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- Bank hisobi -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Bank hisobi
                                 </label>
-                                <select v-model="form.account_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <select v-model="form.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Bank hisobini tanlang</option>
                                     <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
                                         {{ r.name }} ({{ r.currency }})
@@ -2718,20 +2721,20 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- Shartnoma sanasi -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Shartnoma sanasi
                                 </label>
-                                <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                             </div>
 
                             <!-- Hujjat raqami -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     Hujjat raqami
                                 </label>
                                 <div class="relative flex items-center">
-                                    <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
-                                    <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-gray-400 hover:text-gray-600">
+                                    <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
+                                    <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-slate-400 hover:text-slate-600">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
@@ -2741,10 +2744,10 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- Kontragent -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Kontragent
                                 </label>
-                                <select v-model="form.counterparty_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <select v-model="form.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Kontragentni tanlang</option>
                                     <option v-for="c in counterparties" :key="c.id" :value="c.id">
                                         {{ c.name }}
@@ -2755,37 +2758,37 @@ function formatMoney(amount, currency = 'UZS') {
                             <!-- Invoice Selection Area for expense -->
                             <div v-if="form.type === 'expense' && form.counterparty_id" class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
                                 <div class="flex justify-between items-center">
-                                    <span class="text-xs font-semibold text-gray-700">Hisob-faktura</span>
+                                    <span class="text-xs font-semibold text-slate-700">Hisob-faktura</span>
                                     <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">
                                         Tanlash ({{ selectedInvoiceIds.length }} ta tanlangan)
                                     </button>
                                 </div>
                                 <div v-if="selectedInvoiceIds.length > 0" class="flex flex-wrap gap-1.5">
-                                    <span v-for="id in selectedInvoiceIds" :key="id" class="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-0.5 text-[10px] text-gray-700 font-mono shadow-sm">
+                                    <span v-for="id in selectedInvoiceIds" :key="id" class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2.5 py-0.5 text-[10px] text-slate-700 font-mono shadow-sm">
                                         {{ props.invoices?.find(i => i.id === id)?.invoice_number || `#${id}` }}
                                         <button type="button" @click="selectedInvoiceIds = selectedInvoiceIds.filter(x => x !== id)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
                                     </span>
                                 </div>
-                                <span v-else class="text-[10px] text-gray-400 block font-mono">Tanlanmagan</span>
+                                <span v-else class="text-[10px] text-slate-400 block font-mono">Tanlanmagan</span>
                             </div>
 
                             <!-- Summa -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Summa
                                 </label>
-                                <input v-model="form.amount" type="number" step="0.01" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                                <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                             </div>
                         </div>
 
                         <!-- Right Column -->
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <!-- Qurilish obyekti -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Qurilish obyekti
                                 </label>
-                                <select v-model="form.building_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Qurilish obyekti tanlang</option>
                                     <option v-for="b in buildings" :key="b.id" :value="b.id">
                                         {{ b.name }}
@@ -2795,10 +2798,10 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- Valyuta -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Valyuta
                                 </label>
-                                <select v-model="form.currency" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <select v-model="form.currency" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Valyutani tanlang</option>
                                     <option value="UZS">UZS</option>
                                     <option value="USD">USD</option>
@@ -2807,26 +2810,26 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- To'lov maqsadi -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * To'lov maqsadi
                                 </label>
-                                <textarea v-model="form.notes" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
+                                <textarea v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
                             </div>
 
                             <!-- Ilovalar -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     Ilovalar
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
-                                    <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-bold bg-white hover:bg-gray-50 transition-colors shadow-sm text-xs">
-                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
                                         Fayl yuklash
                                     </button>
-                                    <span v-if="form.attachment" class="text-xs text-gray-500 truncate max-w-[200px]" :title="form.attachment.name">
+                                    <span v-if="form.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="form.attachment.name">
                                         {{ form.attachment.name }}
                                     </span>
                                 </div>
@@ -2834,19 +2837,19 @@ function formatMoney(amount, currency = 'UZS') {
 
                             <!-- Izohlar -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-700 mb-1">
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     Izohlar
                                 </label>
-                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izohlarni kiriting"></textarea>
+                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izohlarni kiriting"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showQuickTransactionModal = false" class="btn-cancel px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" @click="showQuickTransactionModal = false" class="btn-cancel px-6 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">
                             Bekor qilish
                         </button>
-                        <button type="submit" :disabled="isProcessing" class="btn-save px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md">
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-8 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
                             Saqlash
                         </button>
                     </div>
@@ -2855,22 +2858,27 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- HISOB-FAKTURALARNI TANLASH SUB-MODAL -->
-        <Modal :show="showInvoiceSelectorModal" @close="showInvoiceSelectorModal = false" maxWidth="2xl" class="quick-transaction-modal-override">
-            <div class="p-6 space-y-6">
+        <Modal :show="showInvoiceSelectorModal" @close="showInvoiceSelectorModal = false" maxWidth="xl" class="quick-transaction-modal-override">
+            <div class="p-5 space-y-4">
                 <!-- Header with Title & Close Icon -->
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-gray-900 font-sans">
-                        Hisob-fakturalarni tanlash
-                    </h3>
-                    <button type="button" @click="showInvoiceSelectorModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+                <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800 font-sans">
+                            Hisob-fakturalarni tanlash
+                        </h2>
+                    </div>
+                    <button type="button" @click="showInvoiceSelectorModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
+                        ✕
+                    </button>
                 </div>
 
                 <!-- Search & Filters -->
-                <div class="flex gap-4">
+                <div class="flex gap-3">
                     <!-- Search input -->
                     <div class="relative flex-1">
-                        <input v-model="invoiceSearchQuery" type="text" placeholder="Hisob-faktura raqami bo'yicha qidirish..." class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
-                        <span class="absolute left-3 top-2.5 text-gray-400">
+                        <input v-model="invoiceSearchQuery" type="text" placeholder="Hisob-faktura raqami bo'yicha qidirish..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                        <span class="absolute left-3 top-2 text-slate-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
@@ -2878,8 +2886,8 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
 
                     <!-- Currency filter dropdown -->
-                    <div class="w-48">
-                        <select v-model="invoiceCurrencyFilter" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                    <div class="w-36">
+                        <select v-model="invoiceCurrencyFilter" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
                             <option value="">Barcha valyutalar</option>
                             <option v-for="c in availableInvoicesCurrencies" :key="c" :value="c">
                                 {{ c }}
@@ -2889,51 +2897,51 @@ function formatMoney(amount, currency = 'UZS') {
                 </div>
 
                 <!-- Invoices Container -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                <div class="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
                     <!-- Hammasini tanlash row -->
-                    <div class="p-3 bg-gray-50 flex items-center gap-3">
-                        <input type="checkbox" v-model="isAllInvoicesSelected" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
-                        <span class="text-xs font-semibold text-gray-700">Hammasini tanlash</span>
+                    <div class="p-2.5 bg-slate-50/50 flex items-center gap-3">
+                        <input type="checkbox" v-model="isAllInvoicesSelected" class="rounded border-slate-350 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                        <span class="text-xs font-semibold text-slate-700">Hammasini tanlash</span>
                     </div>
 
                     <!-- List rows -->
-                    <div v-for="inv in availableInvoices" :key="inv.id" class="p-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                    <div v-for="inv in availableInvoices" :key="inv.id" class="p-3 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                         <div class="flex items-center gap-3">
-                            <input type="checkbox" :value="inv.id" v-model="selectedInvoiceIds" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                            <input type="checkbox" :value="inv.id" v-model="selectedInvoiceIds" class="rounded border-slate-350 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
                             <div>
-                                <span class="block text-xs font-bold text-gray-900 font-mono">{{ inv.invoice_number }}</span>
-                                <span class="text-[10px] text-gray-400 mt-0.5 block font-mono">{{ new Date(inv.due_date).toLocaleDateString() }}</span>
+                                <span class="block text-xs font-bold text-slate-900 font-mono">{{ inv.invoice_number }}</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5 block font-mono">{{ new Date(inv.due_date).toLocaleDateString() }}</span>
                             </div>
                             <!-- badge "Yangi" -->
-                            <span class="ml-2 px-2 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-100 uppercase">
+                            <span class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-100 uppercase">
                                 {{ inv.status === 'new' ? 'Yangi' : inv.status }}
                             </span>
                         </div>
 
                         <!-- Amounts info -->
-                        <div class="flex gap-6 font-mono text-xs">
+                        <div class="flex gap-4 font-mono text-xs">
                             <div class="text-right">
-                                <span class="block text-[10px] text-gray-400 uppercase">Umumiy summa</span>
-                                <span class="font-bold text-gray-900">{{ parseFloat(inv.amount).toLocaleString(undefined, {minimumFractionDigits: 2}) }} {{ inv.currency }}</span>
+                                <span class="block text-[9px] text-slate-400 uppercase">Jami</span>
+                                <span class="font-bold text-slate-900">{{ parseFloat(inv.amount).toLocaleString(undefined, {minimumFractionDigits: 2}) }} {{ inv.currency }}</span>
                             </div>
                             <div class="text-right">
-                                <span class="block text-[10px] text-gray-400 uppercase">To'lanishi kerak</span>
+                                <span class="block text-[9px] text-slate-400 uppercase">Qoldiq</span>
                                 <span class="font-bold text-orange-600">{{ (parseFloat(inv.amount) - parseFloat(inv.paid_amount || 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) }} {{ inv.currency }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div v-if="availableInvoices.length === 0" class="p-8 text-center text-gray-400 text-xs font-mono">
+                    <div v-if="availableInvoices.length === 0" class="p-6 text-center text-slate-400 text-xs font-mono">
                         Hisob-fakturalar topilmadi.
                     </div>
                 </div>
 
                 <!-- Footer buttons -->
-                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                    <button type="button" @click="showInvoiceSelectorModal = false" class="btn-cancel px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors">
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" @click="showInvoiceSelectorModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">
                         Bekor qilish
                     </button>
-                    <button type="button" @click="confirmInvoiceSelection" :disabled="selectedInvoiceIds.length === 0" class="btn-save px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-xs transition-colors shadow-md disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">
+                    <button type="button" @click="confirmInvoiceSelection" :disabled="selectedInvoiceIds.length === 0" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">
                         Tasdiqlash
                     </button>
                 </div>
@@ -2941,23 +2949,33 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- QUICK TRANSFER MODAL -->
-        <Modal :show="showQuickTransferModal" @close="showQuickTransferModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showQuickTransferModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
-                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Ichki pul o'tkazmasi</h3>
+        <Modal :show="showQuickTransferModal" @close="showQuickTransferModal = false" maxWidth="md" class="quick-transaction-modal-override">
+            <div class="p-5">
+                <!-- Header with Title & Close Icon -->
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800 font-sans">
+                            Ichki pul o'tkazmasi
+                        </h2>
+                    </div>
+                    <button type="button" @click="showQuickTransferModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
+                        ✕
+                    </button>
+                </div>
                 
-                <form @submit.prevent="submitTransfer" class="space-y-4 font-mono text-xs">
+                <form @submit.prevent="submitTransfer" class="space-y-4 font-sans text-xs">
                     <!-- From Account -->
                     <div>
-                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Chiqish Kassasi</label>
-                        <input :value="selectedRegister ? `${selectedRegister.name} (${selectedRegister.currency})` : ''" type="text" readonly class="bg-gray-100 border border-gray-200 text-gray-500 rounded-md w-full h-9 font-bold">
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Chiqish Kassasi</label>
+                        <input :value="selectedRegister ? `${selectedRegister.name} (${selectedRegister.currency})` : ''" type="text" readonly class="bg-slate-100 border border-slate-200 text-slate-500 rounded-xl w-full px-3 py-2 font-bold focus:outline-none">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <!-- To Account selection -->
                         <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kirish Kassasi *</label>
-                            <select v-model="transferForm.to_account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kirish Kassasi *</label>
+                            <select v-model="transferForm.to_account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="r in registers.filter(x => selectedRegister && x.id !== selectedRegister.id && x.is_active)" :key="r.id" :value="r.id">
                                     {{ r.name }} ({{ r.currency }})
@@ -2967,27 +2985,27 @@ function formatMoney(amount, currency = 'UZS') {
 
                         <!-- Sent Amount -->
                         <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">O'tkazma Summasi *</label>
-                            <input v-model="transferForm.sent_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 font-bold" required placeholder="0.00">
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">O'tkazma Summasi *</label>
+                            <input v-model="transferForm.sent_amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <!-- Exchange Rate -->
                         <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kurs (Ayirboshlash kursi)</label>
-                            <input v-model="transferForm.exchange_rate" type="number" step="0.000001" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" placeholder="1.0">
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kurs (Ayirboshlash kursi)</label>
+                            <input v-model="transferForm.exchange_rate" type="number" step="0.000001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="1.0">
                         </div>
                         <!-- Description -->
                         <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
-                            <input v-model="transferForm.description" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" placeholder="Izoh (masalan, Naqdlashtirish)...">
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Izoh</label>
+                            <input v-model="transferForm.description" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izoh (masalan, Naqdlashtirish)...">
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showQuickTransferModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Yuborish</button>
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" @click="showQuickTransferModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Yuborish</button>
                     </div>
                 </form>
             </div>

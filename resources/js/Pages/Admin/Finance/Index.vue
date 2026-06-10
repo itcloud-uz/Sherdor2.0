@@ -2690,61 +2690,104 @@ function formatMoney(amount, currency = 'UZS') {
                 </div>
                 
                 <form @submit.prevent="submitTransaction" class="space-y-4 font-sans text-xs">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
-                        <!-- Left Column -->
-                        <div class="space-y-3">
-                            <!-- Tranzaksiya turi -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Tranzaksiya turi
-                                </label>
-                                <select v-model="form.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Tranzaksiya turini tanlang</option>
-                                    <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
-                                        {{ c.name }}
-                                    </option>
-                                </select>
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3.5">
+                        <!-- Row 1: Tranzaksiya turi & Qurilish obyekti -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Tranzaksiya turi
+                            </label>
+                            <select v-model="form.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Tranzaksiya turini tanlang</option>
+                                <option v-for="c in categories.filter(x => x.type === form.type || x.type === 'both')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Qurilish obyekti
+                            </label>
+                            <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Qurilish obyekti tanlang</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">
+                                    {{ b.name }}
+                                </option>
+                            </select>
+                        </div>
 
-                            <!-- Bank hisobi -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Bank hisobi
-                                </label>
-                                <select v-model="form.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Bank hisobini tanlang</option>
-                                    <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                        {{ r.name }} ({{ r.currency }})
-                                    </option>
-                                </select>
-                            </div>
+                        <!-- Row 2: Bank hisobi & Valyuta -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Bank hisobi
+                            </label>
+                            <select v-model="form.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Bank hisobini tanlang</option>
+                                <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                    {{ r.name }} ({{ r.currency }})
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Valyuta
+                            </label>
+                            <select v-model="form.currency" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Valyutani tanlang</option>
+                                <option value="UZS">UZS</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
 
-                            <!-- Shartnoma sanasi -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Shartnoma sanasi
-                                </label>
-                                <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                            </div>
+                        <!-- Row 3: Shartnoma sanasi & To'lov maqsadi -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Shartnoma sanasi
+                            </label>
+                            <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * To'lov maqsadi
+                            </label>
+                            <textarea v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
+                        </div>
 
-                            <!-- Hujjat raqami -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    Hujjat raqami
-                                </label>
-                                <div class="relative flex items-center">
-                                    <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
-                                    <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-slate-400 hover:text-slate-600">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    </button>
-                                </div>
+                        <!-- Row 4: Hujjat raqami & Ilovalar -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Hujjat raqami
+                            </label>
+                            <div class="relative flex items-center">
+                                <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
+                                <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-slate-400 hover:text-slate-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </button>
                             </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Ilovalar
+                            </label>
+                            <div class="flex items-center gap-3 py-0.5">
+                                <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
+                                <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Fayl yuklash
+                                </button>
+                                <span v-if="form.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="form.attachment.name">
+                                    {{ form.attachment.name }}
+                                </span>
+                            </div>
+                        </div>
 
-                            <!-- Kontragent -->
+                        <!-- Row 5: Kontragent & Izohlar -->
+                        <div>
                             <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Kontragent
                                 </label>
                                 <select v-model="form.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
@@ -2754,9 +2797,8 @@ function formatMoney(amount, currency = 'UZS') {
                                     </option>
                                 </select>
                             </div>
-
                             <!-- Invoice Selection Area for expense -->
-                            <div v-if="form.type === 'expense' && form.counterparty_id" class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
+                            <div v-if="form.type === 'expense' && form.counterparty_id" class="mt-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-semibold text-slate-700">Hisob-faktura</span>
                                     <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">
@@ -2771,78 +2813,22 @@ function formatMoney(amount, currency = 'UZS') {
                                 </div>
                                 <span v-else class="text-[10px] text-slate-400 block font-mono">Tanlanmagan</span>
                             </div>
-
-                            <!-- Summa -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Summa
-                                </label>
-                                <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
-                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Izohlar
+                            </label>
+                            <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
                         </div>
 
-                        <!-- Right Column -->
-                        <div class="space-y-3">
-                            <!-- Qurilish obyekti -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Qurilish obyekti
-                                </label>
-                                <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Qurilish obyekti tanlang</option>
-                                    <option v-for="b in buildings" :key="b.id" :value="b.id">
-                                        {{ b.name }}
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- Valyuta -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Valyuta
-                                </label>
-                                <select v-model="form.currency" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Valyutani tanlang</option>
-                                    <option value="UZS">UZS</option>
-                                    <option value="USD">USD</option>
-                                </select>
-                            </div>
-
-                            <!-- To'lov maqsadi -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * To'lov maqsadi
-                                </label>
-                                <textarea v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
-                            </div>
-
-                            <!-- Ilovalar -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    Ilovalar
-                                </label>
-                                <div class="flex items-center gap-3">
-                                    <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
-                                    <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
-                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                        </svg>
-                                        Fayl yuklash
-                                    </button>
-                                    <span v-if="form.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="form.attachment.name">
-                                        {{ form.attachment.name }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Izohlar -->
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    Izohlar
-                                </label>
-                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izohlarni kiriting"></textarea>
-                            </div>
+                        <!-- Row 6: Summa -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Summa
+                            </label>
+                            <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
+                        <div class="hidden md:block"></div>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
@@ -3018,18 +3004,19 @@ function formatMoney(amount, currency = 'UZS') {
 dialog.quick-transaction-modal-override,
 .quick-transaction-modal-override {
     --modal-bg-color: #ffffff !important;
-    --modal-text-color: #111827 !important;
-    --glass-input-bg: #ffffff !important;
-    --glass-input-border: #d1d5db !important;
-    --glass-input-text: #111827 !important;
-    --glass-input-placeholder: #9ca3af !important;
-    --label-color: #374151 !important;
+    --modal-text-color: #0f172a !important; /* slate-900 */
+    --glass-input-bg: #f8fafc !important; /* slate-50 */
+    --glass-input-border: #e2e8f0 !important; /* slate-200 */
+    --glass-input-text: #0f172a !important;
+    --glass-input-placeholder: #94a3b8 !important; /* slate-400 */
+    --label-color: #475569 !important; /* slate-600 */
 }
 
 dialog.quick-transaction-modal-override .theme-modal {
     background-color: #ffffff !important;
-    color: #111827 !important;
-    border-color: #d1d5db !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal h1,
@@ -3041,33 +3028,48 @@ dialog.quick-transaction-modal-override .theme-modal span,
 dialog.quick-transaction-modal-override .theme-modal label,
 dialog.quick-transaction-modal-override .theme-modal th,
 dialog.quick-transaction-modal-override .theme-modal td {
-    color: #111827 !important;
+    color: #0f172a !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal label {
+    color: #475569 !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal input,
 dialog.quick-transaction-modal-override .theme-modal select,
 dialog.quick-transaction-modal-override .theme-modal textarea {
-    background-color: #ffffff !important;
-    color: #111827 !important;
-    border-color: #d1d5db !important;
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+    border-radius: 0.75rem !important; /* rounded-xl */
+    font-size: 0.75rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+dialog.quick-transaction-modal-override .theme-modal input:hover,
+dialog.quick-transaction-modal-override .theme-modal select:hover,
+dialog.quick-transaction-modal-override .theme-modal textarea:hover {
+    border-color: #cbd5e1 !important; /* slate-300 */
 }
 
 dialog.quick-transaction-modal-override .theme-modal input:focus,
 dialog.quick-transaction-modal-override .theme-modal select:focus,
 dialog.quick-transaction-modal-override .theme-modal textarea:focus {
+    background-color: #ffffff !important;
     border-color: #f97316 !important; /* orange-500 */
-    box-shadow: 0 0 0 1px #f97316 !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
     outline: none !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal select option {
     background-color: #ffffff !important;
-    color: #111827 !important;
+    color: #0f172a !important;
 }
 
-dialog.quick-transaction-modal-override .theme-modal .bg-gray-50 {
-    background-color: #f9fafb !important;
-    border-color: #f3f4f6 !important;
+dialog.quick-transaction-modal-override .theme-modal .bg-gray-50,
+dialog.quick-transaction-modal-override .theme-modal .bg-slate-50 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal .bg-orange-50 {
@@ -3078,31 +3080,40 @@ dialog.quick-transaction-modal-override .theme-modal .bg-orange-50 {
 
 dialog.quick-transaction-modal-override .theme-modal .btn-cancel {
     background-color: #ffffff !important;
-    border-color: #e5e7eb !important;
-    color: #374151 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+    transition: all 0.2s ease-in-out !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal .btn-cancel:hover {
-    background-color: #f9fafb !important;
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal .btn-save {
     background-color: #f97316 !important; /* orange-500 */
     color: #ffffff !important;
     border: none !important;
+    transition: all 0.2s ease-in-out !important;
 }
 
 dialog.quick-transaction-modal-override .theme-modal .btn-save:hover {
     background-color: #ea580c !important; /* orange-600 */
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
 }
 
 /* Styled upload button */
 dialog.quick-transaction-modal-override .theme-modal .btn-upload {
     background-color: #ffffff !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+    transition: all 0.2s ease-in-out !important;
 }
+
 dialog.quick-transaction-modal-override .theme-modal .btn-upload:hover {
-    background-color: #f9fafb !important;
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
 }
 </style>

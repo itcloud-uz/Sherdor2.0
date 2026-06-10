@@ -483,9 +483,30 @@ const registerForm = ref({
     is_active: true,
     bank_name: '',
     account_number: '',
-    mfo_code: ''
+    mfo_code: '',
+    balance: 0
 });
 const isEditRegister = ref(false);
+
+const activeRegisterMenuId = ref(null);
+function toggleRegisterMenu(id) {
+    activeRegisterMenuId.value = activeRegisterMenuId.value === id ? null : id;
+}
+function triggerEdit(r) {
+    activeRegisterMenuId.value = null;
+    openEditRegisterModal(r);
+}
+function triggerDelete(id) {
+    activeRegisterMenuId.value = null;
+    deleteRegister(id);
+}
+
+// Close the menu when clicking anywhere else
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', () => {
+        activeRegisterMenuId.value = null;
+    });
+}
 
 function openNewRegisterModal() {
     isEditRegister.value = false;
@@ -493,7 +514,7 @@ function openNewRegisterModal() {
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
         currency: 'UZS', building_id: '', is_active: true,
-        bank_name: '', account_number: '', mfo_code: ''
+        bank_name: '', account_number: '', mfo_code: '', balance: 0
     };
     showRegisterModal.value = true;
 }
@@ -1719,9 +1740,20 @@ function formatMoney(amount, currency = 'UZS') {
                             <div class="flex justify-between items-start">
                                 <span class="text-sm font-bold font-display uppercase tracking-wide truncate max-w-[80%]">{{ r.name }}</span>
                                 <!-- dot menu -->
-                                <button @click.stop="openEditRegisterModal(r)" class="text-gray-400 group-hover:text-gray-700" :class="selectedRegisterId === r.id ? 'text-white/80 group-hover:text-white' : ''">
-                                    ⋮
-                                </button>
+                                <div class="relative">
+                                    <button @click.stop="toggleRegisterMenu(r.id)" class="text-gray-400 group-hover:text-gray-700 p-1 rounded hover:bg-gray-200/20" :class="selectedRegisterId === r.id ? 'text-white/80 group-hover:text-white' : ''">
+                                        ⋮
+                                    </button>
+                                    <!-- Dropdown Menu -->
+                                    <div v-if="activeRegisterMenuId === r.id" class="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1 text-gray-700 font-sans">
+                                        <button @click.stop="triggerEdit(r)" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 rounded-lg flex items-center gap-2">
+                                            ✏️ Tahrirlash
+                                        </button>
+                                        <button @click.stop="triggerDelete(r.id)" class="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+                                            🗑️ O'chirish
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Balances (screenshot style UZS and USD both on card) -->
                             <div class="font-mono text-xs mt-4 space-y-0.5">
@@ -2168,6 +2200,12 @@ function formatMoney(amount, currency = 'UZS') {
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob raqami</label>
                         <input v-model="registerForm.account_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                    </div>
+
+                    <!-- Status toggle in edit mode -->
+                    <div v-if="isEditRegister" class="flex items-center gap-2 mt-2">
+                        <input v-model="registerForm.is_active" type="checkbox" id="register_is_active" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                        <label for="register_is_active" class="text-[10px] text-gray-700 font-bold uppercase cursor-pointer select-none">Kassa faol (Ish holatida)</label>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">

@@ -52,10 +52,19 @@ Route::get('/inspect-db-secure-123456', function(\Illuminate\Http\Request $reque
     }
     try {
         $tables = DB::select('SHOW TABLES');
-        $migrations = DB::table('migrations')->get();
+        $tableNames = [];
+        foreach ($tables as $table) {
+            $tableNames[] = array_values((array)$table)[0];
+        }
+        
+        $hasRates = Schema::hasTable('currency_rates');
+        $hasRegisters = Schema::hasTable('cash_registers');
+        
         return response()->json([
-            'tables' => $tables,
-            'migrations' => $migrations
+            'tables' => $tableNames,
+            'has_currency_rates' => $hasRates,
+            'has_cash_registers' => $hasRegisters,
+            'migrations_count' => DB::table('migrations')->count()
         ]);
     } catch (\Exception $e) {
         return response()->json([

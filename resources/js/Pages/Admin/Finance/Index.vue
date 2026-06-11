@@ -250,7 +250,20 @@ const selectedRegister = computed(() => {
 
 const selectedRegisterTransactions = computed(() => {
     if (!selectedRegisterId.value) return [];
-    return (props.transactions || []).filter(t => t.account_id === selectedRegisterId.value && t.status === 'approved');
+    const childIds = (props.registers || [])
+        .filter(r => r.parent_id === selectedRegisterId.value && r.is_active)
+        .map(r => r.id);
+    const targetIds = [selectedRegisterId.value, ...childIds];
+    return (props.transactions || []).filter(t => targetIds.includes(t.account_id) && t.status === 'approved');
+});
+
+const isCreditType = computed(() => {
+    if (registerForm.value.type === 'credit') return true;
+    if (registerForm.value.parent_id) {
+        const parent = props.registers?.find(r => r.id === registerForm.value.parent_id);
+        return parent && parent.type === 'credit';
+    }
+    return false;
 });
 
 // Selected Register Totals
@@ -590,7 +603,16 @@ const registerForm = ref({
     bank_name: '',
     account_number: '',
     mfo_code: '',
-    balance: 0
+    balance: 0,
+    parent_id: '',
+    creditor_name: '',
+    total_amount: '',
+    interest_rate: '',
+    term_months: '',
+    start_date: '',
+    end_date: '',
+    monthly_payment: '',
+    description: ''
 });
 const isEditRegister = ref(false);
 
@@ -620,14 +642,28 @@ function openNewRegisterModal() {
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
         currency: 'UZS', building_id: '', is_active: true,
-        bank_name: '', account_number: '', mfo_code: '', balance: 0
+        bank_name: '', account_number: '', mfo_code: '', balance: 0,
+        parent_id: '', creditor_name: '', total_amount: '', interest_rate: '',
+        term_months: '', start_date: '', end_date: '', monthly_payment: '', description: ''
     };
     showRegisterModal.value = true;
 }
 
 function openEditRegisterModal(reg) {
     isEditRegister.value = true;
-    registerForm.value = { ...reg, building_id: reg.building_id || '' };
+    registerForm.value = { 
+        ...reg, 
+        building_id: reg.building_id || '',
+        parent_id: reg.parent_id || '',
+        creditor_name: reg.creditor_name || '',
+        total_amount: reg.total_amount || '',
+        interest_rate: reg.interest_rate || '',
+        term_months: reg.term_months || '',
+        start_date: reg.start_date || '',
+        end_date: reg.end_date || '',
+        monthly_payment: reg.monthly_payment || '',
+        description: reg.description || ''
+    };
     showRegisterModal.value = true;
 }
 
@@ -2011,6 +2047,47 @@ function formatMoney(amount, currency = 'UZS') {
                             </div>
                         </div>
 
+                        <!-- Sub-registers list if any exist -->
+                        <div v-if="registers.filter(x => x.parent_id === selectedRegister.id).length > 0" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Ichki kassalar (Sub-kassalar)</h3>
+                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">Jami: {{ registers.filter(x => x.parent_id === selectedRegister.id).length }} ta</span>
+                            </div>
+                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                                <table class="w-full text-left text-xs font-mono">
+                                    <thead class="bg-slate-50 text-gray-500 font-bold border-b border-gray-100 uppercase text-[10px]">
+                                        <tr>
+                                            <th class="p-3">Kassa nomi</th>
+                                            <th class="p-3">Turi</th>
+                                            <th class="p-3">Kreditor (Agar bor bo'lsa)</th>
+                                            <th class="p-3 text-right">Balans (UZS)</th>
+                                            <th class="p-3 text-right">Balans (USD)</th>
+                                            <th class="p-3 text-center">Amallar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="sub in registers.filter(x => x.parent_id === selectedRegister.id)" :key="sub.id" class="hover:bg-slate-50/50 transition-colors">
+                                            <td class="p-3 font-bold text-gray-900">{{ sub.name }}</td>
+                                            <td class="p-3 uppercase text-[9px]">
+                                                <span class="px-1.5 py-0.5 rounded font-bold" :class="sub.type === 'credit' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-700'">
+                                                    {{ sub.type }}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-gray-500">{{ sub.creditor_name || '-' }}</td>
+                                            <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_uzs, 'UZS') }}</td>
+                                            <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_usd, 'USD') }}</td>
+                                            <td class="p-3 text-center">
+                                                <div class="flex justify-center gap-2">
+                                                    <button v-if="sub.type === 'credit'" @click="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
+                                                    <button @click="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all">✏️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <!-- Action Buttons row (screenshot style) -->
                         <div class="flex gap-3">
                             <button @click="openQuickTransaction('income')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
@@ -2326,7 +2403,67 @@ function formatMoney(amount, currency = 'UZS') {
                         <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                             <option value="cash">Naqd (Cash)</option>
                             <option value="bank">Bank hisobi</option>
+                            <option value="credit">Kredit (Loan)</option>
                         </select>
+                    </div>
+
+                    <!-- Asosiy Kassa (Ota kassa) -->
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Asosiy Kassa (Ota kassa)</label>
+                        <select v-model="registerForm.parent_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                            <option value="">-- Mustaqil Kassa (Ota kassa yo'q) --</option>
+                            <option v-for="r in registers.filter(x => x.id !== registerForm.id && !x.parent_id)" :key="r.id" :value="r.id">
+                                {{ r.name }} ({{ r.type }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Kredit / Qarz Tafsilotlari (conditional) -->
+                    <div v-if="isCreditType" class="border border-purple-150 p-4 rounded-xl bg-purple-50/20 space-y-4">
+                        <span class="text-[10px] font-bold text-purple-600 uppercase tracking-widest block mb-2">Kredit / Qarz Tafsilotlari</span>
+                        
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kreditor (Bank/Tashkilot/Shaxs) *</label>
+                            <input v-model="registerForm.creditor_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Umumiy Summa *</label>
+                                <input v-model="registerForm.total_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Foiz Stavkasi % (Yillik)</label>
+                                <input v-model="registerForm.interest_rate" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Muddati (Oy) *</label>
+                                <input v-model="registerForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik To'lov *</label>
+                                <input v-model="registerForm.monthly_payment" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Boshlanish Sanasi *</label>
+                                <input v-model="registerForm.start_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Tugash Sanasi</label>
+                                <input v-model="registerForm.end_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Qo'shimcha izoh</label>
+                            <textarea v-model="registerForm.description" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs p-2"></textarea>
+                        </div>
                     </div>
 
                     <!-- Boshlang'ich balans UZS -->

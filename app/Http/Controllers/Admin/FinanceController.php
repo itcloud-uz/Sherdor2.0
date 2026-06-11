@@ -802,7 +802,7 @@ class FinanceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:cash,bank',
+            'type' => 'required|in:cash,bank,credit',
             'currency' => 'required|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
             'initial_balance_uzs' => 'nullable|numeric|min:0',
@@ -812,6 +812,15 @@ class FinanceController extends Controller
             'account_number' => 'nullable|string|max:255',
             'mfo_code' => 'nullable|string|max:255',
             'balance' => 'nullable|numeric|min:0',
+            'parent_id' => 'nullable|exists:cash_registers,id',
+            'creditor_name' => 'nullable|string|max:255',
+            'total_amount' => 'nullable|numeric|min:0',
+            'interest_rate' => 'nullable|numeric|min:0',
+            'term_months' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'monthly_payment' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string',
         ]);
 
         foreach ($validated as $key => $value) {
@@ -835,7 +844,7 @@ class FinanceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:cash,bank',
+            'type' => 'required|in:cash,bank,credit',
             'currency' => 'required|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
             'initial_balance_uzs' => 'nullable|numeric|min:0',
@@ -846,6 +855,15 @@ class FinanceController extends Controller
             'mfo_code' => 'nullable|string|max:255',
             'balance' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
+            'parent_id' => 'nullable|exists:cash_registers,id',
+            'creditor_name' => 'nullable|string|max:255',
+            'total_amount' => 'nullable|numeric|min:0',
+            'interest_rate' => 'nullable|numeric|min:0',
+            'term_months' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'monthly_payment' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string',
         ]);
 
         foreach ($validated as $key => $value) {

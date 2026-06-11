@@ -17,20 +17,54 @@ class HrController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Admin/HR/Index', [
-            'users' => \App\Models\User::with(['roles', 'transactions'])->withCount(['leads' => function($q) {
+        $tab = (int)request('tab', 0);
+
+        $users = [];
+        $attendanceLogs = [];
+        $workers = [];
+        $brigades = [];
+        $machineries = [];
+        $machineOwners = [];
+        $buildings = [];
+        $unpaidLogs = [];
+        $unpaidTotal = 0;
+        $payrolls = [];
+        $kpiSettings = null;
+
+        if ($tab === 0 || $tab === 1 || $tab === 2) {
+            $users = \App\Models\User::with(['roles', 'transactions'])->withCount(['leads' => function($q) {
                 $q->where('status', 'qualified');
-            }])->get(),
-            'attendanceLogs' => \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get(),
-            'workers' => Worker::with(['brigade', 'salaryHistories', 'transactions'])->get(),
-            'brigades' => \App\Models\Brigade::with('workers')->get(),
-            'machineries' => Machinery::all(),
-            'machineOwners' => \App\Models\MachineOwner::with('machineries')->get(),
-            'buildings' => Building::with('floors.units')->get(),
-            'unpaidLogs' => WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get(),
-            'unpaidTotal' => WorkLog::where('status', 'unpaid')->sum('calculated_cost'),
-            'payrolls' => Payroll::with('transaction')->latest()->limit(500)->get(),
-            'kpiSettings' => \App\Models\CrmSetting::where('key', 'kpi_settings')->first()
+            }])->get();
+        }
+
+        if ($tab === 0 || $tab === 1) {
+            $attendanceLogs = \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get();
+            $workers = Worker::with(['brigade', 'salaryHistories', 'transactions'])->get();
+            $brigades = \App\Models\Brigade::with('workers')->get();
+            $machineries = Machinery::all();
+            $machineOwners = \App\Models\MachineOwner::with('machineries')->get();
+            $buildings = Building::with('floors.units')->get();
+            $unpaidLogs = WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get();
+            $unpaidTotal = WorkLog::where('status', 'unpaid')->sum('calculated_cost');
+            $payrolls = Payroll::with('transaction')->latest()->limit(500)->get();
+        }
+
+        if ($tab === 2) {
+            $kpiSettings = \App\Models\CrmSetting::where('key', 'kpi_settings')->first();
+        }
+
+        return Inertia::render('Admin/HR/Index', [
+            'users' => $users,
+            'attendanceLogs' => $attendanceLogs,
+            'workers' => $workers,
+            'brigades' => $brigades,
+            'machineries' => $machineries,
+            'machineOwners' => $machineOwners,
+            'buildings' => $buildings,
+            'unpaidLogs' => $unpaidLogs,
+            'unpaidTotal' => $unpaidTotal,
+            'payrolls' => $payrolls,
+            'kpiSettings' => $kpiSettings
         ]);
     }
 

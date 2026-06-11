@@ -7,6 +7,7 @@ import { Head, router, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+import { regionsData } from '@/locations.js';
 
 const { t } = useI18n();
 const page = usePage();
@@ -140,6 +141,59 @@ const clientForm = ref({
     contract_language: 'O\'zbek tili',
     contract_id: ''
 });
+
+const availableDistricts = computed(() => {
+    let r = clientForm.value.region;
+    if (!r) return [];
+    r = r.toLowerCase();
+    let foundRegion = regionsData[r];
+    if (!foundRegion) {
+        foundRegion = Object.values(regionsData).find(
+            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
+        );
+    }
+    if (!foundRegion) return [];
+    return Object.entries(foundRegion.districts).map(([key, value]) => ({
+        id: key,
+        name: value.name
+    }));
+});
+
+const availableNeighborhoods = computed(() => {
+    let r = clientForm.value.region;
+    if (!r) return [];
+    r = r.toLowerCase();
+    let foundRegion = regionsData[r];
+    if (!foundRegion) {
+        foundRegion = Object.values(regionsData).find(
+            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
+        );
+    }
+    if (!foundRegion) return [];
+
+    let d = clientForm.value.district;
+    if (!d) return [];
+    d = d.toLowerCase();
+
+    let foundDistrict = foundRegion.districts[d];
+    if (!foundDistrict) {
+        foundDistrict = Object.values(foundRegion.districts).find(
+            item => item.name.toLowerCase() === d || item.name.toLowerCase().replace(/\s+tumani$/, '') === d
+        );
+    }
+
+    if (!foundDistrict) return [];
+    return foundDistrict.neighborhoods || [];
+});
+
+function onRegionChange() {
+    clientForm.value.district = '';
+    clientForm.value.address = '';
+}
+
+function onDistrictChange() {
+    clientForm.value.address = '';
+}
 const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' });
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
@@ -775,10 +829,8 @@ watch(activeTab, (newTab) => {
         const url = new URL(window.location.href);
         const currentTab = url.searchParams.get('tab');
         if (currentTab === null || currentTab !== newTab) {
-            router.replace(route('admin.crm', { tab: newTab }), {
-                preserveState: true,
-                preserveScroll: true
-            });
+            url.searchParams.set('tab', newTab);
+            window.history.replaceState({ ...window.history.state }, '', url.pathname + url.search);
         }
     } catch (e) {
         console.error('URL replace error in CRM activeTab watcher', e);
@@ -3446,8 +3498,19 @@ function submitPromoRule() {
                         </div>
                     </div>
 
-                    <!-- Row 2: Shartnoma sanasi, Telefon raqami, Telefon raqami 2, Telefon raqami 3 -->
+                    <!-- Row 2: Shartnoma id, Shartnoma sanasi, Telefon raqami, Telefon raqami 2 -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
+                            <div class="relative">
+                                <input v-model="clientForm.contract_id" type="text" placeholder="Shartnoma id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
+                                <span class="absolute right-3 top-3 text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma sanasi</label>
                             <input v-model="clientForm.created_at" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
@@ -3468,17 +3531,6 @@ function submitPromoRule() {
                             <div class="relative">
                                 <input v-model="clientForm.phone_2" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
                                 <button type="button" @click="clientForm.phone_2 = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqami 3</label>
-                            <div class="relative">
-                                <input v-model="clientForm.phone_3" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
-                                <button type="button" @click="clientForm.phone_3 = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
@@ -3525,21 +3577,11 @@ function submitPromoRule() {
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Region</label>
                             <div class="relative">
-                                <select v-model="clientForm.region" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                <select v-model="clientForm.region" @change="onRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                     <option value="">Tanlang</option>
-                                    <option value="toshkent">Toshkent sh.</option>
-                                    <option value="samarqand">Samarqand</option>
-                                    <option value="fargona">Farg'ona</option>
-                                    <option value="namangan">Namangan</option>
-                                    <option value="andijon">Andijon</option>
-                                    <option value="buxoro">Buxoro</option>
-                                    <option value="qashqadaryo">Qashqadaryo</option>
-                                    <option value="surxondaryo">Surxondaryo</option>
-                                    <option value="jizzax">Jizzax</option>
-                                    <option value="sirdaryo">Sirdaryo</option>
-                                    <option value="navoiy">Navoiy</option>
-                                    <option value="xorazm">Xorazm</option>
-                                    <option value="qoraqalpogiston">Qoraqalpog'iston</option>
+                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionKey">
+                                        {{ regionObj.name }}
+                                    </option>
                                 </select>
                                 <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -3549,9 +3591,11 @@ function submitPromoRule() {
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
                             <div class="relative">
-                                <select v-model="clientForm.district" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                <select v-model="clientForm.district" @change="onDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                     <option value="">Tanlang</option>
-                                    <option value="tuman">Tuman / Shahar</option>
+                                    <option v-for="districtObj in availableDistricts" :key="districtObj.id" :value="districtObj.name">
+                                        {{ districtObj.name }}
+                                    </option>
                                 </select>
                                 <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -3560,11 +3604,14 @@ function submitPromoRule() {
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Manzil</label>
-                            <input v-model="clientForm.address" type="text" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                            <input v-model="clientForm.address" type="text" list="crmNeighborhoods" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                            <datalist id="crmNeighborhoods">
+                                <option v-for="neighborhood in availableNeighborhoods" :key="neighborhood" :value="neighborhood"></option>
+                            </datalist>
                         </div>
                     </div>
 
-                    <!-- Row 5: Passport rasmlari, Biz haqimizda qayerdan bildingiz?, Shartnoma tili, Shartnoma id -->
+                    <!-- Row 5: Passport rasmlari, Biz haqimizda qayerdan bildingiz?, Shartnoma tili -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Passport rasmlari</label>
@@ -3607,17 +3654,6 @@ function submitPromoRule() {
                                 </select>
                                 <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
-                            <div class="relative">
-                                <input v-model="clientForm.contract_id" type="text" placeholder="Shartnoma id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
-                                <span class="absolute right-3 top-3 text-gray-400">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
                                 </span>
                             </div>
                         </div>

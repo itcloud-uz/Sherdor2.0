@@ -46,10 +46,8 @@ watch(activeTab, (newTab) => {
         const url = new URL(window.location.href);
         const currentTab = url.searchParams.get('tab');
         if (currentTab === null || parseInt(currentTab, 10) !== newTab) {
-            router.replace(route('admin.hr', { tab: newTab }), {
-                preserveState: true,
-                preserveScroll: true
-            });
+            url.searchParams.set('tab', newTab);
+            window.history.replaceState({ ...window.history.state }, '', url.pathname + url.search);
         }
     } catch (e) {
         console.error(e);

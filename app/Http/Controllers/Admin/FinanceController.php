@@ -36,22 +36,32 @@ class FinanceController extends Controller
         // Cleanup unwanted categories
         TransactionCategory::where('name', 'like', '%Farxod%')->delete();
 
-        $transactions = Transaction::with([
-            'creator', 
-            'approver', 
-            'contract.client', 
-            'contract.unit', 
-            'category', 
-            'cashRegister', 
-            'counterparty', 
-            'invoice'
-        ])->latest()->limit(500)->get();
+        $tab = (int)request('tab', 0);
         
-        $rawBalance = CompanyBalance::firstOrCreate([]);
+        $transactions = [];
+        $categories = [];
+        $contracts = [];
+        $financialLiabilities = [];
+        $suppliers = [];
+        $workers = [];
+        $machineries = [];
+        $buildings = [];
+        $clients = [];
+        $partners = [];
+        $fixedAssets = [];
+        $brigades = [];
+        $machineOwners = [];
+        $registers = [];
+        $counterparties = [];
+        $invoices = [];
+        $moneyTransfers = [];
+        $rates = [];
+
+        // Always query balances and pending totals for top cards/headers
         $dynamicUZS = CashRegister::where('currency', 'UZS')->sum('balance');
         $dynamicUSD = CashRegister::where('currency', 'USD')->sum('balance');
         $creditBalance = CashRegister::where('name', 'like', '%Kredit%')->sum('balance');
-
+        $rawBalance = CompanyBalance::firstOrCreate([]);
         $balance = (object)[
             'total_balance' => $dynamicUZS,
             'credit_balance' => $creditBalance,
@@ -63,29 +73,80 @@ class FinanceController extends Controller
         $pendingIncomes = Transaction::where('status', 'pending')->where('type', 'income')->sum('amount');
         $pendingExpenses = Transaction::where('status', 'pending')->where('type', 'expense')->sum('amount');
 
+        // Tab-specific queries
+        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10) {
+            $transactions = Transaction::with([
+                'creator', 
+                'approver', 
+                'contract.client', 
+                'contract.unit', 
+                'category', 
+                'cashRegister', 
+                'counterparty', 
+                'invoice'
+            ])->latest()->limit(500)->get();
+        }
+
+        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 6 || $tab === 8 || $tab === 10) {
+            $registers = CashRegister::with('building')->get();
+        }
+
+        if ($tab === 1) {
+            $categories = TransactionCategory::all();
+            $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
+            $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
+            $suppliers = Supplier::latest()->get();
+            $workers = Worker::latest()->get();
+            $machineries = Machinery::latest()->get();
+            $buildings = Building::latest()->get();
+            $clients = Client::latest()->limit(500)->get();
+            $partners = Partner::with('user')->latest()->get();
+            $fixedAssets = FixedAsset::latest()->get();
+            $brigades = Brigade::latest()->get();
+            $machineOwners = MachineOwner::latest()->get();
+            $counterparties = Counterparty::with('customable')->get();
+            $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
+        }
+
+        if ($tab === 2 || $tab === 9 || $tab === 10) {
+            $counterparties = Counterparty::with('customable')->get();
+        }
+
+        if ($tab === 2 || $tab === 10) {
+            $buildings = Building::latest()->get();
+            $rates = DB::table('currency_rates')->get();
+        }
+
+        if ($tab === 6) {
+            $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
+        }
+
+        if ($tab === 10) {
+            $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
+        }
+
         return Inertia::render('Admin/Finance/Index', [
             'transactions' => $transactions,
             'balance' => $balance,
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
-            'categories' => TransactionCategory::all(),
-            'contracts' => \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get(),
-            'financialLiabilities' => FinancialLiability::with('payments')->latest()->get(),
-            'suppliers' => Supplier::latest()->get(),
-            'workers' => Worker::latest()->get(),
-            'machineries' => Machinery::latest()->get(),
-            'buildings' => Building::latest()->get(),
-            'clients' => Client::latest()->limit(500)->get(),
-            'partners' => Partner::with('user')->latest()->get(),
-            'fixedAssets' => FixedAsset::latest()->get(),
-            'brigades' => Brigade::latest()->get(),
-            'machineOwners' => MachineOwner::latest()->get(),
-            // New tables
-            'registers' => CashRegister::with('building')->get(),
-            'counterparties' => Counterparty::with('customable')->get(),
-            'invoices' => Invoice::with(['counterparty', 'building'])->latest()->get(),
-            'moneyTransfers' => MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get(),
-            'rates' => DB::table('currency_rates')->get(),
+            'categories' => $categories,
+            'contracts' => $contracts,
+            'financialLiabilities' => $financialLiabilities,
+            'suppliers' => $suppliers,
+            'workers' => $workers,
+            'machineries' => $machineries,
+            'buildings' => $buildings,
+            'clients' => $clients,
+            'partners' => $partners,
+            'fixedAssets' => $fixedAssets,
+            'brigades' => $brigades,
+            'machineOwners' => $machineOwners,
+            'registers' => $registers,
+            'counterparties' => $counterparties,
+            'invoices' => $invoices,
+            'moneyTransfers' => $moneyTransfers,
+            'rates' => $rates,
         ]);
     }
 

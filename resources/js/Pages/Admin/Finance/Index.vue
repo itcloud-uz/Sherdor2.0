@@ -190,14 +190,13 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
         const isSubDiff = currentSub !== subVal;
         
         if (isTabDiff || isSubDiff) {
-            const params = { tab: newTab };
+            url.searchParams.set('tab', newTab);
             if (subVal) {
-                params.sub = subVal;
+                url.searchParams.set('sub', subVal);
+            } else {
+                url.searchParams.delete('sub');
             }
-            router.replace(route('admin.finance', params), {
-                preserveState: true,
-                preserveScroll: true
-            });
+            window.history.replaceState({ ...window.history.state }, '', url.pathname + url.search);
         }
     } catch (e) {
         console.error('URL replace error in activeTab watcher', e);

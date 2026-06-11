@@ -258,6 +258,24 @@ onMounted(() => {
             isSettingsMenuOpen.value = true;
         }
     }
+
+    refreshInterval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            const activeRoute = route().current();
+            if (activeRoute && (
+                activeRoute.startsWith('admin.crm') || 
+                activeRoute.startsWith('admin.finance') || 
+                activeRoute.startsWith('admin.hr') || 
+                activeRoute.startsWith('admin.facility') ||
+                activeRoute.startsWith('admin.dashboard')
+            )) {
+                router.reload({
+                    preserveScroll: true,
+                    preserveState: true
+                });
+            }
+        }
+    }, 30000); // 30 seconds
 });
 
 onUnmounted(() => {

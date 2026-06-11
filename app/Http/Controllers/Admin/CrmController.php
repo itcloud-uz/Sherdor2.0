@@ -17,55 +17,102 @@ class CrmController extends Controller
 {
     public function index()
     {
-        $leads = Lead::with('user')->latest()->limit(500)->get();
-        $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
-        $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
-        $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
-        $units = \App\Models\Unit::with('floor.building')->get();
-        $partners = \App\Models\Partner::with('user')->get();
-        $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
-                            ->where('status', 'overdue')
-                            ->orderBy('due_date', 'asc')
-                            ->limit(500)
-                            ->get();
+        $tab = request('tab', 'dashboard');
 
-        $posts = Post::with('user')->latest()->limit(500)->get();
-        $crmSettings = CrmSetting::all()->pluck('value', 'key');
-        $users = User::orderBy('name', 'asc')->get();
-
-        // AI Agent settings and templates
-        $templates = \Illuminate\Support\Facades\DB::table('sms_templates')->get();
-        $rules = \Illuminate\Support\Facades\DB::table('sms_automation_rules')->get();
-        $campaigns = \Illuminate\Support\Facades\DB::table('sms_campaigns')->orderByDesc('id')->take(10)->get();
-        $settings = \Illuminate\Support\Facades\DB::table('eskiz_settings')->first();
-        $smsLogs = \App\Models\SmsLog::with('client')->orderByDesc('id')->take(50)->get();
+        $leads = [];
+        $clients = [];
+        $latestClientId = null;
+        $contracts = [];
+        $units = [];
+        $partners = [];
+        $overdueSchedules = [];
+        $strictCollectionSchedules = [];
+        $posts = [];
+        $crmSettings = [];
+        $users = [];
+        $templates = [];
+        $rules = [];
+        $campaigns = [];
+        $settings = null;
+        $smsLogs = [];
         $isConnected = false;
-        
-        if ($settings && $settings->bearer_token) {
-            $res = \Illuminate\Support\Facades\Http::withToken($settings->bearer_token)->get('https://notify.eskiz.uz/api/auth/user');
-            if ($res->successful()) {
-                $isConnected = true;
+
+        // 1. Dashboard Tab
+        if ($tab === 'dashboard') {
+            $leads = Lead::with('user')->latest()->limit(500)->get();
+        }
+
+        // 2. Leads Tab
+        if ($tab === 'leads') {
+            $leads = Lead::with('user')->latest()->limit(500)->get();
+            $users = User::orderBy('name', 'asc')->get();
+        }
+
+        // 3. Clients tabs
+        if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
+            $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
+            $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
+            $users = User::orderBy('name', 'asc')->get();
+        }
+
+        // 4. Contracts Tab
+        if ($tab === 'contracts') {
+            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
+            $units = \App\Models\Unit::with('floor.building')->get();
+            $partners = \App\Models\Partner::with('user')->get();
+            $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get(); // needed for contract form dropdown
+        }
+
+        // 5. Overdue Tab
+        if ($tab === 'overdue') {
+            $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
+                                ->where('status', 'overdue')
+                                ->orderBy('due_date', 'asc')
+                                ->limit(500)
+                                ->get();
+            $now = now();
+            foreach ($allOverdueSchedules as $schedule) {
+                if (!$schedule->contract) {
+                    $overdueSchedules[] = $schedule;
+                    continue;
+                }
+
+                $contractCreatedAt = \Carbon\Carbon::parse($schedule->contract->created_at);
+                $contractEndDate = $contractCreatedAt->copy()->addMonths($schedule->contract->term_months);
+                $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($now, false);
+
+                if ($now->greaterThan($contractEndDate) || $daysOverdue >= 90) {
+                    $strictCollectionSchedules[] = $schedule;
+                } else {
+                    $overdueSchedules[] = $schedule;
+                }
             }
         }
 
-        $overdueSchedules = [];
-        $strictCollectionSchedules = [];
-        $now = now();
+        // 6. Posts Tab
+        if ($tab === 'posts') {
+            $posts = Post::with('user')->latest()->limit(500)->get();
+        }
 
-        foreach ($allOverdueSchedules as $schedule) {
-            if (!$schedule->contract) {
-                $overdueSchedules[] = $schedule;
-                continue;
-            }
+        // 7. Settings Tab
+        if ($tab === 'settings') {
+            $crmSettings = CrmSetting::all()->pluck('value', 'key');
+            $users = User::orderBy('name', 'asc')->get();
+        }
 
-            $contractCreatedAt = \Carbon\Carbon::parse($schedule->contract->created_at);
-            $contractEndDate = $contractCreatedAt->copy()->addMonths($schedule->contract->term_months);
-            $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($now, false);
-
-            if ($now->greaterThan($contractEndDate) || $daysOverdue >= 90) {
-                $strictCollectionSchedules[] = $schedule;
-            } else {
-                $overdueSchedules[] = $schedule;
+        // 8. SMS automation / settings
+        if ($tab === 'sms') {
+            $templates = \Illuminate\Support\Facades\DB::table('sms_templates')->get();
+            $rules = \Illuminate\Support\Facades\DB::table('sms_automation_rules')->get();
+            $campaigns = \Illuminate\Support\Facades\DB::table('sms_campaigns')->orderByDesc('id')->take(10)->get();
+            $settings = \Illuminate\Support\Facades\DB::table('eskiz_settings')->first();
+            $smsLogs = \App\Models\SmsLog::with('client')->orderByDesc('id')->take(50)->get();
+            
+            if ($settings && $settings->bearer_token) {
+                $res = \Illuminate\Support\Facades\Http::withToken($settings->bearer_token)->get('https://notify.eskiz.uz/api/auth/user');
+                if ($res->successful()) {
+                    $isConnected = true;
+                }
             }
         }
 

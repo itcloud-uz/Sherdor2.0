@@ -5,6 +5,7 @@ import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { useI18n } from 'vue-i18n';
+import { regionsData } from '@/locations.js';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -1066,6 +1067,59 @@ const quickClientForm = ref({
     contract_language: 'O\'zbek tili',
     contract_id: ''
 });
+
+const availableQuickDistricts = computed(() => {
+    let r = quickClientForm.value.region;
+    if (!r) return [];
+    r = r.toLowerCase();
+    let foundRegion = regionsData[r];
+    if (!foundRegion) {
+        foundRegion = Object.values(regionsData).find(
+            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
+        );
+    }
+    if (!foundRegion) return [];
+    return Object.entries(foundRegion.districts).map(([key, value]) => ({
+        id: key,
+        name: value.name
+    }));
+});
+
+const availableQuickNeighborhoods = computed(() => {
+    let r = quickClientForm.value.region;
+    if (!r) return [];
+    r = r.toLowerCase();
+    let foundRegion = regionsData[r];
+    if (!foundRegion) {
+        foundRegion = Object.values(regionsData).find(
+            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
+        );
+    }
+    if (!foundRegion) return [];
+
+    let d = quickClientForm.value.district;
+    if (!d) return [];
+    d = d.toLowerCase();
+
+    let foundDistrict = foundRegion.districts[d];
+    if (!foundDistrict) {
+        foundDistrict = Object.values(foundRegion.districts).find(
+            item => item.name.toLowerCase() === d || item.name.toLowerCase().replace(/\s+tumani$/, '') === d
+        );
+    }
+
+    if (!foundDistrict) return [];
+    return foundDistrict.neighborhoods || [];
+});
+
+function onQuickRegionChange() {
+    quickClientForm.value.district = '';
+    quickClientForm.value.address = '';
+}
+
+function onQuickDistrictChange() {
+    quickClientForm.value.address = '';
+}
 
 function openQuickClientAdd() {
     quickClientForm.value = {
@@ -3316,8 +3370,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
 
-                        <!-- Row 2: Shartnoma sanasi, Telefon raqami, Telefon raqami 2, Telefon raqami 3 -->
+                        <!-- Row 2: Shartnoma id, Shartnoma sanasi, Telefon raqami, Telefon raqami 2 -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
+                                <div class="relative">
+                                    <input v-model="quickClientForm.contract_id" type="text" placeholder="Shartnoma id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
+                                    <span class="absolute right-3 top-3 text-gray-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma sanasi</label>
                                 <input v-model="quickClientForm.created_at" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
@@ -3344,19 +3409,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </button>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqami 3</label>
-                                <div class="relative">
-                                    <input v-model="quickClientForm.phone_3" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
-                                    <button type="button" @click="quickClientForm.phone_3 = '+998'" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
-
+ 
                         <!-- Row 3: Passport raqami, JSHSHIR, Kim tomonidan berilgan, Pasport berilgan kuni -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4">
                             <div>
@@ -3376,7 +3430,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <input v-model="quickClientForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
                             </div>
                         </div>
-
+ 
                         <!-- Row 4: Jinsi, Region, Tuman / Shahar, Manzil -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4">
                             <div>
@@ -3395,21 +3449,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Region</label>
                                 <div class="relative">
-                                    <select v-model="quickClientForm.region" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <select v-model="quickClientForm.region" @change="onQuickRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                         <option value="">Tanlang</option>
-                                        <option value="toshkent">Toshkent sh.</option>
-                                        <option value="samarqand">Samarqand</option>
-                                        <option value="fargona">Farg'ona</option>
-                                        <option value="namangan">Namangan</option>
-                                        <option value="andijon">Andijon</option>
-                                        <option value="buxoro">Buxoro</option>
-                                        <option value="qashqadaryo">Qashqadaryo</option>
-                                        <option value="surxondaryo">Surxondaryo</option>
-                                        <option value="jizzax">Jizzax</option>
-                                        <option value="sirdaryo">Sirdaryo</option>
-                                        <option value="navoiy">Navoiy</option>
-                                        <option value="xorazm">Xorazm</option>
-                                        <option value="qoraqalpogiston">Qoraqalpog'iston</option>
+                                        <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionKey">
+                                            {{ regionObj.name }}
+                                        </option>
                                     </select>
                                     <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -3419,9 +3463,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
                                 <div class="relative">
-                                    <select v-model="quickClientForm.district" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <select v-model="quickClientForm.district" @change="onQuickDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                         <option value="">Tanlang</option>
-                                        <option value="tuman">Tuman / Shahar</option>
+                                        <option v-for="districtObj in availableQuickDistricts" :key="districtObj.id" :value="districtObj.name">
+                                            {{ districtObj.name }}
+                                        </option>
                                     </select>
                                     <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -3430,11 +3476,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Manzil</label>
-                                <input v-model="quickClientForm.address" type="text" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                                <input v-model="quickClientForm.address" type="text" list="facilityNeighborhoods" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                                <datalist id="facilityNeighborhoods">
+                                    <option v-for="neighborhood in availableQuickNeighborhoods" :key="neighborhood" :value="neighborhood"></option>
+                                </datalist>
                             </div>
                         </div>
-
-                        <!-- Row 5: Passport rasmlari, Biz haqimizda, Shartnoma tili, Shartnoma id -->
+ 
+                        <!-- Row 5: Passport rasmlari, Biz haqimizda, Shartnoma tili -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Passport rasmlari</label>
@@ -3481,17 +3530,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </select>
                                     <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
-                                <div class="relative">
-                                    <input v-model="quickClientForm.contract_id" type="text" placeholder="Shartnoma id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
-                                    <span class="absolute right-3 top-3 text-gray-400">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
                                     </span>
                                 </div>
                             </div>

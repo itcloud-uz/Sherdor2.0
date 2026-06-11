@@ -2782,7 +2782,7 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- QARZLAR SCHEDULE MODAL -->
-        <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="4xl">
+        <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="4xl" class="quick-transaction-modal-override">
             <div class="p-6">
                 <button @click="showScheduleModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
                 <div class="flex justify-between items-center mb-2">

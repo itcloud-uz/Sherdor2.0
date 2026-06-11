@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         URL::forceScheme('https'); // <-- 2. VA SHU QATORNI QO'SHING
 
         // Self-healing check for currency_rates table
-        if (!\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
+        if (!app()->runningUnitTests() && !\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
             try {
                 \Illuminate\Support\Facades\Schema::create('currency_rates', function (\Illuminate\Database\Schema\Blueprint $table) {
                     $table->id();

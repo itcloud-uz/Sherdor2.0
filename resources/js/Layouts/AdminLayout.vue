@@ -53,10 +53,6 @@ const isFinanceSubTabActive = (tabId, subVal = null) => {
         if (activeTabVal !== tabId) return false;
         
         const subParam = url.searchParams.get('sub');
-        if (tabId === 2) {
-            if (subVal === 'currency') return subParam === 'currency';
-            return subParam !== 'currency';
-        }
         if (tabId === 10) {
             if (subVal === 'payments') return subParam === 'payments' || subParam === null;
             if (subVal === 'debts') return subParam === 'debts';
@@ -404,18 +400,6 @@ const formattedDate = computed(() => {
                             >
                                 <span :class="isFinanceSubTabActive(10, 'payments') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
                                 Mijoz to'lovlari
-                            </Link>
-
-                            <!-- Valyuta -->
-                            <Link
-                                :href="route('admin.finance', { tab: 2, sub: 'currency' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
-                                :class="isFinanceSubTabActive(2, 'currency')
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
-                            >
-                                <span :class="isFinanceSubTabActive(2, 'currency') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
-                                Valyuta
                             </Link>
 
                             <!-- Qo'shimcha operatsiyalar -->

@@ -286,8 +286,6 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
         let subVal = null;
         if (newTab === 10) {
             subVal = newSub;
-        } else if (newTab === 2 && currentSub === 'currency') {
-            subVal = 'currency';
         }
         
         const isTabDiff = currentTab === null || parseInt(currentTab, 10) !== newTab;

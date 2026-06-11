@@ -223,6 +223,65 @@ const showEmployeeModal = ref(false);
 const isEditMode = ref(false);
 const isProcessing = ref(false);
 
+const showSalaryReportModal = ref(false);
+const salaryReportType = ref(''); // 'base', 'paid', 'penalty', 'debt'
+const reportSearchQuery = ref('');
+
+const openSalaryReportModal = (type) => {
+    salaryReportType.value = type;
+    reportSearchQuery.value = '';
+    showSalaryReportModal.value = true;
+};
+
+const filteredReportList = computed(() => {
+    return salaryList.value.filter(s => {
+        const query = reportSearchQuery.value.toLowerCase();
+        return s.employee.name.toLowerCase().includes(query) ||
+               (s.employee.role_label && s.employee.role_label.toLowerCase().includes(query)) ||
+               (s.employee.building_name && s.employee.building_name.toLowerCase().includes(query));
+    });
+});
+
+const reportModalTitle = computed(() => {
+    const month = selectedMonthLabel.value;
+    switch (salaryReportType.value) {
+        case 'base': return `Asosiy maoshlar bo'yicha to'liq hisobot - ${month}`;
+        case 'paid': return `To'langan maoshlar bo'yicha to'liq hisobot - ${month}`;
+        case 'penalty': return `Jarimalar bo'yicha to'liq hisobot - ${month}`;
+        case 'debt': return `Qarzdorlik (Qoldiq) bo'yicha to'liq hisobot - ${month}`;
+        default: return `To'liq maosh hisoboti - ${month}`;
+    }
+});
+
+function exportReportToExcel() {
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += "sep=;\n"; // Excel column separator directive
+    csvContent += "№;Xodim;Lavozimi;Bino;Asosiy maosh;Bonus;Jarima;Avans;To'langan summa;To'lov sana;Qarzdorlik (Qoldiq);Holat\n";
+    
+    filteredReportList.value.forEach(s => {
+        const name = s.employee.name.replace(/;/g, ' ');
+        const role = (s.employee.role_label || '').replace(/;/g, ' ');
+        const bino = (s.employee.building_name || '').replace(/;/g, ' ');
+        csvContent += `${s.index};"${name}";"${role}";"${bino}";${s.base_salary};${s.bonus};${s.penalty};${s.advance};${s.paid};"${s.payment_date}";${s.debt};"${s.status}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    let filename = `Maosh_Hisoboti_${salarySelectedMonth.value}`;
+    if (salaryReportType.value) {
+        filename += `_${salaryReportType.value}`;
+    }
+    link.setAttribute("download", `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
 const employeeForm = useForm({
     id: null,
     type: 'worker', // 'user' or 'worker'
@@ -990,7 +1049,7 @@ const kpiManagers = computed(() => {
                 <!-- 4 Statistics Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <!-- Card 1: Jami asosiy maosh -->
-                    <div class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openSalaryReportModal('base')" class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-blue-100/50">
                         <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-xl shrink-0">
                             📄
                         </div>
@@ -1001,7 +1060,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- Card 2: Jami to'langan -->
-                    <div class="bg-emerald-50/70 border border-emerald-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openSalaryReportModal('paid')" class="bg-emerald-50/70 border border-emerald-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-emerald-100/50">
                         <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-xl shrink-0">
                             💵
                         </div>
@@ -1012,7 +1071,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- Card 3: Jami jarima -->
-                    <div class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openSalaryReportModal('penalty')" class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-rose-100/50">
                         <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center font-bold text-rose-700 text-xl shrink-0">
                             ⚠️
                         </div>
@@ -1023,7 +1082,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- Card 4: Jami qoldiq -->
-                    <div class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openSalaryReportModal('debt')" class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-purple-100/50">
                         <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center font-bold text-purple-700 text-xl shrink-0">
                             🏛️
                         </div>
@@ -1799,6 +1858,107 @@ const kpiManagers = computed(() => {
                         <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm">Saqlash</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 6. Detailed Salary Report Modal (Clicking total indicators) -->
+        <div v-if="showSalaryReportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+            <div class="bg-white rounded-3xl w-full max-w-6xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-3">
+                        <button @click="showSalaryReportModal = false" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-500 font-bold">✕</button>
+                        <h3 class="text-base font-black text-gray-900 font-display uppercase tracking-wide">{{ reportModalTitle }}</h3>
+                    </div>
+                    <button 
+                        @click="exportReportToExcel" 
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                    >
+                        <span>📥</span> Excel yuklab olish
+                    </button>
+                </div>
+                
+                <!-- Filters and Search inside Modal -->
+                <div class="p-5 bg-white border-b border-gray-50 flex flex-col sm:flex-row gap-4 items-center shrink-0">
+                    <div class="relative flex-1 w-full">
+                        <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
+                        <input 
+                            v-model="reportSearchQuery" 
+                            type="text" 
+                            placeholder="Xodim, lavozim yoki bino bo'yicha qidirish..."
+                            class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                        />
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                    <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-400 uppercase text-[10px] font-bold tracking-wider border-b border-gray-100">
+                                    <th class="p-4 w-12 text-center">№</th>
+                                    <th class="p-4">Xodim</th>
+                                    <th class="p-4">Lavozimi</th>
+                                    <th class="p-4">Bino (Ob'ekt)</th>
+                                    <th class="p-4 text-right" :class="{'bg-blue-50/50 text-blue-800 font-extrabold': salaryReportType === 'base'}">Asosiy maosh</th>
+                                    <th class="p-4 text-right">Bonus</th>
+                                    <th class="p-4 text-right" :class="{'bg-rose-50/50 text-rose-800 font-extrabold': salaryReportType === 'penalty'}">Jarima</th>
+                                    <th class="p-4 text-right">Avans</th>
+                                    <th class="p-4 text-right" :class="{'bg-emerald-50/50 text-emerald-800 font-extrabold': salaryReportType === 'paid'}">To'langan</th>
+                                    <th class="p-4 text-right" :class="{'bg-purple-50/50 text-purple-800 font-extrabold': salaryReportType === 'debt'}">Qarzdorlik (Qoldiq)</th>
+                                    <th class="p-4 text-center">Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(s, idx) in filteredReportList" :key="idx" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 text-center font-mono text-gray-500 text-xs">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900 uppercase text-xs">{{ s.employee.name }}</td>
+                                    <td class="p-4 text-gray-600 text-xs">{{ s.employee.role_label }}</td>
+                                    <td class="p-4 text-gray-500 text-xs">{{ s.employee.building_name }}</td>
+                                    <td class="p-4 text-right font-mono text-xs font-semibold" :class="{'bg-blue-50/30 text-blue-900 font-bold': salaryReportType === 'base'}">
+                                        {{ formatPrice(s.base_salary) }}
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-xs text-gray-600">
+                                        {{ formatPrice(s.bonus) }}
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-xs font-semibold text-rose-600" :class="{'bg-rose-50/30 text-rose-900 font-bold': salaryReportType === 'penalty'}">
+                                        {{ formatPrice(s.penalty) }}
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-xs text-gray-600">
+                                        {{ formatPrice(s.advance) }}
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-xs font-semibold text-emerald-600" :class="{'bg-emerald-50/30 text-emerald-900 font-bold': salaryReportType === 'paid'}">
+                                        {{ formatPrice(s.paid) }}
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-xs font-semibold text-purple-600" :class="{'bg-purple-50/30 text-purple-900 font-bold': salaryReportType === 'debt'}">
+                                        {{ formatPrice(s.debt) }}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" 
+                                            :class="s.status === 'To\'langan' ? 'bg-emerald-100 text-emerald-800' : (s.status === 'Qisman to\'langan' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800')">
+                                            {{ s.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredReportList.length === 0">
+                                    <td colspan="11" class="p-10 text-center text-gray-400 font-medium text-xs">Ma'lumot topilmadi</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer Summary inside Modal -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap justify-between items-center shrink-0 text-xs text-gray-500 font-mono gap-4">
+                    <div>Jami xodimlar: <span class="font-bold text-gray-900">{{ filteredReportList.length }} nafar</span></div>
+                    <div class="flex gap-4">
+                        <div>Asosiy maosh: <span class="font-bold text-blue-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.base_salary, 0)) }}</span></div>
+                        <div>To'langan: <span class="font-bold text-emerald-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.paid, 0)) }}</span></div>
+                        <div>Jarima: <span class="font-bold text-rose-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.penalty, 0)) }}</span></div>
+                        <div>Qoldiq: <span class="font-bold text-purple-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.debt, 0)) }}</span></div>
+                    </div>
+                </div>
             </div>
         </div>
 

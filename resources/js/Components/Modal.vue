@@ -22,17 +22,28 @@ const showSlot = ref(props.show);
 
 watch(
     () => props.show,
-    () => {
-        if (props.show) {
+    (newValue) => {
+        if (newValue) {
             document.body.style.overflow = 'hidden';
             showSlot.value = true;
-
-            dialog.value?.showModal();
+            if (dialog.value && !dialog.value.open) {
+                try {
+                    dialog.value.showModal();
+                } catch (e) {
+                    console.error('Modal showModal error:', e);
+                }
+            }
         } else {
             document.body.style.overflow = '';
 
             setTimeout(() => {
-                dialog.value?.close();
+                if (dialog.value && dialog.value.open) {
+                    try {
+                        dialog.value.close();
+                    } catch (e) {
+                        console.error('Modal close error:', e);
+                    }
+                }
                 showSlot.value = false;
             }, 200);
         }
@@ -55,12 +66,27 @@ const closeOnEscape = (e) => {
     }
 };
 
-onMounted(() => document.addEventListener('keydown', closeOnEscape));
+onMounted(() => {
+    document.addEventListener('keydown', closeOnEscape);
+    if (props.show && dialog.value && !dialog.value.open) {
+        try {
+            dialog.value.showModal();
+        } catch (e) {
+            console.error('Modal showModal onMounted error:', e);
+        }
+    }
+});
 
 onUnmounted(() => {
     document.removeEventListener('keydown', closeOnEscape);
-
     document.body.style.overflow = '';
+    if (dialog.value && dialog.value.open) {
+        try {
+            dialog.value.close();
+        } catch (e) {
+            // ignore
+        }
+    }
 });
 
 const maxWidthClass = computed(() => {
@@ -81,6 +107,7 @@ const maxWidthClass = computed(() => {
 
 <template>
     <dialog
+        v-show="showSlot"
         class="z-50 m-0 min-h-full min-w-full overflow-y-auto bg-transparent backdrop:bg-transparent"
         ref="dialog"
     >

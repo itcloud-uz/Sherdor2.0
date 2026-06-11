@@ -995,16 +995,6 @@ const kpiManagers = computed(() => {
                         <h2 class="text-2xl font-extrabold text-gray-900 font-display">Maosh hisobotlari</h2>
                         <p class="text-sm text-gray-500 font-medium mt-1">Oy kesimida maosh, jarimalar, avanslar va qarzdorlik.</p>
                     </div>
-                    <button 
-                        @click="exportSalariesToExcel" 
-                        class="flex items-center gap-2 px-4 py-2 border border-green-600 hover:border-green-700 text-green-700 hover:bg-green-50 rounded-xl text-sm font-semibold transition-colors"
-                    >
-                        <!-- Excel Icon -->
-                        <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Excel</span>
-                    </button>
                 </div>
 
                 <!-- Filters -->

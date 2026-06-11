@@ -2304,7 +2304,7 @@ function submitPromoRule() {
                 <!-- Detailed Client View Content -->
                 <div v-else-if="detailedClientData" class="space-y-6">
                     <!-- Card 1: Uy haqida ma'lumot -->
-                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
+                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0 && detailedClientData.contracts[0]?.unit" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
                         <!-- Left: Layout Image Preview -->
                         <div class="w-full md:w-64 h-48 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden relative group cursor-pointer flex items-center justify-center shrink-0">
                             <!-- Floorplan Preview -->
@@ -2369,6 +2369,22 @@ function submitPromoRule() {
                                 <div>Xonadon raqami: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}</strong></div>
                                 <div>Tafsilot: <strong class="text-gray-900">—</strong></div>
                                 <div>Maydoni: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.54' }} m²</strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- If no contract/unit exists -->
+                    <div v-else class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between min-h-[120px] relative overflow-hidden">
+                        <div class="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-slate-50 rounded-full opacity-50 blur-xl"></div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                                <svg class="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider font-sans">Uy haqida ma'lumot topilmadi</h3>
+                                <p class="text-xs text-gray-500 font-sans mt-0.5">Ushbu mijoz hali uy sotib olmagan.</p>
                             </div>
                         </div>
                     </div>
@@ -2481,7 +2497,7 @@ function submitPromoRule() {
                             </div>
                             <div>
                                 <span class="text-gray-400 block mb-1">Chegirma</span>
-                                <strong class="text-gray-900 text-base font-bold">500,000 so'm</strong>
+                                <strong class="text-gray-900 text-base font-bold">{{ Number(detailedClientData.contracts[0]?.discount || 0).toLocaleString('en-US') }} so'm</strong>
                             </div>
                             <div>
                                 <span class="text-gray-400 block mb-1">To'langan</span>

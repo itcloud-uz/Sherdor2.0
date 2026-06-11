@@ -144,6 +144,12 @@ class FinanceController extends Controller
             'converted_amount' => 'nullable|numeric|min:0',
         ]);
 
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
+
         // 1. Object Lock Check
         $register = CashRegister::findOrFail($validated['account_id']);
         if ($register->building_id) {
@@ -808,6 +814,12 @@ class FinanceController extends Controller
             'balance' => 'nullable|numeric|min:0',
         ]);
 
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
+
         if (!isset($validated['balance']) || $validated['balance'] == 0) {
             $validated['balance'] = $validated['initial_balance_uzs'] ?? 0;
         }
@@ -833,6 +845,12 @@ class FinanceController extends Controller
             'balance' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
         ]);
+
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
 
         $oldInitialUZS = (float)$register->initial_balance_uzs;
         $newInitialUZS = (float)($validated['initial_balance_uzs'] ?? 0);
@@ -913,6 +931,12 @@ class FinanceController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
+
         $validated['paid_amount'] = 0.00;
         $validated['status'] = 'new';
 
@@ -935,6 +959,12 @@ class FinanceController extends Controller
             'type' => 'required|in:monthly_schedule,manual_expense,procurement,loan',
             'description' => 'nullable|string',
         ]);
+
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
 
         $invoice->update($validated);
 

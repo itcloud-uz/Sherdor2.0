@@ -32,25 +32,47 @@ return new class extends Migration
         }
 
         // 2. Clean up any empty string or null values by setting them to 0.00
-        DB::table('cash_registers')
-            ->where('initial_balance_uzs', '')
-            ->orWhereNull('initial_balance_uzs')
-            ->update(['initial_balance_uzs' => 0.00]);
+        // MySQL does not support comparing decimal columns directly with empty strings ('') in strict mode,
+        // but SQLite does. We check the driver name to run the correct query.
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
 
-        DB::table('cash_registers')
-            ->where('initial_balance_usd', '')
-            ->orWhereNull('initial_balance_usd')
-            ->update(['initial_balance_usd' => 0.00]);
+        if ($isSqlite) {
+            DB::table('cash_registers')
+                ->where('initial_balance_uzs', '')
+                ->orWhereNull('initial_balance_uzs')
+                ->update(['initial_balance_uzs' => 0.00]);
 
-        DB::table('cash_registers')
-            ->where('initial_balance_eur', '')
-            ->orWhereNull('initial_balance_eur')
-            ->update(['initial_balance_eur' => 0.00]);
+            DB::table('cash_registers')
+                ->where('initial_balance_usd', '')
+                ->orWhereNull('initial_balance_usd')
+                ->update(['initial_balance_usd' => 0.00]);
 
-        DB::table('cash_registers')
-            ->where('balance', '')
-            ->orWhereNull('balance')
-            ->update(['balance' => 0.00]);
+            DB::table('cash_registers')
+                ->where('initial_balance_eur', '')
+                ->orWhereNull('initial_balance_eur')
+                ->update(['initial_balance_eur' => 0.00]);
+
+            DB::table('cash_registers')
+                ->where('balance', '')
+                ->orWhereNull('balance')
+                ->update(['balance' => 0.00]);
+        } else {
+            DB::table('cash_registers')
+                ->whereNull('initial_balance_uzs')
+                ->update(['initial_balance_uzs' => 0.00]);
+
+            DB::table('cash_registers')
+                ->whereNull('initial_balance_usd')
+                ->update(['initial_balance_usd' => 0.00]);
+
+            DB::table('cash_registers')
+                ->whereNull('initial_balance_eur')
+                ->update(['initial_balance_eur' => 0.00]);
+
+            DB::table('cash_registers')
+                ->whereNull('balance')
+                ->update(['balance' => 0.00]);
+        }
     }
 
     /**

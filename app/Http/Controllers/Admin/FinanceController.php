@@ -815,13 +815,17 @@ class FinanceController extends Controller
         ]);
 
         foreach ($validated as $key => $value) {
-            if ($value === '' && str_ends_with($key, '_id')) {
+            if ($value === '') {
                 $validated[$key] = null;
             }
         }
 
-        if (!isset($validated['balance']) || $validated['balance'] == 0) {
-            $validated['balance'] = $validated['initial_balance_uzs'] ?? 0;
+        $validated['initial_balance_uzs'] = $validated['initial_balance_uzs'] ?? 0;
+        $validated['initial_balance_usd'] = $validated['initial_balance_usd'] ?? 0;
+        $validated['initial_balance_eur'] = $validated['initial_balance_eur'] ?? 0;
+
+        if (!isset($validated['balance']) || $validated['balance'] === '' || $validated['balance'] === null) {
+            $validated['balance'] = $validated['initial_balance_uzs'];
         }
 
         CashRegister::create($validated);
@@ -847,13 +851,18 @@ class FinanceController extends Controller
         ]);
 
         foreach ($validated as $key => $value) {
-            if ($value === '' && str_ends_with($key, '_id')) {
+            if ($value === '') {
                 $validated[$key] = null;
             }
         }
 
+        $validated['initial_balance_uzs'] = $validated['initial_balance_uzs'] ?? 0;
+        $validated['initial_balance_usd'] = $validated['initial_balance_usd'] ?? 0;
+        $validated['initial_balance_eur'] = $validated['initial_balance_eur'] ?? 0;
+        $validated['balance'] = $validated['balance'] ?? 0;
+
         $oldInitialUZS = (float)$register->initial_balance_uzs;
-        $newInitialUZS = (float)($validated['initial_balance_uzs'] ?? 0);
+        $newInitialUZS = (float)$validated['initial_balance_uzs'];
         if ($newInitialUZS !== $oldInitialUZS) {
             $diff = $newInitialUZS - $oldInitialUZS;
             $validated['balance'] = (float)$validated['balance'] + $diff;

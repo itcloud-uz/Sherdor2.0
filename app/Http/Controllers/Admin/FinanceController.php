@@ -799,8 +799,18 @@ class FinanceController extends Controller
             'type' => 'required|in:cash,bank',
             'currency' => 'required|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
+            'initial_balance_uzs' => 'nullable|numeric|min:0',
+            'initial_balance_usd' => 'nullable|numeric|min:0',
+            'initial_balance_eur' => 'nullable|numeric|min:0',
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'mfo_code' => 'nullable|string|max:255',
             'balance' => 'nullable|numeric|min:0',
         ]);
+
+        if (!isset($validated['balance']) || $validated['balance'] == 0) {
+            $validated['balance'] = $validated['initial_balance_uzs'] ?? 0;
+        }
 
         CashRegister::create($validated);
 
@@ -814,9 +824,22 @@ class FinanceController extends Controller
             'type' => 'required|in:cash,bank',
             'currency' => 'required|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
+            'initial_balance_uzs' => 'nullable|numeric|min:0',
+            'initial_balance_usd' => 'nullable|numeric|min:0',
+            'initial_balance_eur' => 'nullable|numeric|min:0',
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'mfo_code' => 'nullable|string|max:255',
             'balance' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
         ]);
+
+        $oldInitialUZS = (float)$register->initial_balance_uzs;
+        $newInitialUZS = (float)($validated['initial_balance_uzs'] ?? 0);
+        if ($newInitialUZS !== $oldInitialUZS) {
+            $diff = $newInitialUZS - $oldInitialUZS;
+            $validated['balance'] = (float)$validated['balance'] + $diff;
+        }
 
         $register->update($validated);
 

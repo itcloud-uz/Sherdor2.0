@@ -759,6 +759,21 @@ function deleteInvoice(id) {
     }
 }
 
+const uniqueBuildings = computed(() => {
+    if (!props.buildings) return [];
+    const seenIds = new Set();
+    const seenNames = new Set();
+    return props.buildings.filter(b => {
+        const nameLower = b.name.trim().toLowerCase();
+        if (seenIds.has(b.id) || seenNames.has(nameLower)) {
+            return false;
+        }
+        seenIds.add(b.id);
+        seenNames.add(nameLower);
+        return true;
+    });
+});
+
 // Invoice dynamic filters for Tab 10
 const invoiceFilters = ref({
     start_date: '',
@@ -1523,7 +1538,7 @@ function formatMoney(amount, currency = 'UZS') {
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Bino / Obyekt</label>
                         <select v-model="jurnalBuildingId" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
                             <option value="">Barchasi</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
                     </div>
                 </div>
@@ -2299,64 +2314,34 @@ function formatMoney(amount, currency = 'UZS') {
                 </h3>
                 
                 <form @submit.prevent="submitRegister" class="space-y-4 font-mono text-xs">
+                    <!-- Kassa nomi -->
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kassa nomi *</label>
                         <input v-model="registerForm.name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Turi *</label>
-                            <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
-                                <option value="cash">Naqd (Cash)</option>
-                                <option value="bank">Bank hisobi</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Valyuta *</label>
-                            <select v-model="registerForm.currency" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
-                                <option value="UZS">UZS</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
+                    <!-- Turi -->
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Turi *</label>
+                        <select v-model="registerForm.type" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            <option value="cash">Naqd (Cash)</option>
+                            <option value="bank">Bank hisobi</option>
+                        </select>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans UZS</label>
-                            <input v-model="registerForm.initial_balance_uzs" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans USD</label>
-                            <input v-model="registerForm.initial_balance_usd" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Initial Balans EUR</label>
-                            <input v-model="registerForm.initial_balance_eur" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                        </div>
+                    <!-- Boshlang'ich balans UZS -->
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Boshlang'ich balans (UZS)</label>
+                        <input v-model="registerForm.initial_balance_uzs" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                     </div>
 
+                    <!-- Bino / Obyekt -->
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Bino / Obyekt</label>
                         <select v-model="registerForm.building_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                             <option value="">-- Umumiy kassa --</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Bank Nomi</label>
-                            <input v-model="registerForm.bank_name" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">MFO Kodi</label>
-                            <input v-model="registerForm.mfo_code" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob raqami</label>
-                        <input v-model="registerForm.account_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                     </div>
 
                     <!-- Status toggle in edit mode -->
@@ -2709,7 +2694,7 @@ function formatMoney(amount, currency = 'UZS') {
                             </label>
                             <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Qurilish obyekti tanlang</option>
-                                <option v-for="b in buildings" :key="b.id" :value="b.id">
+                                <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
                                     {{ b.name }}
                                 </option>
                             </select>

@@ -306,6 +306,12 @@ const getRegisterName = (id) => {
     return r ? r.name : '';
 };
 
+const isTransferFromLocked = ref(false);
+const getRegisterNameWithCurrency = (id) => {
+    const r = props.registers?.find(x => x.id === id);
+    return r ? `${r.name} (${r.currency})` : '';
+};
+
 // Tab 8 register specific search / filter states
 const registerSearchQuery = ref('');
 const registerDateFrom = ref('');
@@ -1028,14 +1034,27 @@ function openQuickTransaction(type) {
     showQuickTransactionModal.value = true;
 }
 
-function openQuickTransfer() {
-    transferForm.value = { 
-        from_account_id: selectedRegister.value?.id || '', 
-        to_account_id: '', 
-        sent_amount: '', 
-        exchange_rate: 1.0, 
-        description: '' 
-    };
+function openQuickTransfer(fromRegister = null) {
+    const activeReg = fromRegister || (activeTab.value !== 6 ? selectedRegister.value : null);
+    if (activeReg) {
+        isTransferFromLocked.value = true;
+        transferForm.value = { 
+            from_account_id: activeReg.id, 
+            to_account_id: '', 
+            sent_amount: '', 
+            exchange_rate: 1.0, 
+            description: '' 
+        };
+    } else {
+        isTransferFromLocked.value = false;
+        transferForm.value = { 
+            from_account_id: '', 
+            to_account_id: '', 
+            sent_amount: '', 
+            exchange_rate: 1.0, 
+            description: '' 
+        };
+    }
     showQuickTransferModal.value = true;
 }
 
@@ -1852,7 +1871,7 @@ function formatMoney(amount, currency = 'UZS') {
                         <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
                             🔍 Filtr
                         </button>
-                        <button @click="openNewRegisterModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
+                        <button @click="openQuickTransfer()" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
                             + Pul o'tkazmasi qo'shish
                         </button>
                     </div>
@@ -2220,7 +2239,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <button @click="openQuickTransaction('expense')" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
                                 <span>+ CHIQIM</span>
                             </button>
-                            <button @click="openQuickTransfer()" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                            <button @click="openQuickTransfer(selectedRegister)" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
                                 <span>+ O'TKAZMA</span>
                             </button>
                         </div>
@@ -3214,9 +3233,18 @@ function formatMoney(amount, currency = 'UZS') {
                 
                 <form @submit.prevent="submitTransfer" class="space-y-4 font-sans text-xs">
                     <!-- From Account -->
-                    <div>
+                    <div v-if="isTransferFromLocked">
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Chiqish Kassasi</label>
-                        <input :value="selectedRegister ? `${selectedRegister.name} (${selectedRegister.currency})` : ''" type="text" readonly class="bg-slate-100 border border-slate-200 text-slate-500 rounded-xl w-full px-3 py-2 font-bold focus:outline-none">
+                        <input :value="getRegisterNameWithCurrency(transferForm.from_account_id)" type="text" readonly class="bg-slate-100 border border-slate-200 text-slate-500 rounded-xl w-full px-3 py-2 font-bold focus:outline-none">
+                    </div>
+                    <div v-else>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Chiqish Kassasi *</label>
+                        <select v-model="transferForm.from_account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <option value="" disabled>-- Tanlang --</option>
+                            <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
+                                {{ r.name }} ({{ r.currency }})
+                            </option>
+                        </select>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -3225,7 +3253,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kirish Kassasi *</label>
                             <select v-model="transferForm.to_account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>-- Tanlang --</option>
-                                <option v-for="r in registers.filter(x => selectedRegister && x.id !== selectedRegister.id && x.is_active)" :key="r.id" :value="r.id">
+                                <option v-for="r in registers.filter(x => x.id != transferForm.from_account_id && x.is_active)" :key="r.id" :value="r.id">
                                     {{ r.name }} ({{ r.currency }})
                                 </option>
                             </select>

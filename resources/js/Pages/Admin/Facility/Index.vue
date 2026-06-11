@@ -2733,9 +2733,21 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </div>
 
         <!-- Add/Edit Building Modal -->
-        <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false">
-            <div class="p-6 w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar bg-white text-slate-800 rounded-xl">
-                <h2 class="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6">{{ modalTitle }}</h2>
+        <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false" class="facility-modal-override">
+            <div class="p-5 w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar bg-white text-slate-800 rounded-xl">
+                <!-- Header with Title & Close Icon -->
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800 font-sans uppercase tracking-wider">
+                            {{ modalTitle }}
+                        </h2>
+                    </div>
+                    <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
+                        ✕
+                    </button>
+                </div>
+                
                 <form @submit.prevent="submitBuilding" class="space-y-4">
                     
                     <!-- YANGI OBYEKT QO'SHISH FORM -->
@@ -2994,8 +3006,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
 
                     <div class="flex justify-end items-center gap-3 mt-6">
-                        <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors">Bekor Qilish</button>
-                        <button type="submit" :disabled="buildingForm.processing" class="px-5 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-lg shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50">
+                        <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-semibold rounded-lg border btn-cancel">
+                            Bekor Qilish
+                        </button>
+                        <button type="submit" :disabled="buildingForm.processing" class="px-5 py-2.5 text-white font-bold text-xs rounded-lg shadow-md btn-save disabled:opacity-50">
                             {{ submitButtonLabel }}
                         </button>
                     </div>
@@ -3680,3 +3694,94 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
     background-color: #f87171;
 }
 </style>
+
+<style>
+dialog.facility-modal-override .theme-modal {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
+}
+
+dialog.facility-modal-override .theme-modal h1,
+dialog.facility-modal-override .theme-modal h2,
+dialog.facility-modal-override .theme-modal h3,
+dialog.facility-modal-override .theme-modal h4,
+dialog.facility-modal-override .theme-modal p,
+dialog.facility-modal-override .theme-modal span,
+dialog.facility-modal-override .theme-modal label,
+dialog.facility-modal-override .theme-modal th,
+dialog.facility-modal-override .theme-modal td {
+    color: #0f172a !important;
+}
+
+dialog.facility-modal-override .theme-modal label {
+    color: #475569 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.05em !important;
+}
+
+dialog.facility-modal-override .theme-modal input,
+dialog.facility-modal-override .theme-modal select,
+dialog.facility-modal-override .theme-modal textarea {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+    border-radius: 0.75rem !important; /* rounded-xl */
+    font-size: 0.75rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+dialog.facility-modal-override .theme-modal input:hover,
+dialog.facility-modal-override .theme-modal select:hover,
+dialog.facility-modal-override .theme-modal textarea:hover {
+    border-color: #cbd5e1 !important; /* slate-300 */
+}
+
+dialog.facility-modal-override .theme-modal input:focus,
+dialog.facility-modal-override .theme-modal select:focus,
+dialog.facility-modal-override .theme-modal textarea:focus {
+    background-color: #ffffff !important;
+    border-color: #f97316 !important; /* orange-500 */
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
+    outline: none !important;
+}
+
+dialog.facility-modal-override .theme-modal select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+dialog.facility-modal-override .theme-modal .bg-gray-50,
+dialog.facility-modal-override .theme-modal .bg-slate-50 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+dialog.facility-modal-override .theme-modal .btn-cancel {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+dialog.facility-modal-override .theme-modal .btn-cancel:hover {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+dialog.facility-modal-override .theme-modal .btn-save {
+    background-color: #f97316 !important; /* orange-500 */
+    color: #ffffff !important;
+    border: none !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+dialog.facility-modal-override .theme-modal .btn-save:hover {
+    background-color: #ea580c !important; /* orange-600 */
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
+}
+</style>
+

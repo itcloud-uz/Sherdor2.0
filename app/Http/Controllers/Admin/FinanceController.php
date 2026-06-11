@@ -65,21 +65,22 @@ class FinanceController extends Controller
 
         $tab = (int)request('tab', 0);
         
-        $transactions = [];
         $categories = TransactionCategory::all();
-        $contracts = [];
+        $registers = CashRegister::with('building')->get();
+        $workers = Worker::latest()->get();
+        $suppliers = Supplier::latest()->get();
+        $partners = Partner::with('user')->latest()->get();
+        $brigades = Brigade::latest()->get();
+        $machineOwners = MachineOwner::latest()->get();
+        $counterparties = Counterparty::with('customable')->get();
+        $buildings = Building::latest()->get();
+        $clients = Client::latest()->limit(500)->get();
+        $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
+
+        $transactions = [];
         $financialLiabilities = [];
-        $suppliers = [];
-        $workers = [];
         $machineries = [];
-        $buildings = [];
-        $clients = [];
-        $partners = [];
         $fixedAssets = [];
-        $brigades = [];
-        $machineOwners = [];
-        $registers = [];
-        $counterparties = [];
         $invoices = [];
         $moneyTransfers = [];
         $rates = [];
@@ -113,32 +114,14 @@ class FinanceController extends Controller
             ])->latest()->limit(500)->get();
         }
 
-        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 6 || $tab === 8 || $tab === 10 || $tab === 11) {
-            $registers = CashRegister::with('building')->get();
-        }
-
         if ($tab === 1 || $tab === 11) {
-            $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
             $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
-            $suppliers = Supplier::latest()->get();
-            $workers = Worker::latest()->get();
             $machineries = Machinery::latest()->get();
-            $buildings = Building::latest()->get();
-            $clients = Client::latest()->limit(500)->get();
-            $partners = Partner::with('user')->latest()->get();
             $fixedAssets = FixedAsset::latest()->get();
-            $brigades = Brigade::latest()->get();
-            $machineOwners = MachineOwner::latest()->get();
-            $counterparties = Counterparty::with('customable')->get();
             $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
-        if ($tab === 2 || $tab === 9 || $tab === 10 || $tab === 11) {
-            $counterparties = Counterparty::with('customable')->get();
-        }
-
         if ($tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
-            $buildings = Building::latest()->get();
             $rates = DB::table('currency_rates')->get();
         }
 

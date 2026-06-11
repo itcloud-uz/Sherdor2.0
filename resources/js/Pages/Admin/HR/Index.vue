@@ -1648,31 +1648,6 @@ const kpiManagers = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Shartnoma turi -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-2">Shartnoma turi</label>
-                        <div class="flex items-center gap-6 py-1">
-                            <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    value="labor" 
-                                    v-model="employeeForm.contract_type"
-                                    class="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                                />
-                                Mexnat shartnomasi
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700 font-semibold cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    value="civil" 
-                                    v-model="employeeForm.contract_type"
-                                    class="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                                />
-                                FHSH (fuqorolik huquqiy shartnomasi)
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Holat -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">
@@ -1682,64 +1657,6 @@ const kpiManagers = computed(() => {
                             <option value="active">Ish holatida</option>
                             <option value="fired">Bo'shatilgan</option>
                         </select>
-                    </div>
-
-                    <!-- Drag and Drop Additional Documents -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-2">Qo'shimcha hujjatlarni yuklash</label>
-                        <div 
-                            @dragover.prevent="isDragging = true"
-                            @dragleave.prevent="isDragging = false"
-                            @drop.prevent="handleFileDrop"
-                            @click="$refs.docFileInput.click()"
-                            class="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors"
-                            :class="isDragging ? 'border-amber-500 bg-amber-50/50' : 'border-gray-200 bg-gray-50/30 hover:bg-gray-50'"
-                        >
-                            <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
-                                <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                            <p class="text-sm font-semibold text-gray-700 text-center">Fayllarni bu yerga tortib tashlang yoki yuklash uchun bosing</p>
-                            <p class="text-xs text-gray-400 mt-1">Bitta yoki bir nechta faylni yuklashingiz mumkin</p>
-                        </div>
-                        <input ref="docFileInput" type="file" multiple class="hidden" @change="handleFileSelect" />
-
-                        <!-- List of documents -->
-                        <div v-if="employeeForm.additional_documents.length > 0" class="mt-3 space-y-2">
-                            <div v-for="(doc, idx) in employeeForm.additional_documents" :key="idx" class="flex items-center justify-between bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                <div class="flex items-center gap-2 overflow-hidden">
-                                    <span class="text-gray-400 text-lg">📄</span>
-                                    <span class="text-xs font-bold text-gray-700 truncate">{{ doc.name }}</span>
-                                </div>
-                                <button type="button" @click="removeDocument(idx)" class="text-red-500 hover:text-red-700 font-bold text-xs p-1">O'chirish</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Characteristics -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-2">Xarakterlari</label>
-                        <div class="space-y-2">
-                            <div v-for="(char, idx) in employeeForm.characteristics" :key="idx" class="flex gap-2 items-center">
-                                <input 
-                                    v-model="employeeForm.characteristics[idx]" 
-                                    type="text" 
-                                    placeholder="Xarakterni kiriting"
-                                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 bg-white"
-                                />
-                                <button type="button" @click="removeCharacteristic(idx)" class="w-9 h-9 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center font-bold">
-                                    ✕
-                                </button>
-                            </div>
-                            <button 
-                                type="button" 
-                                @click="addCharacteristic"
-                                class="w-full py-2.5 border border-dashed border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50/50 flex items-center justify-center gap-1.5 transition-colors"
-                            >
-                                <span class="text-lg">+</span> Xarakter qo'shish
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Footer Buttons -->

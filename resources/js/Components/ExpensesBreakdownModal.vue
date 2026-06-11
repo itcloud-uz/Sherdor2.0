@@ -55,7 +55,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
         <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-4xl p-0 rounded-2xl relative border border-gray-200 flex flex-col max-h-[90vh]">
             
             <!-- Header -->
-            <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-500/50 rounded-t-2xl shrink-0">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-slate-50 rounded-t-2xl shrink-0">
                 <h3 class="text-2xl font-display font-bold text-gray-900 flex items-center gap-3">
                     <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm"></span>
                     Chiqimlar Hisoboti (Batafsil)
@@ -69,7 +69,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
 
             <!-- Content -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 relative">
-                <div v-if="isProcessing" class="absolute inset-0 flex items-center justify-center bg-gray-500/50 z-10 rounded-b-2xl">
+                <div v-if="isProcessing" class="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-b-2xl">
                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
                 </div>
 
@@ -93,7 +93,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
                         <div v-for="(cat, index) in categories" :key="index" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-100 hover:border-gray-300 transition-all group">
                             <div class="flex justify-between items-center cursor-pointer" @click="cat.expanded = !cat.expanded">
                                 <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-lg bg-gray-500/50 border border-gray-200 flex items-center justify-center text-red-600 font-bold">
+                                    <div class="w-10 h-10 rounded-lg bg-red-50 border border-gray-200 flex items-center justify-center text-red-600 font-bold">
                                         {{ index + 1 }}
                                     </div>
                                     <div>
@@ -125,7 +125,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleEscape));
             </div>
 
             <!-- Footer & Download -->
-            <div class="p-6 border-t border-gray-200 bg-gray-500/50 rounded-b-2xl shrink-0 flex justify-between items-center">
+            <div class="p-6 border-t border-gray-200 bg-slate-50 rounded-b-2xl shrink-0 flex justify-between items-center">
                 <p class="text-xs text-gray-500 max-w-md">Ushbu hisobot barcha tasdiqlangan va yopilgan chiqimlarni o'z ichiga oladi.</p>
                 <div class="flex gap-4">
                     <button @click="close" class="px-6 py-2 rounded border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors">Yopish</button>

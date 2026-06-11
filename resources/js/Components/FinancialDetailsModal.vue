@@ -86,7 +86,7 @@ const applyFilter = () => {
             </div>
 
             <!-- Filters -->
-            <div class="flex flex-col sm:flex-row gap-4 mb-6 items-end bg-gray-50 p-4 rounded-xl border border-gray-200/20">
+            <div class="flex flex-col sm:flex-row gap-4 mb-6 items-end bg-slate-50 p-4 rounded-xl border border-gray-200/20">
                 <div class="w-full sm:w-auto">
                     <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">Boshlanish Sanasi</label>
                     <input v-model="startDate" type="date" class="border border-gray-200 rounded px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all text-sm w-full">
@@ -107,13 +107,13 @@ const applyFilter = () => {
             </div>
 
             <!-- Table -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-200/20 rounded-xl bg-gray-50 relative">
+            <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-200/20 rounded-xl bg-slate-50 relative">
                 <div v-if="loading" class="absolute inset-0 bg-gray-500/10 backdrop-blur-sm flex justify-center items-center z-10">
                     <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
                 
                 <table class="w-full text-left border-collapse min-w-[800px]">
-                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                    <thead class="bg-slate-50 text-gray-500 uppercase text-xs font-medium">
                         <tr class="border-b border-gray-200/20 hover:bg-gray-50 transition-colors">
                             <th class="p-4 text-xs font-mono text-gray-500 uppercase tracking-widest border-b border-gray-200/20">Sana</th>
                             <th class="p-4 text-xs font-mono text-gray-500 uppercase tracking-widest border-b border-gray-200/20">Kategoriya</th>

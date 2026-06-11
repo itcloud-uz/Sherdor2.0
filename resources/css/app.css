@@ -80,41 +80,54 @@
     transition: color 0.3s ease;
   }
 
-  /* Modal Dynamic Themes */
+  /* Modal Dynamic Themes - FORCED TO WHITE/LIGHT THEME FOR CONSISTENCY */
   .theme-modal {
-    background-color: var(--modal-bg-color, #ffffff) !important;
-    color: var(--modal-text-color, #111827) !important;
-    border-color: var(--glass-input-border, rgba(0, 0, 0, 0.1)) !important;
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #e2e8f0 !important;
   }
   
   .theme-modal h1, .theme-modal h2, .theme-modal h3, .theme-modal h4, .theme-modal p, .theme-modal span, .theme-modal label, .theme-modal th, .theme-modal td {
-    color: var(--modal-text-color, #111827) !important;
+    color: #334155 !important;
+  }
+
+  .theme-modal label {
+    color: #64748b !important;
   }
   
   .theme-modal input, .theme-modal select, .theme-modal textarea {
-    background-color: var(--glass-input-bg, rgba(255, 255, 255, 0.9)) !important;
-    color: var(--glass-input-text, #111827) !important;
-    border-color: var(--glass-input-border, rgba(0, 0, 0, 0.1)) !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .theme-modal input::placeholder, .theme-modal textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .theme-modal input:focus, .theme-modal select:focus, .theme-modal textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
   }
   
   .theme-modal .bg-gray-50 {
-    background-color: var(--glass-input-bg, rgba(255, 255, 255, 0.05)) !important;
-    border-color: var(--glass-input-border, rgba(255, 255, 255, 0.1)) !important;
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
   }
   
   .theme-modal .bg-blue-50 {
-    background-color: var(--glass-input-bg, rgba(59, 130, 246, 0.05)) !important;
-    border-color: var(--glass-input-border, rgba(59, 130, 246, 0.2)) !important;
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
   }
   
   .theme-modal .bg-emerald-50 {
-    background-color: rgba(16, 185, 129, 0.1) !important;
-    border-color: rgba(16, 185, 129, 0.3) !important;
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
   }
   
   .theme-modal .bg-red-50 {
-    background-color: rgba(239, 68, 68, 0.1) !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
+    background-color: #fef2f2 !important;
+    border-color: #fca5a5 !important;
   }
 }
 

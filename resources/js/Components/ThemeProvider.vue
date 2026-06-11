@@ -1,6 +1,7 @@
 <script setup>
-import { usePage } from '@inertiajs/vue3';
-import { watchEffect } from 'vue';
+import { usePage, router } from '@inertiajs/vue3';
+import { watchEffect, onMounted, onUnmounted } from 'vue';
+import SuccessAnimation from './SuccessAnimation.vue';
 
 const page = usePage();
 
@@ -109,7 +110,25 @@ watchEffect(() => {
     document.documentElement.classList.remove('theme-apple_glass', 'theme-galaxy', 'theme-cyberpunk', 'theme-minimalist', 'theme-gold', 'theme-itcloud_cyberglass');
     document.documentElement.classList.add(`theme-${themeStyle}`);
 });
+
+let inertiaUnsubscribe = null;
+
+onMounted(() => {
+    inertiaUnsubscribe = router.on('success', (event) => {
+        const method = event.detail.visit?.method || '';
+        if (['post', 'put', 'patch', 'delete'].includes(method.toLowerCase())) {
+            window.dispatchEvent(new CustomEvent('show-success-notification'));
+        }
+    });
+});
+
+onUnmounted(() => {
+    if (inertiaUnsubscribe) {
+        inertiaUnsubscribe();
+    }
+});
 </script>
 <template>
     <slot />
+    <SuccessAnimation />
 </template>

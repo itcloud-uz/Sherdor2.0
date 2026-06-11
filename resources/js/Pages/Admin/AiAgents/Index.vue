@@ -271,34 +271,34 @@ const aiLogs = ref([
             </div>
 
             <!-- RIGHT: AI Terminal Emulator (Sidebar on large screens) -->
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl rounded-2xl border border-blue-200 flex flex-col overflow-hidden bg-[#05050A]/90 relative shadow-sm h-full min-h-[400px]">
-                <div class="h-10 border-b border-blue-200 bg-blue-50 flex items-center px-4 justify-between shrink-0">
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl flex flex-col overflow-hidden relative h-full min-h-[400px]">
+                <div class="h-10 border-b border-slate-200 bg-slate-50 flex items-center px-4 justify-between shrink-0">
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-indigo-600 shadow-sm"></span>
-                        <span class="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></span>
-                        <span class="w-3 h-3 rounded-full bg-emerald-600 shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                        <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                        <span class="w-3 h-3 rounded-full bg-slate-300"></span>
                     </div>
-                    <span class="text-[10px] font-mono text-blue-600 tracking-widest uppercase opacity-70">{{ $t('gemini_sys_log') }}</span>
+                    <span class="text-[10px] font-mono text-slate-500 tracking-widest uppercase opacity-70">{{ $t('gemini_sys_log') }}</span>
                 </div>
                 
                 <div class="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-3">
-                    <div class="text-blue-600/50 mb-4">
+                    <div class="text-slate-400 mb-4">
                         > {{ $t('log_init_ai') }}<br>
                         > {{ $t('log_conn_eskiz') }}<br>
                         > {{ $t('log_await_telemetry') }}
                     </div>
 
-                    <div v-for="log in aiLogs" :key="log.id" class="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                        <div class="flex justify-between text-gray-500 text-[10px]">
+                    <div v-for="log in aiLogs" :key="log.id" class="flex flex-col gap-1 border-b border-slate-100 pb-2">
+                        <div class="flex justify-between text-slate-400 text-[10px]">
                             <span>[{{ log.time }}]</span>
                             <span :class="{ 'text-blue-600': log.type === 'INFO', 'text-amber-600': log.type === 'WARN', 'text-indigo-600': log.type === 'ACTION', 'text-emerald-600': log.type === 'SUCCESS' }">[{{ log.type }}]</span>
                         </div>
-                        <span class="text-gray-900/80 leading-relaxed">{{ $t(log.msg) }}</span>
+                        <span class="text-slate-700 leading-relaxed">{{ $t(log.msg) }}</span>
                     </div>
                     
-                    <div class="mt-4 flex items-center gap-2 text-blue-600 animate-pulse">
+                    <div class="mt-4 flex items-center gap-2 text-slate-400 animate-pulse">
                         <span>></span>
-                        <span class="w-2 h-4 bg-blue-600 inline-block"></span>
+                        <span class="w-2 h-4 bg-slate-400 inline-block"></span>
                     </div>
                 </div>
             </div>

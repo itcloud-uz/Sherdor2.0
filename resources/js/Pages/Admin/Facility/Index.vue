@@ -1715,6 +1715,29 @@ function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
     });
 }
 
+function getFloorStatsText(floor) {
+    if (!floor) return '';
+    if (floor.units && floor.units.length > 0) {
+        const commercialCount = floor.units.filter(u => u.type === 'commercial').length;
+        const residentialCount = floor.units.filter(u => u.type === 'residential').length;
+        
+        if (commercialCount > 0 && residentialCount > 0) {
+            return `${commercialCount} ta do'kon, ${residentialCount} ta uy`;
+        } else if (commercialCount > 0) {
+            return `${commercialCount} ta do'kon`;
+        } else if (residentialCount > 0) {
+            return `${residentialCount} ta uy`;
+        }
+    }
+    
+    // Fallback to static config
+    if (floor.floor_number <= 1) {
+        return `${floor.total_commercial_units || 0} ta do'kon`;
+    } else {
+        return `${floor.total_units || 0} ta uy`;
+    }
+}
+
 function getObjectPhoto(blocks) {
     if (!blocks || !blocks.length) return '/modern_apartment_render.png';
     const withPhoto = blocks.find(b => b.photo_path);
@@ -2120,12 +2143,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                             </div>
                                                         </div>
                                                         <span class="text-[9px] font-sans text-amber-600 font-semibold mt-0.5">
-                                                            <template v-if="floor.floor_number <= 1">
-                                                                {{ floor.total_commercial_units || 0 }} ta do'kon
-                                                            </template>
-                                                            <template v-else>
-                                                                {{ floor.total_units || 0 }} ta uy
-                                                            </template>
+                                                            {{ getFloorStatsText(floor) }}
                                                         </span>
                                                     </div>
 

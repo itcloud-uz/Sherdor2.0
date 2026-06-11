@@ -824,9 +824,7 @@ class FinanceController extends Controller
         $validated['initial_balance_usd'] = $validated['initial_balance_usd'] ?? 0;
         $validated['initial_balance_eur'] = $validated['initial_balance_eur'] ?? 0;
 
-        if (!isset($validated['balance']) || $validated['balance'] === '' || $validated['balance'] === null) {
-            $validated['balance'] = $validated['initial_balance_uzs'];
-        }
+        $validated['balance'] = $validated['initial_balance_uzs'];
 
         CashRegister::create($validated);
 

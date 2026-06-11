@@ -58,14 +58,13 @@ class FinanceController extends Controller
         $rates = [];
 
         // Always query balances and pending totals for top cards/headers
-        $dynamicUZS = CashRegister::where('currency', 'UZS')->sum('balance');
-        $dynamicUSD = CashRegister::where('currency', 'USD')->sum('balance');
-        $creditBalance = CashRegister::where('name', 'like', '%Kredit%')->sum('balance');
+        $dynamicUZS = CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
+        $creditBalance = CashRegister::where('type', 'credit')->whereNull('parent_id')->get()->sum('balance_uzs');
         $rawBalance = CompanyBalance::firstOrCreate([]);
         $balance = (object)[
             'total_balance' => $dynamicUZS,
             'credit_balance' => $creditBalance,
-            'usd_balance' => $dynamicUSD,
+            'usd_balance' => 0,
             'total_income' => $rawBalance->total_income ?? 0,
             'total_expense' => $rawBalance->total_expense ?? 0,
         ];
@@ -112,7 +111,7 @@ class FinanceController extends Controller
             $counterparties = Counterparty::with('customable')->get();
         }
 
-        if ($tab === 2 || $tab === 10) {
+        if ($tab === 2 || $tab === 8 || $tab === 10) {
             $buildings = Building::latest()->get();
             $rates = DB::table('currency_rates')->get();
         }
@@ -793,8 +792,8 @@ class FinanceController extends Controller
         $fromAcc = CashRegister::findOrFail($validated['from_account_id']);
         $toAcc = CashRegister::findOrFail($validated['to_account_id']);
 
-        if ($fromAcc->balance < $validated['sent_amount']) {
-            return redirect()->back()->withErrors(['error' => "Kassa balansi yetarli emas! Mavjud balans: {$fromAcc->balance} {$fromAcc->currency}"]);
+        if ($fromAcc->balance_uzs < $validated['sent_amount']) {
+            return redirect()->back()->withErrors(['error' => "Kassa balansi yetarli emas! Mavjud balans: {$fromAcc->balance_uzs} UZS"]);
         }
 
         $rate = $validated['exchange_rate'] ?? 1.0;
@@ -864,7 +863,7 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:cash,bank,credit',
-            'currency' => 'required|string|size:3',
+            'currency' => 'nullable|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
             'initial_balance_uzs' => 'nullable|numeric|min:0',
             'initial_balance_usd' => 'nullable|numeric|min:0',
@@ -891,8 +890,9 @@ class FinanceController extends Controller
         }
 
         $validated['initial_balance_uzs'] = $validated['initial_balance_uzs'] ?? 0;
-        $validated['initial_balance_usd'] = $validated['initial_balance_usd'] ?? 0;
-        $validated['initial_balance_eur'] = $validated['initial_balance_eur'] ?? 0;
+        $validated['initial_balance_usd'] = 0;
+        $validated['initial_balance_eur'] = 0;
+        $validated['currency'] = 'UZS';
 
         $validated['balance'] = $validated['initial_balance_uzs'];
 
@@ -906,7 +906,7 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:cash,bank,credit',
-            'currency' => 'required|string|size:3',
+            'currency' => 'nullable|string|size:3',
             'building_id' => 'nullable|exists:buildings,id',
             'initial_balance_uzs' => 'nullable|numeric|min:0',
             'initial_balance_usd' => 'nullable|numeric|min:0',
@@ -934,8 +934,9 @@ class FinanceController extends Controller
         }
 
         $validated['initial_balance_uzs'] = $validated['initial_balance_uzs'] ?? 0;
-        $validated['initial_balance_usd'] = $validated['initial_balance_usd'] ?? 0;
-        $validated['initial_balance_eur'] = $validated['initial_balance_eur'] ?? 0;
+        $validated['initial_balance_usd'] = 0;
+        $validated['initial_balance_eur'] = 0;
+        $validated['currency'] = 'UZS';
         $validated['balance'] = $validated['balance'] ?? 0;
 
         $oldInitialUZS = (float)$register->initial_balance_uzs;

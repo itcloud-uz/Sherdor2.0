@@ -203,43 +203,7 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
     }
 });
 
-// Exchange Rates State & Actions
-const editingRate = ref(null);
-const usdRateInput = ref(12350);
-const eurRateInput = ref(16890);
-
-const usdRate = computed(() => {
-    const r = props.rates?.find(x => x.code === 'USD');
-    return r ? parseFloat(r.rate) : 12350;
-});
-const eurRate = computed(() => {
-    const r = props.rates?.find(x => x.code === 'EUR');
-    return r ? parseFloat(r.rate) : 16890;
-});
-
-function editRate(code) {
-    editingRate.value = code;
-    if (code === 'USD') usdRateInput.value = usdRate.value;
-    if (code === 'EUR') eurRateInput.value = eurRate.value;
-}
-
-function saveRate(code) {
-    const rateVal = code === 'USD' ? usdRateInput.value : eurRateInput.value;
-    isProcessing.value = true;
-    router.post(route('admin.finance.rates.update'), {
-        rates: [
-            { code: code, rate: rateVal }
-        ]
-    }, {
-        onSuccess: () => {
-            editingRate.value = null;
-            isProcessing.value = false;
-        },
-        onError: () => {
-            isProcessing.value = false;
-        }
-    });
-}
+// Exchange rates state and actions removed since only UZS exists
 
 // Tab 8 selected register logic
 const selectedRegisterId = ref(null);
@@ -271,19 +235,9 @@ const selectedRegisterKirimUzs = computed(() => {
         .filter(t => t.type === 'income' && t.currency === 'UZS')
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
-const selectedRegisterKirimUsd = computed(() => {
-    return selectedRegisterTransactions.value
-        .filter(t => t.type === 'income' && t.currency === 'USD')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-});
 const selectedRegisterChiqimUzs = computed(() => {
     return selectedRegisterTransactions.value
         .filter(t => t.type === 'expense' && t.currency === 'UZS')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-});
-const selectedRegisterChiqimUsd = computed(() => {
-    return selectedRegisterTransactions.value
-        .filter(t => t.type === 'expense' && t.currency === 'USD')
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
 
@@ -294,12 +248,6 @@ const parentCreditTotalAmountUzs = computed(() => {
         .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0);
 });
 
-const parentCreditTotalAmountUsd = computed(() => {
-    if (!selectedRegister.value || selectedRegister.value.type !== 'credit') return 0;
-    return (props.registers || [])
-        .filter(r => r.parent_id === selectedRegister.value.id && r.currency === 'USD')
-        .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0);
-});
 
 const getRegisterName = (id) => {
     const r = props.registers?.find(x => x.id === id);
@@ -309,7 +257,7 @@ const getRegisterName = (id) => {
 const isTransferFromLocked = ref(false);
 const getRegisterNameWithCurrency = (id) => {
     const r = props.registers?.find(x => x.id === id);
-    return r ? `${r.name} (${r.currency})` : '';
+    return r ? `${r.name}` : '';
 };
 
 // Tab 8 register specific search / filter states
@@ -397,11 +345,9 @@ const totalTolovUzs = computed(() => {
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
 const totalBalansUzs = computed(() => {
-    return (props.registers || []).reduce((sum, r) => sum + parseFloat(r.balance_uzs || 0), 0);
+    return (props.registers || []).filter(r => !r.parent_id).reduce((sum, r) => sum + parseFloat(r.balance_uzs || 0), 0);
 });
-const totalBalansUsd = computed(() => {
-    return (props.registers || []).reduce((sum, r) => sum + parseFloat(r.balance_usd || 0), 0);
-});
+const totalBalansUsd = computed(() => 0);
 
 // Tab 9 Counterparty filter & search
 const counterpartySearch = ref('');
@@ -435,13 +381,6 @@ const filteredTransfers = computed(() => {
     if (!props.moneyTransfers) return [];
     
     let list = props.moneyTransfers;
-    
-    // 1. Filter by sub-tab: transfers vs exchanges
-    if (transferSubTab.value === 'exchanges') {
-        list = list.filter(t => t.sent_currency !== t.received_currency || parseFloat(t.exchange_rate) !== 1.0);
-    } else {
-        list = list.filter(t => t.sent_currency === t.received_currency && parseFloat(t.exchange_rate) === 1.0);
-    }
     
     // 2. Filter by search query
     if (transferSearch.value) {
@@ -686,14 +625,14 @@ if (typeof window !== 'undefined') {
     });
 }
 
-function openNewRegisterModal() {
+function openNewRegisterModal(parentId = '') {
     isEditRegister.value = false;
     registerForm.value = { 
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
         currency: 'UZS', building_id: '', is_active: true,
         bank_name: '', account_number: '', mfo_code: '', balance: 0,
-        parent_id: '', creditor_name: '', total_amount: '', interest_rate: '',
+        parent_id: parentId || '', creditor_name: '', total_amount: '', interest_rate: '',
         term_months: '', start_date: '', end_date: '', monthly_payment: '', description: ''
     };
     showRegisterModal.value = true;
@@ -1341,9 +1280,6 @@ function formatMoney(amount, currency = 'UZS') {
                         </div>
                         <div class="space-y-1">
                             <h2 class="text-2xl font-bold font-display text-emerald-600">
-                                {{ formatMoney(totalTushumUsd, 'USD') }}
-                            </h2>
-                            <h2 class="text-2xl font-bold font-display text-emerald-600">
                                 {{ formatMoney(totalTushumUzs, 'UZS') }}
                             </h2>
                         </div>
@@ -1368,9 +1304,6 @@ function formatMoney(amount, currency = 'UZS') {
                             <span class="text-sm font-semibold text-gray-500">Balans</span>
                         </div>
                         <div class="space-y-1">
-                            <h2 class="text-2xl font-bold font-display text-orange-500">
-                                {{ formatMoney(totalBalansUsd, 'USD') }}
-                            </h2>
                             <h2 class="text-2xl font-bold font-display text-orange-500">
                                 {{ formatMoney(totalBalansUzs, 'UZS') }}
                             </h2>
@@ -1524,35 +1457,7 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
                 </div>
 
-                <!-- Currency Exchange Rates row -->
-                <div class="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 flex-wrap">
-                    <!-- UZS -->
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                        <span class="text-xs font-bold text-orange-500">UZS</span>
-                        <span class="text-xs text-gray-500">Asosiy valyuta</span>
-                        <button class="text-gray-400 hover:text-orange-600">✏️</button>
-                    </div>
-                    <!-- USD -->
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                        <span class="text-xs font-bold text-orange-500">USD</span>
-                        <span class="text-xs text-gray-700">1 USD =</span>
-                        <input v-if="editingRate === 'USD'" v-model="usdRateInput" type="number" class="w-24 px-2 py-0.5 text-xs border border-orange-300 rounded" @keydown.enter="saveRate('USD')">
-                        <span v-else class="text-xs font-bold text-gray-900">{{ usdRate.toLocaleString() }} UZS</span>
-                        <button @click="editingRate === 'USD' ? saveRate('USD') : editRate('USD')" class="text-gray-400 hover:text-orange-500">
-                            {{ editingRate === 'USD' ? '💾' : '✏️' }}
-                        </button>
-                    </div>
-                    <!-- EUR -->
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                        <span class="text-xs font-bold text-orange-500">EUR</span>
-                        <span class="text-xs text-gray-700">1 EUR =</span>
-                        <input v-if="editingRate === 'EUR'" v-model="eurRateInput" type="number" class="w-24 px-2 py-0.5 text-xs border border-orange-300 rounded" @keydown.enter="saveRate('EUR')">
-                        <span v-else class="text-xs font-bold text-gray-900">{{ eurRate.toLocaleString() }} UZS</span>
-                        <button @click="editingRate === 'EUR' ? saveRate('EUR') : editRate('EUR')" class="text-gray-400 hover:text-orange-500">
-                            {{ editingRate === 'EUR' ? '💾' : '✏️' }}
-                        </button>
-                    </div>
-                </div>
+
 
                 <!-- Summaries Cards (Jami tushumlar, Jami to'lovlar, Balans) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1563,9 +1468,6 @@ function formatMoney(amount, currency = 'UZS') {
                             <span class="text-sm font-semibold text-gray-500">Jami tushumlar</span>
                         </div>
                         <div class="space-y-1">
-                            <h2 class="text-xl font-bold font-display text-emerald-600">
-                                {{ formatMoney(totalTushumUsd, 'USD') }}
-                            </h2>
                             <h2 class="text-xl font-bold font-display text-emerald-600">
                                 {{ formatMoney(totalTushumUzs, 'UZS') }}
                             </h2>
@@ -1591,9 +1493,6 @@ function formatMoney(amount, currency = 'UZS') {
                             <span class="text-sm font-semibold text-gray-500">Balans</span>
                         </div>
                         <div class="space-y-1">
-                            <h2 class="text-xl font-bold font-display text-orange-500">
-                                {{ formatMoney(totalBalansUsd, 'USD') }}
-                            </h2>
                             <h2 class="text-xl font-bold font-display text-orange-500">
                                 {{ formatMoney(totalBalansUzs, 'UZS') }}
                             </h2>
@@ -1726,7 +1625,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <select v-model="form.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                    {{ r.name }} ({{ r.currency }}) - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                    {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
                                 </option>
                             </select>
                         </div>
@@ -1913,15 +1812,7 @@ function formatMoney(amount, currency = 'UZS') {
                     <input v-model="transferSearch" type="text" placeholder="Qidirish (Kassa, izoh)..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-1.5 text-xs w-64">
                 </div>
 
-                <!-- Sub tabs for transfers -->
-                <div class="flex border-b border-gray-200">
-                    <button @click="transferSubTab = 'transfers'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="transferSubTab === 'transfers' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
-                        Pul o'tkazmalari
-                    </button>
-                    <button @click="transferSubTab = 'exchanges'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="transferSubTab === 'exchanges' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
-                        Valuta ayirboshlashlar
-                    </button>
-                </div>
+
 
                 <!-- Summaries Cards (Jami o'tkazmalar, Jami summa (USD), Faol kassalar) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1930,7 +1821,7 @@ function formatMoney(amount, currency = 'UZS') {
                         <h2 class="text-2xl font-bold font-display text-gray-900 mt-2">{{ totalTransfersCount }}</h2>
                     </div>
                     <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Jami summa (USD)</span>
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Jami summa</span>
                         <h2 class="text-2xl font-bold font-display text-emerald-600 mt-2">{{ totalTransfersSumUzs.toLocaleString() }} UZS</h2>
                     </div>
                     <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
@@ -1947,7 +1838,6 @@ function formatMoney(amount, currency = 'UZS') {
                             <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center font-bold">💳</div>
                             <div>
                                 <span class="font-bold text-gray-900">#{{ t.id }}</span>
-                                <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700 uppercase">{{ t.sent_currency }}</span>
                             </div>
                         </div>
                         <!-- Flow arrow details -->
@@ -2017,7 +1907,7 @@ function formatMoney(amount, currency = 'UZS') {
                     
                     <!-- Registers Cards List -->
                     <div class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                        <div v-for="r in registers.filter(x => x.name.toLowerCase().includes(registerSearchQuery.toLowerCase()))" :key="r.id" @click="selectedRegisterId = r.id" class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between h-32 relative group" :class="selectedRegisterId === r.id ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border-transparent shadow-lg' : 'bg-gray-50 border-gray-200 text-gray-900 hover:bg-gray-100'">
+                        <div v-for="r in registers.filter(x => !x.parent_id && x.name.toLowerCase().includes(registerSearchQuery.toLowerCase()))" :key="r.id" @click="selectedRegisterId = r.id" class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between h-32 relative group" :class="selectedRegisterId === r.id ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border-transparent shadow-lg' : 'bg-gray-50 border-gray-200 text-gray-900 hover:bg-gray-100'">
                             <div class="flex justify-between items-start">
                                 <span class="text-sm font-bold font-display uppercase tracking-wide truncate max-w-[80%]">{{ r.name }}</span>
                                 <!-- dot menu -->
@@ -2036,14 +1926,10 @@ function formatMoney(amount, currency = 'UZS') {
                                     </div>
                                 </div>
                             </div>
-                            <!-- Balances (screenshot style UZS and USD both on card) -->
+                            <!-- Balances (UZS only) -->
                             <div class="font-mono text-xs mt-4 space-y-0.5">
                                 <div class="flex justify-between">
-                                    <span>USD:</span>
-                                    <span class="font-bold">{{ r.balance_usd.toLocaleString() }} USD</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>UZS:</span>
+                                    <span>Balans:</span>
                                     <span class="font-bold">{{ r.balance_uzs.toLocaleString() }} UZS</span>
                                 </div>
                             </div>
@@ -2087,12 +1973,8 @@ function formatMoney(amount, currency = 'UZS') {
                                     <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px]">UMUMIY LOYIHA SUMMASI</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-gray-400">Umumiy UZS Kredit:</span>
+                                    <span class="text-gray-400">Umumiy Kredit:</span>
                                     <span class="font-bold text-gray-900 font-mono text-sm">{{ formatMoney(parentCreditTotalAmountUzs, 'UZS') }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Umumiy USD Kredit:</span>
-                                    <span class="font-bold text-gray-900 font-mono text-sm">{{ formatMoney(parentCreditTotalAmountUsd, 'USD') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -2156,42 +2038,37 @@ function formatMoney(amount, currency = 'UZS') {
                         </div>
 
                         <!-- Details box for Standard Registers -->
-                        <div v-else class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Hisob nomi:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.name }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Bank nomi:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.bank_name || '-' }}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Holati:</span>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
-                                        {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
-                                    </span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Valyuta:</span>
-                                    <div class="flex gap-1">
-                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 uppercase">USD</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-200 uppercase">UZS</span>
+                        <div v-else class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4 font-mono text-xs">
+                            <!-- Back Button for standard sub-register -->
+                            <div v-if="selectedRegister.parent_id" class="flex justify-between items-center border-b border-gray-100 pb-2.5">
+                                <button @click="selectedRegisterId = selectedRegister.parent_id" class="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-sans transition-all">
+                                    ← Ortga qaytish: {{ getRegisterName(selectedRegister.parent_id) }}
+                                </button>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-200 uppercase">SUB-KASSA</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Hisob nomi:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Bank nomi:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.bank_name || '-' }}</span>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Hisob raqami:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.account_number || '-' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">MFO kodi:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.mfo_code || '-' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Bino:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || '-' }}</span>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Bino:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || '-' }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-400">Holati:</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
+                                            {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2205,8 +2082,7 @@ function formatMoney(amount, currency = 'UZS') {
                                     <span class="text-sm font-bold text-emerald-800">Kirim</span>
                                 </div>
                                 <div class="text-right font-mono">
-                                    <span class="block text-emerald-600 font-bold text-sm">USD: {{ formatMoney(selectedRegisterKirimUsd, 'USD') }}</span>
-                                    <span class="block text-emerald-600 font-bold text-sm">UZS: {{ formatMoney(selectedRegisterKirimUzs, 'UZS') }}</span>
+                                    <span class="block text-emerald-600 font-bold text-lg">{{ formatMoney(selectedRegisterKirimUzs, 'UZS') }}</span>
                                 </div>
                             </div>
                             <!-- Chiqim -->
@@ -2216,19 +2092,23 @@ function formatMoney(amount, currency = 'UZS') {
                                     <span class="text-sm font-bold text-red-800">Chiqim</span>
                                 </div>
                                 <div class="text-right font-mono">
-                                    <span class="block text-red-600 font-bold text-sm">USD: {{ formatMoney(selectedRegisterChiqimUsd, 'USD') }}</span>
-                                    <span class="block text-red-600 font-bold text-sm">UZS: {{ formatMoney(selectedRegisterChiqimUzs, 'UZS') }}</span>
+                                    <span class="block text-red-600 font-bold text-lg">{{ formatMoney(selectedRegisterChiqimUzs, 'UZS') }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Sub-registers list if any exist -->
-                        <div v-if="registers.filter(x => x.parent_id === selectedRegister.id).length > 0" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4">
+                        <!-- Sub-registers list (always visible for root registers) -->
+                        <div v-if="!selectedRegister.parent_id" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4">
                             <div class="flex justify-between items-center">
                                 <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Ichki kassalar (Sub-kassalar)</h3>
-                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">Jami: {{ registers.filter(x => x.parent_id === selectedRegister.id).length }} ta</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">Jami: {{ registers.filter(x => x.parent_id === selectedRegister.id).length }} ta</span>
+                                    <button @click.stop="openNewRegisterModal(selectedRegister.id)" class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
+                                        + Ichki kassa qo'shish
+                                    </button>
+                                </div>
                             </div>
-                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                            <div v-if="registers.filter(x => x.parent_id === selectedRegister.id).length > 0" class="overflow-x-auto border border-gray-100 rounded-xl">
                                 <table class="w-full text-left text-xs font-mono">
                                     <thead class="bg-slate-50 text-gray-500 font-bold border-b border-gray-100 uppercase text-[10px]">
                                         <tr>
@@ -2236,8 +2116,7 @@ function formatMoney(amount, currency = 'UZS') {
                                             <th class="p-3">Turi</th>
                                             <th class="p-3">Kreditor (Agar bor bo'lsa)</th>
                                             <th class="p-3 text-right">Kredit Summasi</th>
-                                            <th class="p-3 text-right">Balans (UZS)</th>
-                                            <th class="p-3 text-right">Balans (USD)</th>
+                                            <th class="p-3 text-right">Balans</th>
                                             <th class="p-3 text-center">Amallar</th>
                                         </tr>
                                     </thead>
@@ -2254,7 +2133,6 @@ function formatMoney(amount, currency = 'UZS') {
                                                 {{ sub.type === 'credit' ? formatMoney(sub.total_amount, sub.currency) : '-' }}
                                             </td>
                                             <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_uzs, 'UZS') }}</td>
-                                            <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_usd, 'USD') }}</td>
                                             <td class="p-3 text-center">
                                                 <div class="flex justify-center gap-2">
                                                     <button v-if="sub.type === 'credit'" @click.stop="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
@@ -2264,6 +2142,12 @@ function formatMoney(amount, currency = 'UZS') {
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div v-else class="text-center py-6 border border-dashed border-gray-200 rounded-xl bg-gray-50/30">
+                                <p class="text-gray-400 text-xs mb-3">Ushbu kassada hozircha ichki kassalar yo'q.</p>
+                                <button @click.stop="openNewRegisterModal(selectedRegister.id)" class="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
+                                    + Birinchi ichki kassani qo'shish
+                                </button>
                             </div>
                         </div>
 
@@ -2562,7 +2446,7 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- KASSA ADD/EDIT MODAL -->
-        <Modal :show="showRegisterModal" @close="showRegisterModal = false" maxWidth="md">
+        <Modal :show="showRegisterModal" @close="showRegisterModal = false" maxWidth="md" class="quick-transaction-modal-override">
             <div class="p-6">
                 <button @click="showRegisterModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
                 <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">
@@ -2666,9 +2550,9 @@ function formatMoney(amount, currency = 'UZS') {
                         <label for="register_is_active" class="text-[10px] text-gray-700 font-bold uppercase cursor-pointer select-none">Kassa faol (Ish holatida)</label>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showRegisterModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+                    <div class="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                        <button type="button" @click="showRegisterModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Saqlash</button>
                     </div>
                 </form>
             </div>
@@ -3032,26 +2916,16 @@ function formatMoney(amount, currency = 'UZS') {
                             </select>
                         </div>
 
-                        <!-- Row 2: Bank hisobi & Valyuta -->
-                        <div>
+                        <!-- Row 2: Bank hisobi -->
+                        <div class="md:col-span-2">
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Bank hisobi
                             </label>
                             <select v-model="form.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Bank hisobini tanlang</option>
                                 <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                    {{ r.name }} ({{ r.currency }})
+                                    {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }}
                                 </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                * Valyuta
-                            </label>
-                            <select v-model="form.currency" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                <option value="" disabled>Valyutani tanlang</option>
-                                <option value="UZS">UZS</option>
-                                <option value="USD">USD</option>
                             </select>
                         </div>
 
@@ -3278,7 +3152,7 @@ function formatMoney(amount, currency = 'UZS') {
                         <select v-model="transferForm.from_account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                             <option value="" disabled>-- Tanlang --</option>
                             <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                {{ r.name }} ({{ r.currency }})
+                                {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }}
                             </option>
                         </select>
                     </div>
@@ -3290,7 +3164,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <select v-model="transferForm.to_account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="r in registers.filter(x => x.id != transferForm.from_account_id && x.is_active)" :key="r.id" :value="r.id">
-                                    {{ r.name }} ({{ r.currency }})
+                                    {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }}
                                 </option>
                             </select>
                         </div>

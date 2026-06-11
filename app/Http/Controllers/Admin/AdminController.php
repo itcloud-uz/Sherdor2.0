@@ -239,6 +239,32 @@ class AdminController extends Controller
             ];
         });
 
+        // 8. Sales by month for the chart
+        $oneYearAgo = \Carbon\Carbon::now()->subYear()->startOfMonth();
+        $contracts = \App\Models\Contract::where('status', '!=', 'cancelled')
+            ->where('created_at', '>=', $oneYearAgo)
+            ->get();
+            
+        $monthlySales = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = \Carbon\Carbon::now()->subMonths($i);
+            $monthKey = $date->format('Y-m');
+            $monthLabel = $date->translatedFormat('M Y');
+            $monthlySales[$monthKey] = [
+                'label' => $monthLabel,
+                'count' => 0
+            ];
+        }
+        
+        foreach ($contracts as $contract) {
+            $monthKey = $contract->created_at->format('Y-m');
+            if (isset($monthlySales[$monthKey])) {
+                $monthlySales[$monthKey]['count']++;
+            }
+        }
+        
+        $salesByMonth = array_values($monthlySales);
+
         return Inertia::render('Admin/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalExpenses' => $totalExpenses,
@@ -259,6 +285,7 @@ class AdminController extends Controller
             'lostLeads' => $lostLeads,
             'financialSummary' => $financialSummary,
             'buildingsSummary' => $buildingsSummary,
+            'salesByMonth' => $salesByMonth,
             'startDate' => $request->input('start_date'),
             'endDate' => $request->input('end_date'),
         ]);

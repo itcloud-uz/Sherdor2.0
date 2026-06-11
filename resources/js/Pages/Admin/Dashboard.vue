@@ -28,6 +28,7 @@ const props = defineProps({
     lostLeads: Array,
     financialSummary: Object,
     buildingsSummary: Array,
+    salesByMonth: Array,
     startDate: String,
     endDate: String
 });
@@ -205,6 +206,53 @@ const leadFunnelOptions = computed(() => ({
 }));
 const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFunnel || []).map(item => item.data[0]) }]);
 
+// Chart 5: Monthly Sales (Bar Chart)
+const monthlySalesOptions = computed(() => ({
+    chart: { 
+        type: 'bar', 
+        toolbar: { show: false }, 
+        background: 'transparent' 
+    },
+    plotOptions: { 
+        bar: { 
+            horizontal: false, 
+            borderRadius: 6, 
+            columnWidth: '50%',
+            distributed: false,
+            dataLabels: { position: 'top' } 
+        } 
+    },
+    colors: ['#f97316'], // orange-500
+    dataLabels: { 
+        enabled: true, 
+        formatter: (val) => val > 0 ? val : '',
+        style: { colors: ['#475569'], fontSize: '10px', fontWeight: 600 },
+        offsetY: -20
+    },
+    xaxis: { 
+        categories: (props.salesByMonth || []).map(item => item.label), 
+        labels: { style: { colors: '#6b7280', fontSize: '10px' } } 
+    },
+    yaxis: { 
+        labels: { 
+            style: { colors: '#6b7280' },
+            formatter: (val) => Math.round(val)
+        } 
+    },
+    theme: { mode: 'light' },
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
+    tooltip: {
+        y: {
+            formatter: (val) => `${val} ta xonadon sotilgan`
+        }
+    }
+}));
+
+const monthlySalesSeries = computed(() => [{
+    name: 'Sotuvlar soni',
+    data: (props.salesByMonth || []).map(item => item.count)
+}]);
+
 </script>
 
 <template>
@@ -277,120 +325,141 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                 </div>
             </div>
             
-            <!-- Horizontal Flex Scrollable Row -->
-            <div class="flex overflow-x-auto gap-6 pb-4 scrollbar-thin snap-x">
-                <div 
-                    v-for="building in filteredBuildingsSummary" 
-                    :key="building.id" 
-                    class="w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 snap-start"
-                >
-                    <!-- Building Card Header -->
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
-                            <img v-if="building.photo_path" :src="'/storage/' + building.photo_path" class="w-full h-full object-cover" />
-                            <div v-else class="w-full h-full bg-gradient-to-tr from-amber-500/10 to-yellow-500/5 flex items-center justify-center text-amber-500">
-                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
-                                </svg>
+            <!-- Grid Layout for scrollable cards on the left, monthly sales chart on the right -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Scrollable Building Cards (2/3 width on desktop) -->
+                <div class="lg:col-span-2 flex overflow-x-auto gap-6 pb-4 scrollbar-thin snap-x">
+                    <div 
+                        v-for="building in filteredBuildingsSummary" 
+                        :key="building.id" 
+                        class="w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 snap-start"
+                    >
+                        <!-- Building Card Header -->
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
+                                <img v-if="building.photo_path" :src="'/storage/' + building.photo_path" class="w-full h-full object-cover" />
+                                <div v-else class="w-full h-full bg-gradient-to-tr from-amber-500/10 to-yellow-500/5 flex items-center justify-center text-amber-500">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-gray-900 font-bold text-lg tracking-tight leading-tight">{{ building.name }}</h4>
                             </div>
                         </div>
+
+                        <!-- Progress bar -->
                         <div>
-                            <h4 class="text-gray-900 font-bold text-lg tracking-tight leading-tight">{{ building.name }}</h4>
-                        </div>
-                    </div>
-
-                    <!-- Progress bar -->
-                    <div>
-                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2">
-                            <span class="text-gray-400">Sotilgan</span>
-                            <span class="text-amber-500">
-                                {{ building.sold_units }} 
-                                <span class="font-semibold">{{ (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2">
-                            <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0) + '%' }"></div>
-                        </div>
-                    </div>
-
-                    <!-- XONALAR section -->
-                    <div class="space-y-2">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR</p>
-                        
-                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
-                            <span class="text-gray-500">Bron qilingan</span>
-                            <span class="text-gray-900 font-semibold">
-                                {{ building.reserved_units }} 
-                                <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.reserved_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
-                            <span class="text-gray-500">Sotuvda mavjud</span>
-                            <span class="text-gray-900 font-semibold">
-                                {{ building.available_units }}
-                                <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.available_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between text-xs pt-0.5">
-                            <span class="text-gray-500">Jami</span>
-                            <span class="text-gray-900 font-bold text-sm">{{ building.total_units }}</span>
-                        </div>
-                    </div>
-
-                    <!-- MAYDON (M2) section -->
-                    <div class="space-y-2">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">MAYDON (M²)</p>
-                        
-                        <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
-                            <span class="text-gray-500">Sotilgan</span>
-                            <span class="text-gray-900 font-semibold">
-                                {{ building.sold_area }}
-                                <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.sold_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between text-xs pt-0.5">
-                            <span class="text-gray-500">Sotuvda mavjud</span>
-                            <span class="text-gray-900 font-semibold">
-                                {{ building.available_area }}
-                                <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.available_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- XONALAR TAQSIMOTI section -->
-                    <div class="space-y-2">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR TAQSIMOTI</p>
-                        
-                        <div v-if="building.rooms_distribution && building.rooms_distribution.length > 0" class="flex flex-wrap gap-2 pt-1">
-                            <div v-for="rd in building.rooms_distribution" :key="rd.rooms" class="flex-1 min-w-[70px] bg-gray-50/50 border border-gray-100 rounded-xl p-2 text-center shadow-sm">
-                                <p class="text-sm font-bold text-gray-800 leading-none mb-1">{{ rd.count }}</p>
-                                <p class="text-[10px] text-gray-400 font-medium leading-none">{{ rd.rooms }}-xonali</p>
+                            <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2">
+                                <span class="text-gray-400">Sotilgan</span>
+                                <span class="text-amber-500">
+                                    {{ building.sold_units }} 
+                                    <span class="font-semibold">{{ (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2">
+                                <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0) + '%' }"></div>
                             </div>
                         </div>
-                        <div v-else class="text-center py-2 text-gray-400 font-medium text-xs">
-                            -
+
+                        <!-- XONALAR section -->
+                        <div class="space-y-2">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR</p>
+                            
+                            <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                                <span class="text-gray-500">Sotilgan</span>
+                                <span class="text-gray-900 font-semibold">
+                                    {{ building.sold_units }} 
+                                    <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+
+                            <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                                <span class="text-gray-500">Bron qilingan</span>
+                                <span class="text-gray-900 font-semibold">
+                                    {{ building.reserved_units }} 
+                                    <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.reserved_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                                <span class="text-gray-500">Sotuvda mavjud</span>
+                                <span class="text-gray-900 font-semibold">
+                                    {{ building.available_units }}
+                                    <span class="text-amber-500 ml-1 font-bold">{{ (building.total_units > 0 ? (building.available_units / building.total_units * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs pt-0.5">
+                                <span class="text-gray-500">Jami</span>
+                                <span class="text-gray-900 font-bold text-sm">{{ building.total_units }}</span>
+                            </div>
+                        </div>
+
+                        <!-- MAYDON (M2) section -->
+                        <div class="space-y-2">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">MAYDON (M²)</p>
+                            
+                            <div class="flex justify-between text-xs border-b border-gray-50 pb-1.5">
+                                <span class="text-gray-500">Sotilgan</span>
+                                <span class="text-gray-900 font-semibold">
+                                    {{ building.sold_area }}
+                                    <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.sold_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs pt-0.5">
+                                <span class="text-gray-500">Sotuvda mavjud</span>
+                                <span class="text-gray-900 font-semibold">
+                                    {{ building.available_area }}
+                                    <span class="text-amber-500 ml-1 font-bold">{{ ((building.sold_area + building.available_area) > 0 ? (building.available_area / (building.sold_area + building.available_area) * 100) : 0).toFixed(2) }}%</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- XONALAR TAQSIMOTI section -->
+                        <div class="space-y-2">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">XONALAR TAQSIMOTI</p>
+                            
+                            <div v-if="building.rooms_distribution && building.rooms_distribution.length > 0" class="flex flex-wrap gap-2 pt-1">
+                                <div v-for="rd in building.rooms_distribution" :key="rd.rooms" class="flex-1 min-w-[70px] bg-gray-50/50 border border-gray-100 rounded-xl p-2 text-center shadow-sm">
+                                    <p class="text-sm font-bold text-gray-800 leading-none mb-1">{{ rd.count }}</p>
+                                    <p class="text-[10px] text-gray-400 font-medium leading-none">{{ rd.rooms }}-xonali</p>
+                                </div>
+                            </div>
+                            <div v-else class="text-center py-2 text-gray-400 font-medium text-xs">
+                                -
+                            </div>
+                        </div>
+
+                        <!-- Bottom finances block -->
+                        <div class="mt-auto pt-4 border-t border-gray-100 space-y-1.5 font-mono text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400 uppercase text-[10px] font-bold">Sotilgan</span>
+                                <span class="text-emerald-500 font-bold text-sm">{{ $currency(building.sold_sum) }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400 uppercase text-[10px] font-bold">Qarzdorlik</span>
+                                <span class="text-red-500 font-bold text-sm">{{ $currency(building.debt_sum) }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-gray-500 uppercase text-[10px] font-bold">Umumiy summa</span>
+                                <span class="text-gray-900 font-bold text-sm font-display">{{ $currency(building.total_sum) }}</span>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Bottom finances block -->
-                    <div class="mt-auto pt-4 border-t border-gray-100 space-y-1.5 font-mono text-xs">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 uppercase text-[10px] font-bold">Sotilgan</span>
-                            <span class="text-emerald-500 font-bold text-sm">{{ $currency(building.sold_sum) }}</span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 uppercase text-[10px] font-bold">Qarzdorlik</span>
-                            <span class="text-red-500 font-bold text-sm">{{ $currency(building.debt_sum) }}</span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center pt-1">
-                            <span class="text-gray-500 uppercase text-[10px] font-bold">Umumiy summa</span>
-                            <span class="text-gray-900 font-bold text-sm font-display">{{ $currency(building.total_sum) }}</span>
-                        </div>
+                <!-- Right side (1/3 width on desktop): Monthly Sales Bar Chart -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col h-[400px] lg:h-full">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-orange-500 rounded-full"></span> Oylik sotuvlar statistikasi
+                    </h4>
+                    <div class="flex-1 min-h-0 w-full">
+                        <VueApexCharts type="bar" height="100%" width="100%" :options="monthlySalesOptions" :series="monthlySalesSeries" />
                     </div>
                 </div>
             </div>

@@ -3579,7 +3579,7 @@ function submitPromoRule() {
                             <div class="relative">
                                 <select v-model="clientForm.region" @change="onRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                     <option value="">Tanlang</option>
-                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionKey">
+                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">
                                         {{ regionObj.name }}
                                     </option>
                                 </select>

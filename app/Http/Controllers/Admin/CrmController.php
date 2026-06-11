@@ -151,12 +151,27 @@ class CrmController extends Controller
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
             'is_blacklisted' => 'nullable|boolean',
-            'created_at' => 'nullable|date'
+            'created_at' => 'nullable|date',
+            'region' => 'nullable|string',
+            'district' => 'nullable|string',
+            'phone_2' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string',
+            'source' => 'nullable|string',
+            'contract_language' => 'nullable|string',
+            'contract_id' => 'nullable|string',
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
         ]);
 
         if (array_key_exists('passport_series', $validated)) {
             $validated['passport_number'] = $validated['passport_series'];
             unset($validated['passport_series']);
+        }
+
+        if ($request->hasFile('passport_photo')) {
+            $validated['passport_photo'] = $request->file('passport_photo')->store('passport_photos', 'public');
+        } else {
+            unset($validated['passport_photo']);
         }
 
         try {
@@ -191,12 +206,30 @@ class CrmController extends Controller
             'passport_issued_date' => 'nullable|date',
             'passport_issued_by' => 'nullable|string',
             'is_blacklisted' => 'nullable|boolean',
-            'created_at' => 'nullable|date'
+            'created_at' => 'nullable|date',
+            'region' => 'nullable|string',
+            'district' => 'nullable|string',
+            'phone_2' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string',
+            'source' => 'nullable|string',
+            'contract_language' => 'nullable|string',
+            'contract_id' => 'nullable|string',
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
         ]);
 
         if (array_key_exists('passport_series', $validated)) {
             $validated['passport_number'] = $validated['passport_series'];
             unset($validated['passport_series']);
+        }
+
+        if ($request->hasFile('passport_photo')) {
+            if ($client->passport_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($client->passport_photo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($client->passport_photo);
+            }
+            $validated['passport_photo'] = $request->file('passport_photo')->store('passport_photos', 'public');
+        } else {
+            unset($validated['passport_photo']);
         }
 
         try {

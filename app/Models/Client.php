@@ -17,6 +17,15 @@ class Client extends Model
         'passport_issued_date',
         'passport_issued_by',
         'is_blacklisted',
+        'region',
+        'district',
+        'phone_2',
+        'birth_date',
+        'gender',
+        'passport_photo',
+        'source',
+        'contract_language',
+        'contract_id',
     ];
 
     public function getFullNameAttribute()

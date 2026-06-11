@@ -73,7 +73,7 @@ class FinanceController extends Controller
         $pendingExpenses = Transaction::where('status', 'pending')->where('type', 'expense')->sum('amount');
 
         // Tab-specific queries
-        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10) {
+        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
             $transactions = Transaction::with([
                 'creator', 
                 'approver', 
@@ -86,11 +86,11 @@ class FinanceController extends Controller
             ])->latest()->limit(500)->get();
         }
 
-        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 6 || $tab === 8 || $tab === 10) {
+        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 6 || $tab === 8 || $tab === 10 || $tab === 11) {
             $registers = CashRegister::with('building')->get();
         }
 
-        if ($tab === 1) {
+        if ($tab === 1 || $tab === 11) {
             $categories = TransactionCategory::all();
             $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
             $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
@@ -107,11 +107,11 @@ class FinanceController extends Controller
             $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
-        if ($tab === 2 || $tab === 9 || $tab === 10) {
+        if ($tab === 2 || $tab === 9 || $tab === 10 || $tab === 11) {
             $counterparties = Counterparty::with('customable')->get();
         }
 
-        if ($tab === 2 || $tab === 8 || $tab === 10) {
+        if ($tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
             $buildings = Building::latest()->get();
             $rates = DB::table('currency_rates')->get();
         }
@@ -120,7 +120,7 @@ class FinanceController extends Controller
             $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
         }
 
-        if ($tab === 10) {
+        if ($tab === 10 || $tab === 11) {
             $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 

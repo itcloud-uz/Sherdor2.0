@@ -441,6 +441,18 @@ const formattedDate = computed(() => {
                                 <span :class="isFinanceSubTabActive(10, 'debts') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
                                 Hisob-fakturalar
                             </Link>
+
+                            <!-- Hisobotlar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 11 })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                :class="isFinanceSubTabActive(11)
+                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                            >
+                                <span :class="isFinanceSubTabActive(11) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                Hisobotlar
+                            </Link>
                         </div>
                     </div>
 

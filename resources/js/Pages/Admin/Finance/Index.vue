@@ -58,6 +58,110 @@ const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
+const isAdmin = computed(() => {
+    return page.props.auth.user?.role === 'admin';
+});
+
+// Tab 11: Reports States
+const reportSubTab = ref('overview');
+const reportJournalSearch = ref('');
+const reportJournalDateFrom = ref('');
+const reportJournalDateTo = ref('');
+const reportJournalAccountId = ref('');
+const reportJournalType = ref('');
+const reportJournalCategoryId = ref('');
+
+const reportFilteredTransactions = computed(() => {
+    let result = (props.transactions || []).filter(t => t.status === 'approved');
+    if (reportJournalSearch.value) {
+        const query = reportJournalSearch.value.toLowerCase();
+        result = result.filter(t => 
+            (t.notes || '').toLowerCase().includes(query) ||
+            (t.counterparty?.name || '').toLowerCase().includes(query)
+        );
+    }
+    if (reportJournalDateFrom.value) {
+        result = result.filter(t => t.transaction_date >= reportJournalDateFrom.value);
+    }
+    if (reportJournalDateTo.value) {
+        result = result.filter(t => t.transaction_date <= reportJournalDateTo.value);
+    }
+    if (reportJournalAccountId.value) {
+        result = result.filter(t => t.account_id === parseInt(reportJournalAccountId.value));
+    }
+    if (reportJournalType.value) {
+        result = result.filter(t => t.type === reportJournalType.value);
+    }
+    if (reportJournalCategoryId.value) {
+        result = result.filter(t => t.category_id === parseInt(reportJournalCategoryId.value));
+    }
+    return result;
+});
+
+const reportOverviewStats = computed(() => {
+    const totalBalances = (props.registers || []).filter(r => !r.parent_id).reduce((sum, r) => sum + parseFloat(r.balance || r.balance_uzs || 0), 0);
+    const totalReceivables = (props.counterparties || []).filter(c => c.type === 'client').reduce((sum, c) => sum + parseFloat(c.balance || 0), 0);
+    const totalPayables = 
+        (props.suppliers || []).reduce((sum, s) => sum + Math.max(0, parseFloat(s.balance || 0)), 0) +
+        (props.workers || []).reduce((sum, w) => sum + Math.max(0, parseFloat(w.balance || 0)), 0) +
+        (props.financialLiabilities || []).filter(l => l.status === 'active').reduce((sum, l) => sum + parseFloat(l.total_amount || 0), 0);
+    const netCapital = totalBalances + totalReceivables - totalPayables;
+    return { totalBalances, totalReceivables, totalPayables, netCapital };
+});
+
+const reportBuildingsSummary = computed(() => {
+    if (!props.buildings) return [];
+    return props.buildings.map(b => {
+        const txs = (props.transactions || []).filter(t => t.building_id === b.id && t.status === 'approved');
+        const incomes = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        const expenses = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        const netFlow = incomes - expenses;
+        
+        const buildingInvoices = (props.invoices || []).filter(inv => inv.building_id === b.id);
+        const totalInvoiced = buildingInvoices.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
+        const paidInvoiced = buildingInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0);
+        const unpaidInvoiced = totalInvoiced - paidInvoiced;
+
+        return {
+            id: b.id,
+            name: b.name,
+            incomes,
+            expenses,
+            netFlow,
+            totalInvoiced,
+            unpaidInvoiced
+        };
+    });
+});
+
+function exportReportToCsv() {
+    const headers = ['Sana', 'Kategoriya', 'Kassa/Hisob', 'Kontragent', 'Turi', 'Summa (UZS)', 'Izoh'];
+    const rows = reportFilteredTransactions.value.map(t => [
+        new Date(t.transaction_date).toLocaleDateString(),
+        t.category?.name || 'Noma\'lum',
+        t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
+        t.counterparty?.name || '-',
+        t.type === 'income' ? 'Kirim' : 'Chiqim',
+        t.amount,
+        t.notes || ''
+    ]);
+
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `hisobot_jurnali_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 const selectedInvoiceIds = ref([]);
 const invoiceSearchQuery = ref('');
 const invoiceCurrencyFilter = ref('');
@@ -2437,6 +2541,449 @@ function formatMoney(amount, currency = 'UZS') {
                                 </tr>
                                 <tr v-if="!filteredClientDebts.length">
                                     <td colspan="4" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 11: Moliya Hisobotlari (Reports Tab) -->
+            <div v-if="activeTab === 11" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+                <!-- Header Card -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900 flex items-center gap-2">
+                            <span>📊</span> Moliyaviy Hisobotlar paneli
+                        </h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Barcha bo'limlar hisob-kitoblarining umumiy va batafsil ko'rsatkichlari tahlili.</p>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Jami Balans -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Jami Balans</span>
+                            <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-xs">🏦</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-gray-900">{{ formatMoney(reportOverviewStats.totalBalances) }}</div>
+                        <div class="text-[10px] text-gray-500 mt-1">Kassalardagi jami naqd va hisobraqam qoldiqlari</div>
+                    </div>
+
+                    <!-- Debitorlik (Mijozlar) -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Debitorlik (Mijozlar)</span>
+                            <span class="p-1.5 rounded-lg bg-orange-50 text-orange-600 text-xs">📈</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-orange-600">{{ formatMoney(reportOverviewStats.totalReceivables) }}</div>
+                        <div class="text-[10px] text-gray-500 mt-1">Mijozlarning shartnoma bo'yicha qarzdorligi</div>
+                    </div>
+
+                    <!-- Kreditorlik (Majburiyatlar) -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Kreditorlik (Majburiyatlar)</span>
+                            <span class="p-1.5 rounded-lg bg-red-50 text-red-600 text-xs">📉</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-red-600">{{ formatMoney(reportOverviewStats.totalPayables) }}</div>
+                        <div class="text-[10px] text-gray-500 mt-1">Ta'minotchi, ishchi va kredit majburiyatlari</div>
+                    </div>
+
+                    <!-- Sof Kapital -->
+                    <div class="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow" :class="reportOverviewStats.netCapital >= 0 ? 'border-amber-250 bg-amber-50/5' : 'border-red-200 bg-red-50/5'">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Sof Kapital</span>
+                            <span class="p-1.5 rounded-lg text-xs" :class="reportOverviewStats.netCapital >= 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">💎</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono" :class="reportOverviewStats.netCapital >= 0 ? 'text-gray-900' : 'text-red-700'">
+                            {{ formatMoney(reportOverviewStats.netCapital) }}
+                        </div>
+                        <div class="text-[10px] text-gray-500 mt-1">Balans + Debitorlik - Kreditorlik</div>
+                    </div>
+                </div>
+
+                <!-- Inner Sub-Tabs Menu -->
+                <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+                    <button @click="reportSubTab = 'overview'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'overview' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Umumiy tahlil
+                    </button>
+                    <button @click="reportSubTab = 'buildings'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'buildings' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Obyektlar
+                    </button>
+                    <button @click="reportSubTab = 'categories'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'categories' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Kategoriyalar
+                    </button>
+                    <button @click="reportSubTab = 'accounts'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'accounts' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Kassa & Hamkorlar
+                    </button>
+                    <button @click="reportSubTab = 'debts'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'debts' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Qarzdorliklar
+                    </button>
+                    <button @click="reportSubTab = 'journal'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'journal' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Batafsil Jurnal
+                    </button>
+                </div>
+
+                <!-- SUB-TAB CONTENT blocks -->
+
+                <!-- SUB-TAB 1: Overview Dashboard -->
+                <div v-if="reportSubTab === 'overview'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Incomes vs Expenses by Categories Summary -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Eng ko'p ishlatilgan kategoriyalar</h3>
+                        <div class="space-y-3">
+                            <div v-for="cat in categoriesSummary.slice(0, 6)" :key="cat.name" class="space-y-1">
+                                <div class="flex justify-between text-xs font-mono text-gray-700">
+                                    <span class="font-bold">{{ cat.name }}</span>
+                                    <span>
+                                        Kirim: <span class="text-emerald-600 font-bold">{{ formatMoney(cat.total_income) }}</span> / 
+                                        Chiqim: <span class="text-red-600 font-bold">{{ formatMoney(cat.total_expense) }}</span>
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+                                    <div class="bg-emerald-500 h-full" :style="{ width: (cat.total_income / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
+                                    <div class="bg-red-500 h-full" :style="{ width: (cat.total_expense / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
+                                </div>
+                            </div>
+                            <div v-if="!categoriesSummary.length" class="text-xs text-gray-400 text-center py-6">Kategoriyalar tahlili uchun tranzaksiyalar mavjud emas.</div>
+                        </div>
+                    </div>
+
+                    <!-- Building Overview Stats -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Obyektlar bo'yicha aylanma</h3>
+                        <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th class="p-3">Bino</th>
+                                        <th class="p-3 text-right">Kirim</th>
+                                        <th class="p-3 text-right">Chiqim</th>
+                                        <th class="p-3 text-right">Sof oqim</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="b in reportBuildingsSummary.slice(0, 5)" :key="b.id" class="hover:bg-gray-50">
+                                        <td class="p-3 font-bold text-gray-900">{{ b.name }}</td>
+                                        <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(b.incomes) }}</td>
+                                        <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(b.expenses) }}</td>
+                                        <td class="p-3 text-right font-bold" :class="b.netFlow >= 0 ? 'text-gray-900' : 'text-red-700'">
+                                            {{ formatMoney(b.netFlow) }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!reportBuildingsSummary.length">
+                                        <td colspan="4" class="p-6 text-center text-gray-400">Obyektlar topilmadi.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 2: Buildings Detail Tab -->
+                <div v-if="reportSubTab === 'buildings'" class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Obyektlar bo'yicha to'liq tafsilotlar</h3>
+                    </div>
+                    <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4">Obyekt nomi</th>
+                                    <th class="p-4 text-right">Kirimlar summasi</th>
+                                    <th class="p-4 text-right">Xarajatlar summasi</th>
+                                    <th class="p-4 text-right">Sof balans</th>
+                                    <th class="p-4 text-right">Faktura qilingan</th>
+                                    <th class="p-4 text-right">Faktura qarzdorligi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="b in reportBuildingsSummary" :key="b.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">{{ b.name }}</td>
+                                    <td class="p-4 text-right text-emerald-600 font-bold">{{ formatMoney(b.incomes) }}</td>
+                                    <td class="p-4 text-right text-red-600 font-bold">{{ formatMoney(b.expenses) }}</td>
+                                    <td class="p-4 text-right font-bold" :class="b.netFlow >= 0 ? 'text-gray-900' : 'text-red-700'">
+                                        {{ formatMoney(b.netFlow) }}
+                                    </td>
+                                    <td class="p-4 text-right text-blue-600">{{ formatMoney(b.totalInvoiced) }}</td>
+                                    <td class="p-4 text-right font-bold" :class="b.unpaidInvoiced > 0 ? 'text-red-600' : 'text-emerald-600'">
+                                        {{ formatMoney(b.unpaidInvoiced) }}
+                                    </td>
+                                </tr>
+                                <tr v-if="!reportBuildingsSummary.length">
+                                    <td colspan="6" class="p-8 text-center text-gray-400">Binolar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 3: Categories Detail Tab -->
+                <div v-if="reportSubTab === 'categories'" class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Barcha tranzaksiya kategoriyalari bo'yicha tahlil</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Kirim toifalar -->
+                        <div class="space-y-4 border border-gray-100 p-4 rounded-xl bg-white">
+                            <h4 class="text-xs font-bold text-emerald-600 uppercase font-mono tracking-widest border-b pb-2">Kirim Kategoriyalari</h4>
+                            <div class="space-y-3">
+                                <template v-for="cat in categoriesSummary" :key="cat.name + '-income'">
+                                    <div v-if="cat.total_income > 0" class="flex justify-between items-center text-xs font-mono">
+                                        <span class="font-bold text-gray-800">{{ cat.name }}</span>
+                                        <span class="text-emerald-600 font-bold">{{ formatMoney(cat.total_income) }}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Chiqim toifalar -->
+                        <div class="space-y-4 border border-gray-100 p-4 rounded-xl bg-white">
+                            <h4 class="text-xs font-bold text-red-600 uppercase font-mono tracking-widest border-b pb-2">Chiqim Kategoriyalari</h4>
+                            <div class="space-y-3">
+                                <template v-for="cat in categoriesSummary" :key="cat.name + '-expense'">
+                                    <div v-if="cat.total_expense > 0" class="flex justify-between items-center text-xs font-mono">
+                                        <span class="font-bold text-gray-800">{{ cat.name }}</span>
+                                        <span class="text-red-600 font-bold">{{ formatMoney(cat.total_expense) }}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 4: Kassalar & Hamkorlar -->
+                <div v-if="reportSubTab === 'accounts'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Kassalar accounts -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Kassalar va Hisob raqamlar</h3>
+                        <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th class="p-3">Kassa nomi</th>
+                                        <th class="p-3">Turi</th>
+                                        <th class="p-3 text-right">Balans</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="r in registers" :key="r.id" class="hover:bg-gray-50">
+                                        <td class="p-3 font-bold text-gray-900">{{ r.name }}</td>
+                                        <td class="p-3 uppercase text-[10px]">{{ r.type }}</td>
+                                        <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(r.balance || r.balance_uzs || 0) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Hamkorlar (Partners shares) -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Ta'sischilar/Hamkorlar Hisobi</h3>
+                        <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th class="p-3">F.I.SH</th>
+                                        <th class="p-3 text-right">Kiritgan sarmoya</th>
+                                        <th class="p-3 text-right">Olingan pul</th>
+                                        <th class="p-3 text-right">Joriy hisob</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="p in partners" :key="p.id" class="hover:bg-gray-50">
+                                        <td class="p-3 font-bold text-gray-900">{{ p.user?.name || p.name }}</td>
+                                        <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(p.invested_amount) }}</td>
+                                        <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(p.withdrawn_amount) }}</td>
+                                        <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(p.accountable_balance) }}</td>
+                                    </tr>
+                                    <tr v-if="!partners || !partners.length">
+                                        <td colspan="4" class="p-6 text-center text-gray-400">Hamkorlar topilmadi.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 5: Debts (Detailed lists) -->
+                <div v-if="reportSubTab === 'debts'" class="space-y-6">
+                    <!-- Client Debts -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Mijozlarimizdan kelishi kerak bo'lgan to'lovlar (Debitorlik)</h3>
+                        <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-4">Mijoz</th>
+                                        <th class="p-4">Telefon</th>
+                                        <th class="p-4 text-right">Qarzdorlik</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="c in counterparties.filter(x => x.type === 'client' && parseFloat(x.balance) > 0)" :key="c.id" class="hover:bg-gray-50">
+                                        <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
+                                        <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
+                                        <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.balance) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Supplier & Worker Payables -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Suppliers balance -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Ta'minotchilarga bo'lgan qarzlar</h3>
+                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                                <table class="w-full text-left text-xs font-mono">
+                                    <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                        <tr>
+                                            <th class="p-3">Ta'minotchi</th>
+                                            <th class="p-3 text-right">Qarz summasi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="s in suppliers.filter(x => parseFloat(x.balance) > 0)" :key="s.id" class="hover:bg-gray-50">
+                                            <td class="p-3 font-bold text-gray-900">{{ s.company_name }} ({{ s.name }})</td>
+                                            <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(s.balance) }}</td>
+                                        </tr>
+                                        <tr v-if="!suppliers.filter(x => parseFloat(x.balance) > 0).length">
+                                            <td colspan="2" class="p-4 text-center text-gray-400">Qarzdorlik yo'q.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Workers wage balance -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Ishchilarga to'lanishi kerak oyliklar</h3>
+                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                                <table class="w-full text-left text-xs font-mono">
+                                    <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                        <tr>
+                                            <th class="p-3">Xodim</th>
+                                            <th class="p-3 text-right">Oylik qarzi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="w in workers.filter(x => parseFloat(x.balance) > 0)" :key="w.id" class="hover:bg-gray-50">
+                                            <td class="p-3 font-bold text-gray-900">{{ w.name }} ({{ w.role || 'Xodim' }})</td>
+                                            <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(w.balance) }}</td>
+                                        </tr>
+                                        <tr v-if="!workers.filter(x => parseFloat(x.balance) > 0).length">
+                                            <td colspan="2" class="p-4 text-center text-gray-400">Xodimlardan qarz yo'q.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 6: Detailed Journal -->
+                <div v-if="reportSubTab === 'journal'" class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-100 pb-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Hisobot tranzaksiyalari jurnali</h3>
+                        <button @click="exportReportToCsv" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all">
+                            📥 CSV yuklab olish
+                        </button>
+                    </div>
+
+                    <!-- On-page filters -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <!-- Search text -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Qidirish</label>
+                            <input v-model="reportJournalSearch" type="text" placeholder="Izoh yoki kontragent..." class="w-full bg-white border border-gray-300 rounded-lg text-xs px-3 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+
+                        <!-- Date From -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Sanadan</label>
+                            <input v-model="reportJournalDateFrom" type="date" class="w-full bg-white border border-gray-300 rounded-lg text-xs px-3 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+
+                        <!-- Date To -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Sanagacha</label>
+                            <input v-model="reportJournalDateTo" type="date" class="w-full bg-white border border-gray-300 rounded-lg text-xs px-3 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+
+                        <!-- Cashbox selection -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Kassa/Hisob</label>
+                            <select v-model="reportJournalAccountId" class="w-full bg-white border border-gray-300 rounded-lg text-xs px-2 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Barchasi</option>
+                                <option v-for="r in registers" :key="r.id" :value="r.id">{{ r.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Type selector -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Turi</label>
+                            <select v-model="reportJournalType" class="w-full bg-white border border-gray-300 rounded-lg text-xs px-2 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Barchasi</option>
+                                <option value="income">Kirim (Income)</option>
+                                <option value="expense">Chiqim (Expense)</option>
+                            </select>
+                        </div>
+
+                        <!-- Category selector -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase font-mono">Kategoriya</label>
+                            <select v-model="reportJournalCategoryId" class="w-full bg-white border border-gray-300 rounded-lg text-xs px-2 py-2 text-gray-900 focus:ring-1 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Barchasi</option>
+                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Journal Table -->
+                    <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] border-b border-gray-200">
+                                <tr>
+                                    <th class="p-3">Sana</th>
+                                    <th class="p-3">Kategoriya</th>
+                                    <th class="p-3">Kassa/Hisob</th>
+                                    <th class="p-3">Kontragent</th>
+                                    <th class="p-3 text-right">Summa (UZS)</th>
+                                    <th class="p-3">Turi</th>
+                                    <th class="p-3">Izoh</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="t in reportFilteredTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-3 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                            {{ t.category?.name || 'Kategoriyasiz' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-bold text-gray-900">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
+                                    <td class="p-3 text-gray-700 font-semibold">{{ t.counterparty?.name || '-' }}</td>
+                                    <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ formatMoney(t.amount, t.currency) }}
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase tracking-wider" :class="t.type === 'income' ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : 'bg-red-50 text-red-700 border border-red-150'">
+                                            {{ t.type === 'income' ? 'Kirim' : 'Chiqim' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-gray-500 truncate max-w-xs" :title="t.notes">{{ t.notes || '-' }}</td>
+                                </tr>
+                                <tr v-if="!reportFilteredTransactions.length">
+                                    <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>

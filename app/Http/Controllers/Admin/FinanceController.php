@@ -36,10 +36,37 @@ class FinanceController extends Controller
         // Cleanup unwanted categories
         TransactionCategory::where('name', 'like', '%Farxod%')->delete();
 
+        // Seed default transaction categories if they don't exist
+        $defaultCategories = [
+            ['name' => 'Mijoz To\'lovi (Shartnoma)', 'type' => 'income'],
+            ['name' => 'Sarmoya (Investitsiya)', 'type' => 'income'],
+            ['name' => 'Qarz tushumi', 'type' => 'income'],
+            ['name' => 'Boshqa daromadlar', 'type' => 'income'],
+            ['name' => 'Ishchi To\'lovi (Avans/Oylik)', 'type' => 'expense'],
+            ['name' => 'Brigada to\'lovi', 'type' => 'expense'],
+            ['name' => 'Texnika To\'lovi', 'type' => 'expense'],
+            ['name' => 'Ta\'minotchi To\'lovi', 'type' => 'expense'],
+            ['name' => 'Hamkorga to\'lov', 'type' => 'expense'],
+            ['name' => 'Obyekt Xarajati', 'type' => 'expense'],
+            ['name' => 'Qurilish materiallari', 'type' => 'expense'],
+            ['name' => 'Ofis xarajatlari', 'type' => 'expense'],
+            ['name' => 'Soliq va to\'lovlar', 'type' => 'expense'],
+            ['name' => 'Qarz qaytarish', 'type' => 'expense'],
+            ['name' => 'Asosiy vositalar', 'type' => 'expense'],
+            ['name' => 'Boshqa xarajatlar', 'type' => 'expense'],
+        ];
+
+        foreach ($defaultCategories as $cat) {
+            TransactionCategory::firstOrCreate(
+                ['name' => $cat['name']],
+                ['type' => $cat['type']]
+            );
+        }
+
         $tab = (int)request('tab', 0);
         
         $transactions = [];
-        $categories = [];
+        $categories = TransactionCategory::all();
         $contracts = [];
         $financialLiabilities = [];
         $suppliers = [];
@@ -91,7 +118,6 @@ class FinanceController extends Controller
         }
 
         if ($tab === 1 || $tab === 11) {
-            $categories = TransactionCategory::all();
             $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
             $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
             $suppliers = Supplier::latest()->get();
@@ -445,6 +471,40 @@ class FinanceController extends Controller
             if ($supplier) {
                 $supplierAmount = $transaction->type === 'income' ? $transaction->amount : -$transaction->amount;
                 $supplier->increment('balance', $supplierAmount);
+            }
+        }
+
+        // 7b. Brigade Transactions
+        if ($transaction->target_type === 'brigade' && $transaction->target_id) {
+            $brigade = Brigade::find($transaction->target_id);
+            if ($brigade) {
+                DB::table('brigade_transactions')->insert([
+                    'brigade_id' => $brigade->id,
+                    'type' => $transaction->type === 'income' ? 'payment_received' : 'payment',
+                    'amount' => $transaction->amount,
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'date' => $transaction->transaction_date ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'finance_transaction_id' => $transaction->id,
+                ]);
+            }
+        }
+
+        // 7c. Machine Owner Transactions
+        if ($transaction->target_type === 'machine_owner' && $transaction->target_id) {
+            $owner = MachineOwner::find($transaction->target_id);
+            if ($owner) {
+                DB::table('machine_owner_transactions')->insert([
+                    'machine_owner_id' => $owner->id,
+                    'type' => $transaction->type === 'income' ? 'payment_received' : 'payment',
+                    'amount' => $transaction->amount,
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'date' => $transaction->transaction_date ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'finance_transaction_id' => $transaction->id,
+                ]);
             }
         }
 

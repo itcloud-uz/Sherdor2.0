@@ -636,7 +636,7 @@ const form = ref({
     fixed_asset_id: '',
     category_id: '',
     category_name: '',
-    transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16),
+    transaction_date: new Date().toLocaleString('sv').slice(0, 10),
     attachment: null,
     notes: '',
     auto_approve: true,
@@ -653,6 +653,76 @@ const transferForm = ref({
     sent_amount: '',
     exchange_rate: 1.0,
     description: ''
+});
+
+const selectedParentRegisterId = ref('');
+const selectedSubRegisterId = ref('');
+
+const parentRegisters = computed(() => {
+    return (props.registers || []).filter(r => !r.parent_id && r.is_active);
+});
+
+const subRegisters = computed(() => {
+    if (!selectedParentRegisterId.value) return [];
+    return (props.registers || []).filter(r => r.parent_id === selectedParentRegisterId.value && r.is_active);
+});
+
+function handleParentRegisterChange() {
+    if (subRegisters.value.length > 0) {
+        selectedSubRegisterId.value = '';
+        form.value.account_id = ''; // user must select sub kassa
+    } else {
+        selectedSubRegisterId.value = '';
+        form.value.account_id = selectedParentRegisterId.value;
+    }
+}
+
+function handleSubRegisterChange() {
+    form.value.account_id = selectedSubRegisterId.value || selectedParentRegisterId.value;
+}
+
+const showCounterpartyField = computed(() => {
+    return requiresClient.value || requiresSupplier.value || requiresPartner.value;
+});
+
+// Watch individual IDs to automatically set counterparty_id
+watch(() => form.value.partner_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => (x.type === 'partner' || x.type === 'shareholder') && x.customable_id === newVal);
+        if (c) {
+            form.value.counterparty_id = c.id;
+        } else {
+            const cAlt = props.counterparties.find(x => x.customable_id === newVal && x.customable_type?.includes('Partner'));
+            if (cAlt) form.value.counterparty_id = cAlt.id;
+        }
+    }
+});
+
+watch(() => form.value.worker_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id === newVal);
+        if (c) {
+            form.value.counterparty_id = c.id;
+        }
+    }
+});
+
+watch(() => form.value.supplier_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => x.type === 'supplier' && x.customable_id === newVal);
+        if (c) {
+            form.value.counterparty_id = c.id;
+        }
+    }
+});
+
+watch(() => form.value.client_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => x.type === 'client' && x.customable_id === newVal);
+        if (c) {
+            form.value.counterparty_id = c.id;
+        }
+    }
 });
 
 // Watch account selection to default the currency
@@ -943,7 +1013,7 @@ const selectedCategoryName = computed(() => {
     return cat ? cat.name.toLowerCase() : '';
 });
 
-const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma') || selectedCategoryName.value.includes('ishchi'));
+const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma'));
 const requiresMachineOwner = computed(() => selectedCategoryName.value.includes('texnika') || selectedCategoryName.value.includes('arendator'));
 const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
 const isGuardSelected = computed(() => {
@@ -952,10 +1022,10 @@ const isGuardSelected = computed(() => {
     return w && w.role === 'guard';
 });
 const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
-const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qarz qaytarish'));
-const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material'));
-const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz'));
-const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner'));
+const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
+const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
+const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz') || selectedCategoryName.value.includes('client'));
+const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner') || selectedCategoryName.value.includes('sarmoya') || selectedCategoryName.value.includes('investitsiya'));
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
 const pendingRefunds = computed(() => {
@@ -1069,7 +1139,7 @@ function submitTransaction() {
                 type: 'income', category_id: '', category_name: '', amount: '', currency: 'UZS', payment_method: 'cash', 
                 account_id: '', counterparty_id: '', invoice_id: '', contract_id: '', client_id: '', worker_id: '',
                 brigade_id: '', partner_id: '', machinery_id: '', machine_owner_id: '', building_id: '', supplier_id: '', 
-                fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16), 
+                fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').slice(0, 10), 
                 attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', 
                 target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
             };
@@ -1101,10 +1171,33 @@ function openQuickTransaction(type) {
         type: type, category_id: '', category_name: '', amount: '', currency: selectedRegister.value?.currency || 'UZS', payment_method: 'cash', 
         account_id: selectedRegister.value?.id || '', counterparty_id: '', invoice_id: '', contract_id: '', client_id: '', worker_id: '',
         brigade_id: '', partner_id: '', machinery_id: '', machine_owner_id: '', building_id: selectedRegister.value?.building_id || '', supplier_id: '', 
-        fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16), 
+        fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').slice(0, 10), 
         attachment: null, auto_approve: true, notes: '', latitude: gpsCoords.value.latitude, longitude: gpsCoords.value.longitude, source: 'admin_panel', 
         target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
     };
+    const activeRegister = selectedRegister.value;
+    if (activeRegister) {
+        if (activeRegister.parent_id) {
+            selectedParentRegisterId.value = activeRegister.parent_id;
+            selectedSubRegisterId.value = activeRegister.id;
+            form.value.account_id = activeRegister.id;
+        } else {
+            selectedParentRegisterId.value = activeRegister.id;
+            const children = (props.registers || []).filter(r => r.parent_id === activeRegister.id && r.is_active);
+            if (children.length > 0) {
+                selectedSubRegisterId.value = '';
+                form.value.account_id = ''; // user must select sub-register
+            } else {
+                selectedSubRegisterId.value = '';
+                form.value.account_id = activeRegister.id;
+            }
+        }
+    } else {
+        selectedParentRegisterId.value = '';
+        selectedSubRegisterId.value = '';
+        form.value.account_id = '';
+    }
+
     selectedInvoiceIds.value = [];
     invoiceSearchQuery.value = '';
     invoiceCurrencyFilter.value = '';
@@ -1768,14 +1861,27 @@ function formatMoney(amount, currency = 'UZS') {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Account selection -->
-                        <div>
-                            <label class="block text-gray-500 mb-1">KASSA / BANK HISOBI *</label>
-                            <select v-model="form.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
-                                <option value="" disabled>-- Tanlang --</option>
-                                <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                    {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
-                                </option>
-                            </select>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-gray-500 mb-1">HISOBNI TANLASH *</label>
+                                <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
+                                    <option value="" disabled>Hisobni tanlang</option>
+                                    <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
+                                        {{ r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Sub-kassa (Optional/Conditional) -->
+                            <div v-if="subRegisters.length > 0">
+                                <label class="block text-gray-500 mb-1">SUB KASSA TANLASH *</label>
+                                <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
+                                    <option value="" disabled>Sub kassa tanlang</option>
+                                    <option v-for="r in subRegisters" :key="r.id" :value="r.id">
+                                        {{ r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Category selection -->
@@ -1790,11 +1896,11 @@ function formatMoney(amount, currency = 'UZS') {
                         </div>
 
                         <!-- Counterparty selection -->
-                        <div>
-                            <label class="block text-gray-500 mb-1">KONTRAGENT (IXTIYORIY)</label>
-                            <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10">
+                        <div v-if="showCounterpartyField">
+                            <label class="block text-gray-500 mb-1">KONTRAGENT (KONKRET KATEGORIYA UCHUN) *</label>
+                            <select v-model="form.counterparty_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
                                 <option value="">-- Tanlang --</option>
-                                <option v-for="c in counterparties" :key="c.id" :value="c.id">
+                                <option v-for="c in counterparties.filter(x => (requiresClient && x.type === 'client') || (requiresSupplier && x.type === 'supplier') || (requiresPartner && (x.type === 'partner' || x.type === 'shareholder')))" :key="c.id" :value="c.id">
                                     [{{ c.type.toUpperCase() }}] {{ c.name }}
                                 </option>
                             </select>
@@ -1824,8 +1930,8 @@ function formatMoney(amount, currency = 'UZS') {
                     <!-- Date & Notes -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-gray-500 mb-1">SANASI</label>
-                            <input v-model="form.transaction_date" type="datetime-local" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10">
+                            <label class="block text-gray-500 mb-1">SANA *</label>
+                            <input v-model="form.transaction_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
                         </div>
                         <div>
                             <label class="block text-gray-500 mb-1">IZOH</label>
@@ -3535,25 +3641,40 @@ function formatMoney(amount, currency = 'UZS') {
                             </select>
                         </div>
 
-                        <!-- Row 2: Bank hisobi -->
-                        <div class="md:col-span-2">
-                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                * Bank hisobi
-                            </label>
-                            <select v-model="form.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                <option value="" disabled>Bank hisobini tanlang</option>
-                                <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
-                                    {{ r.parent_id ? `${getRegisterName(r.parent_id)} ↳ ${r.name}` : r.name }}
-                                </option>
-                            </select>
+                        <!-- Row 2: Hisobni tanlash -->
+                        <div class="md:col-span-2 space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Hisobni tanlash
+                                </label>
+                                <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Hisobni tanlang</option>
+                                    <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
+                                        {{ r.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Sub-kassa (Optional/Conditional) -->
+                            <div v-if="subRegisters.length > 0">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Sub kassa tanlash
+                                </label>
+                                <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Sub kassa tanlang</option>
+                                    <option v-for="r in subRegisters" :key="r.id" :value="r.id">
+                                        {{ r.name }}
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Row 3: Shartnoma sanasi & To'lov maqsadi -->
+                        <!-- Row 3: Sana & To'lov maqsadi -->
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                * Shartnoma sanasi
+                                * Sana
                             </label>
-                            <input v-model="form.transaction_date" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <input v-model="form.transaction_date" type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -3565,16 +3686,9 @@ function formatMoney(amount, currency = 'UZS') {
                         <!-- Row 4: Hujjat raqami & Ilovalar -->
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Hujjat raqami
+                                Hujjat raqami (Avtomatik)
                             </label>
-                            <div class="relative flex items-center">
-                                <input v-model="documentNumberInput" :readonly="!isEditingDocNumber" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors pr-10">
-                                <button type="button" @click="isEditingDocNumber = !isEditingDocNumber" class="absolute right-3 text-slate-400 hover:text-slate-600">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
-                                </button>
-                            </div>
+                            <input v-model="documentNumberInput" readonly type="text" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500 outline-none transition-colors cursor-not-allowed">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -3594,21 +3708,83 @@ function formatMoney(amount, currency = 'UZS') {
                             </div>
                         </div>
 
-                        <!-- Row 5: Kontragent & Izohlar -->
-                        <div>
-                            <div>
+                        <!-- Row 5: Dynamic Target Fields & Izohlar -->
+                        <div class="md:col-span-2 space-y-3">
+                            <!-- Dynamic selectors based on categories -->
+                            <div v-if="requiresClient" class="border border-orange-100 p-4 rounded-xl bg-orange-50/10">
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Kontragent
+                                    * Mijoz (Kontragent)
                                 </label>
-                                <select v-model="form.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Kontragentni tanlang</option>
-                                    <option v-for="c in counterparties" :key="c.id" :value="c.id">
+                                <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Mijozni tanlang</option>
+                                    <option v-for="c in counterparties.filter(x => x.type === 'client')" :key="c.id" :value="c.id">
                                         {{ c.name }}
                                     </option>
                                 </select>
                             </div>
+
+                            <div v-if="requiresSupplier" class="border border-red-100 p-4 rounded-xl bg-red-50/10">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Ta'minotchi (Kontragent)
+                                </label>
+                                <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Ta'minotchini tanlang</option>
+                                    <option v-for="c in counterparties.filter(x => x.type === 'supplier')" :key="c.id" :value="c.id">
+                                        {{ c.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="requiresPartner" class="border border-purple-100 p-4 rounded-xl bg-purple-50/10">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Hamkor (Ta'sischi)
+                                </label>
+                                <select v-model="form.partner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Hamkor tanlang</option>
+                                    <option v-for="p in partners" :key="p.id" :value="p.id">
+                                        {{ p.user?.name || p.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="requiresWorker" class="border border-blue-100 p-4 rounded-xl bg-blue-50/10">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Xodim / Ishchi
+                                </label>
+                                <select v-model="form.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Xodimni tanlang</option>
+                                    <option v-for="w in workers" :key="w.id" :value="w.id">
+                                        {{ w.name }} ({{ w.role || 'Ishchi' }})
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="requiresBrigade" class="border border-teal-100 p-4 rounded-xl bg-teal-50/10">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Brigada
+                                </label>
+                                <select v-model="form.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Brigadani tanlang</option>
+                                    <option v-for="b in brigades" :key="b.id" :value="b.id">
+                                        {{ b.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="requiresMachineOwner" class="border border-amber-100 p-4 rounded-xl bg-amber-50/10">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    * Texnika Egasi
+                                </label>
+                                <select v-model="form.machine_owner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Texnika egasini tanlang</option>
+                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">
+                                        {{ o.name }}
+                                    </option>
+                                </select>
+                            </div>
+
                             <!-- Invoice Selection Area -->
-                            <div v-if="form.counterparty_id" class="mt-3 p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
+                            <div v-if="form.counterparty_id && (requiresClient || requiresSupplier)" class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-semibold text-slate-700">Hisob-faktura</span>
                                     <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">
@@ -3623,12 +3799,13 @@ function formatMoney(amount, currency = 'UZS') {
                                 </div>
                                 <span v-else class="text-[10px] text-slate-400 block font-mono">Tanlanmagan</span>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Izohlar
-                            </label>
-                            <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    Izohlar
+                                </label>
+                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
+                            </div>
                         </div>
 
                         <!-- Row 6: Summa -->

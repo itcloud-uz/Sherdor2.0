@@ -113,7 +113,7 @@ const isFacilityAsosiyActive = () => {
         const url = new URL(page.url, window.location.origin);
         const tabParam = url.searchParams.get('tab');
         const viewParam = url.searchParams.get('view');
-        return tabParam === null && viewParam === null;
+        return tabParam === null && (viewParam === null || viewParam === 'objects');
     } catch (e) {
         return true;
     }
@@ -614,7 +614,7 @@ const formattedDate = computed(() => {
                         <div v-show="isFacilityMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
                             <!-- Asosiy -->
                             <Link
-                                :href="route('admin.facility')"
+                                :href="route('admin.facility', { view: 'objects' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isFacilityAsosiyActive() ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >

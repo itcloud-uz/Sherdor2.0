@@ -35,7 +35,7 @@ const isAdmin = computed(() => {
     return roles.includes('Super_Admin') || roles.includes('Admin');
 });
 
-const currentObject = ref(props.buildings?.length > 0 ? props.buildings[0].name : null);
+const currentObject = ref(null);
 const currentView = ref('objects');
 const selectedBuilding = ref(null);
 const selectedFloor = ref(null);
@@ -613,11 +613,6 @@ onMounted(() => {
                         }
                     }
                 }
-            } else {
-                // Default: autoselect first building if nothing was saved
-                const firstBuilding = props.buildings[0];
-                selectedBuilding.value = firstBuilding;
-                currentObject.value = firstBuilding.name;
             }
         }
     } catch (e) {

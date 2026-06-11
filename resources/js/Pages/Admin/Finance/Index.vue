@@ -222,6 +222,7 @@ const selectedRegisterTransactions = computed(() => {
 
 const isCreditType = computed(() => {
     if (registerForm.value.type === 'credit') return true;
+    if (hasSchedule.value) return true;
     if (registerForm.value.parent_id) {
         const parent = props.registers?.find(r => r.id === registerForm.value.parent_id);
         return parent && parent.type === 'credit';
@@ -579,6 +580,7 @@ watch(() => form.value.counterparty_id, (newVal) => {
 
 // Registers Modal & CRUD helpers
 const showRegisterModal = ref(false);
+const hasSchedule = ref(false);
 const registerForm = ref({
     id: null,
     name: '',
@@ -627,6 +629,7 @@ if (typeof window !== 'undefined') {
 
 function openNewRegisterModal(parentId = '') {
     isEditRegister.value = false;
+    hasSchedule.value = false;
     registerForm.value = { 
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
@@ -640,6 +643,7 @@ function openNewRegisterModal(parentId = '') {
 
 function openEditRegisterModal(reg) {
     isEditRegister.value = true;
+    hasSchedule.value = !!(reg.total_amount || reg.interest_rate || reg.monthly_payment || reg.creditor_name);
     registerForm.value = { 
         ...reg, 
         building_id: reg.building_id || '',
@@ -1161,6 +1165,39 @@ function openScheduleModal(liability) {
         }
     }
     showScheduleModal.value = true;
+}
+
+function downloadScheduleExcel() {
+    if (!selectedLiabilityForSchedule.value || generatedSchedule.value.length === 0) return;
+    
+    const title = selectedLiabilityForSchedule.value.name || selectedLiabilityForSchedule.value.creditor_name || selectedLiabilityForSchedule.value.creditor || 'Kredit';
+    const csvContent = [];
+    
+    // Add UTF-8 header metadata
+    csvContent.push(`To'lovlar grafigi - ${title}`);
+    csvContent.push(`Jami summa:;${selectedLiabilityForSchedule.value.total_amount};UZS`);
+    csvContent.push(`Muddati:;${selectedLiabilityForSchedule.value.term_months};oy`);
+    csvContent.push(`Foiz stavkasi:;${selectedLiabilityForSchedule.value.interest_rate || 0};%`);
+    csvContent.push(``); // Empty spacer
+    
+    // Header columns
+    csvContent.push(`Oy;To'lov Sanasi;Oylik To'lov (UZS);Asosiy Qarz (UZS);Foiz To'lovi (UZS);Qoldiq Asosiy Qarz (UZS)`);
+    
+    // Schedule rows
+    generatedSchedule.value.forEach(row => {
+        csvContent.push(`${row.month};${row.date};${Math.round(row.payment)};${Math.round(row.principal)};${Math.round(row.interest)};${Math.round(row.balance)}`);
+    });
+    
+    const csvString = csvContent.join('\n');
+    const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `tolov_grafigi_${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function deleteLiability(id) {
@@ -1943,9 +1980,12 @@ function formatMoney(amount, currency = 'UZS') {
                         <!-- Details box for Parent Credit Register -->
                         <div v-if="selectedRegister.type === 'credit' && !selectedRegister.parent_id" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
                             <div class="space-y-3">
-                                <div class="flex items-center gap-2 pb-1 border-b border-gray-100">
-                                    <span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
-                                    <span class="font-bold text-purple-700 uppercase tracking-wider text-[10px]">ASOSIY KREDIT GURUHI</span>
+                                <div class="flex items-center justify-between pb-1 border-b border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
+                                        <span class="font-bold text-purple-700 uppercase tracking-wider text-[10px]">ASOSIY KREDIT GURUHI</span>
+                                    </div>
+                                    <button v-if="selectedRegister.total_amount" @click.stop="openScheduleModal(selectedRegister)" class="px-2.5 py-0.5 text-[10px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all font-sans">Grafik</button>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-400">Guruh nomi:</span>
@@ -1985,7 +2025,10 @@ function formatMoney(amount, currency = 'UZS') {
                                 <button @click="selectedRegisterId = selectedRegister.parent_id" class="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-sans transition-all">
                                     ← Ortga qaytish: {{ getRegisterName(selectedRegister.parent_id) }}
                                 </button>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase">SUB-KASSA (KREDIT)</span>
+                                <div class="flex items-center gap-2">
+                                    <button v-if="selectedRegister.total_amount" @click.stop="openScheduleModal(selectedRegister)" class="px-2.5 py-0.5 text-[10px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all font-sans">Grafik</button>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase">SUB-KASSA (KREDIT)</span>
+                                </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="space-y-3">
@@ -2044,7 +2087,10 @@ function formatMoney(amount, currency = 'UZS') {
                                 <button @click="selectedRegisterId = selectedRegister.parent_id" class="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-sans transition-all">
                                     ← Ortga qaytish: {{ getRegisterName(selectedRegister.parent_id) }}
                                 </button>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-200 uppercase">SUB-KASSA</span>
+                                <div class="flex items-center gap-2">
+                                    <button v-if="selectedRegister.total_amount" @click.stop="openScheduleModal(selectedRegister)" class="px-2.5 py-0.5 text-[10px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all font-sans">Grafik</button>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-200 uppercase">SUB-KASSA</span>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2130,12 +2176,12 @@ function formatMoney(amount, currency = 'UZS') {
                                             </td>
                                             <td class="p-3 text-gray-500">{{ sub.creditor_name || '-' }}</td>
                                             <td class="p-3 text-right font-bold text-purple-700">
-                                                {{ sub.type === 'credit' ? formatMoney(sub.total_amount, sub.currency) : '-' }}
+                                                {{ (sub.type === 'credit' || sub.total_amount) ? formatMoney(sub.total_amount, sub.currency) : '-' }}
                                             </td>
                                             <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_uzs, 'UZS') }}</td>
                                             <td class="p-3 text-center">
                                                 <div class="flex justify-center gap-2">
-                                                    <button v-if="sub.type === 'credit'" @click.stop="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
+                                                    <button v-if="sub.type === 'credit' || sub.total_amount" @click.stop="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
                                                     <button @click.stop="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all">✏️</button>
                                                 </div>
                                             </td>
@@ -2481,6 +2527,12 @@ function formatMoney(amount, currency = 'UZS') {
                         </select>
                     </div>
 
+                    <!-- To'lov grafigi mavjudligi (toggled for loan details) -->
+                    <div class="flex items-center gap-2 mt-2 py-1">
+                        <input v-model="hasSchedule" type="checkbox" id="register_has_schedule" class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
+                        <label for="register_has_schedule" class="text-[10px] text-gray-700 font-bold uppercase cursor-pointer select-none">To'lov grafigiga ega (Kredit / Qarz)</label>
+                    </div>
+
                     <!-- Kredit / Qarz Tafsilotlari (conditional) -->
                     <div v-if="isCreditType" class="border border-purple-150 p-4 rounded-xl bg-purple-50/20 space-y-4">
                         <span class="text-[10px] font-bold text-purple-600 uppercase tracking-widest block mb-2">Kredit / Qarz Tafsilotlari</span>
@@ -2716,7 +2768,12 @@ function formatMoney(amount, currency = 'UZS') {
         <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="4xl">
             <div class="p-6">
                 <button @click="showScheduleModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
-                <h3 class="text-lg font-bold text-gray-900 mb-2 uppercase tracking-wider">To'lovlar grafigi</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-gray-900 uppercase tracking-wider">To'lovlar grafigi</h3>
+                    <button @click="downloadScheduleExcel" class="mr-8 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 font-sans">
+                        📥 Excel yuklab olish
+                    </button>
+                </div>
                 <p v-if="selectedLiabilityForSchedule" class="text-xs text-gray-500 mb-6 font-mono">
                     Kredit: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.name || selectedLiabilityForSchedule.creditor_name || selectedLiabilityForSchedule.creditor || '-' }}</span> | 
                     Jami kredit summasi: <span class="font-bold text-purple-700">{{ formatMoney(selectedLiabilityForSchedule.total_amount, selectedLiabilityForSchedule.currency || 'UZS') }}</span> |

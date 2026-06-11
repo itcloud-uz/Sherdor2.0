@@ -8,8 +8,11 @@ use Inertia\Inertia;
 
 class AdminController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
+        $startDate = $request->input('start_date') ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay() : null;
+        $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay() : null;
+
         $totalRevenue = \App\Models\Transaction::where('type', 'income')->where('status', 'approved')->sum('amount');
         $totalExpenses = \App\Models\Transaction::where('type', 'expense')->where('status', 'approved')->sum('amount');
         $balanceRecord = \App\Models\CompanyBalance::first();
@@ -157,18 +160,16 @@ class AdminController extends Controller
         $lostLeads = \App\Models\Lead::where('status', 'lost')->select('id', 'full_name', 'phone', 'reason', 'updated_at')->get();
 
         // Buildings Summary for Object Cards
-        $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) {
+        $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) use ($startDate, $endDate) {
             $unitsQuery = \App\Models\Unit::whereHas('floor', function($q) use ($building) {
                 $q->where('building_id', $building->id);
             });
             
             $totalUnits = $unitsQuery->count();
-            $soldUnits = (clone $unitsQuery)->where('status', 'sold')->count();
             $reservedUnits = (clone $unitsQuery)->where('status', 'reserved')->count();
             $availableUnits = (clone $unitsQuery)->where('status', 'available')->count();
             
             $totalArea = $unitsQuery->sum('area_sqm');
-            $soldArea = (clone $unitsQuery)->where('status', 'sold')->sum('area_sqm');
             $availableArea = (clone $unitsQuery)->where('status', 'available')->sum('area_sqm');
             
             $roomsDistribution = (clone $unitsQuery)->whereIn('status', ['sold', 'reserved'])
@@ -189,12 +190,34 @@ class AdminController extends Controller
                 $q->where('building_id', $building->id);
             })->where('status', '!=', 'cancelled')->pluck('id');
 
-            $soldSum = \App\Models\Transaction::whereIn('contract_id', $contractIds)
+            // Filter contracts query by date range if provided
+            $contractsQuery = \App\Models\Contract::whereHas('unit.floor', function($q) use ($building) {
+                $q->where('building_id', $building->id);
+            })->where('status', '!=', 'cancelled');
+            if ($startDate && $endDate) {
+                $contractsQuery->whereBetween('created_at', [$startDate, $endDate]);
+            }
+            $filteredContractIds = $contractsQuery->pluck('id');
+            $soldUnits = $filteredContractIds->count();
+
+            // Calculate sold area for filtered contracts
+            $soldArea = \App\Models\Contract::whereIn('id', $filteredContractIds)
+                ->with('unit')
+                ->get()
+                ->sum(function($c) {
+                    return $c->unit->area_sqm ?? 0;
+                });
+
+            // Calculate sold sum within date range
+            $soldSumQuery = \App\Models\Transaction::whereIn('contract_id', $contractIds)
                 ->where('status', 'approved')
-                ->where('type', 'income')
-                ->sum('amount');
+                ->where('type', 'income');
+            if ($startDate && $endDate) {
+                $soldSumQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+            }
+            $soldSum = $soldSumQuery->sum('amount');
                 
-            $totalContractAmount = \App\Models\Contract::whereIn('id', $contractIds)->sum('total_amount');
+            $totalContractAmount = \App\Models\Contract::whereIn('id', $filteredContractIds)->sum('total_amount');
             $debtSum = max(0, $totalContractAmount - $soldSum);
             
             return [
@@ -236,6 +259,8 @@ class AdminController extends Controller
             'lostLeads' => $lostLeads,
             'financialSummary' => $financialSummary,
             'buildingsSummary' => $buildingsSummary,
+            'startDate' => $request->input('start_date'),
+            'endDate' => $request->input('end_date'),
         ]);
     }
 }

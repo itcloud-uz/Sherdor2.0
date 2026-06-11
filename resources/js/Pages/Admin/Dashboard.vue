@@ -1,7 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { ref, computed, nextTick } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
+import { ref, computed, nextTick, watch } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 import axios from 'axios';
 import { useI18n } from 'vue-i18n';
@@ -27,13 +27,31 @@ const props = defineProps({
     leadsFunnel: Array,
     lostLeads: Array,
     financialSummary: Object,
-    buildingsSummary: Array
+    buildingsSummary: Array,
+    startDate: String,
+    endDate: String
 });
 
 
 const selectedBuildingName = ref('');
-const startMonth = ref('');
-const endMonth = ref('');
+const startDate = ref(props.startDate || '');
+const endDate = ref(props.endDate || '');
+
+watch([startDate, endDate], () => {
+    router.reload({
+        data: {
+            start_date: startDate.value || null,
+            end_date: endDate.value || null
+        },
+        preserveState: true,
+        preserveScroll: true
+    });
+});
+
+const clearDates = () => {
+    startDate.value = '';
+    endDate.value = '';
+};
 
 const uniqueBuildingNames = computed(() => {
     if (!props.buildingsSummary) return [];
@@ -71,9 +89,9 @@ const groupedBuildingsSummary = computed(() => {
         groups[name].total_area += b.total_area || 0;
         groups[name].sold_area += b.sold_area || 0;
         groups[name].available_area += b.available_area || 0;
-        groups[name].total_sum += b.total_sum || 0;
-        groups[name].sold_sum += b.sold_sum || 0;
-        groups[name].debt_sum += b.debt_sum || 0;
+        groups[name].total_sum += Number(b.total_sum) || 0;
+        groups[name].sold_sum += Number(b.sold_sum) || 0;
+        groups[name].debt_sum += Number(b.debt_sum) || 0;
         if (b.photo_path && !groups[name].photo_path) {
             groups[name].photo_path = b.photo_path;
         }
@@ -220,26 +238,41 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
                         </div>
                     </div>
 
-                    <!-- Date Range selector -->
-                    <div class="relative flex items-center bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm text-gray-500 select-none">
-                        <input 
-                            type="month" 
-                            v-model="startMonth" 
-                            class="text-xs bg-transparent border-none outline-none text-gray-600 focus:ring-0 w-28 p-0 cursor-pointer font-medium" 
-                            placeholder="Boshlanish oyi" 
-                        />
-                        <span class="mx-2 text-gray-300 text-xs">→</span>
-                        <input 
-                            type="month" 
-                            v-model="endMonth" 
-                            class="text-xs bg-transparent border-none outline-none text-gray-600 focus:ring-0 w-28 p-0 cursor-pointer font-medium" 
-                            placeholder="Tugash oyi" 
-                        />
-                        <div class="ml-2 text-gray-400 shrink-0">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                    <!-- Date Range selector (Redesigned) -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Start Date Input -->
+                        <div class="relative flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-1.5 shadow-sm text-gray-500 hover:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all duration-300">
+                            <span class="text-[9px] uppercase font-bold text-gray-400 absolute -top-2 left-4 bg-white px-1">Sana (Dan)</span>
+                            <input 
+                                type="date" 
+                                v-model="startDate" 
+                                class="text-xs bg-transparent border-none outline-none text-gray-700 focus:ring-0 w-28 p-0 cursor-pointer font-semibold" 
+                            />
                         </div>
+
+                        <span class="text-gray-300 font-bold text-xs">→</span>
+
+                        <!-- End Date Input -->
+                        <div class="relative flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-1.5 shadow-sm text-gray-500 hover:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all duration-300">
+                            <span class="text-[9px] uppercase font-bold text-gray-400 absolute -top-2 left-4 bg-white px-1">Sana (Gacham)</span>
+                            <input 
+                                type="date" 
+                                v-model="endDate" 
+                                class="text-xs bg-transparent border-none outline-none text-gray-700 focus:ring-0 w-28 p-0 cursor-pointer font-semibold" 
+                            />
+                        </div>
+                        
+                        <!-- Clear Button -->
+                        <button 
+                            v-if="startDate || endDate" 
+                            @click="clearDates" 
+                            class="p-2 text-gray-400 hover:text-red-500 rounded-2xl bg-white border border-gray-200 hover:border-red-200 transition-colors shadow-sm"
+                            title="Filtrni tozalash"
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -363,111 +363,129 @@ const leadFunnelSeries = computed(() => [{ name: 'Lidlar', data: (props.leadsFun
             </div>
         </div>
 
-        <!-- WIDGET 1: Top Financial Metrics -->
+        <!-- TOP FINANCIAL METRICS -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- 1. Cash Department -->
-            <div @click="openFinancialDetails('cash')" class="bg-white p-6 border-t-4 border-emerald-500 rounded-xl shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-shadow duration-300">
-                <div class="absolute inset-0 bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2 relative z-10">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> KASSA
-                </h3>
-                <div class="space-y-3 font-mono text-xs relative z-10">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Kassa tushum:</span>
-                        <span class="text-emerald-600 font-bold text-sm">{{ $currency(financialSummary?.cash?.income || 0) }}</span>
+            <!-- 1. Sof Balans -->
+            <div @click="openFinancialDetails('overall')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sof Balans</p>
+                        <h3 class="text-2xl font-bold text-gray-900 font-display tracking-tight">{{ $currency(netBalance || 0) }}</h3>
                     </div>
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Kassa chiqim:</span>
-                        <span class="text-red-600 font-bold text-sm">{{ $currency(financialSummary?.cash?.expense || 0) }}</span>
+                    <div class="p-3 bg-indigo-50 text-indigo-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <span class="text-gray-500 font-semibold tracking-wider">Balans:</span>
-                        <span class="text-gray-900 font-display font-bold text-lg">{{ $currency(financialSummary?.cash?.balance || 0) }}</span>
-                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-1.5 text-xs text-gray-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    <span>Batafsil ma'lumotlar</span>
                 </div>
             </div>
 
-            <!-- 2. Bank Account -->
-            <div @click="openFinancialDetails('bank')" class="bg-white p-6 border-t-4 border-blue-500 rounded-xl shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-shadow duration-300">
-                <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2 relative z-10">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> HISOB RAQAM
-                </h3>
-                <div class="space-y-3 font-mono text-xs relative z-10">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Hisob raqam tushum:</span>
-                        <span class="text-emerald-600 font-bold text-sm">{{ $currency(financialSummary?.bank?.income || 0) }}</span>
+            <!-- 2. Jami Kirim -->
+            <div @click="openFinancialDetails('overall')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Jami Kirim</p>
+                        <h3 class="text-2xl font-bold text-gray-900 font-display tracking-tight">{{ $currency(totalRevenue || 0) }}</h3>
                     </div>
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Hisob raqam chiqim:</span>
-                        <span class="text-red-600 font-bold text-sm">{{ $currency(financialSummary?.bank?.expense || 0) }}</span>
+                    <div class="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <span class="text-gray-500 font-semibold tracking-wider">Balans:</span>
-                        <span class="text-gray-900 font-display font-bold text-lg">{{ $currency(financialSummary?.bank?.balance || 0) }}</span>
-                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-1.5 text-xs text-gray-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Tushumlar tarixi</span>
                 </div>
             </div>
 
-            <!-- 3. Credit -->
-            <div @click="openFinancialDetails('credit')" class="bg-white p-6 border-t-4 border-amber-500 rounded-xl shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-shadow duration-300">
-                <div class="absolute inset-0 bg-amber-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2 relative z-10">
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> KREDIT
-                </h3>
-                <div class="space-y-3 font-mono text-xs relative z-10">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Kredit tushum:</span>
-                        <span class="text-emerald-600 font-bold text-sm">{{ $currency(financialSummary?.credit?.income || 0) }}</span>
+            <!-- 3. Jami Chiqim -->
+            <div @click="showExpensesModal = true" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-rose-400 to-rose-600"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Jami Chiqim</p>
+                        <h3 class="text-2xl font-bold text-gray-900 font-display tracking-tight">{{ $currency(totalExpenses || 0) }}</h3>
                     </div>
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Kredit chiqim:</span>
-                        <span class="text-red-600 font-bold text-sm">{{ $currency(financialSummary?.credit?.expense || 0) }}</span>
+                    <div class="p-3 bg-rose-50 text-rose-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
+                        </svg>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <span class="text-gray-500 font-semibold tracking-wider">Balans:</span>
-                        <span class="text-gray-900 font-display font-bold text-lg">{{ $currency(financialSummary?.credit?.balance || 0) }}</span>
-                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-1.5 text-xs text-gray-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    <span>Xarajatlar tahlili</span>
                 </div>
             </div>
 
-            <!-- 4. Overall -->
-            <div @click="openFinancialDetails('overall')" class="bg-white p-6 border-t-4 border-indigo-500 rounded-xl shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-shadow duration-300">
-                <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2 relative z-10">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> UMUMIY
-                </h3>
-                <div class="space-y-3 font-mono text-xs relative z-10">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Umumiy tushum:</span>
-                        <span class="text-emerald-600 font-bold text-sm">{{ $currency(financialSummary?.overall?.income || 0) }}</span>
+            <!-- 4. Qarzdorlik -->
+            <div @click="openFinancialDetails('credit')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-amber-600"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Qarzdorlik (Kredit)</p>
+                        <h3 class="text-2xl font-bold text-gray-900 font-display tracking-tight">{{ $currency(totalLiabilities || 0) }}</h3>
                     </div>
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span class="text-gray-500">Umumiy chiqim:</span>
-                        <span class="text-red-600 font-bold text-sm">{{ $currency(financialSummary?.overall?.expense || 0) }}</span>
+                    <div class="p-3 bg-amber-50 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <span class="text-gray-500 font-semibold tracking-wider">Balans:</span>
-                        <span class="text-gray-900 font-display font-bold text-lg">{{ $currency(financialSummary?.overall?.balance || 0) }}</span>
-                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-1.5 text-xs text-gray-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    <span>Majburiyatlar hisoboti</span>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div class="bg-white p-4 border-l-4 border-red-500 rounded-xl shadow-sm relative overflow-hidden">
-                <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{{ $t('total_debts') }}</p>
-                <h2 class="text-xl font-display font-bold text-gray-900 mt-1">
-                    {{ $currency(totalLiabilities || 0) }}
-                </h2>
+        <!-- SECONDARY DETAILS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- 1. Faol Mijozlar -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-50 text-blue-500 rounded-2xl">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Faol Mijozlar</p>
+                        <h3 class="text-xl font-bold text-gray-900 mt-0.5">{{ activeClients || 0 }} nafar</h3>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-4 border-l-4 border-indigo-500 rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-center">
-                <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{{ $t('hr_workers_today') }}</p>
-                <h2 class="text-xl font-display font-bold text-gray-900 mt-1 flex gap-4">
-                    <span class="text-emerald-600" title="Kelganlar">{{ attendanceStats?.present || 0 }}</span>
-                    <span class="text-gray-500">/</span>
-                    <span class="text-red-600" title="Kelmaganlar">{{ attendanceStats?.absent || 0 }}</span>
-                </h2>
+
+            <!-- 2. Bugungi Xodimlar (Davomat) -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-indigo-50 text-indigo-500 rounded-2xl">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Xodimlar (Davomat Bugun)</p>
+                        <div class="flex items-center gap-4 mt-0.5">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xl font-bold text-emerald-600">{{ attendanceStats?.present || 0 }}</span>
+                                <span class="text-xs text-gray-400 font-medium">kelgan</span>
+                            </div>
+                            <span class="text-gray-300 font-light">|</span>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xl font-bold text-rose-600">{{ attendanceStats?.absent || 0 }}</span>
+                                <span class="text-xs text-gray-400 font-medium">kelmagan</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

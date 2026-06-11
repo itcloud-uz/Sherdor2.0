@@ -681,6 +681,15 @@ function deleteRegister(id) {
     }
 }
 
+function handleDeleteFromModal() {
+    if (registerForm.value.id) {
+        if (confirm("Ushbu kassani o'chirishni tasdiqlaysizmi?")) {
+            showRegisterModal.value = false;
+            router.delete(route('admin.finance.registers.destroy', registerForm.value.id));
+        }
+    }
+}
+
 // Counterparties Modal & CRUD helpers
 const showCounterpartyModal = ref(false);
 const counterpartyForm = ref({
@@ -2182,7 +2191,8 @@ function formatMoney(amount, currency = 'UZS') {
                                             <td class="p-3 text-center">
                                                 <div class="flex justify-center gap-2">
                                                     <button v-if="sub.type === 'credit' || sub.total_amount" @click.stop="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
-                                                    <button @click.stop="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all">✏️</button>
+                                                    <button @click.stop="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all" title="Tahrirlash">✏️</button>
+                                                    <button @click.stop="triggerDelete(sub.id)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-red-300 text-red-600 bg-red-50/30 rounded hover:bg-red-600 hover:text-white transition-all" title="O'chirish">🗑️</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -2602,9 +2612,16 @@ function formatMoney(amount, currency = 'UZS') {
                         <label for="register_is_active" class="text-[10px] text-gray-700 font-bold uppercase cursor-pointer select-none">Kassa faol (Ish holatida)</label>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-slate-100">
-                        <button type="button" @click="showRegisterModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Saqlash</button>
+                    <div class="flex justify-between items-center pt-6 border-t border-slate-100">
+                        <div>
+                            <button v-if="isEditRegister" type="button" @click="handleDeleteFromModal" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-colors flex items-center gap-1">
+                                🗑️ O'chirish
+                            </button>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="button" @click="showRegisterModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
+                            <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Saqlash</button>
+                        </div>
                     </div>
                 </form>
             </div>

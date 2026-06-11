@@ -427,15 +427,41 @@ const filteredCounterpartiesList = computed(() => {
 
 // Tab 6 money transfer filter & search
 const transferSearch = ref('');
+const showTransferFilter = ref(false);
+const transferDateFrom = ref('');
+const transferDateTo = ref('');
+
 const filteredTransfers = computed(() => {
     if (!props.moneyTransfers) return [];
-    if (!transferSearch.value) return props.moneyTransfers;
-    const q = transferSearch.value.toLowerCase();
-    return props.moneyTransfers.filter(t => 
-        (t.description || '').toLowerCase().includes(q) ||
-        (t.fromAccount?.name || '').toLowerCase().includes(q) ||
-        (t.toAccount?.name || '').toLowerCase().includes(q)
-    );
+    
+    let list = props.moneyTransfers;
+    
+    // 1. Filter by sub-tab: transfers vs exchanges
+    if (transferSubTab.value === 'exchanges') {
+        list = list.filter(t => t.sent_currency !== t.received_currency || parseFloat(t.exchange_rate) !== 1.0);
+    } else {
+        list = list.filter(t => t.sent_currency === t.received_currency && parseFloat(t.exchange_rate) === 1.0);
+    }
+    
+    // 2. Filter by search query
+    if (transferSearch.value) {
+        const q = transferSearch.value.toLowerCase();
+        list = list.filter(t => 
+            (t.description || '').toLowerCase().includes(q) ||
+            (t.from_account?.name || '').toLowerCase().includes(q) ||
+            (t.to_account?.name || '').toLowerCase().includes(q)
+        );
+    }
+    
+    // 3. Filter by date range
+    if (transferDateFrom.value) {
+        list = list.filter(t => t.created_at >= transferDateFrom.value);
+    }
+    if (transferDateTo.value) {
+        list = list.filter(t => t.created_at <= transferDateTo.value + 'T23:59:59');
+    }
+    
+    return list;
 });
 
 const totalTransfersCount = computed(() => filteredTransfers.value.length);
@@ -1868,13 +1894,23 @@ function formatMoney(amount, currency = 'UZS') {
                         <p class="text-xs text-gray-500 font-mono mt-1">Bank hisobidan pul o'tkazmalari ro'yxati</p>
                     </div>
                     <div class="flex gap-3 w-full sm:w-auto">
-                        <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                        <button @click="showTransferFilter = !showTransferFilter" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5" :class="showTransferFilter ? 'bg-orange-50 text-orange-600 border-orange-200' : ''">
                             🔍 Filtr
                         </button>
                         <button @click="openQuickTransfer()" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
                             + Pul o'tkazmasi qo'shish
                         </button>
                     </div>
+                </div>
+
+                <!-- Transfer Filters row (toggled) -->
+                <div v-if="showTransferFilter" class="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-xs">
+                        <input v-model="transferDateFrom" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-1 px-2">
+                        <span class="text-gray-400">→</span>
+                        <input v-model="transferDateTo" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-1 px-2">
+                    </div>
+                    <input v-model="transferSearch" type="text" placeholder="Qidirish (Kassa, izoh)..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-1.5 text-xs w-64">
                 </div>
 
                 <!-- Sub tabs for transfers -->
@@ -3266,17 +3302,10 @@ function formatMoney(amount, currency = 'UZS') {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Exchange Rate -->
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kurs (Ayirboshlash kursi)</label>
-                            <input v-model="transferForm.exchange_rate" type="number" step="0.000001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="1.0">
-                        </div>
-                        <!-- Description -->
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Izoh</label>
-                            <input v-model="transferForm.description" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izoh (masalan, Naqdlashtirish)...">
-                        </div>
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Izoh</label>
+                        <input v-model="transferForm.description" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izoh (masalan, Naqdlashtirish)...">
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">

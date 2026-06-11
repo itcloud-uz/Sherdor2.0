@@ -288,6 +288,25 @@ const selectedRegisterChiqimUsd = computed(() => {
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
 
+const parentCreditTotalAmountUzs = computed(() => {
+    if (!selectedRegister.value || selectedRegister.value.type !== 'credit') return 0;
+    return (props.registers || [])
+        .filter(r => r.parent_id === selectedRegister.value.id && r.currency === 'UZS')
+        .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0);
+});
+
+const parentCreditTotalAmountUsd = computed(() => {
+    if (!selectedRegister.value || selectedRegister.value.type !== 'credit') return 0;
+    return (props.registers || [])
+        .filter(r => r.parent_id === selectedRegister.value.id && r.currency === 'USD')
+        .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0);
+});
+
+const getRegisterName = (id) => {
+    const r = props.registers?.find(x => x.id === id);
+    return r ? r.name : '';
+};
+
 // Tab 8 register specific search / filter states
 const registerSearchQuery = ref('');
 const registerDateFrom = ref('');
@@ -1978,11 +1997,112 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
                 </div>
 
-                <!-- Right detailed register panel column -->
+                <!-- Right detailed register panel -->
                 <div class="lg:col-span-9 space-y-6">
                     <div v-if="selectedRegister" class="space-y-6">
-                        <!-- Details box -->
-                        <div class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+                        <!-- Details box for Parent Credit Register -->
+                        <div v-if="selectedRegister.type === 'credit' && !selectedRegister.parent_id" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 pb-1 border-b border-gray-100">
+                                    <span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
+                                    <span class="font-bold text-purple-700 uppercase tracking-wider text-[10px]">ASOSIY KREDIT GURUHI</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Guruh nomi:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Tegishli bino:</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || 'Barcha binolar' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Holati:</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
+                                        {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Ichki kassalar soni:</span>
+                                    <span class="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                        {{ registers.filter(x => x.parent_id === selectedRegister.id).length }} ta sub-kassa
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 pb-1 border-b border-gray-100">
+                                    <span class="font-bold text-gray-500 uppercase tracking-wider text-[10px]">UMUMIY LOYIHA SUMMASI</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Umumiy UZS Kredit:</span>
+                                    <span class="font-bold text-gray-900 font-mono text-sm">{{ formatMoney(parentCreditTotalAmountUzs, 'UZS') }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Umumiy USD Kredit:</span>
+                                    <span class="font-bold text-gray-900 font-mono text-sm">{{ formatMoney(parentCreditTotalAmountUsd, 'USD') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details box for Sub-Register Credit -->
+                        <div v-else-if="selectedRegister.type === 'credit' && selectedRegister.parent_id" class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4 font-mono text-xs">
+                            <div class="flex justify-between items-center border-b border-gray-100 pb-2.5">
+                                <button @click="selectedRegisterId = selectedRegister.parent_id" class="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-sans transition-all">
+                                    ← Ortga qaytish: {{ getRegisterName(selectedRegister.parent_id) }}
+                                </button>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase">SUB-KASSA (KREDIT)</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kassa nomi:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kreditor (Bank/Tashkilot):</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.creditor_name || '-' }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kredit summasi:</span>
+                                        <span class="font-bold text-gray-900 text-right font-mono text-sm text-purple-700">{{ formatMoney(selectedRegister.total_amount, selectedRegister.currency) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Foiz stavkasi:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.interest_rate || 0 }}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kredit muddati:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.term_months || 0 }} oy</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Oylik to'lov:</span>
+                                        <span class="font-bold text-gray-900 text-right font-mono text-emerald-600">{{ formatMoney(selectedRegister.monthly_payment, selectedRegister.currency) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kredit davri:</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.start_date || '-' }} dan {{ selectedRegister.end_date || '-' }} gacha</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Bino (Obyekt):</span>
+                                        <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || '-' }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Izoh:</span>
+                                        <span class="font-bold text-gray-900 text-right truncate max-w-[200px]" :title="selectedRegister.description">{{ selectedRegister.description || '-' }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center pt-1">
+                                        <span class="text-gray-400">Holati:</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
+                                            {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details box for Standard Registers -->
+                        <div v-else class="bg-white border border-gray-150 p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
                             <div class="space-y-3">
                                 <div class="flex justify-between">
                                     <span class="text-gray-400">Hisob nomi:</span>
@@ -2017,7 +2137,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-400">Bino:</span>
-                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || 'Nuovo' }}</span>
+                                    <span class="font-bold text-gray-900 text-right">{{ selectedRegister.building?.name || '-' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -2042,6 +2162,7 @@ function formatMoney(amount, currency = 'UZS') {
                                     <span class="text-sm font-bold text-red-800">Chiqim</span>
                                 </div>
                                 <div class="text-right font-mono">
+                                    <span class="block text-red-600 font-bold text-sm">USD: {{ formatMoney(selectedRegisterChiqimUsd, 'USD') }}</span>
                                     <span class="block text-red-600 font-bold text-sm">UZS: {{ formatMoney(selectedRegisterChiqimUzs, 'UZS') }}</span>
                                 </div>
                             </div>
@@ -2060,13 +2181,14 @@ function formatMoney(amount, currency = 'UZS') {
                                             <th class="p-3">Kassa nomi</th>
                                             <th class="p-3">Turi</th>
                                             <th class="p-3">Kreditor (Agar bor bo'lsa)</th>
+                                            <th class="p-3 text-right">Kredit Summasi</th>
                                             <th class="p-3 text-right">Balans (UZS)</th>
                                             <th class="p-3 text-right">Balans (USD)</th>
                                             <th class="p-3 text-center">Amallar</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
-                                        <tr v-for="sub in registers.filter(x => x.parent_id === selectedRegister.id)" :key="sub.id" class="hover:bg-slate-50/50 transition-colors">
+                                        <tr v-for="sub in registers.filter(x => x.parent_id === selectedRegister.id)" :key="sub.id" @click="selectedRegisterId = sub.id" class="hover:bg-slate-100/70 cursor-pointer transition-colors">
                                             <td class="p-3 font-bold text-gray-900">{{ sub.name }}</td>
                                             <td class="p-3 uppercase text-[9px]">
                                                 <span class="px-1.5 py-0.5 rounded font-bold" :class="sub.type === 'credit' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-700'">
@@ -2074,12 +2196,15 @@ function formatMoney(amount, currency = 'UZS') {
                                                 </span>
                                             </td>
                                             <td class="p-3 text-gray-500">{{ sub.creditor_name || '-' }}</td>
+                                            <td class="p-3 text-right font-bold text-purple-700">
+                                                {{ sub.type === 'credit' ? formatMoney(sub.total_amount, sub.currency) : '-' }}
+                                            </td>
                                             <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_uzs, 'UZS') }}</td>
                                             <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(sub.balance_usd, 'USD') }}</td>
                                             <td class="p-3 text-center">
                                                 <div class="flex justify-center gap-2">
-                                                    <button v-if="sub.type === 'credit'" @click="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
-                                                    <button @click="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all">✏️</button>
+                                                    <button v-if="sub.type === 'credit'" @click.stop="openScheduleModal(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-blue-500 text-blue-600 bg-blue-50/30 rounded hover:bg-blue-600 hover:text-white transition-all">Grafik</button>
+                                                    <button @click.stop="triggerEdit(sub)" class="px-2.5 py-1 text-[9px] uppercase font-bold border border-gray-300 text-gray-700 bg-gray-50 rounded hover:bg-gray-200 transition-all">✏️</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -2650,29 +2775,45 @@ function formatMoney(amount, currency = 'UZS') {
         </Modal>
 
         <!-- QARZLAR SCHEDULE MODAL -->
-        <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="lg">
+        <Modal :show="showScheduleModal" @close="showScheduleModal = false" maxWidth="4xl">
             <div class="p-6">
                 <button @click="showScheduleModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
-                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">To'lovlar grafigi</h3>
+                <h3 class="text-lg font-bold text-gray-900 mb-2 uppercase tracking-wider">To'lovlar grafigi</h3>
+                <p v-if="selectedLiabilityForSchedule" class="text-xs text-gray-500 mb-6 font-mono">
+                    Kredit: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.name || selectedLiabilityForSchedule.creditor_name || selectedLiabilityForSchedule.creditor || '-' }}</span> | 
+                    Jami kredit summasi: <span class="font-bold text-purple-700">{{ formatMoney(selectedLiabilityForSchedule.total_amount, selectedLiabilityForSchedule.currency || 'UZS') }}</span> |
+                    Muddati: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.term_months || 0 }} oy</span> |
+                    Foiz stavkasi: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.interest_rate || 0 }}%</span>
+                </p>
                 
                 <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-xl">
                     <table class="w-full text-left text-xs font-mono">
-                        <thead class="bg-gray-50 text-gray-500">
+                        <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-[10px] border-b border-gray-200">
                             <tr>
                                 <th class="p-3">Oy</th>
-                                <th class="p-3">Sana</th>
-                                <th class="p-3 text-right">To'lov</th>
-                                <th class="p-3 text-right">Asosiy qarz</th>
-                                <th class="p-3 text-right">Qoldiq</th>
+                                <th class="p-3">To'lov Sanasi</th>
+                                <th class="p-3 text-right">Oylik To'lov</th>
+                                <th class="p-3 text-right">Asosiy Qarz</th>
+                                <th class="p-3 text-right">Foiz To'lovi</th>
+                                <th class="p-3 text-right">Qoldiq Asosiy Qarz</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="row in generatedSchedule" :key="row.month" class="hover:bg-gray-50 transition-colors">
                                 <td class="p-3 text-gray-400 font-bold">{{ row.month }}</td>
-                                <td class="p-3">{{ row.date }}</td>
-                                <td class="p-3 text-right font-bold text-emerald-600">{{ formatMoney(row.payment) }}</td>
-                                <td class="p-3 text-right text-gray-700">{{ formatMoney(row.principal) }}</td>
-                                <td class="p-3 text-right text-gray-500">{{ formatMoney(row.balance) }}</td>
+                                <td class="p-3 text-gray-700 font-medium">{{ row.date }}</td>
+                                <td class="p-3 text-right font-bold text-emerald-600">
+                                    {{ formatMoney(row.payment, selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td class="p-3 text-right text-gray-800 font-medium">
+                                    {{ formatMoney(row.principal, selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td class="p-3 text-right text-amber-600">
+                                    {{ formatMoney(row.interest, selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td class="p-3 text-right text-gray-500 font-mono">
+                                    {{ formatMoney(row.balance, selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
                             </tr>
                         </tbody>
                     </table>

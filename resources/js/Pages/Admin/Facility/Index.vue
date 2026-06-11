@@ -1244,6 +1244,7 @@ const unitForm = useForm({
 });
 
 const isEditingBuilding = ref(false);
+const isEditingObject = ref(false);
 const isAddingBlock = ref(false);
 
 const showUploadModelsModal = ref(false);
@@ -1281,9 +1282,10 @@ function submitUploadModels() {
     });
 }
 
-function openEditBuilding() {
+function openEditBuilding(isObject = false) {
     if (!selectedBuilding.value) return;
     isEditingBuilding.value = true;
+    isEditingObject.value = isObject;
     isAddingBlock.value = false;
     buildingForm.name = selectedBuilding.value.name;
     buildingForm.city = selectedBuilding.value.city || '';
@@ -1301,7 +1303,7 @@ function openEditBuilding() {
     buildingForm.blueprint = null;
     buildingForm.model_3d = null;
     buildingForm.photo = null;
-    buildingForm.is_object_only = selectedBuilding.value.total_floors === 0 ? 1 : 0;
+    buildingForm.is_object_only = (selectedBuilding.value.total_floors === 0 || isObject) ? 1 : 0;
     buildingForm.basement_floors = selectedBuilding.value.basement_floors || 0;
     buildingForm.block_name = selectedBuilding.value.block_name || '';
     buildingForm.corpus_name = selectedBuilding.value.corpus_name || '';
@@ -1324,10 +1326,13 @@ function openEditBuilding() {
 }
 
 function openEditObjectContainer(blocksList) {
-    const container = (blocksList || []).find(b => b.total_floors === 0);
+    let container = (blocksList || []).find(b => b.total_floors === 0);
+    if (!container && blocksList && blocksList.length > 0) {
+        container = blocksList[0];
+    }
     if (!container) return;
     selectedBuilding.value = container;
-    openEditBuilding();
+    openEditBuilding(true);
 }
 
 function deleteBuilding() {
@@ -1347,7 +1352,7 @@ function submitBuilding() {
         // use _method: 'put' for file upload with PUT in laravel
         buildingForm.transform((data) => ({
             ...data,
-            is_object_only: 0,
+            is_object_only: isEditingObject.value ? 1 : 0,
             _method: 'put'
         })).post(route('admin.facility.buildings.update', selectedBuilding.value.id), {
             preserveState: true,
@@ -1355,6 +1360,7 @@ function submitBuilding() {
             onSuccess: () => {
                 showAddBuildingModal.value = false;
                 isEditingBuilding.value = false;
+                isEditingObject.value = false;
                 buildingForm.reset();
             },
             onError: (errors) => {
@@ -1668,7 +1674,10 @@ function getObjectPhoto(blocks) {
 
 const modalTitle = computed(() => {
     if (isAddingBlock.value) return 'YANGI BLOK QO\'SHISH';
-    if (isEditingBuilding.value) return 'BINONI TAHRIRLASH';
+    if (isEditingBuilding.value) {
+        if (isEditingObject.value) return 'OBYEKTNI TAHRIRLASH';
+        return 'BINONI TAHRIRLASH';
+    }
     return 'YANGI OBYEKT QO\'SHISH';
 });
 
@@ -2807,7 +2816,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <div v-if="isEditingBuilding && selectedBuilding" class="space-y-4">
                         
                         <!-- 1. TAHRIRLANAYOTGAN NAYSA OBJECT CONTAINER BO'LSA (total_floors === 0) -->
-                        <div v-if="selectedBuilding.total_floors === 0" class="space-y-4">
+                        <div v-if="selectedBuilding.total_floors === 0 || isEditingObject" class="space-y-4">
                             <!-- Obyekt Nomi & Foto -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
@@ -2857,7 +2866,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
 
                         <!-- 2. TAHRIRLANAYOTGAN NAYSA BLOK BO'LSA (total_floors > 0) -->
-                        <div v-else class="space-y-4">
+                        <div v-else-if="!isEditingObject" class="space-y-4">
                             <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>

@@ -247,6 +247,8 @@ class FacilityController extends Controller
                 $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
             }
 
+            $oldName = $building->name;
+
             $building->update([
                 'name' => $validated['name'],
                 'city' => $validated['city'] ?? null,
@@ -270,6 +272,16 @@ class FacilityController extends Controller
                 'photo_path' => $photoPath,
                 'blueprint_path' => $blueprintPath,
                 'model_3d_path' => $model3dPath,
+            ]);
+
+            // Sync object-level fields across all blocks belonging to the same object
+            Building::where('name', $oldName)->update([
+                'name' => $validated['name'],
+                'city' => $validated['city'] ?? null,
+                'district' => $validated['district'] ?? null,
+                'mahalla' => $validated['mahalla'] ?? null,
+                'street' => $validated['street'] ?? null,
+                'photo_path' => $photoPath,
             ]);
 
             $this->generateFloorsAndUnits($building, $request->input('floors_data'));

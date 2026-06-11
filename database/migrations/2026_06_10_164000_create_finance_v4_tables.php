@@ -12,6 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::disableForeignKeyConstraints();
         // 1. currency_rates
         Schema::create('currency_rates', function (Blueprint $table) {
             $table->id();
@@ -430,6 +431,7 @@ return new class extends Migration
             'created_at' => '2026-05-11 15:19:00',
             'updated_at' => '2026-05-11 15:19:00',
         ]);
+        Schema::enableForeignKeyConstraints();
     }
 
     /**

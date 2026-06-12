@@ -223,6 +223,83 @@ const showEmployeeModal = ref(false);
 const isEditMode = ref(false);
 const isProcessing = ref(false);
 
+const showHRReportModal = ref(false);
+const hrReportType = ref(''); // 'total', 'active', 'permanent', 'contract', 'fired'
+const hrReportSearchQuery = ref('');
+
+const openHRReportModal = (type) => {
+    hrReportType.value = type;
+    hrReportSearchQuery.value = '';
+    showHRReportModal.value = true;
+};
+
+const hrReportList = computed(() => {
+    switch (hrReportType.value) {
+        case 'total':
+            return allEmployees.value;
+        case 'active':
+            return allEmployees.value.filter(e => e.status === 'active');
+        case 'permanent':
+            return allEmployees.value.filter(e => e.type === 'user' || e.role === 'guard');
+        case 'contract':
+            return allEmployees.value.filter(e => e.type === 'worker' && e.role !== 'guard');
+        case 'fired':
+            return allEmployees.value.filter(e => e.status === 'fired');
+        default:
+            return [];
+    }
+});
+
+const filteredHRReportList = computed(() => {
+    const query = hrReportSearchQuery.value.toLowerCase();
+    return hrReportList.value.filter(e => {
+        return e.name.toLowerCase().includes(query) ||
+               (e.phone && e.phone.includes(query)) ||
+               (e.role_label && e.role_label.toLowerCase().includes(query)) ||
+               (e.building_name && e.building_name.toLowerCase().includes(query));
+    });
+});
+
+const hrReportTitle = computed(() => {
+    switch (hrReportType.value) {
+        case 'total': return "Barcha xodimlar jurnali";
+        case 'active': return "Faol xodimlar jurnali";
+        case 'permanent': return "Doimiy ishchilar jurnali";
+        case 'contract': return "Yollanma ishchilar jurnali";
+        case 'fired': return "Bo'shatilgan xodimlar jurnali";
+        default: return "Xodimlar jurnali";
+    }
+});
+
+function exportHRReportToExcel() {
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += "sep=;\n"; // Excel column separator directive
+    csvContent += "№;ID;Xodim;Telefon;Lavozimi;Bino;Ishga olingan sana;Holat\n";
+    
+    filteredHRReportList.value.forEach((e, idx) => {
+        const name = e.name.replace(/;/g, ' ');
+        const role = (e.role_label || '').replace(/;/g, ' ');
+        const bino = (e.building_name || '').replace(/;/g, ' ');
+        const phone = (e.phone || '').replace(/;/g, ' ');
+        csvContent += `${idx + 1};${e.id};"${name}";"${phone}";"${role}";"${bino}";"${formatDate(e.employment_date)}";"${e.status_label}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    let filename = `Xodimlar_Jurnali`;
+    if (hrReportType.value) {
+        filename += `_${hrReportType.value}`;
+    }
+    link.setAttribute("download", `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 const showSalaryReportModal = ref(false);
 const salaryReportType = ref(''); // 'base', 'paid', 'penalty', 'debt'
 const reportSearchQuery = ref('');
@@ -817,7 +894,7 @@ const kpiManagers = computed(() => {
                 <!-- 5 Premium Stat Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                     <!-- card 1 -->
-                    <div class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openHRReportModal('total')" class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-blue-100/50">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-xs font-semibold text-blue-700 font-display">Umumiy xodimlar soni</span>
                             <span class="text-blue-500 text-lg">👤</span>
@@ -826,7 +903,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- card 2 -->
-                    <div class="bg-teal-50/70 border border-teal-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openHRReportModal('active')" class="bg-teal-50/70 border border-teal-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-teal-100/50">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-xs font-semibold text-teal-700 font-display">Faol xodimlar soni</span>
                             <span class="text-teal-500 text-lg">👥</span>
@@ -835,7 +912,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- card 3 -->
-                    <div class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openHRReportModal('permanent')" class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-purple-100/50">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-xs font-semibold text-purple-700 font-display">Doimiy ishchilar soni</span>
                             <span class="text-purple-500 text-lg">🛡️</span>
@@ -844,7 +921,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- card 4 -->
-                    <div class="bg-amber-50/70 border border-amber-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openHRReportModal('contract')" class="bg-amber-50/70 border border-amber-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-amber-100/50">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-xs font-semibold text-amber-700 font-display">Yollanma ishchilar soni</span>
                             <span class="text-amber-500 text-lg">🚜</span>
@@ -853,7 +930,7 @@ const kpiManagers = computed(() => {
                     </div>
                     
                     <!-- card 5 -->
-                    <div class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                    <div @click="openHRReportModal('fired')" class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-rose-100/50">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-xs font-semibold text-rose-700 font-display">Bo'shatilgan ishchilar soni</span>
                             <span class="text-rose-500 text-lg">⚠️</span>
@@ -1948,6 +2025,91 @@ const kpiManagers = computed(() => {
                         <div>Jarima: <span class="font-bold text-rose-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.penalty, 0)) }}</span></div>
                         <div>Qoldiq: <span class="font-bold text-purple-600">{{ formatPrice(filteredReportList.reduce((sum, item) => sum + item.debt, 0)) }}</span></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Detailed HR Report Modal (Clicking employee stats indicators) -->
+        <div v-if="showHRReportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+            <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-3">
+                        <button @click="showHRReportModal = false" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-500 font-bold">✕</button>
+                        <h3 class="text-base font-black text-gray-900 font-display uppercase tracking-wide">{{ hrReportTitle }}</h3>
+                    </div>
+                    <button 
+                        @click="exportHRReportToExcel" 
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                    >
+                        <span>📥</span> Excel yuklab olish
+                    </button>
+                </div>
+                
+                <!-- Filters and Search inside Modal -->
+                <div class="p-5 bg-white border-b border-gray-50 flex flex-col sm:flex-row gap-4 items-center shrink-0">
+                    <div class="relative flex-1 w-full">
+                        <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
+                        <input 
+                            v-model="hrReportSearchQuery" 
+                            type="text" 
+                            placeholder="Qidirish (ism, telefon, lavozim yoki bino bo'yicha)..."
+                            class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 bg-white"
+                        />
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                    <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 font-semibold text-xs border-b border-gray-100">
+                                    <th class="p-4 w-12 text-center">ID</th>
+                                    <th class="p-4">Xodim</th>
+                                    <th class="p-4">Lavozim</th>
+                                    <th class="p-4">Bino</th>
+                                    <th class="p-4">Ishga olingan kun</th>
+                                    <th class="p-4">Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(emp, idx) in filteredHRReportList" :key="emp.id + '-' + emp.type" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 text-center font-mono text-gray-500 text-xs">{{ emp.id }}</td>
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center font-bold text-orange-700 shrink-0 uppercase text-xs">
+                                                {{ emp.name.substring(0, 2) }}
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-xs uppercase">{{ emp.name }}</h4>
+                                                <p class="text-[10px] text-gray-500 font-medium mt-0.5">{{ emp.phone }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-gray-700 capitalize text-xs">{{ emp.role_label }}</td>
+                                    <td class="p-4 text-gray-700 text-xs">{{ emp.building_name }}</td>
+                                    <td class="p-4 text-gray-700 text-xs">{{ formatDate(emp.employment_date) }}</td>
+                                    <td class="p-4">
+                                        <span 
+                                            class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+                                            :class="emp.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                                        >
+                                            {{ emp.status_label }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredHRReportList.length === 0">
+                                    <td colspan="6" class="p-10 text-center text-gray-400 font-medium text-xs">Xodimlar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer Summary inside Modal -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center shrink-0 text-xs text-gray-500 font-mono">
+                    <div>Jami xodimlar: <span class="font-bold text-gray-900">{{ filteredHRReportList.length }} nafar</span></div>
                 </div>
             </div>
         </div>

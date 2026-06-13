@@ -1500,8 +1500,9 @@ const categoriesSummary = computed(() => {
 
 // Format money values
 function formatMoney(amount, currency = 'UZS') {
-    if (amount === undefined || amount === null) return '0.00 ' + currency;
-    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' ' + currency;
+    const val = parseFloat(amount);
+    if (isNaN(val)) return '0.00 ' + currency;
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' ' + currency;
 }
 </script>
 
@@ -2932,10 +2933,13 @@ function formatMoney(amount, currency = 'UZS') {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="c in counterparties.filter(x => x.type === 'client' && parseFloat(x.balance) > 0)" :key="c.id" class="hover:bg-gray-50">
+                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0)" :key="c.id" class="hover:bg-gray-50">
                                         <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
                                         <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
                                         <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.balance) }}</td>
+                                    </tr>
+                                    <tr v-if="!(props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0).length">
+                                        <td colspan="3" class="p-4 text-center text-gray-400">Mijozlardan qarzdorlik yo'q.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2956,11 +2960,11 @@ function formatMoney(amount, currency = 'UZS') {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
-                                        <tr v-for="s in suppliers.filter(x => parseFloat(x.balance) > 0)" :key="s.id" class="hover:bg-gray-50">
+                                        <tr v-for="s in (props.suppliers || []).filter(x => parseFloat(x.balance || 0) > 0)" :key="s.id" class="hover:bg-gray-50">
                                             <td class="p-3 font-bold text-gray-900">{{ s.company_name }} ({{ s.name }})</td>
                                             <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(s.balance) }}</td>
                                         </tr>
-                                        <tr v-if="!suppliers.filter(x => parseFloat(x.balance) > 0).length">
+                                        <tr v-if="!(props.suppliers || []).filter(x => parseFloat(x.balance || 0) > 0).length">
                                             <td colspan="2" class="p-4 text-center text-gray-400">Qarzdorlik yo'q.</td>
                                         </tr>
                                     </tbody>
@@ -2980,11 +2984,11 @@ function formatMoney(amount, currency = 'UZS') {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
-                                        <tr v-for="w in workers.filter(x => parseFloat(x.balance) > 0)" :key="w.id" class="hover:bg-gray-50">
+                                        <tr v-for="w in (props.workers || []).filter(x => parseFloat(x.balance || 0) > 0)" :key="w.id" class="hover:bg-gray-50">
                                             <td class="p-3 font-bold text-gray-900">{{ w.name }} ({{ w.role || 'Xodim' }})</td>
                                             <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(w.balance) }}</td>
                                         </tr>
-                                        <tr v-if="!workers.filter(x => parseFloat(x.balance) > 0).length">
+                                        <tr v-if="!(props.workers || []).filter(x => parseFloat(x.balance || 0) > 0).length">
                                             <td colspan="2" class="p-4 text-center text-gray-400">Xodimlardan qarz yo'q.</td>
                                         </tr>
                                     </tbody>

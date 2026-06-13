@@ -512,46 +512,51 @@ const selectedUnit = computed(() => {
     return props.units.find(u => u.id === contractForm.value.unit_id);
 });
 
-const unitSearchQuery = ref('');
-const showUnitDropdown = ref(false);
+const selectedFacilityName = ref('');
+const selectedBuildingId = ref('');
 
-function formatUnitDisplay(u) {
-    const isCommercial = u.type === 'commercial';
-    const typeLabel = isCommercial ? "Do'kon" : 'Xonadon';
-    const prefix = isCommercial && /^\d+$/.test(String(u.unit_number).trim()) ? 'D-' : '';
-    return `${typeLabel} ${prefix}${u.unit_number} - ${u.floor?.building?.name || ''} (Qavat: ${u.floor?.floor_number !== undefined && u.floor?.floor_number !== null ? u.floor.floor_number : ''})`;
-}
+const uniqueFacilities = computed(() => {
+    const names = (props.units || [])
+        .map(u => u.floor?.building?.name)
+        .filter(Boolean);
+    return [...new Set(names)];
+});
 
-const filteredUnits = computed(() => {
-    let result = props.units;
-    
-    // Search filtering
-    if (unitSearchQuery.value) {
-        const q = unitSearchQuery.value.toLowerCase();
-        result = result.filter(u => {
-            const text = formatUnitDisplay(u);
-            return text.toLowerCase().includes(q);
-        });
-    }
-    
-    // Sort by floor_number, then unit_number
-    return [...result].sort((a, b) => {
+const buildingsForSelectedFacility = computed(() => {
+    if (!selectedFacilityName.value) return [];
+    const buildingsMap = {};
+    (props.units || []).forEach(u => {
+        const b = u.floor?.building;
+        if (b && b.name === selectedFacilityName.value) {
+            buildingsMap[b.id] = b;
+        }
+    });
+    return Object.values(buildingsMap);
+});
+
+const unitsForSelectedBuilding = computed(() => {
+    if (!selectedBuildingId.value) return [];
+    return (props.units || []).filter(u => u.floor?.building?.id === Number(selectedBuildingId.value));
+});
+
+const sortedUnitsForSelectedBuilding = computed(() => {
+    return [...unitsForSelectedBuilding.value].sort((a, b) => {
         const floorA = a.floor?.floor_number || 0;
         const floorB = b.floor?.floor_number || 0;
         if (floorA !== floorB) {
             return floorA - floorB;
         }
-        // If same floor, sort by unit number
         const numA = String(a.unit_number).replace(/\D/g, '');
         const numB = String(b.unit_number).replace(/\D/g, '');
         return (Number(numA) || 0) - (Number(numB) || 0);
     });
 });
 
-function selectUnit(u) {
-    contractForm.value.unit_id = u.id;
-    unitSearchQuery.value = formatUnitDisplay(u);
-    showUnitDropdown.value = false;
+function getUnitLabel(u) {
+    const isCommercial = u.type === 'commercial';
+    const typeLabel = isCommercial ? "Do'kon" : 'Xonadon';
+    const prefix = isCommercial && /^\d+$/.test(String(u.unit_number).trim()) ? 'D-' : '';
+    return `${typeLabel} ${prefix}${u.unit_number} (Qavat: ${u.floor?.floor_number ?? ''})`;
 }
 
 const clientsOptions = computed(() => {
@@ -568,16 +573,18 @@ const partnersOptions = computed(() => {
     }));
 });
 
-watch(() => contractForm.value.unit_id, (newVal) => {
-    if (newVal) {
-        const u = props.units.find(un => un.id === newVal);
+watch(() => contractForm.value.unit_id, (newUnitId) => {
+    if (newUnitId) {
+        const u = props.units.find(un => un.id === newUnitId);
         if (u) {
-            unitSearchQuery.value = formatUnitDisplay(u);
+            selectedFacilityName.value = u.floor?.building?.name || '';
+            selectedBuildingId.value = u.floor?.building?.id || '';
         }
     } else {
-        unitSearchQuery.value = '';
+        selectedFacilityName.value = '';
+        selectedBuildingId.value = '';
     }
-});
+}, { immediate: true });
 
 // Update contract amounts when unit changes
 watch(() => contractForm.value.unit_id, (newUnitId) => {
@@ -3721,35 +3728,55 @@ function submitPromoRule() {
                             :required="contractForm.buyer_type === 'partner'"
                         />
                     </div>
-                    <div class="relative">
-                        <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('select_unit') }}</label>
-                        <div class="relative">
-                            <input 
-                                type="text" 
-                                v-model="unitSearchQuery" 
-                                @focus="showUnitDropdown = true"
-                                @blur="showUnitDropdown = false"
-                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full pr-8" 
-                                placeholder="Xonadonni qidiring (masalan: A503)..."
+                    <!-- Cascading Selection: Object -> Block -> Unit -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Object Select -->
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyektni Tanlang</label>
+                            <select 
+                                v-model="selectedFacilityName"
+                                @change="selectedBuildingId = ''; contractForm.unit_id = ''"
+                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5"
                                 required
                             >
-                            <input type="hidden" v-model="contractForm.unit_id">
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-900/50 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                            </div>
+                                <option value="">Obyektni tanlang...</option>
+                                <option v-for="name in uniqueFacilities" :key="name" :value="name">
+                                    {{ name }}
+                                </option>
+                            </select>
                         </div>
-                        <div v-if="showUnitDropdown" class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-gray-500/50 border border-gray-300 rounded-lg">
-                            <div 
-                                v-for="u in filteredUnits" 
-                                :key="u.id" 
-                                @mousedown.prevent="selectUnit(u)"
-                                class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-900 transition-colors"
+
+                        <!-- Block Select -->
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash</label>
+                            <select 
+                                v-model="selectedBuildingId"
+                                @change="contractForm.unit_id = ''"
+                                :disabled="!selectedFacilityName"
+                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5 disabled:opacity-50"
+                                required
                             >
-                                {{ formatUnitDisplay(u) }}
-                            </div>
-                            <div v-if="filteredUnits.length === 0" class="px-4 py-2 text-sm text-gray-500 italic">
-                                Xonadon topilmadi...
-                            </div>
+                                <option value="">Blokni tanlang...</option>
+                                <option v-for="b in buildingsForSelectedFacility" :key="b.id" :value="b.id">
+                                    {{ b.block_name || b.corpus_name || 'Asosiy Blok' }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Unit Select -->
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon yoki do'kon tanlang</label>
+                            <select 
+                                v-model="contractForm.unit_id"
+                                :disabled="!selectedBuildingId"
+                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5 disabled:opacity-50"
+                                required
+                            >
+                                <option value="">Xonadon/Do'kon tanlang...</option>
+                                <option v-for="u in sortedUnitsForSelectedBuilding" :key="u.id" :value="u.id">
+                                    {{ getUnitLabel(u) }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 

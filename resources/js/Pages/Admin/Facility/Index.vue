@@ -1598,170 +1598,387 @@ function printCalculatorDetails() {
         return;
     }
     
+    printWindow.document.open();
     printWindow.document.write(`
         <html>
         <head>
             <title>MA'LUMOTNOMA</title>
             <style>
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+                @page {
+                    size: A4;
+                    margin: 8mm 12mm 8mm 12mm;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
                 body {
-                    font-family: 'Segoe UI', Roboto, sans-serif;
-                    color: #334155;
-                    margin: 0;
-                    padding: 40px;
-                    line-height: 1.5;
-                }
-                .header {
-                    text-align: center;
-                    border-bottom: 2px solid #f1f5f9;
-                    padding-bottom: 20px;
-                    margin-bottom: 30px;
-                }
-                .logo {
-                    font-size: 26px;
-                    font-weight: 800;
-                    color: #1e3a8a;
-                    letter-spacing: 1px;
-                }
-                .title {
-                    font-size: 18px;
-                    color: #64748b;
-                    margin-top: 5px;
-                    font-weight: 500;
-                }
-                .section {
-                    margin-bottom: 30px;
-                }
-                .section-title {
-                    font-size: 15px;
-                    font-weight: 700;
+                    font-family: 'Inter', sans-serif;
                     color: #1e293b;
-                    border-bottom: 1.5px solid #cbd5e1;
-                    padding-bottom: 6px;
-                    margin-bottom: 15px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    margin: 0;
+                    padding: 0;
+                    line-height: 1.4;
+                    background-color: #fff;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
-                .grid {
-                    display: grid;
-                    grid-template-cols: 1fr 1fr;
-                    gap: 20px;
+
+                .luxury-wrapper {
+                    padding: 10px 0;
                 }
-                .info-item {
-                    margin-bottom: 12px;
+
+                /* Header Design */
+                .luxury-header {
+                    border-bottom: 2.5px solid #b45309; /* Bronze/Gold */
+                    padding-bottom: 12px;
+                    margin-bottom: 18px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                 }
-                .info-label {
-                    font-size: 11px;
-                    color: #64748b;
-                    text-transform: uppercase;
-                    font-weight: 600;
-                    margin-bottom: 2px;
+
+                .luxury-logo-area {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
                 }
-                .info-value {
-                    font-size: 16px;
+
+                .luxury-logo-icon {
+                    width: 32px;
+                    height: 32px;
                     color: #0f172a;
-                    font-weight: 700;
                 }
-                .drawings {
+
+                .luxury-title-group {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .luxury-main-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 20px;
+                    font-weight: 800;
+                    color: #0f172a;
+                    letter-spacing: 0.5px;
+                    margin: 0;
+                    text-transform: uppercase;
+                }
+
+                .luxury-subtitle {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #b45309;
+                    margin-top: 2px;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                }
+
+                .luxury-doc-meta {
+                    text-align: right;
+                    font-family: 'Inter', sans-serif;
+                }
+
+                .luxury-meta-id {
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+
+                .luxury-meta-date {
+                    font-size: 10px;
+                    color: #64748b;
+                    margin-top: 2px;
+                }
+
+                /* Drawings Area */
+                .luxury-section-header {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    text-transform: uppercase;
+                    letter-spacing: 0.8px;
+                    margin-bottom: 8px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .luxury-section-header::after {
+                    content: '';
+                    flex-grow: 1;
+                    height: 1px;
+                    background: #cbd5e1;
+                }
+
+                .luxury-drawings-grid {
                     display: grid;
                     grid-template-cols: 1fr 1fr;
-                    gap: 20px;
-                    margin-top: 20px;
+                    gap: 16px;
+                    margin-bottom: 18px;
                 }
-                .drawing-card {
-                    border: 1.5px dashed #cbd5e1;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    text-align: center;
-                    padding: 12px;
+
+                .luxury-drawing-card {
                     background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    position: relative;
+                    overflow: hidden;
                 }
-                .drawing-img {
-                    max-width: 100%;
-                    height: 220px;
+
+                .luxury-drawing-img-box {
+                    width: 100%;
+                    height: 160px;
+                    background: #ffffff;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                    border: 1px solid #f1f5f9;
+                }
+
+                .luxury-drawing-img {
+                    max-width: 95%;
+                    max-height: 95%;
                     object-fit: contain;
                 }
-                .drawing-label {
-                    font-size: 12px;
-                    color: #475569;
-                    margin-top: 8px;
-                    font-weight: 600;
+
+                .luxury-drawing-label {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-top: 6px;
+                    text-align: center;
                 }
-                .results-table {
+
+                /* Main Details Grid */
+                .luxury-content-grid {
+                    display: grid;
+                    grid-template-cols: 1fr 1.2fr;
+                    gap: 24px;
+                    margin-bottom: 18px;
+                }
+
+                .luxury-block-section {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .luxury-info-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 7px;
+                }
+
+                .luxury-info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: baseline;
+                    font-size: 11px;
+                    padding-bottom: 5px;
+                    border-bottom: 1px dashed #cbd5e1;
+                }
+
+                .luxury-info-label {
+                    color: #475569;
+                    font-weight: 500;
+                }
+
+                .luxury-info-value {
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+
+                .luxury-pricing-table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 15px;
                 }
-                .results-table td {
-                    padding: 10px 0;
+
+                .luxury-pricing-table td {
+                    padding: 5px 0;
+                    font-size: 11px;
                     border-bottom: 1px solid #e2e8f0;
-                    font-size: 14px;
                 }
-                .results-table td.value {
+
+                .luxury-pricing-table td.value {
                     text-align: right;
                     font-weight: 700;
                     color: #0f172a;
                 }
-                .monthly-payment-box {
-                    background-color: #eff6ff;
-                    border: 1px solid #bfdbfe;
-                    border-radius: 16px;
-                    padding: 20px;
+
+                .luxury-pricing-table tr.highlight-total td {
+                    border-top: 1.5px solid #0f172a;
+                    border-bottom: 1.5px solid #0f172a;
+                    padding: 7px 0;
+                    font-size: 12px;
+                    font-weight: 800;
+                }
+
+                .luxury-pricing-table tr.highlight-total td.value {
+                    color: #b45309;
+                    font-size: 13px;
+                }
+
+                /* Hero Payment Banner */
+                .luxury-payment-banner {
+                    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+                    color: #ffffff;
+                    border-radius: 10px;
+                    padding: 14px;
                     text-align: center;
-                    margin-top: 20px;
+                    margin-bottom: 18px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
                 }
-                .monthly-payment-value {
-                    font-size: 30px;
-                    font-weight: 800;
-                    color: #2563eb;
-                }
-                .contact-card {
-                    background: linear-gradient(135deg, #1e3a8a, #2563eb);
-                    color: white;
-                    border-radius: 16px;
-                    padding: 24px;
-                    margin-top: 35px;
-                }
-                .contact-title {
-                    font-size: 18px;
+
+                .luxury-payment-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 10px;
                     font-weight: 700;
-                    margin-bottom: 5px;
+                    text-transform: uppercase;
+                    letter-spacing: 1.5px;
+                    color: #93c5fd;
+                    margin-bottom: 4px;
                 }
-                .contact-text {
-                    font-size: 13px;
-                    opacity: 0.95;
-                    margin-bottom: 15px;
-                    line-height: 1.6;
-                }
-                .contact-info {
-                    font-size: 16px;
-                    font-weight: 700;
-                    display: inline-block;
-                    background: rgba(255, 255, 255, 0.15);
-                    padding: 6px 12px;
-                    border-radius: 8px;
-                    margin-top: 5px;
-                }
-                .cta-signal {
-                    font-size: 13px;
+
+                .luxury-payment-amount {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 26px;
                     font-weight: 800;
-                    color: #fef08a;
-                    margin-top: 15px;
+                    color: #ffffff;
+                    margin: 0;
+                }
+
+                .luxury-payment-notes {
+                    font-size: 9px;
+                    color: #cbd5e1;
+                    margin-top: 4px;
+                }
+
+                /* Footer Section */
+                .luxury-footer-row {
+                    display: grid;
+                    grid-template-cols: 1.2fr 1fr;
+                    gap: 20px;
+                    align-items: stretch;
+                }
+
+                .luxury-contact-box {
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-left: 4px solid #b45309;
+                    border-radius: 10px;
+                    padding: 12px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+
+                .luxury-contact-heading {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #0f172a;
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                }
+
+                .luxury-contact-text {
+                    font-size: 10px;
+                    color: #475569;
+                    margin: 0 0 8px 0;
+                    line-height: 1.3;
+                }
+
+                .luxury-contact-info {
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #1e3a8a;
+                    background: #eff6ff;
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    width: fit-content;
+                }
+
+                .luxury-contact-cta {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 9px;
+                    font-weight: 800;
+                    color: #b45309;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    animation: pulse 2s infinite;
+                    margin-top: 6px;
                 }
+
+                .luxury-sign-box {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 12px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    justify-content: center;
+                }
+
+                .luxury-sign-field {
+                    display: flex;
+                    flex-direction: column;
+                    font-size: 10px;
+                    gap: 3px;
+                }
+
+                .luxury-sign-label {
+                    font-weight: 600;
+                    color: #64748b;
+                }
+
+                .luxury-sign-line {
+                    border-bottom: 1px solid #cbd5e1;
+                    height: 16px;
+                    width: 100%;
+                }
+
                 @media print {
                     body {
-                        padding: 0;
-                    }
-                    .contact-card {
-                        background: #1e3a8a !important;
-                        color: white !important;
+                        background: #ffffff;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .monthly-payment-box {
-                        background-color: #eff6ff !important;
+                    .luxury-payment-banner {
+                        background: #0f172a !important;
+                        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+                        color: #ffffff !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .luxury-drawing-card {
+                        background: #f8fafc !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .luxury-contact-box {
+                        background: #f8fafc !important;
+                        border-left: 4px solid #b45309 !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .luxury-contact-info {
+                        background: #eff6ff !important;
+                        color: #1e3a8a !important;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
@@ -1769,110 +1986,161 @@ function printCalculatorDetails() {
             </style>
         </head>
         <body>
-            <div class="header">
-                <div class="logo">MA'LUMOTNOMA</div>
-                <div class="title">Xonadon Sotib Olish To'lov Rejasi</div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">Obyekt va Xonadon Ma'lumotlari</div>
-                <div class="grid">
-                    <div>
-                        <div class="info-item">
-                            <div class="info-label">Obyekt nomi</div>
-                            <div class="info-value">${cleanedBuildingName}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Blok / Korpus</div>
-                            <div class="info-value">${cleanedBlockName}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Qavat</div>
-                            <div class="info-value">${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</div>
+            <div class="luxury-wrapper">
+                <!-- Header -->
+                <div class="luxury-header">
+                    <div class="luxury-logo-area">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="luxury-logo-icon">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        <div class="luxury-title-group">
+                            <div class="luxury-main-title">MA'LUMOTNOMA</div>
+                            <div class="luxury-subtitle">Xonadon sotib olish to'lov rejasi</div>
                         </div>
                     </div>
-                    <div>
-                        <div class="info-item">
-                            <div class="info-label">Xonadon / Do'kon raqami</div>
-                            <div class="info-value">${unit.unit_number}</div>
+                    <div class="luxury-doc-meta">
+                        <div class="luxury-meta-id">Hujjat №: TT-${Math.floor(1000 + Math.random() * 9000)}</div>
+                        <div class="luxury-meta-date">Sana: ${new Date().toLocaleDateString('uz-UZ')}</div>
+                    </div>
+                </div>
+
+                <!-- Drawings -->
+                <div class="luxury-section-header">
+                    <span>Loyiha chizmalari</span>
+                </div>
+                <div class="luxury-drawings-grid">
+                    <div class="luxury-drawing-card">
+                        <div class="luxury-drawing-img-box">
+                            <img src="${selectedUnitBlueprint.value}" class="luxury-drawing-img" />
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">Xonadon maydoni</div>
-                            <div class="info-value">${unit.area_sqm} kv.m</div>
+                        <div class="luxury-drawing-label">2D Xonadon rejasi</div>
+                    </div>
+                    <div class="luxury-drawing-card">
+                        <div class="luxury-drawing-img-box">
+                            <img src="${selectedUnitDisplayImage.value}" class="luxury-drawing-img" />
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">Xonalar soni</div>
-                            <div class="info-value">${unit.rooms_count || 1} xonali</div>
+                        <div class="luxury-drawing-label">3D Tashqi ko'rinish</div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="luxury-content-grid">
+                    <!-- Left: Unit Specs -->
+                    <div class="luxury-block-section">
+                        <div class="luxury-section-header">
+                            <span>Xonadon ma'lumotlari</span>
+                        </div>
+                        <div class="luxury-info-list">
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Majmua nomi</span>
+                                <span class="luxury-info-value">${cleanedBuildingName}</span>
+                            </div>
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Blok / Korpus</span>
+                                <span class="luxury-info-value">${cleanedBlockName}</span>
+                            </div>
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Qavat</span>
+                                <span class="luxury-info-value">${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</span>
+                            </div>
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Xonadon raqami</span>
+                                <span class="luxury-info-value">№ ${unit.unit_number}</span>
+                            </div>
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Umumiy maydoni</span>
+                                <span class="luxury-info-value">${unit.area_sqm} kv.m</span>
+                            </div>
+                            <div class="luxury-info-item">
+                                <span class="luxury-info-label">Xonalar soni</span>
+                                <span class="luxury-info-value">${unit.rooms_count || 1} xonali</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Calculator Pricing Table -->
+                    <div class="luxury-block-section">
+                        <div class="luxury-section-header">
+                            <span>To'lov shartlari</span>
+                        </div>
+                        <table class="luxury-pricing-table">
+                            <tr>
+                                <td>Boshlang'ich uy narxi</td>
+                                <td class="value">${formatSoM(calcPrice.value)}</td>
+                            </tr>
+                            <tr>
+                                <td>Kvadrat metr narxi</td>
+                                <td class="value">${formatSoM(calcPricePerSqm.value)} / kv.m</td>
+                            </tr>
+                            <tr>
+                                <td>Chegirma (kv.m uchun)</td>
+                                <td class="value">${formatSoM(calcDiscountPerSqm.value)}</td>
+                            </tr>
+                            <tr>
+                                <td>Jami chegirma summasi</td>
+                                <td class="value">${formatSoM(calcDiscount.value)}</td>
+                            </tr>
+                            <tr class="highlight-total">
+                                <td>Yakuniy shartnoma qiymati</td>
+                                <td class="value">${formatSoM(calculatedTotalAmount.value)}</td>
+                            </tr>
+                            <tr>
+                                <td>Boshlang'ich to'lov summasi</td>
+                                <td class="value">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</td>
+                            </tr>
+                            <tr>
+                                <td>Muddatli to'lovga qoldiq summa</td>
+                                <td class="value">${formatSoM(calculatedRemainingBalance.value)}</td>
+                            </tr>
+                            <tr>
+                                <td>Bo'lib to'lash muddati</td>
+                                <td class="value">${calcTermMonths.value} oy</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Hero Monthly Payment Box -->
+                <div class="luxury-payment-banner">
+                    <div class="luxury-payment-title">Har oylik to'lov summasi</div>
+                    <div class="luxury-payment-amount">${formatSoM(calculatedMonthlyPayment.value)}</div>
+                    <div class="luxury-payment-notes">* To'lovlar har oyning shartnomada belgilangan kunigacha to'lanadi.</div>
+                </div>
+
+                <!-- Footer Section -->
+                <div class="luxury-footer-row">
+                    <!-- Contact -->
+                    <div class="luxury-contact-box">
+                        <div>
+                            <div class="luxury-contact-heading">Sotuv bo'limi bilan bog'laning!</div>
+                            <p class="luxury-contact-text">Orzuingizdagi premium xonadonni band qilish va to'liq ma'lumotlar bilan shartnoma rasmiylashtirish uchun bog'laning.</p>
+                        </div>
+                        <div>
+                            <div class="luxury-contact-info">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                <span>Maslahatchi: Abbos (+998 90 450 54 55)</span>
+                            </div>
+                            <div class="luxury-contact-cta">🔥 Bugunoq o'z xonadoningizni band qiling!</div>
+                        </div>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="luxury-sign-box">
+                        <div class="luxury-sign-field">
+                            <div class="luxury-sign-label">Maslahatchi imzosi:</div>
+                            <div class="luxury-sign-line"></div>
+                        </div>
+                        <div class="luxury-sign-field">
+                            <div class="luxury-sign-label">Mijoz roziligi va imzosi:</div>
+                            <div class="luxury-sign-line"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-title">Chizmalar va Joylashuv</div>
-                <div class="drawings">
-                    <div class="drawing-card">
-                        <img src="${selectedUnitBlueprint.value}" class="drawing-img" />
-                        <div class="drawing-label">2D reja chizmasi</div>
-                    </div>
-                    <div class="drawing-card">
-                        <img src="${selectedUnitDisplayImage.value}" class="drawing-img" />
-                        <div class="drawing-label">3D ko'rinishi</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section" style="page-break-before: always; margin-top: 40px;">
-                <div class="section-title">To'lov Kalkulyatori va To'lov Rejasi</div>
-                <table class="results-table">
-                    <tr>
-                        <td>Umumiy uy narxi (boshlang'ich)</td>
-                        <td class="value">${formatSoM(calcPrice.value)}</td>
-                    </tr>
-                    <tr>
-                        <td>Kvadrat metr narxi</td>
-                        <td class="value">${formatSoM(calcPricePerSqm.value)} / kv.m</td>
-                    </tr>
-                    <tr>
-                        <td>Chegirma (kv.m uchun)</td>
-                        <td class="value">${formatSoM(calcDiscountPerSqm.value)}</td>
-                    </tr>
-                    <tr>
-                        <td>Jami chegirma</td>
-                        <td class="value">${formatSoM(calcDiscount.value)}</td>
-                    </tr>
-                    <tr style="font-weight: bold; font-size: 15px; border-top: 1px solid #94a3b8;">
-                        <td>Yakuniy shartnoma qiymati (chegirma bilan)</td>
-                        <td class="value">${formatSoM(calculatedTotalAmount.value)}</td>
-                    </tr>
-                    <tr>
-                        <td>Boshlang'ich to'lov</td>
-                        <td class="value">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</td>
-                    </tr>
-                    <tr>
-                        <td>Qoldiq summa (muddatli to'lovga)</td>
-                        <td class="value">${formatSoM(calculatedRemainingBalance.value)}</td>
-                    </tr>
-                    <tr>
-                        <td>Bo'lib to'lash muddati</td>
-                        <td class="value">${calcTermMonths.value} oy</td>
-                    </tr>
-                </table>
-
-                <div class="monthly-payment-box">
-                    <div style="font-size: 13px; color: #475569; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Har oylik to'lov summasi</div>
-                    <div class="monthly-payment-value">${formatSoM(calculatedMonthlyPayment.value)}</div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 6px;">* To'lovlar har oyning shartnomada belgilangan kunigacha to'lanadi.</div>
-                </div>
-            </div>
-
-            <div class="contact-card">
-                <div class="contact-title">Sotuv bo'limi bilan bog'laning!</div>
-                <div class="contact-text">Orzuingizdagi premium xonadonni band qilish va to'liq ma'lumotlar bilan shartnoma rasmiylashtirish uchun sotuv bo'limi maslahatchisiga bog'laning. Biz sizga yordam berishdan mamnunmiz!</div>
-                <div class="contact-info">Maslahatchi: Abbos (Tel: +998 90 450 54 55)</div>
-                <div class="cta-signal">🔥 Shoshiling! Mavjud xonadonlar soni cheklangan! Bugunoq o'z xonadoningizni band qiling!</div>
-            </div>
-            
             <script>
                 window.onload = function() {
                     setTimeout(function() {

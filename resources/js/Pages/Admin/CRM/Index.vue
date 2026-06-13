@@ -574,6 +574,27 @@ function getUnitLabel(u) {
     return `${typeLabel} ${prefix}${u.unit_number} (Qavat: ${u.floor?.floor_number ?? ''})`;
 }
 
+const facilityOptions = computed(() => {
+    return uniqueFacilities.value.map(name => ({
+        label: name,
+        value: name
+    }));
+});
+
+const buildingOptions = computed(() => {
+    return buildingsForSelectedFacility.value.map(b => ({
+        label: b.block_name || b.corpus_name || 'Asosiy Blok',
+        value: b.id
+    }));
+});
+
+const unitOptions = computed(() => {
+    return sortedUnitsForSelectedBuilding.value.map(u => ({
+        label: getUnitLabel(u),
+        value: u.id
+    }));
+});
+
 const clientsOptions = computed(() => {
     return props.clients.map(c => ({
         label: `${c.first_name} ${c.last_name || ''}`.trim(),
@@ -3763,50 +3784,38 @@ function submitPromoRule() {
                         <!-- Object Select -->
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyektni Tanlang</label>
-                            <select 
+                            <SearchableSelect 
                                 v-model="selectedFacilityName"
                                 @change="onFacilityChange"
-                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5"
+                                :options="facilityOptions"
+                                placeholder="Obyektni tanlang..."
                                 required
-                            >
-                                <option value="">Obyektni tanlang...</option>
-                                <option v-for="name in uniqueFacilities" :key="name" :value="name">
-                                    {{ name }}
-                                </option>
-                            </select>
+                            />
                         </div>
 
                         <!-- Block Select -->
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash (Mavjud: {{ buildingsForSelectedFacility.length }})</label>
-                            <select 
+                            <SearchableSelect 
                                 v-model="selectedBuildingId"
                                 @change="onBuildingChange"
                                 :disabled="!selectedFacilityName"
-                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5 disabled:opacity-50"
+                                :options="buildingOptions"
+                                placeholder="Blokni tanlang..."
                                 required
-                            >
-                                <option value="">Blokni tanlang...</option>
-                                <option v-for="b in buildingsForSelectedFacility" :key="b.id" :value="b.id">
-                                    {{ b.block_name || b.corpus_name || 'Asosiy Blok' }}
-                                </option>
-                            </select>
+                            />
                         </div>
 
                         <!-- Unit Select -->
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon/Do'kon tanlang (Mavjud: {{ sortedUnitsForSelectedBuilding.length }})</label>
-                            <select 
+                            <SearchableSelect 
                                 v-model="contractForm.unit_id"
                                 :disabled="!selectedBuildingId"
-                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5 disabled:opacity-50"
+                                :options="unitOptions"
+                                placeholder="Xonadon/Do'kon tanlang..."
                                 required
-                            >
-                                <option value="">Xonadon/Do'kon tanlang...</option>
-                                <option v-for="u in sortedUnitsForSelectedBuilding" :key="u.id" :value="u.id">
-                                    {{ getUnitLabel(u) }}
-                                </option>
-                            </select>
+                            />
                         </div>
                     </div>
 

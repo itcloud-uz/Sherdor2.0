@@ -53,15 +53,19 @@ class CrmController extends Controller
             $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
             $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
             $users = User::orderBy('name', 'asc')->get();
+        } else {
+            // Load lightweight clients list for modals/dropdowns on other tabs
+            $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get();
         }
 
         // 4. Contracts Tab
         if ($tab === 'contracts') {
             $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
-            $units = \App\Models\Unit::with('floor.building')->get();
-            $partners = \App\Models\Partner::with('user')->get();
-            $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get(); // needed for contract form dropdown
         }
+
+        // Always load units and partners to support contract modals and deep links on any tab
+        $units = \App\Models\Unit::with('floor.building')->get();
+        $partners = \App\Models\Partner::with('user')->get();
 
         // 5. Overdue Tab
         if ($tab === 'overdue') {

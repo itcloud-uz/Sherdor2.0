@@ -580,11 +580,26 @@ watch(() => contractForm.value.unit_id, (newUnitId) => {
             selectedFacilityName.value = u.floor?.building?.name || '';
             selectedBuildingId.value = u.floor?.building?.id || '';
         }
-    } else {
-        selectedFacilityName.value = '';
-        selectedBuildingId.value = '';
     }
-}, { immediate: true });
+});
+
+watch(showCreateContractModal, (isOpen) => {
+    if (isOpen) {
+        if (contractForm.value.unit_id) {
+            const u = props.units.find(un => un.id === contractForm.value.unit_id);
+            if (u) {
+                selectedFacilityName.value = u.floor?.building?.name || '';
+                selectedBuildingId.value = u.floor?.building?.id || '';
+            } else {
+                selectedFacilityName.value = '';
+                selectedBuildingId.value = '';
+            }
+        } else {
+            selectedFacilityName.value = '';
+            selectedBuildingId.value = '';
+        }
+    }
+});
 
 // Update contract amounts when unit changes
 watch(() => contractForm.value.unit_id, (newUnitId) => {

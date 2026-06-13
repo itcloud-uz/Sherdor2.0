@@ -46,10 +46,32 @@ const activeTab = ref('blueprint');
 const selectedUnit = ref(null);
 const activeRightPanel = ref('details'); // 'details' or 'calculator'
 const calcPrice = ref(0);
+const calcPricePerSqm = ref(0);
 const calcDownPayment = ref(0);
 const calcTermMonths = ref(12);
 const calcDiscount = ref(0);
+const calcDiscountPerSqm = ref(0);
 const selectedUnitForFullscreenBlueprint = ref(null);
+
+function onPriceInput() {
+    const area = Number(selectedUnit.value?.area_sqm) || 0;
+    calcPricePerSqm.value = area > 0 ? Math.round(calcPrice.value / area) : 0;
+}
+
+function onPricePerSqmInput() {
+    const area = Number(selectedUnit.value?.area_sqm) || 0;
+    calcPrice.value = Math.round(calcPricePerSqm.value * area);
+}
+
+function onDiscountInput() {
+    const area = Number(selectedUnit.value?.area_sqm) || 0;
+    calcDiscountPerSqm.value = area > 0 ? Math.round(calcDiscount.value / area) : 0;
+}
+
+function onDiscountPerSqmInput() {
+    const area = Number(selectedUnit.value?.area_sqm) || 0;
+    calcDiscount.value = Math.round(calcDiscountPerSqm.value * area);
+}
 
 function selectUnit(unit) {
     selectedUnit.value = unit;
@@ -63,9 +85,11 @@ function selectUnit(unit) {
     
     // Set calculator inputs
     calcPrice.value = unit.price || 0;
+    calcPricePerSqm.value = unit.area_sqm > 0 ? Math.round(unit.price / unit.area_sqm) : 0;
     calcDownPayment.value = 0;
     calcTermMonths.value = 12;
     calcDiscount.value = 0;
+    calcDiscountPerSqm.value = 0;
 }
 
 // Dynamic Building statistics
@@ -1557,6 +1581,306 @@ function formatSoM(val) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm";
 }
 
+function printCalculatorDetails() {
+    if (!selectedUnit.value) return;
+
+    const unit = selectedUnit.value;
+    const building = selectedBuilding.value;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("Pop-up blokerlangan! Iltimos, printer sahifasini ochish uchun pop-uplarga ruxsat bering.");
+        return;
+    }
+    
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>SHER-DOR TJM - TIJORAT TAKLIFI</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Roboto, sans-serif;
+                    color: #334155;
+                    margin: 0;
+                    padding: 40px;
+                    line-height: 1.5;
+                }
+                .header {
+                    text-align: center;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }
+                .logo {
+                    font-size: 26px;
+                    font-weight: 800;
+                    color: #1e3a8a;
+                    letter-spacing: 1px;
+                }
+                .title {
+                    font-size: 18px;
+                    color: #64748b;
+                    margin-top: 5px;
+                    font-weight: 500;
+                }
+                .section {
+                    margin-bottom: 30px;
+                }
+                .section-title {
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #1e293b;
+                    border-bottom: 1.5px solid #cbd5e1;
+                    padding-bottom: 6px;
+                    margin-bottom: 15px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .grid {
+                    display: grid;
+                    grid-template-cols: 1fr 1fr;
+                    gap: 20px;
+                }
+                .info-item {
+                    margin-bottom: 12px;
+                }
+                .info-label {
+                    font-size: 11px;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    margin-bottom: 2px;
+                }
+                .info-value {
+                    font-size: 16px;
+                    color: #0f172a;
+                    font-weight: 700;
+                }
+                .drawings {
+                    display: grid;
+                    grid-template-cols: 1fr 1fr;
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+                .drawing-card {
+                    border: 1.5px dashed #cbd5e1;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    text-align: center;
+                    padding: 12px;
+                    background: #f8fafc;
+                }
+                .drawing-img {
+                    max-width: 100%;
+                    height: 220px;
+                    object-fit: contain;
+                }
+                .drawing-label {
+                    font-size: 12px;
+                    color: #475569;
+                    margin-top: 8px;
+                    font-weight: 600;
+                }
+                .results-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 15px;
+                }
+                .results-table td {
+                    padding: 10px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                    font-size: 14px;
+                }
+                .results-table td.value {
+                    text-align: right;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+                .monthly-payment-box {
+                    background-color: #eff6ff;
+                    border: 1px solid #bfdbfe;
+                    border-radius: 16px;
+                    padding: 20px;
+                    text-align: center;
+                    margin-top: 20px;
+                }
+                .monthly-payment-value {
+                    font-size: 30px;
+                    font-weight: 800;
+                    color: #2563eb;
+                }
+                .contact-card {
+                    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+                    color: white;
+                    border-radius: 16px;
+                    padding: 24px;
+                    margin-top: 35px;
+                }
+                .contact-title {
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-bottom: 5px;
+                }
+                .contact-text {
+                    font-size: 13px;
+                    opacity: 0.95;
+                    margin-bottom: 15px;
+                    line-height: 1.6;
+                }
+                .contact-info {
+                    font-size: 16px;
+                    font-weight: 700;
+                    display: inline-block;
+                    background: rgba(255, 255, 255, 0.15);
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    margin-top: 5px;
+                }
+                .cta-signal {
+                    font-size: 13px;
+                    font-weight: 800;
+                    color: #fef08a;
+                    margin-top: 15px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    animation: pulse 2s infinite;
+                }
+                @media print {
+                    body {
+                        padding: 0;
+                    }
+                    .contact-card {
+                        background: #1e3a8a !important;
+                        color: white !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .monthly-payment-box {
+                        background-color: #eff6ff !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="logo">SHER-DOR TJM</div>
+                <div class="title">Xonadon Sotib Olish To'lov Rejasi</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Obyekt va Xonadon Ma'lumotlari</div>
+                <div class="grid">
+                    <div>
+                        <div class="info-item">
+                            <div class="info-label">Obyekt nomi</div>
+                            <div class="info-value">${building?.name || ''}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Blok / Korpus</div>
+                            <div class="info-value">${unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || 'Asosiy Blok'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Qavat</div>
+                            <div class="info-value">${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-item">
+                            <div class="info-label">Xonadon / Do'kon raqami</div>
+                            <div class="info-value">${unit.unit_number}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Xonadon maydoni</div>
+                            <div class="info-value">${unit.area_sqm} kv.m</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Xonalar soni</div>
+                            <div class="info-value">${unit.rooms_count || 1} xonali</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Chizmalar va Joylashuv</div>
+                <div class="drawings">
+                    <div class="drawing-card">
+                        <img src="${selectedUnitBlueprint.value}" class="drawing-img" />
+                        <div class="drawing-label">2D reja chizmasi</div>
+                    </div>
+                    <div class="drawing-card">
+                        <img src="${selectedUnitDisplayImage.value}" class="drawing-img" />
+                        <div class="drawing-label">3D ko'rinishi</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" style="page-break-before: always; margin-top: 40px;">
+                <div class="section-title">To'lov Kalkulyatori va To'lov Rejasi</div>
+                <table class="results-table">
+                    <tr>
+                        <td>Umumiy uy narxi (boshlang'ich)</td>
+                        <td class="value">${formatSoM(calcPrice.value)}</td>
+                    </tr>
+                    <tr>
+                        <td>Kvadrat metr narxi</td>
+                        <td class="value">${formatSoM(calcPricePerSqm.value)} / kv.m</td>
+                    </tr>
+                    <tr>
+                        <td>Chegirma (kv.m uchun)</td>
+                        <td class="value">${formatSoM(calcDiscountPerSqm.value)}</td>
+                    </tr>
+                    <tr>
+                        <td>Jami chegirma</td>
+                        <td class="value">${formatSoM(calcDiscount.value)}</td>
+                    </tr>
+                    <tr style="font-weight: bold; font-size: 15px; border-top: 1px solid #94a3b8;">
+                        <td>Yakuniy shartnoma qiymati (chegirma bilan)</td>
+                        <td class="value">${formatSoM(calculatedTotalAmount.value)}</td>
+                    </tr>
+                    <tr>
+                        <td>Boshlang'ich to'lov</td>
+                        <td class="value">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</td>
+                    </tr>
+                    <tr>
+                        <td>Qoldiq summa (muddatli to'lovga)</td>
+                        <td class="value">${formatSoM(calculatedRemainingBalance.value)}</td>
+                    </tr>
+                    <tr>
+                        <td>Bo'lib to'lash muddati</td>
+                        <td class="value">${calcTermMonths.value} oy</td>
+                    </tr>
+                </table>
+
+                <div class="monthly-payment-box">
+                    <div style="font-size: 13px; color: #475569; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Har oylik to'lov summasi</div>
+                    <div class="monthly-payment-value">${formatSoM(calculatedMonthlyPayment.value)}</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 6px;">* To'lovlar har oyning shartnomada belgilangan kunigacha to'lanadi.</div>
+                </div>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-title">Sotuv bo'limi bilan bog'laning!</div>
+                <div class="contact-text">Orzuingizdagi premium xonadonni band qilish va to'liq ma'lumotlar bilan shartnoma rasmiylashtirish uchun sotuv bo'limi maslahatchisiga bog'laning. Biz sizga yordam berishdan mamnunmiz!</div>
+                <div class="contact-info">Maslahatchi: Abbos (Tel: +998 90 450 54 55)</div>
+                <div class="cta-signal">🔥 Shoshiling! Mavjud xonadonlar soni cheklangan! Bugunoq o'z xonadoningizni band qiling!</div>
+            </div>
+            
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                    }, 500);
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
 const selectedUnitBlueprint = computed(() => {
     if (!selectedUnit.value || !selectedBuilding.value || !selectedBuilding.value.floors) return '/modern_apartment_render.png';
     const fl = selectedBuilding.value.floors.find(f => f.id === selectedUnit.value.floor_id);
@@ -2366,14 +2690,13 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         Hisoblash
                                     </button>
                                     <button v-if="selectedUnit.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
-                                        sotish
+                                        Sotish
                                     </button>
                                     <button @click="openEditUnit(selectedUnit)" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
                                         Tahrirlash
                                     </button>
                                 </div>
                             </div>
-
                             <!-- PANEL 2: Calculator (Kalkulyator) -->
                             <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between">
                                 <div>
@@ -2384,17 +2707,28 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <h3 class="text-2xl font-bold font-sans text-gray-800">Kalkulyator</h3>
                                     </div>
 
-                                    <div class="space-y-4 font-sans">
-                                        <!-- Uy narxi -->
+                                    <div class="space-y-4 font-sans text-sm">
+                                        <!-- Xonadon Maydoni -->
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Uy narxi</label>
-                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcPrice" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
-                                                <span class="text-gray-400">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                    </svg>
-                                                </span>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Xonadon maydoni (kv.m)</label>
+                                            <div class="bg-slate-100 border border-slate-200 text-slate-700 rounded-xl px-4 py-3 font-semibold font-sans">
+                                                {{ selectedUnit?.area_sqm || 0 }} kv.m
+                                            </div>
+                                        </div>
+
+                                        <!-- Kvadrat Metr Narxi & Uy Narxi -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">1 kv.m narxi</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="calcPricePerSqm" @input="onPricePerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Uy narxi (Jami)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="calcPrice" @input="onPriceInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -2404,7 +2738,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 Boshlang'ich to'lov <span v-if="calcDownPaymentPercent > 0" class="text-amber-500 font-bold ml-1">({{ calcDownPaymentPercent }}%)</span>
                                             </label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
                                             <div class="grid grid-cols-5 gap-2 mt-2">
                                                 <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
@@ -2417,25 +2751,23 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <div>
                                             <label class="block text-sm font-medium text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcTermMonths" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                <input type="number" v-model.number="calcTermMonths" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
                                         </div>
 
-                                        <!-- Chegirma -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Chegirma</label>
-                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcDiscount" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" />
-                                                <button type="button" @click="calcDiscount = 0" class="text-red-500 mx-2 hover:scale-110 transition-transform" title="Tozalash">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                                    </svg>
-                                                </button>
-                                                <span class="text-gray-400">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                    </svg>
-                                                </span>
+                                        <!-- Chegirmalar -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Chegirma (1 kv.m uchun)</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="calcDiscountPerSqm" @input="onDiscountPerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">Jami chegirma</label>
+                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                    <input type="number" v-model.number="calcDiscount" @input="onDiscountInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2453,14 +2785,21 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <div class="flex items-center justify-between">
                                             <span class="whitespace-nowrap">Umumiy summa</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcPrice) }}</span>
                                         </div>
                                         
-                                        <!-- Qoldiq summa -->
+                                        <!-- Chegirma -->
                                         <div class="flex items-center justify-between">
-                                            <span class="whitespace-nowrap">Qoldiq summa</span>
+                                            <span class="whitespace-nowrap">Chegirma umumiy</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDiscount) }}</span>
+                                        </div>
+
+                                        <!-- Jami summa -->
+                                        <div class="flex items-center justify-between font-semibold">
+                                            <span class="whitespace-nowrap text-gray-800 font-bold">Jami summa (chegirma bilan)</span>
+                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
                                         </div>
 
                                         <!-- Boshlang'ich to'lov -->
@@ -2469,21 +2808,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
                                             <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDownPayment) }}</span>
                                         </div>
-                                        
-                                        <!-- Chegirma -->
+
+                                        <!-- Qoldiq summa -->
                                         <div class="flex items-center justify-between">
-                                            <span class="whitespace-nowrap">Chegirma</span>
+                                            <span class="whitespace-nowrap">Qoldiq summa</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDiscount) }}</span>
-                                        </div>
-                                        
-                                        <!-- Jami (boshlang'ich to'lov bilan) -->
-                                        <div class="flex items-center justify-between font-semibold pt-1 border-t border-dashed border-gray-200">
-                                            <span class="whitespace-nowrap text-gray-800">Jami (boshlang'ich to'lov bilan)</span>
-                                            <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedGrandTotal) }}</span>
+                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Print Button -->
+                                    <button type="button" @click="printCalculatorDetails" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-4 font-sans text-sm">
+                                        🖨️ Chop etish (Taqdimot)
+                                    </button>
                                 </div>
                             </div>
 

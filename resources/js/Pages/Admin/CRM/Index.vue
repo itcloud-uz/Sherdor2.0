@@ -515,19 +515,30 @@ const selectedUnit = computed(() => {
 const selectedFacilityName = ref('');
 const selectedBuildingId = ref('');
 
+function onFacilityChange() {
+    selectedBuildingId.value = '';
+    contractForm.value.unit_id = '';
+}
+
+function onBuildingChange() {
+    contractForm.value.unit_id = '';
+}
+
 const uniqueFacilities = computed(() => {
     const names = (props.units || [])
-        .map(u => u.floor?.building?.name)
+        .map(u => u.floor?.building?.name?.trim())
         .filter(Boolean);
     return [...new Set(names)];
 });
 
 const buildingsForSelectedFacility = computed(() => {
-    if (!selectedFacilityName.value) return [];
+    const searchVal = (selectedFacilityName.value || '').trim();
+    if (!searchVal) return [];
+    
     const buildingsMap = {};
     (props.units || []).forEach(u => {
         const b = u.floor?.building;
-        if (b && b.name === selectedFacilityName.value) {
+        if (b && b.name && b.name.trim() === searchVal) {
             buildingsMap[b.id] = b;
         }
     });
@@ -536,7 +547,11 @@ const buildingsForSelectedFacility = computed(() => {
 
 const unitsForSelectedBuilding = computed(() => {
     if (!selectedBuildingId.value) return [];
-    return (props.units || []).filter(u => u.floor?.building?.id === Number(selectedBuildingId.value));
+    const targetBuildingId = Number(selectedBuildingId.value);
+    return (props.units || []).filter(u => {
+        const bId = u.floor?.building_id || u.floor?.building?.id;
+        return bId !== undefined && Number(bId) === targetBuildingId;
+    });
 });
 
 const sortedUnitsForSelectedBuilding = computed(() => {
@@ -3750,7 +3765,7 @@ function submitPromoRule() {
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyektni Tanlang</label>
                             <select 
                                 v-model="selectedFacilityName"
-                                @change="selectedBuildingId = ''; contractForm.unit_id = ''"
+                                @change="onFacilityChange"
                                 class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5"
                                 required
                             >
@@ -3763,10 +3778,10 @@ function submitPromoRule() {
 
                         <!-- Block Select -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash</label>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash (Mavjud: {{ buildingsForSelectedFacility.length }})</label>
                             <select 
                                 v-model="selectedBuildingId"
-                                @change="contractForm.unit_id = ''"
+                                @change="onBuildingChange"
                                 :disabled="!selectedFacilityName"
                                 class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-sm py-1.5 disabled:opacity-50"
                                 required
@@ -3780,7 +3795,7 @@ function submitPromoRule() {
 
                         <!-- Unit Select -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon yoki do'kon tanlang</label>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon/Do'kon tanlang (Mavjud: {{ sortedUnitsForSelectedBuilding.length }})</label>
                             <select 
                                 v-model="contractForm.unit_id"
                                 :disabled="!selectedBuildingId"

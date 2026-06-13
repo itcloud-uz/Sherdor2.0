@@ -1587,6 +1587,11 @@ function printCalculatorDetails() {
     const unit = selectedUnit.value;
     const building = selectedBuilding.value;
     
+    const cleanText = (txt) => (txt || '').replace(/sher-?dor(\s*tjm)?/gi, '').trim();
+    const cleanedBuildingName = cleanText(building?.name) || 'Turar joy majmuasi';
+    const rawBlock = unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || 'Asosiy Blok';
+    const cleanedBlockName = cleanText(rawBlock) || 'Asosiy Blok';
+    
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         alert("Pop-up blokerlangan! Iltimos, printer sahifasini ochish uchun pop-uplarga ruxsat bering.");
@@ -1596,7 +1601,7 @@ function printCalculatorDetails() {
     printWindow.document.write(`
         <html>
         <head>
-            <title>SHER-DOR TJM - TIJORAT TAKLIFI</title>
+            <title>MA'LUMOTNOMA</title>
             <style>
                 body {
                     font-family: 'Segoe UI', Roboto, sans-serif;
@@ -1765,7 +1770,7 @@ function printCalculatorDetails() {
         </head>
         <body>
             <div class="header">
-                <div class="logo">SHER-DOR TJM</div>
+                <div class="logo">MA'LUMOTNOMA</div>
                 <div class="title">Xonadon Sotib Olish To'lov Rejasi</div>
             </div>
 
@@ -1775,11 +1780,11 @@ function printCalculatorDetails() {
                     <div>
                         <div class="info-item">
                             <div class="info-label">Obyekt nomi</div>
-                            <div class="info-value">${building?.name || ''}</div>
+                            <div class="info-value">${cleanedBuildingName}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Blok / Korpus</div>
-                            <div class="info-value">${unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || 'Asosiy Blok'}</div>
+                            <div class="info-value">${cleanedBlockName}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Qavat</div>

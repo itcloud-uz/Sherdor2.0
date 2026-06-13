@@ -2701,10 +2701,6 @@ function submitPromoRule() {
                     :placeholder="$t('search') + '...'" 
                     class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm"
                 >
-
-                <button @click="isEditingContract = false; contractForm = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' }; showCreateContractModal = true" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
-                    + {{ $t('add') }} {{ $t('contract') }}
-                </button>
             </div>
             
             <div v-for="(contracts, blockName) in groupedContracts" :key="blockName" class="mb-8">

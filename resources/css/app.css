@@ -200,3 +200,53 @@ select.bg-white optgroup,
   color: #ffffff !important;
 }
 
+/* Force light theme for SearchableSelect dropdown when inside any white/light modals */
+.theme-modal .searchable-select-dropdown,
+dialog .searchable-select-dropdown,
+.facility-modal-override .searchable-select-dropdown,
+.theme-galaxy .theme-modal .searchable-select-dropdown,
+.theme-cyberpunk .theme-modal .searchable-select-dropdown,
+.theme-minimalist .theme-modal .searchable-select-dropdown,
+.theme-gold .theme-modal .searchable-select-dropdown,
+.theme-itcloud_cyberglass .theme-modal .searchable-select-dropdown {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+.theme-modal .searchable-select-dropdown .sticky,
+dialog .searchable-select-dropdown .sticky,
+.facility-modal-override .searchable-select-dropdown .sticky,
+.theme-galaxy .theme-modal .searchable-select-dropdown .sticky,
+.theme-cyberpunk .theme-modal .searchable-select-dropdown .sticky,
+.theme-minimalist .theme-modal .searchable-select-dropdown .sticky,
+.theme-gold .theme-modal .searchable-select-dropdown .sticky,
+.theme-itcloud_cyberglass .theme-modal .searchable-select-dropdown .sticky {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.theme-modal .searchable-select-dropdown div,
+dialog .searchable-select-dropdown div,
+.facility-modal-override .searchable-select-dropdown div,
+.theme-galaxy .theme-modal .searchable-select-dropdown div,
+.theme-cyberpunk .theme-modal .searchable-select-dropdown div,
+.theme-minimalist .theme-modal .searchable-select-dropdown div,
+.theme-gold .theme-modal .searchable-select-dropdown div,
+.theme-itcloud_cyberglass .theme-modal .searchable-select-dropdown div {
+  color: #111827 !important;
+}
+
+.theme-modal .searchable-select-dropdown div:hover,
+dialog .searchable-select-dropdown div:hover,
+.facility-modal-override .searchable-select-dropdown div:hover,
+.theme-galaxy .theme-modal .searchable-select-dropdown div:hover,
+.theme-cyberpunk .theme-modal .searchable-select-dropdown div:hover,
+.theme-minimalist .theme-modal .searchable-select-dropdown div:hover,
+.theme-gold .theme-modal .searchable-select-dropdown div:hover,
+.theme-itcloud_cyberglass .theme-modal .searchable-select-dropdown div:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+

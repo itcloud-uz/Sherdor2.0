@@ -1592,6 +1592,10 @@ function printCalculatorDetails() {
     const rawBlock = unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || 'Asosiy Blok';
     const cleanedBlockName = cleanText(rawBlock) || 'Asosiy Blok';
     
+    const logoSrc = page.props.branding?.logo_path ? `/storage/${page.props.branding.logo_path}` : '';
+    const buildingPhoto = building?.photo_path ? `/storage/${building.photo_path}` : '/modern_apartment_render.png';
+    const showDiscountBadge = (Number(calcDiscount.value) || 0) > 0;
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         alert("Pop-up blokerlangan! Iltimos, printer sahifasini ochish uchun pop-uplarga ruxsat bering.");
@@ -1604,11 +1608,11 @@ function printCalculatorDetails() {
         <head>
             <title>MA'LUMOTNOMA</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
                 @page {
                     size: A4;
-                    margin: 8mm 12mm 8mm 12mm;
+                    margin: 0;
                 }
 
                 * {
@@ -1617,339 +1621,298 @@ function printCalculatorDetails() {
 
                 body {
                     font-family: 'Inter', sans-serif;
-                    color: #1e293b;
+                    color: #333;
                     margin: 0;
                     padding: 0;
-                    line-height: 1.4;
                     background-color: #fff;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
 
-                .luxury-wrapper {
-                    padding: 10px 0;
-                }
-
-                /* Header Design */
-                .luxury-header {
-                    border-bottom: 2.5px solid #b45309; /* Bronze/Gold */
-                    padding-bottom: 12px;
-                    margin-bottom: 18px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .luxury-logo-area {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .luxury-logo-icon {
-                    width: 32px;
-                    height: 32px;
-                    color: #0f172a;
-                }
-
-                .luxury-title-group {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .luxury-main-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 20px;
-                    font-weight: 800;
-                    color: #0f172a;
-                    letter-spacing: 0.5px;
-                    margin: 0;
-                    text-transform: uppercase;
-                }
-
-                .luxury-subtitle {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: #b45309;
-                    margin-top: 2px;
-                    text-transform: uppercase;
-                    letter-spacing: 1.2px;
-                }
-
-                .luxury-doc-meta {
-                    text-align: right;
-                    font-family: 'Inter', sans-serif;
-                }
-
-                .luxury-meta-id {
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #0f172a;
-                }
-
-                .luxury-meta-date {
-                    font-size: 10px;
-                    color: #64748b;
-                    margin-top: 2px;
-                }
-
-                /* Drawings Area */
-                .luxury-section-header {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #0f172a;
-                    text-transform: uppercase;
-                    letter-spacing: 0.8px;
-                    margin-bottom: 8px;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .luxury-section-header::after {
-                    content: '';
-                    flex-grow: 1;
-                    height: 1px;
-                    background: #cbd5e1;
-                }
-
-                .luxury-drawings-grid {
-                    display: grid;
-                    grid-template-cols: 1fr 1fr;
-                    gap: 16px;
-                    margin-bottom: 18px;
-                }
-
-                .luxury-drawing-card {
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 10px;
-                    padding: 8px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
+                .print-container {
+                    width: 210mm;
+                    height: 297mm;
                     position: relative;
+                    background: #fff;
                     overflow: hidden;
                 }
 
-                .luxury-drawing-img-box {
+                /* Diagonal crop containers */
+                .clip-top-left-bg {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 130mm;
+                    height: 130mm;
+                    background: #333;
+                    clip-path: polygon(0 0, 100% 0, 68% 100%, 0 100%);
+                    z-index: 1;
+                }
+
+                .clip-top-left-img {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 128mm;
+                    height: 128mm;
+                    background: #fff;
+                    clip-path: polygon(0 0, 100% 0, 68% 100%, 0 100%);
+                    z-index: 2;
+                    overflow: hidden;
+                }
+
+                .clip-top-left-img img {
                     width: 100%;
-                    height: 160px;
-                    background: #ffffff;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .clip-bottom-right-bg {
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
+                    width: 130mm;
+                    height: 130mm;
+                    background: #333;
+                    clip-path: polygon(32% 0, 100% 0, 100% 100%, 0 100%);
+                    z-index: 1;
+                }
+
+                .clip-bottom-right-img {
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
+                    width: 128mm;
+                    height: 128mm;
+                    background: #fff;
+                    clip-path: polygon(32% 0, 100% 0, 100% 100%, 0 100%);
+                    z-index: 2;
+                    overflow: hidden;
+                }
+
+                .clip-bottom-right-img img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                /* Logo placement */
+                .logo-container {
+                    position: absolute;
+                    top: 15mm;
+                    left: 12mm;
+                    z-index: 10;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 6px 12px;
                     border-radius: 6px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                }
+
+                .logo-fallback {
                     display: flex;
                     align-items: center;
-                    justify-content: center;
-                    overflow: hidden;
-                    border: 1px solid #f1f5f9;
+                    gap: 6px;
                 }
 
-                .luxury-drawing-img {
-                    max-width: 95%;
-                    max-height: 95%;
-                    object-fit: contain;
+                .logo-fallback-icon {
+                    width: 20px;
+                    height: 20px;
+                    color: #333;
                 }
 
-                .luxury-drawing-label {
+                .logo-fallback-text {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 9px;
-                    font-weight: 700;
-                    color: #64748b;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #333;
+                    letter-spacing: 0.5px;
+                }
+
+                /* Text Quadrants */
+                .top-right-content {
+                    position: absolute;
+                    top: 15mm;
+                    right: 12mm;
+                    width: 85mm;
+                    z-index: 10;
+                }
+
+                .bottom-left-content {
+                    position: absolute;
+                    bottom: 15mm;
+                    left: 12mm;
+                    width: 85mm;
+                    z-index: 10;
+                }
+
+                /* Text Styles */
+                .title-xona {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 56px;
+                    font-weight: 800;
+                    color: #333;
+                    text-align: right;
+                    line-height: 0.9;
+                    margin-bottom: 25px;
+                    text-transform: uppercase;
+                }
+
+                .title-xona span {
+                    font-size: 78px;
+                    color: #000;
+                    font-weight: 900;
+                }
+
+                .section-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 15px;
+                    font-weight: 800;
+                    color: #000;
+                    border-bottom: 1.5px solid #333;
+                    padding-bottom: 4px;
+                    margin-bottom: 12px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    margin-top: 6px;
-                    text-align: center;
                 }
 
-                /* Main Details Grid */
-                .luxury-content-grid {
-                    display: grid;
-                    grid-template-cols: 1fr 1.2fr;
-                    gap: 24px;
-                    margin-bottom: 18px;
-                }
-
-                .luxury-block-section {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .luxury-info-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 7px;
-                }
-
-                .luxury-info-item {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: baseline;
-                    font-size: 11px;
-                    padding-bottom: 5px;
-                    border-bottom: 1px dashed #cbd5e1;
-                }
-
-                .luxury-info-label {
-                    color: #475569;
-                    font-weight: 500;
-                }
-
-                .luxury-info-value {
-                    font-weight: 700;
-                    color: #0f172a;
-                }
-
-                .luxury-pricing-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-
-                .luxury-pricing-table td {
-                    padding: 5px 0;
-                    font-size: 11px;
-                    border-bottom: 1px solid #e2e8f0;
-                }
-
-                .luxury-pricing-table td.value {
-                    text-align: right;
-                    font-weight: 700;
-                    color: #0f172a;
-                }
-
-                .luxury-pricing-table tr.highlight-total td {
-                    border-top: 1.5px solid #0f172a;
-                    border-bottom: 1.5px solid #0f172a;
-                    padding: 7px 0;
-                    font-size: 12px;
-                    font-weight: 800;
-                }
-
-                .luxury-pricing-table tr.highlight-total td.value {
-                    color: #b45309;
-                    font-size: 13px;
-                }
-
-                /* Hero Payment Banner */
-                .luxury-payment-banner {
-                    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-                    color: #ffffff;
-                    border-radius: 10px;
-                    padding: 14px;
-                    text-align: center;
-                    margin-bottom: 18px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-                }
-
-                .luxury-payment-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 10px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 1.5px;
-                    color: #93c5fd;
-                    margin-bottom: 4px;
-                }
-
-                .luxury-payment-amount {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 26px;
-                    font-weight: 800;
-                    color: #ffffff;
+                .bullet-list {
+                    list-style: none;
+                    padding: 0;
                     margin: 0;
                 }
 
-                .luxury-payment-notes {
-                    font-size: 9px;
-                    color: #cbd5e1;
-                    margin-top: 4px;
+                .bullet-item {
+                    position: relative;
+                    padding-left: 14px;
+                    margin-bottom: 2px;
+                    font-size: 11.5px;
+                    color: #333;
+                    line-height: 1.4;
                 }
 
-                /* Footer Section */
-                .luxury-footer-row {
-                    display: grid;
-                    grid-template-cols: 1.2fr 1fr;
-                    gap: 20px;
-                    align-items: stretch;
+                .bullet-item::before {
+                    content: '•';
+                    position: absolute;
+                    left: 0;
+                    color: #333;
+                    font-weight: bold;
                 }
 
-                .luxury-contact-box {
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-left: 4px solid #b45309;
-                    border-radius: 10px;
-                    padding: 12px;
+                .bullet-item-val {
+                    position: relative;
+                    padding-left: 14px;
+                    margin-bottom: 8px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #000;
+                    line-height: 1.4;
+                }
+
+                .bullet-item-val::before {
+                    content: '•';
+                    position: absolute;
+                    left: 0;
+                    color: #333;
+                    font-weight: bold;
+                }
+
+                /* Starburst Badge */
+                .discount-badge-container {
+                    position: absolute;
+                    top: 148.5mm;
+                    left: 105mm;
+                    transform: translate(-50%, -50%);
+                    width: 120px;
+                    height: 120px;
+                    z-index: 20;
+                }
+
+                .badge-point {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #333;
+                    border-radius: 4px;
+                }
+
+                .badge-point.p1 { transform: rotate(0deg); }
+                .badge-point.p2 { transform: rotate(22.5deg); }
+                .badge-point.p3 { transform: rotate(45deg); }
+                .badge-point.p4 { transform: rotate(67.5deg); }
+
+                .badge-inner {
+                    position: absolute;
+                    top: 6%;
+                    left: 6%;
+                    width: 88%;
+                    height: 88%;
+                    background: #333;
+                    border-radius: 50%;
+                    border: 1.5px dashed #ffffff;
                     display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 5;
                 }
 
-                .luxury-contact-heading {
+                .badge-text {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 11px;
-                    font-weight: 800;
-                    color: #0f172a;
-                    margin-bottom: 4px;
+                    color: #ffffff;
+                    font-size: 12px;
+                    font-weight: 900;
+                    letter-spacing: 0.5px;
+                    transform: rotate(-10deg);
                     text-transform: uppercase;
                 }
 
-                .luxury-contact-text {
-                    font-size: 10px;
-                    color: #475569;
-                    margin: 0 0 8px 0;
-                    line-height: 1.3;
-                }
-
-                .luxury-contact-info {
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #1e3a8a;
-                    background: #eff6ff;
-                    padding: 4px 8px;
-                    border-radius: 6px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    width: fit-content;
-                }
-
-                .luxury-contact-cta {
+                /* Contact Styles */
+                .contact-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 9px;
+                    font-size: 14px;
                     font-weight: 800;
-                    color: #b45309;
+                    color: #000;
+                    margin-top: 20px;
+                    margin-bottom: 12px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    margin-top: 6px;
                 }
 
-                .luxury-sign-box {
-                    border: 1px solid #e2e8f0;
-                    border-radius: 10px;
-                    padding: 12px;
+                .phone-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 12px;
+                    gap: 8px;
+                }
+
+                .phone-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .phone-icon-circle {
+                    width: 26px;
+                    height: 26px;
+                    background: #333;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
                     justify-content: center;
+                    color: #fff;
                 }
 
-                .luxury-sign-field {
-                    display: flex;
-                    flex-direction: column;
-                    font-size: 10px;
-                    gap: 3px;
+                .phone-icon-svg {
+                    width: 12px;
+                    height: 12px;
+                    fill: currentColor;
                 }
 
-                .luxury-sign-label {
-                    font-weight: 600;
-                    color: #64748b;
-                }
-
-                .luxury-sign-line {
-                    border-bottom: 1px solid #cbd5e1;
-                    height: 16px;
-                    width: 100%;
+                .phone-number {
+                    font-family: 'Inter', sans-serif;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: #000;
                 }
 
                 @media print {
@@ -1958,27 +1921,14 @@ function printCalculatorDetails() {
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .luxury-payment-banner {
-                        background: #0f172a !important;
-                        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
-                        color: #ffffff !important;
+                    .print-container {
+                        width: 210mm;
+                        height: 297mm;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .luxury-drawing-card {
-                        background: #f8fafc !important;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    .luxury-contact-box {
-                        background: #f8fafc !important;
-                        border-left: 4px solid #b45309 !important;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    .luxury-contact-info {
-                        background: #eff6ff !important;
-                        color: #1e3a8a !important;
+                    .clip-top-left-bg, .clip-bottom-right-bg, .phone-icon-circle, .badge-point, .badge-inner {
+                        background: #333 !important;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
@@ -1986,158 +1936,113 @@ function printCalculatorDetails() {
             </style>
         </head>
         <body>
-            <div class="luxury-wrapper">
-                <!-- Header -->
-                <div class="luxury-header">
-                    <div class="luxury-logo-area">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="luxury-logo-icon">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                        <div class="luxury-title-group">
-                            <div class="luxury-main-title">MA'LUMOTNOMA</div>
-                            <div class="luxury-subtitle">Xonadon sotib olish to'lov rejasi</div>
-                        </div>
-                    </div>
-                    <div class="luxury-doc-meta">
-                        <div class="luxury-meta-id">Hujjat №: TT-${Math.floor(1000 + Math.random() * 9000)}</div>
-                        <div class="luxury-meta-date">Sana: ${new Date().toLocaleDateString('uz-UZ')}</div>
-                    </div>
+            <div class="print-container">
+                <!-- Top Left Image (Diagonal) -->
+                <div class="clip-top-left-bg"></div>
+                <div class="clip-top-left-img">
+                    <img src="${buildingPhoto}" alt="Building Cover" />
                 </div>
 
-                <!-- Drawings -->
-                <div class="luxury-section-header">
-                    <span>Loyiha chizmalari</span>
-                </div>
-                <div class="luxury-drawings-grid">
-                    <div class="luxury-drawing-card">
-                        <div class="luxury-drawing-img-box">
-                            <img src="${selectedUnitBlueprint.value}" class="luxury-drawing-img" />
+                <!-- Logo -->
+                <div class="logo-container">
+                    ${logoSrc ? `
+                        <img src="${logoSrc}" style="max-height: 40px; max-width: 120px; object-fit: contain;" alt="Logo" />
+                    ` : `
+                        <div class="logo-fallback">
+                            <svg class="logo-fallback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            <span class="logo-fallback-text">TIJORAT TAKLIFI</span>
                         </div>
-                        <div class="luxury-drawing-label">2D Xonadon rejasi</div>
-                    </div>
-                    <div class="luxury-drawing-card">
-                        <div class="luxury-drawing-img-box">
-                            <img src="${selectedUnitDisplayImage.value}" class="luxury-drawing-img" />
-                        </div>
-                        <div class="luxury-drawing-label">3D Tashqi ko'rinish</div>
-                    </div>
+                    `}
                 </div>
 
-                <!-- Content Grid -->
-                <div class="luxury-content-grid">
-                    <!-- Left: Unit Specs -->
-                    <div class="luxury-block-section">
-                        <div class="luxury-section-header">
-                            <span>Xonadon ma'lumotlari</span>
-                        </div>
-                        <div class="luxury-info-list">
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Majmua nomi</span>
-                                <span class="luxury-info-value">${cleanedBuildingName}</span>
-                            </div>
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Blok / Korpus</span>
-                                <span class="luxury-info-value">${cleanedBlockName}</span>
-                            </div>
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Qavat</span>
-                                <span class="luxury-info-value">${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</span>
-                            </div>
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Xonadon raqami</span>
-                                <span class="luxury-info-value">№ ${unit.unit_number}</span>
-                            </div>
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Umumiy maydoni</span>
-                                <span class="luxury-info-value">${unit.area_sqm} kv.m</span>
-                            </div>
-                            <div class="luxury-info-item">
-                                <span class="luxury-info-label">Xonalar soni</span>
-                                <span class="luxury-info-value">${unit.rooms_count || 1} xonali</span>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Top Right Content -->
+                <div class="top-right-content">
+                    <div class="title-xona"><span>${unit.rooms_count || 1}</span> XONA</div>
+                    
+                    <div class="section-title">Xonadon ma'lumotlari</div>
+                    <ul class="bullet-list" style="margin-bottom: 25px;">
+                        <li class="bullet-item">Blok / Korpus: <strong>${cleanedBlockName}</strong></li>
+                        <li class="bullet-item">Qavat: <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
+                        <li class="bullet-item">Xonadon raqami: <strong>№ ${unit.unit_number}</strong></li>
+                        <li class="bullet-item">Umumiy maydoni: <strong>${unit.area_sqm} kv.m</strong></li>
+                        <li class="bullet-item">Xonalar soni: <strong>${unit.rooms_count || 1} xonali</strong></li>
+                    </ul>
 
-                    <!-- Right: Calculator Pricing Table -->
-                    <div class="luxury-block-section">
-                        <div class="luxury-section-header">
-                            <span>To'lov shartlari</span>
-                        </div>
-                        <table class="luxury-pricing-table">
-                            <tr>
-                                <td>Boshlang'ich uy narxi</td>
-                                <td class="value">${formatSoM(calcPrice.value)}</td>
-                            </tr>
-                            <tr>
-                                <td>Kvadrat metr narxi</td>
-                                <td class="value">${formatSoM(calcPricePerSqm.value)} / kv.m</td>
-                            </tr>
-                            <tr>
-                                <td>Chegirma (kv.m uchun)</td>
-                                <td class="value">${formatSoM(calcDiscountPerSqm.value)}</td>
-                            </tr>
-                            <tr>
-                                <td>Jami chegirma summasi</td>
-                                <td class="value">${formatSoM(calcDiscount.value)}</td>
-                            </tr>
-                            <tr class="highlight-total">
-                                <td>Yakuniy shartnoma qiymati</td>
-                                <td class="value">${formatSoM(calculatedTotalAmount.value)}</td>
-                            </tr>
-                            <tr>
-                                <td>Boshlang'ich to'lov summasi</td>
-                                <td class="value">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</td>
-                            </tr>
-                            <tr>
-                                <td>Muddatli to'lovga qoldiq summa</td>
-                                <td class="value">${formatSoM(calculatedRemainingBalance.value)}</td>
-                            </tr>
-                            <tr>
-                                <td>Bo'lib to'lash muddati</td>
-                                <td class="value">${calcTermMonths.value} oy</td>
-                            </tr>
-                        </table>
-                    </div>
+                    <div class="section-title">To'lov shartlari</div>
+                    <ul class="bullet-list">
+                        <li class="bullet-item">Boshlang'ich uy narxi</li>
+                        <li class="bullet-item-val">${formatSoM(calcPrice.value)}</li>
+                        <li class="bullet-item">Kvadrat metr narxi</li>
+                        <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
+                        <li class="bullet-item">Chegirma (kv.m uchun)</li>
+                        <li class="bullet-item-val">${formatSoM(calcDiscountPerSqm.value)}</li>
+                        <li class="bullet-item">Jami chegirma summasi</li>
+                        <li class="bullet-item-val">${formatSoM(calcDiscount.value)}</li>
+                    </ul>
                 </div>
 
-                <!-- Hero Monthly Payment Box -->
-                <div class="luxury-payment-banner">
-                    <div class="luxury-payment-title">Har oylik to'lov summasi</div>
-                    <div class="luxury-payment-amount">${formatSoM(calculatedMonthlyPayment.value)}</div>
-                    <div class="luxury-payment-notes">* To'lovlar har oyning shartnomada belgilangan kunigacha to'lanadi.</div>
+                <!-- Starburst Badge -->
+                ${showDiscountBadge ? `
+                <div class="discount-badge-container">
+                    <div class="badge-point p1"></div>
+                    <div class="badge-point p2"></div>
+                    <div class="badge-point p3"></div>
+                    <div class="badge-point p4"></div>
+                    <div class="badge-inner">
+                        <div class="badge-text">CHEGIRMA</div>
+                    </div>
                 </div>
+                ` : ''}
 
-                <!-- Footer Section -->
-                <div class="luxury-footer-row">
-                    <!-- Contact -->
-                    <div class="luxury-contact-box">
-                        <div>
-                            <div class="luxury-contact-heading">Sotuv bo'limi bilan bog'laning!</div>
-                            <p class="luxury-contact-text">Orzuingizdagi premium xonadonni band qilish va to'liq ma'lumotlar bilan shartnoma rasmiylashtirish uchun bog'laning.</p>
-                        </div>
-                        <div>
-                            <div class="luxury-contact-info">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Bottom Left Content -->
+                <div class="bottom-left-content">
+                    <div class="section-title">Yakuniy shartnoma qiymati</div>
+                    <ul class="bullet-list" style="margin-bottom: 25px;">
+                        <li class="bullet-item-val" style="font-size: 14px; margin-bottom: 6px; color: #000;">${formatSoM(calculatedTotalAmount.value)}</li>
+                        <li class="bullet-item">Boshlang'ich to'lov summasi</li>
+                        <li class="bullet-item-val">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</li>
+                        <li class="bullet-item">Muddatli to'lovga qoldiq summa</li>
+                        <li class="bullet-item-val">${formatSoM(calculatedRemainingBalance.value)}</li>
+                        <li class="bullet-item">Bo'lib to'lash muddati</li>
+                        <li class="bullet-item-val">${calcTermMonths.value || 12} oy</li>
+                    </ul>
+
+                    <div class="contact-title">BOG'LANISH UCHUN</div>
+                    <div class="phone-list">
+                        <div class="phone-row">
+                            <span class="phone-icon-circle">
+                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                                 </svg>
-                                <span>Maslahatchi: Abbos (+998 90 450 54 55)</span>
-                            </div>
-                            <div class="luxury-contact-cta">🔥 Bugunoq o'z xonadoningizni band qiling!</div>
+                            </span>
+                            <span class="phone-number">+998 90 450 54 55</span>
+                        </div>
+                        <div class="phone-row">
+                            <span class="phone-icon-circle">
+                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                            </span>
+                            <span class="phone-number">+998 93 573 29 29</span>
+                        </div>
+                        <div class="phone-row">
+                            <span class="phone-icon-circle">
+                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                            </span>
+                            <span class="phone-number">+998 91 708 44 44</span>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Signatures -->
-                    <div class="luxury-sign-box">
-                        <div class="luxury-sign-field">
-                            <div class="luxury-sign-label">Maslahatchi imzosi:</div>
-                            <div class="luxury-sign-line"></div>
-                        </div>
-                        <div class="luxury-sign-field">
-                            <div class="luxury-sign-label">Mijoz roziligi va imzosi:</div>
-                            <div class="luxury-sign-line"></div>
-                        </div>
-                    </div>
+                <!-- Bottom Right Image (Diagonal) -->
+                <div class="clip-bottom-right-bg"></div>
+                <div class="clip-bottom-right-img">
+                    <img src="${selectedUnitDisplayImage.value}" alt="Unit 3D Layout" />
                 </div>
             </div>
 

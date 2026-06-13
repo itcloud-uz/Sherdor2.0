@@ -1399,6 +1399,26 @@ function deleteBuilding() {
     }
 }
 
+function deleteObject(blocksList, name) {
+    let container = (blocksList || []).find(b => b.total_floors === 0);
+    if (!container && blocksList && blocksList.length > 0) {
+        container = blocksList[0];
+    }
+    if (!container) return;
+    
+    if (confirm(`Rostdan ham "${name}" obyektini to'liq o'chirib yubormoqchimisiz?\nUshbu amaliyot uning tarkibidagi barcha bloklar, qavatlar va xonadonlarni butunlay o'chirib tashlaydi!`)) {
+        router.delete(route('admin.facility.objects.destroy', container.id), {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                if (currentObject.value === name) {
+                    currentObject.value = null;
+                }
+            }
+        });
+    }
+}
+
 function submitBuilding() {
     if (isEditingBuilding.value && selectedBuilding.value) {
         // use _method: 'put' for file upload with PUT in laravel
@@ -1834,6 +1854,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div class="p-4 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                             <span class="text-xs font-semibold text-blue-600 group-hover:underline">Boshqarish →</span>
+                            <div class="flex items-center gap-2">
+                                <button @click.stop="openEditObjectContainer(blocks)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
+                                    Tahrirlash
+                                </button>
+                                <button @click.stop="deleteObject(blocks, objName)" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
+                                    O'chirish
+                                </button>
+                            </div>
                         </div>
                     </div>
                     

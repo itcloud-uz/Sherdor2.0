@@ -807,6 +807,21 @@ class FacilityController extends Controller
         return redirect()->route('admin.facility')->with('message', 'Bino o\'chirildi!');
     }
 
+    public function destroyObject($id)
+    {
+        $container = Building::findOrFail($id);
+        $name = $container->name;
+
+        \DB::transaction(function () use ($name) {
+            $buildings = Building::where('name', $name)->get();
+            foreach ($buildings as $building) {
+                $building->delete();
+            }
+        });
+
+        return redirect()->route('admin.facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
+    }
+
     public function storeUnit(Request $request)
     {
         $validated = $request->validate([

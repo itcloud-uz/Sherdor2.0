@@ -2440,7 +2440,7 @@ function submitPromoRule() {
         </div>
 
         <!-- TAB 2: CLIENTS ROSTER -->
-        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
+        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
             <div v-if="!selectedClientForDetail">
                 <!-- Breadcrumbs -->
                 <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
@@ -2451,188 +2451,288 @@ function submitPromoRule() {
                     Mijozlar bazasi
                 </span>
                 <span class="text-gray-300 font-bold">&gt;</span>
-                <span class="text-gray-900 font-bold">Mijozlar</span>
+                <span class="text-gray-900 font-bold">{{ activeTab === 'contracts' ? 'Shartnomalar' : 'Mijozlar' }}</span>
             </div>
 
-            <!-- Control bar -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <!-- Left controls: Add + Search -->
-                <div class="flex flex-wrap items-center gap-4">
-                    <button @click="openCreateClientModal" class="px-5 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
-                        + Qo'shish
-                    </button>
-                    
-                    <div class="relative flex items-center">
-                        <span class="absolute left-3.5 text-gray-400">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </span>
-                        <input 
-                            v-model="searchQuery" 
-                            type="text" 
-                            placeholder="Qidirish" 
-                            class="bg-white border border-gray-200 text-gray-800 text-xs rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-64 transition-all"
-                        />
-                    </div>
+            <!-- Contracts section inside Client Database Roster -->
+            <div v-if="activeTab === 'contracts'" class="space-y-6">
+                <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <input 
+                        v-model="contractSearchQuery" 
+                        type="text" 
+                        :placeholder="$t('search') + '...'" 
+                        class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm"
+                    >
                 </div>
-
-                <!-- Right controls: Dropdowns + Excel -->
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Obyektlar filter -->
-                    <div class="relative">
-                        <select v-model="selectedBuildingFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
-                            <option value="">Obyektlar</option>
-                            <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
-                        </select>
-                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </span>
-                    </div>
-
-                    <!-- Sotuv menejeri filter -->
-                    <div class="relative">
-                        <select v-model="selectedManagerFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
-                            <option value="">Sotuv menejeri</option>
-                            <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
-                        </select>
-                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </span>
-                    </div>
-
-                    <!-- Holat (Tasdiqlangan...) filter -->
-                    <div class="relative">
-                        <select v-model="selectedStatusFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
-                            <option value="">Tasdiqlangan...</option>
-                            <option value="approved">Tasdiqlangan</option>
-                            <option value="pending">Kutilmoqda</option>
-                            <option value="cancelled">Bekor qilingan</option>
-                        </select>
-                        <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </span>
-                    </div>
-
-                    <!-- Excel Export Preview Trigger -->
-                    <button @click="openExcelPreviewModal" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
-                        <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                            <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
-                        </svg>
-                        Excel
-                    </button>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
-                    <thead>
-                        <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
-                            <th class="p-4 w-12 text-center">ID</th>
-                            <th class="p-4">Ism</th>
-                            <th class="p-4">Bino</th>
-                            <th class="p-4">Blok</th>
-                            <th class="p-4">Xonadon</th>
-                            <th class="p-4">Qavat</th>
-                            <th class="p-4">Uy narxi</th>
-                            <th class="p-4">Yaratilgan</th>
-                            <th class="p-4">Holat</th>
-                            <th class="p-4 text-right">Amallar</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <tr 
-                            v-for="client in filteredClients" 
-                            :key="client.id" 
-                            class="hover:bg-gray-50/50 transition-colors"
-                        >
-                            <!-- ID -->
-                            <td class="p-4 text-center font-medium text-gray-600">{{ client.id }}</td>
-                            
-                            <!-- Ism -->
-                            <td class="p-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-                                        {{ getInitials(client.first_name, client.last_name) }}
-                                    </div>
-                                    <div>
-                                        <h3 class="text-sm font-bold text-gray-900 leading-tight">
-                                            {{ client.last_name }} {{ client.first_name }}
+                
+                <div v-for="(contracts, blockName) in groupedContracts" :key="blockName" class="mb-8">
+                    <h3 class="text-lg font-bold text-emerald-600 mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <span>🏢</span> {{ blockName }}
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                        <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
+                            <thead class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="p-4">Shartnoma</th>
+                                    <th class="p-4">Mijoz</th>
+                                    <th class="p-4">Boshlang'ich to'lov</th>
+                                    <th class="p-4">Jami Summa</th>
+                                    <th class="p-4">To'langan (Holati)</th>
+                                    <th class="p-4 text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr 
+                                    v-for="contract in contracts" 
+                                    :key="contract.id"
+                                    @click="openScheduleModal(contract)"
+                                    class="hover:bg-gray-50/50 transition-colors cursor-pointer group bg-white"
+                                >
+                                    <td class="p-4">
+                                        <h3 class="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                                            {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
                                         </h3>
-                                        <div class="text-xs text-gray-500 mt-1 font-medium">{{ client.phone || 'N/A' }}</div>
+                                        <p class="text-[10px] font-mono text-blue-600 mt-0.5">
+                                            {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
+                                        </p>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 flex items-center justify-center text-emerald-600 font-display font-bold text-xs shadow-sm shrink-0">
+                                                {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+                                            </div>
+                                            <div>
+                                                <p class="text-sm text-gray-900 font-bold leading-tight">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
+                                                <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-sm font-mono text-gray-900/80">
+                                        {{ $currency(contract.down_payment) }}
+                                    </td>
+                                    <td class="p-4 text-sm font-mono text-emerald-600 font-bold">
+                                        {{ $currency(contract.total_amount) }}
+                                        <div class="text-[10px] text-gray-500 mt-0.5 font-normal">
+                                            <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
+                                            <span v-else>{{ contract.term_months }} {{ $t('months') }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col gap-1 w-32">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-xs font-mono text-gray-900">{{ $currency(calculatePaidAmount(contract)) }}</span>
+                                                <span class="text-[10px] text-emerald-600 font-bold">{{ calculateProgress(contract).toFixed(0) }}%</span>
+                                            </div>
+                                            <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
+                                                <div 
+                                                    class="absolute top-0 left-0 bottom-0 bg-emerald-600 shadow-sm transition-all duration-1000"
+                                                    :style="{ width: calculateProgress(contract) + '%' }"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right" @click.stop>
+                                        <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-black transition-colors shadow-sm" title="Tahrirlash">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </button>
+                                            <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-black transition-colors shadow-sm" title="O'chirish">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div v-if="Object.keys(groupedContracts).length === 0" class="text-center py-20 text-gray-500 font-mono text-sm border border-dashed border-gray-200 rounded-2xl bg-white">
+                    {{ $t('no_active_contracts') }}
+                </div>
+            </div>
+
+            <!-- Clients view when activeTab is not contracts -->
+            <div v-else>
+                <!-- Control bar -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <!-- Left controls: Add + Search -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button @click="openCreateClientModal" class="px-5 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
+                            + Qo'shish
+                        </button>
+                        
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3.5 text-gray-400">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input 
+                                v-model="searchQuery" 
+                                type="text" 
+                                placeholder="Qidirish" 
+                                class="bg-white border border-gray-200 text-gray-800 text-xs rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-64 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Right controls: Dropdowns + Excel -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Obyektlar filter -->
+                        <div class="relative">
+                            <select v-model="selectedBuildingFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                                <option value="">Obyektlar</option>
+                                <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
+                        <!-- Sotuv menejeri filter -->
+                        <div class="relative">
+                            <select v-model="selectedManagerFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                                <option value="">Sotuv menejeri</option>
+                                <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
+                        <!-- Holat (Tasdiqlangan...) filter -->
+                        <div class="relative">
+                            <select v-model="selectedStatusFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                                <option value="">Tasdiqlangan...</option>
+                                <option value="approved">Tasdiqlangan</option>
+                                <option value="pending">Kutilmoqda</option>
+                                <option value="cancelled">Bekor qilingan</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
+                        <!-- Excel Export Preview Trigger -->
+                        <button @click="openExcelPreviewModal" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
+                            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
+                            </svg>
+                            Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
+                        <thead>
+                            <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                                <th class="p-4 w-12 text-center">ID</th>
+                                <th class="p-4">Ism</th>
+                                <th class="p-4">Bino</th>
+                                <th class="p-4">Blok</th>
+                                <th class="p-4">Xonadon</th>
+                                <th class="p-4">Qavat</th>
+                                <th class="p-4">Uy narxi</th>
+                                <th class="p-4">Yaratilgan</th>
+                                <th class="p-4">Holat</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr 
+                                v-for="client in filteredClients" 
+                                :key="client.id" 
+                                class="hover:bg-gray-50/50 transition-colors"
+                            >
+                                <!-- ID -->
+                                <td class="p-4 text-center font-medium text-gray-600">{{ client.id }}</td>
+                                
+                                <!-- Ism -->
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                            {{ getInitials(client.first_name, client.last_name) }}
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-bold text-gray-900 leading-tight">
+                                                {{ client.last_name }} {{ client.first_name }}
+                                            </h3>
+                                            <div class="text-xs text-gray-500 mt-1 font-medium">{{ client.phone || 'N/A' }}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            
-                            <!-- Bino -->
-                            <td class="p-4 text-[#0f766e] font-semibold">
-                                {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
-                            </td>
-                            
-                            <!-- Blok -->
-                            <td class="p-4 text-[#0f766e] font-semibold">
-                                {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || (getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + ' Podezd' : '—') }}
-                            </td>
-                            
-                            <!-- Xonadon -->
-                            <td class="p-4 text-[#0f766e] font-semibold">
-                                {{ getClientLatestContract(client)?.unit?.unit_number ? getClientLatestContract(client).unit.unit_number + '-Xonadon' : '—' }}
-                            </td>
-                            
-                            <!-- Qavat -->
-                            <td class="p-4 text-[#0f766e] font-semibold">
-                                {{ getClientLatestContract(client)?.unit?.floor?.floor_number ? getClientLatestContract(client).unit.floor.floor_number + '-Qavat' : '—' }}
-                            </td>
-                            
-                            <!-- Uy narxi -->
-                            <td class="p-4 text-[#ef4444] font-bold">
-                                {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('uz-UZ') + " so'm" : '—' }}
-                            </td>
-                            
-                            <!-- Yaratilgan -->
-                            <td class="p-4 text-gray-600 font-medium">{{ formatDate(client.created_at) }}</td>
-                            
-                            <!-- Holat -->
-                            <td class="p-4">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ecfdf5] text-[#047857] border border-[#d1fae5] shadow-sm uppercase tracking-wide">
-                                    {{ getClientLatestContract(client) ? (getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Tasdiqlangan') : 'Tasdiqlangan' }}
-                                </span>
-                            </td>
-                            
-                            <!-- Amallar -->
-                            <td class="p-4 text-right">
-                                <div class="flex items-center justify-end gap-3">
-                                    <!-- Delete -->
-                                    <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors" title="O'chirish">
-                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </button>
-                                    <!-- View -->
-                                    <button @click="selectClientForDetail(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
-                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    </button>
-                                    <!-- Edit -->
-                                    <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors" title="Tahrirlash">
-                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredClients.length === 0">
-                            <td colspan="10" class="py-20 text-center text-gray-400 font-mono text-sm border-dashed">
-                                {{ $t('no_clients_found') }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </td>
+                                
+                                <!-- Bino -->
+                                <td class="p-4 text-[#0f766e] font-semibold">
+                                    {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
+                                </td>
+                                
+                                <!-- Blok -->
+                                <td class="p-4 text-[#0f766e] font-semibold">
+                                    {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || (getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + ' Podezd' : '—') }}
+                                </td>
+                                
+                                <!-- Xonadon -->
+                                <td class="p-4 text-[#0f766e] font-semibold">
+                                    {{ getClientLatestContract(client)?.unit?.unit_number ? getClientLatestContract(client).unit.unit_number + '-Xonadon' : '—' }}
+                                </td>
+                                
+                                <!-- Qavat -->
+                                <td class="p-4 text-[#0f766e] font-semibold">
+                                    {{ getClientLatestContract(client)?.unit?.floor?.floor_number ? getClientLatestContract(client).unit.floor.floor_number + '-Qavat' : '—' }}
+                                </td>
+                                
+                                <!-- Uy narxi -->
+                                <td class="p-4 text-[#ef4444] font-bold">
+                                    {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('uz-UZ') + " so'm" : '—' }}
+                                </td>
+                                
+                                <!-- Yaratilgan -->
+                                <td class="p-4 text-gray-600 font-medium">{{ formatDate(client.created_at) }}</td>
+                                
+                                <!-- Holat -->
+                                <td class="p-4">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ecfdf5] text-[#047857] border border-[#d1fae5] shadow-sm uppercase tracking-wide">
+                                        {{ getClientLatestContract(client) ? (getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Tasdiqlangan') : 'Tasdiqlangan' }}
+                                    </span>
+                                </td>
+                                
+                                <!-- Amallar -->
+                                <td class="p-4 text-right">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <!-- Delete -->
+                                        <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors" title="O'chirish">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
+                                        <!-- View -->
+                                        <button @click="selectClientForDetail(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                        <!-- Edit -->
+                                        <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors" title="Tahrirlash">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredClients.length === 0">
+                                <td colspan="10" class="py-20 text-center text-gray-400 font-mono text-sm border-dashed">
+                                    {{ $t('no_clients_found') }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             </div>
             
@@ -3012,102 +3112,7 @@ function submitPromoRule() {
             </div>
         </div>
 
-        <!-- TAB 3: SMART CONTRACTS -->
-        <div v-if="activeTab === 'contracts'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px]">
-            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <input 
-                    v-model="contractSearchQuery" 
-                    type="text" 
-                    :placeholder="$t('search') + '...'" 
-                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm"
-                >
-            </div>
-            
-            <div v-for="(contracts, blockName) in groupedContracts" :key="blockName" class="mb-8">
-                <h3 class="text-lg font-bold text-emerald-600 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <span>🏢</span> {{ blockName }}
-                </h3>
-                <div class="overflow-x-auto rounded-xl border border-gray-200">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                            <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Shartnoma</th>
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Boshlang'ich to'lov</th>
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Jami Summa</th>
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'langan (Holati)</th>
-                                <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider text-right">Amallar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr 
-                                v-for="contract in contracts" 
-                                :key="contract.id"
-                                @click="openScheduleModal(contract)"
-                                class="border-b border-gray-100 hover:/[0.03] transition-colors cursor-pointer group bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                            >
-                                <td class="p-3">
-                                    <h3 class="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
-                                        {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
-                                    </h3>
-                                    <p class="text-[10px] font-mono text-blue-600 mt-0.5">
-                                        {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
-                                    </p>
-                                </td>
-                                <td class="p-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 flex items-center justify-center text-emerald-600 font-display font-bold text-xs shadow-sm shrink-0">
-                                            {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-900">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
-                                            <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="p-3 text-sm font-mono text-gray-900/80">
-                                    {{ $currency(contract.down_payment) }}
-                                </td>
-                                <td class="p-3 text-sm font-mono text-emerald-600 font-bold">
-                                    {{ $currency(contract.total_amount) }}
-                                    <div class="text-[10px] text-gray-500 mt-0.5 font-normal">
-                                        <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
-                                        <span v-else>{{ contract.term_months }} {{ $t('months') }}</span>
-                                    </div>
-                                </td>
-                                <td class="p-3">
-                                    <div class="flex flex-col gap-1 w-32">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-mono text-gray-900">{{ $currency(calculatePaidAmount(contract)) }}</span>
-                                            <span class="text-[10px] text-emerald-600">{{ calculateProgress(contract).toFixed(0) }}%</span>
-                                        </div>
-                                        <div class="w-full h-1.5 bg-gray-500/50 rounded-full overflow-hidden border border-gray-100 relative">
-                                            <div 
-                                                class="absolute top-0 left-0 bottom-0 bg-emerald-600 shadow-sm transition-all duration-1000"
-                                                :style="{ width: calculateProgress(contract) + '%' }"
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="p-3 text-right" @click.stop>
-                                    <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                        <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-gray-900 transition-colors shadow-sm" title="Tahrirlash">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        </button>
-                                        <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-gray-900 transition-colors shadow-sm" title="O'chirish">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div v-if="Object.keys(groupedContracts).length === 0" class="text-center py-20 text-gray-500 font-mono text-sm border border-dashed border-gray-200 rounded-2xl">
-                {{ $t('no_active_contracts') }}
-            </div>
-        </div>
+
 
         <!-- TAB CANCELED: BEKOR QILINGAN SHARTNOMALAR -->
         <div v-if="activeTab === 'canceled'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px] border border-red-200">

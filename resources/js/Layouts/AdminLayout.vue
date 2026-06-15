@@ -235,7 +235,7 @@ onMounted(() => {
             try {
                 const url = new URL(page.url, window.location.origin);
                 const tabParam = url.searchParams.get('tab') || 'dashboard';
-                if (['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(tabParam)) {
+                if (['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes(tabParam)) {
                     isClientsMenuOpen.value = true;
                 } else {
                     isCrmMenuOpen.value = true;
@@ -469,11 +469,11 @@ const formattedDate = computed(() => {
                         <button
                             @click="isCrmMenuOpen = !isCrmMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -512,15 +512,7 @@ const formattedDate = computed(() => {
                                 📝 Postlar
                             </Link>
 
-                            <!-- Shartnomalar -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'contracts' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('contracts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📄 Shartnomalar
-                            </Link>
-                            
+
                             <!-- Qarzdorlik radari -->
                             <Link
                                 v-if="hasPerm('access debtors')"
@@ -565,11 +557,11 @@ const formattedDate = computed(() => {
                         <button
                             @click="isClientsMenuOpen = !isClientsMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Mijozlar bazasi</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Mijozlar bazasi</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -625,6 +617,15 @@ const formattedDate = computed(() => {
                                 :class="isClientsTabActive('clients_blacklist') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
                                 ❌ Qora ro'yxat
+                            </Link>
+
+                            <!-- Shartnomalar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'contracts' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('contracts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📄 Shartnomalar
                             </Link>
                         </div>
                     </div>

@@ -981,6 +981,8 @@ const contractForm = ref({
     price_per_sqm: '',
     total_amount: '',
     down_payment: '',
+    is_down_payment_split: false,
+    down_payment_split_months: 1,
     term_months: 36,
     payment_type: 'installment',
     created_at: '',
@@ -1005,6 +1007,8 @@ function openSellUnit(unit) {
         price_per_sqm: '',
         total_amount: unit.price || '',
         down_payment: '',
+        is_down_payment_split: false,
+        down_payment_split_months: 1,
         term_months: 36,
         payment_type: 'installment',
         created_at: '',
@@ -3145,6 +3149,24 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                     <input type="number" v-model.number="contractForm.term_months" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Boshlang'ich to'lovni bo'lib to'lash (Split down payment option) -->
+                                        <div class="space-y-3 p-3 bg-amber-50/50 border border-amber-100 rounded-xl" v-if="contractForm.payment_type === 'installment' && Number(contractForm.down_payment) > 0">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" v-model="contractForm.is_down_payment_split" class="text-amber-500 rounded border-gray-300 focus:ring-amber-500">
+                                                <span class="text-sm font-semibold text-gray-800">Boshlang'ich to'lovni ham bo'lib to'lash</span>
+                                            </label>
+                                            
+                                            <div v-if="contractForm.is_down_payment_split" class="grid grid-cols-2 gap-3 items-center pt-2">
+                                                <label class="text-xs font-medium text-gray-500">Boshlang'ich to'lov muddati (oy)</label>
+                                                <div class="relative flex items-center bg-white border border-gray-200 rounded-lg px-3 py-1.5">
+                                                    <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-bold" required />
+                                                </div>
+                                            </div>
+                                            <div v-if="contractForm.is_down_payment_split" class="text-xs text-amber-700 font-sans">
+                                                * Boshlang'ich to'lov har oy <strong>{{ formatSoM(Math.round(Number(contractForm.down_payment || 0) / Number(contractForm.down_payment_split_months || 1))) }}</strong>dan, jami <strong>{{ contractForm.down_payment_split_months || 1 }} oy</strong> davomida to'lanadi. Qolgan summa esa undan keyin <strong>{{ contractForm.term_months }} oy</strong> davomida bo'lib to'lanadi.
                                             </div>
                                         </div>
 

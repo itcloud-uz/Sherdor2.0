@@ -13,6 +13,8 @@ class Contract extends Model
         'price_per_sqm',
         'total_amount',
         'down_payment',
+        'is_down_payment_split',
+        'down_payment_split_months',
         'term_months',
         'status',
         'pdf_path',
@@ -30,6 +32,7 @@ class Contract extends Model
 
     protected $casts = [
         'ai_verification_logs' => 'array',
+        'is_down_payment_split' => 'boolean',
     ];
 
     public function client()
@@ -98,10 +101,8 @@ class Contract extends Model
 
     public function generateDraft()
     {
-        $this->update(['status' => 'draft']);
-        
-        if ($this->unit) {
-            $this->unit->update(['status' => 'reserved']);
+        if ($this->status === 'draft') {
+            $this->update(['status' => 'awaiting_payment']);
         }
     }
 
@@ -125,21 +126,47 @@ class Contract extends Model
             return;
         }
 
+        $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
+
+        // 1. Generate split down payment schedules if enabled
+        $downPaymentTerm = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 1;
+        
+        if ($this->is_down_payment_split && $this->down_payment > 0 && $downPaymentTerm > 0) {
+            $downPaymentMonthly = $this->down_payment / $downPaymentTerm;
+            for ($i = 1; $i <= $downPaymentTerm; $i++) {
+                $dueDate = $baseDate->copy()->addMonths($i);
+                $status = $dueDate->isPast() ? 'overdue' : 'pending';
+                \App\Models\PaymentSchedule::create([
+                    'contract_id' => $this->id,
+                    'expected_amount' => $downPaymentMonthly,
+                    'remaining_debt' => $downPaymentMonthly,
+                    'due_date' => $dueDate->toDateTimeString(),
+                    'status' => $status,
+                    'original_payment_amount' => $downPaymentMonthly
+                ]);
+            }
+        }
+
+        // 2. Generate regular installments
         if (($this->payment_type ?? 'installment') === 'installment' && ($this->term_months ?? 1) > 0) {
             $remaining = $this->total_amount - $this->down_payment;
             if ($remaining > 0) {
                 $monthly = $remaining / $this->term_months;
-                $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
+                
+                // If down payment is split, regular installments start after the down payment period
+                $startOffset = $this->is_down_payment_split ? $downPaymentTerm : 0;
+                
                 for ($i = 1; $i <= $this->term_months; $i++) {
-                    $dueDate = $baseDate->copy()->addMonths($i);
+                    $dueDate = $baseDate->copy()->addMonths($startOffset + $i);
                     $status = $dueDate->isPast() ? 'overdue' : 'pending';
                     
                     \App\Models\PaymentSchedule::create([
                         'contract_id' => $this->id,
                         'expected_amount' => $monthly,
                         'remaining_debt' => $monthly,
-                        'due_date' => $dueDate,
-                        'status' => $status
+                        'due_date' => $dueDate->toDateTimeString(),
+                        'status' => $status,
+                        'original_payment_amount' => $monthly
                     ]);
                 }
             }

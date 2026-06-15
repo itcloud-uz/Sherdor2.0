@@ -23,6 +23,8 @@ class ContractController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'payment_type' => 'nullable|string|in:full,installment',
             'down_payment' => 'nullable|numeric|min:0',
+            'is_down_payment_split' => 'nullable|boolean',
+            'down_payment_split_months' => 'nullable|integer|min:1',
             'term_months' => 'nullable|integer|min:1',
             'created_at' => 'nullable|date',
             'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number',
@@ -47,6 +49,8 @@ class ContractController extends Controller
             'price_per_sqm' => $validated['price_per_sqm'],
             'total_amount' => $validated['total_amount'],
             'down_payment' => $validated['down_payment'] ?? 0,
+            'is_down_payment_split' => $request->boolean('is_down_payment_split'),
+            'down_payment_split_months' => $validated['down_payment_split_months'] ?? 1,
             'term_months' => $validated['term_months'] ?? 1,
             'payment_type' => $paymentType,
             'contract_number' => $validated['contract_number'] ?? null,
@@ -118,7 +122,7 @@ class ContractController extends Controller
         } else {
             $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
                              ? $validated['actual_paid_amount'] 
-                             : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0);
+                             : ($request->boolean('is_down_payment_split') ? 0 : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0));
 
             if ($paymentAmount > 0) {
                 $paymentMethod = $validated['payment_method'] ?? 'bank';

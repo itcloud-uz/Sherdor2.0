@@ -2853,20 +2853,20 @@ function submitPromoRule() {
 
                             <!-- Action Buttons below -->
                             <div class="mt-6 pt-4 border-t border-gray-50 flex items-center gap-2">
-                                <button @click="exportDocx(detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors">
+                                <a :href="'/admin/crm/contracts/' + detailedClientData.contracts[0].id + '/export-doc/pdf?lang=' + $i18n.locale" target="_blank" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors text-center">
                                     <svg class="w-8 h-8 text-amber-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                         <path d="M14 2v6h6" opacity="0.3"/>
                                     </svg>
                                     <span class="text-[10px] font-bold text-amber-800">Shartnoma</span>
-                                </button>
-                                <button @click="exportExcel(detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors">
+                                </a>
+                                <a :href="'/admin/crm/ledger/' + detailedClientData.contracts[0].id + '/export/xlsx?lang=' + $i18n.locale" target="_blank" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors text-center">
                                     <svg class="w-8 h-8 text-emerald-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                         <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
                                     </svg>
                                     <span class="text-[10px] font-bold text-emerald-800">Grafik</span>
-                                </button>
+                                </a>
                                 <button @click="selectClientForDetail(detailedClientData)" class="flex-1 flex flex-col items-center justify-center p-2 border border-gray-200 hover:bg-gray-50 rounded-2xl transition-colors">
                                     <svg class="w-8 h-8 text-gray-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" />

@@ -251,12 +251,34 @@ const cancelContract = async (id) => {
     }
 };
 
-const forceActivateContract = async () => {
+const showSotildiConfirmModal = ref(false);
+const sotildiAccountId = ref('');
+const sotildiPaymentMethod = ref('bank');
+
+watch(sotildiAccountId, (newAccountId) => {
+    if (newAccountId && props.cashRegisters) {
+        const reg = props.cashRegisters.find(r => r.id === newAccountId);
+        if (reg) {
+            if (reg.type === 'bank') {
+                sotildiPaymentMethod.value = 'bank';
+            } else if (reg.type === 'cash') {
+                sotildiPaymentMethod.value = 'main';
+            } else {
+                sotildiPaymentMethod.value = 'credit';
+            }
+        }
+    }
+});
+
+const forceActivateContract = async (accountId = null, paymentMethod = null) => {
     if (!confirm("Haqiqatan ham ushbu shartnomani qo'lda 'Sotildi' holatiga o'tkazmoqchimisiz?")) return;
     
     isProcessing.value = true;
     try {
-        await axios.post(route('admin.contracts.force_activate', selectedContract.value.id));
+        await axios.post(route('admin.contracts.force_activate', selectedContract.value.id), {
+            account_id: accountId,
+            payment_method: paymentMethod
+        });
         router.reload({ only: ['contracts'] });
         
         // Update local state to reflect changes instantly
@@ -268,6 +290,22 @@ const forceActivateContract = async () => {
     } finally {
         isProcessing.value = false;
     }
+};
+
+const handleSotildiClick = () => {
+    if (selectedContract.value.down_payment > 0) {
+        sotildiAccountId.value = '';
+        sotildiPaymentMethod.value = 'bank';
+        showSotildiConfirmModal.value = true;
+    } else {
+        forceActivateContract();
+    }
+};
+
+const confirmForceActivate = async () => {
+    if (!sotildiAccountId.value) return;
+    showSotildiConfirmModal.value = false;
+    await forceActivateContract(sotildiAccountId.value, sotildiPaymentMethod.value);
 };
 
 function recalculatePenalty() {
@@ -3437,7 +3475,7 @@ function submitPromoRule() {
                             <button @click="fileInput.click()" :disabled="isProcessing" class="px-6 py-2 bg-blue-50 border border-blue-500 text-blue-600 font-bold text-xs uppercase tracking-widest rounded hover:bg-blue-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Yuklash
                             </button>
-                            <button v-if="selectedContract.status !== 'active'" @click="forceActivateContract" :disabled="isProcessing" class="px-6 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 font-bold text-xs uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
+                            <button v-if="selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-6 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 font-bold text-xs uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sotildi qilish
                             </button>
                         </div>
@@ -3591,6 +3629,66 @@ function submitPromoRule() {
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </div>
+
+        <!-- SOTILDI QILISH CONFIRMATION MODAL -->
+        <div v-if="showSotildiConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50 backdrop-blur-sm transition-all">
+            <div class="bg-white border border-gray-200 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden flex flex-col p-6 space-y-4">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase">Sotishni tasdiqlash</h3>
+                    <button @click="showSotildiConfirmModal = false" class="text-gray-400 hover:text-gray-600 text-sm font-bold">
+                        ✕
+                    </button>
+                </div>
+                
+                <div class="text-xs text-gray-600 space-y-1">
+                    <p>Shartnoma bo'yicha boshlang'ich to'lov miqdori: <strong class="text-emerald-600">{{ $currency(selectedContract?.down_payment) }}</strong></p>
+                    <p class="text-[10px] text-gray-400 font-mono">Iltimos, ushbu mablag' qaysi kassaga kirim qilinishini belgilang.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                            * Kassaga yo'naltirish
+                        </label>
+                        <select v-model="sotildiAccountId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <option value="" disabled>Kassani tanlang</option>
+                            <option v-for="reg in cashRegisters" :key="reg.id" :value="reg.id">
+                                {{ reg.name }} ({{ reg.currency }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <div v-if="sotildiAccountId">
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                            * To'lov usuli
+                        </label>
+                        <div class="flex gap-6 mt-1">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="sotildiPaymentMethod" value="main" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                <span class="text-xs text-gray-900 font-medium">Naqd</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="sotildiPaymentMethod" value="bank" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                <span class="text-xs text-gray-900 font-medium">Bank</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="sotildiPaymentMethod" value="credit" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                <span class="text-xs text-gray-900 font-medium">Nasiya</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-end pt-3 border-t border-gray-100">
+                    <button type="button" @click="showSotildiConfirmModal = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors">
+                        Bekor qilish
+                    </button>
+                    <button type="button" @click="confirmForceActivate" :disabled="!sotildiAccountId || isProcessing" class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
+                        Tasdiqlash & Sotildi qilish
+                    </button>
                 </div>
             </div>
         </div>

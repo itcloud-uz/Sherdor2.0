@@ -139,12 +139,24 @@ class ContractController extends Controller
                     ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
                 );
 
+                $counterpartyId = null;
+                if ($contract->client_id) {
+                    $counterpartyId = \App\Models\Counterparty::where([
+                        'customable_type' => 'App\Models\Client',
+                        'customable_id' => $contract->client_id,
+                    ])->value('id');
+                }
+                $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
+
                 $transaction = \App\Models\Transaction::create([
                     'type' => 'income',
                     'amount' => $paymentAmount,
                     'account_type' => $paymentMethod,
                     'account_id' => $accountId,
                     'contract_id' => $contract->id,
+                    'client_id' => $contract->client_id,
+                    'counterparty_id' => $counterpartyId,
+                    'building_id' => $buildingId,
                     'category_id' => $incomeCategory->id,
                     'status' => 'pending',
                     'transaction_date' => $baseDate,
@@ -420,10 +432,62 @@ class ContractController extends Controller
             }
         }
 
+        // Retrieve counterparty and building info
+        $counterpartyId = null;
+        if ($contract->client_id) {
+            $counterpartyId = \App\Models\Counterparty::where([
+                'customable_type' => 'App\Models\Client',
+                'customable_id' => $contract->client_id,
+            ])->value('id');
+        }
+        $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
+
         // Auto-approve any pending transactions associated with this contract
         $pendingTransactions = \App\Models\Transaction::where('contract_id', $contract->id)->where('status', 'pending')->get();
         $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
-        foreach ($pendingTransactions as $tx) {
+
+        if ($pendingTransactions->count() > 0) {
+            foreach ($pendingTransactions as $tx) {
+                $updateData = [
+                    'client_id' => $contract->client_id,
+                    'counterparty_id' => $counterpartyId,
+                    'building_id' => $buildingId,
+                ];
+
+                if (request()->has('account_id')) {
+                    $updateData['account_id'] = request()->input('account_id');
+                }
+                if (request()->has('payment_method')) {
+                    $updateData['account_type'] = request()->input('payment_method');
+                }
+
+                $tx->update($updateData);
+                $financeController->approveTransaction(request(), $tx);
+            }
+        } elseif ($contract->down_payment > 0 && request()->has('account_id')) {
+            $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+            );
+
+            $paymentMethod = request()->input('payment_method', 'bank');
+
+            $tx = \App\Models\Transaction::create([
+                'type' => 'income',
+                'amount' => $contract->down_payment,
+                'account_type' => $paymentMethod,
+                'account_id' => request()->input('account_id'),
+                'contract_id' => $contract->id,
+                'client_id' => $contract->client_id,
+                'counterparty_id' => $counterpartyId,
+                'building_id' => $buildingId,
+                'category_id' => $incomeCategory->id,
+                'status' => 'pending',
+                'transaction_date' => now(),
+                'notes' => 'Shartnoma aktivlashtirish paytidagi to\'lov (' . $paymentMethod . ')',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+
             $financeController->approveTransaction(request(), $tx);
         }
 

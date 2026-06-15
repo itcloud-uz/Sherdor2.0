@@ -22,7 +22,8 @@ class FacilityController extends Controller
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,
             'clients' => $clients,
-            'partners' => $partners
+            'partners' => $partners,
+            'registers' => \App\Models\CashRegister::where('is_active', true)->get()
         ]);
     }
 

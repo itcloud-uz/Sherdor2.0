@@ -11,7 +11,8 @@ const { t } = useI18n();
 const props = defineProps({
     buildings: Array,
     clients: Array,
-    partners: Array
+    partners: Array,
+    registers: Array
 });
 
 const page = usePage();
@@ -985,6 +986,7 @@ const contractForm = ref({
     created_at: '',
     actual_paid_amount: '',
     payment_method: 'bank',
+    account_id: '',
     floor: '',
     rooms: ''
 });
@@ -1008,6 +1010,7 @@ function openSellUnit(unit) {
         created_at: '',
         actual_paid_amount: '',
         payment_method: 'bank',
+        account_id: '',
         floor: selectedFloor.value?.floor_number || '',
         rooms: unit.rooms_count || ''
     };
@@ -1038,6 +1041,29 @@ watch(() => contractForm.value.payment_type, (newType) => {
     } else {
         contractForm.value.down_payment = '';
         contractForm.value.term_months = 36;
+    }
+});
+
+watch(() => contractForm.value.account_id, (newAccountId) => {
+    if (newAccountId && props.registers) {
+        const reg = props.registers.find(r => r.id === newAccountId);
+        if (reg) {
+            if (reg.type === 'bank') {
+                contractForm.value.payment_method = 'bank';
+            } else if (reg.type === 'cash') {
+                contractForm.value.payment_method = 'main';
+            } else {
+                contractForm.value.payment_method = 'credit';
+            }
+        }
+    }
+}, { immediate: true });
+
+watch(() => contractForm.value.actual_paid_amount, (newAmount) => {
+    if (Number(newAmount) > 0 && !contractForm.value.account_id) {
+        if (props.registers && props.registers.length > 0) {
+            contractForm.value.account_id = props.registers[0].id;
+        }
     }
 });
 
@@ -3118,6 +3144,49 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <label class="block text-sm font-medium text-gray-500 mb-1">Muddat (oy)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                     <input type="number" v-model.number="contractForm.term_months" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- To'lov Qabul Qilish (Payment Acceptance) -->
+                                        <div class="pt-4 border-t border-gray-100 mt-4 space-y-4">
+                                            <h4 class="text-sm font-bold text-[#10b981] font-sans uppercase">To'lov qabul qilish</h4>
+                                            
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-500 mb-1">To'langan summa</label>
+                                                    <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                        <input type="number" v-model.number="contractForm.actual_paid_amount" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" placeholder="Ixtiyoriy" />
+                                                    </div>
+                                                </div>
+                                                <div v-if="Number(contractForm.actual_paid_amount) > 0">
+                                                    <label class="block text-sm font-medium text-gray-500 mb-1">Kassaga yo'naltirish</label>
+                                                    <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                        <select v-model="contractForm.account_id" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white" :required="Number(contractForm.actual_paid_amount) > 0">
+                                                            <option value="" disabled>Kassani tanlang</option>
+                                                            <option v-for="reg in registers" :key="reg.id" :value="reg.id">
+                                                                {{ reg.name }} ({{ reg.currency }})
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="Number(contractForm.actual_paid_amount) > 0">
+                                                <label class="block text-sm font-medium text-gray-500 mb-2">To'lov usuli</label>
+                                                <div class="flex gap-6">
+                                                    <label class="flex items-center gap-2 cursor-pointer">
+                                                        <input type="radio" v-model="contractForm.payment_method" value="main" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                        <span class="text-sm text-gray-900 font-medium">Naqd</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-2 cursor-pointer">
+                                                        <input type="radio" v-model="contractForm.payment_method" value="bank" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                        <span class="text-sm text-gray-900 font-medium">Bank</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-2 cursor-pointer">
+                                                        <input type="radio" v-model="contractForm.payment_method" value="credit" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300">
+                                                        <span class="text-sm text-gray-900 font-medium">Nasiya</span>
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>

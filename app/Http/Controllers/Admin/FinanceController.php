@@ -75,7 +75,7 @@ class FinanceController extends Controller
         $counterparties = Counterparty::with('customable')->get();
         $buildings = Building::latest()->get();
         $clients = Client::latest()->limit(500)->get();
-        $contracts = \App\Models\Contract::with(['client', 'unit', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
+        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
 
         $transactions = [];
         $financialLiabilities = [];
@@ -186,6 +186,7 @@ class FinanceController extends Controller
             'counterparty_id' => 'nullable|exists:counterparties,id',
             'invoice_id' => 'nullable|exists:invoices,id',
             'contract_id' => 'nullable|exists:contracts,id',
+            'payment_schedule_id' => 'nullable|exists:payment_schedules,id',
             'client_id' => 'nullable|exists:clients,id',
             'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
@@ -214,12 +215,9 @@ class FinanceController extends Controller
             }
         }
 
-        // 1. Object Lock Check
+        // 1. Object Lock Check - Relaxed
         $register = CashRegister::findOrFail($validated['account_id']);
-        if ($register->building_id) {
-            if (!empty($validated['building_id']) && $validated['building_id'] != $register->building_id) {
-                return redirect()->back()->withErrors(['error' => "Ushbu kassa faqat '" . ($register->building->name ?? 'Belgilangan') . "' obyekti uchun ishlatilishi mumkin!"]);
-            }
+        if (empty($validated['building_id']) && $register->building_id) {
             $validated['building_id'] = $register->building_id;
         }
 
@@ -513,42 +511,71 @@ class FinanceController extends Controller
 
             if ($appliedAmount > 0) {
                 $remainingAmount = $appliedAmount;
-                
-                $schedules = PaymentSchedule::where('contract_id', $transaction->contract_id)
-                    ->where('status', '!=', 'paid')
-                    ->orderBy('due_date', 'asc')
-                    ->get();
-                    
-                $isFirst = true;
-                foreach ($schedules as $schedule) {
-                    if ($remainingAmount <= 0) break;
-                    
-                    $needed = $schedule->expected_amount - $schedule->paid_amount;
-                    if ($needed <= 0) continue;
-                    
-                    if ($remainingAmount >= $needed) {
-                        $schedule->paid_amount += $needed;
-                        $schedule->status = 'paid';
-                        $schedule->actual_payment_date = $transaction->transaction_date ?? now();
-                        $schedule->payment_method = $transaction->payment_method;
-                        if ($isFirst) {
-                            $schedule->original_payment_amount = $transaction->amount;
-                            $isFirst = false;
+
+                // Prioritize specific payment schedule if selected
+                if ($transaction->payment_schedule_id) {
+                    $specificSchedule = PaymentSchedule::find($transaction->payment_schedule_id);
+                    if ($specificSchedule && $specificSchedule->contract_id == $transaction->contract_id && $specificSchedule->status !== 'paid') {
+                        $needed = $specificSchedule->expected_amount - $specificSchedule->paid_amount;
+                        if ($needed > 0) {
+                            if ($remainingAmount >= $needed) {
+                                $specificSchedule->paid_amount += $needed;
+                                $specificSchedule->status = 'paid';
+                                $specificSchedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                $specificSchedule->payment_method = $transaction->payment_method;
+                                $specificSchedule->original_payment_amount = $transaction->amount;
+                                $specificSchedule->save();
+                                $remainingAmount -= $needed;
+                            } else {
+                                $specificSchedule->paid_amount += $remainingAmount;
+                                $specificSchedule->status = 'partial';
+                                $specificSchedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                $specificSchedule->payment_method = $transaction->payment_method;
+                                $specificSchedule->original_payment_amount = $transaction->amount;
+                                $specificSchedule->save();
+                                $remainingAmount = 0;
+                            }
                         }
-                        $remainingAmount -= $needed;
-                    } else {
-                        $schedule->paid_amount += $remainingAmount;
-                        $schedule->status = 'partial';
-                        $schedule->actual_payment_date = $transaction->transaction_date ?? now();
-                        $schedule->payment_method = $transaction->payment_method;
-                        if ($isFirst) {
-                            $schedule->original_payment_amount = $transaction->amount;
-                            $isFirst = false;
-                        }
-                        $remainingAmount = 0;
                     }
-                    
-                    $schedule->save();
+                }
+
+                if ($remainingAmount > 0) {
+                    $schedules = PaymentSchedule::where('contract_id', $transaction->contract_id)
+                        ->where('status', '!=', 'paid')
+                        ->orderBy('due_date', 'asc')
+                        ->get();
+                        
+                    $isFirst = !$transaction->payment_schedule_id;
+                    foreach ($schedules as $schedule) {
+                        if ($remainingAmount <= 0) break;
+                        
+                        $needed = $schedule->expected_amount - $schedule->paid_amount;
+                        if ($needed <= 0) continue;
+                        
+                        if ($remainingAmount >= $needed) {
+                            $schedule->paid_amount += $needed;
+                            $schedule->status = 'paid';
+                            $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                            $schedule->payment_method = $transaction->payment_method;
+                            if ($isFirst) {
+                                $schedule->original_payment_amount = $transaction->amount;
+                                $isFirst = false;
+                            }
+                            $remainingAmount -= $needed;
+                        } else {
+                            $schedule->paid_amount += $remainingAmount;
+                            $schedule->status = 'partial';
+                            $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                            $schedule->payment_method = $transaction->payment_method;
+                            if ($isFirst) {
+                                $schedule->original_payment_amount = $transaction->amount;
+                                $isFirst = false;
+                            }
+                            $remainingAmount = 0;
+                        }
+                        
+                        $schedule->save();
+                    }
                 }
                 
                 if ($remainingAmount > 0) {

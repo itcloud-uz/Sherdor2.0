@@ -186,28 +186,58 @@ const selectedCounterpartyObj = computed(() => {
 });
 
 const availableInvoices = computed(() => {
-    if (!form.value.counterparty_id || !props.invoices) return [];
-    return props.invoices.filter(inv => {
-        if (inv.counterparty_id !== form.value.counterparty_id) return false;
-        if (inv.status === 'paid') return false;
-        
-        if (invoiceSearchQuery.value) {
-            const q = invoiceSearchQuery.value.toLowerCase();
-            if (!inv.invoice_number.toLowerCase().includes(q)) return false;
-        }
-        
-        if (invoiceCurrencyFilter.value) {
-            if (inv.currency !== invoiceCurrencyFilter.value) return false;
-        }
-        
-        return true;
-    });
+    if (!form.value.counterparty_id) return [];
+    
+    let items = [];
+    
+    // 1. Add actual invoices
+    if (props.invoices) {
+        props.invoices.forEach(inv => {
+            if (inv.counterparty_id === form.value.counterparty_id && inv.status !== 'paid') {
+                items.push({
+                    id: inv.id,
+                    invoice_number: inv.invoice_number,
+                    due_date: inv.due_date,
+                    status: inv.status,
+                    amount: inv.amount,
+                    paid_amount: inv.paid_amount || 0,
+                    currency: inv.currency
+                });
+            }
+        });
+    }
+    
+    // 2. Add client contract payment schedules as pseudo-invoices
+    if (requiresClient.value && form.value.contract_id && contractSchedules.value) {
+        contractSchedules.value.forEach(s => {
+            items.push({
+                id: 'sched_' + s.id,
+                invoice_number: `To'lov Rejasi (Muddati: ${s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum'})`,
+                due_date: s.due_date,
+                status: s.status === 'partial' ? 'qisman' : 'yangi',
+                amount: s.expected_amount,
+                paid_amount: s.paid_amount || 0,
+                currency: form.value.currency || 'UZS'
+            });
+        });
+    }
+    
+    // Apply search query filter
+    if (invoiceSearchQuery.value) {
+        const q = invoiceSearchQuery.value.toLowerCase();
+        items = items.filter(item => item.invoice_number.toLowerCase().includes(q));
+    }
+    
+    // Apply currency filter
+    if (invoiceCurrencyFilter.value) {
+        items = items.filter(item => item.currency === invoiceCurrencyFilter.value);
+    }
+    
+    return items;
 });
 
 const availableInvoicesCurrencies = computed(() => {
-    if (!form.value.counterparty_id || !props.invoices) return [];
-    const filtered = props.invoices.filter(inv => inv.counterparty_id === form.value.counterparty_id && inv.status !== 'paid');
-    return [...new Set(filtered.map(inv => inv.currency))];
+    return [...new Set(availableInvoices.value.map(item => item.currency))];
 });
 
 const isAllInvoicesSelected = computed({
@@ -237,13 +267,21 @@ function confirmInvoiceSelection() {
     if (selectedInvoiceIds.value.length > 0) {
         let totalUnpaid = 0;
         selectedInvoiceIds.value.forEach(id => {
-            const inv = props.invoices?.find(i => i.id === id);
+            const inv = availableInvoices.value.find(i => i.id === id);
             if (inv) {
                 const unpaid = parseFloat(inv.amount) - parseFloat(inv.paid_amount || 0);
                 totalUnpaid += unpaid;
             }
         });
         form.value.amount = totalUnpaid.toFixed(2);
+
+        // If the selected invoice is a schedule, set the payment_schedule_id
+        const firstId = selectedInvoiceIds.value[0];
+        if (typeof firstId === 'string' && firstId.startsWith('sched_')) {
+            form.value.payment_schedule_id = parseInt(firstId.replace('sched_', ''));
+        } else {
+            form.value.payment_schedule_id = '';
+        }
     }
     showInvoiceSelectorModal.value = false;
 }
@@ -653,7 +691,8 @@ const form = ref({
     longitude: null,
     source: 'admin_panel',
     exchange_rate: 1.0,
-    converted_amount: ''
+    converted_amount: '',
+    payment_schedule_id: ''
 });
 
 const transferForm = ref({
@@ -747,8 +786,25 @@ watch(() => form.value.account_id, (newVal) => {
     }
 });
 
-// Watch counterparty selection to sync polymorphic fields
+// Watch contract selection to automatically select the building
+watch(() => form.value.contract_id, (newVal) => {
+    if (newVal && props.contracts) {
+        const c = props.contracts.find(x => x.id === newVal);
+        if (c) {
+            const buildingId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            if (buildingId) {
+                form.value.building_id = buildingId;
+            }
+        }
+    }
+});
+
+// Watch counterparty selection to sync polymorphic fields and reset sub-selections
 watch(() => form.value.counterparty_id, (newVal) => {
+    form.value.contract_id = '';
+    form.value.payment_schedule_id = '';
+    selectedInvoiceIds.value = [];
+
     if (newVal && props.counterparties) {
         const c = props.counterparties.find(x => x.id === newVal);
         if (c) {
@@ -1127,15 +1183,34 @@ function submitTransaction() {
         form.value.notes = form.value.notes ? (form.value.notes + ' | Izoh: ' + extraNotesInput.value) : extraNotesInput.value;
     }
 
-    // Add selected invoices detail to notes and set primary invoice_id
+    // Add selected invoices detail to notes and set primary invoice_id / payment_schedule_id
     if (selectedInvoiceIds.value.length > 0) {
-        form.value.invoice_id = selectedInvoiceIds.value[0]; // Set primary invoice ID
-        const invoiceCodes = selectedInvoiceIds.value.map(id => {
-            const inv = props.invoices?.find(i => i.id === id);
-            return inv ? inv.invoice_number : `#${id}`;
-        });
-        const invoiceNotes = `Fakturalar: ${invoiceCodes.join(', ')}`;
-        form.value.notes = form.value.notes ? `${form.value.notes} (${invoiceNotes})` : invoiceNotes;
+        const firstId = selectedInvoiceIds.value[0];
+        if (typeof firstId === 'string' && firstId.startsWith('sched_')) {
+            form.value.payment_schedule_id = parseInt(firstId.replace('sched_', ''));
+            form.value.invoice_id = null;
+            
+            const invoiceCodes = selectedInvoiceIds.value.map(id => {
+                const schedId = parseInt(id.replace('sched_', ''));
+                const s = contractSchedules.value.find(x => x.id === schedId);
+                return s ? `To'lov Rejasi (Muddati: ${s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum'})` : `#${id}`;
+            });
+            const invoiceNotes = `Bog'langan To'lov Rejalari: ${invoiceCodes.join(', ')}`;
+            form.value.notes = form.value.notes ? `${form.value.notes} (${invoiceNotes})` : invoiceNotes;
+        } else {
+            form.value.invoice_id = firstId; // Set primary invoice ID
+            form.value.payment_schedule_id = null;
+            const invoiceCodes = selectedInvoiceIds.value.map(id => {
+                const inv = props.invoices?.find(i => i.id === id);
+                return inv ? inv.invoice_number : `#${id}`;
+            });
+            const invoiceNotes = `Fakturalar: ${invoiceCodes.join(', ')}`;
+            form.value.notes = form.value.notes ? `${form.value.notes} (${invoiceNotes})` : invoiceNotes;
+        }
+    } else {
+        // If no invoice selector item was selected, but we chose from the inline list directly:
+        // payment_schedule_id is already set on form.value.payment_schedule_id. We set invoice_id to null.
+        form.value.invoice_id = null;
     }
 
     if (requiresPartner.value || form.value.account_type === 'partner') {
@@ -1169,7 +1244,7 @@ function submitTransaction() {
                 brigade_id: '', partner_id: '', machinery_id: '', machine_owner_id: '', building_id: '', supplier_id: '', 
                 fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').slice(0, 10), 
                 attachment: null, auto_approve: true, notes: '', latitude: null, longitude: null, source: 'admin_panel', 
-                target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
+                target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: '', payment_schedule_id: ''
             };
             selectedInvoiceIds.value = [];
             extraNotesInput.value = '';
@@ -1203,7 +1278,7 @@ function openQuickTransaction(type) {
         brigade_id: '', partner_id: '', machinery_id: '', machine_owner_id: '', building_id: selectedRegister.value?.building_id || '', supplier_id: '', 
         fixed_asset_id: '', transaction_date: new Date().toLocaleString('sv').slice(0, 10), 
         attachment: null, auto_approve: true, notes: '', latitude: gpsCoords.value.latitude, longitude: gpsCoords.value.longitude, source: 'admin_panel', 
-        target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: ''
+        target_type: null, target_id: null, exchange_rate: 1.0, converted_amount: '', payment_schedule_id: ''
     };
     const activeRegister = selectedRegister.value;
     if (activeRegister) {
@@ -1558,8 +1633,15 @@ const categoriesSummary = computed(() => {
 });
 
 function selectScheduleAmount(s) {
-    const remaining = Number(s.expected_amount) - Number(s.paid_amount || 0);
-    form.value.amount = remaining > 0 ? remaining : 0;
+    selectedInvoiceIds.value = [];
+    if (form.value.payment_schedule_id === s.id) {
+        form.value.payment_schedule_id = '';
+        form.value.amount = '';
+    } else {
+        form.value.payment_schedule_id = s.id;
+        const remaining = Number(s.expected_amount) - Number(s.paid_amount || 0);
+        form.value.amount = remaining > 0 ? remaining : 0;
+    }
 }
 
 // Format money values
@@ -3890,7 +3972,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Qurilish obyekti
                             </label>
-                            <select v-model="form.building_id" :disabled="selectedRegisterHasBuilding" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Qurilish obyekti tanlang</option>
                                 <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
                                     {{ b.name }}
@@ -4002,7 +4084,8 @@ function formatMoney(amount, currency = 'UZS') {
                                         <div class="max-h-36 overflow-y-auto space-y-1">
                                             <div v-for="(s, index) in contractSchedules" :key="s.id" 
                                                  @click="selectScheduleAmount(s)"
-                                                 class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border border-transparent hover:border-orange-200 hover:bg-orange-50/50 group">
+                                                 class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
+                                                 :class="form.payment_schedule_id === s.id ? 'border-orange-500 bg-orange-50/60 font-bold shadow-sm' : 'border-transparent hover:border-orange-200 hover:bg-orange-50/50'">
                                                 <div class="flex items-center gap-2">
                                                     <span class="w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-mono text-[9px]">
                                                         {{ index + 1 }}
@@ -4097,7 +4180,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 </div>
                                 <div v-if="selectedInvoiceIds.length > 0" class="flex flex-wrap gap-1.5">
                                     <span v-for="id in selectedInvoiceIds" :key="id" class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2.5 py-0.5 text-[10px] text-slate-700 font-mono shadow-sm">
-                                        {{ props.invoices?.find(i => i.id === id)?.invoice_number || `#${id}` }}
+                                        {{ props.invoices?.find(i => i.id === id)?.invoice_number || (typeof id === 'string' && id.startsWith('sched_') ? 'To\'lov Rejasi #' + id.replace('sched_', '') : `#${id}`) }}
                                         <button type="button" @click="selectedInvoiceIds = selectedInvoiceIds.filter(x => x !== id)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
                                     </span>
                                 </div>
@@ -4187,7 +4270,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <input type="checkbox" :value="inv.id" v-model="selectedInvoiceIds" class="rounded border-slate-350 text-orange-500 focus:ring-orange-500 w-4 h-4 cursor-pointer">
                             <div>
                                 <span class="block text-xs font-bold text-slate-900 font-mono">{{ inv.invoice_number }}</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5 block font-mono">{{ new Date(inv.due_date).toLocaleDateString() }}</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5 block font-mono">{{ inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'Noma\'lum' }}</span>
                             </div>
                             <!-- badge "Yangi" -->
                             <span class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-100 uppercase">

@@ -117,12 +117,9 @@ class BotApiController extends Controller
 
         $register = CashRegister::findOrFail($request->account_id);
         
-        // Object Lock Check
+        // Object Lock Check - Relaxed
         $buildingId = $request->building_id;
-        if ($register->building_id) {
-            if (!empty($buildingId) && $buildingId != $register->building_id) {
-                return response()->json(['error' => "Ushbu kassa faqat '" . ($register->building->name ?? 'Belgilangan') . "' obyekti uchun ishlatilishi mumkin!"], 400);
-            }
+        if (empty($buildingId) && $register->building_id) {
             $buildingId = $register->building_id;
         }
 

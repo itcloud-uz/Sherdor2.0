@@ -42,17 +42,22 @@ async def verify_user(chat_id: str):
     data, status = await _request("POST", "/bot/v1/verify-user", {"chat_id": str(chat_id)})
     return data, status
 
-async def send_transaction(chat_id: str, type_: str, amount: float, account_type: str, payment_method: str, category: str, description: str = ""):
+async def get_metadata():
+    return await _request("GET", "/bot/v1/meta")
+
+async def send_transaction(chat_id: str, type_: str, amount: float, account_id: int, payment_method: str, category_id: int, description: str = "", extra_params: dict = None):
     payload = {
         "chat_id": str(chat_id),
         "type": type_,
         "amount": amount,
-        "account_type": account_type,
+        "account_id": account_id,
         "payment_method": payment_method,
-        "category": category,
+        "category_id": category_id,
         "description": description,
         "source": "telegram"
     }
+    if extra_params:
+        payload.update(extra_params)
     return await _request("POST", "/bot/v1/transactions", payload)
 
 async def get_pending_transactions():

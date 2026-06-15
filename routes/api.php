@@ -18,6 +18,7 @@ Route::post('/leads', [\App\Http\Controllers\Api\LeadController::class, 'store']
 // Telegram Bot API Endpoints
 Route::middleware([\App\Http\Middleware\BotApiMiddleware::class])->prefix('bot/v1')->group(function () {
     Route::post('/verify-user', [\App\Http\Controllers\Api\BotApiController::class, 'verifyUser']);
+    Route::get('/meta', [\App\Http\Controllers\Api\BotApiController::class, 'getMetadata']);
     Route::post('/transactions', [\App\Http\Controllers\Api\BotApiController::class, 'createTransaction']);
     Route::get('/transactions/pending', [\App\Http\Controllers\Api\BotApiController::class, 'getPendingTransactions']);
     Route::post('/transactions/approve', [\App\Http\Controllers\Api\BotApiController::class, 'approveTransaction']);

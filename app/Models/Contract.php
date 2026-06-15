@@ -131,11 +131,15 @@ class Contract extends Model
                 $monthly = $remaining / $this->term_months;
                 $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
                 for ($i = 1; $i <= $this->term_months; $i++) {
+                    $dueDate = $baseDate->copy()->addMonths($i);
+                    $status = $dueDate->isPast() ? 'overdue' : 'pending';
+                    
                     \App\Models\PaymentSchedule::create([
                         'contract_id' => $this->id,
                         'expected_amount' => $monthly,
-                        'due_date' => $baseDate->copy()->addMonths($i),
-                        'status' => 'pending'
+                        'remaining_debt' => $monthly,
+                        'due_date' => $dueDate,
+                        'status' => $status
                     ]);
                 }
             }

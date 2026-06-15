@@ -34,13 +34,15 @@ class ContractObserver
 
         for ($i = 1; $i <= $contract->term_months; $i++) {
             $dueDate = $startDate->copy()->addMonths($i);
+            $status = $dueDate->isPast() ? 'overdue' : 'pending';
             
             $schedules[] = [
                 'contract_id' => $contract->id,
                 'expected_amount' => $monthlyExpectedAmount,
+                'remaining_debt' => $monthlyExpectedAmount,
                 'paid_amount' => 0,
                 'due_date' => $dueDate->format('Y-m-d'),
-                'status' => 'pending',
+                'status' => $status,
                 'created_at' => $startDate->toDateTimeString(),
                 'updated_at' => $startDate->toDateTimeString(),
             ];

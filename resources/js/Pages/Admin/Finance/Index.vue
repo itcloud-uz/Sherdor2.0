@@ -1343,7 +1343,19 @@ const contractApproveForm = ref({ applied_amount: 0, refund_amount: 0, account_i
 
 watch(() => contractApproveForm.value.applied_amount, (newVal) => {
     if (selectedContractTxn.value) {
-        contractApproveForm.value.refund_amount = Math.max(0, selectedContractTxn.value.amount - newVal);
+        const diff = Math.max(0, selectedContractTxn.value.amount - Number(newVal));
+        if (contractApproveForm.value.refund_amount !== diff) {
+            contractApproveForm.value.refund_amount = diff;
+        }
+    }
+});
+
+watch(() => contractApproveForm.value.refund_amount, (newVal) => {
+    if (selectedContractTxn.value) {
+        const diff = Math.max(0, selectedContractTxn.value.amount - Number(newVal));
+        if (contractApproveForm.value.applied_amount !== diff) {
+            contractApproveForm.value.applied_amount = diff;
+        }
     }
 });
 
@@ -3846,7 +3858,7 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
-                        <input :value="contractApproveForm.refund_amount" type="number" readonly class="bg-gray-100 border border-gray-200 text-gray-500 rounded-md w-full h-9 font-bold">
+                        <input v-model="contractApproveForm.refund_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 px-3 font-bold" required>
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1 uppercase">Qabul qiluvchi Kassa / Hisob *</label>

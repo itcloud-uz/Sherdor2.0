@@ -101,7 +101,7 @@ class FinanceController extends Controller
         $pendingExpenses = Transaction::where('status', 'pending')->where('type', 'expense')->sum('amount');
 
         // Tab-specific queries
-        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
+        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11 || $tab === 12) {
             $transactions = Transaction::with([
                 'creator', 
                 'approver', 

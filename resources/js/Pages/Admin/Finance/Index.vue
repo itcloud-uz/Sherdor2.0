@@ -3098,6 +3098,82 @@ function formatMoney(amount, currency = 'UZS') {
                     </div>
                 </div>
             </div>
+
+            <!-- TAB 12: Botdan kiritilgan kirimlar -->
+            <div v-if="activeTab === 12" class="space-y-6">
+                <!-- Title & Actions Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Botdan kiritilgan kirimlar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Telegram Bot orqali kiritilgan barcha kirim va chiqim operatsiyalari ro'yxati</p>
+                    </div>
+                </div>
+
+                <!-- Bot Incomes Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4">ID</th>
+                                    <th class="p-4">Sana</th>
+                                    <th class="p-4">Kassa / Hisob</th>
+                                    <th class="p-4">Kategoriya</th>
+                                    <th class="p-4 text-right">Summa</th>
+                                    <th class="p-4">Kiritgan xodim</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="t in (props.transactions || []).filter(x => x.source === 'telegram')" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
+                                    <td class="p-4 text-gray-500">{{ new Date(t.transaction_date || t.created_at).toLocaleDateString() }}</td>
+                                    <td class="p-4 text-gray-750 font-bold">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                            {{ t.category?.name || 'Telegram Bot' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
+                                    </td>
+                                    <td class="p-4 text-gray-700 font-semibold">{{ t.creator?.name || '-' }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border" 
+                                            :class="t.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : (t.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-150' : 'bg-red-50 text-red-700 border-red-150')">
+                                            {{ t.status === 'approved' ? 'Tasdiqlangan' : (t.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan') }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex justify-center gap-2">
+                                            <!-- View -->
+                                            <button @click="openReceipt(t)" class="p-1 text-gray-500 hover:text-blue-600 border border-gray-200 rounded-md hover:bg-blue-50 transition-all" title="Ko'rish">
+                                                👁️
+                                            </button>
+                                            <!-- Approve (if pending) -->
+                                            <button v-if="t.status === 'pending' && isAdmin" @click="approve(t.id)" :disabled="isProcessing" class="px-2 py-1 text-[10px] font-bold uppercase bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all rounded-lg" title="Tasdiqlash">
+                                                Tasdiqlash
+                                            </button>
+                                            <!-- Edit -->
+                                            <button v-if="isAdmin" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
+                                                ✏️
+                                            </button>
+                                            <!-- Delete -->
+                                            <button v-if="isAdmin" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!(props.transactions || []).filter(x => x.source === 'telegram').length">
+                                    <td colspan="8" class="p-8 text-center text-gray-400">Bot orqali kiritilgan tranzaksiyalar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- MODALS & PORTALS -->

@@ -1202,11 +1202,11 @@ function submitUnifiedSell() {
                     contract_type: currentSellingUnit.value.type === 'commercial' ? 'commercial' : 'residential',
                     price_per_sqm: contractForm.value.price_per_sqm,
                     total_amount: contractForm.value.total_amount,
-                    down_payment: contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment,
+                    down_payment: contractForm.value.down_payment || contractForm.value.total_amount,
                     term_months: contractForm.value.payment_type === 'full' ? 1 : contractForm.value.term_months,
                     payment_type: contractForm.value.payment_type,
                     created_at: contractForm.value.created_at || quickClientForm.value.created_at,
-                    actual_paid_amount: contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment,
+                    actual_paid_amount: contractForm.value.actual_paid_amount || (contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment),
                     payment_method: 'bank',
                     floor: selectedFloor.value?.floor_number || '',
                     rooms: currentSellingUnit.value.rooms_count || ''

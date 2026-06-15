@@ -525,7 +525,12 @@ const clientPayments = computed(() => {
 });
 
 const clientDebts = computed(() => {
-    return (props.counterparties || []).filter(c => c.type === 'client');
+    return (props.counterparties || [])
+        .filter(c => c.type === 'client' && Number(c.balance || 0) < 0)
+        .map(c => ({
+            ...c,
+            debt_amount: Math.abs(Number(c.balance))
+        }));
 });
 
 const clientPaymentsSearch = ref('');
@@ -2701,7 +2706,7 @@ function formatMoney(amount, currency = 'UZS') {
                                     <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
                                     <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
                                     <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
-                                    <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.balance) }}</td>
+                                    <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.debt_amount) }}</td>
                                 </tr>
                                 <tr v-if="!filteredClientDebts.length">
                                     <td colspan="4" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
@@ -2992,13 +2997,39 @@ function formatMoney(amount, currency = 'UZS') {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0)" :key="c.id" class="hover:bg-gray-50">
+                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) < 0)" :key="c.id" class="hover:bg-gray-50">
                                         <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
                                         <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
-                                        <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.balance) }}</td>
+                                        <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(Math.abs(c.balance)) }}</td>
+                                    </tr>
+                                    <tr v-if="!(props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) < 0).length">
+                                        <td colspan="3" class="p-4 text-center text-gray-400">Mijozlardan qarzdorlik yo'q.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Overpayments Table -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-650 font-mono">Mijozlarga qaytarilishi kerak bo'lgan ortiqcha to'lovlar (Kreditorlik)</h3>
+                        <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-50 text-emerald-700 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-4">Mijoz</th>
+                                        <th class="p-4">Telefon</th>
+                                        <th class="p-4 text-right">Ortiqcha To'lov</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0)" :key="c.id" class="hover:bg-emerald-50/20">
+                                        <td class="p-4 font-bold text-slate-900">{{ c.name }}</td>
+                                        <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
+                                        <td class="p-4 text-right font-bold text-emerald-600">{{ formatMoney(c.balance) }}</td>
                                     </tr>
                                     <tr v-if="!(props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0).length">
-                                        <td colspan="3" class="p-4 text-center text-gray-400">Mijozlardan qarzdorlik yo'q.</td>
+                                        <td colspan="3" class="p-4 text-center text-gray-400">Ortiqcha to'lovlar yo'q.</td>
                                     </tr>
                                 </tbody>
                             </table>

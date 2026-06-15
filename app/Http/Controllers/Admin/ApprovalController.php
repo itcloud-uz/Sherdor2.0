@@ -76,6 +76,17 @@ class ApprovalController extends Controller
                     // Generate Payment Schedules
                     $contract->generatePaymentSchedules();
 
+                    // Deduct purchase price from client counterparty balance
+                    if ($contract->client_id) {
+                        $counterparty = \App\Models\Counterparty::where([
+                            'customable_type' => 'App\Models\Client',
+                            'customable_id' => $contract->client_id,
+                        ])->first();
+                        if ($counterparty) {
+                            $counterparty->decrement('balance', $contract->total_amount);
+                        }
+                    }
+
                     // Create and auto-approve transaction for the down payment/initial payment
                     $paymentAmount = $contract->down_payment;
                     if ($paymentAmount > 0) {

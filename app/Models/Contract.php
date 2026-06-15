@@ -154,6 +154,17 @@ class Contract extends Model
             // Generate Payment Schedules
             $this->generatePaymentSchedules();
 
+            // Deduct purchase price from client counterparty balance
+            if ($this->client_id) {
+                $counterparty = \App\Models\Counterparty::where([
+                    'customable_type' => 'App\Models\Client',
+                    'customable_id' => $this->client_id,
+                ])->first();
+                if ($counterparty) {
+                    $counterparty->decrement('balance', $this->total_amount);
+                }
+            }
+
             // Auto-approve any pending transactions associated with this contract
             $pendingTransactions = \App\Models\Transaction::where('contract_id', $this->id)->where('status', 'pending')->get();
             $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
@@ -171,21 +182,15 @@ class Contract extends Model
             $this->unit->update(['status' => 'available']);
         }
 
-        // Calculate total amount paid for this contract
-        $totalPaid = \App\Models\Transaction::where('contract_id', $this->id)
-            ->where('status', 'approved')
-            ->where('type', 'income')
-            ->sum('amount');
-
-        if ($totalPaid > 0 && $this->client_id) {
+        if ($this->client_id) {
             $counterparty = \App\Models\Counterparty::where([
                 'customable_type' => 'App\Models\Client',
                 'customable_id' => $this->client_id,
             ])->first();
 
             if ($counterparty) {
-                // Deduct the paid amount to represent refund obligation (negative balance / liability)
-                $counterparty->decrement('balance', $totalPaid);
+                // Revert the purchase price debt
+                $counterparty->increment('balance', $this->total_amount);
             }
         }
     }

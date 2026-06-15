@@ -409,6 +409,17 @@ class ContractController extends Controller
         // Generate Payment Schedules
         $contract->generatePaymentSchedules();
 
+        // Deduct purchase price from client counterparty balance
+        if ($contract->client_id) {
+            $counterparty = \App\Models\Counterparty::where([
+                'customable_type' => 'App\Models\Client',
+                'customable_id' => $contract->client_id,
+            ])->first();
+            if ($counterparty) {
+                $counterparty->decrement('balance', $contract->total_amount);
+            }
+        }
+
         // Auto-approve any pending transactions associated with this contract
         $pendingTransactions = \App\Models\Transaction::where('contract_id', $contract->id)->where('status', 'pending')->get();
         $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);

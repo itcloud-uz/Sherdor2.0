@@ -9,36 +9,42 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class LedgerExportController extends Controller
 {
-    public function exportPdf(Contract $contract)
+    public function exportPdf(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
+        $type = $request->query('type'); // 'down_payment' or 'installments'
 
-        $pdf = Pdf::loadView('exports.client_ledger', compact('contract'));
-        return $pdf->download("ledger_{$contract->id}.pdf");
+        $pdf = Pdf::loadView('exports.client_ledger', compact('contract', 'type'));
+        $suffix = $type ? "_{$type}" : "";
+        return $pdf->download("ledger_{$contract->id}{$suffix}.pdf");
     }
 
-    public function exportDocx(Contract $contract)
+    public function exportDocx(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
+        $type = $request->query('type');
         
+        $suffix = $type ? "_{$type}" : "";
         $headers = [
             "Content-type" => "application/vnd.ms-word",
-            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}.doc"
+            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}{$suffix}.doc"
         ];
 
-        return response()->view('exports.client_ledger', compact('contract'), 200, $headers);
+        return response()->view('exports.client_ledger', compact('contract', 'type'), 200, $headers);
     }
 
-    public function exportXlsx(Contract $contract)
+    public function exportXlsx(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
+        $type = $request->query('type');
         
+        $suffix = $type ? "_{$type}" : "";
         $headers = [
             "Content-type" => "application/vnd.ms-excel",
-            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}.xls"
+            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}{$suffix}.xls"
         ];
 
-        return response()->view('exports.client_ledger', compact('contract'), 200, $headers);
+        return response()->view('exports.client_ledger', compact('contract', 'type'), 200, $headers);
     }
 
     public function exportContractPdf(Contract $contract, Request $request)

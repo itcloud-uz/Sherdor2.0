@@ -1467,27 +1467,14 @@ const clientPayments = computed(() => {
     );
 });
 
-const calculatedSchedules = computed(() => {
-    if (!selectedContract.value || !selectedContract.value.payment_schedules) return [];
+function computeLedgerRows(schedulesToProcess, startingBalance, paymentsToProcess) {
+    let running_balance = startingBalance;
+    const firstDueDate = schedulesToProcess.length > 0 ? new Date(schedulesToProcess[0].due_date) : null;
     
-    // Sort schedules by due_date
-    const schedules = [...selectedContract.value.payment_schedules].sort((a, b) => 
-        new Date(a.due_date) - new Date(b.due_date)
-    );
-    
-    // Sort approved income transactions
-    const payments = [...clientPayments.value].sort((a, b) => 
-        new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at)
-    );
-    
-    let running_balance = Number(selectedContract.value.down_payment || 0);
-    const firstDueDate = schedules.length > 0 ? new Date(schedules[0].due_date) : null;
-    
-    // Transactions before the first monthly schedule's due date offset the down payment
     const prePayments = [];
     const remainingPayments = [];
     
-    payments.forEach(p => {
+    paymentsToProcess.forEach(p => {
         const pDate = new Date(p.transaction_date || p.created_at);
         if (firstDueDate && pDate < firstDueDate) {
             prePayments.push(p);
@@ -1502,14 +1489,13 @@ const calculatedSchedules = computed(() => {
     
     const rows = [];
     
-    for (let i = 0; i < schedules.length; i++) {
-        const s = schedules[i];
+    for (let i = 0; i < schedulesToProcess.length; i++) {
+        const s = schedulesToProcess[i];
         const currentDueDate = new Date(s.due_date);
-        const nextDueDate = (i < schedules.length - 1) ? new Date(schedules[i+1].due_date) : null;
+        const nextDueDate = (i < schedulesToProcess.length - 1) ? new Date(schedulesToProcess[i+1].due_date) : null;
         
         running_balance += Number(s.expected_amount || 0);
         
-        // Find all transactions in [currentDueDate, nextDueDate)
         const periodPayments = [];
         const nextRemaining = [];
         
@@ -1567,7 +1553,53 @@ const calculatedSchedules = computed(() => {
         nextRemaining.forEach(p => remainingPayments.push(p));
     }
     
-    return rows;
+    return { rows, remainingPayments };
+}
+
+const splitLedgerData = computed(() => {
+    if (!selectedContract.value || !selectedContract.value.payment_schedules) {
+        return { downPaymentRows: [], installmentRows: [], isSplit: false };
+    }
+    
+    const isSplit = selectedContract.value.is_down_payment_split;
+    const splitMonths = parseInt(selectedContract.value.down_payment_split_months) || 1;
+    
+    // Sort schedules by due_date
+    const allSchedules = [...selectedContract.value.payment_schedules].sort((a, b) => 
+        new Date(a.due_date) - new Date(b.due_date)
+    );
+    
+    const payments = [...clientPayments.value].sort((a, b) => 
+        new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at)
+    );
+    
+    if (isSplit) {
+        const dpSchedules = allSchedules.slice(0, splitMonths);
+        const instSchedules = allSchedules.slice(splitMonths);
+        
+        const dpResult = computeLedgerRows(dpSchedules, 0, payments);
+        const instResult = computeLedgerRows(instSchedules, 0, dpResult.remainingPayments);
+        
+        return {
+            downPaymentRows: dpResult.rows,
+            installmentRows: instResult.rows,
+            isSplit: true
+        };
+    } else {
+        const result = computeLedgerRows(allSchedules, Number(selectedContract.value.down_payment || 0), payments);
+        return {
+            downPaymentRows: [],
+            installmentRows: result.rows,
+            isSplit: false
+        };
+    }
+});
+
+const calculatedSchedules = computed(() => {
+    if (!splitLedgerData.value.isSplit) {
+        return splitLedgerData.value.installmentRows;
+    }
+    return [...splitLedgerData.value.downPaymentRows, ...splitLedgerData.value.installmentRows];
 });
 
 function openScheduleModal(contract) {
@@ -3503,15 +3535,31 @@ function submitPromoRule() {
                     
                     <!-- ACTION HUB & SETTINGS -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                        <div class="flex items-center gap-3">
-                            <a :href="`/admin/crm/ledger/${selectedContract.id}/export/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-black transition-all shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Mijoz shaxsiy varaqasi (PDF)
-                            </a>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <template v-if="splitLedgerData.isSplit">
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/pdf?type=down_payment&lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-amber-50 border border-amber-500 text-amber-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-amber-600 hover:text-black transition-all shadow-sm">
+                                    📄 Boshlang'ich to'lov varaqasi (PDF)
+                                </a>
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/pdf?type=installments&lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-black transition-all shadow-sm">
+                                    📄 Asosiy shartnoma varaqasi (PDF)
+                                </a>
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?type=down_payment&lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-700 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
+                                    📊 Boshlang'ich to'lov varaqasi (Excel)
+                                </a>
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?type=installments&lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
+                                    📊 Asosiy shartnoma varaqasi (Excel)
+                                </a>
+                            </template>
+                            <template v-else>
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-black transition-all shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Mijoz shaxsiy varaqasi (PDF)
+                                </a>
+                                <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Mijoz shaxsiy varaqasi (Excel)
+                                </a>
+                            </template>
                             <a :href="`/admin/crm/contracts/${selectedContract.id}/export-doc/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple text-neon-purple text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-purple hover:text-black transition-all shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Shartnoma
-                            </a>
-                            <a :href="`/admin/crm/ledger/${selectedContract.id}/export/xlsx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-emerald-50 border border-emerald-500 text-emerald-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-emerald-600 hover:text-black transition-all shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Mijoz shaxsiy varaqasi (Excel)
                             </a>
                             <button @click="cancelContract(selectedContract.id)" :disabled="isProcessing" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                                 🚫 Bekor qilish
@@ -3584,11 +3632,172 @@ function submitPromoRule() {
                         </div>
                     </div>
 
-                    <!-- LEDGER TABLE -->
-                    <div class="overflow-x-auto rounded-xl border border-gray-200">
+                    <!-- LEDGER TABLES -->
+                    <div v-if="splitLedgerData.isSplit">
+                        <!-- Down Payment Table -->
+                        <div class="mb-8">
+                            <h3 class="text-sm font-bold text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-600 shadow-sm animate-pulse"></span>
+                                Boshlang'ich to'lovni bo'lib to'lash grafigi (Alohida mijoz varaqasi)
+                            </h3>
+                            <div class="overflow-x-auto rounded-xl border border-amber-200 bg-white">
+                                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                        <tr class="border-b border-amber-200 bg-white hover:bg-gray-50 transition-colors">
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'langan Sana</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('expected') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Asl To'lov</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'lov Summasi</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'lov Usuli</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('remaining_debt') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('penalty_accrued') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider text-right">{{ $t('status') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr 
+                                            v-for="(schedule, index) in splitLedgerData.downPaymentRows" 
+                                            :key="schedule.id" 
+                                            class="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white hover:bg-gray-50 transition-colors"
+                                            :class="{'bg-amber-50/30 border-l-2 border-l-amber-500': schedule.remaining_debt > 0 && new Date(schedule.due_date) < new Date()}"
+                                        >
+                                            <td class="p-3 text-sm font-bold text-gray-900">{{ index + 1 }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">{{ schedule.due_date }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/60">
+                                                <div v-if="editingScheduleId === schedule.id">
+                                                    <input type="date" v-model="editingActualPaymentDate" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-28 text-gray-900 text-xs py-1 px-2">
+                                                </div>
+                                                <div v-else>
+                                                    {{ schedule.actual_payment_date || '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-blue-600">{{ $currency(schedule.expected_amount) }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">
+                                                {{ schedule.original_payment_amount > 0 ? $currency(schedule.original_payment_amount) : '-' }}
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-emerald-600">
+                                                <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
+                                                    <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
+                                                    <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
+                                                    <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
+                                                </div>
+                                                <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
+                                                    {{ $currency(schedule.paid_amount || 0) }}
+                                                    <span class="text-[10px] opacity-0 group-hover:opacity-100 text-blue-600 transition-opacity border border-blue-200 rounded px-1"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">
+                                                <div v-if="editingScheduleId === schedule.id">
+                                                    <select v-model="editingPaymentMethod" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20 text-gray-900 text-xs py-1 px-2">
+                                                        <option value="naqd">Naqd</option>
+                                                        <option value="bank">Bank</option>
+                                                        <option value="karta">Karta</option>
+                                                    </select>
+                                                </div>
+                                                <div v-else class="uppercase text-xs" :class="{'text-blue-600': schedule.payment_method === 'bank', 'text-emerald-600': schedule.payment_method === 'naqd', 'text-indigo-600': schedule.payment_method === 'karta'}">
+                                                    {{ schedule.payment_method || '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-indigo-600">{{ $currency(schedule.remaining_debt || 0) }}</td>
+                                            <td class="p-3 text-sm font-mono text-indigo-600">{{ $currency(schedule.penalty_for_this_month || 0) }}</td>
+                                            <td class="p-3 text-right">
+                                                <span class="inline-block px-2 py-1 rounded text-[10px] uppercase tracking-widest border"
+                                                    :class="{ 'bg-emerald-50 text-emerald-600 border-emerald-200': schedule.status === 'paid', 'bg-amber-50 text-amber-600 border-amber-200': schedule.status === 'partial', 'bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm': schedule.status === 'overdue', ' text-gray-500 border-gray-300': schedule.status === 'pending' }">
+                                                    {{ schedule.status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Installments Table -->
+                        <div>
+                            <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-sm animate-pulse"></span>
+                                Asosiy shartnoma bo'lib to'lash grafigi
+                            </h3>
+                            <div class="overflow-x-auto rounded-xl border border-indigo-200 bg-white">
+                                <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                        <tr class="border-b border-indigo-200 bg-white hover:bg-gray-50 transition-colors">
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'langan Sana</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('expected') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Asl To'lov</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'lov Summasi</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'lov Usuli</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('remaining_debt') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('penalty_accrued') }}</th>
+                                            <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider text-right">{{ $t('status') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr 
+                                            v-for="(schedule, index) in splitLedgerData.installmentRows" 
+                                            :key="schedule.id" 
+                                            class="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white hover:bg-gray-50 transition-colors"
+                                            :class="{'bg-indigo-50/30 border-l-2 border-l-indigo-500': schedule.remaining_debt > 0 && new Date(schedule.due_date) < new Date()}"
+                                        >
+                                            <td class="p-3 text-sm font-bold text-gray-900">{{ index + 1 }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">{{ schedule.due_date }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/60">
+                                                <div v-if="editingScheduleId === schedule.id">
+                                                    <input type="date" v-model="editingActualPaymentDate" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-28 text-gray-900 text-xs py-1 px-2">
+                                                </div>
+                                                <div v-else>
+                                                    {{ schedule.actual_payment_date || '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-blue-600">{{ $currency(schedule.expected_amount) }}</td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">
+                                                {{ schedule.original_payment_amount > 0 ? $currency(schedule.original_payment_amount) : '-' }}
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-emerald-600">
+                                                <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
+                                                    <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
+                                                    <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
+                                                    <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
+                                                </div>
+                                                <div v-else class="flex items-center gap-2 cursor-pointer group" @click="editSchedule(schedule)">
+                                                    {{ $currency(schedule.paid_amount || 0) }}
+                                                    <span class="text-[10px] opacity-0 group-hover:opacity-100 text-blue-600 transition-opacity border border-blue-200 rounded px-1"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-gray-900/80">
+                                                <div v-if="editingScheduleId === schedule.id">
+                                                    <select v-model="editingPaymentMethod" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20 text-gray-900 text-xs py-1 px-2">
+                                                        <option value="naqd">Naqd</option>
+                                                        <option value="bank">Bank</option>
+                                                        <option value="karta">Karta</option>
+                                                    </select>
+                                                </div>
+                                                <div v-else class="uppercase text-xs" :class="{'text-blue-600': schedule.payment_method === 'bank', 'text-emerald-600': schedule.payment_method === 'naqd', 'text-indigo-600': schedule.payment_method === 'karta'}">
+                                                    {{ schedule.payment_method || '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-sm font-mono text-indigo-600">{{ $currency(schedule.remaining_debt || 0) }}</td>
+                                            <td class="p-3 text-sm font-mono text-indigo-600">{{ $currency(schedule.penalty_for_this_month || 0) }}</td>
+                                            <td class="p-3 text-right">
+                                                <span class="inline-block px-2 py-1 rounded text-[10px] uppercase tracking-widest border"
+                                                    :class="{ 'bg-emerald-50 text-emerald-600 border-emerald-200': schedule.status === 'paid', 'bg-amber-50 text-amber-600 border-amber-200': schedule.status === 'partial', 'bg-indigo-50 text-indigo-600 border-neon-magenta/30 shadow-sm': schedule.status === 'overdue', ' text-gray-500 border-gray-300': schedule.status === 'pending' }">
+                                                    {{ schedule.status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
                         <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
                             <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <tr class="border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors">
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('month_no') }}</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">{{ $t('due_date') }}</th>
                                     <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">To'langan Sana</th>
@@ -3605,7 +3814,7 @@ function submitPromoRule() {
                                 <tr 
                                     v-for="(schedule, index) in calculatedSchedules" 
                                     :key="schedule.id" 
-                                    class="border-b border-gray-100 hover:/[0.03] transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                                    class="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white hover:bg-gray-50 transition-colors"
                                     :class="{'bg-indigo-50 border-l-2 border-l-neon-magenta': schedule.remaining_debt > 0 && new Date(schedule.due_date) < new Date()}"
                                 >
                                     <td class="p-3 text-sm font-bold text-gray-900">{{ index + 1 }}</td>

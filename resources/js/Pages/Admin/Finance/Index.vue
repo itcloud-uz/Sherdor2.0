@@ -59,8 +59,11 @@ const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
 const isAdmin = computed(() => {
-    const role = (page.props.auth.user?.role || '').toLowerCase();
-    return role === 'admin' || role === 'super-admin' || role === 'super_admin';
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    const rawRoles = user.roles || [];
+    const roles = rawRoles.map(r => (typeof r === 'string' ? r : r.name || '').toLowerCase());
+    return roles.includes('admin') || roles.includes('super-admin') || roles.includes('super_admin');
 });
 
 // Tab 11: Reports States
@@ -1309,6 +1312,8 @@ function getRegisterBuildingName(accountId) {
     const reg = props.registers.find(r => r.id === accountId);
     return reg && reg.building ? reg.building.name : null;
 }
+
+
 
 function reject(id) {
     isProcessing.value = true;
@@ -3729,11 +3734,16 @@ function formatMoney(amount, currency = 'UZS') {
 
                     <!-- Warning Alerts -->
                     <div class="space-y-2 pt-2">
+                        <div class="p-3 bg-gray-50 border border-gray-150 rounded-xl text-[11px] font-mono space-y-1">
+                            <div>Dastlabki tanlangan kassa: <strong class="text-gray-900">{{ getRegisterName(selectedContractTxn?.account_id) }}</strong></div>
+                            <div>Yo'naltirilayotgan kassa: <strong class="text-blue-700">{{ getRegisterName(contractApproveForm.account_id) }}</strong></div>
+                        </div>
+
                         <div v-if="contractApproveForm.account_id !== selectedContractTxn?.account_id" class="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-[11px] font-semibold">
-                            ⚠️ Diqqat: Pul dastlab tanlangan hisobdan boshqa hisobga yo'naltirilmoqda!
+                            ⚠️ Diqqat: Pul dastlab tanlangan hisobdan boshqa hisobga yo'naltirilmoqda! ({{ getRegisterName(selectedContractTxn?.account_id) }} ➔ {{ getRegisterName(contractApproveForm.account_id) }})
                         </div>
                         <div v-else class="p-3 bg-emerald-50 border border-emerald-150 text-emerald-700 rounded-xl text-[11px] font-semibold">
-                            ✓ Pul dastlab tanlangan kassa hisobiga tushadi.
+                            ✓ Kassa o'zgartirilmadi, pul dastlab tanlangan '{{ getRegisterName(selectedContractTxn?.account_id) }}' kassa hisobiga tushadi.
                         </div>
                         <div v-if="getRegisterBuildingName(contractApproveForm.account_id)" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-[11px]">
                             ℹ️ Ushbu kassa faqat <strong>{{ getRegisterBuildingName(contractApproveForm.account_id) }}</strong> obyekti uchun cheklangan.
@@ -3772,11 +3782,16 @@ function formatMoney(amount, currency = 'UZS') {
 
                     <!-- Warning Alerts -->
                     <div class="space-y-2 pt-2">
+                        <div class="p-3 bg-gray-50 border border-gray-150 rounded-xl text-[11px] font-mono space-y-1">
+                            <div>Dastlabki tanlangan kassa: <strong class="text-gray-900">{{ getRegisterName(selectedApproveTxn?.account_id) }}</strong></div>
+                            <div>Yo'naltirilayotgan kassa: <strong class="text-blue-700">{{ getRegisterName(approveForm.account_id) }}</strong></div>
+                        </div>
+
                         <div v-if="approveForm.account_id !== selectedApproveTxn?.account_id" class="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-[11px] font-semibold">
-                            ⚠️ Diqqat: Pul dastlab telegramda belgilangan hisobdan boshqa hisobga yo'naltirilmoqda!
+                            ⚠️ Diqqat: Pul telegramda belgilangan hisobdan boshqa hisobga yo'naltirilmoqda! ({{ getRegisterName(selectedApproveTxn?.account_id) }} ➔ {{ getRegisterName(approveForm.account_id) }})
                         </div>
                         <div v-else class="p-3 bg-emerald-50 border border-emerald-150 text-emerald-700 rounded-xl text-[11px] font-semibold">
-                            ✓ Pul telegramda tanlangan kassa hisobiga tushadi/chiqadi.
+                            ✓ Kassa o'zgartirilmadi, pul telegramda tanlangan '{{ getRegisterName(selectedApproveTxn?.account_id) }}' kassa hisobiga tushadi/chiqadi.
                         </div>
                         <div v-if="getRegisterBuildingName(approveForm.account_id)" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-[11px]">
                             ℹ️ Ushbu kassa faqat <strong>{{ getRegisterBuildingName(approveForm.account_id) }}</strong> obyekti uchun cheklangan.

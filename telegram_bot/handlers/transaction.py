@@ -34,13 +34,37 @@ async def ask_next_field(message: Message, state: FSMContext):
     await state.update_data(pending_fields=pending_fields)
 
     if next_field == 'contract':
-        await state.set_state(TransactionState.waiting_for_extra_search)
-        await state.update_data(search_type='contract')
-        await message.answer(
-            "<b>Mijoz shartnomasini tanlash.</b>\n\n"
-            "Mijozning ismi-familiyasi yoki xonadon raqamini kiriting (masalan: 'Ali' yoki '12'):",
-            parse_mode="HTML"
-        )
+        contracts = metadata.get("contracts", [])
+        if contracts:
+            buttons = []
+            for c in contracts:
+                client = c.get('client') or {}
+                unit = c.get('unit') or {}
+                client_name = f"{client.get('first_name', '')} {client.get('last_name', '')}".strip()
+                unit_num = str(unit.get('unit_number', ''))
+                label = f"{client_name} (Xonadon: {unit_num})"
+                buttons.append((label, f"extra_contract_{c['id']}"))
+            
+            if len(contracts) <= 15:
+                await state.set_state(TransactionState.waiting_for_extra_field)
+                await message.answer(
+                    "<b>Mijoz shartnomasini tanlang:</b>",
+                    reply_markup=build_inline_keyboard(buttons, cols=1),
+                    parse_mode="HTML"
+                )
+            else:
+                await state.set_state(TransactionState.waiting_for_extra_field)
+                buttons_display = buttons[:15]
+                buttons_display.append(("🔍 Qidirish (Ism yoki xonadon bo'yicha)", "contract_search_mode"))
+                await message.answer(
+                    "<b>Mijoz shartnomasini tanlang yoki qidiruvdan foydalaning:</b>",
+                    reply_markup=build_inline_keyboard(buttons_display, cols=1),
+                    parse_mode="HTML"
+                )
+        else:
+            await message.answer("🛑 Tizimda faol shartnomalar topilmadi. Amaliyot to'xtatildi.")
+            await state.clear()
+            return
     elif next_field == 'partner':
         partners = metadata.get("partners", [])
         if len(partners) <= 15:
@@ -343,6 +367,15 @@ async def process_extra_search(message: Message, state: FSMContext):
     markup = build_inline_keyboard(buttons, cols=1)
     await message.answer("Quyidagi natijalardan birini tanlang:", reply_markup=markup)
 
+@router.callback_query(F.data == "contract_search_mode")
+async def process_contract_search_mode(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await state.set_state(TransactionState.waiting_for_extra_search)
+    await state.update_data(search_type='contract')
+    await callback.message.answer(
+        "Mijozning ismi-familiyasi yoki xonadon raqamini kiriting (masalan: 'Ali' yoki '12'):"
+    )
+
 @router.callback_query(F.data.startswith("extra_"))
 async def process_extra_callback(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -410,8 +443,26 @@ async def process_extra_callback(callback: CallbackQuery, state: FSMContext):
             await state.update_data(machine_owner_name=mo['name'])
 
     try:
+        state_data = await state.get_data()
+        selected_name = ""
+        if entity_type == 'contract':
+            selected_name = state_data.get("contract_name", "")
+        elif entity_type == 'partner':
+            selected_name = state_data.get("partner_name", "")
+        elif entity_type == 'worker':
+            selected_name = state_data.get("worker_name", "")
+        elif entity_type == 'supplier':
+            selected_name = state_data.get("supplier_name", "")
+        elif entity_type == 'building':
+            selected_name = state_data.get("building_name", "")
+        elif entity_type == 'brigade':
+            selected_name = state_data.get("brigade_name", "")
+        elif entity_type == 'machine_owner':
+            selected_name = state_data.get("machine_owner_name", "")
+            
+        display_name = selected_name if selected_name else f"{entity_type.upper()} #{entity_id}"
         await callback.message.edit_text(
-            callback.message.html_text + f"\n\nTanlandi: <b>{entity_type.upper()} #{entity_id}</b>",
+            callback.message.html_text + f"\n\nTanlandi: <b>{display_name}</b>",
             parse_mode="HTML"
         )
     except Exception:

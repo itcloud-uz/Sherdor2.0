@@ -10,9 +10,17 @@ class PublicReceiptController extends Controller
 {
     public function verify($hash)
     {
-        $transaction = Transaction::with(['creator', 'approver', 'paymentSchedule.contract.client', 'paymentSchedule.contract.unit', 'contract.client', 'contract.unit'])->where('receipt_hash', $hash)->firstOrFail();
+        $transaction = Transaction::with([
+            'creator', 
+            'approver', 
+            'paymentSchedule.contract.client', 
+            'paymentSchedule.contract.unit', 
+            'contract.client', 
+            'contract.unit',
+            'client'
+        ])->where('receipt_hash', $hash)->firstOrFail();
 
-        $client = $transaction->contract?->client ?? $transaction->paymentSchedule?->contract?->client;
+        $client = $transaction->client ?? $transaction->contract?->client ?? $transaction->paymentSchedule?->contract?->client;
 
         // Check if user has authenticated for this specific receipt
         $authKey = 'receipt_auth_' . $transaction->id;
@@ -24,10 +32,15 @@ class PublicReceiptController extends Controller
                     'is_internal' => true
                 ]);
             } else {
+                $firstName = $client->first_name ?? '';
+                $lastName = $client->last_name ?? '';
+                $maskedFirst = $firstName !== '' ? mb_substr($firstName, 0, 1, 'UTF-8') . '***' : '***';
+                $maskedLast = $lastName !== '' ? mb_substr($lastName, 0, 1, 'UTF-8') . '***' : '***';
+                
                 return Inertia::render('Public/ReceiptAuth', [
                     'hash' => $hash,
                     'is_internal' => false,
-                    'client_name_masked' => substr($client->first_name, 0, 1) . '*** ' . substr($client->last_name, 0, 1) . '***'
+                    'client_name_masked' => $maskedFirst . ' ' . $maskedLast
                 ]);
             }
         }
@@ -56,8 +69,8 @@ class PublicReceiptController extends Controller
 
     public function authenticate(\Illuminate\Http\Request $request, $hash)
     {
-        $transaction = Transaction::with(['paymentSchedule.contract.client', 'contract.client'])->where('receipt_hash', $hash)->firstOrFail();
-        $client = $transaction->contract?->client ?? $transaction->paymentSchedule?->contract?->client;
+        $transaction = Transaction::with(['paymentSchedule.contract.client', 'contract.client', 'client'])->where('receipt_hash', $hash)->firstOrFail();
+        $client = $transaction->client ?? $transaction->contract?->client ?? $transaction->paymentSchedule?->contract?->client;
 
         if (!$client) {
             // Internal Employee Authentication
@@ -88,7 +101,7 @@ class PublicReceiptController extends Controller
         $inputPassport = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $request->passport));
         $clientPassport = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $client->passport_number));
 
-        if (str_ends_with($clientPhone, $inputPhone) && $inputPassport === $clientPassport) {
+        if (strlen($inputPhone) >= 7 && strlen($inputPassport) >= 5 && str_ends_with($clientPhone, $inputPhone) && $inputPassport === $clientPassport) {
             session(['receipt_auth_' . $transaction->id => true]);
             return redirect()->route('public.receipt.verify', $hash);
         }

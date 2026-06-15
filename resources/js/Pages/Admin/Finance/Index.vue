@@ -1051,7 +1051,12 @@ const uniqueBuildings = computed(() => {
 
 const clientContracts = computed(() => {
     if (!form.value.client_id || !props.contracts) return [];
-    return props.contracts.filter(c => c.client_id === form.value.client_id);
+    let baseContracts = props.contracts.filter(c => c.client_id === form.value.client_id);
+    if (selectedCategoryName.value === 'mijozga pulni qaytarish' || selectedCategoryName.value === 'mijozga to\'lov qilish' || selectedCategoryName.value === 'client_refund') {
+        return baseContracts.filter(c => c.status === 'cancelled');
+    } else {
+        return baseContracts.filter(c => c.status !== 'cancelled');
+    }
 });
 
 const contractSchedules = computed(() => {

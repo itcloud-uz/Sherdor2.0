@@ -1,6 +1,6 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 const props = defineProps({
     transaction: Object,
@@ -24,12 +24,40 @@ const currency = (value) => {
 // Mask phone number
 const maskPhone = (phone) => {
     if (!phone) return 'N/A';
-    // e.g. +998901234567 -> +998 90 *** ** 67
-    if (phone.length === 13) {
-        return phone.substring(0, 4) + ' ' + phone.substring(4, 6) + ' *** ** ' + phone.substring(11, 13);
+    const cleaned = String(phone).replace(/[^0-9]/g, '');
+    if (cleaned.length >= 9) {
+        const country = cleaned.length > 9 ? '+' + cleaned.substring(0, cleaned.length - 9) : '+998';
+        const operator = cleaned.substring(cleaned.length - 9, cleaned.length - 7);
+        const lastTwo = cleaned.substring(cleaned.length - 2);
+        return `${country} ${operator} *** ** ${lastTwo}`;
     }
     return phone;
 };
+
+const client = computed(() => {
+    return props.transaction.client 
+        || props.transaction.contract?.client 
+        || props.transaction.payment_schedule?.contract?.client;
+});
+
+const clientName = computed(() => {
+    if (!client.value) return 'N/A';
+    const first = client.value.first_name || '';
+    const last = client.value.last_name || '';
+    const middle = client.value.middle_name || '';
+    return `${last} ${first} ${middle}`.trim() || 'N/A';
+});
+
+const clientPhone = computed(() => {
+    return client.value?.phone || '';
+});
+
+const unitNumber = computed(() => {
+    return props.contractDetails?.unit 
+        || props.transaction.contract?.unit?.number 
+        || props.transaction.payment_schedule?.contract?.unit?.number 
+        || 'N/A';
+});
 </script>
 
 <template>
@@ -85,20 +113,20 @@ const maskPhone = (phone) => {
                 </div>
 
                 <!-- Client Info -->
-                <div v-if="transaction.payment_schedule_id && transaction.payment_schedule" class="p-5 border border-white/10 rounded-2xl bg-gradient-to-br from-white/5 to-transparent relative z-10 mb-8">
+                <div v-if="client" class="p-5 border border-white/10 rounded-2xl bg-gradient-to-br from-white/5 to-transparent relative z-10 mb-8">
                     <h3 class="text-xs uppercase tracking-widest text-white/50 mb-4 border-b border-white/10 pb-2">Mijoz Ma'lumotlari</h3>
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
                             <span class="text-text-muted">Ism-Sharif:</span>
-                            <span class="text-white font-bold">{{ transaction.payment_schedule.contract?.client?.first_name }} {{ transaction.payment_schedule.contract?.client?.last_name }}</span>
+                            <span class="text-white font-bold">{{ clientName }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-text-muted">Kvartira (Obyekt):</span>
-                            <span class="text-white font-bold">{{ contractDetails?.unit || 'N/A' }}</span>
+                            <span class="text-white font-bold">{{ unitNumber }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-text-muted">Telefon:</span>
-                            <span class="text-white font-bold">{{ maskPhone(transaction.payment_schedule.contract?.client?.phone) }}</span>
+                            <span class="text-white font-bold">{{ maskPhone(clientPhone) }}</span>
                         </div>
                     </div>
                 </div>

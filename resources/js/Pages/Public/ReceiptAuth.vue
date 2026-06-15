@@ -36,7 +36,7 @@
                                 <input 
                                     v-model="form.phone" 
                                     type="text" 
-                                    class="glass-input w-full pl-10 text-gray-900" 
+                                    class="glass-input w-full pl-10 text-white" 
                                     placeholder="+998 90 123 45 67"
                                     required
                                 >
@@ -53,7 +53,7 @@
                                 <input 
                                     v-model="form.passport" 
                                     type="text" 
-                                    class="glass-input w-full pl-10 text-gray-900 uppercase" 
+                                    class="glass-input w-full pl-10 text-white uppercase" 
                                     placeholder="Masalan: AB1234567"
                                     required
                                 >
@@ -67,7 +67,7 @@
                             <input 
                                 v-model="form.email" 
                                 type="email" 
-                                class="glass-input w-full text-gray-900" 
+                                class="glass-input w-full text-white" 
                                 placeholder="admin@itcloud.uz"
                                 required
                             >
@@ -79,7 +79,7 @@
                             <input 
                                 v-model="form.password" 
                                 type="password" 
-                                class="glass-input w-full text-gray-900" 
+                                class="glass-input w-full text-white" 
                                 placeholder="••••••••"
                                 required
                             >

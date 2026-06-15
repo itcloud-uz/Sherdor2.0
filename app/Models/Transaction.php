@@ -19,6 +19,11 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\User::class, 'created_by');
     }
 
+    public function client()
+    {
+        return $this->belongsTo(\App\Models\Client::class);
+    }
+
     public function approver()
     {
         return $this->belongsTo(\App\Models\User::class, 'approved_by');

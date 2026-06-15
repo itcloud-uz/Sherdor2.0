@@ -1019,6 +1019,36 @@ function forceDeleteCounterparty(id) {
     }
 }
 
+const selectedActions = ref([]);
+
+const isAllSelected = computed(() => {
+    return props.financeActions && props.financeActions.length > 0 && selectedActions.value.length === props.financeActions.length;
+});
+
+function toggleSelectAll() {
+    if (isAllSelected.value) {
+        selectedActions.value = [];
+    } else {
+        selectedActions.value = props.financeActions.map(act => act.id);
+    }
+}
+
+function bulkDestroyActions() {
+    if (selectedActions.value.length === 0) return;
+    if (confirm(`Haqiqatan ham tanlangan ${selectedActions.value.length} ta harakatlar jurnali yozuvini butunlay o'chirib tashlamoqchimisiz?`)) {
+        isProcessing.value = true;
+        router.post(route('admin.finance.actions.bulk_destroy'), {
+            ids: selectedActions.value
+        }, {
+            onSuccess: () => {
+                selectedActions.value = [];
+                isProcessing.value = false;
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
 // Invoices CRUD & Modals
 const showInvoiceModal = ref(false);
 const invoiceForm = ref({
@@ -3479,11 +3509,19 @@ function getCounterpartyStatus(c) {
 
                 <!-- Part 1: Action Logs Table -->
                 <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 font-display">Harakatlar Jurnali</h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 font-display">Harakatlar Jurnali</h3>
+                        <button v-if="selectedActions.length > 0" @click="bulkDestroyActions" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1">
+                            🗑️ Tanlanganlarni tozalash ({{ selectedActions.length }})
+                        </button>
+                    </div>
                     <div class="overflow-x-auto border border-gray-150 rounded-xl">
                         <table class="w-full text-left text-sm font-mono">
                             <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                                 <tr>
+                                    <th class="p-4 w-12 text-center">
+                                        <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="rounded border-gray-300 text-amber-500 focus:ring-amber-500 bg-white">
+                                    </th>
                                     <th class="p-4 w-12">№</th>
                                     <th class="p-4">Sana</th>
                                     <th class="p-4">Foydalanuvchi</th>
@@ -3495,6 +3533,9 @@ function getCounterpartyStatus(c) {
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-for="(act, idx) in props.financeActions" :key="act.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" :value="act.id" v-model="selectedActions" class="rounded border-gray-300 text-amber-500 focus:ring-amber-500 bg-white">
+                                    </td>
                                     <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(act.created_at).toLocaleString() }}</td>
                                     <td class="p-4 font-bold text-gray-900">{{ act.user?.name || '-' }}</td>
@@ -3520,7 +3561,7 @@ function getCounterpartyStatus(c) {
                                     <td class="p-4 text-gray-500 max-w-xs truncate" :title="act.notes">{{ act.notes || '-' }}</td>
                                 </tr>
                                 <tr v-if="!props.financeActions?.length">
-                                    <td colspan="7" class="p-8 text-center text-gray-400">Harakatlar topilmadi.</td>
+                                    <td colspan="8" class="p-8 text-center text-gray-400">Harakatlar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>

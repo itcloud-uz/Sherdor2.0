@@ -134,6 +134,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::delete('/counterparties/{counterparty}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyCounterparty'])->name('counterparties.destroy');
         Route::post('/counterparties/{id}/restore', [\App\Http\Controllers\Admin\FinanceController::class, 'restoreCounterparty'])->name('counterparties.restore');
         Route::delete('/counterparties/{id}/force', [\App\Http\Controllers\Admin\FinanceController::class, 'forceDestroyCounterparty'])->name('counterparties.force_destroy');
+        Route::post('/actions/bulk-delete', [\App\Http\Controllers\Admin\FinanceController::class, 'bulkDestroyActions'])->name('actions.bulk_destroy');
 
         // Invoices
         Route::post('/invoices', [\App\Http\Controllers\Admin\FinanceController::class, 'storeInvoice'])->name('invoices.store');

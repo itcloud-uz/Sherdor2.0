@@ -1810,4 +1810,16 @@ class FinanceController extends Controller
             return redirect()->back()->withErrors(['error' => 'O\'chirishda xatolik yuz berdi: ' . $e->getMessage()]);
         }
     }
+
+    public function bulkDestroyActions(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|exists:finance_actions,id'
+        ]);
+
+        \App\Models\FinanceAction::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('message', 'Tanlangan harakatlar jurnali yozuvlari muvaffaqiyatli o\'chirildi.');
+    }
 }

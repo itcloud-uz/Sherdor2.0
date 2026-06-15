@@ -81,49 +81,133 @@
             </tr>
         </thead>
         <tbody>
-            @php 
+            @php
+                $running_balance = (float)$contract->down_payment;
+                $schedules = $contract->paymentSchedules->sortBy('due_date');
+                
+                $transactions = $contract->transactions->filter(function($t) {
+                    return $t->type === 'income' && $t->status === 'approved';
+                })->sortBy(function($t) {
+                    return $t->transaction_date ?: $t->created_at;
+                });
+                
+                $firstDueDate = $schedules->first() ? \Carbon\Carbon::parse($schedules->first()->due_date) : null;
+                
+                $preTransactions = collect();
+                $remainingTransactions = collect();
+                
+                foreach($transactions as $t) {
+                    $tDate = \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at);
+                    if ($firstDueDate && $tDate->lt($firstDueDate)) {
+                        $preTransactions->push($t);
+                    } else {
+                        $remainingTransactions->push($t);
+                    }
+                }
+                
+                foreach($preTransactions as $t) {
+                    $running_balance -= (float)$t->amount;
+                }
+                
+                $calculated_rows = [];
                 $totalExpected = 0;
                 $totalPaid = 0;
-                $totalDebt = 0;
+                
+                foreach($schedules as $index => $schedule) {
+                    $currentDueDate = \Carbon\Carbon::parse($schedule->due_date);
+                    $nextSchedule = $schedules->values()->get($index + 1);
+                    $nextDueDate = $nextSchedule ? \Carbon\Carbon::parse($nextSchedule->due_date) : null;
+                    
+                    $running_balance += (float)$schedule->expected_amount;
+                    $totalExpected += (float)$schedule->expected_amount;
+                    
+                    $periodTransactions = collect();
+                    $nextRemainingTransactions = collect();
+                    
+                    foreach($remainingTransactions as $t) {
+                        $tDate = \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at);
+                        $isAfterOrEqualCurrent = $tDate->gte($currentDueDate);
+                        $isBeforeNext = $nextDueDate ? $tDate->lt($nextDueDate) : true;
+                        
+                        if ($isAfterOrEqualCurrent && $isBeforeNext) {
+                            $periodTransactions->push($t);
+                        } else {
+                            $nextRemainingTransactions->push($t);
+                        }
+                    }
+                    
+                    $periodPaidSum = (float)$periodTransactions->sum('amount');
+                    $totalPaid += $periodPaidSum;
+                    
+                    $periodPaymentDates = [];
+                    $periodPaymentMethods = [];
+                    
+                    foreach($periodTransactions as $t) {
+                        $dStr = \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y');
+                        if (!in_array($dStr, $periodPaymentDates)) {
+                            $periodPaymentDates[] = $dStr;
+                        }
+                        $method = $t->payment_method ?: 'naqd';
+                        if (!in_array($method, $periodPaymentMethods)) {
+                            $periodPaymentMethods[] = $method;
+                        }
+                    }
+                    
+                    $running_balance -= $periodPaidSum;
+                    
+                    $status = 'pending';
+                    if ($running_balance <= 0) {
+                        $status = 'paid';
+                    } elseif ($periodPaidSum > 0) {
+                        $status = 'partial';
+                    } elseif ($currentDueDate->isPast()) {
+                        $status = 'overdue';
+                    }
+                    
+                    $calculated_rows[] = (object)[
+                        'due_date' => $schedule->due_date,
+                        'expected_amount' => $schedule->expected_amount,
+                        'actual_payment_date' => implode(', ', $periodPaymentDates) ?: '-',
+                        'original_payment_amount' => $periodTransactions->first() ? $periodTransactions->first()->amount : 0,
+                        'paid_amount' => $periodPaidSum,
+                        'payment_method' => implode(', ', $periodPaymentMethods) ?: '-',
+                        'remaining_debt' => $running_balance,
+                        'penalty_for_this_month' => $schedule->penalty_for_this_month,
+                        'status' => $status
+                    ];
+                    
+                    $remainingTransactions = $nextRemainingTransactions;
+                }
             @endphp
-            @foreach($contract->paymentSchedules as $index => $schedule)
-                @php
-                    $totalExpected += $schedule->expected_amount;
-                    $totalPaid += $schedule->paid_amount;
-                    $totalDebt += $schedule->remaining_debt;
-                @endphp
+            @foreach($calculated_rows as $index => $row)
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($row->due_date)->format('d.m.Y') }}</td>
                     <td>
-                        @if($schedule->actual_payment_date)
-                            <div>{{ \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') }}</div>
-                        @else
-                            -
-                        @endif
+                        {{ $row->actual_payment_date }}
                     </td>
-                    <td>{{ number_format($schedule->expected_amount, 2) }}</td>
-                    <td>{{ $schedule->original_payment_amount > 0 ? number_format($schedule->original_payment_amount, 2) : '-' }}</td>
-                    <td>{{ number_format($schedule->paid_amount, 2) }}</td>
-                    <td style="text-transform: uppercase; font-size: 9px;">{{ $schedule->payment_method ?: '-' }}</td>
+                    <td>{{ number_format($row->expected_amount, 2) }}</td>
+                    <td>{{ $row->original_payment_amount > 0 ? number_format($row->original_payment_amount, 2) : '-' }}</td>
+                    <td>{{ number_format($row->paid_amount, 2) }}</td>
+                    <td style="text-transform: uppercase; font-size: 9px;">{{ $row->payment_method }}</td>
                     <td>
-                        @if($schedule->remaining_debt > 0)
-                            <span class="text-danger">{{ number_format($schedule->remaining_debt, 2) }}</span>
+                        @if($row->remaining_debt > 0)
+                            <span class="text-danger">{{ number_format($row->remaining_debt, 2) }}</span>
                         @else
                             0.00
                         @endif
                     </td>
                     <td>
-                        @if($schedule->penalty_for_this_month > 0)
-                            <span class="text-danger">{{ number_format($schedule->penalty_for_this_month, 2) }}</span>
+                        @if($row->penalty_for_this_month > 0)
+                            <span class="text-danger">{{ number_format($row->penalty_for_this_month, 2) }}</span>
                         @else
                             0.00
                         @endif
                     </td>
                     <td>
-                        @if($schedule->status == 'paid')
+                        @if($row->status == 'paid')
                             <strong class="text-success">TO'LANGAN</strong>
-                        @elseif($schedule->status == 'partial')
+                        @elseif($row->status == 'partial')
                             <strong>QISMAN TO'LANGAN</strong>
                         @else
                             <strong class="text-danger">KUTILMOQDA</strong>
@@ -139,7 +223,7 @@
                 <td></td>
                 <td class="font-bold">{{ number_format($totalPaid, 2) }}</td>
                 <td></td>
-                <td class="font-bold text-danger">{{ number_format($totalDebt, 2) }}</td>
+                <td class="font-bold text-danger">{{ number_format($running_balance, 2) }}</td>
                 <td class="font-bold text-danger">{{ number_format($contract->total_penalty_accumulated, 2) }}</td>
                 <td></td>
             </tr>

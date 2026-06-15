@@ -1467,6 +1467,109 @@ const clientPayments = computed(() => {
     );
 });
 
+const calculatedSchedules = computed(() => {
+    if (!selectedContract.value || !selectedContract.value.payment_schedules) return [];
+    
+    // Sort schedules by due_date
+    const schedules = [...selectedContract.value.payment_schedules].sort((a, b) => 
+        new Date(a.due_date) - new Date(b.due_date)
+    );
+    
+    // Sort approved income transactions
+    const payments = [...clientPayments.value].sort((a, b) => 
+        new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at)
+    );
+    
+    let running_balance = Number(selectedContract.value.down_payment || 0);
+    const firstDueDate = schedules.length > 0 ? new Date(schedules[0].due_date) : null;
+    
+    // Transactions before the first monthly schedule's due date offset the down payment
+    const prePayments = [];
+    const remainingPayments = [];
+    
+    payments.forEach(p => {
+        const pDate = new Date(p.transaction_date || p.created_at);
+        if (firstDueDate && pDate < firstDueDate) {
+            prePayments.push(p);
+        } else {
+            remainingPayments.push(p);
+        }
+    });
+    
+    prePayments.forEach(p => {
+        running_balance -= Number(p.amount || 0);
+    });
+    
+    const rows = [];
+    
+    for (let i = 0; i < schedules.length; i++) {
+        const s = schedules[i];
+        const currentDueDate = new Date(s.due_date);
+        const nextDueDate = (i < schedules.length - 1) ? new Date(schedules[i+1].due_date) : null;
+        
+        running_balance += Number(s.expected_amount || 0);
+        
+        // Find all transactions in [currentDueDate, nextDueDate)
+        const periodPayments = [];
+        const nextRemaining = [];
+        
+        remainingPayments.forEach(p => {
+            const pDate = new Date(p.transaction_date || p.created_at);
+            const isAfterOrEqualCurrent = pDate >= currentDueDate;
+            const isBeforeNext = nextDueDate ? (pDate < nextDueDate) : true;
+            
+            if (isAfterOrEqualCurrent && isBeforeNext) {
+                periodPayments.push(p);
+            } else {
+                nextRemaining.push(p);
+            }
+        });
+        
+        const periodPaidSum = periodPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        running_balance -= periodPaidSum;
+        
+        const periodDates = [];
+        const periodMethods = [];
+        periodPayments.forEach(p => {
+            const dateObj = new Date(p.transaction_date || p.created_at);
+            const dStr = String(dateObj.getDate()).padStart(2, '0') + '.' + 
+                         String(dateObj.getMonth() + 1).padStart(2, '0') + '.' + 
+                         dateObj.getFullYear();
+            if (!periodDates.includes(dStr)) periodDates.push(dStr);
+            
+            const method = p.payment_method || 'naqd';
+            if (!periodMethods.includes(method)) periodMethods.push(method);
+        });
+        
+        let status = 'pending';
+        if (running_balance <= 0) {
+            status = 'paid';
+        } else if (periodPaidSum > 0) {
+            status = 'partial';
+        } else if (currentDueDate < new Date()) {
+            status = 'overdue';
+        }
+        
+        rows.push({
+            id: s.id,
+            due_date: s.due_date,
+            expected_amount: s.expected_amount,
+            actual_payment_date: periodDates.join(', ') || null,
+            original_payment_amount: periodPayments.length > 0 ? periodPayments[0].amount : 0,
+            paid_amount: periodPaidSum,
+            payment_method: periodMethods.join(', ') || null,
+            remaining_debt: running_balance,
+            penalty_for_this_month: s.penalty_for_this_month || 0,
+            status: status
+        });
+        
+        remainingPayments.length = 0;
+        nextRemaining.forEach(p => remainingPayments.push(p));
+    }
+    
+    return rows;
+});
+
 function openScheduleModal(contract) {
     selectedContract.value = JSON.parse(JSON.stringify(contract));
     showModal.value = true;
@@ -3500,7 +3603,7 @@ function submitPromoRule() {
                             </thead>
                             <tbody>
                                 <tr 
-                                    v-for="(schedule, index) in selectedContract.payment_schedules" 
+                                    v-for="(schedule, index) in calculatedSchedules" 
                                     :key="schedule.id" 
                                     class="border-b border-gray-100 hover:/[0.03] transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     :class="{'bg-indigo-50 border-l-2 border-l-neon-magenta': schedule.remaining_debt > 0 && new Date(schedule.due_date) < new Date()}"
@@ -3512,7 +3615,7 @@ function submitPromoRule() {
                                             <input type="date" v-model="editingActualPaymentDate" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-28 text-gray-900 text-xs py-1 px-2">
                                         </div>
                                         <div v-else>
-                                            {{ schedule.actual_payment_date ? new Date(schedule.actual_payment_date).toLocaleDateString() : '-' }}
+                                            {{ schedule.actual_payment_date || '-' }}
                                         </div>
                                     </td>
                                     <td class="p-3 text-sm font-mono text-blue-600">{{ $currency(schedule.expected_amount) }}</td>

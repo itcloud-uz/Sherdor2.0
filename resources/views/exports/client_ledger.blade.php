@@ -255,7 +255,7 @@
                     </tr>
                     <tr>
                         <td class="label-cell">Oylik to'lov so'mmasi</td>
-                        <td class="value-cell" style="font-weight: bold;">{{ number_format($contract->payment_schedules->first() ? $contract->payment_schedules->first()->expected_amount : (($contract->total_amount - $contract->down_payment) / ($contract->term_months ?: 1)), 0, ',', ' ') }}</td>
+                        <td class="value-cell" style="font-weight: bold;">{{ number_format($contract->paymentSchedules->first() ? $contract->paymentSchedules->first()->expected_amount : (($contract->total_amount - $contract->down_payment) / ($contract->term_months ?: 1)), 0, ',', ' ') }}</td>
                     </tr>
                 </table>
             </td>

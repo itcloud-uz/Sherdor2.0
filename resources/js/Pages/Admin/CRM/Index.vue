@@ -687,21 +687,21 @@ watch(() => contractForm.value.payment_type, (newType) => {
 });
 
 const filteredCashRegisters = computed(() => {
-    if (!props.cashRegisters) return [];
-    if (contractForm.value.payment_method === 'bank') {
-        return props.cashRegisters.filter(r => r.type === 'bank');
-    } else if (contractForm.value.payment_method === 'main') {
-        return props.cashRegisters.filter(r => r.type === 'cash');
-    }
-    return props.cashRegisters;
+    return props.cashRegisters || [];
 });
 
-watch(() => contractForm.value.payment_method, (newMethod) => {
-    const list = filteredCashRegisters.value;
-    if (list.length > 0) {
-        contractForm.value.account_id = list[0].id;
-    } else {
-        contractForm.value.account_id = '';
+watch(() => contractForm.value.account_id, (newAccountId) => {
+    if (newAccountId && props.cashRegisters) {
+        const reg = props.cashRegisters.find(r => r.id === newAccountId);
+        if (reg) {
+            if (reg.type === 'bank') {
+                contractForm.value.payment_method = 'bank';
+            } else if (reg.type === 'cash') {
+                contractForm.value.payment_method = 'main';
+            } else {
+                contractForm.value.payment_method = 'credit';
+            }
+        }
     }
 }, { immediate: true });
 
@@ -3929,23 +3929,15 @@ function submitPromoRule() {
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
                                 <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">To'lov Usuli</label>
-                                <select v-model="contractForm.payment_method" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
-                                    <option value="bank">{{ $t('bank_account') }}</option>
-                                    <option value="main">{{ $t('cash_account') }}</option>
-                                    <option value="credit">💳 Plastik / Terminal</option>
+                            <div v-if="Number(contractForm.actual_paid_amount) > 0">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
+                                <select v-model="contractForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="Number(contractForm.actual_paid_amount) > 0">
+                                    <option value="" disabled>Kassani tanlang</option>
+                                    <option v-for="register in filteredCashRegisters" :key="register.id" :value="register.id">
+                                        {{ register.name }} ({{ register.type === 'bank' ? 'Bank' : 'Naqd' }})
+                                    </option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="mt-4" v-if="Number(contractForm.actual_paid_amount) > 0">
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
-                            <select v-model="contractForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="Number(contractForm.actual_paid_amount) > 0">
-                                <option value="" disabled>Kassani tanlang</option>
-                                <option v-for="register in filteredCashRegisters" :key="register.id" :value="register.id">
-                                    {{ register.name }} ({{ register.type === 'bank' ? 'Bank' : 'Naqd' }})
-                                </option>
-                            </select>
                         </div>
                         <p v-if="contractForm.actual_paid_amount > 0" class="text-[10px] text-gray-500 mt-2 font-mono">
                             Moliya bo'limi ushbu to'lovni tasdiqlayotganda ortiqcha summa avtomatik ravishda <strong class="text-amber-600">Naqdlashtirish (Qaytim)</strong> navbatiga tushadi.

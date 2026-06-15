@@ -1720,12 +1720,94 @@ class FinanceController extends Controller
     {
         $counterparty = Counterparty::onlyTrashed()->findOrFail($id);
 
-        if ($counterparty->transactions()->count() > 0 || $counterparty->invoices()->count() > 0) {
-            return redirect()->back()->withErrors(['error' => 'Ushbu kontragent bilan bog\'liq tranzaksiyalar yoki hisob-fakturalar mavjud bo\'lgani uchun uni butunlay o\'chirib bo\'lmaydi.']);
+        try {
+            DB::transaction(function () use ($counterparty) {
+                // Disable foreign key constraints to prevent cascading path conflicts in MySQL/SQLite
+                \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+
+                try {
+                    $clientId = null;
+                    $supplierId = null;
+
+                    if ($counterparty->customable_type === 'App\Models\Client' && $counterparty->customable_id) {
+                        $clientId = $counterparty->customable_id;
+                    } elseif ($counterparty->customable_type === 'App\Models\Supplier' && $counterparty->customable_id) {
+                        $supplierId = $counterparty->customable_id;
+                    }
+
+                    // 1. Dissociate transactions
+                    $transactionQuery = \App\Models\Transaction::query();
+                    if ($clientId) {
+                        $transactionQuery->where('counterparty_id', $counterparty->id)
+                            ->orWhere('client_id', $clientId);
+                    } elseif ($supplierId) {
+                        $transactionQuery->where('counterparty_id', $counterparty->id)
+                            ->orWhere('supplier_id', $supplierId);
+                    } else {
+                        $transactionQuery->where('counterparty_id', $counterparty->id);
+                    }
+
+                    $transactionQuery->update([
+                        'counterparty_id' => null,
+                        'client_id' => null,
+                        'contract_id' => null,
+                        'payment_schedule_id' => null,
+                        'supplier_id' => null
+                    ]);
+
+                    // 2. Clean up Client-related tables
+                    if ($clientId) {
+                        // Delete scheduled SMS
+                        \App\Models\ScheduledSms::where('client_id', $clientId)->delete();
+
+                        // Get all contracts for this client
+                        $contracts = \App\Models\Contract::where('client_id', $clientId)->get();
+                        foreach ($contracts as $contract) {
+                            // Delete payment schedules for this contract
+                            \App\Models\PaymentSchedule::where('contract_id', $contract->id)->delete();
+                            // Delete the contract itself
+                            $contract->delete();
+                        }
+
+                        // Delete the client itself
+                        \App\Models\Client::where('id', $clientId)->delete();
+                    }
+
+                    // 3. Clean up Supplier-related tables
+                    if ($supplierId) {
+                        // Delete purchase orders
+                        $orders = \App\Models\PurchaseOrder::where('supplier_id', $supplierId)->get();
+                        foreach ($orders as $order) {
+                            \App\Models\PurchaseOrderItem::where('purchase_order_id', $order->id)->delete();
+                            $order->delete();
+                        }
+
+                        // Delete supplier contracts
+                        \App\Models\SupplierContract::where('supplier_id', $supplierId)->delete();
+
+                        // Delete supplier itself
+                        \App\Models\Supplier::where('id', $supplierId)->delete();
+                    }
+
+                    // 4. Delete invoices
+                    \App\Models\Invoice::where('counterparty_id', $counterparty->id)->delete();
+
+                    // 5. Force delete the counterparty
+                    $counterparty->forceDelete();
+                } finally {
+                    // Re-enable foreign key constraints
+                    \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+                }
+            });
+
+            return redirect()->back()->with('message', 'Mijoz/Kontragent tizimdan butunlay o\'chirildi.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Counterparty force delete failed: " . $e->getMessage(), [
+                'exception' => $e,
+                'counterparty_id' => $id
+            ]);
+
+            return redirect()->back()->withErrors(['error' => 'O\'chirishda xatolik yuz berdi: ' . $e->getMessage()]);
         }
-
-        $counterparty->forceDelete();
-
-        return redirect()->back()->with('message', 'Mijoz/Kontragent tizimdan butunlay o\'chirildi.');
     }
 }

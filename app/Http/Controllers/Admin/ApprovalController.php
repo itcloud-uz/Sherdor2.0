@@ -73,18 +73,41 @@ class ApprovalController extends Controller
                         $unit->update(['status' => 'sold']);
                     }
                     
-                    // Generate Payment Schedules if installment
-                    if (($payload['payment_type'] ?? 'installment') === 'installment' && ($payload['term_months'] ?? 1) > 0) {
-                        $remaining = $contract->total_amount - $contract->down_payment;
-                        $monthly = $remaining / $contract->term_months;
-                        for ($i = 1; $i <= $contract->term_months; $i++) {
-                            \App\Models\PaymentSchedule::create([
-                                'contract_id' => $contract->id,
-                                'expected_amount' => $monthly,
-                                'due_date' => now()->addMonths($i),
-                                'status' => 'pending'
-                            ]);
+                    // Generate Payment Schedules
+                    $contract->generatePaymentSchedules();
+
+                    // Create and auto-approve transaction for the down payment/initial payment
+                    $paymentAmount = $contract->down_payment;
+                    if ($paymentAmount > 0) {
+                        $paymentMethod = $request->account_type ?? 'main';
+                        
+                        $accountId = null;
+                        $regType = $paymentMethod === 'bank' ? 'bank' : 'cash';
+                        $reg = \App\Models\CashRegister::where('type', $regType)->where('is_active', true)->first();
+                        if ($reg) {
+                            $accountId = $reg->id;
                         }
+
+                        $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                            ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                            ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+                        );
+
+                        $transaction = \App\Models\Transaction::create([
+                            'type' => 'income',
+                            'amount' => $paymentAmount,
+                            'account_type' => $paymentMethod,
+                            'account_id' => $accountId,
+                            'contract_id' => $contract->id,
+                            'category_id' => $incomeCategory->id,
+                            'status' => 'pending',
+                            'transaction_date' => now(),
+                            'notes' => 'Shartnoma tasdiqlangandagi boshlang\'ich to\'lov (' . $paymentMethod . ')',
+                            'created_by' => $approval->user_id,
+                        ]);
+
+                        $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+                        $financeController->approveTransaction(request(), $transaction);
                     }
                     break;
 
@@ -157,7 +180,7 @@ class ApprovalController extends Controller
                     
                     // Use FinanceController logic to properly update balances and payment schedules
                     $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
-                    $financeController->approveTransaction($transaction);
+                    $financeController->approveTransaction(request(), $transaction);
                     break;
 
                 case 'finance_expense':

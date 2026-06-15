@@ -183,7 +183,10 @@ class ContractController extends Controller
             'created_at' => 'nullable|date',
             'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number,' . $contract->id,
             'floor' => 'nullable|string|max:50',
-            'rooms' => 'nullable|integer|min:1'
+            'rooms' => 'nullable|integer|min:1',
+            'actual_paid_amount' => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string|in:bank,main,credit',
+            'account_id' => 'nullable|exists:cash_registers,id',
         ]);
 
         if (($validated['payment_type'] ?? 'installment') === 'full') {
@@ -196,6 +199,48 @@ class ContractController extends Controller
             $contract->created_at = $validated['created_at'];
         }
         $contract->save();
+
+        // Handle payment capture
+        $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
+                         ? $validated['actual_paid_amount'] 
+                         : 0;
+
+        if ($paymentAmount > 0) {
+            $paymentMethod = $validated['payment_method'] ?? 'bank';
+            
+            // Determine account_id
+            $accountId = $validated['account_id'] ?? null;
+            if (!$accountId) {
+                $regType = $paymentMethod === 'bank' ? 'bank' : 'cash';
+                $reg = \App\Models\CashRegister::where('type', $regType)->where('is_active', true)->first();
+                if ($reg) {
+                    $accountId = $reg->id;
+                }
+            }
+
+            $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+            );
+
+            $transaction = \App\Models\Transaction::create([
+                'type' => 'income',
+                'amount' => $paymentAmount,
+                'account_type' => $paymentMethod,
+                'account_id' => $accountId,
+                'contract_id' => $contract->id,
+                'category_id' => $incomeCategory->id,
+                'status' => 'pending',
+                'transaction_date' => now()->toDateTimeString(),
+                'notes' => 'Shartnomani tahrirlash paytidagi to\'lov (' . $paymentMethod . ')',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+
+            if ($contract->status === 'active') {
+                $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+                $financeController->approveTransaction(request(), $transaction);
+            }
+        }
 
         return redirect()->back()->with('message', 'Contract updated successfully.');
     }
@@ -359,6 +404,16 @@ class ContractController extends Controller
         $contract->update(['status' => 'active', 'ai_verification_status' => 'passed']);
         if ($contract->unit) {
             $contract->unit->update(['status' => 'sold']);
+        }
+
+        // Generate Payment Schedules
+        $contract->generatePaymentSchedules();
+
+        // Auto-approve any pending transactions associated with this contract
+        $pendingTransactions = \App\Models\Transaction::where('contract_id', $contract->id)->where('status', 'pending')->get();
+        $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+        foreach ($pendingTransactions as $tx) {
+            $financeController->approveTransaction(request(), $tx);
         }
 
         return response()->json([

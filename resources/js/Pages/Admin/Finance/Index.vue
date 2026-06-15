@@ -993,6 +993,14 @@ const clientContracts = computed(() => {
     return props.contracts.filter(c => c.client_id === form.value.client_id);
 });
 
+const contractSchedules = computed(() => {
+    if (!form.value.contract_id || !props.contracts) return [];
+    const contract = props.contracts.find(c => c.id === form.value.contract_id);
+    if (!contract) return [];
+    const schedules = contract.payment_schedules || contract.paymentSchedules || [];
+    return schedules.filter(s => s.status !== 'paid');
+});
+
 const selectedRegisterHasBuilding = computed(() => {
     if (!form.value.account_id || !props.registers) return false;
     const reg = props.registers.find(r => r.id === form.value.account_id);
@@ -1543,6 +1551,11 @@ const categoriesSummary = computed(() => {
     });
     return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
 });
+
+function selectScheduleAmount(s) {
+    const remaining = Number(s.expected_amount) - Number(s.paid_amount || 0);
+    form.value.amount = remaining > 0 ? remaining : 0;
+}
 
 // Format money values
 function formatMoney(amount, currency = 'UZS') {
@@ -3949,6 +3962,37 @@ function formatMoney(amount, currency = 'UZS') {
                                     <span v-if="clientContracts.length === 0" class="text-[10px] text-red-500 mt-1 block font-mono">
                                         Ushbu mijoz uchun faol shartnoma topilmadi!
                                     </span>
+
+                                    <!-- Unpaid Installment Schedule list -->
+                                    <div v-if="form.contract_id && contractSchedules.length > 0" class="mt-2 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
+                                        <label class="block text-[10px] font-mono text-slate-500 uppercase mb-2">
+                                            To'lov Rejasi (Oylik to'lovlar)
+                                        </label>
+                                        <div class="max-h-36 overflow-y-auto space-y-1">
+                                            <div v-for="(s, index) in contractSchedules" :key="s.id" 
+                                                 @click="selectScheduleAmount(s)"
+                                                 class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border border-transparent hover:border-orange-200 hover:bg-orange-50/50 group">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-mono text-[9px]">
+                                                        {{ index + 1 }}
+                                                    </span>
+                                                    <span class="text-slate-600 font-medium">
+                                                        Muddati: {{ s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum' }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
+                                                        {{ formatMoney(Number(s.expected_amount) - Number(s.paid_amount || 0), 'so\'m') }}
+                                                    </span>
+                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                                                          :class="s.status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                                                        {{ s.status === 'partial' ? 'Qisman' : 'Kutilmoqda' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="text-[9px] text-slate-400 mt-1">💡 To'lov summasini avtomatik to'ldirish uchun kerakli qatorni bosing.</p>
+                                    </div>
                                 </div>
                             </div>
 

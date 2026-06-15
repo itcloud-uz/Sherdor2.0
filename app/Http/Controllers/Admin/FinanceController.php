@@ -75,7 +75,7 @@ class FinanceController extends Controller
         $counterparties = Counterparty::with('customable')->get();
         $buildings = Building::latest()->get();
         $clients = Client::latest()->limit(500)->get();
-        $contracts = \App\Models\Contract::with(['client', 'unit'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
+        $contracts = \App\Models\Contract::with(['client', 'unit', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
 
         $transactions = [];
         $financialLiabilities = [];
@@ -101,7 +101,7 @@ class FinanceController extends Controller
         $pendingExpenses = Transaction::where('status', 'pending')->where('type', 'expense')->sum('amount');
 
         // Tab-specific queries
-        if ($tab === 0 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11 || $tab === 12) {
+        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11 || $tab === 12) {
             $transactions = Transaction::with([
                 'creator', 
                 'approver', 

@@ -44,7 +44,8 @@ function openApproveModal(req) {
     const requiresFinance = req.type === 'new_payment' || 
                             req.type === 'finance_expense' ||
                             (req.type === 'hr_action' && (req.payload?.action_type === 'advance' || req.payload?.action_type === 'bonus')) ||
-                            (req.type === 'warehouse_kirim' && req.payload?.cost > 0);
+                            (req.type === 'warehouse_kirim' && req.payload?.cost > 0) ||
+                            (req.type === 'new_contract' && Number(req.payload?.down_payment) > 0);
                             
     if (requiresFinance) {
         showApproveModal.value = true;
@@ -185,7 +186,7 @@ function reject(id) {
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Mablag' (Summa)</label>
                         <div class="text-xl font-bold text-blue-600 mb-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
-                            {{ activeRequest?.type === 'new_payment' || activeRequest?.type === 'finance_expense' || activeRequest?.type === 'hr_action' ? activeRequest?.payload?.amount : activeRequest?.payload?.cost }} so'm
+                            {{ activeRequest?.type === 'new_payment' || activeRequest?.type === 'finance_expense' || activeRequest?.type === 'hr_action' ? activeRequest?.payload?.amount : (activeRequest?.type === 'new_contract' ? activeRequest?.payload?.down_payment : activeRequest?.payload?.cost) }} so'm
                         </div>
                     </div>
                     

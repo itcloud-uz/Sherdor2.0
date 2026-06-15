@@ -119,6 +119,29 @@ class Contract extends Model
         }
     }
 
+    public function generatePaymentSchedules()
+    {
+        if ($this->paymentSchedules()->count() > 0) {
+            return;
+        }
+
+        if (($this->payment_type ?? 'installment') === 'installment' && ($this->term_months ?? 1) > 0) {
+            $remaining = $this->total_amount - $this->down_payment;
+            if ($remaining > 0) {
+                $monthly = $remaining / $this->term_months;
+                $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
+                for ($i = 1; $i <= $this->term_months; $i++) {
+                    \App\Models\PaymentSchedule::create([
+                        'contract_id' => $this->id,
+                        'expected_amount' => $monthly,
+                        'due_date' => $baseDate->copy()->addMonths($i),
+                        'status' => 'pending'
+                    ]);
+                }
+            }
+        }
+    }
+
     public function markAsActiveSold()
     {
         if ($this->ai_verification_status === 'passed') {
@@ -126,6 +149,16 @@ class Contract extends Model
             
             if ($this->unit) {
                 $this->unit->update(['status' => 'sold']);
+            }
+
+            // Generate Payment Schedules
+            $this->generatePaymentSchedules();
+
+            // Auto-approve any pending transactions associated with this contract
+            $pendingTransactions = \App\Models\Transaction::where('contract_id', $this->id)->where('status', 'pending')->get();
+            $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+            foreach ($pendingTransactions as $tx) {
+                $financeController->approveTransaction(request(), $tx);
             }
         }
     }

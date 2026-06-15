@@ -71,8 +71,10 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/crm/ledger/{contract}/export/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportPdf'])->name('contracts.export.pdf');
     Route::get('/crm/ledger/{contract}/export/docx', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportDocx'])->name('contracts.export.docx');
     Route::get('/crm/ledger/{contract}/export/xlsx', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportXlsx'])->name('contracts.export.xlsx');
+    Route::get('/crm/ledger/{contract}/preview', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewLedger'])->name('contracts.ledger.preview');
     
     Route::get('/crm/contracts/{contract}/export-doc/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportContractPdf'])->name('contracts.document.export.pdf');
+    Route::get('/crm/contracts/{contract}/preview-doc', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewContract'])->name('contracts.document.preview');
     
     Route::post('/contracts/{contract}/upload-signature', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAndVerifySignature'])->name('contracts.upload_signature');
     Route::get('/facility', [\App\Http\Controllers\Admin\FacilityController::class, 'index'])->name('facility');

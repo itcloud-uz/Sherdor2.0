@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { regionsData } from '@/locations.js';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const page = usePage();
 const props = defineProps({
     leads: Array,
@@ -1652,6 +1652,25 @@ function refreshData() {
     });
 }
 
+const showDocPreviewModal = ref(false);
+const docPreviewTitle = ref('');
+const docPreviewUrl = ref('');
+const docDownloadUrl = ref('');
+
+function openDocumentPreview(type, contract) {
+    if (!contract) return;
+    if (type === 'contract') {
+        docPreviewTitle.value = 'Shartnoma';
+        docPreviewUrl.value = route('admin.contracts.document.preview', contract.id) + '?lang=' + locale.value;
+        docDownloadUrl.value = route('admin.contracts.document.export.pdf', contract.id) + '?lang=' + locale.value;
+    } else {
+        docPreviewTitle.value = 'To\'lov Grafiki';
+        docPreviewUrl.value = route('admin.contracts.ledger.preview', contract.id);
+        docDownloadUrl.value = route('admin.contracts.export.xlsx', contract.id);
+    }
+    showDocPreviewModal.value = true;
+}
+
 const fileInput = ref(null);
 const detailFileInput = ref(null);
 const uploadStatus = ref(null);
@@ -2853,20 +2872,20 @@ function submitPromoRule() {
 
                             <!-- Action Buttons below -->
                             <div class="mt-6 pt-4 border-t border-gray-50 flex items-center gap-2">
-                                <a :href="'/admin/crm/contracts/' + detailedClientData.contracts[0].id + '/export-doc/pdf?lang=' + $i18n.locale" target="_blank" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors text-center">
+                                <button @click="openDocumentPreview('contract', detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors">
                                     <svg class="w-8 h-8 text-amber-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                         <path d="M14 2v6h6" opacity="0.3"/>
                                     </svg>
                                     <span class="text-[10px] font-bold text-amber-800">Shartnoma</span>
-                                </a>
-                                <a :href="'/admin/crm/ledger/' + detailedClientData.contracts[0].id + '/export/xlsx?lang=' + $i18n.locale" target="_blank" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors text-center">
+                                </button>
+                                <button @click="openDocumentPreview('grafik', detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors">
                                     <svg class="w-8 h-8 text-emerald-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                         <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
                                     </svg>
                                     <span class="text-[10px] font-bold text-emerald-800">Grafik</span>
-                                </a>
+                                </button>
                                 <button @click="selectClientForDetail(detailedClientData)" class="flex-1 flex flex-col items-center justify-center p-2 border border-gray-200 hover:bg-gray-50 rounded-2xl transition-colors">
                                     <svg class="w-8 h-8 text-gray-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" />
@@ -4026,6 +4045,35 @@ function submitPromoRule() {
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCUMENT PREVIEW MODAL (PREMIUM PREVIEW) -->
+        <div v-if="showDocPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50 transition-all">
+            <div class="bg-white border border-gray-200 shadow-xl w-full max-w-6xl rounded-2xl border border-blue-200 shadow-sm overflow-hidden flex flex-col h-[90vh]">
+                <!-- Header -->
+                <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-600 text-xl font-bold">📄</span>
+                        <h2 class="text-xl font-bold text-gray-900 font-sans">{{ docPreviewTitle }}</h2>
+                    </div>
+                    <button @click="showDocPreviewModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <!-- Body: IFrame rendering the doc preview -->
+                <div class="flex-1 bg-slate-100 p-4 relative overflow-hidden">
+                    <iframe :src="docPreviewUrl" class="w-full h-full rounded-lg border border-gray-200 bg-white shadow-inner" style="min-height: 100%;"></iframe>
+                </div>
+
+                <!-- Footer with Download Button -->
+                <div class="p-4 border-t border-gray-200 flex justify-end bg-gray-50">
+                    <a :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Yuklab olish
+                    </a>
                 </div>
             </div>
         </div>

@@ -66,4 +66,29 @@ class LedgerExportController extends Controller
         $pdf = Pdf::loadView($viewPath, compact('contract'));
         return $pdf->download("contract_{$contract->id}.pdf");
     }
+
+    public function previewLedger(Contract $contract, Request $request)
+    {
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
+        $type = $request->query('type');
+        return view('exports.client_ledger', compact('contract', 'type'));
+    }
+
+    public function previewContract(Contract $contract, Request $request)
+    {
+        $contract->load(['client', 'unit.floor.building']);
+
+        $locale = $request->query('lang', app()->getLocale());
+        if (!in_array($locale, ['uz', 'ru', 'en'])) {
+            $locale = 'uz'; // fallback
+        }
+
+        $type = $contract->contract_type ?? 'residential';
+        if (!in_array($type, ['residential', 'commercial'])) {
+            $type = 'residential';
+        }
+        
+        $viewPath = "contracts.{$locale}.{$type}";
+        return view($viewPath, compact('contract'));
+    }
 }

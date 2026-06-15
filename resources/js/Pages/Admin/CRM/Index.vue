@@ -285,6 +285,9 @@ const forceActivateContract = async (accountId = null, paymentMethod = null) => 
         selectedContract.value.status = 'active';
         selectedContract.value.ai_verification_status = 'passed';
         
+        if (selectedClientForDetail.value) {
+            selectClientForDetail(selectedClientForDetail.value);
+        }
     } catch (e) {
         alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));
     } finally {
@@ -318,6 +321,9 @@ function recalculatePenalty() {
             const updatedContract = (page.props.contracts || []).find(c => c.id === selectedContract.value.id);
             if (updatedContract) {
                 selectedContract.value = JSON.parse(JSON.stringify(updatedContract));
+            }
+            if (selectedClientForDetail.value) {
+                selectClientForDetail(selectedClientForDetail.value);
             }
         },
         onError: () => {
@@ -1015,6 +1021,11 @@ function selectClientForDetail(client) {
         .then(response => {
             if (response.data.status === 'success') {
                 detailedClientData.value = response.data.client;
+                if (detailedClientData.value && detailedClientData.value.contracts && detailedClientData.value.contracts.length > 0) {
+                    selectedContract.value = detailedClientData.value.contracts[0];
+                } else {
+                    selectedContract.value = null;
+                }
             }
         })
         .catch(err => {
@@ -1603,8 +1614,12 @@ const calculatedSchedules = computed(() => {
 });
 
 function openScheduleModal(contract) {
-    selectedContract.value = JSON.parse(JSON.stringify(contract));
-    showModal.value = true;
+    if (contract.client) {
+        selectClientForDetail(contract.client);
+    } else {
+        selectedContract.value = JSON.parse(JSON.stringify(contract));
+        showModal.value = true;
+    }
 }
 
 function refreshData() {
@@ -1624,6 +1639,7 @@ function refreshData() {
 }
 
 const fileInput = ref(null);
+const detailFileInput = ref(null);
 const uploadStatus = ref(null);
 const uploadMessage = ref('');
 
@@ -1650,6 +1666,10 @@ function uploadSignature(event) {
             selectedContract.value.status = 'active';
         } else {
             selectedContract.value.ai_verification_status = 'failed';
+        }
+        
+        if (selectedClientForDetail.value) {
+            selectClientForDetail(selectedClientForDetail.value);
         }
     }).catch(error => {
         uploadStatus.value = 'error';
@@ -2767,6 +2787,53 @@ function submitPromoRule() {
                                         </strong>
                                     </div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Kadastr:</span> <strong class="text-gray-900">yo'q</strong></div>
+                                    
+                                    <!-- Kunlik Penya Darajasi & Hisoblash -->
+                                    <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center gap-2">
+                                        <span class="text-gray-400">Kunlik Penya Darajasi (%):</span>
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" step="0.01" v-model="selectedContract.daily_penalty_rate" class="bg-white border border-gray-300 text-gray-900 rounded px-1.5 py-0.5 text-xs w-16 text-center font-bold font-mono">
+                                            <button @click="recalculatePenalty" :disabled="isProcessing" class="px-2.5 py-1 bg-blue-50 border border-blue-300 text-blue-600 text-[10px] font-bold uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50">
+                                                Hisoblash
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center">
+                                        <span class="text-gray-400">Jamg'arilgan Penya Summasi:</span>
+                                        <strong class="text-indigo-600 font-bold font-mono">{{ $currency(selectedContract.total_penalty_accumulated || 0) }}</strong>
+                                    </div>
+
+                                    <!-- AI Hujjat Tekshiruvi & Sotildi qilish -->
+                                    <div v-if="selectedContract" class="py-2 border-b border-gray-50">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-gray-400">AI Hujjat Tekshiruvi:</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono" 
+                                                  :class="{ 'text-gray-500 bg-gray-50': !selectedContract.ai_verification_status, 'text-emerald-600 bg-emerald-50': selectedContract.ai_verification_status === 'passed', 'text-red-600 bg-red-50': selectedContract.ai_verification_status === 'failed' }">
+                                                {{ selectedContract.ai_verification_status === 'passed' ? 'Tasdiqlangan' : 
+                                                   (selectedContract.ai_verification_status === 'failed' ? 'Imzolanmagan' : 'Kutilmoqda') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-2 mt-2">
+                                            <div class="flex flex-col">
+                                                <span v-if="uploadStatus === 'uploading'" class="text-[10px] text-blue-600 animate-pulse font-sans">{{ uploadMessage }}</span>
+                                                <span v-else-if="uploadStatus === 'success'" class="text-[10px] text-emerald-600 font-sans">{{ uploadMessage }}</span>
+                                                <span v-else-if="uploadStatus === 'error'" class="text-[10px] text-red-600 font-sans">{{ uploadMessage }}</span>
+                                                <span v-else class="text-[10px] text-gray-400 font-sans">Rasmi yoki PDF yuklang</span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <input type="file" ref="detailFileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png" @change="uploadSignature">
+                                                <button @click="detailFileInput.click()" :disabled="isProcessing" class="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 font-bold text-[10px] uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                                    Yuklash
+                                                </button>
+                                                <button v-if="selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold text-[10px] uppercase rounded hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                    Sotildi qilish
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -2869,6 +2936,7 @@ function submitPromoRule() {
                                         <th class="p-3 text-right">To'langan summa</th>
                                         <th class="p-3 text-right">Qarzdorlik</th>
                                         <th class="p-3 text-center">Turi</th>
+                                        <th class="p-3 text-right">Penya</th>
                                         <th class="p-3 text-center">Holat</th>
                                     </tr>
                                 </thead>
@@ -2882,6 +2950,9 @@ function submitPromoRule() {
                                         <td class="p-3 text-center font-sans text-gray-700">
                                             {{ schedule.payment_type || (index === 0 ? 'Bosh to\'lov' : 'Oylik to\'lov') }}
                                         </td>
+                                        <td class="p-3 text-right font-bold text-indigo-600">
+                                            {{ Number(schedule.penalty_for_this_month || 0).toLocaleString('en-US') }}
+                                        </td>
                                         <td class="p-3 text-center">
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-sans"
                                                   :class="schedule.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'">
@@ -2890,7 +2961,7 @@ function submitPromoRule() {
                                         </td>
                                     </tr>
                                     <tr v-if="getContractSchedules(detailedClientData.contracts[0]).length === 0">
-                                        <td colspan="7" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
+                                        <td colspan="8" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
                                     </tr>
                                 </tbody>
                             </table>

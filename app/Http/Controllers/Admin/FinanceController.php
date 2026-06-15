@@ -326,11 +326,11 @@ class FinanceController extends Controller
         if (!empty($validated['refund_amount']) && $validated['refund_amount'] > 0) {
             $pendingCategory = TransactionCategory::firstOrCreate(
                 ['name' => 'Kutayotgan Naqdlashtirish'],
-                ['type' => 'transfer', 'description' => 'Shartnomadan ortib qolgan va mijozga qaytarilishi kerak bo\'lgan summa']
+                ['type' => 'expense', 'description' => 'Shartnomadan ortib qolgan va mijozga qaytarilishi kerak bo\'lgan summa']
             );
 
             Transaction::create([
-                'type' => 'transfer',
+                'type' => 'expense',
                 'amount' => $validated['refund_amount'],
                 'account_id' => $transaction->account_id,
                 'contract_id' => $transaction->contract_id,
@@ -578,29 +578,8 @@ class FinanceController extends Controller
                     }
                 }
                 
-                if ($remainingAmount > 0) {
-                    $refundAmount += $remainingAmount;
-                }
             }
 
-            if ($refundAmount > 0) {
-                $refundCategory = TransactionCategory::firstOrCreate(
-                    ['name' => 'Kutayotgan Naqdlashtirish'],
-                    ['type' => 'expense', 'description' => 'Mijoz ortiqcha to\'lovni naqd qilib olishi uchun navbat']
-                );
-
-                Transaction::create([
-                    'type' => 'expense',
-                    'amount' => $refundAmount,
-                    'account_id' => $transaction->account_id,
-                    'contract_id' => $transaction->contract_id,
-                    'category_id' => $refundCategory->id,
-                    'status' => 'pending',
-                    'transaction_date' => now(),
-                    'notes' => 'Avtomatik naqdlashtirish navbati (Asosiy TXN: #' . $transaction->id . ')',
-                    'created_by' => auth()->id(),
-                ]);
-            }
         } elseif ($transaction->contract_id && $transaction->type === 'expense' && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {
             $contract = \App\Models\Contract::find($transaction->contract_id);
             if ($contract) {

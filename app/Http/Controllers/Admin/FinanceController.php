@@ -81,7 +81,7 @@ class FinanceController extends Controller
         $financialLiabilities = [];
         $machineries = [];
         $fixedAssets = [];
-        $invoices = [];
+        $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         $moneyTransfers = [];
         $rates = [];
 
@@ -118,7 +118,6 @@ class FinanceController extends Controller
             $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
             $machineries = Machinery::latest()->get();
             $fixedAssets = FixedAsset::latest()->get();
-            $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
         if ($tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
@@ -127,10 +126,6 @@ class FinanceController extends Controller
 
         if ($tab === 6) {
             $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
-        }
-
-        if ($tab === 10 || $tab === 11) {
-            $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
         return Inertia::render('Admin/Finance/Index', [
@@ -317,7 +312,13 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'applied_amount' => 'nullable|numeric|min:0',
             'refund_amount' => 'nullable|numeric|min:0',
+            'account_id' => 'nullable|exists:cash_registers,id',
         ]);
+
+        if (!empty($validated['account_id'])) {
+            $transaction->account_id = $validated['account_id'];
+            $transaction->save();
+        }
 
         $transaction->status = 'approved';
         $transaction->approved_by = auth()->id();

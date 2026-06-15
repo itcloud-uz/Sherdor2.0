@@ -984,6 +984,17 @@ const uniqueBuildings = computed(() => {
     });
 });
 
+const clientContracts = computed(() => {
+    if (!form.value.client_id || !props.contracts) return [];
+    return props.contracts.filter(c => c.client_id === form.value.client_id);
+});
+
+const selectedRegisterHasBuilding = computed(() => {
+    if (!form.value.account_id || !props.registers) return false;
+    const reg = props.registers.find(r => r.id === form.value.account_id);
+    return !!(reg && reg.building_id);
+});
+
 // Invoice dynamic filters for Tab 10
 const invoiceFilters = ref({
     start_date: '',
@@ -1147,6 +1158,8 @@ function submitTransaction() {
             extraNotesInput.value = '';
             documentNumberInput.value = '';
             isEditingDocNumber.value = false;
+            selectedParentRegisterId.value = '';
+            selectedSubRegisterId.value = '';
             activeTab.value = 1;
         },
         onError: () => isProcessing.value = false
@@ -1868,7 +1881,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
                                     <option value="" disabled>Hisobni tanlang</option>
                                     <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
                                     </option>
                                 </select>
                             </div>
@@ -1879,7 +1892,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10" required>
                                     <option value="" disabled>Sub kassa tanlang</option>
                                     <option v-for="r in subRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }} - Balans: {{ r.balance_uzs.toLocaleString() }} UZS
+                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
                                     </option>
                                 </select>
                             </div>
@@ -3696,6 +3709,13 @@ function formatMoney(amount, currency = 'UZS') {
                 </div>
                 
                 <form @submit.prevent="submitTransaction" class="space-y-4 font-sans text-xs">
+                    <!-- Error Banner -->
+                    <div v-if="page.props.errors && Object.keys(page.props.errors).length > 0" class="p-3 bg-red-50 border border-red-150 rounded-xl text-red-600 text-xs">
+                        <ul class="list-disc list-inside font-mono">
+                            <li v-for="(err, field) in page.props.errors" :key="field">{{ err }}</li>
+                        </ul>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3.5">
                         <!-- Row 1: Tranzaksiya turi & Qurilish obyekti -->
                         <div>
@@ -3713,7 +3733,7 @@ function formatMoney(amount, currency = 'UZS') {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Qurilish obyekti
                             </label>
-                            <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <select v-model="form.building_id" :disabled="selectedRegisterHasBuilding" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Qurilish obyekti tanlang</option>
                                 <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
                                     {{ b.name }}
@@ -3730,7 +3750,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Hisobni tanlang</option>
                                     <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }}
+                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
                                     </option>
                                 </select>
                             </div>
@@ -3743,7 +3763,7 @@ function formatMoney(amount, currency = 'UZS') {
                                 <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                     <option value="" disabled>Sub kassa tanlang</option>
                                     <option v-for="r in subRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }}
+                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
                                     </option>
                                 </select>
                             </div>
@@ -3791,16 +3811,32 @@ function formatMoney(amount, currency = 'UZS') {
                         <!-- Row 5: Dynamic Target Fields & Izohlar -->
                         <div class="md:col-span-2 space-y-3">
                             <!-- Dynamic selectors based on categories -->
-                            <div v-if="requiresClient" class="border border-orange-100 p-4 rounded-xl bg-orange-50/10">
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Mijoz (Kontragent)
-                                </label>
-                                <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Mijozni tanlang</option>
-                                    <option v-for="c in counterparties.filter(x => x.type === 'client')" :key="c.id" :value="c.id">
-                                        {{ c.name }}
-                                    </option>
-                                </select>
+                            <div v-if="requiresClient" class="border border-orange-100 p-4 rounded-xl bg-orange-50/10 space-y-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                        * Mijoz (Kontragent)
+                                    </label>
+                                    <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                        <option value="" disabled>Mijozni tanlang</option>
+                                        <option v-for="c in counterparties.filter(x => x.type === 'client')" :key="c.id" :value="c.id">
+                                            {{ c.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div v-if="form.client_id">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                        * Mijoz Shartnomasi
+                                    </label>
+                                    <select v-model="form.contract_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                        <option value="" disabled>Shartnomani tanlang</option>
+                                        <option v-for="c in clientContracts" :key="c.id" :value="c.id">
+                                            Shartnoma #{{ c.contract_number || c.id }} - Xona: {{ c.unit?.unit_number || 'Noma\'lum' }}
+                                        </option>
+                                    </select>
+                                    <span v-if="clientContracts.length === 0" class="text-[10px] text-red-500 mt-1 block font-mono">
+                                        Ushbu mijoz uchun faol shartnoma topilmadi!
+                                    </span>
+                                </div>
                             </div>
 
                             <div v-if="requiresSupplier" class="border border-red-100 p-4 rounded-xl bg-red-50/10">

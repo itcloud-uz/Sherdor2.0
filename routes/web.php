@@ -110,6 +110,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/transactions', [\App\Http\Controllers\Admin\FinanceController::class, 'store'])->name('transactions.store');
         Route::put('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'update'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroy'])->name('transactions.destroy');
+        Route::post('/transactions/{id}/restore', [\App\Http\Controllers\Admin\FinanceController::class, 'restore'])->name('transactions.restore');
+        Route::delete('/transactions/{id}/force', [\App\Http\Controllers\Admin\FinanceController::class, 'forceDestroy'])->name('transactions.force_destroy');
         Route::get('/transactions/{transaction}/export/pdf', [\App\Http\Controllers\Admin\TransactionExportController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/{transaction}/print', [\App\Http\Controllers\Admin\TransactionExportController::class, 'print'])->name('transactions.export.print');
         Route::post('/transactions/{transaction}/approve', [\App\Http\Controllers\Admin\FinanceController::class, 'approveTransaction'])->name('transactions.approve');

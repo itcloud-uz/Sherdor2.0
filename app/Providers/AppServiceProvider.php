@@ -48,5 +48,6 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Contract::observe(\App\Observers\ContractObserver::class);
         \App\Models\WorkLog::observe(\App\Observers\WorkLogObserver::class);
         \App\Models\SystemSetting::observe(\App\Observers\SystemSettingObserver::class);
+        \App\Models\Transaction::observe(\App\Observers\TransactionObserver::class);
     }
 }

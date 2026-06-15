@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Transaction extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'type', 'amount', 'currency', 'payment_method', 'status',
         'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes',

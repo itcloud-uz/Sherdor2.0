@@ -50,7 +50,9 @@ const props = defineProps({
     counterparties: Array,
     invoices: Array,
     moneyTransfers: Array,
-    rates: Array
+    rates: Array,
+    deletedTransactions: Array,
+    financeActions: Array
 });
 
 const activeTab = ref(0);
@@ -627,6 +629,26 @@ function deleteTransaction(id) {
     if (confirm("Haqiqatan ham bu tranzaksiyani o'chirmoqchimisiz? (Tasdiqlangan bo'lsa, balansga ta'sir qiladi)")) {
         isProcessing.value = true;
         router.delete(route('admin.finance.transactions.destroy', id), {
+            onSuccess: () => isProcessing.value = false,
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function restoreTransaction(id) {
+    if (confirm("Ushbu tranzaksiyani ortga qaytarmoqchimisiz (dastlabki holatiga)? Balanslar qaytadan hisoblanadi.")) {
+        isProcessing.value = true;
+        router.post(route('admin.finance.transactions.restore', id), {}, {
+            onSuccess: () => isProcessing.value = false,
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function forceDeleteTransaction(id) {
+    if (confirm("Haqiqatan ham bu tranzaksiyani butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!")) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.transactions.force_destroy', id), {
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -2786,7 +2808,7 @@ function getCounterpartyStatus(c) {
                                     <th class="p-4">To'lov sanasi</th>
                                     <th class="p-4">To'lov turi</th>
                                     <th class="p-4">Hujjat raqami</th>
-                                    <th class="p-4 text-center">To'lov kvitantsiyasi</th>
+                                    <th class="p-4 text-center">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -2809,9 +2831,17 @@ function getCounterpartyStatus(c) {
                                     </td>
                                     <td class="p-4 text-gray-700 font-bold">#{{ t.id }}</td>
                                     <td class="p-4 text-center">
-                                        <button @click="openReceipt(t)" class="text-orange-500 hover:text-orange-700 font-bold hover:underline inline-flex items-center gap-1.5">
-                                            📥 Yuklab olish
-                                        </button>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button @click="openReceipt(t)" class="px-2.5 py-1 text-[11px] bg-orange-50 text-orange-600 border border-orange-200 rounded-lg font-bold hover:bg-orange-500 hover:text-white transition-all">
+                                                📥 Yuklab olish
+                                            </button>
+                                            <button @click="openEditTransactionModal(t)" class="px-2.5 py-1 text-[11px] bg-blue-50 text-blue-600 border border-blue-200 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all">
+                                                ✏️ Tahrirlash
+                                            </button>
+                                            <button @click="deleteTransaction(t.id)" class="px-2.5 py-1 text-[11px] bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-all">
+                                                🗑️ O'chirish
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="!filteredClientPayments.length">
@@ -3398,6 +3428,118 @@ function getCounterpartyStatus(c) {
                                 </tr>
                                 <tr v-if="!(props.transactions || []).filter(x => x.source === 'telegram').length">
                                     <td colspan="8" class="p-8 text-center text-gray-400">Bot orqali kiritilgan tranzaksiyalar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 13: Harakatlar va Savatcha -->
+            <div v-if="activeTab === 13" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+                <!-- Title -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Moliya Bo'limi Harakatlari</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tranzaksiyalar bo'yicha amalga oshirilgan barcha harakatlar jurnali va o'chirilgan tranzaksiyalar savatchasi</p>
+                    </div>
+                </div>
+
+                <!-- Part 1: Action Logs Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 font-display">Harakatlar Jurnali</h3>
+                    <div class="overflow-x-auto border border-gray-150 rounded-xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Sana</th>
+                                    <th class="p-4">Foydalanuvchi</th>
+                                    <th class="p-4">Amal turi</th>
+                                    <th class="p-4">Tranzaksiya ID</th>
+                                    <th class="p-4 text-right">Summa</th>
+                                    <th class="p-4">Izoh</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(act, idx) in props.financeActions" :key="act.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 text-gray-500">{{ new Date(act.created_at).toLocaleString() }}</td>
+                                    <td class="p-4 font-bold text-gray-900">{{ act.user?.name || '-' }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border" 
+                                            :class="{
+                                                'bg-emerald-50 text-emerald-700 border-emerald-150': act.action === 'create',
+                                                'bg-blue-50 text-blue-700 border-blue-150': act.action === 'update',
+                                                'bg-red-50 text-red-700 border-red-150': act.action === 'delete',
+                                                'bg-indigo-50 text-indigo-700 border-indigo-150': act.action === 'restore',
+                                                'bg-purple-50 text-purple-700 border-purple-150': act.action === 'permanent_delete'
+                                            }">
+                                            {{ act.action === 'create' ? 'Qo\'shildi' : 
+                                               (act.action === 'update' ? 'Tahrirlandi' : 
+                                               (act.action === 'delete' ? 'O\'chirildi' : 
+                                               (act.action === 'restore' ? 'Qayta tiklandi' : 'Butunlay o\'chirildi'))) }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 font-semibold text-gray-700">#{{ act.transaction_id || '-' }}</td>
+                                    <td class="p-4 text-right font-bold text-gray-900">
+                                        {{ act.amount > 0 ? (act.transaction_type === 'income' ? '+' : '-') + ' ' + formatMoney(act.amount, act.currency) : '-' }}
+                                    </td>
+                                    <td class="p-4 text-gray-500 max-w-xs truncate" :title="act.notes">{{ act.notes || '-' }}</td>
+                                </tr>
+                                <tr v-if="!props.financeActions?.length">
+                                    <td colspan="7" class="p-8 text-center text-gray-400">Harakatlar topilmadi.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Part 2: Deleted Transactions (Savatcha) Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 font-display text-red-600">O'chirilgan Tranzaksiyalar (Savatcha)</h3>
+                    <div class="overflow-x-auto border border-gray-150 rounded-xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Ism / Kontragent</th>
+                                    <th class="p-4 text-right">Summa</th>
+                                    <th class="p-4">O'chirilgan sana</th>
+                                    <th class="p-4">Kassa / Hisob</th>
+                                    <th class="p-4">Kategoriya</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(t, idx) in props.deletedTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900">
+                                        {{ t.counterparty?.name || '-' }}
+                                    </td>
+                                    <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
+                                    </td>
+                                    <td class="p-4 text-gray-500">{{ new Date(t.deleted_at).toLocaleString() }}</td>
+                                    <td class="p-4 text-gray-750 font-bold">{{ t.cashRegister?.name || '-' }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
+                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button @click="restoreTransaction(t.id)" class="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-600 font-bold text-xs rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                                                🔄 Ortga qaytarish
+                                            </button>
+                                            <button @click="forceDeleteTransaction(t.id)" class="px-3 py-1 bg-red-50 border border-red-200 text-red-600 font-bold text-xs rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                                                🗑️ Butunlay o'chirish
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!props.deletedTransactions?.length">
+                                    <td colspan="7" class="p-8 text-center text-gray-400">Savatcha bo'sh. O'chirilgan tranzaksiyalar mavjud emas.</td>
                                 </tr>
                             </tbody>
                         </table>

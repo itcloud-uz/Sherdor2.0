@@ -1662,6 +1662,49 @@ function formatMoney(amount, currency = 'UZS') {
     if (isNaN(val)) return '0.00 ' + currency;
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' ' + currency;
 }
+
+function getCounterpartyStatus(c) {
+    if (c.type === 'client') {
+        const hasPendingTx = c.transactions && c.transactions.some(t => t.status === 'pending');
+        if (hasPendingTx) {
+            return { text: 'To\'lov kutilmoqda (Jarayonda)', class: 'bg-amber-50 text-amber-700 border border-amber-200' };
+        }
+
+        const hasPendingContract = c.customable?.contracts && c.customable.contracts.some(con => con.status === 'pending' || con.status === 'draft');
+        if (hasPendingContract) {
+            return { text: 'Shartnoma kutilmoqda', class: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
+        }
+
+        const hasRejectedTx = c.transactions && c.transactions.some(t => t.status === 'rejected');
+        if (hasRejectedTx) {
+            return { text: 'To\'lov rad etilgan', class: 'bg-rose-50 text-rose-700 border border-rose-200' };
+        }
+
+        const balance = parseFloat(c.balance || 0);
+        if (balance < 0) {
+            return { text: 'Qarzdor', class: 'bg-red-50 text-red-700 border border-red-200' };
+        }
+        if (balance > 0) {
+            return { text: 'Kompaniya qarzdor (Ortiqcha to\'lov)', class: 'bg-emerald-50 text-emerald-700 border border-emerald-200' };
+        }
+
+        const hasActiveContract = c.customable?.contracts && c.customable.contracts.some(con => con.status === 'active' || con.status === 'completed');
+        if (hasActiveContract) {
+            return { text: 'Uy sotib olgan', class: 'bg-blue-50 text-blue-700 border border-blue-200' };
+        }
+
+        return { text: 'Yangi mijoz', class: 'bg-gray-50 text-gray-700 border border-gray-200' };
+    } else {
+        const balance = parseFloat(c.balance || 0);
+        if (balance < 0) {
+            return { text: 'Qarzdor', class: 'bg-red-50 text-red-700 border border-red-200' };
+        }
+        if (balance > 0) {
+            return { text: 'Ortiqcha haq', class: 'bg-emerald-50 text-emerald-700 border border-emerald-200' };
+        }
+        return { text: c.is_active ? 'Faol' : 'Faol emas', class: c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400' };
+    }
+}
 </script>
 
 <template>
@@ -2671,9 +2714,6 @@ function formatMoney(amount, currency = 'UZS') {
                                 <th class="p-4">Kontragent nomi</th>
                                 <th class="p-4">Tranzaksiya turi</th>
                                 <th class="p-4">Holat</th>
-                                <th class="p-4">Hisob raqami</th>
-                                <th class="p-4">Bank</th>
-                                <th class="p-4">INN</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -2697,16 +2737,13 @@ function formatMoney(amount, currency = 'UZS') {
                                     </span>
                                 </td>
                                 <td class="p-4">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'">
-                                        {{ c.is_active ? 'Faol' : 'Faol emas' }}
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="getCounterpartyStatus(c).class">
+                                        {{ getCounterpartyStatus(c).text }}
                                     </span>
                                 </td>
-                                <td class="p-4 text-gray-600">{{ c.account_number || '-' }}</td>
-                                <td class="p-4 text-gray-600">{{ c.bank_name || '-' }}</td>
-                                <td class="p-4 text-gray-600">{{ c.inn || '-' }}</td>
                             </tr>
                             <tr v-if="!filteredCounterpartiesList.length">
-                                <td colspan="7" class="p-8 text-center text-gray-400">Kontragentlar topilmadi.</td>
+                                <td colspan="4" class="p-8 text-center text-gray-400">Kontragentlar topilmadi.</td>
                             </tr>
                         </tbody>
                     </table>

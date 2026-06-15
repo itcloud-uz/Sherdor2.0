@@ -1198,7 +1198,7 @@ const groupedContracts = computed(() => {
 
     const groups = {};
     contracts.forEach(c => {
-        const blockName = c.unit?.floor?.building?.name || "Boshqa (Biriktirilmagan)";
+        const blockName = c.unit?.floor?.building?.block_name || c.unit?.floor?.building?.corpus_name || c.unit?.floor?.building?.name || "Boshqa (Biriktirilmagan)";
         if (!groups[blockName]) {
             groups[blockName] = [];
         }

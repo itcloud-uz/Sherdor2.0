@@ -29,7 +29,7 @@
 
     <h3>1. SUBJECT OF THE CONTRACT</h3>
     <p>1.1 The «SELLER» assumes the obligation to build a newly constructed residential apartment located at Navoi street #83, Dustlik neighborhood, Urgut city (hereinafter referred to as the «OBJECT») at the expense of its own funds or the funds of the «BUYER».</p>
-    <p>1.2 According to the project estimates and agreement of the parties, the apartment consists of <strong>{{ $contract->unit ? $contract->unit->area_sqm : '____' }}</strong> sq.meters, and is located at block <strong>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '___' }}</strong>, floor <strong>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</strong>, apartment № <strong>{{ $contract->unit ? $contract->unit->unit_number : '___' }}</strong>.</p>
+    <p>1.2 According to the project estimates and agreement of the parties, the apartment consists of <strong>{{ $contract->unit ? $contract->unit->area_sqm : '____' }}</strong> sq.meters, and is located at block <strong>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? ($contract->unit->floor->building->block_name ?: ($contract->unit->floor->building->corpus_name ?: '___')) : '___' }}</strong>, floor <strong>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</strong>, apartment № <strong>{{ $contract->unit ? $contract->unit->unit_number : '___' }}</strong>.</p>
     
     <h3>2. FINANCING AMOUNT AND PROCEDURE</h3>
     <table class="info-table">
@@ -41,7 +41,7 @@
             <th>Total Price with VAT ($)</th>
         </tr>
         <tr>
-            <td>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '___' }}</td>
+            <td>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? ($contract->unit->floor->building->block_name ?: ($contract->unit->floor->building->corpus_name ?: '___')) : '___' }}</td>
             <td>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</td>
             <td>___</td>
             <td>{{ $contract->unit ? $contract->unit->area_sqm : '___' }}</td>
@@ -49,7 +49,13 @@
         </tr>
     </table>
     <p>Total contract amount with VAT is equivalent to <strong>{{ number_format($contract->total_amount, 2) }} USD</strong>.</p>
-    <p>2.2 Down payment amount: <strong>{{ number_format($contract->down_payment, 2) }} USD</strong> is paid by the «BUYER» from the date of signing the contract, the remaining balance is paid within <strong>{{ $contract->term_months }}</strong> months according to the payment schedule.</p>
+    <p>
+        @if(($contract->payment_type ?? 'installment') === 'full' || $contract->term_months <= 1 || $contract->down_payment >= $contract->total_amount)
+            2.2 Contract amount (100% payment): <strong>{{ number_format($contract->total_amount, 2) }} USD</strong> is fully paid by the «BUYER» within 6 (six) bank business days from the date of signing the contract.
+        @else
+            2.2 Down payment amount: <strong>{{ number_format($contract->down_payment, 2) }} USD</strong> is paid by the «BUYER» from the date of signing the contract, the remaining balance is paid within <strong>{{ $contract->term_months }}</strong> months according to the payment schedule.
+        @endif
+    </p>
     
     <table class="signatures">
         <tr>

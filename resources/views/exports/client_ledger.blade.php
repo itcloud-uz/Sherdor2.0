@@ -45,7 +45,7 @@
             <td><strong>Obyekt / Kvartira:</strong></td>
             <td>
                 @if($contract->unit)
-                    {{ $contract->unit->floor->building->name ?? 'N/A' }} - {{ $contract->unit->type }} ({{ $contract->unit->area_sqm }} m2)
+                    {{ $contract->unit->floor->building->name ?? 'N/A' }}{{ ($contract->unit->floor->building->block_name || $contract->unit->floor->building->corpus_name) ? ' (' . ($contract->unit->floor->building->block_name ?: $contract->unit->floor->building->corpus_name) . ')' : '' }} - {{ $contract->unit->type }} ({{ $contract->unit->area_sqm }} m2)
                 @else
                     N/A
                 @endif

@@ -29,7 +29,7 @@
 
     <h3>1. ПРЕДМЕТ ДОГОВОРА</h3>
     <p>1.1 «ПРОДАВЕЦ» обязуется построить многоквартирный жилой дом с коммерческими помещениями, расположенный по адресу г. Ургут, махалля Дустлик, улица Навои, д. 83 (в дальнейшем именуемый «ОБЪЕКТ») за счет собственных средств или средств «ПОКУПАТЕЛЯ».</p>
-    <p>1.2 Согласно проектно-сметной документации и соглашению сторон, магазин состоит из <strong>{{ $contract->unit ? $contract->unit->area_sqm : '____' }}</strong> кв.м, и расположен в блоке <strong>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '___' }}</strong>, на <strong>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</strong> этаже, магазин № <strong>{{ $contract->unit ? $contract->unit->unit_number : '___' }}</strong>.</p>
+    <p>1.2 Согласно проектно-сметной документации и соглашению сторон, магазин состоит из <strong>{{ $contract->unit ? $contract->unit->area_sqm : '____' }}</strong> кв.м, и расположена в блоке <strong>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? ($contract->unit->floor->building->block_name ?: ($contract->unit->floor->building->corpus_name ?: '___')) : '___' }}</strong>, на <strong>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</strong> этаже, магазин № <strong>{{ $contract->unit ? $contract->unit->unit_number : '___' }}</strong>.</p>
     
     <h3>2. РАЗМЕР И ПОРЯДОК ФИНАНСИРОВАНИЯ</h3>
     <table class="info-table">
@@ -41,7 +41,7 @@
             <th>Общая стоимость с НДС ($)</th>
         </tr>
         <tr>
-            <td>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? $contract->unit->floor->building->name : '___' }}</td>
+            <td>{{ $contract->unit && $contract->unit->floor && $contract->unit->floor->building ? ($contract->unit->floor->building->block_name ?: ($contract->unit->floor->building->corpus_name ?: '___')) : '___' }}</td>
             <td>{{ $contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___' }}</td>
             <td>___</td>
             <td>{{ $contract->unit ? $contract->unit->area_sqm : '___' }}</td>
@@ -49,7 +49,13 @@
         </tr>
     </table>
     <p>Общая сумма договора с учетом НДС эквивалентна <strong>{{ number_format($contract->total_amount, 2) }} Долларов США</strong>.</p>
-    <p>2.2 Сумма первоначального взноса: <strong>{{ number_format($contract->down_payment, 2) }} Долларов США</strong> оплачивается «ПОКУПАТЕЛЕМ» со дня подписания договора, оставшаяся сумма оплачивается в течение <strong>{{ $contract->term_months }}</strong> месяцев согласно графику платежей.</p>
+    <p>
+        @if(($contract->payment_type ?? 'installment') === 'full' || $contract->term_months <= 1 || $contract->down_payment >= $contract->total_amount)
+            2.2 Сумма договора (100% оплата): <strong>{{ number_format($contract->total_amount, 2) }} Долларов США</strong> оплачивается «ПОКУПАТЕЛЕМ» в течение 6 (шести) банковских дней со дня подписания договора.
+        @else
+            2.2 Сумма первоначального взноса: <strong>{{ number_format($contract->down_payment, 2) }} Долларов США</strong> оплачивается «ПОКУПАТЕЛЕМ» со дня подписания договора, оставшаяся сумма оплачивается в течение <strong>{{ $contract->term_months }}</strong> месяцев согласно графику платежей.
+        @endif
+    </p>
     
     <table class="signatures">
         <tr>

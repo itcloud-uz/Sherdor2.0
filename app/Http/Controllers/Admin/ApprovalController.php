@@ -80,7 +80,7 @@ class ApprovalController extends Controller
                         for ($i = 1; $i <= $contract->term_months; $i++) {
                             \App\Models\PaymentSchedule::create([
                                 'contract_id' => $contract->id,
-                                'amount' => $monthly,
+                                'expected_amount' => $monthly,
                                 'due_date' => now()->addMonths($i),
                                 'status' => 'pending'
                             ]);
@@ -132,7 +132,7 @@ class ApprovalController extends Controller
                             for ($i = 1; $i <= $monthsLeft; $i++) {
                                 \App\Models\PaymentSchedule::create([
                                     'contract_id' => $contract->id,
-                                    'amount' => $monthly,
+                                    'expected_amount' => $monthly,
                                     'due_date' => now()->addMonths($i),
                                     'status' => 'pending'
                                 ]);

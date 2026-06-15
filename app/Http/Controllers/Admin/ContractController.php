@@ -21,15 +21,23 @@ class ContractController extends Controller
             'contract_type' => 'required|string|in:residential,commercial',
             'price_per_sqm' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
-            'down_payment' => 'required|numeric|min:0',
-            'term_months' => 'required|integer|min:1',
+            'payment_type' => 'nullable|string|in:full,installment',
+            'down_payment' => 'nullable|numeric|min:0',
+            'term_months' => 'nullable|integer|min:1',
             'created_at' => 'nullable|date',
             'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number',
             'actual_paid_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|string|in:bank,main,credit',
+            'account_id' => 'nullable|exists:cash_registers,id',
             'floor' => 'nullable|string|max:50',
             'rooms' => 'nullable|integer|min:1'
         ]);
+
+        $paymentType = $validated['payment_type'] ?? 'installment';
+        if ($paymentType === 'full') {
+            $validated['down_payment'] = $validated['total_amount'];
+            $validated['term_months'] = 1;
+        }
 
         $contract = new \App\Models\Contract([
             'client_id' => $validated['buyer_type'] === 'client' ? $validated['client_id'] : null,
@@ -38,8 +46,9 @@ class ContractController extends Controller
             'contract_type' => $validated['contract_type'],
             'price_per_sqm' => $validated['price_per_sqm'],
             'total_amount' => $validated['total_amount'],
-            'down_payment' => $validated['down_payment'],
-            'term_months' => $validated['term_months'],
+            'down_payment' => $validated['down_payment'] ?? 0,
+            'term_months' => $validated['term_months'] ?? 1,
+            'payment_type' => $paymentType,
             'contract_number' => $validated['contract_number'] ?? null,
             'floor' => $validated['floor'] ?? null,
             'rooms' => $validated['rooms'] ?? null,
@@ -110,10 +119,20 @@ class ContractController extends Controller
             $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
                              ? $validated['actual_paid_amount'] 
                              : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0);
-            
+
             if ($paymentAmount > 0) {
                 $paymentMethod = $validated['payment_method'] ?? 'bank';
                 
+                // Determine account_id
+                $accountId = $validated['account_id'] ?? null;
+                if (!$accountId) {
+                    $regType = $paymentMethod === 'bank' ? 'bank' : 'cash';
+                    $reg = \App\Models\CashRegister::where('type', $regType)->where('is_active', true)->first();
+                    if ($reg) {
+                        $accountId = $reg->id;
+                    }
+                }
+
                 // Create a pending transaction for Action Center to approve
                 $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
                     ['name' => 'Mijoz To\'lovi (Shartnoma)'],
@@ -124,6 +143,7 @@ class ContractController extends Controller
                     'type' => 'income',
                     'amount' => $paymentAmount,
                     'account_type' => $paymentMethod,
+                    'account_id' => $accountId,
                     'contract_id' => $contract->id,
                     'category_id' => $incomeCategory->id,
                     'status' => 'pending',
@@ -157,13 +177,19 @@ class ContractController extends Controller
             'contract_type' => 'required|string|in:residential,commercial',
             'price_per_sqm' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
-            'down_payment' => 'required|numeric|min:0',
-            'term_months' => 'required|integer|min:1',
+            'payment_type' => 'nullable|string|in:full,installment',
+            'down_payment' => 'nullable|numeric|min:0',
+            'term_months' => 'nullable|integer|min:1',
             'created_at' => 'nullable|date',
             'contract_number' => 'nullable|string|max:255|unique:contracts,contract_number,' . $contract->id,
             'floor' => 'nullable|string|max:50',
             'rooms' => 'nullable|integer|min:1'
         ]);
+
+        if (($validated['payment_type'] ?? 'installment') === 'full') {
+            $validated['down_payment'] = $validated['total_amount'];
+            $validated['term_months'] = 1;
+        }
 
         $contract->fill($validated);
         if (!empty($validated['created_at'])) {

@@ -13,6 +13,10 @@ class ContractObserver
      */
     public function created(Contract $contract): void
     {
+        if ($contract->payment_type === 'full') {
+            return;
+        }
+
         // 1. Calculate the remaining amount after down payment
         $remainingAmount = $contract->total_amount - $contract->down_payment;
         

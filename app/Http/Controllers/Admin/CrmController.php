@@ -139,6 +139,7 @@ class CrmController extends Controller
             'smsLogs' => $smsLogs,
             'isEskizConnected' => $isConnected,
             'leadSources' => \App\Models\LeadSource::orderBy('name', 'asc')->get(),
+            'cashRegisters' => \App\Models\CashRegister::where('is_active', true)->get(),
         ]);
     }
 

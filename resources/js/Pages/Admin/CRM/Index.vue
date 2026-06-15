@@ -29,6 +29,7 @@ const props = defineProps({
     smsLogs: Array,
     isEskizConnected: Boolean,
     leadSources: Array,
+    cashRegisters: Array,
 });
 
 const isAdmin = computed(() => {
@@ -443,7 +444,7 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '' });
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -463,6 +464,7 @@ function editContract(contract) {
         created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
         actual_paid_amount: '',
         payment_method: 'bank',
+        account_id: '',
         floor: contract.floor || contract.unit?.floor?.floor_number || '',
         rooms: contract.rooms || contract.unit?.rooms_count || ''
     };
@@ -499,7 +501,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', floor: '', rooms: '' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -660,27 +662,55 @@ watch(() => contractForm.value.unit_id, (newUnitId) => {
 });
 
 watch(() => contractForm.value.total_amount, (newTotal) => {
-    if (isEditingContract.value) return;
     if (contractForm.value.unit_id) {
         const u = props.units.find(unit => unit.id === contractForm.value.unit_id);
         if (u) {
             const area = Number(u.area_sqm) || 0;
             contractForm.value.price_per_sqm = area > 0 ? (Number(newTotal) / area).toFixed(2) : 0;
-            
-            if (contractForm.value.payment_type === 'full') {
-                contractForm.value.down_payment = Number(newTotal);
-            } else {
-                // optional: auto-update down payment if needed
-            }
         }
+    }
+    if (contractForm.value.payment_type === 'full') {
+        contractForm.value.down_payment = Number(newTotal);
     }
 });
 
 watch(() => contractForm.value.payment_type, (newType) => {
-    if (isEditingContract.value) return;
     if (newType === 'full') {
         contractForm.value.down_payment = contractForm.value.total_amount;
         contractForm.value.term_months = 1;
+    } else if (newType === 'installment') {
+        if (Number(contractForm.value.down_payment) === Number(contractForm.value.total_amount)) {
+            contractForm.value.down_payment = contractForm.value.total_amount * 0.3;
+            contractForm.value.term_months = 36;
+        }
+    }
+});
+
+const filteredCashRegisters = computed(() => {
+    if (!props.cashRegisters) return [];
+    if (contractForm.value.payment_method === 'bank') {
+        return props.cashRegisters.filter(r => r.type === 'bank');
+    } else if (contractForm.value.payment_method === 'main') {
+        return props.cashRegisters.filter(r => r.type === 'cash');
+    }
+    return props.cashRegisters;
+});
+
+watch(() => contractForm.value.payment_method, (newMethod) => {
+    const list = filteredCashRegisters.value;
+    if (list.length > 0) {
+        contractForm.value.account_id = list[0].id;
+    } else {
+        contractForm.value.account_id = '';
+    }
+}, { immediate: true });
+
+watch(() => contractForm.value.actual_paid_amount, (newAmount) => {
+    if (Number(newAmount) > 0 && !contractForm.value.account_id) {
+        const list = filteredCashRegisters.value;
+        if (list.length > 0) {
+            contractForm.value.account_id = list[0].id;
+        }
     }
 });
 
@@ -2548,8 +2578,14 @@ function submitPromoRule() {
                                             {{ detailedClientData.contracts[0]?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
                                         </span>
                                     </div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">To'lov turi:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'installment' ? 'Bo\'lib to\'lash' : 'O\'z mablag\'' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Muddati:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">To'lov turi:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'full' ? 'Bir martalik umumiy to\'lov' : 'Bo\'lib to\'lash' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between">
+                                        <span class="text-gray-400">Muddati:</span>
+                                        <strong class="text-gray-900 font-mono">
+                                            <span v-if="detailedClientData.contracts[0]?.payment_type === 'full'">Bir martalik</span>
+                                            <span v-else>{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</span>
+                                        </strong>
+                                    </div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Kadastr:</span> <strong class="text-gray-900">yo'q</strong></div>
                                 </div>
                             </div>
@@ -2750,7 +2786,10 @@ function submitPromoRule() {
                                 </td>
                                 <td class="p-3 text-sm font-mono text-emerald-600 font-bold">
                                     {{ $currency(contract.total_amount) }}
-                                    <div class="text-[10px] text-gray-500 mt-0.5 font-normal">{{ contract.term_months }} {{ $t('months') }}</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 font-normal">
+                                        <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
+                                        <span v-else>{{ contract.term_months }} {{ $t('months') }}</span>
+                                    </div>
                                 </td>
                                 <td class="p-3">
                                     <div class="flex flex-col gap-1 w-32">
@@ -3898,6 +3937,15 @@ function submitPromoRule() {
                                     <option value="credit">💳 Plastik / Terminal</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="mt-4" v-if="Number(contractForm.actual_paid_amount) > 0">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
+                            <select v-model="contractForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="Number(contractForm.actual_paid_amount) > 0">
+                                <option value="" disabled>Kassani tanlang</option>
+                                <option v-for="register in filteredCashRegisters" :key="register.id" :value="register.id">
+                                    {{ register.name }} ({{ register.type === 'bank' ? 'Bank' : 'Naqd' }})
+                                </option>
+                            </select>
                         </div>
                         <p v-if="contractForm.actual_paid_amount > 0" class="text-[10px] text-gray-500 mt-2 font-mono">
                             Moliya bo'limi ushbu to'lovni tasdiqlayotganda ortiqcha summa avtomatik ravishda <strong class="text-amber-600">Naqdlashtirish (Qaytim)</strong> navbatiga tushadi.

@@ -24,7 +24,8 @@ class Contract extends Model
         'contract_number',
         'partner_id',
         'floor',
-        'rooms'
+        'rooms',
+        'payment_type'
     ];
 
     protected $casts = [

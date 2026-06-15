@@ -163,6 +163,9 @@ class FinanceController extends Controller
                 ->latest()
                 ->limit(500)
                 ->get(),
+            'deletedCounterparties' => Counterparty::onlyTrashed()
+                ->latest()
+                ->get(),
         ]);
     }
 
@@ -1092,10 +1095,6 @@ class FinanceController extends Controller
 
     public function destroyCounterparty(Counterparty $counterparty)
     {
-        if ($counterparty->transactions()->count() > 0 || $counterparty->invoices()->count() > 0) {
-            return redirect()->back()->withErrors(['error' => 'Ushbu kontragent bilan bog\'liq tranzaksiyalar yoki hisob-fakturalar mavjud, uni o\'chirish mumkin emas.']);
-        }
-
         $counterparty->delete();
 
         return redirect()->back()->with('message', 'Kontragent muvaffaqiyatli o\'chirildi.');
@@ -1707,5 +1706,26 @@ class FinanceController extends Controller
         });
 
         return redirect()->back()->with('message', 'Tranzaksiya tizimdan butunlay o\'chirildi.');
+    }
+
+    public function restoreCounterparty(Request $request, $id)
+    {
+        $counterparty = Counterparty::onlyTrashed()->findOrFail($id);
+        $counterparty->restore();
+
+        return redirect()->back()->with('message', 'Mijoz/Kontragent muvaffaqiyatli qayta tiklandi.');
+    }
+
+    public function forceDestroyCounterparty($id)
+    {
+        $counterparty = Counterparty::onlyTrashed()->findOrFail($id);
+
+        if ($counterparty->transactions()->count() > 0 || $counterparty->invoices()->count() > 0) {
+            return redirect()->back()->withErrors(['error' => 'Ushbu kontragent bilan bog\'liq tranzaksiyalar yoki hisob-fakturalar mavjud bo\'lgani uchun uni butunlay o\'chirib bo\'lmaydi.']);
+        }
+
+        $counterparty->forceDelete();
+
+        return redirect()->back()->with('message', 'Mijoz/Kontragent tizimdan butunlay o\'chirildi.');
     }
 }

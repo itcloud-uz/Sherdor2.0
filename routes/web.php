@@ -132,6 +132,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/counterparties', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCounterparty'])->name('counterparties.store');
         Route::put('/counterparties/{counterparty}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateCounterparty'])->name('counterparties.update');
         Route::delete('/counterparties/{counterparty}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyCounterparty'])->name('counterparties.destroy');
+        Route::post('/counterparties/{id}/restore', [\App\Http\Controllers\Admin\FinanceController::class, 'restoreCounterparty'])->name('counterparties.restore');
+        Route::delete('/counterparties/{id}/force', [\App\Http\Controllers\Admin\FinanceController::class, 'forceDestroyCounterparty'])->name('counterparties.force_destroy');
 
         // Invoices
         Route::post('/invoices', [\App\Http\Controllers\Admin\FinanceController::class, 'storeInvoice'])->name('invoices.store');

@@ -52,7 +52,8 @@ const props = defineProps({
     moneyTransfers: Array,
     rates: Array,
     deletedTransactions: Array,
-    financeActions: Array
+    financeActions: Array,
+    deletedCounterparties: Array
 });
 
 const activeTab = ref(0);
@@ -995,6 +996,26 @@ function submitCounterparty() {
 function deleteCounterparty(id) {
     if (confirm("Ushbu kontragentni o'chirishni tasdiqlaysizmi?")) {
         router.delete(route('admin.finance.counterparties.destroy', id));
+    }
+}
+
+function restoreCounterparty(id) {
+    if (confirm("Ushbu kontragentni savatchadan qayta tiklamoqchimisiz?")) {
+        isProcessing.value = true;
+        router.post(route('admin.finance.counterparties.restore', id), {}, {
+            onSuccess: () => isProcessing.value = false,
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function forceDeleteCounterparty(id) {
+    if (confirm("Haqiqatan ham bu kontragentni butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!")) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.counterparties.force_destroy', id), {
+            onSuccess: () => isProcessing.value = false,
+            onError: () => isProcessing.value = false
+        });
     }
 }
 
@@ -2865,6 +2886,7 @@ function getCounterpartyStatus(c) {
                                     <th class="p-4">Ism</th>
                                     <th class="p-4">Telefon</th>
                                     <th class="p-4 text-right">Qarzdorlik (UZS)</th>
+                                    <th class="p-4 text-center">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -2873,9 +2895,19 @@ function getCounterpartyStatus(c) {
                                     <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
                                     <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
                                     <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.debt_amount) }}</td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button @click="openEditCounterpartyModal(c)" class="px-2.5 py-1 text-[11px] bg-blue-50 text-blue-600 border border-blue-200 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all">
+                                                ✏️ Tahrirlash
+                                            </button>
+                                            <button @click="deleteCounterparty(c.id)" class="px-2.5 py-1 text-[11px] bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-all">
+                                                🗑️ O'chirish
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr v-if="!filteredClientDebts.length">
-                                    <td colspan="4" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
+                                    <td colspan="5" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -3540,6 +3572,53 @@ function getCounterpartyStatus(c) {
                                 </tr>
                                 <tr v-if="!props.deletedTransactions?.length">
                                     <td colspan="7" class="p-8 text-center text-gray-400">Savatcha bo'sh. O'chirilgan tranzaksiyalar mavjud emas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Part 3: Deleted Counterparties (Savatcha) Table -->
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 font-display text-red-600">O'chirilgan Mijozlar va Kontragentlar (Savatcha)</h3>
+                    <div class="overflow-x-auto border border-gray-150 rounded-xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Ism / Kontragent</th>
+                                    <th class="p-4">Telefon</th>
+                                    <th class="p-4 text-right">Balans / Qarz (UZS)</th>
+                                    <th class="p-4">Turi</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(c, idx) in props.deletedCounterparties" :key="c.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
+                                    <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
+                                    <td class="p-4 text-right font-bold" :class="Number(c.balance || 0) < 0 ? 'text-red-600' : 'text-emerald-600'">
+                                        {{ formatMoney(c.balance) }}
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50 uppercase">
+                                            {{ c.type }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button @click="restoreCounterparty(c.id)" class="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-600 font-bold text-xs rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                                                🔄 Ortga qaytarish
+                                            </button>
+                                            <button @click="forceDeleteCounterparty(c.id)" class="px-3 py-1 bg-red-50 border border-red-200 text-red-600 font-bold text-xs rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                                                🗑️ Butunlay o'chirish
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!props.deletedCounterparties?.length">
+                                    <td colspan="6" class="p-8 text-center text-gray-400">Savatcha bo'sh. O'chirilgan kontragentlar mavjud emas.</td>
                                 </tr>
                             </tbody>
                         </table>

@@ -73,10 +73,9 @@ class FinanceController extends Controller
         $brigades = Brigade::latest()->get();
         $machineOwners = MachineOwner::latest()->get();
         $counterparties = Counterparty::with(['customable', 'transactions'])->get();
-        $clientsCollection = $counterparties->where('customable_type', \App\Models\Client::class)->pluck('customable');
-        if ($clientsCollection->isNotEmpty()) {
-            $clientsCollection->load('contracts');
-        }
+        $counterparties->loadMorph('customable', [
+            \App\Models\Client::class => ['contracts'],
+        ]);
         $buildings = Building::latest()->get();
         $clients = Client::latest()->limit(500)->get();
         $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->limit(500)->get();

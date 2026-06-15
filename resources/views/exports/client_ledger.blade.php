@@ -147,6 +147,38 @@
     </table>
 
     @php
+        $payments = $contract->transactions->filter(function($t) {
+            return $t->type === 'income' && $t->status === 'approved';
+        });
+    @endphp
+
+    @if($payments->count() > 0)
+        <h3 style="margin-top: 30px; font-size: 14px; text-align: left; color: green; text-transform: uppercase;">Mijoz tomonidan amalga oshirilgan to'lovlar tarixi (Kirim)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#ID</th>
+                    <th>Sana</th>
+                    <th>To'lov usuli</th>
+                    <th>Summa</th>
+                    <th>Izoh</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($payments as $transaction)
+                    <tr>
+                        <td>#{{ $transaction->id }}</td>
+                        <td>{{ \Carbon\Carbon::parse($transaction->transaction_date ?: $transaction->created_at)->format('d.m.Y') }}</td>
+                        <td style="text-transform: uppercase; font-size: 9px;">{{ $transaction->payment_method ?: '-' }}</td>
+                        <td style="color: green; font-weight: bold;">{{ number_format($transaction->amount, 2) }}</td>
+                        <td style="text-align: left;">{{ $transaction->notes ?: '-' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    @php
         $refundTransactions = $contract->transactions->filter(function($t) {
             return $t->category && in_array($t->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish']);
         });

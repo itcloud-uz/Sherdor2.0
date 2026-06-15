@@ -53,4 +53,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(\App\Models\Invoice::class, 'invoice_id');
     }
+
+    public function building()
+    {
+        return $this->belongsTo(\App\Models\Building::class);
+    }
 }

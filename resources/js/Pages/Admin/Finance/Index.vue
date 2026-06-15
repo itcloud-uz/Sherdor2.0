@@ -1961,7 +1961,7 @@ function formatMoney(amount, currency = 'UZS') {
                                     <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
                                     <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
-                                    <td class="p-4 text-gray-700">{{ t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                    <td class="p-4 text-gray-700">{{ t.building?.name || t.contract?.unit?.building?.name || 'Nuovo' }}</td>
                                     <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
                                     </td>
@@ -2620,7 +2620,7 @@ function formatMoney(amount, currency = 'UZS') {
                                         <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                         <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
                                         <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
-                                        <td class="p-4 text-gray-600">{{ t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                        <td class="p-4 text-gray-600">{{ t.building?.name || t.contract?.unit?.building?.name || 'Nuovo' }}</td>
                                         <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                             {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
                                         </td>

@@ -104,12 +104,35 @@ class ApprovalController extends Controller
                             ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
                         );
 
+                        $buildingId = null;
+                        $unit = Unit::find($payload['unit_id']);
+                        if ($unit && $unit->floor_id) {
+                            $floor = \App\Models\Floor::find($unit->floor_id);
+                            if ($floor) {
+                                $buildingId = $floor->building_id;
+                            }
+                        }
+
+                        $counterpartyId = null;
+                        if ($contract->client_id) {
+                            $counterparty = \App\Models\Counterparty::where([
+                                'customable_type' => 'App\Models\Client',
+                                'customable_id' => $contract->client_id,
+                            ])->first();
+                            if ($counterparty) {
+                                $counterpartyId = $counterparty->id;
+                            }
+                        }
+
                         $transaction = \App\Models\Transaction::create([
                             'type' => 'income',
                             'amount' => $paymentAmount,
                             'account_type' => $paymentMethod,
                             'account_id' => $accountId,
                             'contract_id' => $contract->id,
+                            'client_id' => $contract->client_id,
+                            'counterparty_id' => $counterpartyId,
+                            'building_id' => $buildingId,
                             'category_id' => $incomeCategory->id,
                             'status' => 'pending',
                             'transaction_date' => now(),
@@ -176,6 +199,31 @@ class ApprovalController extends Controller
                     break;
 
                 case 'new_payment':
+                    $contract = Contract::find($payload['contract_id']);
+                    $clientId = $contract ? $contract->client_id : null;
+                    $counterpartyId = null;
+                    $buildingId = null;
+                    if ($contract) {
+                        if ($clientId) {
+                            $counterparty = \App\Models\Counterparty::where([
+                                'customable_type' => 'App\Models\Client',
+                                'customable_id' => $clientId,
+                            ])->first();
+                            if ($counterparty) {
+                                $counterpartyId = $counterparty->id;
+                            }
+                        }
+                        if ($contract->unit_id) {
+                            $unit = Unit::find($contract->unit_id);
+                            if ($unit && $unit->floor_id) {
+                                $floor = \App\Models\Floor::find($unit->floor_id);
+                                if ($floor) {
+                                    $buildingId = $floor->building_id;
+                                }
+                            }
+                        }
+                    }
+
                     $transaction = Transaction::create([
                         'type' => 'income',
                         'amount' => $payload['amount'],
@@ -183,6 +231,9 @@ class ApprovalController extends Controller
                         'notes' => 'Contract Payment - ' . ($payload['comment'] ?? ''),
                         'payment_method' => $payload['payment_method'] ?? 'cash',
                         'contract_id' => $payload['contract_id'],
+                        'client_id' => $clientId,
+                        'counterparty_id' => $counterpartyId,
+                        'building_id' => $buildingId,
                         'account_type' => $request->account_type ?? 'main',
                         'created_by' => $approval->user_id,
                         'status' => 'pending',

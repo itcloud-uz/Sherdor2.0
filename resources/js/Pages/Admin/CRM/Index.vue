@@ -1422,6 +1422,13 @@ const refundTransactions = computed(() => {
     );
 });
 
+const clientPayments = computed(() => {
+    if (!selectedContract.value || !selectedContract.value.transactions) return [];
+    return selectedContract.value.transactions.filter(t => 
+        t.type === 'income' && t.status === 'approved'
+    );
+});
+
 function openScheduleModal(contract) {
     selectedContract.value = JSON.parse(JSON.stringify(contract));
     showModal.value = true;
@@ -3511,6 +3518,44 @@ function submitPromoRule() {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- PAYMENTS HISTORY TABLE -->
+                    <div v-if="clientPayments.length > 0" class="mt-8">
+                        <h3 class="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600 shadow-sm"></span>
+                            Mijoz Amalga Oshirgan To'lovlar Tarixi
+                        </h3>
+                        <div class="overflow-x-auto rounded-xl border border-emerald-200">
+                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                                    <tr class="border-b border-emerald-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <th class="p-3 text-xs font-mono text-emerald-600 font-normal uppercase tracking-wider">Tranzaksiya ID</th>
+                                        <th class="p-3 text-xs font-mono text-emerald-600 font-normal uppercase tracking-wider">Sana</th>
+                                        <th class="p-3 text-xs font-mono text-emerald-600 font-normal uppercase tracking-wider">To'lov Usuli</th>
+                                        <th class="p-3 text-xs font-mono text-emerald-600 font-normal uppercase tracking-wider">Summa</th>
+                                        <th class="p-3 text-xs font-mono text-emerald-600 font-normal uppercase tracking-wider">Izoh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr 
+                                        v-for="transaction in clientPayments" 
+                                        :key="transaction.id" 
+                                        class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <td class="p-3 text-sm font-mono text-gray-900/80">#{{ transaction.id }}</td>
+                                        <td class="p-3 text-sm font-mono text-gray-900/80">
+                                            {{ transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : new Date(transaction.created_at).toLocaleDateString() }}
+                                        </td>
+                                        <td class="p-3 text-sm font-mono text-gray-900/60 uppercase">
+                                            <span class="px-2 py-0.5 border border-gray-300 rounded text-[10px]">{{ transaction.payment_method }}</span>
+                                        </td>
+                                        <td class="p-3 text-sm font-mono font-bold text-emerald-600">{{ $currency(transaction.amount) }}</td>
+                                        <td class="p-3 text-sm font-mono text-gray-900/60">{{ transaction.notes || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- REFUNDS LEDGER TABLE -->

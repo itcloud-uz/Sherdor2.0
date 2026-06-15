@@ -106,11 +106,12 @@ class FinanceController extends Controller
                 'creator', 
                 'approver', 
                 'contract.client', 
-                'contract.unit', 
+                'contract.unit.floor.building', 
                 'category', 
                 'cashRegister', 
                 'counterparty', 
-                'invoice'
+                'invoice',
+                'building'
             ])->latest()->limit(500)->get();
         }
 
@@ -329,11 +330,45 @@ class FinanceController extends Controller
                 ['type' => 'expense', 'description' => 'Shartnomadan ortib qolgan va mijozga qaytarilishi kerak bo\'lgan summa']
             );
 
+            $clientId = $transaction->client_id;
+            $counterpartyId = $transaction->counterparty_id;
+            $buildingId = $transaction->building_id;
+
+            if ($transaction->contract_id) {
+                $contract = Contract::find($transaction->contract_id);
+                if ($contract) {
+                    if (!$clientId) {
+                        $clientId = $contract->client_id;
+                    }
+                    if (!$counterpartyId && $clientId) {
+                        $counterparty = \App\Models\Counterparty::where([
+                            'customable_type' => 'App\Models\Client',
+                            'customable_id' => $clientId,
+                        ])->first();
+                        if ($counterparty) {
+                            $counterpartyId = $counterparty->id;
+                        }
+                    }
+                    if (!$buildingId && $contract->unit_id) {
+                        $unit = Unit::find($contract->unit_id);
+                        if ($unit && $unit->floor_id) {
+                            $floor = \App\Models\Floor::find($unit->floor_id);
+                            if ($floor) {
+                                $buildingId = $floor->building_id;
+                            }
+                        }
+                    }
+                }
+            }
+
             Transaction::create([
                 'type' => 'expense',
                 'amount' => $validated['refund_amount'],
                 'account_id' => $transaction->account_id,
                 'contract_id' => $transaction->contract_id,
+                'client_id' => $clientId,
+                'counterparty_id' => $counterpartyId,
+                'building_id' => $buildingId,
                 'category_id' => $pendingCategory->id,
                 'status' => 'pending',
                 'transaction_date' => now(),
@@ -1192,7 +1227,7 @@ class FinanceController extends Controller
 
     public function exportTransactionsExcel(Request $request)
     {
-        $query = Transaction::with(['creator', 'approver', 'cashRegister', 'counterparty', 'category']);
+        $query = Transaction::with(['creator', 'approver', 'cashRegister', 'counterparty', 'category', 'building', 'contract.unit.floor.building']);
 
         if ($request->filled('start_date')) {
             $query->whereDate('transaction_date', '>=', $request->start_date);

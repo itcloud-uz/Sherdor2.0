@@ -502,54 +502,63 @@ async def process_description(message: Message, state: FSMContext):
         
     chat_id = str(message.chat.id)
     
-    loading_msg = await message.answer("Tranzaksiya saqlanmoqda, iltimos kuting...")
-    
-    api_response, status = await send_transaction(
-        chat_id=chat_id,
-        type_=type_,
-        amount=amount,
-        account_id=account_id,
-        payment_method=payment_method,
-        category_id=category_id,
-        description=description,
-        extra_params=extra_params
-    )
-    
-    await state.clear()
-    
-    if status == 200:
-        type_title = "Kirim (Daromad)" if type_ == 'income' else "Chiqim (Xarajat)"
-        acc_name = data.get("account_name", f"Kassa #{account_id}")
-        pay_name = data.get("payment_name", payment_method)
-        cat_name = data.get("category_name", f"Kategoriya #{category_id}")
-        
-        success_text = (
-            f"✅ <b>Muvaffaqiyatli saqlandi va tasdiqlash kutilmoqda!</b>\n\n"
-            f"🏷️ <b>Turi:</b> {type_title}\n"
-            f"💰 <b>Summa:</b> {amount:,.2f} UZS\n"
-            f"🏦 <b>Kassa:</b> {acc_name}\n"
-            f"💳 <b>To'lov turi:</b> {pay_name}\n"
-            f"📂 <b>Kategoriya:</b> {cat_name}\n"
+    try:
+        # API ga so'rov yuborish
+        api_response, status = await send_transaction(
+            chat_id=chat_id,
+            type_=type_,
+            amount=amount,
+            account_id=account_id,
+            payment_method=payment_method,
+            category_id=category_id,
+            description=description,
+            extra_params=extra_params
         )
         
-        if "contract_name" in data:
-            success_text += f"👤 <b>Mijoz/Shartnoma:</b> {data['contract_name']}\n"
-        if "partner_name" in data:
-            success_text += f"👤 <b>Hamkor:</b> {data['partner_name']}\n"
-        if "worker_name" in data:
-            success_text += f"👤 <b>Ishchi:</b> {data['worker_name']}\n"
-        if "supplier_name" in data:
-            success_text += f"👤 <b>Ta'minotchi:</b> {data['supplier_name']}\n"
-        if "building_name" in data:
-            success_text += f"🏢 <b>Obyekt:</b> {data['building_name']}\n"
-        if "brigade_name" in data:
-            success_text += f"👥 <b>Brigada:</b> {data['brigade_name']}\n"
-        if "machine_owner_name" in data:
-            success_text += f"👤 <b>Texnika egasi:</b> {data['machine_owner_name']}\n"
-            
-        success_text += f"💬 <b>Izoh:</b> {description}"
+        await state.clear()
         
-        await loading_msg.edit_text(success_text, parse_mode="HTML", reply_markup=get_main_menu())
-    else:
-        err = api_response.get("error", "Noma'lum xatolik")
-        await loading_msg.edit_text(f"🛑 <b>Xatolik yuz berdi:</b> {err}", parse_mode="HTML", reply_markup=get_main_menu())
+        if status == 200:
+            type_title = "Kirim (Daromad)" if type_ == 'income' else "Chiqim (Xarajat)"
+            acc_name = data.get("account_name", f"Kassa #{account_id}")
+            pay_name = data.get("payment_name", payment_method)
+            cat_name = data.get("category_name", f"Kategoriya #{category_id}")
+            
+            try:
+                formatted_amount = f"{float(amount):,.2f}"
+            except Exception:
+                formatted_amount = str(amount)
+
+            success_text = (
+                f"✅ <b>Muvaffaqiyatli saqlandi va tasdiqlash kutilmoqda!</b>\n\n"
+                f"🏷️ <b>Turi:</b> {type_title}\n"
+                f"💰 <b>Summa:</b> {formatted_amount} UZS\n"
+                f"🏦 <b>Kassa:</b> {acc_name}\n"
+                f"💳 <b>To'lov turi:</b> {pay_name}\n"
+                f"📂 <b>Kategoriya:</b> {cat_name}\n"
+            )
+            
+            if "contract_name" in data:
+                success_text += f"👤 <b>Mijoz/Shartnoma:</b> {data['contract_name']}\n"
+            if "partner_name" in data:
+                success_text += f"👤 <b>Hamkor:</b> {data['partner_name']}\n"
+            if "worker_name" in data:
+                success_text += f"👤 <b>Ishchi:</b> {data['worker_name']}\n"
+            if "supplier_name" in data:
+                success_text += f"👤 <b>Ta'minotchi:</b> {data['supplier_name']}\n"
+            if "building_name" in data:
+                success_text += f"🏢 <b>Obyekt:</b> {data['building_name']}\n"
+            if "brigade_name" in data:
+                success_text += f"👥 <b>Brigada:</b> {data['brigade_name']}\n"
+            if "machine_owner_name" in data:
+                success_text += f"👤 <b>Texnika egasi:</b> {data['machine_owner_name']}\n"
+                
+            success_text += f"💬 <b>Izoh:</b> {description}"
+            
+            await message.answer(success_text, parse_mode="HTML", reply_markup=get_main_menu())
+        else:
+            err = api_response.get("error", "Noma'lum xatolik")
+            await message.answer(f"🛑 <b>Xatolik yuz berdi:</b> {err}", parse_mode="HTML", reply_markup=get_main_menu())
+            
+    except Exception as e:
+        await state.clear()
+        await message.answer(f"🛑 <b>Tizim xatoligi (Sistemni xato):</b> {str(e)}", reply_markup=get_main_menu())

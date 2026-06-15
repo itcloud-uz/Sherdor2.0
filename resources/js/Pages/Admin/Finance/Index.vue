@@ -59,7 +59,8 @@ const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
 const isAdmin = computed(() => {
-    return page.props.auth.user?.role === 'admin';
+    const role = (page.props.auth.user?.role || '').toLowerCase();
+    return role === 'admin' || role === 'super-admin' || role === 'super_admin';
 });
 
 // Tab 11: Reports States
@@ -1247,7 +1248,7 @@ function openQuickTransfer(fromRegister = null) {
 // Contract Approve Details
 const showContractApproveModal = ref(false);
 const selectedContractTxn = ref(null);
-const contractApproveForm = ref({ applied_amount: 0, refund_amount: 0 });
+const contractApproveForm = ref({ applied_amount: 0, refund_amount: 0, account_id: '' });
 
 watch(() => contractApproveForm.value.applied_amount, (newVal) => {
     if (selectedContractTxn.value) {
@@ -1255,31 +1256,58 @@ watch(() => contractApproveForm.value.applied_amount, (newVal) => {
     }
 });
 
+const showApproveModal = ref(false);
+const selectedApproveTxn = ref(null);
+const approveForm = ref({ account_id: '' });
+
 function approve(id) {
     const txn = (props.transactions || []).find(t => t.id === id);
-    if (txn && txn.contract_id && txn.type === 'income') {
+    if (!txn) return;
+    if (txn.contract_id && txn.type === 'income') {
         selectedContractTxn.value = txn;
         contractApproveForm.value.applied_amount = txn.amount;
         contractApproveForm.value.refund_amount = 0;
+        contractApproveForm.value.account_id = txn.account_id || '';
         showContractApproveModal.value = true;
         return;
     }
+    selectedApproveTxn.value = txn;
+    approveForm.value.account_id = txn.account_id || '';
+    showApproveModal.value = true;
+}
+
+function submitApprove() {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.approve', id), {}, {
-        onSuccess: () => isProcessing.value = false,
+    router.post(route('admin.finance.transactions.approve', selectedApproveTxn.value.id), {
+        account_id: approveForm.value.account_id
+    }, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showApproveModal.value = false;
+        },
         onError: () => isProcessing.value = false
     });
 }
 
 function submitContractApprove() {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.approve', selectedContractTxn.value.id), contractApproveForm.value, {
+    router.post(route('admin.finance.transactions.approve', selectedContractTxn.value.id), {
+        applied_amount: contractApproveForm.value.applied_amount,
+        refund_amount: contractApproveForm.value.refund_amount,
+        account_id: contractApproveForm.value.account_id
+    }, {
         onSuccess: () => {
             isProcessing.value = false;
             showContractApproveModal.value = false;
         },
         onError: () => isProcessing.value = false
     });
+}
+
+function getRegisterBuildingName(accountId) {
+    if (!accountId || !props.registers) return null;
+    const reg = props.registers.find(r => r.id === accountId);
+    return reg && reg.building ? reg.building.name : null;
 }
 
 function reject(id) {
@@ -3165,8 +3193,12 @@ function formatMoney(amount, currency = 'UZS') {
                                                 👁️
                                             </button>
                                             <!-- Approve (if pending) -->
-                                            <button v-if="t.status === 'pending' && isAdmin" @click="approve(t.id)" :disabled="isProcessing" class="px-2 py-1 text-[10px] font-bold uppercase bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all rounded-lg" title="Tasdiqlash">
+                                            <button v-if="t.status === 'pending' && isAdmin" @click="approve(t.id)" :disabled="isProcessing" class="px-2.5 py-1 text-[10px] font-bold uppercase bg-emerald-50 border border-emerald-500 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all rounded-lg" title="Tasdiqlash">
                                                 Tasdiqlash
+                                            </button>
+                                            <!-- Reject (if pending) -->
+                                            <button v-if="t.status === 'pending' && isAdmin" @click="reject(t.id)" :disabled="isProcessing" class="px-2.5 py-1 text-[10px] font-bold uppercase bg-red-50 border border-red-500 text-red-600 hover:bg-red-600 hover:text-white transition-all rounded-lg" title="Rad Etish">
+                                                Rad Etish
                                             </button>
                                             <!-- Edit -->
                                             <button v-if="isAdmin" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
@@ -3685,8 +3717,74 @@ function formatMoney(amount, currency = 'UZS') {
                         <label class="block text-gray-400 mb-1 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
                         <input :value="contractApproveForm.refund_amount" type="number" readonly class="bg-gray-100 border border-gray-200 text-gray-500 rounded-md w-full h-9 font-bold">
                     </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1 uppercase">Qabul qiluvchi Kassa / Hisob *</label>
+                        <select v-model="contractApproveForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 px-2 text-xs" required>
+                            <option value="" disabled>Kassani tanlang</option>
+                            <option v-for="r in registers" :key="r.id" :value="r.id">
+                                {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Warning Alerts -->
+                    <div class="space-y-2 pt-2">
+                        <div v-if="contractApproveForm.account_id !== selectedContractTxn?.account_id" class="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-[11px] font-semibold">
+                            ⚠️ Diqqat: Pul dastlab tanlangan hisobdan boshqa hisobga yo'naltirilmoqda!
+                        </div>
+                        <div v-else class="p-3 bg-emerald-50 border border-emerald-150 text-emerald-700 rounded-xl text-[11px] font-semibold">
+                            ✓ Pul dastlab tanlangan kassa hisobiga tushadi.
+                        </div>
+                        <div v-if="getRegisterBuildingName(contractApproveForm.account_id)" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-[11px]">
+                            ℹ️ Ushbu kassa faqat <strong>{{ getRegisterBuildingName(contractApproveForm.account_id) }}</strong> obyekti uchun cheklangan.
+                        </div>
+                    </div>
+
                     <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
                         <button type="button" @click="showContractApproveModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold">Tasdiqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- GENERAL TRANSACTION APPROVE MODAL -->
+        <Modal :show="showApproveModal" @close="showApproveModal = false" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Tranzaksiyani Tasdiqlash</h3>
+                
+                <div class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs space-y-2 font-mono text-gray-600">
+                    <div>Turi: <strong class="text-gray-900 uppercase">{{ selectedApproveTxn?.type === 'income' ? 'Kirim' : 'Chiqim' }}</strong></div>
+                    <div>Summa: <strong class="text-emerald-600 text-sm">{{ formatMoney(selectedApproveTxn?.amount, selectedApproveTxn?.currency) }}</strong></div>
+                    <div>Izoh: <strong class="text-gray-900">{{ selectedApproveTxn?.notes || '-' }}</strong></div>
+                </div>
+
+                <form @submit.prevent="submitApprove" class="space-y-4 font-mono text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1 uppercase">Tasdiqlovchi Kassa / Hisob *</label>
+                        <select v-model="approveForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 px-2 text-xs" required>
+                            <option value="" disabled>Kassani tanlang</option>
+                            <option v-for="r in registers" :key="r.id" :value="r.id">
+                                {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Warning Alerts -->
+                    <div class="space-y-2 pt-2">
+                        <div v-if="approveForm.account_id !== selectedApproveTxn?.account_id" class="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-[11px] font-semibold">
+                            ⚠️ Diqqat: Pul dastlab telegramda belgilangan hisobdan boshqa hisobga yo'naltirilmoqda!
+                        </div>
+                        <div v-else class="p-3 bg-emerald-50 border border-emerald-150 text-emerald-700 rounded-xl text-[11px] font-semibold">
+                            ✓ Pul telegramda tanlangan kassa hisobiga tushadi/chiqadi.
+                        </div>
+                        <div v-if="getRegisterBuildingName(approveForm.account_id)" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-[11px]">
+                            ℹ️ Ushbu kassa faqat <strong>{{ getRegisterBuildingName(approveForm.account_id) }}</strong> obyekti uchun cheklangan.
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                        <button type="button" @click="showApproveModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
                         <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold">Tasdiqlash</button>
                     </div>
                 </form>

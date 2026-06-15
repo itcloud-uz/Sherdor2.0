@@ -759,6 +759,7 @@ watch(() => contractForm.value.actual_paid_amount, (newAmount) => {
 });
 
 const activeTab = ref('dashboard');
+const previousTabBeforeDetail = ref(null);
 const leadsViewMode = ref('kanban'); // 'kanban' or 'list'
 
 // Dashboard Stats & Charts Computeds
@@ -1013,6 +1014,10 @@ const clientDetailLoading = ref(false);
 const detailedClientData = ref(null);
 
 function selectClientForDetail(client) {
+    if (activeTab.value !== 'clients' && !['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(activeTab.value)) {
+        previousTabBeforeDetail.value = activeTab.value;
+    }
+    activeTab.value = 'clients';
     selectedClientForDetail.value = client;
     clientDetailLoading.value = true;
     detailedClientData.value = null;
@@ -1034,6 +1039,15 @@ function selectClientForDetail(client) {
         .finally(() => {
             clientDetailLoading.value = false;
         });
+}
+
+function closeClientDetail() {
+    selectedClientForDetail.value = null;
+    detailedClientData.value = null;
+    if (previousTabBeforeDetail.value) {
+        activeTab.value = previousTabBeforeDetail.value;
+        previousTabBeforeDetail.value = null;
+    }
 }
 
 function getUzFormattedDate() {
@@ -2607,7 +2621,7 @@ function submitPromoRule() {
             <div v-else class="space-y-6">
                 <!-- Breadcrumbs -->
                 <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
-                    <span @click="selectedClientForDetail = null" class="flex items-center gap-1 cursor-pointer hover:underline hover:text-gray-900 transition-colors">
+                    <span @click="closeClientDetail" class="flex items-center gap-1 cursor-pointer hover:underline hover:text-gray-900 transition-colors">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
@@ -2624,7 +2638,7 @@ function submitPromoRule() {
                         <div class="text-xs text-gray-500 font-mono mt-1">{{ getUzFormattedDate() }}</div>
                     </div>
                     <!-- Go back button -->
-                    <button @click="selectedClientForDetail = null" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1">
+                    <button @click="closeClientDetail" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>

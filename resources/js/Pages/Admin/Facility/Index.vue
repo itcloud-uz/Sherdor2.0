@@ -350,18 +350,52 @@ function openBlueprintFullscreen() {
 function isUnitMatchingFilters(unit) {
     if (!unit) return false;
     
-    // Status filter
+    // 1. Search Query Match
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase().trim();
+        const numStr = String(unit.unit_number || '').toLowerCase();
+        const statusStr = String(unit.status || '').toLowerCase();
+        const roomsStr = (unit.rooms_count ? `${unit.rooms_count} xona` : '').toLowerCase();
+        
+        let statusUz = '';
+        if (unit.status === 'available') statusUz = "bo'sh";
+        else if (unit.status === 'sold') statusUz = 'sotilgan';
+        else if (unit.status === 'reserved') statusUz = 'band';
+
+        const match = numStr.includes(query) || 
+                      statusStr.includes(query) || 
+                      statusUz.includes(query) || 
+                      roomsStr.includes(query) ||
+                      String(unit.rooms_count || '').includes(query);
+                      
+        if (!match) return false;
+    }
+    
+    // 2. Status filter (from global search/filter panel)
+    if (selectedStatusFilter.value && unit.status !== selectedStatusFilter.value) {
+        return false;
+    }
+    
+    // 3. Rooms filter (from global search/filter panel)
+    if (selectedRoomsFilter.value) {
+        const roomsVal = Number(selectedRoomsFilter.value);
+        const uRooms = unit.rooms_count || 1;
+        const matchRooms = roomsVal === 5 ? uRooms >= 5 : uRooms === roomsVal;
+        if (!matchRooms) return false;
+    }
+
+    // 4. Status filter (from chessboard local filters)
     if (activeFilters.value.status && unit.status !== activeFilters.value.status) {
         return false;
     }
     
-    // Rooms count filter
+    // 5. Rooms count filter (from chessboard local filters)
     if (activeFilters.value.rooms.length > 0) {
         const rooms = unit.rooms_count || 1;
         if (!activeFilters.value.rooms.includes(rooms)) return false;
     }
     
-    // Area filter
+    // 6. Area filter (from chessboard local filters)
     if (activeFilters.value.minArea !== null && activeFilters.value.minArea !== '') {
         if (unit.area_sqm < Number(activeFilters.value.minArea)) return false;
     }
@@ -369,7 +403,7 @@ function isUnitMatchingFilters(unit) {
         if (unit.area_sqm > Number(activeFilters.value.maxArea)) return false;
     }
     
-    // Price filter
+    // 7. Price filter (from chessboard local filters)
     if (activeFilters.value.minPrice !== null && activeFilters.value.minPrice !== '') {
         if (unit.price < Number(activeFilters.value.minPrice)) return false;
     }
@@ -891,6 +925,8 @@ function onTotalApartmentsInput(e) {
 const searchQuery = ref('');
 const selectedCity = ref('');
 const selectedDistrict = ref('');
+const selectedRoomsFilter = ref('');
+const selectedStatusFilter = ref('');
 
 const cities = computed(() => {
     if (!props.buildings) return [];
@@ -911,21 +947,60 @@ const filteredBuildings = computed(() => {
     return props.buildings.filter(b => {
         // 1. Search Query
         if (searchQuery.value) {
-            const query = searchQuery.value.toLowerCase();
+            const query = searchQuery.value.toLowerCase().trim();
             const nameMatch = (b.name || '').toLowerCase().includes(query);
             const cityMatch = (b.city || '').toLowerCase().includes(query);
             const districtMatch = (b.district || '').toLowerCase().includes(query);
-            if (!nameMatch && !cityMatch && !districtMatch) return false;
+            const blockMatch = (b.block_name || '').toLowerCase().includes(query) || (b.corpus_name || '').toLowerCase().includes(query);
+            
+            // Check inside units (apartments) for unit_number, status, rooms_count
+            const unitMatch = b.floors?.some(f => f.units?.some(u => {
+                const numStr = String(u.unit_number || '').toLowerCase();
+                const statusStr = String(u.status || '').toLowerCase();
+                const roomsStr = (u.rooms_count ? `${u.rooms_count} xona` : '').toLowerCase();
+                
+                // Status translations in Uzbek
+                let statusUz = '';
+                if (u.status === 'available') statusUz = "bo'sh";
+                else if (u.status === 'sold') statusUz = 'sotilgan';
+                else if (u.status === 'reserved') statusUz = 'band';
+
+                return numStr.includes(query) || 
+                       statusStr.includes(query) || 
+                       statusUz.includes(query) || 
+                       roomsStr.includes(query) ||
+                       String(u.rooms_count || '').includes(query);
+            })) || false;
+
+            if (!nameMatch && !cityMatch && !districtMatch && !blockMatch && !unitMatch) {
+                return false;
+            }
         }
 
         // 2. City Filter
-        if (selectedCity.value && b.city !== selectedCity.value) {
+        if (!currentObject.value && selectedCity.value && b.city !== selectedCity.value) {
             return false;
         }
 
         // 3. District Filter
-        if (selectedDistrict.value && b.district !== selectedDistrict.value) {
+        if (!currentObject.value && selectedDistrict.value && b.district !== selectedDistrict.value) {
             return false;
+        }
+
+        // 4. Rooms Filter
+        if (selectedRoomsFilter.value) {
+            const roomsVal = Number(selectedRoomsFilter.value);
+            const hasMatchingRooms = b.floors?.some(f => f.units?.some(u => {
+                const uRooms = u.rooms_count || 1;
+                return roomsVal === 5 ? uRooms >= 5 : uRooms === roomsVal;
+            })) || false;
+            if (!hasMatchingRooms) return false;
+        }
+
+        // 5. Status Filter
+        if (selectedStatusFilter.value) {
+            const hasMatchingStatus = b.floors?.some(f => f.units?.some(u => u.status === selectedStatusFilter.value)) || false;
+            if (!hasMatchingStatus) return false;
         }
 
         return true;
@@ -2470,7 +2545,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
 
                 <!-- Qidiruv va Filtrlar paneli -->
-                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col xl:flex-row xl:items-center gap-4">
                     <!-- Qidiruv -->
                     <div class="flex-1 relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
@@ -2481,55 +2556,95 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <input 
                             v-model="searchQuery" 
                             type="text" 
-                            placeholder="Nomi, shahar yoki tuman bo'yicha qidirish..." 
+                            placeholder="Nomi, shahar, tuman, blok, xonadon raqami, xonalar soni yoki holati bo'yicha..." 
                             class="pl-10 pr-4 py-2.5 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
                         />
                     </div>
 
-                    <!-- Shahar/Viloyat Filtr -->
-                    <div class="w-full md:w-48 relative">
-                        <select 
-                            v-model="selectedCity" 
-                            @change="selectedDistrict = ''"
-                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
-                        >
-                            <option value="">Barchasi (Viloyat)</option>
-                            <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
-                        </select>
-                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </span>
-                    </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <!-- Shahar/Viloyat Filtr -->
+                        <div class="w-full sm:w-44 relative">
+                            <select 
+                                v-model="selectedCity" 
+                                @change="selectedDistrict = ''"
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barchasi (Viloyat)</option>
+                                <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
 
-                    <!-- Tuman Filtr -->
-                    <div class="w-full md:w-48 relative">
-                        <select 
-                            v-model="selectedDistrict" 
-                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
-                        >
-                            <option value="">Barchasi (Tuman)</option>
-                            <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
-                        </select>
-                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </span>
-                    </div>
+                        <!-- Tuman Filtr -->
+                        <div class="w-full sm:w-44 relative">
+                            <select 
+                                v-model="selectedDistrict" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barchasi (Tuman)</option>
+                                <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
 
-                    <!-- Tozalash tugmasi -->
-                    <button 
-                        v-if="searchQuery || selectedCity || selectedDistrict"
-                        @click="searchQuery = ''; selectedCity = ''; selectedDistrict = '';"
-                        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
-                    >
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Tozalash
-                    </button>
+                        <!-- Xonalar soni Filtr -->
+                        <div class="w-full sm:w-40 relative">
+                            <select 
+                                v-model="selectedRoomsFilter" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barcha Xonalar</option>
+                                <option value="1">1 xonali</option>
+                                <option value="2">2 xonali</option>
+                                <option value="3">3 xonali</option>
+                                <option value="4">4 xonali</option>
+                                <option value="5">5+ xonali</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <!-- Xonadon Holati Filtr -->
+                        <div class="w-full sm:w-40 relative">
+                            <select 
+                                v-model="selectedStatusFilter" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barcha Holatlar</option>
+                                <option value="available">Sotuvda (Bo'sh)</option>
+                                <option value="reserved">Bron qilingan</option>
+                                <option value="sold">Sotilgan</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <!-- Tozalash tugmasi -->
+                        <button 
+                            v-if="searchQuery || selectedCity || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
+                            @click="searchQuery = ''; selectedCity = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
+                            class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Tozalash
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2557,8 +2672,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                     </div>
                     
-                    <div v-if="Object.keys(groupedObjects).length === 0" class="col-span-full bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                    <div v-if="props.buildings.length === 0" class="col-span-full bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
                         Hech qanday obyekt topilmadi. Yuqoridagi "+ Yangi Obyekt" orqali obyekt kiritishingiz mumkin.
+                    </div>
+                    <div v-else-if="Object.keys(groupedObjects).length === 0" class="col-span-full bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                        Qidiruv va filtrlar bo'yicha hech qanday obyekt topilmadi.
                     </div>
                 </div>
             </div>
@@ -2570,7 +2688,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
 
                 <!-- Qidiruv va Filtrlar paneli -->
-                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col xl:flex-row xl:items-center gap-4">
                     <!-- Qidiruv -->
                     <div class="flex-1 relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
@@ -2581,55 +2699,95 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <input 
                             v-model="searchQuery" 
                             type="text" 
-                            placeholder="Nomi, shahar yoki tuman bo'yicha qidirish..." 
+                            placeholder="Nomi, shahar, tuman, blok, xonadon raqami, xonalar soni yoki holati bo'yicha..." 
                             class="pl-10 pr-4 py-2.5 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
                         />
                     </div>
 
-                    <!-- Shahar/Viloyat Filtr -->
-                    <div class="w-full md:w-48 relative">
-                        <select 
-                            v-model="selectedCity" 
-                            @change="selectedDistrict = ''"
-                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
-                        >
-                            <option value="">Barchasi (Viloyat)</option>
-                            <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
-                        </select>
-                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </span>
-                    </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <!-- Shahar/Viloyat Filtr -->
+                        <div class="w-full sm:w-44 relative">
+                            <select 
+                                v-model="selectedCity" 
+                                @change="selectedDistrict = ''"
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barchasi (Viloyat)</option>
+                                <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
 
-                    <!-- Tuman Filtr -->
-                    <div class="w-full md:w-48 relative">
-                        <select 
-                            v-model="selectedDistrict" 
-                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
-                        >
-                            <option value="">Barchasi (Tuman)</option>
-                            <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
-                        </select>
-                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </span>
-                    </div>
+                        <!-- Tuman Filtr -->
+                        <div class="w-full sm:w-44 relative">
+                            <select 
+                                v-model="selectedDistrict" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barchasi (Tuman)</option>
+                                <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
 
-                    <!-- Tozalash tugmasi -->
-                    <button 
-                        v-if="searchQuery || selectedCity || selectedDistrict"
-                        @click="searchQuery = ''; selectedCity = ''; selectedDistrict = '';"
-                        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
-                    >
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Tozalash
-                    </button>
+                        <!-- Xonalar soni Filtr -->
+                        <div class="w-full sm:w-40 relative">
+                            <select 
+                                v-model="selectedRoomsFilter" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barcha Xonalar</option>
+                                <option value="1">1 xonali</option>
+                                <option value="2">2 xonali</option>
+                                <option value="3">3 xonali</option>
+                                <option value="4">4 xonali</option>
+                                <option value="5">5+ xonali</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <!-- Xonadon Holati Filtr -->
+                        <div class="w-full sm:w-40 relative">
+                            <select 
+                                v-model="selectedStatusFilter" 
+                                class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                            >
+                                <option value="">Barcha Holatlar</option>
+                                <option value="available">Sotuvda (Bo'sh)</option>
+                                <option value="reserved">Bron qilingan</option>
+                                <option value="sold">Sotilgan</option>
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <!-- Tozalash tugmasi -->
+                        <button 
+                            v-if="searchQuery || selectedCity || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
+                            @click="searchQuery = ''; selectedCity = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
+                            class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Tozalash
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2653,8 +2811,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
                 </div>
 
-                <div v-if="(filteredBuildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
-                    Hozirda hech qanday blok topilmadi.
+                <div v-if="props.buildings.filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                    Hozirda hech qanday blok mavjud emas.
+                </div>
+                <div v-else-if="(filteredBuildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                    Qidiruv va filtrlar bo'yicha hech qanday blok topilmadi.
                 </div>
             </div>
 
@@ -2700,8 +2861,76 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
                 </div>
 
+                <!-- Qidiruv va Filtrlar paneli (Obyekt ichidagi bloklar uchun) -->
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+                    <!-- Qidiruv -->
+                    <div class="flex-1 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Blok nomi, xonadon raqami, xonalar soni yoki holati bo'yicha..." 
+                            class="pl-10 pr-4 py-2.5 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
+                        />
+                    </div>
+
+                    <!-- Xonalar soni Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedRoomsFilter" 
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barcha Xonalar</option>
+                            <option value="1">1 xonali</option>
+                            <option value="2">2 xonali</option>
+                            <option value="3">3 xonali</option>
+                            <option value="4">4 xonali</option>
+                            <option value="5">5+ xonali</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Xonadon Holati Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedStatusFilter" 
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barcha Holatlar</option>
+                            <option value="available">Sotuvda (Bo'sh)</option>
+                            <option value="reserved">Bron qilingan</option>
+                            <option value="sold">Sotilgan</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Tozalash tugmasi -->
+                    <button 
+                        v-if="searchQuery || selectedRoomsFilter || selectedStatusFilter"
+                        @click="searchQuery = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
+                        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
+                    >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Tozalash
+                    </button>
+                </div>
+
                 <!-- Grid of Blocks under this Object -->
-                <div class="space-y-4">
+                <div class="space-y-4 mt-6">
                     <h3 class="text-lg font-bold text-gray-800 uppercase tracking-wider">Bloklar / Korpuslar</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div v-for="building in (groupedObjects[currentObject] || []).filter(b => b.total_floors > 0)" :key="building.id" 
@@ -2723,8 +2952,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                     </div>
                     
-                    <div v-if="(groupedObjects[currentObject] || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                    <div v-if="props.buildings.filter(b => b.name === currentObject && b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
                         Ushbu obyektda hali hech qanday blok qo'shilmagan. Yuqoridagi "+ Yangi Blok" orqali blok kiritishingiz mumkin.
+                    </div>
+                    <div v-else-if="(groupedObjects[currentObject] || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                        Qidiruv va filtrlar bo'yicha hech qanday blok topilmadi.
                     </div>
                 </div>
             </div>

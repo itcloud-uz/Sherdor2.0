@@ -218,8 +218,8 @@ class ContractController extends Controller
 
         // Handle payment capture
         $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
-                         ? $validated['actual_paid_amount'] 
-                         : 0;
+                         ? (float)$validated['actual_paid_amount'] 
+                         : 0.0;
 
         if ($paymentAmount > 0) {
             $paymentMethod = $validated['payment_method'] ?? 'bank';
@@ -234,27 +234,64 @@ class ContractController extends Controller
                 }
             }
 
-            $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                ['name' => 'Mijoz To\'lovi (Shartnoma)'],
-                ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
-            );
+            // Get sum of existing income transactions for this contract
+            $existingTransactions = \App\Models\Transaction::where('contract_id', $contract->id)
+                ->where('type', 'income')
+                ->get();
+                
+            $existingPaidSum = (float)$existingTransactions->sum('amount');
+            
+            if (abs($paymentAmount - $existingPaidSum) > 0.01) {
+                if ($paymentAmount > $existingPaidSum) {
+                    $difference = $paymentAmount - $existingPaidSum;
+                    
+                    $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                        ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+                    );
 
-            $transaction = \App\Models\Transaction::create([
-                'type' => 'income',
-                'amount' => $paymentAmount,
-                'account_type' => $paymentMethod,
-                'account_id' => $accountId,
-                'contract_id' => $contract->id,
-                'category_id' => $incomeCategory->id,
-                'status' => 'pending',
-                'transaction_date' => now()->toDateTimeString(),
-                'notes' => 'Shartnomani tahrirlash paytidagi to\'lov (' . $paymentMethod . ')',
-                'created_by' => auth()->id() ?? 1,
-            ]);
+                    $counterpartyId = null;
+                    if ($contract->client_id) {
+                        $counterpartyId = \App\Models\Counterparty::where([
+                            'customable_type' => 'App\Models\Client',
+                            'customable_id' => $contract->client_id,
+                        ])->value('id');
+                    }
+                    $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
 
-            if ($contract->status === 'active') {
-                $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
-                $financeController->approveTransaction(request(), $transaction);
+                    $transaction = \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $difference,
+                        'account_type' => $paymentMethod,
+                        'account_id' => $accountId,
+                        'contract_id' => $contract->id,
+                        'client_id' => $contract->client_id,
+                        'counterparty_id' => $counterpartyId,
+                        'building_id' => $buildingId,
+                        'category_id' => $incomeCategory->id,
+                        'status' => 'pending',
+                        'transaction_date' => now()->toDateTimeString(),
+                        'notes' => 'Shartnomani tahrirlash paytidagi qo\'shimcha to\'lov (' . $paymentMethod . ')',
+                        'created_by' => auth()->id() ?? 1,
+                    ]);
+
+                    if ($contract->status === 'active') {
+                        $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+                        $financeController->approveTransaction(request(), $transaction);
+                    }
+                } else {
+                    // Try to adjust a pending transaction if one exists
+                    $pendingTx = $existingTransactions->where('status', 'pending')->first();
+                    if ($pendingTx) {
+                        $otherApprovedSum = (float)$existingTransactions->where('status', '!=', 'pending')->sum('amount');
+                        $newPendingAmount = $paymentAmount - $otherApprovedSum;
+                        if ($newPendingAmount > 0.01) {
+                            $pendingTx->update(['amount' => $newPendingAmount]);
+                        } else {
+                            $pendingTx->delete();
+                        }
+                    }
+                }
             }
         }
 

@@ -493,6 +493,11 @@ const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', 
 function editContract(contract) {
     isEditingContract.value = true;
     currentContractId.value = contract.id;
+    
+    const incomeTxns = (contract.transactions || []).filter(t => t.type === 'income');
+    const existingPaidSum = incomeTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const firstTx = incomeTxns.length > 0 ? incomeTxns[0] : null;
+
     contractForm.value = { 
         buyer_type: contract.partner_id ? 'partner' : 'client',
         partner_id: contract.partner_id || '',
@@ -506,9 +511,9 @@ function editContract(contract) {
         term_months: contract.term_months, 
         payment_type: contract.payment_type || 'installment',
         created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
-        actual_paid_amount: '',
-        payment_method: 'bank',
-        account_id: '',
+        actual_paid_amount: existingPaidSum || '',
+        payment_method: firstTx ? firstTx.account_type || 'bank' : 'bank',
+        account_id: firstTx ? firstTx.account_id || '' : '',
         floor: contract.floor || contract.unit?.floor?.floor_number || '',
         rooms: contract.rooms || contract.unit?.rooms_count || ''
     };

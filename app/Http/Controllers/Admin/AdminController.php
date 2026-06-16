@@ -265,6 +265,79 @@ class AdminController extends Controller
         
         $salesByMonth = array_values($monthlySales);
 
+        // 9. Analytics by building (approved income & expense)
+        $buildings = \App\Models\Building::all();
+        $analyticsByBuilding = $buildings->map(function($building) use ($startDate, $endDate) {
+            $incomeQuery = \App\Models\Transaction::where('building_id', $building->id)
+                ->where('type', 'income')
+                ->where('status', 'approved');
+            
+            $expenseQuery = \App\Models\Transaction::where('building_id', $building->id)
+                ->where('type', 'expense')
+                ->where('status', 'approved');
+
+            if ($startDate && $endDate) {
+                $incomeQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+                $expenseQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+            }
+
+            return [
+                'id' => $building->id,
+                'name' => $building->name,
+                'income' => (float) $incomeQuery->sum('amount'),
+                'expense' => (float) $expenseQuery->sum('amount'),
+            ];
+        });
+
+        // 10. Analytics by month (approved income & expense)
+        $analyticsByMonth = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $monthDate = \Carbon\Carbon::now()->subMonths($i);
+            $monthKey = $monthDate->format('Y-m');
+            $monthLabel = $monthDate->translatedFormat('M Y');
+            
+            $startOfMonth = (clone $monthDate)->startOfMonth();
+            $endOfMonth = (clone $monthDate)->endOfMonth();
+            
+            if ($startDate && $endDate) {
+                $filterStart = \Carbon\Carbon::parse($startDate)->startOfDay();
+                $filterEnd = \Carbon\Carbon::parse($endDate)->endOfDay();
+                
+                $actualStart = $startOfMonth->gt($filterStart) ? $startOfMonth : $filterStart;
+                $actualEnd = $endOfMonth->lt($filterEnd) ? $endOfMonth : $filterEnd;
+                
+                if ($actualStart->gt($actualEnd)) {
+                    $income = 0;
+                    $expense = 0;
+                } else {
+                    $income = (float) \App\Models\Transaction::where('type', 'income')
+                        ->where('status', 'approved')
+                        ->whereBetween('transaction_date', [$actualStart, $actualEnd])
+                        ->sum('amount');
+                    $expense = (float) \App\Models\Transaction::where('type', 'expense')
+                        ->where('status', 'approved')
+                        ->whereBetween('transaction_date', [$actualStart, $actualEnd])
+                        ->sum('amount');
+                }
+            } else {
+                $income = (float) \App\Models\Transaction::where('type', 'income')
+                    ->where('status', 'approved')
+                    ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
+                $expense = (float) \App\Models\Transaction::where('type', 'expense')
+                    ->where('status', 'approved')
+                    ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
+            }
+            
+            $analyticsByMonth[] = [
+                'key' => $monthKey,
+                'label' => $monthLabel,
+                'income' => $income,
+                'expense' => $expense,
+            ];
+        }
+
         return Inertia::render('Admin/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalExpenses' => $totalExpenses,
@@ -286,6 +359,8 @@ class AdminController extends Controller
             'financialSummary' => $financialSummary,
             'buildingsSummary' => $buildingsSummary,
             'salesByMonth' => $salesByMonth,
+            'analyticsByBuilding' => $analyticsByBuilding,
+            'analyticsByMonth' => $analyticsByMonth,
             'startDate' => $request->input('start_date'),
             'endDate' => $request->input('end_date'),
         ]);

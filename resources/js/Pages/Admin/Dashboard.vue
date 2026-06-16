@@ -29,6 +29,8 @@ const props = defineProps({
     financialSummary: Object,
     buildingsSummary: Array,
     salesByMonth: Array,
+    analyticsByBuilding: Array,
+    analyticsByMonth: Array,
     startDate: String,
     endDate: String
 });
@@ -140,42 +142,118 @@ const openFinancialDetails = (category) => {
     showFinancialModal.value = true;
 };
 
-// Chart 1: Cash Flow Area
-const cashFlowOptions = {
-    chart: { type: 'area', toolbar: { show: false }, background: 'transparent' },
-    colors: ['#3b82f6', '#ef4444'], // blue-500, red-500
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } },
-    dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2 },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], labels: { style: { colors: '#6b7280' } } },
-    yaxis: { labels: { style: { colors: '#6b7280' }, formatter: (val) => `$${(val / 1000)}k` } },
-    theme: { mode: 'light' },
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
-    legend: { labels: { colors: '#374151' } }
-};
-const cashFlowSeries = [
-    { name: t('income'), data: [15000, 25000, 20000, props.totalRevenue / 10 || 30000, props.totalRevenue / 5 || 40000, props.totalRevenue || 50000] },
-    { name: t('expense'), data: [8000, 15000, 10000, props.totalExpenses / 10 || 15000, props.totalExpenses / 5 || 20000, props.totalExpenses || 25000] }
-];
+// Kirim / Chiqim Analytics
+const activeTab = ref('buildings');
 
-// Chart 2: Facility Radar
-const radarOptions = {
-    chart: { type: 'donut', background: 'transparent' },
-    labels: ['Available', 'Reserved', 'Sold'],
-    colors: ['#10b981', '#f59e0b', '#ef4444'], // emerald-500, amber-500, red-500
-    stroke: { width: 0 },
-    dataLabels: { enabled: false },
-    plotOptions: {
-        pie: { donut: { size: '75%', labels: { show: true, name: { color: '#374151' }, value: { color: '#111827', fontSize: '24px', fontWeight: 600 }, total: { show: true, color: '#6b7280', label: 'Units' } } } }
-    },
-    theme: { mode: 'light' },
-    legend: { position: 'bottom', labels: { colors: '#374151' } }
-};
-const radarSeries = computed(() => [
-    props.unitsStatus?.available || 0,
-    props.unitsStatus?.reserved || 0,
-    props.unitsStatus?.sold || 0
-]);
+const kirimChiqimOptions = computed(() => {
+    const isBuildings = activeTab.value === 'buildings';
+    const categories = isBuildings 
+        ? (props.analyticsByBuilding || []).map(b => b.name || 'Noma\'lum Obyekt')
+        : (props.analyticsByMonth || []).map(m => m.label || '');
+
+    return {
+        chart: {
+            type: 'bar',
+            toolbar: { show: false },
+            background: 'transparent'
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '45%',
+                borderRadius: 6
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            show: true,
+            width: 2,
+            colors: ['transparent']
+        },
+        colors: ['#22c55e', '#ef4444'], // Green for Kirim (income), Red for Chiqim (expense)
+        xaxis: {
+            categories: categories,
+            labels: {
+                style: {
+                    colors: '#6b7280',
+                    fontSize: '11px',
+                    fontWeight: 500
+                }
+            },
+            axisBorder: {
+                show: false
+            },
+            axisTicks: {
+                show: false
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: '#6b7280',
+                    fontSize: '11px'
+                },
+                formatter: (val) => {
+                    if (val >= 1000000000) {
+                        return (val / 1000000000).toFixed(1).replace('.0', '') + 'B';
+                    }
+                    if (val >= 1000000) {
+                        return (val / 1000000).toFixed(1).replace('.0', '') + 'M';
+                    }
+                    if (val >= 1000) {
+                        return (val / 1000).toFixed(1).replace('.0', '') + 'K';
+                    }
+                    return val;
+                }
+            }
+        },
+        grid: {
+            borderColor: '#f3f4f6',
+            strokeDashArray: 4,
+            xaxis: {
+                lines: {
+                    show: false
+                }
+            }
+        },
+        legend: {
+            show: false
+        },
+        tooltip: {
+            shared: true,
+            intersect: false,
+            y: {
+                formatter: (val) => {
+                    return new Intl.NumberFormat('uz-UZ').format(val) + " so'm";
+                }
+            }
+        }
+    };
+});
+
+const kirimChiqimSeries = computed(() => {
+    const isBuildings = activeTab.value === 'buildings';
+    const dataIncome = isBuildings
+        ? (props.analyticsByBuilding || []).map(b => b.income || 0)
+        : (props.analyticsByMonth || []).map(m => m.income || 0);
+
+    const dataExpense = isBuildings
+        ? (props.analyticsByBuilding || []).map(b => b.expense || 0)
+        : (props.analyticsByMonth || []).map(m => m.expense || 0);
+
+    return [
+        {
+            name: 'Kirim',
+            data: dataIncome
+        },
+        {
+            name: 'Chiqim',
+            data: dataExpense
+        }
+    ];
+});
 
 // Chart 3: Lead Source Donut
 const leadSourceOptions = computed(() => ({
@@ -452,126 +530,48 @@ const monthlySalesSeries = computed(() => [{
             </div>
         </div>
 
-        <!-- SECONDARY DETAILS GRID -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- 1. Faol Mijozlar -->
-            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-blue-50 text-blue-500 rounded-2xl">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Faol Mijozlar</p>
-                        <h3 class="text-xl font-bold text-gray-900 mt-0.5">{{ activeClients || 0 }} nafar</h3>
-                    </div>
+        <!-- ANALITIKA SECTION -->
+        <div class="mt-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-900 tracking-tight">Analitika</h3>
+            <p class="text-xs text-gray-400 mt-1 font-medium">Binolaringizning umumiy moliyaviy ko'rsatkichlari</p>
+            
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mt-6 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-bold text-gray-800 tracking-tight">Kirim / Chiqim</h4>
                 </div>
-            </div>
-
-            <!-- 2. Bugungi Xodimlar (Davomat) -->
-            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-indigo-50 text-indigo-500 rounded-2xl">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Xodimlar (Davomat Bugun)</p>
-                        <div class="flex items-center gap-4 mt-0.5">
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-xl font-bold text-emerald-600">{{ attendanceStats?.present || 0 }}</span>
-                                <span class="text-xs text-gray-400 font-medium">kelgan</span>
-                            </div>
-                            <span class="text-gray-300 font-light">|</span>
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-xl font-bold text-rose-600">{{ attendanceStats?.absent || 0 }}</span>
-                                <span class="text-xs text-gray-400 font-medium">kelmagan</span>
-                            </div>
-                        </div>
-                    </div>
+                
+                <!-- Tab headers -->
+                <div class="flex items-center gap-6 border-b border-gray-100 mb-6">
+                    <button 
+                        @click="activeTab = 'buildings'" 
+                        :class="activeTab === 'buildings' ? 'text-gray-900 border-amber-500 font-bold' : 'text-gray-400 border-transparent hover:text-gray-600'" 
+                        class="pb-3 text-sm font-semibold border-b-2 transition-all duration-200"
+                    >
+                        Obyektlar bo'yicha
+                    </button>
+                    <button 
+                        @click="activeTab = 'months'" 
+                        :class="activeTab === 'months' ? 'text-gray-900 border-amber-500 font-bold' : 'text-gray-400 border-transparent hover:text-gray-600'" 
+                        class="pb-3 text-sm font-semibold border-b-2 transition-all duration-200"
+                    >
+                        Oylar bo'yicha
+                    </button>
+                </div>
+                
+                <!-- Chart -->
+                <div class="h-[350px] w-full">
+                    <VueApexCharts type="bar" height="100%" :options="kirimChiqimOptions" :series="kirimChiqimSeries" />
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <!-- WIDGET 3: Financial Wave Chart -->
-            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-[400px] flex flex-col">
-                <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> {{ $t('cash_flow') }}
-                </h3>
-                <div class="flex-1 min-h-0 w-full">
-                    <VueApexCharts type="area" height="100%" :options="cashFlowOptions" :series="cashFlowSeries" />
-                </div>
-            </div>
-
-            <!-- Oylik sotuvlar statistikasi -->
-            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-[400px] flex flex-col">
-                <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-orange-500"></span> Oylik sotuvlar statistikasi
-                </h3>
-                <div class="flex-1 min-h-0 w-full">
-                    <VueApexCharts type="bar" height="100%" width="100%" :options="monthlySalesOptions" :series="monthlySalesSeries" />
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Facility Radar moved to bottom row -->
-            <div class="flex flex-col gap-4">
-                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center flex-1 h-96">
-                    <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 w-full flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> {{ $t('facility_radar') }}
-                    </h3>
-                    <div class="w-full flex-1 flex items-center justify-center">
-                        <VueApexCharts type="donut" width="100%" :options="radarOptions" :series="radarSeries" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Smart Notification Panel -->
-            <div class="lg:col-span-1 bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden flex flex-col h-96 relative group">
-                <div class="bg-amber-50 px-4 py-3 border-b border-amber-100 flex justify-between items-center z-10">
-                    <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> {{ $t('system_alerts') }}
-                    </span>
-                    <span class="text-[10px] font-medium text-amber-600">{{ $t('live') }}</span>
-                </div>
-
-                <div class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-3 z-10">
-                    <div v-for="(alert, index) in systemAlerts" :key="index" class="p-3 rounded-lg border flex items-start gap-3 bg-white" :class="alert.type === 'warning' ? 'border-red-200 text-red-700 bg-red-50' : 'border-blue-200 text-blue-700 bg-blue-50'">
-                        <span class="mt-0.5">{{ alert.type === 'warning' ? '⚠️' : 'ℹ️' }}</span>
-                        <p class="text-xs font-medium">{{ alert.message }}</p>
-                    </div>
-                    <div v-if="!systemAlerts || systemAlerts.length === 0" class="text-center py-8 text-xs font-medium text-emerald-600">
-                        {{ $t('all_systems_good') }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activities Sidebar -->
-            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-96">
-                <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-6 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-gray-400"></span> {{ $t('recent_activities') }}
-                </h3>
-                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                    <div v-for="act in recentActivities" :key="act.id" class="p-4 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-300 transition-colors cursor-pointer group">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider" :class="act.type === 'income' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'">
-                                {{ act.type }}
-                            </span>
-                            <span class="text-[10px] text-gray-500 font-mono">{{ new Date(act.created_at).toLocaleDateString() }}</span>
-                        </div>
-                        <p class="text-sm text-gray-900 font-bold mb-1">{{ $currency(act.amount) }}</p>
-                        <p class="text-xs text-gray-500 truncate">
-                            {{ act.notes || act.paymentSchedule?.contract?.client?.first_name || 'System Generated' }}
-                        </p>
-                    </div>
-                    <div v-if="recentActivities.length === 0" class="text-center py-8 text-sm font-medium text-gray-500">
-                        {{ $t('no_recent_activities') }}
-                    </div>
-                </div>
+        <!-- OYLIK SOTUVLAR STATISTIKASI -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-[400px] flex flex-col mb-8">
+            <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-orange-500"></span> Oylik sotuvlar statistikasi
+            </h3>
+            <div class="flex-1 min-h-0 w-full">
+                <VueApexCharts type="bar" height="100%" width="100%" :options="monthlySalesOptions" :series="monthlySalesSeries" />
             </div>
         </div>
 

@@ -1005,6 +1005,9 @@ function formatDateOnly(dateStr) {
 }
 
 function getDummyBirthDate(client) {
+    if (client && client.birth_date) {
+        return client.birth_date;
+    }
     const years = [1985, 1988, 1990, 1993, 1995, 1997, 1999, 2000, 2002];
     const months = ['02', '05', '09', '11', '12'];
     const days = ['02', '09', '10', '11', '15', '20', '25', '27'];
@@ -1086,6 +1089,11 @@ function exportExcel(contract) {
 
 function getClientGender(client) {
     if (!client) return '—';
+    if (client.gender) {
+        if (client.gender === 'female') return 'Ayol';
+        if (client.gender === 'male') return 'Erkak';
+        return client.gender;
+    }
     const ln = (client.last_name || '').toLowerCase();
     const mn = (client.middle_name || '').toLowerCase();
     const fn = (client.first_name || '').toLowerCase();
@@ -2888,16 +2896,24 @@ function submitPromoRule() {
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs font-sans text-gray-700">
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">ID:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.id }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">—</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 3:</span> <strong class="text-gray-900 font-mono">—</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_2 || '—' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 3:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_3 || '—' }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Jinsi:</span> <strong class="text-gray-900">{{ getClientGender(detailedClientData) }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tug'ilgan sanasi:</span> <strong class="text-gray-900 font-mono">{{ getDummyBirthDate(detailedClientData) }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">Toshkent shahri</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">Mirobod tumani</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">{{ detailedClientData.region || '—' }}</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">{{ detailedClientData.district || '—' }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address || 'address' }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Qo'shilgan sana:</span> <strong class="text-gray-900 font-mono">{{ getUzFormattedDateFromString(detailedClientData.created_at) }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number || 'AA1234567' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport rasmlari:</span> <strong class="text-gray-900">Rasmlar yo'q</strong></div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between">
+                                        <span class="text-gray-400">Passport rasmlari:</span>
+                                        <strong class="text-gray-900">
+                                            <a v-if="detailedClientData.passport_photo" :href="'/storage/' + detailedClientData.passport_photo" target="_blank" class="text-amber-500 hover:underline">
+                                                Ko'rish
+                                            </a>
+                                            <span v-else>Rasmlar yo'q</span>
+                                        </strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>

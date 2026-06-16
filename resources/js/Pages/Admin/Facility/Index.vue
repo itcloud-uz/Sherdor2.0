@@ -2887,19 +2887,41 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             />
                         </div>
 
-                        <!-- Oyni Tanlang diapazoni -->
-                        <div class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-sm">
-                            <input 
-                                v-model="startMonth" 
-                                type="month" 
-                                class="border-0 p-1 text-xs focus:outline-none focus:ring-0 bg-transparent text-gray-700"
-                            />
-                            <span class="text-gray-300 text-xs font-bold font-mono">→</span>
-                            <input 
-                                v-model="endMonth" 
-                                type="month" 
-                                class="border-0 p-1 text-xs focus:outline-none focus:ring-0 bg-transparent text-gray-700"
-                            />
+                        <!-- Oyni Tanlang diapazoni (Redesigned) -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Start Month Input -->
+                            <div class="relative flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-1.5 shadow-sm text-gray-500 hover:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all duration-300">
+                                <span class="text-[9px] uppercase font-bold text-gray-400 absolute -top-2 left-4 bg-white px-1">Sana (Dan)</span>
+                                <input 
+                                    type="month" 
+                                    v-model="startMonth" 
+                                    class="text-xs bg-transparent border-none outline-none text-gray-700 focus:ring-0 w-28 p-0 cursor-pointer font-semibold" 
+                                />
+                            </div>
+
+                            <span class="text-gray-300 font-bold text-xs">→</span>
+
+                            <!-- End Month Input -->
+                            <div class="relative flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-1.5 shadow-sm text-gray-500 hover:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all duration-300">
+                                <span class="text-[9px] uppercase font-bold text-gray-400 absolute -top-2 left-4 bg-white px-1">Sana (Gacham)</span>
+                                <input 
+                                    type="month" 
+                                    v-model="endMonth" 
+                                    class="text-xs bg-transparent border-none outline-none text-gray-700 focus:ring-0 w-28 p-0 cursor-pointer font-semibold" 
+                                />
+                            </div>
+
+                            <!-- Clear Button -->
+                            <button 
+                                v-if="startMonth || endMonth" 
+                                @click="startMonth = ''; endMonth = '';" 
+                                class="p-2 text-gray-400 hover:text-red-500 rounded-2xl bg-white border border-gray-200 hover:border-red-200 transition-colors shadow-sm"
+                                title="Filtrni tozalash"
+                            >
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
                         </div>
 
                         <!-- Excel Tugmasi -->
@@ -2923,11 +2945,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <tr>
                                     <th scope="col" class="px-6 py-4 w-12 text-center">№</th>
                                     <th scope="col" class="px-6 py-4">Nomi</th>
-                                    <th scope="col" class="px-6 py-4 text-center">Maksimal xonadonlar</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Xonadonlar soni</th>
                                     <th scope="col" class="px-6 py-4 text-center">Sotilgan xonadonlar</th>
                                     <th scope="col" class="px-6 py-4 text-center">Sotuvdagi xonadonlar</th>
                                     <th scope="col" class="px-6 py-4 text-right">Sotilgan uylar narxi</th>
-                                    <th scope="col" class="px-6 py-4 text-right">Qarzdorlik narxi</th>
+                                    <th scope="col" class="px-6 py-4 text-right">Kutilayotgan to'lovlar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 font-sans">
@@ -4001,11 +4023,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <tr class="bg-gray-100 text-gray-700 uppercase">
                                     <th class="border border-gray-300 p-2 text-center">A (№)</th>
                                     <th class="border border-gray-300 p-2">B (Nomi)</th>
-                                    <th class="border border-gray-300 p-2 text-center">C (Maksimal xonadonlar)</th>
+                                    <th class="border border-gray-300 p-2 text-center">C (Xonadonlar soni)</th>
                                     <th class="border border-gray-300 p-2 text-center">D (Sotilgan xonadonlar)</th>
                                     <th class="border border-gray-300 p-2 text-center">E (Sotuvdagi xonadonlar)</th>
                                     <th class="border border-gray-300 p-2 text-right">F (Sotilgan uylar narxi)</th>
-                                    <th class="border border-gray-300 p-2 text-right">G (Qarzdorlik narxi)</th>
+                                    <th class="border border-gray-300 p-2 text-right">G (Kutilayotgan to'lovlar)</th>
                                 </tr>
                             </thead>
                             <tbody>

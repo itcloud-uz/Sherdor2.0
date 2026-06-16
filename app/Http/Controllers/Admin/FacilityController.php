@@ -1070,11 +1070,11 @@ class FacilityController extends Controller
             fputcsv($file, [
                 '№', 
                 'Nomi', 
-                'Maksimal xonadonlar', 
+                'Xonadonlar soni', 
                 'Sotilgan xonadonlar', 
                 'Sotuvdagi xonadonlar', 
                 'Sotilgan uylar narxi (so\'m)', 
-                'Qarzdorlik narxi (so\'m)'
+                'Kutilayotgan to\'lovlar (so\'m)'
             ], ';');
 
             $i = 1;

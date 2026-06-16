@@ -13,17 +13,41 @@ use Inertia\Inertia;
 
 class FacilityController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $buildings = Building::with(['floors.units', 'stages'])->get();
         $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->latest()->limit(200)->get();
         $partners = \App\Models\Partner::with('user:id,name')->get();
 
+        $startDate = null;
+        $endDate = null;
+        if ($request->filled('start_month')) {
+            $startDate = \Carbon\Carbon::parse($request->input('start_month'))->startOfMonth()->toDateTimeString();
+        }
+        if ($request->filled('end_month')) {
+            $endDate = \Carbon\Carbon::parse($request->input('end_month'))->endOfMonth()->toDateTimeString();
+        }
+        if ($request->filled('start_date')) {
+            $startDate = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()->toDateTimeString();
+        }
+        if ($request->filled('end_date')) {
+            $endDate = \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()->toDateTimeString();
+        }
+
+        $reportData = $this->getReportData($startDate, $endDate);
+
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,
             'clients' => $clients,
             'partners' => $partners,
-            'registers' => \App\Models\CashRegister::where('is_active', true)->get()
+            'registers' => \App\Models\CashRegister::where('is_active', true)->get(),
+            'reportData' => $reportData,
+            'filters' => [
+                'start_month' => $request->input('start_month'),
+                'end_month' => $request->input('end_month'),
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+            ]
         ]);
     }
 
@@ -944,5 +968,131 @@ class FacilityController extends Controller
         $unit = Unit::findOrFail($id);
         $unit->delete();
         return redirect()->back()->with('message', 'Xonadon/Do\'kon o\'chirildi!');
+    }
+
+    private function getReportData($startDate = null, $endDate = null)
+    {
+        $buildings = Building::with(['floors.units'])->get();
+        $grouped = $buildings->groupBy('name');
+        
+        $report = [];
+        
+        foreach ($grouped as $name => $blocks) {
+            $maxApartments = 0;
+            $soldApartments = 0;
+            $availableApartments = 0;
+            $soldApartmentsPrice = 0;
+            $debtPrice = 0;
+            
+            $buildingIds = $blocks->pluck('id')->toArray();
+            
+            foreach ($blocks as $block) {
+                foreach ($block->floors as $floor) {
+                    $maxApartments += $floor->units->count();
+                    $availableApartments += $floor->units->where('status', 'available')->count();
+                }
+            }
+            
+            $contractsQuery = \App\Models\Contract::whereHas('unit.floor', function($q) use ($buildingIds) {
+                $q->whereIn('building_id', $buildingIds);
+            })->where('status', '!=', 'cancelled');
+            
+            $soldContractsQuery = clone $contractsQuery;
+            if ($startDate && $endDate) {
+                $soldContractsQuery->whereBetween('created_at', [$startDate, $endDate]);
+            }
+            
+            $soldContracts = $soldContractsQuery->with('unit')->get();
+            $soldApartments = $soldContracts->count();
+            $soldApartmentsPrice = $soldContracts->sum('total_amount');
+            
+            $contractIds = $soldContracts->pluck('id')->toArray();
+            
+            $approvedPayments = 0;
+            if (!empty($contractIds)) {
+                $paymentsQuery = \App\Models\Transaction::whereIn('contract_id', $contractIds)
+                    ->where('status', 'approved')
+                    ->where('type', 'income');
+                if ($startDate && $endDate) {
+                    $paymentsQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+                }
+                $approvedPayments = $paymentsQuery->sum('amount');
+            }
+            
+            $debtPrice = max(0, $soldApartmentsPrice - $approvedPayments);
+            
+            $report[] = [
+                'name' => $name,
+                'max_apartments' => $maxApartments,
+                'sold_apartments' => $soldApartments,
+                'available_apartments' => $availableApartments,
+                'sold_apartments_price' => $soldApartmentsPrice,
+                'debt_price' => $debtPrice,
+            ];
+        }
+        
+        return $report;
+    }
+
+    public function exportReport(Request $request)
+    {
+        $startDate = null;
+        $endDate = null;
+        if ($request->filled('start_month')) {
+            $startDate = \Carbon\Carbon::parse($request->input('start_month'))->startOfMonth()->toDateTimeString();
+        }
+        if ($request->filled('end_month')) {
+            $endDate = \Carbon\Carbon::parse($request->input('end_month'))->endOfMonth()->toDateTimeString();
+        }
+        if ($request->filled('start_date')) {
+            $startDate = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()->toDateTimeString();
+        }
+        if ($request->filled('end_date')) {
+            $endDate = \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()->toDateTimeString();
+        }
+
+        $reportData = $this->getReportData($startDate, $endDate);
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=obyektlar_hisoboti_" . date('Y-m-d_H-i') . ".csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($reportData) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM to fix UTF-8 in Excel
+            fputs($file, "\xEF\xBB\xBF");
+
+            fputcsv($file, [
+                '№', 
+                'Nomi', 
+                'Maksimal xonadonlar', 
+                'Sotilgan xonadonlar', 
+                'Sotuvdagi xonadonlar', 
+                'Sotilgan uylar narxi (so\'m)', 
+                'Qarzdorlik narxi (so\'m)'
+            ], ';');
+
+            $i = 1;
+            foreach ($reportData as $row) {
+                fputcsv($file, [
+                    $i++,
+                    $row['name'],
+                    $row['max_apartments'],
+                    $row['sold_apartments'],
+                    $row['available_apartments'],
+                    $row['sold_apartments_price'],
+                    $row['debt_price']
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

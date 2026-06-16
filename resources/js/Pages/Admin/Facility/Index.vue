@@ -12,7 +12,9 @@ const props = defineProps({
     buildings: Array,
     clients: Array,
     partners: Array,
-    registers: Array
+    registers: Array,
+    reportData: Array,
+    filters: Object
 });
 
 const page = usePage();
@@ -583,7 +585,9 @@ watch([currentObject, selectedBuilding, selectedPodyezdFilter], ([newObj, newBui
         let targetBuildingId = null;
         let targetPodyezd = null;
         
-        if (newObj === null) {
+        if (currentView.value === 'report') {
+            targetView = 'report';
+        } else if (newObj === null) {
             if (currentView.value === 'blocks') {
                 targetView = 'blocks';
             } else {
@@ -923,6 +927,32 @@ function onTotalApartmentsInput(e) {
 
 
 const searchQuery = ref('');
+const reportSearchQuery = ref('');
+const startMonth = ref(props.filters?.start_month || '');
+const endMonth = ref(props.filters?.end_month || '');
+const showExcelPreviewModal = ref(false);
+
+const filteredReportData = computed(() => {
+    if (!props.reportData) return [];
+    const query = reportSearchQuery.value.toLowerCase().trim();
+    if (!query) return props.reportData;
+    return props.reportData.filter(row => (row.name || '').toLowerCase().includes(query));
+});
+
+function fetchReportWithDates() {
+    router.get(route('admin.facility'), {
+        view: 'report',
+        start_month: startMonth.value,
+        end_month: endMonth.value
+    }, {
+        preserveState: true,
+        preserveScroll: true
+    });
+}
+
+watch([startMonth, endMonth], () => {
+    fetchReportWithDates();
+});
 const selectedCity = ref('');
 const selectedDistrict = ref('');
 const selectedRoomsFilter = ref('');
@@ -2519,6 +2549,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 <span class="text-gray-300">/</span>
                 <span class="text-gray-800 font-semibold">Barcha Bloklar</span>
             </template>
+            <template v-if="currentView === 'report'">
+                <span class="text-gray-300">/</span>
+                <span class="text-gray-800 font-semibold">Obyektlar Hisoboti</span>
+            </template>
             <template v-if="currentObject">
                 <span class="text-gray-300">/</span>
                 <button @click="selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
@@ -2816,6 +2850,112 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
                 <div v-else-if="(filteredBuildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
                     Qidiruv va filtrlar bo'yicha hech qanday blok topilmadi.
+                </div>
+            </div>
+
+            <!-- VIEW 1.6: Obyektlar Hisoboti Page -->
+            <div v-else-if="currentView === 'report'" class="space-y-6">
+                <!-- Sarlavha paneli -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button 
+                            @click="currentObject = null; selectedBuilding = null; currentView = 'objects'" 
+                            class="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all shadow-sm"
+                            title="Orqaga"
+                        >
+                            <svg class="h-4 w-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
+                        <h2 class="text-2xl font-bold text-gray-900">Obyektlar</h2>
+                    </div>
+
+                    <!-- Filtrlar va Excel -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Qidirish -->
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input 
+                                v-model="reportSearchQuery" 
+                                type="text" 
+                                placeholder="Qidirish..." 
+                                class="pl-9 pr-4 py-2 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
+                            />
+                        </div>
+
+                        <!-- Oyni Tanlang diapazoni -->
+                        <div class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-sm">
+                            <input 
+                                v-model="startMonth" 
+                                type="month" 
+                                class="border-0 p-1 text-xs focus:outline-none focus:ring-0 bg-transparent text-gray-700"
+                            />
+                            <span class="text-gray-300 text-xs font-bold font-mono">→</span>
+                            <input 
+                                v-model="endMonth" 
+                                type="month" 
+                                class="border-0 p-1 text-xs focus:outline-none focus:ring-0 bg-transparent text-gray-700"
+                            />
+                        </div>
+
+                        <!-- Excel Tugmasi -->
+                        <button 
+                            @click="showExcelPreviewModal = true" 
+                            class="px-4 py-2 border border-emerald-600 bg-white hover:bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                            <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Jurnal/Hisobot jadvali -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50/70 border-b border-gray-100 font-sans">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 w-12 text-center">№</th>
+                                    <th scope="col" class="px-6 py-4">Nomi</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Maksimal xonadonlar</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Sotilgan xonadonlar</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Sotuvdagi xonadonlar</th>
+                                    <th scope="col" class="px-6 py-4 text-right">Sotilgan uylar narxi</th>
+                                    <th scope="col" class="px-6 py-4 text-right">Qarzdorlik narxi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-sans">
+                                <tr 
+                                    v-for="(row, idx) in filteredReportData" 
+                                    :key="'rep-'+idx"
+                                    class="bg-white hover:bg-gray-50/50 transition-colors"
+                                >
+                                    <td class="px-6 py-4 text-center font-medium text-gray-900 w-12">{{ idx + 1 }}</td>
+                                    <td class="px-6 py-4 font-semibold text-gray-900">{{ row.name }}</td>
+                                    <td class="px-6 py-4 text-center text-gray-700 font-mono">{{ row.max_apartments }}</td>
+                                    <td class="px-6 py-4 text-center text-gray-700 font-mono">{{ row.sold_apartments }}</td>
+                                    <td class="px-6 py-4 text-center text-gray-700 font-mono">{{ row.available_apartments }}</td>
+                                    <td class="px-6 py-4 text-right text-emerald-600 font-bold font-mono">
+                                        {{ formatSoM(row.sold_apartments_price) }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right text-red-500 font-bold font-mono">
+                                        {{ formatSoM(row.debt_price) }}
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredReportData.length === 0">
+                                    <td colspan="7" class="px-6 py-12 text-center text-gray-500 italic bg-gray-50/30">
+                                        Hisobot bo'yicha hech qanday ma'lumot topilmadi.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -3844,6 +3984,66 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             </div>
 
         </div>
+
+        <!-- EXCEL PREVIEW MODAL -->
+        <Modal :show="showExcelPreviewModal" @close="showExcelPreviewModal = false" maxWidth="4xl">
+            <div class="p-6 font-sans">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900">Excel Yuklab Olish - Oynani ko'rish</h3>
+                    <button @click="showExcelPreviewModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+                </div>
+
+                <!-- Report Table Preview -->
+                <div class="my-6 border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-50/30 p-2">
+                    <div class="overflow-x-auto max-h-[350px]">
+                        <table class="w-full text-xs text-left border-collapse border border-gray-300 bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-700 uppercase">
+                                    <th class="border border-gray-300 p-2 text-center">A (№)</th>
+                                    <th class="border border-gray-300 p-2">B (Nomi)</th>
+                                    <th class="border border-gray-300 p-2 text-center">C (Maksimal xonadonlar)</th>
+                                    <th class="border border-gray-300 p-2 text-center">D (Sotilgan xonadonlar)</th>
+                                    <th class="border border-gray-300 p-2 text-center">E (Sotuvdagi xonadonlar)</th>
+                                    <th class="border border-gray-300 p-2 text-right">F (Sotilgan uylar narxi)</th>
+                                    <th class="border border-gray-300 p-2 text-right">G (Qarzdorlik narxi)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(row, idx) in filteredReportData" :key="'prev-'+idx" class="hover:bg-gray-50">
+                                    <td class="border border-gray-300 p-2 text-center font-mono">{{ idx + 1 }}</td>
+                                    <td class="border border-gray-300 p-2 font-semibold">{{ row.name }}</td>
+                                    <td class="border border-gray-300 p-2 text-center font-mono">{{ row.max_apartments }}</td>
+                                    <td class="border border-gray-300 p-2 text-center font-mono">{{ row.sold_apartments }}</td>
+                                    <td class="border border-gray-300 p-2 text-center font-mono">{{ row.available_apartments }}</td>
+                                    <td class="border border-gray-300 p-2 text-right text-emerald-600 font-bold font-mono">{{ formatSoM(row.sold_apartments_price) }}</td>
+                                    <td class="border border-gray-300 p-2 text-right text-red-500 font-bold font-mono">{{ formatSoM(row.debt_price) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modal Actions/Footer -->
+                <div class="flex justify-end items-center gap-3 pt-4 border-t border-gray-100">
+                    <button 
+                        @click="showExcelPreviewModal = false" 
+                        class="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-all"
+                    >
+                        Bekor qilish
+                    </button>
+                    <a 
+                        :href="route('admin.facility.report.export', { start_month: startMonth, end_month: endMonth })"
+                        @click="showExcelPreviewModal = false"
+                        class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Yuklab olish
+                    </a>
+                </div>
+            </div>
+        </Modal>
 
         <!-- Add/Edit Building Modal -->
         <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false" class="facility-modal-override">

@@ -77,6 +77,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/crm/contracts/{contract}/preview-doc', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewContract'])->name('contracts.document.preview');
     
     Route::post('/contracts/{contract}/upload-signature', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAndVerifySignature'])->name('contracts.upload_signature');
+    Route::get('/facility/report/export', [\App\Http\Controllers\Admin\FacilityController::class, 'exportReport'])->name('facility.report.export');
     Route::get('/facility', [\App\Http\Controllers\Admin\FacilityController::class, 'index'])->name('facility');
     Route::post('/facility/buildings', [\App\Http\Controllers\Admin\FacilityController::class, 'storeBuilding'])->name('facility.buildings.store');
     Route::put('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateBuilding'])->name('facility.buildings.update');

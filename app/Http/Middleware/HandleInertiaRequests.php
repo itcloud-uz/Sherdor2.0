@@ -64,7 +64,31 @@ class HandleInertiaRequests extends Middleware
                 'neon_glow_intensity' => $settings['neon_glow_intensity'] ?? '0 0 15px',
                 'default_currency' => $settings['default_currency'] ?? 'USD',
             ],
-            'locale' => $request->user()?->language ?? session('locale', config('app.locale'))
+            'locale' => $request->user()?->language ?? session('locale', config('app.locale')),
+            'facilitiesMenu' => $request->user() ? \Illuminate\Support\Facades\Cache::remember('facilities_menu_tree_v2', 60, function () {
+                $res = [];
+                $buildings = \App\Models\Building::orderBy('name')->orderBy('block_name')->orderBy('corpus_name')->get();
+                $grouped = $buildings->groupBy('name');
+                foreach ($grouped as $facilityName => $facilityBuildings) {
+                    $blocks = [];
+                    foreach ($facilityBuildings as $b) {
+                        $podyezds = \App\Models\Unit::whereHas('floor', function($q) use ($b) {
+                            $q->where('building_id', $b->id);
+                        })->select('podyezd')->distinct()->orderBy('podyezd')->pluck('podyezd')->toArray();
+                        
+                        $blocks[] = [
+                            'id' => $b->id,
+                            'name' => $b->block_name ?? $b->corpus_name ?? 'Asosiy Blok',
+                            'podyezds' => array_values(array_filter($podyezds, fn($val) => !is_null($val) && $val !== ''))
+                        ];
+                    }
+                    $res[] = [
+                        'name' => $facilityName,
+                        'blocks' => $blocks
+                    ];
+                }
+                return $res;
+            }) : []
         ];
     }
 }

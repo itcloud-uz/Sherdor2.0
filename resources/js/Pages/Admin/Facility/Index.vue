@@ -42,6 +42,7 @@ const currentView = ref('objects');
 const selectedBuilding = ref(null);
 const selectedFloor = ref(null);
 const activeTab = ref('blueprint');
+const selectedPodyezdFilter = ref(null);
 
 // Unit selection state (must be declared before watchers that reference them)
 const selectedUnit = ref(null);
@@ -384,6 +385,16 @@ const sortedFloors = computed(() => {
     return [...selectedBuilding.value.floors].sort((a, b) => a.floor_number - b.floor_number);
 });
 
+const podyezdsToShow = computed(() => {
+    if (!selectedBuilding.value) return [];
+    const count = selectedBuilding.value.entrances_count || 1;
+    const all = Array.from({ length: count }, (_, i) => i + 1);
+    if (selectedPodyezdFilter.value && all.includes(selectedPodyezdFilter.value)) {
+        return [selectedPodyezdFilter.value];
+    }
+    return all;
+});
+
 const formattedCurrentDate = computed(() => {
     const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
     const now = new Date();
@@ -455,30 +466,47 @@ watch(
 
             const viewParam = url.searchParams.get('view');
             const objectParam = url.searchParams.get('object');
+            const buildingIdParam = url.searchParams.get('building_id');
+            const podyezdParam = url.searchParams.get('podyezd');
 
-            if (viewParam) {
-                currentView.value = viewParam;
+            if (buildingIdParam) {
+                const bId = Number(buildingIdParam);
+                const foundB = (props.buildings || []).find(b => b.id === bId);
+                if (foundB) {
+                    selectedBuilding.value = foundB;
+                    currentObject.value = foundB.name;
+                    currentView.value = 'blocks';
+                }
             } else {
-                currentView.value = currentObject.value ? 'object_detail' : 'objects';
+                if (viewParam) {
+                    currentView.value = viewParam;
+                } else {
+                    currentView.value = currentObject.value ? 'object_detail' : 'objects';
+                }
+
+                if (viewParam === 'objects') {
+                    currentObject.value = null;
+                    selectedBuilding.value = null;
+                } else if (viewParam === 'object_detail') {
+                    if (objectParam) {
+                        currentObject.value = objectParam;
+                    } else if (!currentObject.value) {
+                        currentObject.value = 'SHER-DOR TJM';
+                    }
+                    selectedBuilding.value = null;
+                } else if (viewParam === 'blocks') {
+                    if (objectParam) {
+                        currentObject.value = objectParam;
+                    } else {
+                        currentObject.value = null;
+                    }
+                }
             }
 
-            if (viewParam === 'objects') {
-                currentObject.value = null;
-                selectedBuilding.value = null;
-            } else if (viewParam === 'object_detail') {
-                if (objectParam) {
-                    currentObject.value = objectParam;
-                } else if (!currentObject.value) {
-                    currentObject.value = 'SHER-DOR TJM';
-                }
-                selectedBuilding.value = null;
-            } else if (viewParam === 'blocks') {
-                if (objectParam) {
-                    currentObject.value = objectParam;
-                } else {
-                    currentObject.value = null;
-                }
-                // Keep selectedBuilding if it is set, otherwise keep it null to show blocks list
+            if (podyezdParam) {
+                selectedPodyezdFilter.value = Number(podyezdParam);
+            } else {
+                selectedPodyezdFilter.value = null;
             }
         } catch (e) {
             console.error('URL parse error in Facility tab/view watcher', e);
@@ -506,16 +534,20 @@ watch(activeTab, (newTab) => {
     }
 });
 
-// Synchronize URL query parameters with currentObject and selectedBuilding changes inside the component
-watch([currentObject, selectedBuilding], ([newObj, newBuilding]) => {
+// Synchronize URL query parameters with currentObject, selectedBuilding, and selectedPodyezdFilter changes inside the component
+watch([currentObject, selectedBuilding, selectedPodyezdFilter], ([newObj, newBuilding, newPodyezd]) => {
     if (typeof window === 'undefined') return;
     try {
         const url = new URL(window.location.href);
         const currentViewParam = url.searchParams.get('view');
         const currentObjectParam = url.searchParams.get('object');
+        const currentBuildingIdParam = url.searchParams.get('building_id');
+        const currentPodyezdParam = url.searchParams.get('podyezd');
         
         let targetView = null;
         let targetObject = null;
+        let targetBuildingId = null;
+        let targetPodyezd = null;
         
         if (newObj === null) {
             if (currentView.value === 'blocks') {
@@ -529,9 +561,19 @@ watch([currentObject, selectedBuilding], ([newObj, newBuilding]) => {
         } else {
             targetView = 'blocks';
             targetObject = newObj;
+            targetBuildingId = String(newBuilding.id);
+        }
+
+        if (newPodyezd) {
+            targetPodyezd = String(newPodyezd);
         }
         
-        if (currentViewParam !== targetView || currentObjectParam !== targetObject) {
+        if (
+            currentViewParam !== targetView || 
+            currentObjectParam !== targetObject ||
+            currentBuildingIdParam !== targetBuildingId ||
+            currentPodyezdParam !== targetPodyezd
+        ) {
             if (targetView) {
                 url.searchParams.set('view', targetView);
             } else {
@@ -542,6 +584,18 @@ watch([currentObject, selectedBuilding], ([newObj, newBuilding]) => {
                 url.searchParams.set('object', targetObject);
             } else {
                 url.searchParams.delete('object');
+            }
+
+            if (targetBuildingId) {
+                url.searchParams.set('building_id', targetBuildingId);
+            } else {
+                url.searchParams.delete('building_id');
+            }
+
+            if (targetPodyezd) {
+                url.searchParams.set('podyezd', targetPodyezd);
+            } else {
+                url.searchParams.delete('podyezd');
             }
             
             window.history.replaceState(
@@ -834,11 +888,54 @@ function onTotalApartmentsInput(e) {
 
 
 
+const searchQuery = ref('');
+const selectedCity = ref('');
+const selectedDistrict = ref('');
+
+const cities = computed(() => {
+    if (!props.buildings) return [];
+    return [...new Set(props.buildings.map(b => b.city).filter(Boolean))].sort();
+});
+
+const districts = computed(() => {
+    if (!props.buildings) return [];
+    let filtered = props.buildings;
+    if (selectedCity.value) {
+        filtered = filtered.filter(b => b.city === selectedCity.value);
+    }
+    return [...new Set(filtered.map(b => b.district).filter(Boolean))].sort();
+});
+
+const filteredBuildings = computed(() => {
+    if (!props.buildings) return [];
+    return props.buildings.filter(b => {
+        // 1. Search Query
+        if (searchQuery.value) {
+            const query = searchQuery.value.toLowerCase();
+            const nameMatch = (b.name || '').toLowerCase().includes(query);
+            const cityMatch = (b.city || '').toLowerCase().includes(query);
+            const districtMatch = (b.district || '').toLowerCase().includes(query);
+            if (!nameMatch && !cityMatch && !districtMatch) return false;
+        }
+
+        // 2. City Filter
+        if (selectedCity.value && b.city !== selectedCity.value) {
+            return false;
+        }
+
+        // 3. District Filter
+        if (selectedDistrict.value && b.district !== selectedDistrict.value) {
+            return false;
+        }
+
+        return true;
+    });
+});
+
 const expandedObjects = ref({});
 const groupedObjects = computed(() => {
     const groups = {};
-    if (!props.buildings) return groups;
-    props.buildings.forEach(b => {
+    filteredBuildings.value.forEach(b => {
         const objName = b.name || 'Boshqa';
         if (!groups[objName]) {
             groups[objName] = [];
@@ -2372,6 +2469,69 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </button>
                 </div>
 
+                <!-- Qidiruv va Filtrlar paneli -->
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+                    <!-- Qidiruv -->
+                    <div class="flex-1 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Nomi, shahar yoki tuman bo'yicha qidirish..." 
+                            class="pl-10 pr-4 py-2.5 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
+                        />
+                    </div>
+
+                    <!-- Shahar/Viloyat Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedCity" 
+                            @change="selectedDistrict = ''"
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barchasi (Viloyat)</option>
+                            <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Tuman Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedDistrict" 
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barchasi (Tuman)</option>
+                            <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Tozalash tugmasi -->
+                    <button 
+                        v-if="searchQuery || selectedCity || selectedDistrict"
+                        @click="searchQuery = ''; selectedCity = ''; selectedDistrict = '';"
+                        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
+                    >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Tozalash
+                    </button>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div v-for="(blocks, objName) in groupedObjects" :key="objName" 
                          @click="currentObject = objName; selectedBuilding = null"
@@ -2409,8 +2569,71 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <h2 class="text-2xl font-bold text-gray-900">Barcha Obyektlar Bloklari / Korpuslari</h2>
                 </div>
 
+                <!-- Qidiruv va Filtrlar paneli -->
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+                    <!-- Qidiruv -->
+                    <div class="flex-1 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Nomi, shahar yoki tuman bo'yicha qidirish..." 
+                            class="pl-10 pr-4 py-2.5 w-full rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400"
+                        />
+                    </div>
+
+                    <!-- Shahar/Viloyat Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedCity" 
+                            @change="selectedDistrict = ''"
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barchasi (Viloyat)</option>
+                            <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Tuman Filtr -->
+                    <div class="w-full md:w-48 relative">
+                        <select 
+                            v-model="selectedDistrict" 
+                            class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Barchasi (Tuman)</option>
+                            <option v-for="district in districts" :key="district" :value="district">{{ district }}</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Tozalash tugmasi -->
+                    <button 
+                        v-if="searchQuery || selectedCity || selectedDistrict"
+                        @click="searchQuery = ''; selectedCity = ''; selectedDistrict = '';"
+                        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
+                    >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Tozalash
+                    </button>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div v-for="building in (props.buildings || []).filter(b => b.total_floors > 0)" :key="building.id" 
+                    <div v-for="building in (filteredBuildings || []).filter(b => b.total_floors > 0)" :key="building.id" 
                          @click="currentObject = building.name; selectedBuilding = building"
                          class="bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
                         <div class="h-40 overflow-hidden bg-gray-100 relative">
@@ -2430,7 +2653,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
                 </div>
 
-                <div v-if="(props.buildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
+                <div v-if="(filteredBuildings || []).filter(b => b.total_floors > 0).length === 0" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500">
                     Hozirda hech qanday blok topilmadi.
                 </div>
             </div>
@@ -2673,7 +2896,13 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <!-- Tab 1: Blueprint / Chessboard -->
                             <div v-if="activeTab === 'blueprint'" class="animate-fade-in">
                                 <div class="flex justify-between items-center gap-4 mb-6">
-                                    <h4 class="text-sm font-bold font-sans text-gray-800">Xonadonlar Shaxmatkasi</h4>
+                                    <h4 class="text-sm font-bold font-sans text-gray-800 flex items-center gap-2">
+                                        <span>Xonadonlar Shaxmatkasi</span>
+                                        <span v-if="selectedPodyezdFilter" class="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-600 rounded text-xs flex items-center gap-1 font-mono">
+                                            {{ selectedPodyezdFilter }}-podyezd
+                                            <button @click="selectedPodyezdFilter = null" class="hover:text-red-500 font-bold ml-1 text-sm select-none" title="Filtrni tozalash">×</button>
+                                        </span>
+                                    </h4>
                                     <div class="flex items-center gap-2">
                                         <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -2684,11 +2913,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </button>
                                     </div>
                                 </div>
-
-                                <!-- Chessboard Grid -->
-                                <div class="overflow-x-auto pb-4">
-                                    <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
-                                        <div v-for="p in selectedBuilding.entrances_count || 1" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
+ 
+                                 <!-- Chessboard Grid -->
+                                 <div class="overflow-x-auto pb-4">
+                                     <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
+                                         <div v-for="p in podyezdsToShow" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
                                             <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
                                                 {{ p }}-padezd
                                             </h4>

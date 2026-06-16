@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import ThemeProvider from '@/Components/ThemeProvider.vue';
@@ -131,9 +131,66 @@ const isFacilityViewActive = (view, objectName = null) => {
     }
 };
 
+const isBlockActive = (blockId) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.facility') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const buildingIdParam = url.searchParams.get('building_id');
+        return buildingIdParam !== null && Number(buildingIdParam) === Number(blockId);
+    } catch (e) {
+        return false;
+    }
+};
+
+const isPodyezdActive = (blockId, podyezdNumber) => {
+    const currentRoute = route().current();
+    if (currentRoute !== 'admin.facility') return false;
+    try {
+        const url = new URL(page.url, window.location.origin);
+        const buildingIdParam = url.searchParams.get('building_id');
+        const podyezdParam = url.searchParams.get('podyezd');
+        return buildingIdParam !== null && Number(buildingIdParam) === Number(blockId) && podyezdParam !== null && Number(podyezdParam) === Number(podyezdNumber);
+    } catch (e) {
+        return false;
+    }
+};
+
+// Automatically expand active facility and block on route/url changes
+watch(
+    () => page.url,
+    (newUrl) => {
+        try {
+            const url = new URL(newUrl, window.location.origin);
+            const objectParam = url.searchParams.get('object');
+            const buildingIdParam = url.searchParams.get('building_id');
+            
+            if (objectParam) {
+                openFacilities.value[objectParam] = true;
+            }
+            if (buildingIdParam) {
+                openBlocks.value[buildingIdParam] = true;
+            }
+        } catch (e) {
+            console.error('Error auto-expanding menu items:', e);
+        }
+    },
+    { immediate: true }
+);
+
 const currentActiveObject = ref(null);
 const availableObjects = ref([]);
 const isObjectsListOpen = ref(true);
+const openFacilities = ref({});
+const openBlocks = ref({});
+
+const toggleFacilityMenu = (facilityName) => {
+    openFacilities.value[facilityName] = !openFacilities.value[facilityName];
+};
+
+const toggleBlockMenu = (blockId) => {
+    openBlocks.value[blockId] = !openBlocks.value[blockId];
+};
 
 const updateSidebarState = () => {
     if (typeof window !== 'undefined') {
@@ -651,16 +708,7 @@ const formattedDate = computed(() => {
                         </button>
                         
                         <div v-show="isFacilityMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Asosiy -->
-                            <Link
-                                :href="route('admin.facility', { view: 'objects' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityAsosiyActive() ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🏠 Asosiy
-                            </Link>
-
-                            <!-- Obyektlar Toggle and Link -->
+                            <!-- Obyektlar Toggle and Nested Collapsible Tree -->
                             <div class="space-y-1">
                                 <div
                                     class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors"
@@ -687,28 +735,78 @@ const formattedDate = computed(() => {
                                     </button>
                                 </div>
                                 
-                                <!-- Collapsible list of available objects -->
+                                <!-- Collapsible list of available objects with nested blocks and podyezds -->
                                 <div v-show="isObjectsListOpen" class="pl-3 space-y-1 transition-all duration-300 border-l border-gray-100 ml-4">
-                                    <template v-for="obj in (availableObjects.length > 0 ? availableObjects : ['SHER-DOR TJM'])" :key="obj">
-                                        <Link
-                                            :href="route('admin.facility', { view: 'object_detail', object: obj })"
-                                            class="flex items-center gap-2 py-1.5 px-3 rounded-lg text-[11px] font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                            :class="isFacilityViewActive('object_detail', obj) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                                        >
-                                            🏗️ {{ obj }}
-                                        </Link>
-                                    </template>
+                                    <div v-for="fac in ($page.props.facilitiesMenu || [])" :key="fac.name" class="space-y-1">
+                                        <div class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors">
+                                            <Link
+                                                :href="route('admin.facility', { view: 'object_detail', object: fac.name })"
+                                                class="flex-1 flex items-center gap-2 py-1.5 px-3 text-[11px] font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                                                :class="isFacilityViewActive('object_detail', fac.name) ? 'text-blue-600 font-semibold' : ''"
+                                            >
+                                                🏗️ {{ fac.name }}
+                                            </Link>
+                                            <button
+                                                @click="toggleFacilityMenu(fac.name)"
+                                                class="p-1.5 text-gray-400 hover:text-blue-600 focus:outline-none shrink-0"
+                                            >
+                                                <svg
+                                                    class="w-2.5 h-2.5 transition-transform duration-200"
+                                                    :class="openFacilities[fac.name] ? 'rotate-180' : ''"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                >
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Blocks Loop -->
+                                        <div v-show="openFacilities[fac.name]" class="pl-3 space-y-1 transition-all duration-300 border-l border-gray-100 ml-3">
+                                            <div v-for="block in fac.blocks" :key="block.id" class="space-y-1">
+                                                <div class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors">
+                                                    <Link
+                                                        :href="route('admin.facility', { view: 'blocks', object: fac.name, building_id: block.id })"
+                                                        class="flex-1 flex items-center gap-2 py-1 px-3 text-[10px] font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                                                        :class="isBlockActive(block.id) ? 'text-blue-600 font-semibold' : ''"
+                                                    >
+                                                        📦 {{ block.name }}
+                                                    </Link>
+                                                    <button
+                                                        v-if="block.podyezds && block.podyezds.length > 0"
+                                                        @click="toggleBlockMenu(block.id)"
+                                                        class="p-1 text-gray-400 hover:text-blue-600 focus:outline-none shrink-0"
+                                                    >
+                                                        <svg
+                                                            class="w-2 h-2 transition-transform duration-200"
+                                                            :class="openBlocks[block.id] ? 'rotate-180' : ''"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                        >
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Podyezd Loop -->
+                                                <div v-show="openBlocks[block.id]" class="pl-4 space-y-0.5 transition-all duration-300 border-l border-gray-100 ml-2">
+                                                    <Link
+                                                        v-for="p in block.podyezds"
+                                                        :key="p"
+                                                        :href="route('admin.facility', { view: 'blocks', object: fac.name, building_id: block.id, podyezd: p })"
+                                                        class="block py-1 px-3 rounded text-[9px] font-mono font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                                        :class="isPodyezdActive(block.id, p) ? 'text-blue-600 bg-blue-50/50 font-bold border-l-2 border-blue-600 pl-2' : ''"
+                                                    >
+                                                        🚪 {{ p }}-podyezd
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                            
+                                            <div v-if="!fac.blocks || fac.blocks.length === 0" class="text-[9px] text-gray-400 italic pl-3">
+                                                Bloklar yo'q
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- Bloklar -->
-                            <Link
-                                :href="route('admin.facility', { view: 'blocks' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isFacilityViewActive('blocks') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                📦 Bloklar
-                            </Link>
                         </div>
                     </div>
 

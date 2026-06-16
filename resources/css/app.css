@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 125%; /* Increases all rem-based typography globally by 25% (2 sizes) */
+  }
   body {
     background-color: var(--body-bg-color, #F9FAFB);
     color: var(--body-text-color, #111827);
@@ -55,7 +58,7 @@
 
   /* Dynamic Label Styling - Global Override from User Settings */
   label, .label-text {
-    font-size: var(--label-font-size, 12px) !important;
+    font-size: var(--label-font-size, 0.75rem) !important;
     color: var(--label-color, #374151);
     transition: all 0.3s ease;
   }

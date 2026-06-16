@@ -325,15 +325,13 @@ const monthlySalesSeries = computed(() => [{
                 </div>
             </div>
             
-            <!-- Grid Layout for scrollable cards on the left, monthly sales chart on the right -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left: Scrollable Building Cards (2/3 width on desktop) -->
-                <div class="lg:col-span-2 flex overflow-x-auto gap-6 pb-4 scrollbar-thin snap-x">
-                    <div 
-                        v-for="building in filteredBuildingsSummary" 
-                        :key="building.id" 
-                        class="w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 snap-start"
-                    >
+            <!-- Scrollable Building Cards -->
+            <div class="flex overflow-x-auto gap-6 pb-4 scrollbar-thin snap-x w-full">
+                <div 
+                    v-for="building in filteredBuildingsSummary" 
+                    :key="building.id" 
+                    class="w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 snap-start"
+                >
                         <!-- Building Card Header -->
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
@@ -449,17 +447,6 @@ const monthlySalesSeries = computed(() => [{
                                 <span class="text-gray-500 uppercase text-[10px] font-bold">Umumiy summa</span>
                                 <span class="text-gray-900 font-bold text-sm font-display">{{ $currency(building.total_sum) }}</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right side (1/3 width on desktop): Monthly Sales Bar Chart -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col h-[400px] lg:h-full">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-4 bg-orange-500 rounded-full"></span> Oylik sotuvlar statistikasi
-                    </h4>
-                    <div class="flex-1 min-h-0 w-full">
-                        <VueApexCharts type="bar" height="100%" width="100%" :options="monthlySalesOptions" :series="monthlySalesSeries" />
                     </div>
                 </div>
             </div>
@@ -508,14 +495,24 @@ const monthlySalesSeries = computed(() => [{
             </div>
         </div>
 
-        <div class="mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- WIDGET 3: Financial Wave Chart -->
-            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px]">
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-[400px] flex flex-col">
                 <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-blue-500"></span> {{ $t('cash_flow') }}
                 </h3>
-                <div class="h-80">
+                <div class="flex-1 min-h-0 w-full">
                     <VueApexCharts type="area" height="100%" :options="cashFlowOptions" :series="cashFlowSeries" />
+                </div>
+            </div>
+
+            <!-- Oylik sotuvlar statistikasi -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-[400px] flex flex-col">
+                <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span> Oylik sotuvlar statistikasi
+                </h3>
+                <div class="flex-1 min-h-0 w-full">
+                    <VueApexCharts type="bar" height="100%" width="100%" :options="monthlySalesOptions" :series="monthlySalesSeries" />
                 </div>
             </div>
         </div>

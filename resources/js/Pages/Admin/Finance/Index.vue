@@ -84,6 +84,7 @@ const kirimChiqimSearch = ref('');
 const kirimChiqimDateFrom = ref('');
 const kirimChiqimDateTo = ref('');
 const kirimChiqimTableTab = ref('all');
+const kirimChiqimRegisterId = ref('');
 
 function formatMoneyKirimChiqim(amount) {
     const parsed = parseFloat(amount);
@@ -124,6 +125,9 @@ const filteredKirimChiqimTransactions = computed(() => {
             const dateOnly = typeof dateStr === 'string' ? dateStr.split('T')[0] : new Date(dateStr).toISOString().split('T')[0];
             return dateOnly <= kirimChiqimDateTo.value;
         });
+    }
+    if (kirimChiqimRegisterId.value) {
+        result = result.filter(t => t.account_id === parseInt(kirimChiqimRegisterId.value));
     }
     if (kirimChiqimSearch.value) {
         const query = kirimChiqimSearch.value.toLowerCase();
@@ -169,6 +173,28 @@ const displayedKirimChiqimTransactions = computed(() => {
     return list;
 });
 
+const displayedKirimChiqimIncomeSum = computed(() => {
+    return displayedKirimChiqimTransactions.value
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => {
+            const parsed = parseFloat(t.amount);
+            return sum + (isNaN(parsed) ? 0 : parsed);
+        }, 0);
+});
+
+const displayedKirimChiqimExpenseSum = computed(() => {
+    return displayedKirimChiqimTransactions.value
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => {
+            const parsed = parseFloat(t.amount);
+            return sum + (isNaN(parsed) ? 0 : parsed);
+        }, 0);
+});
+
+const displayedKirimChiqimTotalSum = computed(() => {
+    return displayedKirimChiqimIncomeSum.value - displayedKirimChiqimExpenseSum.value;
+});
+
 function exportKirimChiqimToExcel() {
     const headers = ['№', 'Yaratilgan sana', 'Kassa', 'Turi', 'Summa', 'Izoh', 'Xodim'];
     const rows = displayedKirimChiqimTransactions.value.map((t, idx) => {
@@ -185,9 +211,23 @@ function exportKirimChiqimToExcel() {
         ];
     });
 
+    // Add empty row for spacing
+    rows.push([]);
+
+    // Add summary rows based on the active tab
+    if (kirimChiqimTableTab.value === 'all') {
+        rows.push(['', '', '', 'Jami Kirim', displayedKirimChiqimIncomeSum.value, '', '']);
+        rows.push(['', '', '', 'Jami Chiqim', -displayedKirimChiqimExpenseSum.value, '', '']);
+        rows.push(['', '', '', 'Sof Balans', displayedKirimChiqimTotalSum.value, '', '']);
+    } else if (kirimChiqimTableTab.value === 'income') {
+        rows.push(['', '', '', 'Jami Kirim', displayedKirimChiqimIncomeSum.value, '', '']);
+    } else if (kirimChiqimTableTab.value === 'expense') {
+        rows.push(['', '', '', 'Jami Chiqim', -displayedKirimChiqimExpenseSum.value, '', '']);
+    }
+
     const csvContent = [
         headers.join(';'),
-        ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+        ...rows.map(row => row.map(val => `"${String(val !== undefined && val !== null ? val : '').replace(/"/g, '""')}"`).join(';'))
     ].join('\r\n');
 
     const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3195,56 +3235,11 @@ function getCounterpartyStatus(c) {
                     </div>
                 </div>
 
-                <!-- KPI Summary Cards Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Jami Balans -->
-                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Jami Balans</span>
-                            <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-xs">🏦</span>
-                        </div>
-                        <div class="text-xl font-bold font-mono text-gray-900">{{ formatMoney(reportOverviewStats.totalBalances) }}</div>
-                        <div class="text-[10px] text-gray-500 mt-1">Kassalardagi jami naqd va hisobraqam qoldiqlari</div>
-                    </div>
-
-                    <!-- Debitorlik (Mijozlar) -->
-                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Debitorlik (Mijozlar)</span>
-                            <span class="p-1.5 rounded-lg bg-orange-50 text-orange-600 text-xs">📈</span>
-                        </div>
-                        <div class="text-xl font-bold font-mono text-orange-600">{{ formatMoney(reportOverviewStats.totalReceivables) }}</div>
-                        <div class="text-[10px] text-gray-500 mt-1">Mijozlarning shartnoma bo'yicha qarzdorligi</div>
-                    </div>
-
-                    <!-- Kreditorlik (Majburiyatlar) -->
-                    <div class="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Kreditorlik (Majburiyatlar)</span>
-                            <span class="p-1.5 rounded-lg bg-red-50 text-red-600 text-xs">📉</span>
-                        </div>
-                        <div class="text-xl font-bold font-mono text-red-600">{{ formatMoney(reportOverviewStats.totalPayables) }}</div>
-                        <div class="text-[10px] text-gray-500 mt-1">Ta'minotchi, ishchi va kredit majburiyatlari</div>
-                    </div>
-
-                    <!-- Sof Kapital -->
-                    <div class="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow" :class="reportOverviewStats.netCapital >= 0 ? 'border-amber-250 bg-amber-50/5' : 'border-red-200 bg-red-50/5'">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold font-mono text-gray-400 uppercase">Sof Kapital</span>
-                            <span class="p-1.5 rounded-lg text-xs" :class="reportOverviewStats.netCapital >= 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">💎</span>
-                        </div>
-                        <div class="text-xl font-bold font-mono" :class="reportOverviewStats.netCapital >= 0 ? 'text-gray-900' : 'text-red-700'">
-                            {{ formatMoney(reportOverviewStats.netCapital) }}
-                        </div>
-                        <div class="text-[10px] text-gray-500 mt-1">Balans + Debitorlik - Kreditorlik</div>
-                    </div>
-                </div>
-
                 <!-- Inner Sub-Tabs Menu -->
                 <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
                     <button @click="reportSubTab = 'overview'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
                         :class="reportSubTab === 'overview' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
-                        Umumiy tahlil
+                        Kassalar hisobotlari
                     </button>
                     <button @click="reportSubTab = 'kirim_chiqim'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
                         :class="reportSubTab === 'kirim_chiqim' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
@@ -3288,28 +3283,6 @@ function getCounterpartyStatus(c) {
                                 <h2 class="text-xl font-bold font-display text-gray-900">Kirim/Chiqim hisobotlari</h2>
                                 <p class="text-xs text-gray-500 font-semibold mt-1">Kassa operatsiyalari va moliyaviy hisobotlar</p>
                             </div>
-                        </div>
-                        
-                        <div class="flex flex-wrap items-center gap-3 lg:ml-auto w-full lg:w-auto">
-                            <!-- Search -->
-                            <div class="relative w-full sm:w-60">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </span>
-                                <input v-model="kirimChiqimSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-9 pr-4 py-2 text-sm w-full">
-                            </div>
-                            
-                            <!-- Date Range -->
-                            <div class="flex items-center gap-2 w-full sm:w-auto">
-                                <input v-model="kirimChiqimDateFrom" type="date" placeholder="Sanadan" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-xs w-full sm:w-36">
-                                <span class="text-gray-400 font-bold">→</span>
-                                <input v-model="kirimChiqimDateTo" type="date" placeholder="Sanagacha" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-xs w-full sm:w-36">
-                            </div>
-
-                            <!-- Excel button -->
-                            <button @click="exportKirimChiqimToExcel" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 w-full sm:w-auto justify-center">
-                                📊 Excel ga yuklash
-                            </button>
                         </div>
                     </div>
 
@@ -3357,20 +3330,54 @@ function getCounterpartyStatus(c) {
 
                     <!-- Inner tab menu & Unified Table Card -->
                     <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
-                        <!-- Table Inner Tabs (Barcha, Kirim, Chiqim) -->
-                        <div class="flex gap-4 border-b border-gray-100 pb-3">
-                            <button @click="kirimChiqimTableTab = 'all'" class="text-sm font-bold pb-2 transition-all border-b-2"
-                                :class="kirimChiqimTableTab === 'all' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
-                                Barcha
-                            </button>
-                            <button @click="kirimChiqimTableTab = 'income'" class="text-sm font-bold pb-2 transition-all border-b-2"
-                                :class="kirimChiqimTableTab === 'income' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
-                                Kirim
-                            </button>
-                            <button @click="kirimChiqimTableTab = 'expense'" class="text-sm font-bold pb-2 transition-all border-b-2"
-                                :class="kirimChiqimTableTab === 'expense' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
-                                Chiqim
-                            </button>
+                        <!-- Table Inner Tabs & Filters -->
+                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-gray-100 pb-3">
+                            <!-- Left: Table Inner Tabs (Barcha, Kirim, Chiqim) -->
+                            <div class="flex gap-4">
+                                <button @click="kirimChiqimTableTab = 'all'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                    :class="kirimChiqimTableTab === 'all' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                    Barcha
+                                </button>
+                                <button @click="kirimChiqimTableTab = 'income'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                    :class="kirimChiqimTableTab === 'income' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                    Kirim
+                                </button>
+                                <button @click="kirimChiqimTableTab = 'expense'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                    :class="kirimChiqimTableTab === 'expense' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                    Chiqim
+                                </button>
+                            </div>
+
+                            <!-- Right: Search, Date Range, Kassa filter, Excel Button -->
+                            <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                <!-- Search -->
+                                <div class="relative w-full sm:w-48">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </span>
+                                    <input v-model="kirimChiqimSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-9 pr-4 py-1.5 text-xs w-full">
+                                </div>
+
+                                <!-- Date Range -->
+                                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                                    <input v-model="kirimChiqimDateFrom" type="date" placeholder="Sanadan" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2.5 py-1.5 text-xs w-full sm:w-32">
+                                    <span class="text-gray-400 font-bold text-xs">→</span>
+                                    <input v-model="kirimChiqimDateTo" type="date" placeholder="Sanagacha" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2.5 py-1.5 text-xs w-full sm:w-32">
+                                </div>
+
+                                <!-- Kassa Dropdown Filter -->
+                                <div class="relative w-full sm:w-40">
+                                    <select v-model="kirimChiqimRegisterId" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2 py-1.5 text-xs w-full">
+                                        <option value="">Barcha kassalar</option>
+                                        <option v-for="r in registers" :key="r.id" :value="r.id">{{ r.name }}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Excel Button -->
+                                <button @click="exportKirimChiqimToExcel" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 justify-center w-full sm:w-auto">
+                                    📊 Excel ga yuklash
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Table -->
@@ -3408,6 +3415,25 @@ function getCounterpartyStatus(c) {
                                         <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
                                     </tr>
                                 </tbody>
+                                <tfoot v-if="displayedKirimChiqimTransactions.length" class="bg-gray-50 border-t border-gray-200 text-xs font-bold text-gray-700 font-mono">
+                                    <tr>
+                                        <td colspan="4" class="p-3 text-right">Jami:</td>
+                                        <td class="p-3 text-right text-gray-900 whitespace-nowrap">
+                                            <div v-if="kirimChiqimTableTab === 'all'">
+                                                <div class="text-emerald-600 font-black">+{{ formatMoneyKirimChiqim(displayedKirimChiqimIncomeSum) }}</div>
+                                                <div class="text-red-600 font-black">-{{ formatMoneyKirimChiqim(displayedKirimChiqimExpenseSum) }}</div>
+                                                <div class="text-blue-600 border-t border-gray-300 mt-1 pt-1 font-black">Balans: {{ formatMoneyKirimChiqim(displayedKirimChiqimTotalSum) }}</div>
+                                            </div>
+                                            <div v-else-if="kirimChiqimTableTab === 'income'" class="text-emerald-600 font-black">
+                                                +{{ formatMoneyKirimChiqim(displayedKirimChiqimIncomeSum) }}
+                                            </div>
+                                            <div v-else-if="kirimChiqimTableTab === 'expense'" class="text-red-600 font-black">
+                                                -{{ formatMoneyKirimChiqim(displayedKirimChiqimExpenseSum) }}
+                                            </div>
+                                        </td>
+                                        <td colspan="2" class="p-3"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

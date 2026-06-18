@@ -488,7 +488,7 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' });
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -515,7 +515,8 @@ function editContract(contract) {
         payment_method: firstTx ? firstTx.account_type || 'bank' : 'bank',
         account_id: firstTx ? firstTx.account_id || '' : '',
         floor: contract.floor || contract.unit?.floor?.floor_number || '',
-        rooms: contract.rooms || contract.unit?.rooms_count || ''
+        rooms: contract.rooms || contract.unit?.rooms_count || '',
+        user_id: contract.user_id || ''
     };
     showCreateContractModal.value = true;
 }
@@ -550,7 +551,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -660,6 +661,13 @@ const partnersOptions = computed(() => {
     }));
 });
 
+const salesAgentsList = computed(() => {
+    return (props.users || []).filter(u => {
+        const roles = u.roles || [];
+        return roles.some(r => r.name === 'Sotuvchi' || r === 'Sotuvchi');
+    });
+});
+
 watch(() => contractForm.value.unit_id, (newUnitId) => {
     if (newUnitId) {
         const u = props.units.find(un => un.id === newUnitId);
@@ -766,6 +774,127 @@ watch(() => contractForm.value.actual_paid_amount, (newAmount) => {
 const activeTab = ref('dashboard');
 const previousTabBeforeDetail = ref(null);
 const leadsViewMode = ref('kanban'); // 'kanban' or 'list'
+
+// Sales Agents Tab states
+const salesBuildingFilter = ref('');
+const salesSearchQuery = ref('');
+const salesDateFrom = ref('');
+const salesDateTo = ref('');
+
+const getAgentInitials = (name) => {
+    if (!name) return 'S';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        // "Shavkatov Abubakir" -> "AS" (initials reversed for Uzbek name syntax)
+        return (parts[1][0] + parts[0][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+};
+
+const processedSalesAgentsData = computed(() => {
+    const users = props.users || [];
+    return users.map(user => {
+        const leads = user.leads || [];
+        const contracts = user.contracts || [];
+        
+        let filteredLeads = leads;
+        let filteredContracts = contracts;
+        
+        if (salesBuildingFilter.value) {
+            filteredContracts = contracts.filter(c => {
+                const bId = c.unit?.floor?.building_id;
+                return bId === Number(salesBuildingFilter.value);
+            });
+        }
+        
+        if (salesDateFrom.value) {
+            const from = new Date(salesDateFrom.value);
+            filteredLeads = filteredLeads.filter(l => new Date(l.created_at) >= from);
+            filteredContracts = filteredContracts.filter(c => new Date(c.created_at) >= from);
+        }
+        if (salesDateTo.value) {
+            const to = new Date(salesDateTo.value);
+            to.setHours(23, 59, 59, 999);
+            filteredLeads = filteredLeads.filter(l => new Date(l.created_at) <= to);
+            filteredContracts = filteredContracts.filter(c => new Date(c.created_at) <= to);
+        }
+        
+        const activeContracts = filteredContracts.filter(c => c.status !== 'cancelled' && c.status !== 'canceled');
+        const soldCount = activeContracts.length;
+        const soldAmount = activeContracts.reduce((sum, c) => sum + Number(c.total_amount || 0), 0);
+        
+        const newLeadsCount = filteredLeads.filter(l => l.status === 'new').length;
+        const totalLeadsCount = filteredLeads.length;
+        const lostLeadsCount = filteredLeads.filter(l => l.status === 'lost').length;
+        
+        const conversionRate = totalLeadsCount > 0 ? (soldCount / totalLeadsCount) * 100 : 0;
+        
+        return {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            soldCount,
+            soldAmount,
+            newLeadsCount,
+            totalLeadsCount,
+            lostLeadsCount,
+            conversionRate
+        };
+    });
+});
+
+const filteredSalesAgentsData = computed(() => {
+    let data = processedSalesAgentsData.value;
+    
+    if (salesSearchQuery.value) {
+        const query = salesSearchQuery.value.toLowerCase().trim();
+        data = data.filter(item => {
+            return (item.name || '').toLowerCase().includes(query) || 
+                   (item.phone || '').toLowerCase().includes(query);
+        });
+    }
+    
+    return data;
+});
+
+const calculatedSalesStats = computed(() => {
+    const agents = filteredSalesAgentsData.value;
+    const totalAgents = agents.length;
+    
+    const totalSold = agents.reduce((sum, a) => sum + a.soldCount, 0);
+    const totalLeads = agents.reduce((sum, a) => sum + a.totalLeadsCount, 0);
+    const newLeads = agents.reduce((sum, a) => sum + a.newLeadsCount, 0);
+    
+    const avgConversion = totalLeads > 0 ? (totalSold / totalLeads) * 100 : 0;
+    
+    return {
+        totalAgents,
+        totalSold,
+        totalLeads,
+        newLeads,
+        avgConversion
+    };
+});
+
+const exportSalesStatsToExcel = () => {
+    const data = filteredSalesAgentsData.value;
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "№;Ism;Sotilgan xonadonlar;Sotilgan xonadonlar narxi;Yangi lidlar;Jami lidlar;Rad etilgan;Sotuv konversiyasi\n";
+    
+    data.forEach((item, index) => {
+        const name = (item.name || '').replace(/;/g, ' ');
+        const phone = (item.phone || '').replace(/;/g, ' ');
+        csvContent += `${index + 1};"${name} (${phone})";${item.soldCount};${item.soldAmount};${item.newLeadsCount};${item.totalLeadsCount};${item.lostLeadsCount};"${item.conversionRate.toFixed(1)}%"\n`;
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `sotuv_xodimlari_statistikasi_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 // Dashboard Stats & Charts Computeds
 const dashboardStats = computed(() => {
@@ -3599,6 +3728,140 @@ const ledgerReportData = computed(() => {
             </div>
         </div>
 
+        <!-- TAB: SOTUV XODIMLARI (SALES AGENTS PERFORMANCE & STATS) -->
+        <div v-else-if="activeTab === 'sales_agents'" class="space-y-6">
+            <!-- Header bar with title, subtitle and filters (Image 1 style) -->
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <Link :href="route('admin.crm', { tab: 'dashboard' })" class="w-10 h-10 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </Link>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 font-display">Sotuv xodimi</h1>
+                        <p class="text-xs text-gray-500 font-medium mt-0.5">Barcha obyektlar bo'yicha sotuv statistikasi</p>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    <!-- Object Filter -->
+                    <div class="w-full sm:w-48">
+                        <select v-model="salesBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500">
+                            <option value="">Barcha obyektlar</option>
+                            <option v-for="b in props.buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+
+                    <!-- Search Filter -->
+                    <div class="relative flex-1 sm:flex-initial sm:w-48">
+                        <span class="absolute left-3 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input v-model="salesSearchQuery" type="text" placeholder="Qidirish" class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-9 pr-3 py-2 text-xs w-full focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Datepicker Range -->
+                    <div class="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2 bg-white text-xs text-gray-600 w-full sm:w-auto">
+                        <input type="date" v-model="salesDateFrom" class="border-0 p-0 text-xs text-gray-700 bg-transparent focus:ring-0 w-24">
+                        <span class="text-gray-400">→</span>
+                        <input type="date" v-model="salesDateTo" class="border-0 p-0 text-xs text-gray-700 bg-transparent focus:ring-0 w-24">
+                        <span class="text-gray-400">
+                            <svg class="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <!-- Excel Export -->
+                    <button @click="exportSalesStatsToExcel" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 ml-auto xl:ml-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orange gradient statistics bar (matching image 1) -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white shadow-md grid grid-cols-2 md:grid-cols-5 gap-6 divide-y md:divide-y-0 md:divide-x divide-white/20">
+                <div class="flex flex-col justify-center p-2">
+                    <span class="text-xs font-medium text-white/80">Jami sotuvchilar</span>
+                    <span class="text-2xl font-bold mt-1">{{ calculatedSalesStats.totalAgents }} ta</span>
+                </div>
+                <div class="flex flex-col justify-center p-2 md:pl-6">
+                    <span class="text-xs font-medium text-white/80">Jami sotilgan</span>
+                    <span class="text-2xl font-bold mt-1">{{ calculatedSalesStats.totalSold }} ta</span>
+                </div>
+                <div class="flex flex-col justify-center p-2 md:pl-6">
+                    <span class="text-xs font-medium text-white/80">Jami lidlar</span>
+                    <span class="text-2xl font-bold mt-1">{{ calculatedSalesStats.totalLeads }} ta</span>
+                </div>
+                <div class="flex flex-col justify-center p-2 md:pl-6">
+                    <span class="text-xs font-medium text-white/80">Yangi lidlar</span>
+                    <span class="text-2xl font-bold mt-1">{{ calculatedSalesStats.newLeads }} ta</span>
+                </div>
+                <div class="flex flex-col justify-center p-2 md:pl-6">
+                    <span class="text-xs font-medium text-white/80">O'rtacha konversiya</span>
+                    <span class="text-2xl font-bold mt-1">{{ calculatedSalesStats.avgConversion.toFixed(1) }}%</span>
+                </div>
+            </div>
+
+            <!-- Agents performance table card -->
+            <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm font-sans border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs font-semibold border-b border-gray-150 uppercase">
+                            <tr>
+                                <th class="p-4 w-12 text-center">№</th>
+                                <th class="p-4">Ism</th>
+                                <th class="p-4 text-center">Sotilgan xonadonlar</th>
+                                <th class="p-4 text-center">Sotilgan xonadonlar narxi</th>
+                                <th class="p-4 text-center">Yangi lidlar</th>
+                                <th class="p-4 text-center">Jami lidlar</th>
+                                <th class="p-4 text-center">Rad etilgan</th>
+                                <th class="p-4 text-center">Sotuv konversiyasi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700">
+                            <tr v-for="(agent, index) in filteredSalesAgentsData" :key="agent.id" class="hover:bg-gray-50/50 transition-colors">
+                                <td class="p-4 text-center font-mono text-xs text-gray-400">{{ index + 1 }}</td>
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center font-bold text-orange-700 shrink-0 uppercase text-xs">
+                                            {{ getAgentInitials(agent.name) }}
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm capitalize">{{ agent.name }}</h4>
+                                            <p class="text-xs text-gray-500 font-medium mt-0.5">{{ agent.phone || '—' }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-center font-mono font-semibold">{{ agent.soldCount }}</td>
+                                <td class="p-4 text-center font-mono text-gray-900">{{ $currency(agent.soldAmount) }}</td>
+                                <td class="p-4 text-center font-mono text-amber-600">{{ agent.newLeadsCount }}</td>
+                                <td class="p-4 text-center font-mono">{{ agent.totalLeadsCount }}</td>
+                                <td class="p-4 text-center font-mono text-red-500">{{ agent.lostLeadsCount }}</td>
+                                <td class="p-4 text-center">
+                                    <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-mono" :class="agent.conversionRate > 20 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (agent.conversionRate > 0 ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-gray-50 text-gray-600 border border-gray-150')">
+                                        {{ agent.conversionRate.toFixed(1) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredSalesAgentsData.length === 0">
+                                <td colspan="8" class="text-center py-20 text-gray-400 font-medium text-xs">
+                                    Sotuv xodimlari topilmadi
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- TAB: MIJOZ TO'LOVLARI (CLIENT PAYMENTS & DEBTS) -->
         <div v-if="activeTab === 'client_payments'" class="space-y-6">
             <!-- Sub tabs bar -->
@@ -5002,6 +5265,17 @@ const ledgerReportData = computed(() => {
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
                             <input v-model="contractForm.contract_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" placeholder="Masalan: SH-001">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Sotuv xodimi (Sotuvchi)</label>
+                            <select v-model="contractForm.user_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full p-2 text-xs h-9">
+                                <option value="">Sotuvchini tanlang (Ixtiyoriy)</option>
+                                <option v-for="user in salesAgentsList" :key="user.id" :value="user.id">
+                                    {{ user.name }}
+                                </option>
+                            </select>
                         </div>
                     </div>
                     <div>

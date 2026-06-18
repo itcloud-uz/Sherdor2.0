@@ -104,7 +104,7 @@ const allEmployees = computed(() => {
     if (props.users) {
         props.users.forEach(u => {
             const roleName = u.roles?.[0]?.name || 'direktor';
-            const displayRole = roleName === 'Super_Admin' ? 'Super Admin' : (roleName === 'Operator' ? 'operator' : (roleName === 'Partner' ? 'hamkor' : roleName));
+            const displayRole = roleName === 'Super_Admin' ? 'Super Admin' : (roleName === 'Operator' ? 'operator' : (roleName === 'Partner' ? 'hamkor' : (roleName === 'Sotuvchi' ? 'sotuvchi' : roleName)));
             list.push({
                 id: u.id,
                 type: 'user',
@@ -958,6 +958,7 @@ const kpiManagers = computed(() => {
                             <option value="Super_Admin">Super Admin</option>
                             <option value="Operator">Operator</option>
                             <option value="Partner">Hamkor</option>
+                            <option value="Sotuvchi">Sotuvchi</option>
                             <option value="builder">Quruvchi / Usta</option>
                             <option value="driver">Haydovchi</option>
                             <option value="guard">Qorovul</option>
@@ -1704,6 +1705,7 @@ const kpiManagers = computed(() => {
                                 <option value="Super_Admin">Super Admin</option>
                                 <option value="Operator">Operator</option>
                                 <option value="Partner">Hamkor</option>
+                                <option value="Sotuvchi">Sotuvchi</option>
                             </select>
                         </div>
                     </div>

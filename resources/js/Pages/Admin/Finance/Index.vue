@@ -86,32 +86,42 @@ const kirimChiqimDateTo = ref('');
 const kirimChiqimTableTab = ref('all');
 
 function formatMoneyKirimChiqim(amount) {
-    const val = Math.round(parseFloat(amount || 0));
+    const parsed = parseFloat(amount);
+    const val = isNaN(parsed) ? 0 : Math.round(parsed);
     return new Intl.NumberFormat('en-US').format(val) + " so'm";
 }
 
 function formatDateTime(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+    } catch (e) {
+        return '';
+    }
 }
 
 const filteredKirimChiqimTransactions = computed(() => {
-    let result = (props.transactions || []).filter(t => t.status === 'approved');
+    let result = (props.transactions || []).filter(t => t && t.status === 'approved');
     if (kirimChiqimDateFrom.value) {
         result = result.filter(t => {
-            const dateOnly = t.transaction_date || t.created_at?.split('T')[0];
+            const dateStr = t.transaction_date || t.created_at;
+            if (!dateStr) return false;
+            const dateOnly = typeof dateStr === 'string' ? dateStr.split('T')[0] : new Date(dateStr).toISOString().split('T')[0];
             return dateOnly >= kirimChiqimDateFrom.value;
         });
     }
     if (kirimChiqimDateTo.value) {
         result = result.filter(t => {
-            const dateOnly = t.transaction_date || t.created_at?.split('T')[0];
+            const dateStr = t.transaction_date || t.created_at;
+            if (!dateStr) return false;
+            const dateOnly = typeof dateStr === 'string' ? dateStr.split('T')[0] : new Date(dateStr).toISOString().split('T')[0];
             return dateOnly <= kirimChiqimDateTo.value;
         });
     }
@@ -130,13 +140,19 @@ const filteredKirimChiqimTransactions = computed(() => {
 const kirimChiqimTotalIncome = computed(() => {
     return filteredKirimChiqimTransactions.value
         .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        .reduce((sum, t) => {
+            const parsed = parseFloat(t.amount);
+            return sum + (isNaN(parsed) ? 0 : parsed);
+        }, 0);
 });
 
 const kirimChiqimTotalExpense = computed(() => {
     return filteredKirimChiqimTransactions.value
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        .reduce((sum, t) => {
+            const parsed = parseFloat(t.amount);
+            return sum + (isNaN(parsed) ? 0 : parsed);
+        }, 0);
 });
 
 const kirimChiqimBalance = computed(() => {
@@ -155,15 +171,19 @@ const displayedKirimChiqimTransactions = computed(() => {
 
 function exportKirimChiqimToExcel() {
     const headers = ['№', 'Yaratilgan sana', 'Kassa', 'Turi', 'Summa', 'Izoh', 'Xodim'];
-    const rows = displayedKirimChiqimTransactions.value.map((t, idx) => [
-        idx + 1,
-        formatDateTime(t.transaction_date || t.created_at),
-        t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
-        t.type === 'income' ? 'Kirim' : 'Chiqim',
-        Math.round(t.amount),
-        t.notes || '',
-        t.creator?.phone || t.creator?.name || ''
-    ]);
+    const rows = displayedKirimChiqimTransactions.value.map((t, idx) => {
+        const parsedAmount = parseFloat(t.amount);
+        const amountVal = isNaN(parsedAmount) ? 0 : Math.round(parsedAmount);
+        return [
+            idx + 1,
+            formatDateTime(t.transaction_date || t.created_at),
+            t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
+            t.type === 'income' ? 'Kirim' : 'Chiqim',
+            amountVal,
+            t.notes || '',
+            t.creator?.phone || t.creator?.name || ''
+        ];
+    });
 
     const csvContent = [
         headers.join(';'),
@@ -3255,7 +3275,7 @@ function getCounterpartyStatus(c) {
                 <!-- SUB-TAB CONTENT blocks -->
 
                 <!-- SUB-TAB: Kirim/Chiqim Hisobotlari -->
-                <div v-if="reportSubTab === 'kirim_chiqim'" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+                <div v-if="reportSubTab === 'kirim_chiqim'" class="space-y-6">
                     <!-- Header Filters Card -->
                     <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div class="flex items-center gap-3">

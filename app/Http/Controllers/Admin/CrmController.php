@@ -47,14 +47,14 @@ class CrmController extends Controller
         // 2. Leads Tab
         if ($tab === 'leads') {
             $leads = Lead::with('user')->latest()->limit(500)->get();
-            $users = User::orderBy('name', 'asc')->get();
+            $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
         // 3. Clients tabs
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
             $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
             $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
-            $users = User::orderBy('name', 'asc')->get();
+            $users = User::with('roles')->orderBy('name', 'asc')->get();
         } else {
             // Load lightweight clients list for modals/dropdowns on other tabs
             $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get();
@@ -63,6 +63,12 @@ class CrmController extends Controller
         // 4. Contracts Tab
         if ($tab === 'contracts') {
             $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
+            $users = User::with('roles')->orderBy('name', 'asc')->get();
+        }
+
+        // 11. Sales Agents Tab
+        if ($tab === 'sales_agents') {
+            $users = User::role('Sotuvchi')->with(['leads', 'contracts.unit.floor.building', 'roles'])->get();
         }
 
         // Always load units and partners to support contract modals and deep links on any tab
@@ -103,7 +109,7 @@ class CrmController extends Controller
         // 7. Settings Tab
         if ($tab === 'settings') {
             $crmSettings = CrmSetting::all()->pluck('value', 'key');
-            $users = User::orderBy('name', 'asc')->get();
+            $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
         // 8. SMS automation / settings

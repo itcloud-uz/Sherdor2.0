@@ -42,6 +42,11 @@ class User extends Authenticatable
         return $this->hasMany(Lead::class);
     }
 
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
+
     public function building()
     {
         return $this->belongsTo(Building::class);

@@ -32,7 +32,8 @@ class ContractController extends Controller
             'payment_method' => 'nullable|string|in:bank,main,credit',
             'account_id' => 'nullable|exists:cash_registers,id',
             'floor' => 'nullable|string|max:50',
-            'rooms' => 'nullable|integer|min:1'
+            'rooms' => 'nullable|integer|min:1',
+            'user_id' => 'nullable|exists:users,id'
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';
@@ -56,6 +57,7 @@ class ContractController extends Controller
             'contract_number' => $validated['contract_number'] ?? null,
             'floor' => $validated['floor'] ?? null,
             'rooms' => $validated['rooms'] ?? null,
+            'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
             'status' => 'draft'
         ]);
         
@@ -203,6 +205,7 @@ class ContractController extends Controller
             'actual_paid_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|string|in:bank,main,credit',
             'account_id' => 'nullable|exists:cash_registers,id',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         if (($validated['payment_type'] ?? 'installment') === 'full') {

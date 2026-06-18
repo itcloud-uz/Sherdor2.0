@@ -62,6 +62,11 @@ const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
+// Client search states
+const clientSearchQuery = ref('');
+const clientPaymentType = ref('monthly');
+const showClientDropdown = ref(false);
+
 const isAdmin = computed(() => {
     const user = page.props.auth?.user;
     if (!user) return false;
@@ -1040,7 +1045,12 @@ watch(() => form.value.counterparty_id, (newVal) => {
             form.value.client_id = c.type === 'client' ? c.customable_id : '';
             form.value.supplier_id = c.type === 'supplier' ? c.customable_id : '';
             form.value.worker_id = c.type === 'employee' ? c.customable_id : '';
+            if (c.type === 'client') {
+                clientSearchQuery.value = c.name;
+            }
         }
+    } else {
+        clientSearchQuery.value = '';
     }
 });
 
@@ -1478,13 +1488,31 @@ const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
 // Client search and payment type selector state
-const clientSearchQuery = ref('');
-const clientPaymentType = ref('monthly');
 const filteredClientsList = computed(() => {
     const list = props.counterparties?.filter(x => x.type === 'client') || [];
     if (!clientSearchQuery.value) return list;
     const q = clientSearchQuery.value.toLowerCase().trim();
+    const selected = props.counterparties?.find(x => x.id === form.value.counterparty_id);
+    if (selected && selected.name.toLowerCase().trim() === q) return list;
     return list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+});
+
+const closeClientDropdown = () => {
+    setTimeout(() => {
+        showClientDropdown.value = false;
+    }, 200);
+};
+
+const selectClientForQuickTransaction = (c) => {
+    form.value.counterparty_id = c.id;
+    clientSearchQuery.value = c.name;
+    showClientDropdown.value = false;
+};
+
+const selectedClientName = computed(() => {
+    if (!form.value.counterparty_id) return '';
+    const c = props.counterparties?.find(x => x.id === form.value.counterparty_id);
+    return c ? c.name : '';
 });
 
 const handlePaymentTypeChange = () => {
@@ -5067,18 +5095,21 @@ function getCounterpartyStatus(c) {
 
                         <!-- Conditional client section -->
                         <div v-if="requiresClient" class="md:col-span-2 border border-orange-100 p-4 rounded-xl bg-orange-50/10 space-y-3">
-                            <div>
+                            <div class="relative">
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Mijoz (Kontragent)
                                 </label>
-                                <!-- Search Input -->
-                                <input type="text" v-model="clientSearchQuery" placeholder="Mijoz ismini yozib qidiring..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors mb-2" />
-                                <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Mijozni tanlang</option>
-                                    <option v-for="c in filteredClientsList" :key="c.id" :value="c.id">
-                                        {{ c.name }}
-                                    </option>
-                                </select>
+                                <input type="text" v-model="clientSearchQuery" @focus="showClientDropdown = true" @blur="closeClientDropdown" placeholder="Mijoz ismini yozib qidiring..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required />
+                                
+                                <div v-show="showClientDropdown && filteredClientsList.length" class="absolute z-50 left-0 right-0 bg-white border border-slate-250 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                    <div v-for="c in filteredClientsList" :key="c.id" @mousedown="selectClientForQuickTransaction(c)" class="p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 flex justify-between items-center text-xs">
+                                        <span class="font-medium text-slate-800">{{ c.name }}</span>
+                                        <span v-if="c.phone" class="text-slate-400 font-mono text-[10px]">{{ c.phone }}</span>
+                                    </div>
+                                </div>
+                                <span v-if="form.counterparty_id" class="text-[10px] text-slate-500 mt-1 block">
+                                    Tanlandi: <strong class="text-slate-800">{{ selectedClientName }}</strong>
+                                </span>
                             </div>
                             <div v-if="form.client_id">
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">

@@ -1441,7 +1441,9 @@ function submitUnifiedSell() {
                     actual_paid_amount: contractForm.value.actual_paid_amount || (contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment),
                     payment_method: 'bank',
                     floor: selectedFloor.value?.floor_number || '',
-                    rooms: currentSellingUnit.value.rooms_count || ''
+                    rooms: currentSellingUnit.value.rooms_count || '',
+                    is_down_payment_split: contractForm.value.is_down_payment_split || false,
+                    down_payment_split_months: contractForm.value.is_down_payment_split ? (contractForm.value.down_payment_split_months || 1) : 1
                 };
 
                 // Submit contract using Inertia router so that page reloads and state resets cleanly!
@@ -4702,8 +4704,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             1. Mijoz ma'lumotlari
                         </h3>
                         
-                        <!-- Row 1: Familiya, Ism, Sharif, Tug'ilgan sanasi -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                        <!-- Row 1: Familiya, Ism, Sharif -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Familiya</label>
                                 <input v-model="quickClientForm.last_name" type="text" placeholder="Familiyangizni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
@@ -4715,10 +4717,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Sharif</label>
                                 <input v-model="quickClientForm.middle_name" type="text" placeholder="Sharifingizni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tug'ilgan sanasi</label>
-                                <input v-model="quickClientForm.birth_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" placeholder="Sanani tanlang">
                             </div>
                         </div>
 
@@ -4783,21 +4781,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
  
-                        <!-- Row 4: Jinsi, Region, Tuman / Shahar, Manzil -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-4">Jinsi</label>
-                                <div class="flex items-center gap-6 text-xs text-gray-800 pt-1">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" v-model="quickClientForm.gender" value="erkak" class="w-4 h-4 text-[#f2a900] border-gray-300 focus:ring-[#f2a900] focus:ring-2 focus:ring-offset-0">
-                                        <span>Erkak</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" v-model="quickClientForm.gender" value="ayol" class="w-4 h-4 text-[#f2a900] border-gray-300 focus:ring-[#f2a900] focus:ring-2 focus:ring-offset-0">
-                                        <span>Ayol</span>
-                                    </label>
-                                </div>
-                            </div>
+                        <!-- Row 4: Region, Tuman / Shahar, Manzil -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Region</label>
                                 <div class="relative">
@@ -4925,11 +4910,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             3. Shartnoma va to'lov
                         </h3>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma raqami</label>
-                                <input v-model="contractForm.contract_number" type="text" placeholder="Masalan: SH-001" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
-                            </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Umumiy narxi (QQS bilan)</label>
                                 <input v-model.number="contractForm.total_amount" type="number" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
@@ -4953,7 +4934,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mt-4" v-if="contractForm.payment_type === 'installment'">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4" v-if="contractForm.payment_type === 'installment'">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Boshlang'ich to'lov</label>
                                 <input v-model.number="contractForm.down_payment" type="number" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
@@ -4961,6 +4942,24 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Muddat (oy)</label>
                                 <input v-model.number="contractForm.term_months" type="number" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Boshlang'ich to'lovni bo'lib to'lash (Split down payment option) -->
+                        <div class="space-y-3 p-4 bg-amber-50/50 border border-amber-100 rounded-xl mt-4" v-if="contractForm.payment_type === 'installment' && Number(contractForm.down_payment) > 0">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" v-model="contractForm.is_down_payment_split" class="text-amber-500 rounded border-gray-300 focus:ring-amber-500">
+                                <span class="text-xs font-semibold text-gray-800">Boshlang'ich to'lovni ham bo'lib to'lash</span>
+                            </label>
+                            
+                            <div v-if="contractForm.is_down_payment_split" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-2">
+                                <div>
+                                    <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Boshlang'ich to'lov muddati (oy)</label>
+                                    <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" required />
+                                </div>
+                            </div>
+                            <div v-if="contractForm.is_down_payment_split" class="text-xs text-amber-700 font-sans">
+                                * Boshlang'ich to'lov har oy <strong>{{ formatSoM(Math.round(Number(contractForm.down_payment || 0) / Number(contractForm.down_payment_split_months || 1))) }}</strong>dan, jami <strong>{{ contractForm.down_payment_split_months || 1 }} oy</strong> davomida to'lanadi. Qolgan summa esa undan keyin <strong>{{ contractForm.term_months }} oy</strong> davomida bo'lib to'lanadi.
                             </div>
                         </div>
                     </div>

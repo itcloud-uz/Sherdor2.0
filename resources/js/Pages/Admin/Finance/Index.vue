@@ -5130,22 +5130,7 @@ function getCounterpartyStatus(c) {
                                 </select>
                             </div>
 
-                            <!-- Invoice Selection Area -->
-                            <div v-if="form.counterparty_id && (requiresClient || requiresSupplier)" class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl space-y-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-semibold text-slate-700">Hisob-faktura</span>
-                                    <button type="button" @click="showInvoiceSelectorModal = true" class="text-xs font-bold text-orange-600 hover:underline">
-                                        Tanlash ({{ selectedInvoiceIds.length }} ta tanlangan)
-                                    </button>
-                                </div>
-                                <div v-if="selectedInvoiceIds.length > 0" class="flex flex-wrap gap-1.5">
-                                    <span v-for="id in selectedInvoiceIds" :key="id" class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2.5 py-0.5 text-[10px] text-slate-700 font-mono shadow-sm">
-                                        {{ props.invoices?.find(i => i.id === id)?.invoice_number || (typeof id === 'string' && id.startsWith('sched_') ? 'To\'lov Rejasi #' + id.replace('sched_', '') : `#${id}`) }}
-                                        <button type="button" @click="selectedInvoiceIds = selectedInvoiceIds.filter(x => x !== id)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
-                                    </span>
-                                </div>
-                                <span v-else class="text-[10px] text-slate-400 block font-mono">Tanlanmagan</span>
-                            </div>
+
 
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">

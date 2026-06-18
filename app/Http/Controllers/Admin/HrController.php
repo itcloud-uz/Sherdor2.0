@@ -17,7 +17,7 @@ class HrController extends Controller
 {
     public function index()
     {
-        $tab = (int)request('tab', 0);
+        $tab = request('tab', '0');
 
         $users = [];
         $attendanceLogs = [];
@@ -31,13 +31,13 @@ class HrController extends Controller
         $payrolls = [];
         $kpiSettings = null;
 
-        if ($tab === 0 || $tab === 1 || $tab === 2) {
+        if ($tab === '0' || $tab === '1' || $tab === '2' || $tab === 0 || $tab === 1 || $tab === 2) {
             $users = \App\Models\User::with(['roles', 'transactions'])->withCount(['leads' => function($q) {
                 $q->where('status', 'qualified');
             }])->get();
         }
 
-        if ($tab === 0 || $tab === 1) {
+        if ($tab === '0' || $tab === '1' || $tab === 0 || $tab === 1) {
             $attendanceLogs = \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get();
             $workers = Worker::with(['brigade', 'salaryHistories', 'transactions'])->get();
             $brigades = \App\Models\Brigade::with('workers')->get();
@@ -49,8 +49,13 @@ class HrController extends Controller
             $payrolls = Payroll::with('transaction')->latest()->limit(500)->get();
         }
 
-        if ($tab === 2) {
+        if ($tab === '2' || $tab === 2) {
             $kpiSettings = \App\Models\CrmSetting::where('key', 'kpi_settings')->first();
+        }
+
+        if ($tab === 'sales_agents') {
+            $users = \App\Models\User::role('Sotuvchi')->with(['leads', 'contracts.unit.floor.building', 'roles'])->get();
+            $buildings = Building::with('floors.units')->get();
         }
 
         return Inertia::render('Admin/HR/Index', [

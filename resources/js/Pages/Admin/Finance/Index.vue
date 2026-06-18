@@ -1470,9 +1470,63 @@ const isGuardSelected = computed(() => {
 const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
 const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
 const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
-const requiresClient = computed(() => selectedCategoryName.value.includes('mijoz') || selectedCategoryName.value.includes('client'));
+const requiresClient = computed(() => {
+    const name = selectedCategoryName.value.toLowerCase();
+    return name.includes('mijoz') || name.includes('client') || name.includes("boshlang'ich to'lov") || name.includes("boshlang'ich to’lov") || clientPaymentType.value === 'initial';
+});
 const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner') || selectedCategoryName.value.includes('sarmoya') || selectedCategoryName.value.includes('investitsiya'));
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
+
+// Client search and payment type selector state
+const clientSearchQuery = ref('');
+const clientPaymentType = ref('monthly');
+const filteredClientsList = computed(() => {
+    const list = props.counterparties?.filter(x => x.type === 'client') || [];
+    if (!clientSearchQuery.value) return list;
+    const q = clientSearchQuery.value.toLowerCase().trim();
+    return list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+});
+
+const handlePaymentTypeChange = () => {
+    if (clientPaymentType.value === 'initial') {
+        form.value.payment_schedule_id = '';
+        const existingCat = props.categories?.find(c => c.name.toLowerCase() === "boshlang'ich to'lov" || c.name.toLowerCase() === "boshlang'ich to’lov");
+        if (existingCat) {
+            isNewCategory.value = false;
+            form.value.category_id = existingCat.id;
+            form.value.category_name = existingCat.name;
+        } else {
+            isNewCategory.value = true;
+            form.value.category_id = '';
+            form.value.category_name = "Boshlang'ich to'lov";
+        }
+    } else {
+        const existingCat = props.categories?.find(c => c.name.toLowerCase().includes("mijoz to'lovi") || c.name.toLowerCase().includes("mijoz to’lovi"));
+        if (existingCat) {
+            isNewCategory.value = false;
+            form.value.category_id = existingCat.id;
+            form.value.category_name = existingCat.name;
+        } else {
+            isNewCategory.value = true;
+            form.value.category_id = '';
+            form.value.category_name = "Mijoz To'lovi (Shartnoma)";
+        }
+    }
+};
+
+watch(() => form.value.category_id, (newVal) => {
+    if (newVal) {
+        const cat = props.categories?.find(c => c.id === newVal);
+        if (cat) {
+            const name = cat.name.toLowerCase();
+            if (name === "boshlang'ich to'lov" || name === "boshlang'ich to’lov") {
+                clientPaymentType.value = 'initial';
+            } else if (name.includes("mijoz") || name.includes("client")) {
+                clientPaymentType.value = 'monthly';
+            }
+        }
+    }
+});
 
 const pendingRefunds = computed(() => {
     return (props.transactions || []).filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
@@ -1611,6 +1665,8 @@ function submitTransaction() {
             selectedInvoiceIds.value = [];
             extraNotesInput.value = '';
             documentNumberInput.value = '';
+            clientSearchQuery.value = '';
+            clientPaymentType.value = 'monthly';
             isEditingDocNumber.value = false;
             selectedParentRegisterId.value = '';
             selectedSubRegisterId.value = '';
@@ -1668,6 +1724,8 @@ function openQuickTransaction(type) {
     selectedInvoiceIds.value = [];
     invoiceSearchQuery.value = '';
     invoiceCurrencyFilter.value = '';
+    clientSearchQuery.value = '';
+    clientPaymentType.value = 'monthly';
     documentNumberInput.value = String(nextDocNumber.value);
     isEditingDocNumber.value = false;
     extraNotesInput.value = '';
@@ -5007,137 +5065,154 @@ function getCounterpartyStatus(c) {
                             </div>
                         </div>
 
-                        <!-- Row 5: Dynamic Target Fields & Izohlar -->
-                        <div class="md:col-span-2 space-y-3">
-                            <!-- Dynamic selectors based on categories -->
-                            <div v-if="requiresClient" class="border border-orange-100 p-4 rounded-xl bg-orange-50/10 space-y-3">
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                        * Mijoz (Kontragent)
-                                    </label>
-                                    <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                        <option value="" disabled>Mijozni tanlang</option>
-                                        <option v-for="c in counterparties.filter(x => x.type === 'client')" :key="c.id" :value="c.id">
-                                            {{ c.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div v-if="form.client_id">
-                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                        * Mijoz Shartnomasi
-                                    </label>
-                                    <select v-model="form.contract_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                        <option value="" disabled>Shartnomani tanlang</option>
-                                        <option v-for="c in clientContracts" :key="c.id" :value="c.id">
-                                            Shartnoma #{{ c.contract_number || c.id }} - Xona: {{ c.unit?.unit_number || 'Noma\'lum' }}
-                                        </option>
-                                    </select>
-                                    <span v-if="clientContracts.length === 0" class="text-[10px] text-red-500 mt-1 block font-mono">
-                                        Ushbu mijoz uchun faol shartnoma topilmadi!
-                                    </span>
-
-                                    <!-- Unpaid Installment Schedule list -->
-                                    <div v-if="form.contract_id && contractSchedules.length > 0" class="mt-2 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
-                                        <label class="block text-[10px] font-mono text-slate-500 uppercase mb-2">
-                                            To'lov Rejasi (Oylik to'lovlar)
-                                        </label>
-                                        <div class="max-h-36 overflow-y-auto space-y-1">
-                                            <div v-for="(s, index) in contractSchedules" :key="s.id" 
-                                                 @click="selectScheduleAmount(s)"
-                                                 class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
-                                                 :class="form.payment_schedule_id === s.id ? 'border-orange-500 bg-orange-50/60 font-bold shadow-sm' : 'border-transparent hover:border-orange-200 hover:bg-orange-50/50'">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-mono text-[9px]">
-                                                        {{ index + 1 }}
-                                                    </span>
-                                                    <span class="text-slate-600 font-medium">
-                                                        Muddati: {{ s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum' }}
-                                                    </span>
-                                                </div>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
-                                                        {{ formatMoney(Number(s.expected_amount) - Number(s.paid_amount || 0), 'so\'m') }}
-                                                    </span>
-                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
-                                                          :class="s.status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
-                                                        {{ s.status === 'partial' ? 'Qisman' : 'Kutilmoqda' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="text-[9px] text-slate-400 mt-1">💡 To'lov summasini avtomatik to'ldirish uchun kerakli qatorni bosing.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="requiresSupplier" class="border border-red-100 p-4 rounded-xl bg-red-50/10">
+                        <!-- Conditional client section -->
+                        <div v-if="requiresClient" class="md:col-span-2 border border-orange-100 p-4 rounded-xl bg-orange-50/10 space-y-3">
+                            <div>
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Ta'minotchi (Kontragent)
+                                    * Mijoz (Kontragent)
                                 </label>
+                                <!-- Search Input -->
+                                <input type="text" v-model="clientSearchQuery" placeholder="Mijoz ismini yozib qidiring..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors mb-2" />
                                 <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Ta'minotchini tanlang</option>
-                                    <option v-for="c in counterparties.filter(x => x.type === 'supplier')" :key="c.id" :value="c.id">
+                                    <option value="" disabled>Mijozni tanlang</option>
+                                    <option v-for="c in filteredClientsList" :key="c.id" :value="c.id">
                                         {{ c.name }}
                                     </option>
                                 </select>
                             </div>
-
-                            <div v-if="requiresPartner" class="border border-purple-100 p-4 rounded-xl bg-purple-50/10">
+                            <div v-if="form.client_id">
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Hamkor (Ta'sischi)
+                                    * Mijoz Shartnomasi
                                 </label>
-                                <select v-model="form.partner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Hamkor tanlang</option>
-                                    <option v-for="p in partners" :key="p.id" :value="p.id">
-                                        {{ p.user?.name || p.name }}
+                                <select v-model="form.contract_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="" disabled>Shartnomani tanlang</option>
+                                    <option v-for="c in clientContracts" :key="c.id" :value="c.id">
+                                        Shartnoma #{{ c.contract_number || c.id }} - Xona: {{ c.unit?.unit_number || 'Noma\'lum' }}
                                     </option>
                                 </select>
+                                <span v-if="clientContracts.length === 0" class="text-[10px] text-red-500 mt-1 block font-mono">
+                                    Ushbu mijoz uchun faol shartnoma topilmadi!
+                                </span>
+
+                                <!-- Payment Type Selector (Boshlang'ich to'lov vs Oylik to'lov) -->
+                                <div v-if="form.contract_id" class="mt-3">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                                        * To'lov Turi
+                                    </label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center gap-2 text-xs text-slate-750 cursor-pointer font-semibold">
+                                            <input type="radio" value="initial" v-model="clientPaymentType" @change="handlePaymentTypeChange" class="text-orange-500 focus:ring-orange-500" />
+                                            Boshlang'ich to'lov
+                                        </label>
+                                        <label class="flex items-center gap-2 text-xs text-slate-755 cursor-pointer font-semibold">
+                                            <input type="radio" value="monthly" v-model="clientPaymentType" @change="handlePaymentTypeChange" class="text-orange-500 focus:ring-orange-500" />
+                                            Oylik to'lov (Grafik bo'yicha)
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Unpaid Installment Schedule list -->
+                                <div v-if="form.contract_id && clientPaymentType === 'monthly' && contractSchedules.length > 0" class="mt-3 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
+                                    <label class="block text-[10px] font-mono text-slate-500 uppercase mb-2">
+                                        To'lov Rejasi (Oylik to'lovlar)
+                                    </label>
+                                    <div class="max-h-36 overflow-y-auto space-y-1">
+                                        <div v-for="(s, index) in contractSchedules" :key="s.id" 
+                                             @click="selectScheduleAmount(s)"
+                                             class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
+                                             :class="form.payment_schedule_id === s.id ? 'border-orange-500 bg-orange-50/60 font-bold shadow-sm' : 'border-transparent hover:border-orange-200 hover:bg-orange-50/50'">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-mono text-[9px]">
+                                                    {{ index + 1 }}
+                                                </span>
+                                                <span class="text-slate-600 font-medium">
+                                                    Muddati: {{ s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum' }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
+                                                    {{ formatMoney(Number(s.expected_amount) - Number(s.paid_amount || 0), 'so\'m') }}
+                                                </span>
+                                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                                                      :class="s.status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                                                    {{ s.status === 'partial' ? 'Qisman' : 'Kutilmoqda' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-1">💡 To'lov summasini avtomatik to'ldirish uchun kerakli qatorni bosing.</p>
+                                </div>
                             </div>
+                        </div>
 
-                            <div v-if="requiresWorker" class="border border-blue-100 p-4 rounded-xl bg-blue-50/10">
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Xodim / Ishchi
-                                </label>
-                                <select v-model="form.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Xodimni tanlang</option>
-                                    <option v-for="w in workers" :key="w.id" :value="w.id">
-                                        {{ w.name }} ({{ w.role || 'Ishchi' }})
-                                    </option>
-                                </select>
-                            </div>
+                        <!-- Conditional supplier section -->
+                        <div v-if="requiresSupplier" class="md:col-span-2 border border-red-100 p-4 rounded-xl bg-red-50/10">
+                            <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Ta'minotchini tanlang</option>
+                                <option v-for="c in counterparties.filter(x => x.type === 'supplier')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
 
-                            <div v-if="requiresBrigade" class="border border-teal-100 p-4 rounded-xl bg-teal-50/10">
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Brigada
-                                </label>
-                                <select v-model="form.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Brigadani tanlang</option>
-                                    <option v-for="b in brigades" :key="b.id" :value="b.id">
-                                        {{ b.name }}
-                                    </option>
-                                </select>
-                            </div>
+                        <!-- Conditional partner section -->
+                        <div v-if="requiresPartner" class="md:col-span-2 border border-purple-100 p-4 rounded-xl bg-purple-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Hamkor (Ta'sischi)
+                            </label>
+                            <select v-model="form.partner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Hamkor tanlang</option>
+                                <option v-for="p in partners" :key="p.id" :value="p.id">
+                                    {{ p.user?.name || p.name }}
+                                </option>
+                            </select>
+                        </div>
 
-                            <div v-if="requiresMachineOwner" class="border border-amber-100 p-4 rounded-xl bg-amber-50/10">
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Texnika Egasi
-                                </label>
-                                <select v-model="form.machine_owner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Texnika egasini tanlang</option>
-                                    <option v-for="o in machineOwners" :key="o.id" :value="o.id">
-                                        {{ o.name }}
-                                    </option>
-                                </select>
-                            </div>
+                        <!-- Conditional worker section -->
+                        <div v-if="requiresWorker" class="md:col-span-2 border border-blue-100 p-4 rounded-xl bg-blue-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Xodim / Ishchi
+                            </label>
+                            <select v-model="form.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Xodimni tanlang</option>
+                                <option v-for="w in workers" :key="w.id" :value="w.id">
+                                    {{ w.name }} ({{ w.role || 'Ishchi' }})
+                                </option>
+                            </select>
+                        </div>
 
+                        <!-- Conditional brigade section -->
+                        <div v-if="requiresBrigade" class="md:col-span-2 border border-teal-100 p-4 rounded-xl bg-teal-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Brigada
+                            </label>
+                            <select v-model="form.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Brigadani tanlang</option>
+                                <option v-for="b in brigades" :key="b.id" :value="b.id">
+                                    {{ b.name }}
+                                </option>
+                            </select>
+                        </div>
 
+                        <!-- Conditional machine owner section -->
+                        <div v-if="requiresMachineOwner" class="md:col-span-2 border border-amber-100 p-4 rounded-xl bg-amber-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Texnika Egasi
+                            </label>
+                            <select v-model="form.machine_owner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Texnika egasini tanlang</option>
+                                <option v-for="o in machineOwners" :key="o.id" :value="o.id">
+                                    {{ o.name }}
+                                </option>
+                            </select>
+                        </div>
 
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    Izohlar
-                                </label>
-                                <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
-                            </div>
+                        <!-- Row 5: Izohlar & Summa -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Izohlar
+                            </label>
+                            <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
                         </div>
 
                         <!-- Row 6: Summa -->

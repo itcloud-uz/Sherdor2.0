@@ -555,8 +555,19 @@ class FinanceController extends Controller
             }
         }
 
-        // 8. Payment Schedule Reductions
-        if ($transaction->contract_id && $transaction->type === 'income') {
+        // 8. Payment Schedule Reductions (Only if NOT Boshlang'ich to'lov)
+        $isInitialPayment = false;
+        if ($transaction->category_id) {
+            $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
+            if ($cat) {
+                $catName = strtolower($cat->name);
+                if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
+                    $isInitialPayment = true;
+                }
+            }
+        }
+
+        if ($transaction->contract_id && $transaction->type === 'income' && !$isInitialPayment) {
             $appliedAmount = $validated['applied_amount'] ?? ($transaction->converted_amount ?? $transaction->amount);
             $refundAmount = ($transaction->converted_amount ?? $transaction->amount) - $appliedAmount;
 
@@ -1611,8 +1622,19 @@ class FinanceController extends Controller
                 }
             }
 
-            // 5. CRM Contract Payment Schedules
-            if ($transaction->contract_id && $transaction->type === 'income') {
+            // 5. CRM Contract Payment Schedules (Only if NOT Boshlang'ich to'lov)
+            $isInitialPayment = false;
+            if ($transaction->category_id) {
+                $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
+                if ($cat) {
+                    $catName = strtolower($cat->name);
+                    if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
+                        $isInitialPayment = true;
+                    }
+                }
+            }
+
+            if ($transaction->contract_id && $transaction->type === 'income' && !$isInitialPayment) {
                 $appliedAmount = $transaction->converted_amount ?? $transaction->amount;
                 $remainingAmount = $appliedAmount;
 

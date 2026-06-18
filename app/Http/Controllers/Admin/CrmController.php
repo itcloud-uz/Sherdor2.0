@@ -66,6 +66,10 @@ class CrmController extends Controller
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
+        // 11. Sales Agents Tab
+        if ($tab === 'sales_agents') {
+            $users = User::role('Sotuvchi')->with(['leads', 'contracts.unit.floor.building', 'roles'])->get();
+        }
 
         // Always load units and partners to support contract modals and deep links on any tab
         $units = \App\Models\Unit::with('floor.building')->get();

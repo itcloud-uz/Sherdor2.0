@@ -133,6 +133,7 @@ class FinanceController extends Controller
         }
 
         return Inertia::render('Admin/Finance/Index', [
+            'users' => \App\Models\User::orderBy('name', 'asc')->get(),
             'transactions' => $transactions,
             'balance' => $balance,
             'pendingIncomes' => $pendingIncomes,

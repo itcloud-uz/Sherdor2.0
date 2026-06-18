@@ -30,6 +30,7 @@ onMounted(() => {
 });
 
 const props = defineProps({
+    users: Array,
     transactions: Array,
     balance: Object,
     pendingIncomes: Number,
@@ -77,6 +78,108 @@ const reportJournalDateTo = ref('');
 const reportJournalAccountId = ref('');
 const reportJournalType = ref('');
 const reportJournalCategoryId = ref('');
+
+// Kirim/Chiqim states & helpers
+const kirimChiqimSearch = ref('');
+const kirimChiqimDateFrom = ref('');
+const kirimChiqimDateTo = ref('');
+const kirimChiqimTableTab = ref('all');
+
+function formatMoneyKirimChiqim(amount) {
+    const val = Math.round(parseFloat(amount || 0));
+    return new Intl.NumberFormat('en-US').format(val) + " so'm";
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
+
+const filteredKirimChiqimTransactions = computed(() => {
+    let result = (props.transactions || []).filter(t => t.status === 'approved');
+    if (kirimChiqimDateFrom.value) {
+        result = result.filter(t => {
+            const dateOnly = t.transaction_date || t.created_at?.split('T')[0];
+            return dateOnly >= kirimChiqimDateFrom.value;
+        });
+    }
+    if (kirimChiqimDateTo.value) {
+        result = result.filter(t => {
+            const dateOnly = t.transaction_date || t.created_at?.split('T')[0];
+            return dateOnly <= kirimChiqimDateTo.value;
+        });
+    }
+    if (kirimChiqimSearch.value) {
+        const query = kirimChiqimSearch.value.toLowerCase();
+        result = result.filter(t => 
+            (t.notes || '').toLowerCase().includes(query) ||
+            (t.cashRegister?.name || t.cash_register?.name || '').toLowerCase().includes(query) ||
+            (t.creator?.name || '').toLowerCase().includes(query) ||
+            (t.creator?.phone || '').toLowerCase().includes(query)
+        );
+    }
+    return result;
+});
+
+const kirimChiqimTotalIncome = computed(() => {
+    return filteredKirimChiqimTransactions.value
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+
+const kirimChiqimTotalExpense = computed(() => {
+    return filteredKirimChiqimTransactions.value
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+});
+
+const kirimChiqimBalance = computed(() => {
+    return kirimChiqimTotalIncome.value - kirimChiqimTotalExpense.value;
+});
+
+const displayedKirimChiqimTransactions = computed(() => {
+    let list = filteredKirimChiqimTransactions.value;
+    if (kirimChiqimTableTab.value === 'income') {
+        list = list.filter(t => t.type === 'income');
+    } else if (kirimChiqimTableTab.value === 'expense') {
+        list = list.filter(t => t.type === 'expense');
+    }
+    return list;
+});
+
+function exportKirimChiqimToExcel() {
+    const headers = ['№', 'Yaratilgan sana', 'Kassa', 'Turi', 'Summa', 'Izoh', 'Xodim'];
+    const rows = displayedKirimChiqimTransactions.value.map((t, idx) => [
+        idx + 1,
+        formatDateTime(t.transaction_date || t.created_at),
+        t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
+        t.type === 'income' ? 'Kirim' : 'Chiqim',
+        Math.round(t.amount),
+        t.notes || '',
+        t.creator?.phone || t.creator?.name || ''
+    ]);
+
+    const csvContent = [
+        headers.join(';'),
+        ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+    ].join('\r\n');
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `kirim_chiqim_hisoboti_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
 const reportFilteredTransactions = computed(() => {
     let result = (props.transactions || []).filter(t => t.status === 'approved');
@@ -1063,16 +1166,52 @@ function forceDeleteCounterparty(id) {
 }
 
 const selectedActions = ref([]);
+const actionSearchQuery = ref('');
+const actionTypeFilter = ref('');
+const actionUserFilter = ref('');
+const actionDateFilter = ref('');
+
+const filteredFinanceActions = computed(() => {
+    let list = props.financeActions || [];
+
+    if (actionTypeFilter.value) {
+        list = list.filter(act => act.action === actionTypeFilter.value);
+    }
+
+    if (actionUserFilter.value) {
+        list = list.filter(act => act.user_id == actionUserFilter.value);
+    }
+
+    if (actionDateFilter.value) {
+        list = list.filter(act => {
+            const actDate = new Date(act.created_at).toISOString().split('T')[0];
+            return actDate === actionDateFilter.value;
+        });
+    }
+
+    if (actionSearchQuery.value) {
+        const q = actionSearchQuery.value.toLowerCase();
+        list = list.filter(act => 
+            (act.user?.name || '').toLowerCase().includes(q) ||
+            String(act.transaction_id || '').toLowerCase().includes(q) ||
+            (act.notes || '').toLowerCase().includes(q) ||
+            (act.action || '').toLowerCase().includes(q)
+        );
+    }
+
+    return list;
+});
 
 const isAllSelected = computed(() => {
-    return props.financeActions && props.financeActions.length > 0 && selectedActions.value.length === props.financeActions.length;
+    const list = filteredFinanceActions.value;
+    return list.length > 0 && selectedActions.value.length === list.length;
 });
 
 function toggleSelectAll() {
     if (isAllSelected.value) {
         selectedActions.value = [];
     } else {
-        selectedActions.value = props.financeActions.map(act => act.id);
+        selectedActions.value = filteredFinanceActions.value.map(act => act.id);
     }
 }
 
@@ -1090,6 +1229,41 @@ function bulkDestroyActions() {
             onError: () => isProcessing.value = false
         });
     }
+}
+
+function exportActionsToCsv() {
+    const headers = ['No', 'Sana', 'Foydalanuvchi', 'Amal turi', 'Tranzaksiya ID', 'Summa', 'Izoh'];
+    const rows = filteredFinanceActions.value.map((act, idx) => {
+        const actionLabel = act.action === 'create' ? 'Qo\'shildi' : 
+                            (act.action === 'update' ? 'Tahrirlandi' : 
+                            (act.action === 'delete' ? 'O\'chirildi' : 
+                            (act.action === 'restore' ? 'Qayta tiklandi' : 'Butunlay o\'chirildi')));
+        const amountLabel = act.amount > 0 ? (act.transaction_type === 'income' ? '+' : '-') + ' ' + act.amount : '-';
+        return [
+            idx + 1,
+            new Date(act.created_at).toLocaleString(),
+            act.user?.name || '-',
+            actionLabel,
+            act.transaction_id || '-',
+            amountLabel,
+            act.notes || ''
+        ];
+    });
+
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `harakatlar_jurnali_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Invoices CRUD & Modals
@@ -3051,6 +3225,10 @@ function getCounterpartyStatus(c) {
                         :class="reportSubTab === 'overview' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
                         Umumiy tahlil
                     </button>
+                    <button @click="reportSubTab = 'kirim_chiqim'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                        :class="reportSubTab === 'kirim_chiqim' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
+                        Kirim/Chiqim hisoboti
+                    </button>
                     <button @click="reportSubTab = 'buildings'" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
                         :class="reportSubTab === 'buildings' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'">
                         Obyektlar
@@ -3687,6 +3865,46 @@ function getCounterpartyStatus(c) {
                             🗑️ Tanlanganlarni tozalash ({{ selectedActions.length }})
                         </button>
                     </div>
+
+                    <!-- Filter & Search Controls -->
+                    <div class="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center bg-gray-50/50 p-4 rounded-xl border border-gray-150">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1">
+                            <!-- Search -->
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                                <input v-model="actionSearchQuery" type="text" placeholder="Izlash (ID, foydalanuvchi, izoh)..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-2 text-xs shadow-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                            </div>
+                            
+                            <!-- Action Type Filter -->
+                            <select v-model="actionTypeFilter" class="bg-white border border-gray-300 text-gray-900 rounded-xl px-3 py-2 text-xs shadow-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">-- Amal turi (Barchasi) --</option>
+                                <option value="create">Qo'shildi (Create)</option>
+                                <option value="update">Tahrirlandi (Update)</option>
+                                <option value="delete">O'chirildi (Delete)</option>
+                                <option value="restore">Qayta tiklandi (Restore)</option>
+                                <option value="permanent_delete">Butunlay o'chirildi</option>
+                            </select>
+
+                            <!-- User Filter -->
+                            <select v-model="actionUserFilter" class="bg-white border border-gray-300 text-gray-900 rounded-xl px-3 py-2 text-xs shadow-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">-- Foydalanuvchi (Barchasi) --</option>
+                                <option v-for="u in props.users" :key="u.id" :value="u.id">
+                                    {{ u.name }}
+                                </option>
+                            </select>
+
+                            <!-- Date Filter -->
+                            <input v-model="actionDateFilter" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-xl px-3 py-2 text-xs shadow-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono">
+                        </div>
+
+                        <!-- Export Button -->
+                        <div class="flex items-center gap-2">
+                            <button @click="exportActionsToCsv" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 uppercase font-mono">
+                                📥 CSV Yuklash
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="overflow-x-auto border border-gray-150 rounded-xl">
                         <table class="w-full text-left text-sm font-mono">
                             <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
@@ -3704,7 +3922,7 @@ function getCounterpartyStatus(c) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="(act, idx) in props.financeActions" :key="act.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="(act, idx) in filteredFinanceActions" :key="act.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 text-center">
                                         <input type="checkbox" :value="act.id" v-model="selectedActions" class="rounded border-gray-300 text-amber-500 focus:ring-amber-500 bg-white">
                                     </td>
@@ -3732,7 +3950,7 @@ function getCounterpartyStatus(c) {
                                     </td>
                                     <td class="p-4 text-gray-500 max-w-xs truncate" :title="act.notes">{{ act.notes || '-' }}</td>
                                 </tr>
-                                <tr v-if="!props.financeActions?.length">
+                                <tr v-if="!filteredFinanceActions?.length">
                                     <td colspan="8" class="p-8 text-center text-gray-400">Harakatlar topilmadi.</td>
                                 </tr>
                             </tbody>

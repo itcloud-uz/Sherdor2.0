@@ -2163,6 +2163,379 @@ function submitPromoRule() {
     });
 }
 
+// ==========================================
+// NEW CLIENT PAYMENTS, DEBTS & LEDGERS MODULE
+// ==========================================
+const paymentsSubTab = ref('payments');
+const clientPaymentsSearch = ref('');
+const clientDebtsSearch = ref('');
+
+const filteredClientPayments = computed(() => {
+    const txns = (props.transactions || []).filter(t => t.counterparty?.type === 'client' && t.status === 'approved');
+    if (!clientPaymentsSearch.value) return txns;
+    const q = clientPaymentsSearch.value.toLowerCase();
+    return txns.filter(t => 
+        (t.counterparty?.name || '').toLowerCase().includes(q) ||
+        (t.notes || '').toLowerCase().includes(q)
+    );
+});
+
+const filteredClientDebts = computed(() => {
+    const debts = (props.counterparties || [])
+        .filter(c => c.type === 'client' && Number(c.balance || 0) < 0)
+        .map(c => {
+            const clientContracts = c.customable?.contracts || [];
+            const agreed = clientContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+            
+            const paid = (c.transactions || [])
+                .filter(t => t.type === 'income' && t.status === 'approved')
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+            return {
+                ...c,
+                agreed_amount: agreed,
+                paid_amount: paid,
+                debt_amount: Math.abs(Number(c.balance))
+            };
+        });
+    if (!clientDebtsSearch.value) return debts;
+    const q = clientDebtsSearch.value.toLowerCase();
+    return debts.filter(c => 
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q)
+    );
+});
+
+const clientsWithContracts = computed(() => {
+    const allClients = props.clients || [];
+    return allClients.filter(c => c.contracts && c.contracts.length > 0);
+});
+
+const counterpartiesWithContracts = computed(() => {
+    return (props.counterparties || []).filter(cp => {
+        if (cp.type !== 'client') return false;
+        const clientContracts = cp.customable?.contracts || [];
+        return clientContracts.length > 0;
+    });
+});
+
+const selectedCounterpartyContracts = computed(() => {
+    const cpId = transactionForm.value.counterparty_id;
+    if (!cpId) return [];
+    const cp = props.counterparties?.find(c => c.id == cpId);
+    return cp?.customable?.contracts || [];
+});
+
+const showQuickTransactionModal = ref(false);
+const showEditTransactionModal = ref(false);
+const showReceiptModal = ref(false);
+const receiptData = ref(null);
+
+const transactionForm = ref({
+    type: 'income',
+    category_name: "Mijoz To'lovi (Shartnoma)",
+    amount: '',
+    currency: 'UZS',
+    payment_method: 'cash',
+    account_id: '',
+    counterparty_id: '',
+    contract_id: '',
+    client_id: '',
+    transaction_date: new Date().toISOString().split('T')[0],
+    notes: '',
+    auto_approve: true,
+});
+
+const editTransactionForm = ref({
+    id: null,
+    amount: '',
+    notes: '',
+});
+
+function openQuickTransaction(type = 'income', client = null) {
+    transactionForm.value = {
+        type: type,
+        category_name: "Mijoz To'lovi (Shartnoma)",
+        amount: '',
+        currency: 'UZS',
+        payment_method: 'cash',
+        account_id: props.cashRegisters && props.cashRegisters.length > 0 ? props.cashRegisters[0].id : '',
+        counterparty_id: '',
+        contract_id: '',
+        client_id: '',
+        transaction_date: new Date().toISOString().split('T')[0],
+        notes: '',
+        auto_approve: true,
+    };
+    
+    if (client) {
+        const cp = props.counterparties?.find(c => c.customable_id == client.id && c.customable_type?.includes('Client'));
+        if (cp) {
+            transactionForm.value.counterparty_id = cp.id;
+            transactionForm.value.client_id = client.id;
+            const contracts = cp.customable?.contracts || [];
+            if (contracts.length > 0) {
+                transactionForm.value.contract_id = contracts[0].id;
+            }
+        }
+    }
+    showQuickTransactionModal.value = true;
+}
+
+watch(() => transactionForm.value.counterparty_id, (newCpId) => {
+    if (!newCpId) {
+        transactionForm.value.client_id = '';
+        transactionForm.value.contract_id = '';
+        return;
+    }
+    const cp = props.counterparties?.find(c => c.id == newCpId);
+    if (cp && cp.customable_id) {
+        transactionForm.value.client_id = cp.customable_id;
+        const contracts = cp.customable?.contracts || [];
+        if (contracts.length > 0) {
+            transactionForm.value.contract_id = contracts[0].id;
+        } else {
+            transactionForm.value.contract_id = '';
+        }
+    }
+});
+
+function submitQuickTransaction() {
+    isProcessing.value = true;
+    router.post(route('admin.finance.transactions.store'), transactionForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showQuickTransactionModal.value = false;
+        },
+        onError: () => {
+            isProcessing.value = false;
+        }
+    });
+}
+
+function openEditTransactionModal(txn) {
+    editTransactionForm.value = {
+        id: txn.id,
+        amount: txn.amount,
+        notes: txn.notes || ''
+    };
+    showEditTransactionModal.value = true;
+}
+
+function submitEditTransaction() {
+    isProcessing.value = true;
+    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showEditTransactionModal.value = false;
+        },
+        onError: () => {
+            isProcessing.value = false;
+        }
+    });
+}
+
+function deleteTransaction(id) {
+    if (confirm("Ushbu tranzaksiyani o'chirishni xohlaysizmi?")) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.transactions.destroy', id), {
+            onSuccess: () => {
+                isProcessing.value = false;
+            },
+            onError: () => {
+                isProcessing.value = false;
+            }
+        });
+    }
+}
+
+function openReceipt(transaction) {
+    receiptData.value = transaction;
+    showReceiptModal.value = true;
+}
+
+const showCounterpartyModal = ref(false);
+const isEditCounterparty = ref(false);
+const counterpartyForm = ref({
+    id: null,
+    name: '',
+    type: 'client',
+    phone: '',
+    balance: 0,
+});
+
+function openEditCounterpartyModal(c) {
+    isEditCounterparty.value = true;
+    counterpartyForm.value = {
+        id: c.id,
+        name: c.name,
+        type: c.type || 'client',
+        phone: c.phone || '',
+        balance: c.balance || 0,
+    };
+    showCounterpartyModal.value = true;
+}
+
+function submitCounterparty() {
+    isProcessing.value = true;
+    router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showCounterpartyModal.value = false;
+        },
+        onError: () => {
+            isProcessing.value = false;
+        }
+    });
+}
+
+function deleteCounterparty(id) {
+    if (confirm("Ushbu kontragentni o'chirishni tasdiqlaysizmi?")) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.counterparties.destroy', id), {
+            onSuccess: () => {
+                isProcessing.value = false;
+            },
+            onError: () => {
+                isProcessing.value = false;
+            }
+        });
+    }
+}
+
+const selectedReportContractId = ref('');
+const selectedReportContract = computed(() => {
+    if (!selectedReportContractId.value) return null;
+    return props.contracts?.find(c => c.id == selectedReportContractId.value);
+});
+
+const ledgerReportData = computed(() => {
+    const contract = selectedReportContract.value;
+    if (!contract) return null;
+    
+    const schedules = [...(contract.payment_schedules || contract.paymentSchedules || [])]
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    
+    const approvedTxns = (contract.transactions || []).filter(t => t.status === 'approved');
+    const incomes = approvedTxns.filter(t => t.type === 'income').sort((a, b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
+    const refunds = approvedTxns.filter(t => t.type === 'expense' && t.category && (t.category.name.includes('qaytarish') || t.category.name.includes('to\'lov qilish'))).sort((a, b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
+    
+    const firstDueDate = schedules[0] ? new Date(schedules[0].due_date) : null;
+    
+    const preTransactions = [];
+    const activePayments = [];
+    
+    incomes.forEach(t => {
+        const tDate = new Date(t.transaction_date || t.created_at);
+        if (firstDueDate && tDate < firstDueDate) {
+            preTransactions.push(t);
+        } else {
+            activePayments.push(t);
+        }
+    });
+    
+    const rows = [];
+    let running_balance = 0;
+    let totalPaidAll = 0;
+    let totalRefundedAll = 0;
+    
+    preTransactions.forEach(t => {
+        const amount = Number(t.amount);
+        rows.push({
+            is_down_payment: true,
+            due_date_label: "Boshlang'ich to'lov",
+            expected_amount: null,
+            paid_date: new Date(t.transaction_date || t.created_at).toLocaleDateString(),
+            paid_amount: amount,
+            payment_method: t.payment_method || 'Naqd',
+            refund_date: null,
+            refund_amount: null,
+            qoldiq: null
+        });
+        totalPaidAll += amount;
+    });
+    
+    schedules.forEach((schedule, idx) => {
+        let schedulePayments = activePayments.filter(p => p.payment_schedule_id == schedule.id);
+        
+        if (schedulePayments.length === 0) {
+            const currentDueDate = new Date(schedule.due_date);
+            const nextSchedule = schedules[idx + 1];
+            const nextDueDate = nextSchedule ? new Date(nextSchedule.due_date) : null;
+            
+            schedulePayments = activePayments.filter(p => {
+                const tDate = new Date(p.transaction_date || p.created_at);
+                const fiveDaysBefore = new Date(currentDueDate);
+                fiveDaysBefore.setDate(fiveDaysBefore.getDate() - 5);
+                
+                let isAfterFiveDaysBefore = tDate >= fiveDaysBefore;
+                let isBeforeNext = true;
+                if (nextDueDate) {
+                    const nextFiveDaysBefore = new Date(nextDueDate);
+                    nextFiveDaysBefore.setDate(nextFiveDaysBefore.getDate() - 5);
+                    isBeforeNext = tDate < nextFiveDaysBefore;
+                }
+                return isAfterFiveDaysBefore && isBeforeNext;
+            });
+        }
+        
+        const currentDueDate = new Date(schedule.due_date);
+        const nextSchedule = schedules[idx + 1];
+        const nextDueDate = nextSchedule ? new Date(nextSchedule.due_date) : null;
+        
+        const scheduleRefunds = refunds.filter(r => {
+            const rDate = new Date(r.transaction_date || r.created_at);
+            const startOfMonth = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth(), 1);
+            let isAfterStart = rDate >= startOfMonth;
+            let isBeforeNextMonth = true;
+            if (nextDueDate) {
+                const nextStartOfMonth = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth(), 1);
+                isBeforeNextMonth = rDate < nextStartOfMonth;
+            }
+            return isAfterStart && isBeforeNextMonth;
+        });
+        
+        const paid_amount = schedulePayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const refunded_amount = scheduleRefunds.reduce((sum, r) => sum + Number(r.amount), 0);
+        
+        const paid_date = schedulePayments.length > 0 ? new Date(schedulePayments[0].transaction_date || schedulePayments[0].created_at).toLocaleDateString() : '';
+        
+        let methodLabel = '';
+        if (schedulePayments.length > 0) {
+            const m = (schedulePayments[0].payment_method || '').toLowerCase();
+            if (m === 'naqd' || m === 'cash') methodLabel = 'Naqt';
+            else if (m === 'plastik' || m === 'card' || m === 'karta') methodLabel = 'Plastik';
+            else if (m === 'bank') methodLabel = 'Bank';
+            else methodLabel = schedulePayments[0].payment_method || '';
+        }
+        
+        const refund_date = scheduleRefunds.length > 0 ? new Date(scheduleRefunds[0].transaction_date || scheduleRefunds[0].created_at).toLocaleDateString() : '';
+        
+        running_balance += (paid_amount - Number(schedule.expected_amount) - refunded_amount);
+        
+        rows.push({
+            is_down_payment: false,
+            due_date_label: new Date(schedule.due_date).toLocaleDateString(),
+            expected_amount: Number(schedule.expected_amount),
+            paid_date: paid_date,
+            paid_amount: paid_amount > 0 ? paid_amount : null,
+            payment_method: methodLabel,
+            refund_date: refund_date || null,
+            refund_amount: refunded_amount > 0 ? refunded_amount : null,
+            qoldiq: running_balance
+        });
+        
+        totalPaidAll += paid_amount;
+        totalRefundedAll += refunded_amount;
+    });
+    
+    return {
+        rows,
+        totalPaidAll,
+        totalRefundedAll,
+        remainingDebt: Number(contract.total_amount) - (totalPaidAll - totalRefundedAll) + Number(contract.total_penalty_accumulated || 0)
+    };
+});
 </script>
 
 <template>
@@ -2566,6 +2939,45 @@ function submitPromoRule() {
 
             <!-- Clients view when activeTab is not contracts -->
             <div v-else>
+                <!-- Client sub-tabs bar matching design -->
+                <div class="flex flex-wrap items-center gap-1.5 border-b border-gray-200 bg-white px-6 py-3 rounded-2xl mb-6 shadow-sm border border-gray-150">
+                    <button 
+                        @click="activeTab = 'clients'" 
+                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+                        :class="activeTab === 'clients' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        👥 Barchasi
+                    </button>
+                    <button 
+                        @click="activeTab = 'clients_new'" 
+                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+                        :class="activeTab === 'clients_new' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        🟢 Yangi
+                    </button>
+                    <button 
+                        @click="activeTab = 'clients_active'" 
+                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+                        :class="activeTab === 'clients_active' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        🤝 Faol
+                    </button>
+                    <button 
+                        @click="activeTab = 'clients_debtors'" 
+                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+                        :class="activeTab === 'clients_debtors' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        ⏳ Qarzdor
+                    </button>
+                    <button 
+                        @click="activeTab = 'clients_blacklist'" 
+                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+                        :class="activeTab === 'clients_blacklist' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        ❌ Qora ro'yxat
+                    </button>
+                </div>
+
                 <!-- Control bar -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <!-- Left controls: Add + Search -->
@@ -3187,134 +3599,332 @@ function submitPromoRule() {
             </div>
         </div>
 
-        <!-- TAB 4: OVERDUE RADAR -->
-        <div v-if="activeTab === 'overdue'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px] border border-neon-magenta/30">
-            <h2 class="text-xl font-display font-bold text-indigo-600 mb-6 flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-indigo-600 animate-pulse shadow-sm"></span>
-                {{ $t('overdue_payments_radar') }}
-            </h2>
+        <!-- TAB: MIJOZ TO'LOVLARI (CLIENT PAYMENTS & DEBTS) -->
+        <div v-if="activeTab === 'client_payments'" class="space-y-6">
+            <!-- Sub tabs bar -->
+            <div class="flex border-b border-gray-200 bg-white px-6 pt-4 rounded-t-2xl border-x border-t border-gray-150">
+                <button @click="paymentsSubTab = 'payments'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="paymentsSubTab === 'payments' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                    Mijoz to'lovlari
+                </button>
+                <button @click="paymentsSubTab = 'debts'" class="px-6 py-3 font-bold text-xs uppercase tracking-widest border-b-2 transition-all" :class="paymentsSubTab === 'debts' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'">
+                    Mijozdan qarzdorlik
+                </button>
+            </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <!-- STRICT COLLECTION -->
-                <div v-if="groupedStrictCollection && groupedStrictCollection.length > 0">
-                    <h3 class="text-lg font-bold text-red-600 mb-4 uppercase tracking-widest flex items-center gap-2">
-                        <span>🚨</span> Qat'iy Unduruv (Rassrochka)
-                    </h3>
-                    <div class="overflow-x-auto rounded-xl border border-red-200 shadow-sm">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="border-b border-red-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Mijoz</th>
-                                    <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Kechikkan Summa</th>
-                                    <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider">Muddat</th>
-                                    <th class="p-3 text-xs font-mono text-red-600 font-bold uppercase tracking-wider text-right">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr 
-                                    v-for="group in groupedStrictCollection" 
-                                    :key="group.client?.id"
-                                    class="border-b border-red-200 hover: transition-colors group cursor-pointer bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                                    @click="openScheduleModal(group.schedules[0].contract)"
-                                >
-                                    <td class="p-3">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-red-600 font-display font-bold text-xs shadow-sm">
-                                                ⚠️
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-900 font-bold">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
-                                                <p class="text-[10px] font-mono text-red-600 mt-0.5">{{ group.schedules.length }} ta to'lov kechikkan</p>
-                                            </div>
+            <!-- Subtab 1: Mijoz to'lovlari (Image 1 Style) -->
+            <div v-if="paymentsSubTab === 'payments'" class="space-y-6 bg-white p-6 rounded-b-2xl border-x border-b border-gray-150 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="relative flex-1 max-w-md">
+                        <span class="absolute left-3.5 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input v-model="clientPaymentsSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-10 pr-4 py-2 text-sm w-full">
+                    </div>
+                    <button @click="openQuickTransaction('income')" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm">
+                        + To'lov qilish
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                    <table class="w-full text-left text-sm font-sans">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4 w-12 text-center font-bold">№</th>
+                                <th class="p-4">Ism</th>
+                                <th class="p-4 text-right">Summa</th>
+                                <th class="p-4">To'lov sanasi</th>
+                                <th class="p-4">To'lov turi</th>
+                                <th class="p-4">Hujjat raqami</th>
+                                <th class="p-4 text-center">To'lov kvitantsiyasi</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(t, idx) in filteredClientPayments" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                            {{ getInitials(t.counterparty?.name ? t.counterparty.name.split(' ')[1] : '', t.counterparty?.name ? t.counterparty.name.split(' ')[0] : '') }}
                                         </div>
-                                    </td>
-                                    <td class="p-3">
-                                        <p class="text-sm font-mono font-bold text-gray-900">{{ $currency(group.total_amount) }}</p>
-                                    </td>
-                                    <td class="p-3">
-                                        <p class="text-xs font-mono font-bold text-red-600">max {{ group.max_days }} {{ $t('days') }}</p>
-                                    </td>
-                                    <td class="p-3 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-black transition-colors shadow-sm" title="Qo'ng'iroq qilish" @click.stop>
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </a>
-                                            <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-indigo-50 border border-neon-magenta/30 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-gray-900 transition-colors shadow-sm" title="SMS Yuborish">
-                                                📱
-                                            </button>
+                                        <div>
+                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ t.counterparty?.name || '-' }}</p>
+                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ t.counterparty?.phone || '-' }}</span>
                                         </div>
-                                        <div v-if="group.last_sms" class="text-[8px] font-mono text-blue-600 mt-1">
-                                            SMS: {{ group.last_sms.toLocaleDateString() }}
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-right font-bold text-blue-600 text-base">{{ Number(t.amount || 0).toLocaleString() }} so'm</td>
+                                <td class="p-4 text-gray-500 text-xs font-mono">{{ new Date(t.transaction_date || t.created_at).toLocaleString() }}</td>
+                                <td class="p-4">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold border border-gray-200 bg-gray-50 font-sans">
+                                        {{ t.payment_method === 'cash' ? 'Naqd pul' : (t.payment_method === 'card' ? 'Plastik' : 'Bank transfer') }}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-gray-700 font-mono font-bold text-center">#{{ t.id }}</td>
+                                <td class="p-4 text-center">
+                                    <button @click="openReceipt(t)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs text-amber-600 hover:text-amber-700 font-bold transition-all hover:underline" title="To'lov kvitantsiyasi">
+                                        Yuklab olish
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                    </button>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button @click="openEditTransactionModal(t)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                            ✏️
+                                        </button>
+                                        <button @click="deleteTransaction(t.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!filteredClientPayments.length">
+                                <td colspan="8" class="p-8 text-center text-gray-400">To'lovlar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Subtab 2: Mijozdan qarzdorlik (Image 2 Style) -->
+            <div v-if="paymentsSubTab === 'debts'" class="space-y-6 bg-white p-6 rounded-b-2xl border-x border-b border-gray-150 shadow-sm">
+                <div class="flex">
+                    <div class="relative flex-1 max-w-md">
+                        <span class="absolute left-3.5 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input v-model="clientDebtsSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-10 pr-4 py-2 text-sm w-full">
                     </div>
                 </div>
 
-                <!-- NORMAL OVERDUE -->
+                <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                    <table class="w-full text-left text-sm font-sans">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4 w-12 text-center font-bold">№</th>
+                                <th class="p-4">Ism</th>
+                                <th class="p-4 text-center">Kelishilgan-To'langan</th>
+                                <th class="p-4 text-right">Qolgan miqdor</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(c, idx) in filteredClientDebts" :key="c.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                            {{ getInitials(c.name ? c.name.split(' ')[1] : '', c.name ? c.name.split(' ')[0] : '') }}
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ c.name }}</p>
+                                            <span class="text-xs text-gray-500 font-mono mt-1 inline-block">{{ c.phone || '-' }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-center font-bold text-emerald-600">
+                                    {{ Number(c.paid_amount || 0).toLocaleString() }} so'm
+                                    <div class="text-[10px] text-gray-400 font-normal font-sans">Kelishilgan: {{ Number(c.agreed_amount || 0).toLocaleString() }} so'm</div>
+                                </td>
+                                <td class="p-4 text-right font-bold text-red-600 text-base">{{ Number(c.debt_amount || 0).toLocaleString() }} so'm</td>
+                                <td class="p-4 text-right">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <!-- Quick pay debt button -->
+                                        <button @click="openQuickTransaction('income', c.customable)" class="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-500 hover:text-white transition-all shadow-sm font-sans">
+                                            + Qarzni to'lash
+                                        </button>
+                                        
+                                        <!-- Edit/delete counterparty -->
+                                        <button @click="openEditCounterpartyModal(c)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                            ✏️
+                                        </button>
+                                        <button @click="deleteCounterparty(c.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!filteredClientDebts.length">
+                                <td colspan="5" class="p-8 text-center text-gray-400">Qarzdorliklar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MIJOZ TO'LOV HISOBOTLARI (CLIENT PAYMENT REPORTS / LEDGERS) -->
+        <div v-if="activeTab === 'client_payment_reports'" class="space-y-6 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm font-sans">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">📊 Mijoz to'lov hisoboti (Shaxsiy varaqa)</h2>
+                <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tizimdagi shartnomalar bo'yicha shaxsiy varaqalar va to'lovlar tahlili.</p>
+            </div>
+
+            <!-- Contract Selector -->
+            <div class="max-w-md">
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Mijoz shartnomasini tanlang</label>
+                <select v-model="selectedReportContractId" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- Shartnomani tanlang --</option>
+                    <option v-for="c in contracts" :key="c.id" :value="c.id">
+                        Shartnoma #{{ c.contract_number || c.id }} - {{ c.client?.last_name }} {{ c.client?.first_name }} ({{ c.unit?.floor?.building?.name || 'Bino' }} Xonadon: {{ c.unit?.unit_number }})
+                    </option>
+                </select>
+            </div>
+
+            <!-- Inline Ledger Report -->
+            <div v-if="selectedReportContract && ledgerReportData" class="space-y-6 pt-4 border-t border-gray-100">
+                <!-- Info cards grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Contract summary -->
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm text-xs space-y-2">
+                        <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">📄 Shartnoma Ma'lumotlari</p>
+                        <div class="flex justify-between"><span>Raqami:</span> <strong class="text-gray-900">#{{ selectedReportContract.contract_number || selectedReportContract.id }}</strong></div>
+                        <div class="flex justify-between"><span>Sanasi:</span> <strong class="text-gray-900">{{ selectedReportContract.created_at ? new Date(selectedReportContract.created_at).toLocaleDateString() : '—' }}</strong></div>
+                        <div class="flex justify-between"><span>Turi:</span> <strong class="text-gray-900 uppercase">{{ selectedReportContract.contract_type }}</strong></div>
+                    </div>
+                    <!-- Client summary -->
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm text-xs space-y-2">
+                        <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">👤 Mijoz Ma'lumotlari</p>
+                        <div class="flex justify-between"><span>F.I.Sh:</span> <strong class="text-gray-900">{{ selectedReportContract.client?.last_name }} {{ selectedReportContract.client?.first_name }}</strong></div>
+                        <div class="flex justify-between"><span>Telefon:</span> <strong class="text-gray-900">{{ selectedReportContract.client?.phone }}</strong></div>
+                        <div class="flex justify-between"><span>PINFL:</span> <strong class="text-gray-900">{{ selectedReportContract.client?.pinfl || '—' }}</strong></div>
+                    </div>
+                    <!-- Apartment summary -->
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm text-xs space-y-2">
+                        <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">🏢 Xonadon Ma'lumotlari</p>
+                        <div class="flex justify-between"><span>Bino:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.building?.name || '—' }}</strong></div>
+                        <div class="flex justify-between"><span>Qavat / Maydon:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.number }}-qavat / {{ selectedReportContract.unit?.area_sqm }} m²</strong></div>
+                        <div class="flex justify-between"><span>Xona soni / Raqami:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.rooms }} xona / Xonadon {{ selectedReportContract.unit?.unit_number }}</strong></div>
+                    </div>
+                </div>
+
+                <!-- Action links/buttons for downloading file reports -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <a :href="`/admin/crm/ledger/${selectedReportContract.id}/export/pdf`" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 border border-red-300 text-red-700 text-xs font-bold uppercase rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                        PDF Yuklash
+                    </a>
+                    <a :href="`/admin/crm/ledger/${selectedReportContract.id}/export/xlsx`" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold uppercase rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                        Excel Yuklash
+                    </a>
+                    <a :href="`/admin/crm/ledger/${selectedReportContract.id}/export/docx`" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 border border-blue-300 text-blue-700 text-xs font-bold uppercase rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm">
+                        Word/Docx Yuklash
+                    </a>
+                </div>
+
+                <!-- Ledger Table -->
+                <div class="overflow-x-auto border border-gray-150 rounded-2xl mt-4">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] border-b border-gray-200">
+                            <tr>
+                                <th class="p-3 w-12 text-center font-bold">№</th>
+                                <th class="p-3">To'lov muddati</th>
+                                <th class="p-3 text-right">Kelishilgan summa</th>
+                                <th class="p-3 text-center">To'lov sanasi</th>
+                                <th class="p-3 text-right">To'langan summa</th>
+                                <th class="p-3 text-center">To'lov turi</th>
+                                <th class="p-3 text-center">Qaytarilgan sana</th>
+                                <th class="p-3 text-right">Qaytarilgan summa</th>
+                                <th class="p-3 text-right font-bold">Qoldiq</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(row, idx) in ledgerReportData.rows" :key="idx" class="hover:bg-gray-50 transition-colors" :class="row.is_down_payment ? 'bg-amber-50/20 font-bold' : ''">
+                                <td class="p-3 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                <td class="p-3">{{ row.due_date_label }}</td>
+                                <td class="p-3 text-right">{{ row.expected_amount ? Number(row.expected_amount).toLocaleString() + " so'm" : '—' }}</td>
+                                <td class="p-3 text-center text-gray-500">{{ row.paid_date || '—' }}</td>
+                                <td class="p-3 text-right font-bold" :class="row.paid_amount ? 'text-emerald-600' : 'text-gray-400'">{{ row.paid_amount ? Number(row.paid_amount).toLocaleString() + " so'm" : '—' }}</td>
+                                <td class="p-3 text-center">{{ row.payment_method || '—' }}</td>
+                                <td class="p-3 text-center text-gray-500">{{ row.refund_date || '—' }}</td>
+                                <td class="p-3 text-right font-bold text-red-500">{{ row.refund_amount ? Number(row.refund_amount).toLocaleString() + " so'm" : '—' }}</td>
+                                <td class="p-3 text-right font-bold" :class="row.qoldiq < 0 ? 'text-red-600' : (row.qoldiq > 0 ? 'text-emerald-600' : 'text-gray-900')">
+                                    {{ row.qoldiq !== null ? Number(row.qoldiq).toLocaleString() + " so'm" : '—' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ledger Totals Summary -->
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-150 max-w-md ml-auto text-sm space-y-3 font-semibold shadow-sm">
+                    <div class="flex justify-between"><span>Jami Shartnoma summasi:</span> <strong class="text-gray-900">{{ Number(selectedReportContract.total_amount || 0).toLocaleString() }} so'm</strong></div>
+                    <div class="flex justify-between text-emerald-600"><span>Jami To'langan:</span> <strong>{{ Number(ledgerReportData.totalPaidAll || 0).toLocaleString() }} so'm</strong></div>
+                    <div class="flex justify-between text-red-600" v-if="ledgerReportData.totalRefundedAll > 0"><span>Qaytarilgan summa:</span> <strong>{{ Number(ledgerReportData.totalRefundedAll).toLocaleString() }} so'm</strong></div>
+                    <div class="flex justify-between text-indigo-600" v-if="selectedReportContract.total_penalty_accumulated > 0"><span>Kechikish penyasi:</span> <strong>{{ Number(selectedReportContract.total_penalty_accumulated).toLocaleString() }} so'm</strong></div>
+                    <div class="flex justify-between text-red-600 border-t border-dashed border-gray-300 pt-3 text-base">
+                        <span>QARZDORLIK QOLDIQ:</span> 
+                        <strong>{{ Number(ledgerReportData.remainingDebt || 0).toLocaleString() }} so'm</strong>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-20 text-gray-400 font-sans border border-dashed border-gray-200 rounded-2xl">
+                Shaxsiy varaqa hosil qilish uchun yuqoridan shartnoma tanlang.
+            </div>
+        </div>
+
+        <!-- TAB: QARZDORLAR RADARI (STRICT COLLECTION OVERDUE RADAR) -->
+        <div v-if="activeTab === 'overdue'" class="space-y-6 font-sans">
+            <!-- Header section matching design mockup -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex justify-between items-center">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-4 uppercase tracking-widest flex items-center gap-2">
-                        <span>⏳</span> Oddiy Qarzdorlik
-                    </h3>
-                    <div class="overflow-x-auto rounded-xl border border-gray-200">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                <tr class="/50 border-b border-gray-200 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Mijoz</th>
-                                    <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Kechikkan Summa</th>
-                                    <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider">Muddat</th>
-                                    <th class="p-3 text-xs font-mono text-gray-500 font-normal uppercase tracking-wider text-right">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr 
-                                    v-for="group in groupedOverdueSchedules" 
-                                    :key="group.client?.id"
-                                    class="border-b border-gray-100 hover:/[0.03] transition-colors group cursor-pointer bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                                    @click="openScheduleModal(group.schedules[0].contract)"
-                                >
-                                    <td class="p-3">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-indigo-50 border border-neon-magenta/50 flex items-center justify-center text-indigo-600 font-display font-bold text-xs shadow-sm">
-                                                ⏳
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-900 font-bold">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
-                                                <p class="text-[10px] font-mono text-indigo-600 mt-0.5">{{ group.schedules.length }} ta to'lov kechikkan</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-3">
-                                        <p class="text-sm font-mono font-bold text-gray-900">{{ $currency(group.total_amount) }}</p>
-                                    </td>
-                                    <td class="p-3">
-                                        <p class="text-xs font-mono font-bold text-indigo-600">max {{ group.max_days }} {{ $t('days') }}</p>
-                                    </td>
-                                    <td class="p-3 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-black transition-colors shadow-sm" title="Qo'ng'iroq qilish" @click.stop>
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </a>
-                                            <button @click.stop="sendWarningSms(group.schedules[0].id)" :disabled="isProcessing" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-gray-900 transition-colors shadow-sm" title="SMS Yuborish">
-                                                📱
-                                            </button>
-                                        </div>
-                                        <div v-if="group.last_sms" class="text-[8px] font-mono text-gray-500 mt-1">
-                                            SMS: {{ group.last_sms.toLocaleDateString() }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="groupedOverdueSchedules.length === 0">
-                                    <td colspan="4" class="py-10 text-center text-emerald-600 font-mono text-sm border-dashed">
-                                        {{ $t('no_overdue_payments') }} 🎉
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <h2 class="text-xl font-bold font-sans text-red-600 flex items-center gap-2">
+                        <span>🚨</span> QAT'IY UNDURUV (RASSROCHKA)
+                    </h2>
+                    <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Uzoq muddatli va kechikkan to'lovlar radari.</p>
+                </div>
+                <a :href="route('admin.crm.export.overdue.excel')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm uppercase font-sans">
+                    📥 Excelga yuklash
+                </a>
+            </div>
+
+            <!-- Debtor Siren Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="groupedStrictCollection && groupedStrictCollection.length > 0">
+                <div 
+                    v-for="group in groupedStrictCollection" 
+                    :key="group.client?.id"
+                    @click="openScheduleModal(group.schedules[0].contract)"
+                    class="bg-white border-2 border-red-100 hover:border-red-400 cursor-pointer rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-between"
+                >
+                    <div class="flex items-center gap-4">
+                        <!-- Red triangle alarm icon -->
+                        <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center shadow-sm shrink-0 border border-red-200 animate-pulse">
+                            ⚠️
+                        </div>
+                        <div>
+                            <p class="text-base font-bold text-gray-900">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
+                            <p class="text-xs text-red-600 mt-1 font-semibold">{{ group.schedules.length }} ta to'lov kechikkan</p>
+                        </div>
+                    </div>
+
+                    <div class="text-right space-y-1">
+                        <div class="text-xs text-gray-500 font-bold uppercase tracking-wider">Kechikkan summa</div>
+                        <div class="text-lg font-bold text-red-600 font-mono">{{ Number(group.total_amount || 0).toLocaleString() }} so'm</div>
+                        <div class="text-xs font-bold text-red-600 bg-red-50 rounded-full px-2.5 py-0.5 inline-block">
+                            max {{ group.max_days }} kun
+                        </div>
+                    </div>
+
+                    <!-- Actions Call & SMS -->
+                    <div class="flex items-center gap-2 shrink-0 ml-4 border-l border-gray-100 pl-4" @click.stop>
+                        <!-- Phone Call -->
+                        <a :href="`tel:${group.phone}`" class="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Qo'ng'iroq qilish">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </a>
+                        <!-- Message warning SMS -->
+                        <button @click="sendWarningSms(group.schedules[0].id)" class="w-10 h-10 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="SMS ogohlantirish">
+                            📱
+                        </button>
                     </div>
                 </div>
+            </div>
+            <div v-else class="text-center py-20 text-gray-400 font-sans border border-dashed border-gray-200 rounded-2xl bg-white">
+                Strict collection qarzdorliklar topilmadi. 🎉
             </div>
         </div>
 
@@ -5474,6 +6084,286 @@ function submitPromoRule() {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 💰 Quick Payment Modal (Add Transaction) -->
+        <div v-if="showQuickTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex justify-between items-center shadow-md">
+                    <h3 class="text-base font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>💵</span> Yangi Mijoz To'lovi
+                    </h3>
+                    <button @click="showQuickTransactionModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form @submit.prevent="submitQuickTransaction" class="p-6 space-y-4">
+                    <!-- Client Selector (Only Counterparties with contracts) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Mijoz (Kontragent)</label>
+                        <select v-model="transactionForm.counterparty_id" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                            <option value="">-- Mijozni tanlang --</option>
+                            <option v-for="cp in counterpartiesWithContracts" :key="cp.id" :value="cp.id">
+                                {{ cp.name }} ({{ cp.phone || 'Telefon yo\'q' }})
+                            </option>
+                        </select>
+                        <p v-if="counterpartiesWithContracts.length === 0" class="text-[10px] text-red-500 mt-1 font-semibold">Tizimda shartnomasi mavjud bo'lgan mijozlar topilmadi.</p>
+                    </div>
+
+                    <!-- Contract Selector (Select from Selected Client's Contracts) -->
+                    <div v-if="transactionForm.counterparty_id">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Shartnoma</label>
+                        <select v-model="transactionForm.contract_id" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                            <option value="">-- Shartnomani tanlang --</option>
+                            <option v-for="c in selectedCounterpartyContracts" :key="c.id" :value="c.id">
+                                Shartnoma #{{ c.contract_number || c.id }} - {{ c.total_amount ? Number(c.total_amount).toLocaleString() : '0' }} so'm
+                            </option>
+                        </select>
+                        <p v-if="selectedCounterpartyContracts.length === 0" class="text-[10px] text-red-500 mt-1 font-semibold">Ushbu mijozda shartnoma mavjud emas.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov Summasi</label>
+                            <div class="relative">
+                                <input v-model="transactionForm.amount" type="number" required min="1" placeholder="Masalan: 5000000" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-bold">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov Usuli</label>
+                            <select v-model="transactionForm.payment_method" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="cash">Naqd pul</option>
+                                <option value="card">Plastik (Karta)</option>
+                                <option value="bank">Bank o'tkazmasi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Cash Register (Kassa) -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 font-sans">Kassa (Hisob)</label>
+                            <select v-model="transactionForm.account_id" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">-- Kassani tanlang --</option>
+                                <option v-for="cr in cashRegisters" :key="cr.id" :value="cr.id">
+                                    {{ cr.name }} ({{ cr.currency }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Transaction Date -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Sana</label>
+                            <input v-model="transactionForm.transaction_date" type="date" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh (Eslatma)</label>
+                        <textarea v-model="transactionForm.notes" rows="3" placeholder="To'lov bo'yicha qo'shimcha ma'lumotlar..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                        <button type="button" @click="showQuickTransactionModal = false" class="px-4 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50">
+                            <span v-if="isProcessing" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ✏️ Edit Transaction Modal -->
+        <div v-if="showEditTransactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center shadow-md">
+                    <h3 class="text-base font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>✏️</span> To'lovni Tahrirlash
+                    </h3>
+                    <button @click="showEditTransactionModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form @submit.prevent="submitEditTransaction" class="p-6 space-y-4">
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov Summasi</label>
+                        <div class="relative">
+                            <input v-model="editTransactionForm.amount" type="number" required min="1" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold">
+                            <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh</label>
+                        <textarea v-model="editTransactionForm.notes" rows="3" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                        <button type="button" @click="showEditTransactionModal = false" class="px-4 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50">
+                            <span v-if="isProcessing" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 📝 Printable Receipt Modal -->
+        <div v-if="showReceiptModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-150 max-w-md w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center print:hidden">
+                    <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">🖨️ To'lov kvitansiyasi</h3>
+                    <button @click="showReceiptModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Printable Receipt area -->
+                <div id="receipt-print-area" class="p-8 space-y-6 text-gray-800 font-sans print:p-0">
+                    <!-- Logo / Brand -->
+                    <div class="text-center space-y-1">
+                        <h2 class="text-2xl font-black tracking-tight text-gray-900">SHERDOR 2.0</h2>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Turar-joy majmuasi</p>
+                        <div class="h-0.5 w-16 bg-orange-500 mx-auto mt-2"></div>
+                    </div>
+
+                    <!-- Receipt Details Card -->
+                    <div class="border-t border-b border-dashed border-gray-300 py-4 space-y-2.5 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hujjat raqami:</span>
+                            <span class="font-bold text-gray-900">#{{ receiptData?.id }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">To'lov sanasi:</span>
+                            <span class="font-mono text-gray-900">{{ new Date(receiptData?.transaction_date || receiptData?.created_at).toLocaleString() }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">To'lovchi (Mijoz):</span>
+                            <span class="font-bold text-gray-900">{{ receiptData?.counterparty?.name }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Telefon:</span>
+                            <span class="font-mono text-gray-900">{{ receiptData?.counterparty?.phone || '—' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">To'lov usuli:</span>
+                            <span class="font-bold text-gray-900 uppercase">
+                                {{ receiptData?.payment_method === 'cash' ? 'Naqd pul' : (receiptData?.payment_method === 'card' ? 'Plastik (Karta)' : 'Bank o\'tkazmasi') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Amount -->
+                    <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Qabul qilingan summa</span>
+                        <span class="text-2xl font-black text-emerald-600 font-mono">{{ Number(receiptData?.amount || 0).toLocaleString() }} so'm</span>
+                    </div>
+
+                    <!-- QR Code verification & Notes -->
+                    <div class="flex items-center gap-6 bg-amber-50/40 p-4 rounded-xl border border-amber-100/50">
+                        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=https://sherdor.uz/receipt/${receiptData?.id}`" alt="QR Verification" class="w-20 h-20 bg-white p-1 rounded-lg shadow-sm border border-gray-200">
+                        <div class="text-[10px] leading-relaxed text-amber-900">
+                            <p class="font-bold uppercase tracking-wider text-amber-950 mb-1">To'lov Tasdiqlandi</p>
+                            Ushbu kvitansiya to'lov amalga oshirilganligini tasdiqlovchi rasmiy hujjat hisoblanadi. To'lovni tekshirish uchun QR-kodni skanerlang.
+                        </div>
+                    </div>
+
+                    <!-- Signature placeholders -->
+                    <div class="grid grid-cols-2 gap-8 pt-4 text-xs">
+                        <div class="text-center space-y-4">
+                            <div class="border-b border-gray-300 h-6"></div>
+                            <span class="text-gray-500">Qabul qildi (Kassir)</span>
+                        </div>
+                        <div class="text-center space-y-4">
+                            <div class="border-b border-gray-300 h-6"></div>
+                            <span class="text-gray-500">Mijoz</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer with Print Action -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-150 flex justify-end gap-3 print:hidden">
+                    <button @click="showReceiptModal = false" class="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-100 transition-all uppercase tracking-wider">
+                        Yopish
+                    </button>
+                    <button @click="window.print()" class="px-5 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 uppercase tracking-wider">
+                        🖨️ Chop etish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👤 Edit Counterparty Modal -->
+        <div v-if="showCounterpartyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center shadow-md">
+                    <h3 class="text-base font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>👤</span> Mijoz Kontragent Ma'lumotlari
+                    </h3>
+                    <button @click="showCounterpartyModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form @submit.prevent="submitCounterparty" class="p-6 space-y-4">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Mijoz (F.I.Sh)</label>
+                        <input v-model="counterpartyForm.name" type="text" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold">
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Telefon raqami</label>
+                        <input v-model="counterpartyForm.phone" type="text" placeholder="+998XXXXXXXXX" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono">
+                    </div>
+
+                    <!-- Initial Balance -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Boshlang'ich qoldiq (Balans)</label>
+                        <div class="relative">
+                            <input v-model="counterpartyForm.balance" type="number" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold">
+                            <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400 mt-1 block">Manfiy qiymat qarzdorlikni, musbat qiymat esa haqdorlikni bildiradi.</span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                        <button type="button" @click="showCounterpartyModal = false" class="px-4 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="isProcessing" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50">
+                            <span v-if="isProcessing" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

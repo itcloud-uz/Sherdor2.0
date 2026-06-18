@@ -292,7 +292,7 @@ onMounted(() => {
             try {
                 const url = new URL(page.url, window.location.origin);
                 const tabParam = url.searchParams.get('tab') || 'dashboard';
-                if (['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes(tabParam)) {
+                if (['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue'].includes(tabParam)) {
                     isClientsMenuOpen.value = true;
                 } else {
                     isCrmMenuOpen.value = true;
@@ -447,18 +447,6 @@ const formattedDate = computed(() => {
                                 Pul o'tkazmalari
                             </Link>
 
-                            <!-- Mijoz to'lovlari -->
-                            <Link
-                                :href="route('admin.finance', { tab: 10, sub: 'payments' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
-                                :class="isFinanceSubTabActive(10, 'payments')
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
-                            >
-                                <span :class="isFinanceSubTabActive(10, 'payments') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
-                                Mijoz to'lovlari
-                            </Link>
-
                             <!-- Botdan kirimlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 12 })"
@@ -481,18 +469,6 @@ const formattedDate = computed(() => {
                             >
                                 <span :class="isFinanceSubTabActive(1) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
                                 Qo'shimcha operatsiyalar
-                            </Link>
-
-                            <!-- Hisob-fakturalar -->
-                            <Link
-                                :href="route('admin.finance', { tab: 10, sub: 'debts' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
-                                :class="isFinanceSubTabActive(10, 'debts')
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
-                            >
-                                <span :class="isFinanceSubTabActive(10, 'debts') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
-                                Hisob-fakturalar
                             </Link>
 
                             <!-- Hisobotlar -->
@@ -526,11 +502,11 @@ const formattedDate = computed(() => {
                         <button
                             @click="isCrmMenuOpen = !isCrmMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -569,17 +545,6 @@ const formattedDate = computed(() => {
                                 📝 Postlar
                             </Link>
 
-
-                            <!-- Qarzdorlik radari -->
-                            <Link
-                                v-if="hasPerm('access debtors')"
-                                :href="route('admin.crm', { tab: 'overdue' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ⏳ Qarzdorlar radari
-                            </Link>
-
                             <!-- Sozlamalar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'settings' })"
@@ -609,16 +574,16 @@ const formattedDate = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Custom nested menu for clients_database (Mijozlar bazasi) -->
+                    <!-- Custom nested menu for clients_database (Sotuv bo'limi) -->
                     <div v-else-if="item.name === 'clients_database'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isClientsMenuOpen = !isClientsMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Mijozlar bazasi</span>
+                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">💼</span>
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Sotuv bo'limi</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -630,50 +595,13 @@ const formattedDate = computed(() => {
                         </button>
                         
                         <div v-show="isClientsMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Yangi mijozlar -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'clients_new' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('clients_new') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🟢 Yangi mijozlar
-                            </Link>
-
                             <!-- Mijozlar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'clients' })"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('clients') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                :class="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0]) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
                                 👥 Mijozlar
-                            </Link>
-                            
-                            <!-- Faol mijozlar -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'clients_active' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('clients_active') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🤝 Faol mijozlar
-                            </Link>
-
-                            <!-- Qarzdor mijozlar -->
-                            <Link
-                                v-if="hasPerm('access debtors')"
-                                :href="route('admin.crm', { tab: 'clients_debtors' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('clients_debtors') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ⏳ Qarzdor mijozlar
-                            </Link>
-                            
-                            <!-- Qora ro'yxat -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'clients_blacklist' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('clients_blacklist') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                ❌ Qora ro'yxat
                             </Link>
 
                             <!-- Shartnomalar -->
@@ -683,6 +611,34 @@ const formattedDate = computed(() => {
                                 :class="isClientsTabActive('contracts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
                                 📄 Shartnomalar
+                            </Link>
+
+                            <!-- Mijoz to'lovlari -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'client_payments' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('client_payments') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                💳 Mijoz to'lovlari
+                            </Link>
+
+                            <!-- Mijoz to'lov hisobotlari -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'client_payment_reports' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('client_payment_reports') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                📊 To'lov hisobotlari
+                            </Link>
+
+                            <!-- Qarzdorlar radari -->
+                            <Link
+                                v-if="hasPerm('access debtors')"
+                                :href="route('admin.crm', { tab: 'overdue' })"
+                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                                :class="isClientsTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                            >
+                                🚨 Qarzdorlar radari
                             </Link>
                         </div>
                     </div>

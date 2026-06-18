@@ -107,4 +107,80 @@ class ClientExportController extends Controller
         $pdf = Pdf::loadHTML($html)->setPaper('A4', 'landscape');
         return $pdf->download('clients_' . date('Y-m-d_H-i') . '.pdf');
     }
+
+    public function exportOverdueExcel(Request $request)
+    {
+        $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
+                            ->where('status', 'overdue')
+                            ->orderBy('due_date', 'asc')
+                            ->get();
+        $now = now();
+        $strictCollectionSchedules = [];
+        
+        foreach ($allOverdueSchedules as $schedule) {
+            if (!$schedule->contract) {
+                continue;
+            }
+
+            $contractCreatedAt = \Carbon\Carbon::parse($schedule->contract->created_at);
+            $contractEndDate = $contractCreatedAt->copy()->addMonths($schedule->contract->term_months);
+            $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($now, false);
+
+            if ($now->greaterThan($contractEndDate) || $daysOverdue >= 90) {
+                $strictCollectionSchedules[] = $schedule;
+            }
+        }
+
+        // Group by client
+        $groups = [];
+        foreach ($strictCollectionSchedules as $schedule) {
+            $client = $schedule->contract->client;
+            if (!$client) continue;
+            $clientId = $client->id;
+            if (!isset($groups[$clientId])) {
+                $groups[$clientId] = [
+                    'name' => trim("{$client->last_name} {$client->first_name} {$client->middle_name}"),
+                    'phone' => $client->phone,
+                    'total_amount' => 0,
+                    'schedules_count' => 0,
+                    'max_days' => 0,
+                ];
+            }
+            $groups[$clientId]['total_amount'] += $schedule->expected_amount;
+            $groups[$clientId]['schedules_count']++;
+            $days = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($now);
+            if ($days > $groups[$clientId]['max_days']) {
+                $groups[$clientId]['max_days'] = $days;
+            }
+        }
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=overdue_debtors_" . date('Y-m-d_H-i') . ".csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($groups) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, ['ID', 'Mijoz F.I.Sh', 'Telefon', 'Kechikkan to\'lovlar soni', 'Kechikkan Summa', 'Maksimal kechikish muddati (kun)'], ';');
+
+            $idx = 1;
+            foreach ($groups as $clientId => $data) {
+                fputcsv($file, [
+                    $idx++,
+                    $data['name'],
+                    $data['phone'] ? $data['phone'] : '',
+                    $data['schedules_count'],
+                    $data['total_amount'] . " so'm",
+                    $data['max_days'] . " kun",
+                ], ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

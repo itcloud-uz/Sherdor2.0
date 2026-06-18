@@ -36,6 +36,8 @@ class CrmController extends Controller
         $settings = null;
         $smsLogs = [];
         $isConnected = false;
+        $transactions = [];
+        $counterparties = [];
 
         // 1. Dashboard Tab
         if ($tab === 'dashboard') {
@@ -120,6 +122,32 @@ class CrmController extends Controller
             }
         }
 
+        // 9. Client Payments Tab
+        if ($tab === 'client_payments') {
+            $transactions = \App\Models\Transaction::with([
+                'creator', 
+                'approver', 
+                'contract.client', 
+                'contract.unit.floor.building',
+                'category', 
+                'cashRegister', 
+                'counterparty', 
+                'invoice',
+                'building'
+            ])->whereHas('counterparty', function($q) {
+                $q->where('type', 'client');
+            })->latest()->limit(1000)->get();
+
+            $counterparties = \App\Models\Counterparty::with(['customable.contracts', 'transactions'])
+                            ->where('type', 'client')
+                            ->get();
+        }
+
+        // 10. Client Payment Reports Tab (MIJOZ TO'LOV HISOBOTLARI)
+        if ($tab === 'client_payment_reports') {
+            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->get();
+        }
+
         return Inertia::render('Admin/CRM/Index', [
             'leads' => $leads,
             'clients' => $clients,
@@ -140,6 +168,10 @@ class CrmController extends Controller
             'isEskizConnected' => $isConnected,
             'leadSources' => \App\Models\LeadSource::orderBy('name', 'asc')->get(),
             'cashRegisters' => \App\Models\CashRegister::where('is_active', true)->get(),
+            'transactions' => $transactions,
+            'counterparties' => $counterparties,
+            'categories' => \App\Models\TransactionCategory::all(),
+            'buildings' => \App\Models\Building::latest()->get(),
         ]);
     }
 

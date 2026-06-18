@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/crm/clients/{client}/details', [\App\Http\Controllers\Admin\CrmController::class, 'getClientDetails'])->name('crm.clients.details');
     Route::get('/crm/clients/export/excel', [\App\Http\Controllers\Admin\ClientExportController::class, 'exportExcel'])->name('crm.export.clients.excel');
     Route::get('/crm/clients/export/pdf', [\App\Http\Controllers\Admin\ClientExportController::class, 'exportPdf'])->name('crm.export.clients.pdf');
+    Route::get('/crm/overdue/export/excel', [\App\Http\Controllers\Admin\ClientExportController::class, 'exportOverdueExcel'])->name('crm.export.overdue.excel');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'updateLead'])->name('crm.leads.update');
     Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyLead'])->name('crm.leads.destroy');
     Route::post('/crm/schedules/{schedule}/pay', [\App\Http\Controllers\Admin\CrmController::class, 'paySchedule'])->name('crm.schedules.pay');

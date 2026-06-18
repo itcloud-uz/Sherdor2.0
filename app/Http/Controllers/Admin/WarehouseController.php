@@ -40,20 +40,119 @@ class WarehouseController extends Controller
 
     public function inventory()
     {
+        $items = InventoryItem::all()->map(function ($item) {
+            $latestOrderItem = PurchaseOrderItem::where('item_name', $item->name)
+                ->whereHas('order', function ($query) {
+                    $query->where('status', 'delivered');
+                })
+                ->with('order.supplier')
+                ->latest()
+                ->first();
+            
+            $item->supplier_name = $latestOrderItem ? ($latestOrderItem->order->supplier->company_name ?: $latestOrderItem->order->supplier->name) : '—';
+            return $item;
+        });
+
+        $stats = [
+            'total_types' => $items->count(),
+            'low_stock' => $items->filter(fn($i) => $i->quantity < $i->min_quantity)->count(),
+            'pending_orders' => PurchaseOrder::where('status', 'pending')->count(),
+            'total_value' => $items->sum(fn($i) => $i->quantity * ($i->average_cost ?: $i->price)),
+        ];
+
         return Inertia::render('Admin/Warehouse/Inventory', [
-            'inventory' => InventoryItem::all(),
-            'transactions' => InventoryTransaction::with(['item', 'user'])->latest()->get()
+            'inventory' => $items,
+            'stats' => $stats,
+            'transactions' => InventoryTransaction::with(['item', 'user'])->latest()->get(),
+            'suppliers' => Supplier::all()
         ]);
+    }
+
+    public function storeInventoryItem(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:inventory_items,name',
+            'category' => 'nullable|string|max:255',
+            'unit' => 'required|string|max:50',
+            'quantity' => 'required|numeric|min:0',
+            'min_quantity' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:0',
+            'status' => 'required|string|in:faol,to\'xtatilgan,qoralama',
+        ]);
+
+        $validated['average_cost'] = $validated['price'];
+
+        $item = InventoryItem::create($validated);
+
+        if ($validated['quantity'] > 0) {
+            InventoryTransaction::create([
+                'inventory_item_id' => $item->id,
+                'type' => 'in',
+                'quantity' => $validated['quantity'],
+                'cost' => $validated['price'],
+                'notes' => 'Boshlang\'ich qoldiq',
+                'user_id' => auth()->id()
+            ]);
+        }
+
+        return back()->with('success', 'Mahsulot muvaffaqiyatli qo\'shildi');
+    }
+
+    public function updateInventoryItem(Request $request, InventoryItem $item)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:inventory_items,name,' . $item->id,
+            'category' => 'nullable|string|max:255',
+            'unit' => 'required|string|max:50',
+            'quantity' => 'required|numeric|min:0',
+            'min_quantity' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:0',
+            'status' => 'required|string|in:faol,to\'xtatilgan,qoralama',
+        ]);
+
+        $diff = $validated['quantity'] - $item->quantity;
+        if ($diff != 0) {
+            InventoryTransaction::create([
+                'inventory_item_id' => $item->id,
+                'type' => $diff > 0 ? 'in' : 'out',
+                'quantity' => abs($diff),
+                'cost' => $validated['price'],
+                'notes' => 'Qoldiqni qo\'lda tahrirlash',
+                'user_id' => auth()->id()
+            ]);
+        }
+
+        $validated['average_cost'] = $validated['price'];
+
+        $item->update($validated);
+
+        return back()->with('success', 'Mahsulot yangilandi');
+    }
+
+    public function destroyInventoryItem(InventoryItem $item)
+    {
+        $item->delete();
+        return back()->with('success', 'Mahsulot o\'chirildi');
     }
 
     public function suppliers()
     {
+        $suppliers = Supplier::with(['contracts', 'orders' => function($q) {
+            $q->with('items')->oldest();
+        }, 'transactions' => function($q) {
+            $q->where('type', 'expense')->oldest();
+        }])->latest()->get();
+
+        $stats = [
+            'total_suppliers' => $suppliers->count(),
+            'total_debt' => $suppliers->where('balance', '>', 0)->sum('balance'),
+            'total_credit' => abs($suppliers->where('balance', '<', 0)->sum('balance')),
+            'total_purchases' => PurchaseOrder::where('status', 'delivered')->count(),
+        ];
+
         return Inertia::render('Admin/Warehouse/Suppliers', [
-            'suppliers' => Supplier::with(['contracts', 'orders' => function($q) {
-                $q->with('items')->oldest();
-            }, 'transactions' => function($q) {
-                $q->where('type', 'expense')->oldest();
-            }])->latest()->get(),
+            'suppliers' => $suppliers,
+            'stats' => $stats,
             'inventory_items' => InventoryItem::all()
         ]);
     }
@@ -68,6 +167,8 @@ class WarehouseController extends Controller
             'address' => 'nullable|string',
             'bank_account' => 'nullable|string',
             'mfo' => 'nullable|string',
+            'category' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:255',
         ]);
 
         Supplier::create($validated);
@@ -84,7 +185,9 @@ class WarehouseController extends Controller
             'address' => 'nullable|string',
             'bank_account' => 'nullable|string',
             'mfo' => 'nullable|string',
-            'balance' => 'nullable|numeric'
+            'balance' => 'nullable|numeric',
+            'category' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:255',
         ]);
 
         $supplier->update($validated);
@@ -95,6 +198,39 @@ class WarehouseController extends Controller
     {
         $supplier->delete();
         return back()->with('success', 'Ta\'minotchi o\'chirildi');
+    }
+
+    public function suppliersListExcel()
+    {
+        $suppliers = Supplier::with(['orders' => function($q) {
+            $q->with('items');
+        }])->get();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\SuppliersListExport($suppliers),
+            'Taminotchilar_royxati.xlsx'
+        );
+    }
+
+    public function inventoryListExcel()
+    {
+        $items = InventoryItem::all()->map(function ($item) {
+            $latestOrderItem = PurchaseOrderItem::where('item_name', $item->name)
+                ->whereHas('order', function ($query) {
+                    $query->where('status', 'delivered');
+                })
+                ->with('order.supplier')
+                ->latest()
+                ->first();
+            
+            $item->supplier_name = $latestOrderItem ? ($latestOrderItem->order->supplier->company_name ?: $latestOrderItem->order->supplier->name) : '—';
+            return $item;
+        });
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InventoryListExport($items),
+            'Omborxona_hisoboti.xlsx'
+        );
     }
 
     public function uploadSupplierDocument(Request $request, Supplier $supplier)

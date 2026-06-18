@@ -274,7 +274,13 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::prefix('warehouse')->name('warehouse.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\WarehouseController::class, 'index'])->name('index');
         Route::get('/inventory', [\App\Http\Controllers\Admin\WarehouseController::class, 'inventory'])->name('inventory');
+        Route::get('/inventory/export/excel', [\App\Http\Controllers\Admin\WarehouseController::class, 'inventoryListExcel'])->name('inventory.export.excel');
+        Route::post('/inventory', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeInventoryItem'])->name('inventory.store');
+        Route::put('/inventory/{item}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateInventoryItem'])->name('inventory.update');
+        Route::delete('/inventory/{item}', [\App\Http\Controllers\Admin\WarehouseController::class, 'destroyInventoryItem'])->name('inventory.destroy');
+
         Route::get('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'suppliers'])->name('suppliers');
+        Route::get('/suppliers/export/excel', [\App\Http\Controllers\Admin\WarehouseController::class, 'suppliersListExcel'])->name('suppliers.export.excel');
         Route::post('/suppliers', [\App\Http\Controllers\Admin\WarehouseController::class, 'storeSupplier'])->name('suppliers.store');
         Route::put('/suppliers/{supplier}', [\App\Http\Controllers\Admin\WarehouseController::class, 'updateSupplier'])->name('suppliers.update');
         Route::delete('/suppliers/{supplier}', [\App\Http\Controllers\Admin\WarehouseController::class, 'destroySupplier'])->name('suppliers.destroy');

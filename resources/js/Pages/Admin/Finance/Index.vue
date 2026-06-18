@@ -1095,15 +1095,18 @@ if (typeof window !== 'undefined') {
 }
 
 function openNewRegisterModal(parentId = '') {
+    // If parentId is a PointerEvent / MouseEvent, ignore it and treat as empty string
+    const parentIdVal = (parentId && typeof parentId !== 'object') ? parentId : '';
+    
     isEditRegister.value = false;
     hasSchedule.value = false;
-    isSubKassaCreation.value = !!parentId;
+    isSubKassaCreation.value = !!parentIdVal;
     registerForm.value = { 
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
         currency: 'UZS', building_id: '', is_active: true,
         bank_name: '', account_number: '', mfo_code: '', balance: 0,
-        parent_id: parentId || '', creditor_name: '', total_amount: '', interest_rate: '',
+        parent_id: parentIdVal || '', creditor_name: '', total_amount: '', interest_rate: '',
         term_months: '', start_date: '', end_date: '', monthly_payment: '', description: ''
     };
     showRegisterModal.value = true;
@@ -2713,7 +2716,7 @@ function getCounterpartyStatus(c) {
                 <div class="lg:col-span-3 bg-white border border-gray-150 p-6 rounded-2xl shadow-sm space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Kassalar ro'yxati</h3>
-                        <button @click="openNewRegisterModal" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        <button @click="openNewRegisterModal()" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
                             +
                         </button>
                     </div>
@@ -4367,6 +4370,13 @@ function getCounterpartyStatus(c) {
                 </h3>
                 
                 <form @submit.prevent="submitRegister" class="space-y-4 font-mono text-xs">
+                    <!-- Validation Errors -->
+                    <div v-if="page.props.errors && Object.keys(page.props.errors).length > 0" class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-sans">
+                        <ul class="list-disc pl-4 space-y-0.5 font-bold">
+                            <li v-for="(err, field) in page.props.errors" :key="field">{{ err }}</li>
+                        </ul>
+                    </div>
+
                     <!-- Kassa nomi -->
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Kassa nomi *</label>

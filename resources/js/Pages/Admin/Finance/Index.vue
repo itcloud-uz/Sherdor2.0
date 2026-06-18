@@ -1184,7 +1184,8 @@ const filteredFinanceActions = computed(() => {
 
     if (actionDateFilter.value) {
         list = list.filter(act => {
-            const actDate = new Date(act.created_at).toISOString().split('T')[0];
+            const d = new Date(act.created_at);
+            const actDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             return actDate === actionDateFilter.value;
         });
     }
@@ -3253,6 +3254,147 @@ function getCounterpartyStatus(c) {
 
                 <!-- SUB-TAB CONTENT blocks -->
 
+                <!-- SUB-TAB: Kirim/Chiqim Hisobotlari -->
+                <div v-if="reportSubTab === 'kirim_chiqim'" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+                    <!-- Header Filters Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <button @click="reportSubTab = 'overview'" class="p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-600 transition-all" title="Orqaga">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-bold font-display text-gray-900">Kirim/Chiqim hisobotlari</h2>
+                                <p class="text-xs text-gray-500 font-semibold mt-1">Kassa operatsiyalari va moliyaviy hisobotlar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center gap-3 lg:ml-auto w-full lg:w-auto">
+                            <!-- Search -->
+                            <div class="relative w-full sm:w-60">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </span>
+                                <input v-model="kirimChiqimSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-9 pr-4 py-2 text-sm w-full">
+                            </div>
+                            
+                            <!-- Date Range -->
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input v-model="kirimChiqimDateFrom" type="date" placeholder="Sanadan" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-xs w-full sm:w-36">
+                                <span class="text-gray-400 font-bold">→</span>
+                                <input v-model="kirimChiqimDateTo" type="date" placeholder="Sanagacha" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-xs w-full sm:w-36">
+                            </div>
+
+                            <!-- Excel button -->
+                            <button @click="exportKirimChiqimToExcel" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 w-full sm:w-auto justify-center">
+                                📊 Excel ga yuklash
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Jami kirim -->
+                        <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Jami kirim</span>
+                                <h2 class="text-2xl font-black text-emerald-600 mt-2 font-mono">
+                                    + {{ formatMoneyKirimChiqim(kirimChiqimTotalIncome) }}
+                                </h2>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg shadow-sm">
+                                ↑
+                            </div>
+                        </div>
+
+                        <!-- Jami chiqim -->
+                        <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Jami chiqim</span>
+                                <h2 class="text-2xl font-black text-red-600 mt-2 font-mono">
+                                    - {{ formatMoneyKirimChiqim(kirimChiqimTotalExpense) }}
+                                </h2>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-black text-lg shadow-sm">
+                                ↓
+                            </div>
+                        </div>
+
+                        <!-- Balans -->
+                        <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Balans</span>
+                                <h2 class="text-2xl font-black text-blue-600 mt-2 font-mono">
+                                    {{ formatMoneyKirimChiqim(kirimChiqimBalance) }}
+                                </h2>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg shadow-sm">
+                                $
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inner tab menu & Unified Table Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
+                        <!-- Table Inner Tabs (Barcha, Kirim, Chiqim) -->
+                        <div class="flex gap-4 border-b border-gray-100 pb-3">
+                            <button @click="kirimChiqimTableTab = 'all'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                :class="kirimChiqimTableTab === 'all' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                Barcha
+                            </button>
+                            <button @click="kirimChiqimTableTab = 'income'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                :class="kirimChiqimTableTab === 'income' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                Kirim
+                            </button>
+                            <button @click="kirimChiqimTableTab = 'expense'" class="text-sm font-bold pb-2 transition-all border-b-2"
+                                :class="kirimChiqimTableTab === 'expense' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                Chiqim
+                            </button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                            <table class="w-full text-left text-xs font-sans">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-3 w-12 text-center font-bold">№</th>
+                                        <th class="p-3">Yaratilgan sana</th>
+                                        <th class="p-3">Kassa</th>
+                                        <th class="p-3">Turi</th>
+                                        <th class="p-3 text-right">Summa</th>
+                                        <th class="p-3">Izoh</th>
+                                        <th class="p-3">Xodim</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="(t, idx) in displayedKirimChiqimTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                        <td class="p-3 text-gray-600">{{ formatDateTime(t.transaction_date || t.created_at) }}</td>
+                                        <td class="p-3 font-bold text-gray-800">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold border font-mono uppercase tracking-wider" 
+                                                :class="t.type === 'income' ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : 'bg-red-50 text-red-700 border-red-150'">
+                                                {{ t.type === 'income' ? 'Kirim' : 'Chiqim' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right font-black font-mono" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ formatMoneyKirimChiqim(t.amount) }}
+                                        </td>
+                                        <td class="p-3 text-gray-700 max-w-xs truncate" :title="t.notes">{{ t.notes || '—' }}</td>
+                                        <td class="p-3 text-gray-600 font-mono">{{ t.creator?.phone || t.creator?.name || '—' }}</td>
+                                    </tr>
+                                    <tr v-if="!displayedKirimChiqimTransactions.length">
+                                        <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB CONTENT blocks -->
+
                 <!-- SUB-TAB 1: Overview Dashboard -->
                 <div v-if="reportSubTab === 'overview'" class="space-y-6">
                     
@@ -3854,6 +3996,59 @@ function getCounterpartyStatus(c) {
                     <div>
                         <h2 class="text-xl font-bold font-display text-gray-900">Moliya Bo'limi Harakatlari</h2>
                         <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tranzaksiyalar bo'yicha amalga oshirilgan barcha harakatlar jurnali va o'chirilgan tranzaksiyalar savatchasi</p>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Total Actions Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+                        <div>
+                            <span class="text-xs text-gray-400 font-mono font-bold uppercase tracking-wider">Jami amallar</span>
+                            <h4 class="text-2xl font-bold text-gray-900 mt-1 font-mono">{{ props.financeActions?.length || 0 }}</h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold">
+                            📊
+                        </div>
+                    </div>
+
+                    <!-- Created Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+                        <div>
+                            <span class="text-xs text-gray-400 font-mono font-bold uppercase tracking-wider">Kirim qilinganlar</span>
+                            <h4 class="text-2xl font-bold text-emerald-600 mt-1 font-mono">
+                                {{ (props.financeActions || []).filter(a => a.action === 'create').length }}
+                            </h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                            ➕
+                        </div>
+                    </div>
+
+                    <!-- Updated Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+                        <div>
+                            <span class="text-xs text-gray-400 font-mono font-bold uppercase tracking-wider">Tahrirlanganlar</span>
+                            <h4 class="text-2xl font-bold text-blue-600 mt-1 font-mono">
+                                {{ (props.financeActions || []).filter(a => a.action === 'update').length }}
+                            </h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold">
+                            📝
+                        </div>
+                    </div>
+
+                    <!-- Deleted Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+                        <div>
+                            <span class="text-xs text-gray-400 font-mono font-bold uppercase tracking-wider">O'chirilganlar</span>
+                            <h4 class="text-2xl font-bold text-red-600 mt-1 font-mono">
+                                {{ (props.financeActions || []).filter(a => a.action === 'delete').length }}
+                            </h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-lg font-bold">
+                            🗑️
+                        </div>
                     </div>
                 </div>
 

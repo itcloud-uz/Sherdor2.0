@@ -4381,7 +4381,7 @@ function getCounterpartyStatus(c) {
                     </div>
 
                     <!-- Asosiy Kassa (Ota kassa) -->
-                    <div>
+                    <div v-if="registerForm.parent_id">
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Asosiy Kassa (Ota kassa)</label>
                         <select v-model="registerForm.parent_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                             <option value="">-- Mustaqil Kassa (Ota kassa yo'q) --</option>

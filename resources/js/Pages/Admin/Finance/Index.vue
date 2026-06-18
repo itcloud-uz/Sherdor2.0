@@ -1047,6 +1047,7 @@ watch(() => form.value.counterparty_id, (newVal) => {
 // Registers Modal & CRUD helpers
 const showRegisterModal = ref(false);
 const hasSchedule = ref(false);
+const isSubKassaCreation = ref(false);
 const registerForm = ref({
     id: null,
     name: '',
@@ -1096,6 +1097,7 @@ if (typeof window !== 'undefined') {
 function openNewRegisterModal(parentId = '') {
     isEditRegister.value = false;
     hasSchedule.value = false;
+    isSubKassaCreation.value = !!parentId;
     registerForm.value = { 
         id: null, name: '', type: 'cash', 
         initial_balance_uzs: 0, initial_balance_usd: 0, initial_balance_eur: 0,
@@ -1110,6 +1112,7 @@ function openNewRegisterModal(parentId = '') {
 function openEditRegisterModal(reg) {
     isEditRegister.value = true;
     hasSchedule.value = !!(reg.total_amount || reg.interest_rate || reg.monthly_payment || reg.creditor_name);
+    isSubKassaCreation.value = !!reg.parent_id;
     registerForm.value = { 
         ...reg, 
         building_id: reg.building_id || '',
@@ -4381,7 +4384,7 @@ function getCounterpartyStatus(c) {
                     </div>
 
                     <!-- Asosiy Kassa (Ota kassa) -->
-                    <div v-if="registerForm.parent_id">
+                    <div v-if="isSubKassaCreation">
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Asosiy Kassa (Ota kassa)</label>
                         <select v-model="registerForm.parent_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                             <option value="">-- Mustaqil Kassa (Ota kassa yo'q) --</option>

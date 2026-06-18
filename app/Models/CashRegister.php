@@ -38,7 +38,7 @@ class CashRegister extends Model
         'balance' => 'decimal:2',
     ];
 
-    protected $appends = ['balance_uzs', 'balance_usd', 'balance_eur'];
+    protected $appends = ['balance_uzs', 'balance_usd', 'balance_eur', 'total_income_uzs', 'total_expense_uzs'];
 
     public function building()
     {
@@ -84,6 +84,20 @@ class CashRegister extends Model
         $outflow = $this->transactions()->where('status', 'approved')->where('type', 'expense')->where('currency', 'EUR')->sum('amount');
         $own = (float)($this->initial_balance_eur + $inflow - $outflow);
         $childrenSum = (float)$this->children()->where('is_active', true)->get()->sum('balance_eur');
+        return $own + $childrenSum;
+    }
+
+    public function getTotalIncomeUzsAttribute()
+    {
+        $own = $this->transactions()->where('status', 'approved')->where('type', 'income')->where('currency', 'UZS')->sum('amount');
+        $childrenSum = (float)$this->children()->where('is_active', true)->get()->sum('total_income_uzs');
+        return $own + $childrenSum;
+    }
+
+    public function getTotalExpenseUzsAttribute()
+    {
+        $own = $this->transactions()->where('status', 'approved')->where('type', 'expense')->where('currency', 'UZS')->sum('amount');
+        $childrenSum = (float)$this->children()->where('is_active', true)->get()->sum('total_expense_uzs');
         return $own + $childrenSum;
     }
 }

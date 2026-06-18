@@ -116,6 +116,49 @@ const reportOverviewStats = computed(() => {
     return { totalBalances, totalReceivables, totalPayables, netCapital };
 });
 
+const kassaReports = computed(() => {
+    const regs = props.registers || [];
+    
+    const getStats = (filterFn) => {
+        const matched = regs.filter(filterFn);
+        const income = matched.reduce((sum, r) => sum + parseFloat(r.total_income_uzs || 0), 0);
+        const expense = matched.reduce((sum, r) => sum + parseFloat(r.total_expense_uzs || 0), 0);
+        const balance = matched.reduce((sum, r) => sum + parseFloat(r.balance_uzs || 0), 0);
+        return { income, expense, balance };
+    };
+
+    function stripos(str, search) {
+        return (str || '').toLowerCase().includes(search.toLowerCase());
+    }
+
+    const bank = getStats(r => r.type === 'bank' || stripos(r.name, 'bank'));
+    const credit = getStats(r => (r.type === 'credit' || stripos(r.name, 'kredit')) && !stripos(r.name, 'qarz'));
+    const raxmonov = getStats(r => stripos(r.name, 'raxmonov'));
+    const uzoqov = getStats(r => stripos(r.name, 'uzoqov'));
+    const debts = getStats(r => stripos(r.name, 'qarz'));
+    
+    // Enterprise: cash box, excluding specific names
+    const enterprise = getStats(r => 
+        r.type === 'cash' && 
+        !stripos(r.name, 'raxmonov') && 
+        !stripos(r.name, 'uzoqov') && 
+        !stripos(r.name, 'qarz') && 
+        !stripos(r.name, 'kredit')
+    );
+
+    return {
+        enterprise,
+        bank,
+        credit,
+        raxmonov,
+        uzoqov,
+        debts,
+        totalIncome: enterprise.income + bank.income + credit.income + raxmonov.income + uzoqov.income + debts.income,
+        totalExpense: enterprise.expense + bank.expense + credit.expense + raxmonov.expense + uzoqov.expense + debts.expense,
+        totalBalance: enterprise.balance + bank.balance + credit.balance + raxmonov.balance + uzoqov.balance + debts.balance,
+    };
+});
+
 const reportBuildingsSummary = computed(() => {
     if (!props.buildings) return [];
     return props.buildings.map(b => {
@@ -3033,55 +3076,184 @@ function getCounterpartyStatus(c) {
                 <!-- SUB-TAB CONTENT blocks -->
 
                 <!-- SUB-TAB 1: Overview Dashboard -->
-                <div v-if="reportSubTab === 'overview'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Incomes vs Expenses by Categories Summary -->
-                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Eng ko'p ishlatilgan kategoriyalar</h3>
-                        <div class="space-y-3">
-                            <div v-for="cat in categoriesSummary.slice(0, 6)" :key="cat.name" class="space-y-1">
-                                <div class="flex justify-between text-xs font-mono text-gray-700">
-                                    <span class="font-bold">{{ cat.name }}</span>
-                                    <span>
-                                        Kirim: <span class="text-emerald-600 font-bold">{{ formatMoney(cat.total_income) }}</span> / 
-                                        Chiqim: <span class="text-red-600 font-bold">{{ formatMoney(cat.total_expense) }}</span>
-                                    </span>
+                <div v-if="reportSubTab === 'overview'" class="space-y-6">
+                    
+                    <!-- KASSA HISOBOTLARI (Image 1 Style) -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono border-b border-gray-100 pb-3 flex items-center gap-2">
+                            <span>💵</span> KASSA HISOBOTLARI
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                            <!-- Column 1: kirim -->
+                            <div class="flex flex-col items-center space-y-4">
+                                <div class="w-full border-2 border-emerald-500 bg-emerald-50/10 rounded-xl p-4 text-center shadow-sm">
+                                    <span class="block text-xs font-bold uppercase tracking-wider text-emerald-800">Umumiy kirim</span>
+                                    <span class="text-lg font-black text-emerald-600 mt-1 block font-mono">{{ formatMoney(kassaReports.totalIncome) }}</span>
                                 </div>
-                                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
-                                    <div class="bg-emerald-500 h-full" :style="{ width: (cat.total_income / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
-                                    <div class="bg-red-500 h-full" :style="{ width: (cat.total_expense / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
+                                <div class="text-emerald-500">
+                                    <svg class="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </div>
+                                <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Korxona balansi kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.income) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.income) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Kredit kassa kirimlari</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.income) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Raxmonov kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.income) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Uzoqov kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.income) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1">
+                                        <span class="text-gray-600 font-semibold">Qarzlar kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.income) }}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div v-if="!categoriesSummary.length" class="text-xs text-gray-400 text-center py-6">Kategoriyalar tahlili uchun tranzaksiyalar mavjud emas.</div>
+
+                            <!-- Column 2: chiqim -->
+                            <div class="flex flex-col items-center space-y-4">
+                                <div class="w-full border-2 border-red-500 bg-red-50/10 rounded-xl p-4 text-center shadow-sm">
+                                    <span class="block text-xs font-bold uppercase tracking-wider text-red-800">Umumiy chiqim</span>
+                                    <span class="text-lg font-black text-red-600 mt-1 block font-mono">{{ formatMoney(kassaReports.totalExpense) }}</span>
+                                </div>
+                                <div class="text-red-400">
+                                    <svg class="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </div>
+                                <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Korxona balansi chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.expense) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.expense) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Kredit kassa chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.expense) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Raxmonov chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.expense) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Uzoqov chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.expense) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1">
+                                        <span class="text-gray-600 font-semibold">Qarzlar chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.expense) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: balans -->
+                            <div class="flex flex-col items-center space-y-4">
+                                <div class="w-full border-2 border-blue-500 bg-blue-50/10 rounded-xl p-4 text-center shadow-sm">
+                                    <span class="block text-xs font-bold uppercase tracking-wider text-blue-800">Balans</span>
+                                    <span class="text-lg font-black text-blue-600 mt-1 block font-mono">{{ formatMoney(kassaReports.totalBalance) }}</span>
+                                </div>
+                                <div class="text-blue-500">
+                                    <svg class="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </div>
+                                <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Korxona balansi qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.balance) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.balance) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Kredit kassa qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.balance) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Raxmonov qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.balance) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                                        <span class="text-gray-600 font-semibold">Uzoqov qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.balance) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1">
+                                        <span class="text-gray-600 font-semibold">Qarzlar qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.balance) }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Building Overview Stats -->
-                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Obyektlar bo'yicha aylanma</h3>
-                        <div class="overflow-x-auto border border-gray-100 rounded-xl">
-                            <table class="w-full text-left text-xs font-mono">
-                                <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
-                                    <tr>
-                                        <th class="p-3">Bino</th>
-                                        <th class="p-3 text-right">Kirim</th>
-                                        <th class="p-3 text-right">Chiqim</th>
-                                        <th class="p-3 text-right">Sof oqim</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="b in reportBuildingsSummary.slice(0, 5)" :key="b.id" class="hover:bg-gray-50">
-                                        <td class="p-3 font-bold text-gray-900">{{ b.name }}</td>
-                                        <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(b.incomes) }}</td>
-                                        <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(b.expenses) }}</td>
-                                        <td class="p-3 text-right font-bold" :class="b.netFlow >= 0 ? 'text-gray-900' : 'text-red-700'">
-                                            {{ formatMoney(b.netFlow) }}
-                                        </td>
-                                    </tr>
-                                    <tr v-if="!reportBuildingsSummary.length">
-                                        <td colspan="4" class="p-6 text-center text-gray-400">Obyektlar topilmadi.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Incomes vs Expenses by Categories Summary -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Eng ko'p ishlatilgan kategoriyalar</h3>
+                            <div class="space-y-3">
+                                <div v-for="cat in categoriesSummary.slice(0, 6)" :key="cat.name" class="space-y-1">
+                                    <div class="flex justify-between text-xs font-mono text-gray-700">
+                                        <span class="font-bold">{{ cat.name }}</span>
+                                        <span>
+                                            Kirim: <span class="text-emerald-600 font-bold">{{ formatMoney(cat.total_income) }}</span> / 
+                                            Chiqim: <span class="text-red-600 font-bold">{{ formatMoney(cat.total_expense) }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+                                        <div class="bg-emerald-500 h-full" :style="{ width: (cat.total_income / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
+                                        <div class="bg-red-500 h-full" :style="{ width: (cat.total_expense / (cat.total_income + cat.total_expense || 1) * 100) + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div v-if="!categoriesSummary.length" class="text-xs text-gray-400 text-center py-6">Kategoriyalar tahlili uchun tranzaksiyalar mavjud emas.</div>
+                            </div>
+                        </div>
+
+                        <!-- Building Overview Stats -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Obyektlar bo'yicha aylanma</h3>
+                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                                <table class="w-full text-left text-xs font-mono">
+                                    <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                        <tr>
+                                            <th class="p-3">Bino</th>
+                                            <th class="p-3 text-right">Kirim</th>
+                                            <th class="p-3 text-right">Chiqim</th>
+                                            <th class="p-3 text-right">Sof oqim</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="b in reportBuildingsSummary.slice(0, 5)" :key="b.id" class="hover:bg-gray-50">
+                                            <td class="p-3 font-bold text-gray-900">{{ b.name }}</td>
+                                            <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(b.incomes) }}</td>
+                                            <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(b.expenses) }}</td>
+                                            <td class="p-3 text-right font-bold" :class="b.netFlow >= 0 ? 'text-gray-900' : 'text-red-700'">
+                                                {{ formatMoney(b.netFlow) }}
+                                            </td>
+                                        </tr>
+                                        <tr v-if="!reportBuildingsSummary.length">
+                                            <td colspan="4" class="p-6 text-center text-gray-400">Obyektlar topilmadi.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

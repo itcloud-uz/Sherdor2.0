@@ -1095,4 +1095,67 @@ class FacilityController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function uploadShowroomImages(Request $request, $id)
+    {
+        $building = Building::findOrFail($id);
+
+        $request->validate([
+            'images' => 'required|array',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // Max 10MB per image
+        ]);
+
+        $currentImages = $building->showroom_images ?: [];
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('showroom', 'public');
+                $currentImages[] = $path;
+            }
+        }
+
+        $building->update([
+            'showroom_images' => $currentImages,
+        ]);
+
+        // Sync to all other blocks of the same building group (with the same name)
+        Building::where('name', $building->name)->update([
+            'showroom_images' => json_encode($currentImages),
+        ]);
+
+        return redirect()->back()->with('message', 'Showroom rasmlari muvaffaqiyatli yuklandi!');
+    }
+
+    public function deleteShowroomImage(Request $request, $id)
+    {
+        $building = Building::findOrFail($id);
+
+        $request->validate([
+            'image_path' => 'required|string',
+        ]);
+
+        $imagePath = $request->input('image_path');
+        $currentImages = $building->showroom_images ?: [];
+
+        // Remove from list
+        $currentImages = array_values(array_filter($currentImages, function ($img) use ($imagePath) {
+            return $img !== $imagePath;
+        }));
+
+        // Delete actual file from storage
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($imagePath)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($imagePath);
+        }
+
+        $building->update([
+            'showroom_images' => $currentImages,
+        ]);
+
+        // Sync to all other blocks of the same building group
+        Building::where('name', $building->name)->update([
+            'showroom_images' => json_encode($currentImages),
+        ]);
+
+        return redirect()->back()->with('message', 'Showroom rasmi o\'chirildi!');
+    }
 }

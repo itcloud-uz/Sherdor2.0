@@ -32,6 +32,11 @@ class Building extends Model
         'height_m',
         'model_3d_path',
         'basement_floors',
+        'showroom_images',
+    ];
+
+    protected $casts = [
+        'showroom_images' => 'array',
     ];
 
     public function floors()

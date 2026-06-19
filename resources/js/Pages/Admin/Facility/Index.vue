@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
@@ -1048,6 +1048,93 @@ const groupedObjects = computed(() => {
         groups[objName].push(b);
     });
     return groups;
+});
+
+const showShowroomModal = ref(false);
+const activeShowroomImageIndex = ref(0);
+const showroomManageMode = ref(false);
+const isUploadingShowroom = ref(false);
+const showroomUploadForm = useForm({
+    images: []
+});
+
+const currentObjectContainer = computed(() => {
+    const list = groupedObjects.value[currentObject.value] || [];
+    let container = list.find(b => b.total_floors === 0);
+    if (!container && list.length > 0) {
+        container = list[0];
+    }
+    return container;
+});
+
+function openShowroomModal() {
+    showShowroomModal.value = true;
+    activeShowroomImageIndex.value = 0;
+    showroomManageMode.value = false;
+}
+
+function handleShowroomImagesChange(e) {
+    showroomUploadForm.images = Array.from(e.target.files);
+}
+
+function submitShowroomImages() {
+    if (!showroomUploadForm.images.length) return;
+    isUploadingShowroom.value = true;
+    
+    showroomUploadForm.post(route('admin.facility.buildings.showroom-images.store', currentObjectContainer.value.id), {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            showroomUploadForm.reset();
+            isUploadingShowroom.value = false;
+            showroomManageMode.value = false;
+            activeShowroomImageIndex.value = 0;
+        },
+        onError: (err) => {
+            isUploadingShowroom.value = false;
+            alert('Rasmlar yuklashda xatolik yuz berdi: ' + Object.values(err).join(', '));
+        }
+    });
+}
+
+function deleteShowroomImage(path) {
+    if (confirm("Ushbu showroom rasmini o'chirishni xohlaysizmi?")) {
+        router.delete(route('admin.facility.buildings.showroom-images.destroy', currentObjectContainer.value.id), {
+            data: { image_path: path },
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                activeShowroomImageIndex.value = 0;
+            }
+        });
+    }
+}
+
+const handleKeyDown = (e) => {
+    if (!showShowroomModal.value) return;
+    if (showroomManageMode.value) return;
+
+    if (e.key === 'Escape') {
+        showShowroomModal.value = false;
+    } else if (e.key === 'ArrowRight' || e.key === 'Right') {
+        const imgs = currentObjectContainer.value?.showroom_images || [];
+        if (imgs.length > 1) {
+            activeShowroomImageIndex.value = (activeShowroomImageIndex.value + 1) % imgs.length;
+        }
+    } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+        const imgs = currentObjectContainer.value?.showroom_images || [];
+        if (imgs.length > 1) {
+            activeShowroomImageIndex.value = (activeShowroomImageIndex.value - 1 + imgs.length) % imgs.length;
+        }
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyDown);
 });
 
 function toggleObject(objName) {
@@ -3001,7 +3088,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                     <span>3d</span>
                                 </div>
-                                <button class="px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
+                                <button @click="openShowroomModal" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
                                     👁️ Showroom
                                 </button>
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
@@ -4975,6 +5062,153 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 👁️ Showroom Fullscreen Modal -->
+        <div v-if="showShowroomModal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col select-none animate-[fadeIn_0.3s_ease-out]">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center text-white shrink-0 bg-black/40">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">👁️</span>
+                    <div>
+                        <h2 class="text-base font-bold uppercase tracking-wider font-display">{{ currentObject }} showroomi</h2>
+                        <p class="text-[10px] text-gray-400 font-medium">Barcha 3D chizmalar va showroom rasmlari galereyasi</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Manage Button -->
+                    <button @click="showroomManageMode = !showroomManageMode" class="px-4 py-2 border text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                        :class="showroomManageMode ? 'bg-amber-500 hover:bg-amber-600 border-transparent text-white' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'">
+                        {{ showroomManageMode ? '👁️ Galereya' : '⚙️ Rasmlarni boshqarish' }}
+                    </button>
+                    <!-- Close Button -->
+                    <button @click="showShowroomModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/10">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="flex-1 overflow-hidden relative flex flex-col items-center justify-center p-6 text-white">
+                <!-- VIEW MODE: Gallery -->
+                <div v-if="!showroomManageMode" class="w-full h-full flex flex-col justify-between">
+                    <!-- Image Display Area -->
+                    <div class="flex-1 flex items-center justify-center relative group min-h-0">
+                        <template v-if="currentObjectContainer?.showroom_images?.length">
+                            <!-- Left Arrow -->
+                            <button v-if="currentObjectContainer.showroom_images.length > 1" 
+                                @click="activeShowroomImageIndex = (activeShowroomImageIndex - 1 + currentObjectContainer.showroom_images.length) % currentObjectContainer.showroom_images.length"
+                                class="absolute left-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-xl font-bold transition-all z-10">
+                                ‹
+                            </button>
+
+                            <!-- Active Image -->
+                            <div class="max-w-full max-h-full flex items-center justify-center relative p-4">
+                                <img :src="'/storage/' + currentObjectContainer.showroom_images[activeShowroomImageIndex]" 
+                                     class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl border border-white/5 animate-[scaleIn_0.3s_ease-out]" />
+                                
+                                <!-- Floating Download Button -->
+                                <div class="absolute bottom-6 right-6">
+                                    <a :href="'/storage/' + currentObjectContainer.showroom_images[activeShowroomImageIndex]" 
+                                       download 
+                                       class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 uppercase font-mono tracking-wider">
+                                        📥 Yuklab olish
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Right Arrow -->
+                            <button v-if="currentObjectContainer.showroom_images.length > 1" 
+                                @click="activeShowroomImageIndex = (activeShowroomImageIndex + 1) % currentObjectContainer.showroom_images.length"
+                                class="absolute right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-xl font-bold transition-all z-10">
+                                ›
+                            </button>
+                        </template>
+
+                        <!-- Empty State -->
+                        <div v-else class="text-center space-y-4 max-w-sm">
+                            <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-4xl mx-auto border border-white/10">
+                                🖼️
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-200">Showroom rasmlari yuklanmagan</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed">Ushbu obyekt uchun hali showroom yoki 3D rasmlari kiritilmagan. Yuqoridagi "Rasmlarni boshqarish" tugmasi orqali rasm yuklashingiz mumkin.</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Indicator Carousel / Thumbnails -->
+                    <div v-if="currentObjectContainer?.showroom_images?.length" class="h-24 border-t border-white/5 bg-black/20 shrink-0 flex items-center justify-center gap-2 overflow-x-auto px-6 py-2">
+                        <div v-for="(img, idx) in currentObjectContainer.showroom_images" :key="img"
+                             @click="activeShowroomImageIndex = idx"
+                             class="w-20 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all shrink-0 relative group"
+                             :class="activeShowroomImageIndex === idx ? 'border-amber-500 scale-105 shadow-md' : 'border-transparent opacity-50 hover:opacity-100'">
+                            <img :src="'/storage/' + img" class="w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EDIT/MANAGE MODE: Upload & Remove -->
+                <div v-else class="w-full h-full flex flex-col md:flex-row gap-6 overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+                    <!-- Left: Upload Form Panel -->
+                    <div class="w-full md:w-80 bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col gap-4 shrink-0">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-amber-500 font-mono">Yangi rasmlar yuklash</h3>
+                        
+                        <!-- Drag & Drop / File Selector -->
+                        <div class="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:border-amber-500 transition-colors relative cursor-pointer group">
+                            <input type="file" multiple accept="image/*" id="showroom-file-input" @change="handleShowroomImagesChange" class="absolute inset-0 opacity-0 cursor-pointer" />
+                            <div class="space-y-2">
+                                <span class="text-3xl block group-hover:scale-110 transition-transform">➕</span>
+                                <span class="text-xs font-bold text-gray-300 block">Rasmlarni tanlang</span>
+                                <span class="text-[10px] text-gray-500 block">JPEG, PNG, WEBP (Maks: 10MB)</span>
+                            </div>
+                        </div>
+
+                        <!-- Selected Files List -->
+                        <div v-if="showroomUploadForm.images.length" class="flex-1 overflow-y-auto space-y-2 max-h-48 pr-1">
+                            <div v-for="(file, idx) in showroomUploadForm.images" :key="idx" class="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 text-xs">
+                                <span class="truncate font-mono pr-2 max-w-[180px]">{{ file.name }}</span>
+                                <button type="button" @click="showroomUploadForm.images.splice(idx, 1)" class="text-red-400 hover:text-red-500 font-bold">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="button" 
+                                @click="submitShowroomImages" 
+                                :disabled="isUploadingShowroom || !showroomUploadForm.images.length"
+                                class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider disabled:opacity-50 mt-auto">
+                            <span v-if="isUploadingShowroom" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            📤 Yuklash ({{ showroomUploadForm.images.length }})
+                        </button>
+                    </div>
+
+                    <!-- Right: Existing Images Grid -->
+                    <div class="flex-1 bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col gap-4 overflow-hidden">
+                        <div class="flex justify-between items-center shrink-0">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-300 font-mono">Mavjud Showroom rasmlari ({{ currentObjectContainer?.showroom_images?.length || 0 }} ta)</h3>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="flex-1 overflow-y-auto pr-1">
+                            <div v-if="currentObjectContainer?.showroom_images?.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div v-for="img in currentObjectContainer.showroom_images" :key="img" class="aspect-video rounded-xl overflow-hidden border border-white/10 relative group">
+                                    <img :src="'/storage/' + img" class="w-full h-full object-cover" />
+                                    <!-- Delete Button Overlay -->
+                                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                        <button @click="deleteShowroomImage(img)" class="w-10 h-10 rounded-full bg-red-600/80 hover:bg-red-600 text-white flex items-center justify-center border border-red-500/20 text-sm shadow-md transition-all">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Empty State -->
+                            <div v-else class="h-full flex flex-col items-center justify-center text-center p-8 text-gray-500">
+                                <span class="text-4xl block mb-2">🖼️</span>
+                                <span class="text-xs">Yuklangan rasmlar topilmadi.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

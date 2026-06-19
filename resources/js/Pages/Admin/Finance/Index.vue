@@ -3131,72 +3131,7 @@ function getCounterpartyStatus(c) {
                 </div>
             </div>
 
-            <!-- TAB 9: Kontragentlar - Screenshot 3 Style -->
-            <div v-if="activeTab === 9" class="space-y-6">
-                <!-- Header Actions row -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                    <div>
-                        <h2 class="text-xl font-bold font-display text-gray-900">Kontragentlar</h2>
-                        <p class="text-xs text-gray-500 font-mono mt-1">Mijozlar, ta'minotchilar va boshqa kontragentlar</p>
-                    </div>
-                    <div class="flex gap-3 w-full sm:w-auto">
-                        <input v-model="counterpartySearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
-                        <select v-model="counterpartyTypeFilter" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3">
-                            <option value="">Tranzaksiya turi</option>
-                            <option value="client">Mijoz to'lovi</option>
-                            <option value="supplier">Ta'minotchi</option>
-                            <option value="employee">Xodim</option>
-                        </select>
-                        <button @click="openNewCounterpartyModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
-                            + Yangi kontragent yaratish
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Table -->
-                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
-                    <table class="w-full text-left text-sm font-mono">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
-                            <tr>
-                                <th class="p-4 w-12">№</th>
-                                <th class="p-4">Kontragent nomi</th>
-                                <th class="p-4">Tranzaksiya turi</th>
-                                <th class="p-4">Holat</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <tr v-for="(c, idx) in filteredCounterpartiesList" :key="c.id" class="hover:bg-gray-50 transition-colors">
-                                <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
-                                <td class="p-4">
-                                    <div class="flex items-center gap-3">
-                                        <!-- Initials Avatar -->
-                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
-                                            {{ c.name.charAt(0) }}
-                                        </div>
-                                        <div>
-                                            <span class="block font-bold text-gray-900">{{ c.name }}</span>
-                                            <span class="text-xs text-gray-400">{{ c.phone || '-' }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="p-4">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                        {{ c.type === 'client' ? 'Mijoz to\'lovi' : (c.type === 'employee' ? 'Xodim Oylik maoshi' : 'Ta\'minotchi') }}
-                                    </span>
-                                </td>
-                                <td class="p-4">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="getCounterpartyStatus(c).class">
-                                        {{ getCounterpartyStatus(c).text }}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr v-if="!filteredCounterpartiesList.length">
-                                <td colspan="4" class="p-8 text-center text-gray-400">Kontragentlar topilmadi.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
             <!-- TAB 10: Hisob-fakturalar & Mijoz to'lovlari - Screenshot 5 Style -->
             <div v-if="activeTab === 10" class="space-y-6">

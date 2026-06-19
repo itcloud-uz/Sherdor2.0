@@ -426,18 +426,6 @@ const formattedDate = computed(() => {
                                 Tranzaksiyalar
                             </Link>
 
-                            <!-- Kontragentlar -->
-                            <Link
-                                :href="route('admin.finance', { tab: 9 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
-                                :class="isFinanceSubTabActive(9)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
-                            >
-                                <span :class="isFinanceSubTabActive(9) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
-                                Kontragentlar
-                            </Link>
-
                             <!-- Pul o'tkazmalari -->
                             <Link
                                 :href="route('admin.finance', { tab: 6 })"

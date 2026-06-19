@@ -5186,7 +5186,7 @@ function getCounterpartyStatus(c) {
                             <textarea v-else v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
                         </div>
 
-                        <!-- Row 4: Hujjat raqami & Ilovalar -->
+                        <!-- Row 4: Hujjat raqami & Summa -->
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 Hujjat raqami (Avtomatik)
@@ -5195,20 +5195,9 @@ function getCounterpartyStatus(c) {
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Ilovalar
+                                * Summa
                             </label>
-                            <div class="flex items-center gap-3 py-0.5">
-                                <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
-                                <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
-                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                    </svg>
-                                    Fayl yuklash
-                                </button>
-                                <span v-if="form.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="form.attachment.name">
-                                    {{ form.attachment.name }}
-                                </span>
-                            </div>
+                            <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
 
                         <!-- Conditional client section -->
@@ -5349,12 +5338,23 @@ function getCounterpartyStatus(c) {
                             <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
                         </div>
 
-                        <!-- Row 6: Summa -->
+                        <!-- Row 6: Ilovalar -->
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                * Summa
+                                Ilovalar
                             </label>
-                            <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                            <div class="flex items-center gap-3 py-0.5">
+                                <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload">
+                                <button type="button" @click="$refs.fileInput.click()" class="btn-upload flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Fayl yuklash
+                                </button>
+                                <span v-if="form.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="form.attachment.name">
+                                    {{ form.attachment.name }}
+                                </span>
+                            </div>
                         </div>
                         <div class="hidden md:block"></div>
                     </div>

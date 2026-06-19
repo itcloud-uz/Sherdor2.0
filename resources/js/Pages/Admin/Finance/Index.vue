@@ -293,45 +293,30 @@ const reportOverviewStats = computed(() => {
 });
 
 const kassaReports = computed(() => {
-    const regs = props.registers || [];
+    const regs = (props.registers || []).filter(r => !r.parent_id);
     
-    const getStats = (filterFn) => {
-        const matched = regs.filter(filterFn);
-        const income = matched.reduce((sum, r) => sum + parseFloat(r.total_income_uzs || 0), 0);
-        const expense = matched.reduce((sum, r) => sum + parseFloat(r.total_expense_uzs || 0), 0);
-        const balance = matched.reduce((sum, r) => sum + parseFloat(r.balance_uzs || 0), 0);
-        return { income, expense, balance };
-    };
+    const items = regs.map(r => {
+        const income = parseFloat(r.total_income_uzs || 0);
+        const expense = parseFloat(r.total_expense_uzs || 0);
+        const balance = parseFloat(r.balance_uzs || 0);
+        return {
+            id: r.id,
+            name: r.name,
+            income,
+            expense,
+            balance
+        };
+    });
 
-    function stripos(str, search) {
-        return (str || '').toLowerCase().includes(search.toLowerCase());
-    }
-
-    const bank = getStats(r => r.type === 'bank' || stripos(r.name, 'bank'));
-    const credit = getStats(r => (r.type === 'credit' || stripos(r.name, 'kredit')) && !stripos(r.name, 'qarz'));
-    const raxmonov = getStats(r => stripos(r.name, 'raxmonov'));
-    const uzoqov = getStats(r => stripos(r.name, 'uzoqov'));
-    const debts = getStats(r => stripos(r.name, 'qarz'));
-    
-    // Enterprise: cash box, excluding specific names
-    const enterprise = getStats(r => 
-        r.type === 'cash' && 
-        !stripos(r.name, 'raxmonov') && 
-        !stripos(r.name, 'uzoqov') && 
-        !stripos(r.name, 'qarz') && 
-        !stripos(r.name, 'kredit')
-    );
+    const totalIncome = items.reduce((sum, item) => sum + item.income, 0);
+    const totalExpense = items.reduce((sum, item) => sum + item.expense, 0);
+    const totalBalance = items.reduce((sum, item) => sum + item.balance, 0);
 
     return {
-        enterprise,
-        bank,
-        credit,
-        raxmonov,
-        uzoqov,
-        debts,
-        totalIncome: enterprise.income + bank.income + credit.income + raxmonov.income + uzoqov.income + debts.income,
-        totalExpense: enterprise.expense + bank.expense + credit.expense + raxmonov.expense + uzoqov.expense + debts.expense,
-        totalBalance: enterprise.balance + bank.balance + credit.balance + raxmonov.balance + uzoqov.balance + debts.balance,
+        items,
+        totalIncome,
+        totalExpense,
+        totalBalance
     };
 });
 
@@ -3643,29 +3628,9 @@ function getCounterpartyStatus(c) {
                                     </svg>
                                 </div>
                                 <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Korxona balansi kirimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.income) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi kirimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.income) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Kredit kassa kirimlari</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.income) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Raxmonov kirimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.income) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Uzoqov kirimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.income) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1">
-                                        <span class="text-gray-600 font-semibold">Qarzlar kirimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.income) }}</span>
+                                    <div v-for="item in kassaReports.items" :key="item.id" class="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                                        <span class="text-gray-600 font-semibold">{{ item.name }} kirimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(item.income) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -3682,29 +3647,9 @@ function getCounterpartyStatus(c) {
                                     </svg>
                                 </div>
                                 <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Korxona balansi chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.expense) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.expense) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Kredit kassa chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.expense) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Raxmonov chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.expense) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Uzoqov chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.expense) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1">
-                                        <span class="text-gray-600 font-semibold">Qarzlar chiqimi</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.expense) }}</span>
+                                    <div v-for="item in kassaReports.items" :key="item.id" class="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                                        <span class="text-gray-600 font-semibold">{{ item.name }} chiqimi</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(item.expense) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -3721,29 +3666,9 @@ function getCounterpartyStatus(c) {
                                     </svg>
                                 </div>
                                 <div class="w-full border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-sm font-sans text-xs">
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Korxona balansi qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.enterprise.balance) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Bank hisob varaqasi qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.bank.balance) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Kredit kassa qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.credit.balance) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Raxmonov qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.raxmonov.balance) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                                        <span class="text-gray-600 font-semibold">Uzoqov qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.uzoqov.balance) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center py-1">
-                                        <span class="text-gray-600 font-semibold">Qarzlar qoldig'i</span>
-                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(kassaReports.debts.balance) }}</span>
+                                    <div v-for="item in kassaReports.items" :key="item.id" class="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                                        <span class="text-gray-600 font-semibold">{{ item.name }} qoldig'i</span>
+                                        <span class="font-bold text-gray-900 font-mono">{{ formatMoney(item.balance) }}</span>
                                     </div>
                                 </div>
                             </div>

@@ -64,7 +64,10 @@ const panels = [
                 <a href="#about" class="hover:text-amber-400 transition-colors">Qo'llanma</a>
                 <a href="#contact" class="hover:text-amber-400 transition-colors">Texnik Yordam</a>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <Link :href="route('admin.developer.settings')" class="px-5 py-2 text-sm font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 rounded-full transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                    ⚙️ CMS Sozlamalari
+                </Link>
                 <Link :href="route('login')" class="px-5 py-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-colors ">
                     Tizimga Kirish
                 </Link>

@@ -60,6 +60,7 @@ watch(activeTab, (newTab) => {
 });
 
 const salarySearchQuery = ref('');
+const kpiSearchQuery = ref('');
 const salarySelectedMonth = ref('2025-11'); // Default to Noyabr 2025 to match mockup exactly
 const salaryCurrency = ref("so'm");
 const conversionRate = 12800; // 1 USD = 12800 UZS
@@ -874,7 +875,7 @@ const calculateKpiAndExpectedSalary = (leadsCount) => {
 
 const kpiManagers = computed(() => {
     // Return all system users having leads or roles related to sales
-    return allEmployees.value.filter(e => e.type === 'user').map(u => {
+    let list = allEmployees.value.filter(e => e.type === 'user').map(u => {
         const kpiCalc = calculateKpiAndExpectedSalary(u.leads_count);
         return {
             id: u.id,
@@ -884,6 +885,11 @@ const kpiManagers = computed(() => {
             expected_salary: kpiCalc.salary
         };
     });
+    if (kpiSearchQuery.value) {
+        const q = kpiSearchQuery.value.toLowerCase().trim();
+        list = list.filter(m => m.name && m.name.toLowerCase().includes(q));
+    }
+    return list;
 });
 
 // Sales Agents Tab states (moved from CRM to HRM)
@@ -1504,8 +1510,14 @@ const exportSalesStatsToExcel = () => {
             <div v-if="activeTab === 2" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-                    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900 font-display">KPI</h3>
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div class="flex items-center gap-4 w-full sm:w-auto">
+                            <h3 class="text-lg font-bold text-gray-900 font-display">KPI</h3>
+                            <div class="relative w-full sm:w-64">
+                                <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                                <input v-model="kpiSearchQuery" type="text" placeholder="Menejerni qidirish..." class="bg-white border border-gray-300 text-gray-950 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                            </div>
+                        </div>
                         <button 
                             @click="showKpiDrawer = true" 
                             class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5"

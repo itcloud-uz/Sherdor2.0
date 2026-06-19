@@ -1104,6 +1104,9 @@ watch(activeTab, (newTab) => {
     }
 });
 const searchQuery = ref('');
+const leadsSearchQuery = ref('');
+const leadsSourceFilter = ref('');
+const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
 const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
@@ -1247,12 +1250,29 @@ function getContractSchedules(contract) {
     return contract.payment_schedules || contract.paymentSchedules || [];
 }
 
+const filteredLeads = computed(() => {
+    let list = props.leads || [];
+    if (leadsSearchQuery.value) {
+        const q = leadsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(l => 
+            (l.full_name && l.full_name.toLowerCase().includes(q)) ||
+            (l.name && l.name.toLowerCase().includes(q)) ||
+            (l.phone && l.phone.includes(q)) ||
+            (l.email && l.email.toLowerCase().includes(q))
+        );
+    }
+    if (leadsSourceFilter.value) {
+        list = list.filter(l => l.source === leadsSourceFilter.value);
+    }
+    return list;
+});
+
 const leadsByStatus = computed(() => {
     return {
-        new: (props.leads || []).filter(l => l.status === 'new'),
-        contacted: (props.leads || []).filter(l => l.status === 'contacted'),
-        qualified: (props.leads || []).filter(l => l.status === 'qualified'),
-        lost: (props.leads || []).filter(l => l.status === 'lost')
+        new: filteredLeads.value.filter(l => l.status === 'new'),
+        contacted: filteredLeads.value.filter(l => l.status === 'contacted'),
+        qualified: filteredLeads.value.filter(l => l.status === 'qualified'),
+        lost: filteredLeads.value.filter(l => l.status === 'lost')
     };
 });
 
@@ -1381,7 +1401,18 @@ const groupedContracts = computed(() => {
 });
 
 const canceledContracts = computed(() => {
-    return (props.contracts || []).filter(c => c.status === 'canceled' || c.status === 'cancelled');
+    let list = (props.contracts || []).filter(c => c.status === 'canceled' || c.status === 'cancelled');
+    if (canceledSearchQuery.value) {
+        const q = canceledSearchQuery.value.toLowerCase().trim();
+        list = list.filter(c => {
+            const clientName = `${c.client?.first_name || ''} ${c.client?.last_name || ''}`.toLowerCase();
+            const clientPhone = (c.client?.phone || '').toLowerCase();
+            const contractNo = (c.contract_number || '').toLowerCase();
+            const bino = (c.unit?.floor?.building?.name || '').toLowerCase();
+            return clientName.includes(q) || clientPhone.includes(q) || contractNo.includes(q) || bino.includes(q);
+        });
+    }
+    return list;
 });
 
 function calculatePaidAmount(contract) {
@@ -2690,27 +2721,44 @@ const ledgerReportData = computed(() => {
         <!-- TAB 1: LEADS KANBAN / LIST VIEW -->
         <div v-if="activeTab === 'leads'" class="space-y-4">
             <!-- View Mode Switcher & Actions -->
-            <div class="flex items-center justify-between bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3">
-                <!-- Toggle Button Group -->
-                <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-lg">
-                    <button 
-                        @click="leadsViewMode = 'kanban'"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
-                        :class="leadsViewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
-                    >
-                        📋 Kanban doskasi
-                    </button>
-                    <button 
-                        @click="leadsViewMode = 'list'"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
-                        :class="leadsViewMode === 'list' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
-                    >
-                        📝 Jadval ko'rinishi
-                    </button>
+            <div class="flex flex-col md:flex-row md:items-center justify-between bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 gap-4">
+                <!-- Left controls: Switcher + Search -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                    <!-- Toggle Button Group -->
+                    <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
+                        <button 
+                            @click="leadsViewMode = 'kanban'"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
+                            :class="leadsViewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                            📋 Kanban doskasi
+                        </button>
+                        <button 
+                            @click="leadsViewMode = 'list'"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-2 transition-all"
+                            :class="leadsViewMode === 'list' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                            📝 Jadval ko'rinishi
+                        </button>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative flex-1 max-w-xs">
+                        <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                        <input v-model="leadsSearchQuery" type="text" placeholder="Lidlarni qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-2 text-xs w-full focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+
+                    <!-- Source Filter -->
+                    <select v-model="leadsSourceFilter" class="bg-white border border-gray-300 text-gray-950 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        <option value="">Barcha manbalar</option>
+                        <option value="telegram">Telegram Bot</option>
+                        <option value="partner">Hamkor Ilova</option>
+                        <option value="manual">Qo'lda qo'shilgan</option>
+                    </select>
                 </div>
 
                 <!-- Action buttons -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 self-end md:self-auto">
                     <button 
                         @click="openAiSettings"
                         class="px-4 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
@@ -2891,7 +2939,7 @@ const ledgerReportData = computed(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm">
-                            <tr v-for="lead in (leads || [])" :key="lead.id" class="hover:bg-gray-50/30 transition-colors">
+                            <tr v-for="lead in filteredLeads" :key="lead.id" class="hover:bg-gray-50/30 transition-colors">
                                 <td class="px-6 py-4 cursor-pointer hover:bg-gray-50/50" @click="openLeadDetailModal(lead)">
                                     <div class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">{{ lead.full_name || lead.name }}</div>
                                     <div class="text-xs text-gray-500 font-mono">{{ lead.phone }}</div>
@@ -2943,7 +2991,7 @@ const ledgerReportData = computed(() => {
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-if="(leads || []).length === 0">
+                            <tr v-if="filteredLeads.length === 0">
                                 <td colspan="6" class="px-6 py-10 text-center text-gray-500">
                                     Hech qanday lidlar topilmadi.
                                 </td>
@@ -3678,10 +3726,16 @@ const ledgerReportData = computed(() => {
 
         <!-- TAB CANCELED: BEKOR QILINGAN SHARTNOMALAR -->
         <div v-if="activeTab === 'canceled'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px] border border-red-200">
-            <h2 class="text-xl font-display font-bold text-red-600 mb-6 flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm"></span>
-                Bekor Qilingan Shartnomalar
-            </h2>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 class="text-xl font-display font-bold text-red-600 flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm"></span>
+                    Bekor Qilingan Shartnomalar
+                </h2>
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                    <input v-model="canceledSearchQuery" type="text" placeholder="Mijoz yoki shartnomani qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-2 text-xs w-full focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                </div>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <div 
                         v-for="contract in canceledContracts" 

@@ -84,6 +84,14 @@ const reportJournalAccountId = ref('');
 const reportJournalType = ref('');
 const reportJournalCategoryId = ref('');
 
+const pendingSearchQuery = ref('');
+const liabilitySearchQuery = ref('');
+const supplierSearchQuery = ref('');
+const categorySearchQuery = ref('');
+const reportBuildingsSearchQuery = ref('');
+const reportDebtsSearchQuery = ref('');
+const telegramSearchQuery = ref('');
+
 // Kirim/Chiqim states & helpers
 const kirimChiqimSearch = ref('');
 const kirimChiqimDateFrom = ref('');
@@ -329,7 +337,7 @@ const kassaReports = computed(() => {
 
 const reportBuildingsSummary = computed(() => {
     if (!props.buildings) return [];
-    return props.buildings.map(b => {
+    let list = props.buildings.map(b => {
         const txs = (props.transactions || []).filter(t => t.building_id === b.id && t.status === 'approved');
         const incomes = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         const expenses = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -350,6 +358,59 @@ const reportBuildingsSummary = computed(() => {
             unpaidInvoiced
         };
     });
+    if (reportBuildingsSearchQuery.value) {
+        const q = reportBuildingsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(b => b.name && b.name.toLowerCase().includes(q));
+    }
+    return list;
+});
+
+const filteredReportDebtors = computed(() => {
+    let list = (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) < 0);
+    if (reportDebtsSearchQuery.value) {
+        const q = reportDebtsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(c => 
+            (c.name && c.name.toLowerCase().includes(q)) || 
+            (c.phone && c.phone.includes(q))
+        );
+    }
+    return list;
+});
+
+const filteredReportCreditors = computed(() => {
+    let list = (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0);
+    if (reportDebtsSearchQuery.value) {
+        const q = reportDebtsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(c => 
+            (c.name && c.name.toLowerCase().includes(q)) || 
+            (c.phone && c.phone.includes(q))
+        );
+    }
+    return list;
+});
+
+const filteredReportSupplierPayables = computed(() => {
+    let list = (props.suppliers || []).filter(x => parseFloat(x.balance || 0) > 0);
+    if (reportDebtsSearchQuery.value) {
+        const q = reportDebtsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(s => 
+            (s.company_name && s.company_name.toLowerCase().includes(q)) || 
+            (s.name && s.name.toLowerCase().includes(q))
+        );
+    }
+    return list;
+});
+
+const filteredReportEmployeePayables = computed(() => {
+    let list = (props.workers || []).filter(x => parseFloat(x.balance || 0) > 0);
+    if (reportDebtsSearchQuery.value) {
+        const q = reportDebtsSearchQuery.value.toLowerCase().trim();
+        list = list.filter(w => 
+            (w.name && w.name.toLowerCase().includes(q)) || 
+            (w.role && w.role.toLowerCase().includes(q))
+        );
+    }
+    return list;
 });
 
 function exportReportToCsv() {
@@ -868,8 +929,63 @@ function forceDeleteTransaction(id) {
 }
 
 // Maker/Checker action queues
-const pendingTransactions = computed(() => (props.transactions || []).filter(t => t.status === 'pending'));
+const pendingTransactions = computed(() => {
+    let list = (props.transactions || []).filter(t => t.status === 'pending');
+    if (pendingSearchQuery.value) {
+        const q = pendingSearchQuery.value.toLowerCase().trim();
+        list = list.filter(t => 
+            (t.notes && t.notes.toLowerCase().includes(q)) ||
+            (t.counterparty?.name && t.counterparty.name.toLowerCase().includes(q)) ||
+            (t.creator?.name && t.creator.name.toLowerCase().includes(q)) ||
+            (t.cashRegister?.name && t.cashRegister.name.toLowerCase().includes(q)) ||
+            (t.amount && t.amount.toString().includes(q))
+        );
+    }
+    return list;
+});
 const historicalTransactions = computed(() => (props.transactions || []).filter(t => t.status !== 'pending'));
+
+const filteredFinancialLiabilities = computed(() => {
+    let list = props.financialLiabilities || [];
+    if (liabilitySearchQuery.value) {
+        const q = liabilitySearchQuery.value.toLowerCase().trim();
+        list = list.filter(l => 
+            (l.creditor_name && l.creditor_name.toLowerCase().includes(q)) ||
+            (l.type && l.type.toLowerCase().includes(q)) ||
+            (l.description && l.description.toLowerCase().includes(q)) ||
+            (l.total_amount && l.total_amount.toString().includes(q))
+        );
+    }
+    return list;
+});
+
+const filteredSuppliers = computed(() => {
+    let list = props.suppliers || [];
+    if (supplierSearchQuery.value) {
+        const q = supplierSearchQuery.value.toLowerCase().trim();
+        list = list.filter(s => 
+            (s.company_name && s.company_name.toLowerCase().includes(q)) ||
+            (s.name && s.name.toLowerCase().includes(q))
+        );
+    }
+    return list;
+});
+
+const filteredTelegramTransactions = computed(() => {
+    let list = (props.transactions || []).filter(x => x.source === 'telegram');
+    if (telegramSearchQuery.value) {
+        const q = telegramSearchQuery.value.toLowerCase().trim();
+        list = list.filter(t => 
+            (t.notes && t.notes.toLowerCase().includes(q)) ||
+            (t.creator?.name && t.creator.name.toLowerCase().includes(q)) ||
+            (t.cashRegister?.name && t.cashRegister.name.toLowerCase().includes(q)) ||
+            (t.category?.name && t.category.name.toLowerCase().includes(q)) ||
+            (t.amount && t.amount.toString().includes(q)) ||
+            (t.status && t.status.toLowerCase().includes(q))
+        );
+    }
+    return list;
+});
 
 const recentIncomes = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'income'));
 const recentExpenses = computed(() => (historicalTransactions.value || []).filter(t => t.type === 'expense'));
@@ -2089,7 +2205,12 @@ const categoriesSummary = computed(() => {
         }
         groups[catName].transactions.push(t);
     });
-    return Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
+    let list = Object.values(groups).sort((a, b) => b.transactions.length - a.transactions.length);
+    if (categorySearchQuery.value) {
+        const q = categorySearchQuery.value.toLowerCase().trim();
+        list = list.filter(c => c.name.toLowerCase().includes(q));
+    }
+    return list;
 });
 
 function selectScheduleAmount(s) {
@@ -2285,10 +2406,16 @@ function getCounterpartyStatus(c) {
             <!-- TAB 1: Maker/Checker Queue (Harakatlar Markazi) -->
             <div v-if="activeTab === 1" class="space-y-6 animate-[fadeIn_0.5s_ease-out]">
                 <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm">
-                    <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-                        Tasdiqlash Kutilayotgan Tranzaksiyalar
-                    </h2>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+                            Tasdiqlash Kutilayotgan Tranzaksiyalar
+                        </h2>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                            <input v-model="pendingSearchQuery" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="txn in pendingTransactions" :key="txn.id" class="p-5 rounded-2xl bg-gray-50 border border-gray-200 hover:border-amber-300 transition-all flex flex-col gap-4 relative overflow-hidden group">
@@ -2598,14 +2725,20 @@ function getCounterpartyStatus(c) {
 
             <!-- TAB 4: Qarzlar & Kreditlar (Liabilities) -->
             <div v-if="activeTab === 4" class="space-y-6">
-                <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
                     <div>
                         <h2 class="text-xl font-bold font-display text-gray-900">Qarzlar va Kreditlar</h2>
-                        <p class="text-xs text-gray-500 font-mono mt-1">Kompaniyaning tashqi moliyaviy majburiyatlari.</p>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Kompaniyaning tashqi moliyaviy majburiyatlari.</p>
                     </div>
-                    <button @click="openNewLiabilityModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm">
-                        + Yangi Majburiyat
-                    </button>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                            <input v-model="liabilitySearchQuery" type="text" placeholder="Kreditor yoki turni qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                        <button @click="openNewLiabilityModal" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
+                            + Yangi Majburiyat
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
@@ -2622,7 +2755,7 @@ function getCounterpartyStatus(c) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="l in financialLiabilities" :key="l.id" class="hover:bg-gray-50 transition-colors">
+                            <tr v-for="l in filteredFinancialLiabilities" :key="l.id" class="hover:bg-gray-50 transition-colors">
                                 <td class="p-4 font-bold text-gray-900">{{ l.creditor_name }}</td>
                                 <td class="p-4 uppercase text-[10px]">{{ l.type }}</td>
                                 <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(l.total_amount) }}</td>
@@ -2641,7 +2774,7 @@ function getCounterpartyStatus(c) {
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-if="!financialLiabilities.length">
+                            <tr v-if="!filteredFinancialLiabilities.length">
                                 <td colspan="7" class="p-8 text-center text-gray-400">Majburiyatlar mavjud emas.</td>
                             </tr>
                         </tbody>
@@ -2651,9 +2784,15 @@ function getCounterpartyStatus(c) {
 
             <!-- TAB 5: Ta'minotchilar (Suppliers) -->
             <div v-if="activeTab === 5" class="space-y-6">
-                <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                    <h2 class="text-xl font-bold font-display text-gray-900">Ta'minotchilar Qoldiqlari</h2>
-                    <p class="text-xs text-gray-500 font-mono mt-1">Material yetkazib beruvchilar va ulardan bo'lgan hisob-kitoblar.</p>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Ta'minotchilar Qoldiqlari</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Material yetkazib beruvchilar va ulardan bo'lgan hisob-kitoblar.</p>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                        <input v-model="supplierSearchQuery" type="text" placeholder="Ta'minotchini qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
                 </div>
 
                 <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
@@ -2667,7 +2806,7 @@ function getCounterpartyStatus(c) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="s in suppliers" :key="s.id" class="hover:bg-gray-50 transition-colors">
+                            <tr v-for="s in filteredSuppliers" :key="s.id" class="hover:bg-gray-50 transition-colors">
                                 <td class="p-4 font-bold text-gray-900">{{ s.company_name }}</td>
                                 <td class="p-4 text-gray-700">{{ s.name }}</td>
                                 <td class="p-4 text-right font-bold" :class="s.balance > 0 ? 'text-red-600' : 'text-emerald-600'">
@@ -2680,7 +2819,7 @@ function getCounterpartyStatus(c) {
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-if="!suppliers.length">
+                            <tr v-if="!filteredSuppliers.length">
                                 <td colspan="4" class="p-8 text-center text-gray-400">Ta'minotchilar topilmadi.</td>
                             </tr>
                         </tbody>
@@ -2764,9 +2903,15 @@ function getCounterpartyStatus(c) {
 
             <!-- TAB 7: Kategoriya Hisoboti -->
             <div v-if="activeTab === 7" class="space-y-6">
-                <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
-                    <h2 class="text-xl font-bold font-display text-gray-900">Hisobotlar (Kategoriya bo'yicha)</h2>
-                    <p class="text-xs text-gray-500 font-mono mt-1">Kirim va chiqimlar kategoriyalar tasnifida.</p>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Hisobotlar (Kategoriya bo'yicha)</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Kirim va chiqimlar kategoriyalar tasnifida.</p>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                        <input v-model="categorySearchQuery" type="text" placeholder="Kategoriyani qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3653,8 +3798,12 @@ function getCounterpartyStatus(c) {
 
                 <!-- SUB-TAB 2: Buildings Detail Tab -->
                 <div v-if="reportSubTab === 'buildings'" class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-3">
                         <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Obyektlar bo'yicha to'liq tafsilotlar</h3>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                            <input v-model="reportBuildingsSearchQuery" type="text" placeholder="Obyektni qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
                     </div>
                     <div class="overflow-x-auto border border-gray-150 rounded-2xl">
                         <table class="w-full text-left text-xs font-mono">
@@ -3691,7 +3840,13 @@ function getCounterpartyStatus(c) {
 
                 <!-- SUB-TAB 3: Categories Detail Tab -->
                 <div v-if="reportSubTab === 'categories'" class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Barcha tranzaksiya kategoriyalari bo'yicha tahlil</h3>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Barcha tranzaksiya kategoriyalari bo'yicha tahlil</h3>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                            <input v-model="categorySearchQuery" type="text" placeholder="Kategoriyani qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Kirim toifalar -->
                         <div class="space-y-4 border border-gray-100 p-4 rounded-xl bg-white">
@@ -3777,6 +3932,18 @@ function getCounterpartyStatus(c) {
 
                 <!-- SUB-TAB 5: Debts (Detailed lists) -->
                 <div v-if="reportSubTab === 'debts'" class="space-y-6">
+                    <!-- Search input for debts -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Qarzdorliklar va Majburiyatlar Tahlili</h3>
+                            <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tizimdagi barcha qarzdorliklarni qidirish va hisoblash.</p>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                            <input v-model="reportDebtsSearchQuery" type="text" placeholder="Ism yoki telefon orqali qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                    </div>
+
                     <!-- Client Debts -->
                     <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
                         <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Mijozlarimizdan kelishi kerak bo'lgan to'lovlar (Debitorlik)</h3>
@@ -3790,12 +3957,12 @@ function getCounterpartyStatus(c) {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) < 0)" :key="c.id" class="hover:bg-gray-50">
+                                    <tr v-for="c in filteredReportDebtors" :key="c.id" class="hover:bg-gray-50">
                                         <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
                                         <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
                                         <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(Math.abs(c.balance)) }}</td>
                                     </tr>
-                                    <tr v-if="!(props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) < 0).length">
+                                    <tr v-if="!filteredReportDebtors.length">
                                         <td colspan="3" class="p-4 text-center text-gray-400">Mijozlardan qarzdorlik yo'q.</td>
                                     </tr>
                                 </tbody>
@@ -3816,12 +3983,12 @@ function getCounterpartyStatus(c) {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="c in (props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0)" :key="c.id" class="hover:bg-emerald-50/20">
+                                    <tr v-for="c in filteredReportCreditors" :key="c.id" class="hover:bg-emerald-50/20">
                                         <td class="p-4 font-bold text-slate-900">{{ c.name }}</td>
                                         <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
                                         <td class="p-4 text-right font-bold text-emerald-600">{{ formatMoney(c.balance) }}</td>
                                     </tr>
-                                    <tr v-if="!(props.counterparties || []).filter(x => x.type === 'client' && parseFloat(x.balance || 0) > 0).length">
+                                    <tr v-if="!filteredReportCreditors.length">
                                         <td colspan="3" class="p-4 text-center text-gray-400">Ortiqcha to'lovlar yo'q.</td>
                                     </tr>
                                 </tbody>
@@ -3843,11 +4010,11 @@ function getCounterpartyStatus(c) {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
-                                        <tr v-for="s in (props.suppliers || []).filter(x => parseFloat(x.balance || 0) > 0)" :key="s.id" class="hover:bg-gray-50">
+                                        <tr v-for="s in filteredReportSupplierPayables" :key="s.id" class="hover:bg-gray-50">
                                             <td class="p-3 font-bold text-gray-900">{{ s.company_name }} ({{ s.name }})</td>
                                             <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(s.balance) }}</td>
                                         </tr>
-                                        <tr v-if="!(props.suppliers || []).filter(x => parseFloat(x.balance || 0) > 0).length">
+                                        <tr v-if="!filteredReportSupplierPayables.length">
                                             <td colspan="2" class="p-4 text-center text-gray-400">Qarzdorlik yo'q.</td>
                                         </tr>
                                     </tbody>
@@ -3867,11 +4034,11 @@ function getCounterpartyStatus(c) {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
-                                        <tr v-for="w in (props.workers || []).filter(x => parseFloat(x.balance || 0) > 0)" :key="w.id" class="hover:bg-gray-50">
+                                        <tr v-for="w in filteredReportEmployeePayables" :key="w.id" class="hover:bg-gray-50">
                                             <td class="p-3 font-bold text-gray-900">{{ w.name }} ({{ w.role || 'Xodim' }})</td>
                                             <td class="p-3 text-right font-bold text-red-600">{{ formatMoney(w.balance) }}</td>
                                         </tr>
-                                        <tr v-if="!(props.workers || []).filter(x => parseFloat(x.balance || 0) > 0).length">
+                                        <tr v-if="!filteredReportEmployeePayables.length">
                                             <td colspan="2" class="p-4 text-center text-gray-400">Xodimlardan qarz yo'q.</td>
                                         </tr>
                                     </tbody>
@@ -3990,6 +4157,10 @@ function getCounterpartyStatus(c) {
                         <h2 class="text-xl font-bold font-display text-gray-900">Botdan kiritilgan kirimlar</h2>
                         <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Telegram Bot orqali kiritilgan barcha kirim va chiqim operatsiyalari ro'yxati</p>
                     </div>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+                        <input v-model="telegramSearchQuery" type="text" placeholder="Xodim, kategoriya yoki izohni qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
                 </div>
 
                 <!-- Bot Incomes Table -->
@@ -4009,7 +4180,7 @@ function getCounterpartyStatus(c) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="t in (props.transactions || []).filter(x => x.source === 'telegram')" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="t in filteredTelegramTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date || t.created_at).toLocaleDateString() }}</td>
                                     <td class="p-4 text-gray-750 font-bold">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
@@ -4053,7 +4224,7 @@ function getCounterpartyStatus(c) {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="!(props.transactions || []).filter(x => x.source === 'telegram').length">
+                                <tr v-if="!filteredTelegramTransactions.length">
                                     <td colspan="8" class="p-8 text-center text-gray-400">Bot orqali kiritilgan tranzaksiyalar topilmadi.</td>
                                 </tr>
                             </tbody>

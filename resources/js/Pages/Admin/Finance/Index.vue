@@ -1633,6 +1633,7 @@ const selectedClientName = computed(() => {
 
 const handlePaymentTypeChange = () => {
     if (clientPaymentType.value === 'initial') {
+        form.value.notes = "Boshlang'ich to'lov";
         form.value.payment_schedule_id = '';
         const existingCat = props.categories?.find(c => c.name.toLowerCase() === "boshlang'ich to'lov" || c.name.toLowerCase() === "boshlang'ich to’lov");
         if (existingCat) {
@@ -1645,6 +1646,7 @@ const handlePaymentTypeChange = () => {
             form.value.category_name = "Boshlang'ich to'lov";
         }
     } else {
+        form.value.notes = "Oylik to'lov";
         const existingCat = props.categories?.find(c => c.name.toLowerCase().includes("mijoz to'lovi") || c.name.toLowerCase().includes("mijoz to’lovi"));
         if (existingCat) {
             isNewCategory.value = false;
@@ -1665,8 +1667,10 @@ watch(() => form.value.category_id, (newVal) => {
             const name = cat.name.toLowerCase();
             if (name === "boshlang'ich to'lov" || name === "boshlang'ich to’lov") {
                 clientPaymentType.value = 'initial';
+                form.value.notes = "Boshlang'ich to'lov";
             } else if (name.includes("mijoz") || name.includes("client")) {
                 clientPaymentType.value = 'monthly';
+                form.value.notes = "Oylik to'lov";
             }
         }
     }
@@ -1737,6 +1741,10 @@ function submitTransaction() {
     isProcessing.value = true;
     form.value.latitude = gpsCoords.value.latitude;
     form.value.longitude = gpsCoords.value.longitude;
+    
+    if (requiresClient.value) {
+        form.value.notes = clientPaymentType.value === 'initial' ? "Boshlang'ich to'lov" : "Oylik to'lov";
+    }
     
     // Combine extraNotesInput with form.notes
     if (extraNotesInput.value) {
@@ -5171,7 +5179,11 @@ function getCounterpartyStatus(c) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * To'lov maqsadi
                             </label>
-                            <textarea v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
+                            <select v-if="requiresClient" v-model="clientPaymentType" @change="handlePaymentTypeChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="monthly">Oylik to'lov</option>
+                                <option value="initial">Boshlang'ich to'lov</option>
+                            </select>
+                            <textarea v-else v-model="form.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" required placeholder="mijoz boshlang'ich tolov qildi naqd da"></textarea>
                         </div>
 
                         <!-- Row 4: Hujjat raqami & Ilovalar -->
@@ -5231,22 +5243,7 @@ function getCounterpartyStatus(c) {
                                     Ushbu mijoz uchun faol shartnoma topilmadi!
                                 </span>
 
-                                <!-- Payment Type Selector (Boshlang'ich to'lov vs Oylik to'lov) -->
-                                <div v-if="form.contract_id" class="mt-3">
-                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                                        * To'lov Turi
-                                    </label>
-                                    <div class="flex gap-4">
-                                        <label class="flex items-center gap-2 text-xs text-slate-750 cursor-pointer font-semibold">
-                                            <input type="radio" value="initial" v-model="clientPaymentType" @change="handlePaymentTypeChange" class="text-orange-500 focus:ring-orange-500" />
-                                            Boshlang'ich to'lov
-                                        </label>
-                                        <label class="flex items-center gap-2 text-xs text-slate-755 cursor-pointer font-semibold">
-                                            <input type="radio" value="monthly" v-model="clientPaymentType" @change="handlePaymentTypeChange" class="text-orange-500 focus:ring-orange-500" />
-                                            Oylik to'lov (Grafik bo'yicha)
-                                        </label>
-                                    </div>
-                                </div>
+
 
                                 <!-- Unpaid Installment Schedule list -->
                                 <div v-if="form.contract_id && clientPaymentType === 'monthly' && contractSchedules.length > 0" class="mt-3 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">

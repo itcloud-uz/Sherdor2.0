@@ -227,14 +227,14 @@ const isHrTabActive = (tabId) => {
 const navItems = [
     { name: 'dashboard', route: 'admin.dashboard', icon: '⬡' },
     { name: 'facility_manager', route: 'admin.facility', icon: '🏗️' },
-    { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
     { name: 'crm', route: 'admin.crm', icon: '🛒' },
+    { name: 'clients_database', route: 'admin.crm', icon: '👥' },
+    { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
-    { name: 'clients_database', route: 'admin.crm', icon: '👥' },
     { name: 'Taminotchilar', route: 'admin.warehouse.index', icon: '📦' },
-    { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
+    { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
 
 const hasPerm = (perm) => {

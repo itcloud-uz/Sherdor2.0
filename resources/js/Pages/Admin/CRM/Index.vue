@@ -2564,6 +2564,76 @@ function deleteCounterparty(id) {
 }
 
 const selectedReportContractId = ref('');
+const reportSearchQuery = ref('');
+const reportSelectedBuildingId = ref('');
+const reportSelectedBlock = ref('');
+
+const uniqueBuildings = computed(() => {
+    const buildingsMap = {};
+    props.contracts?.forEach(c => {
+        const b = c.unit?.floor?.building;
+        if (b && b.id) {
+            buildingsMap[b.id] = b.name;
+        }
+    });
+    return Object.entries(buildingsMap).map(([id, name]) => ({ id: parseInt(id), name }));
+});
+
+const uniqueBlocks = computed(() => {
+    const blocks = new Set();
+    props.contracts?.forEach(c => {
+        const block = c.unit?.floor?.building?.block_name;
+        if (block) {
+            blocks.add(block);
+        }
+    });
+    return [...blocks].sort();
+});
+
+const filteredReportContracts = computed(() => {
+    if (!props.contracts) return [];
+    
+    return props.contracts.filter(c => {
+        // 1. Text search
+        if (reportSearchQuery.value) {
+            const query = reportSearchQuery.value.toLowerCase().trim();
+            const clientName = `${c.client?.last_name || ''} ${c.client?.first_name || ''} ${c.client?.middle_name || ''}`.toLowerCase();
+            const phone = (c.client?.phone || '').toLowerCase();
+            const contractNumber = String(c.contract_number || c.id).toLowerCase();
+            const unitNumber = String(c.unit?.unit_number || '').toLowerCase();
+            
+            const matchText = clientName.includes(query) || 
+                              phone.includes(query) || 
+                              contractNumber.includes(query) || 
+                              unitNumber.includes(query);
+                              
+            if (!matchText) return false;
+        }
+        
+        // 2. Building filter
+        if (reportSelectedBuildingId.value) {
+            if (c.unit?.floor?.building?.id !== parseInt(reportSelectedBuildingId.value)) {
+                return false;
+            }
+        }
+        
+        // 3. Block filter
+        if (reportSelectedBlock.value) {
+            if (c.unit?.floor?.building?.block_name !== reportSelectedBlock.value) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+});
+
+const clearReportFilters = () => {
+    reportSearchQuery.value = '';
+    reportSelectedBuildingId.value = '';
+    reportSelectedBlock.value = '';
+};
+
 const selectedReportContract = computed(() => {
     if (!selectedReportContractId.value) return null;
     return props.contracts?.find(c => c.id == selectedReportContractId.value);
@@ -4083,12 +4153,58 @@ const ledgerReportData = computed(() => {
                 <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tizimdagi shartnomalar bo'yicha shaxsiy varaqalar va to'lovlar tahlili.</p>
             </div>
 
+            <!-- Search & Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-xl border border-gray-200/60 shadow-sm max-w-4xl">
+                <!-- Search text -->
+                <div class="md:col-span-2">
+                    <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1.5">Ism, shartnoma raqami, tel yoki xonadon bo'yicha</label>
+                    <input 
+                        v-model="reportSearchQuery" 
+                        type="text" 
+                        placeholder="Qidiruv matnini kiriting..." 
+                        class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
+
+                <!-- Building select -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1.5">Bino</label>
+                    <select v-model="reportSelectedBuildingId" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Barchasi --</option>
+                        <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
+                            {{ b.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Block select -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1.5">Blok</label>
+                    <div class="flex gap-2">
+                        <select v-model="reportSelectedBlock" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Barchasi --</option>
+                            <option v-for="block in uniqueBlocks" :key="block" :value="block">
+                                {{ block }}
+                            </option>
+                        </select>
+                        <button 
+                            v-if="reportSearchQuery || reportSelectedBuildingId || reportSelectedBlock"
+                            @click="clearReportFilters"
+                            class="px-3 py-2 bg-red-50 hover:bg-red-500 hover:text-white text-red-600 rounded-xl border border-red-200 transition-colors shadow-sm text-sm"
+                            title="Filtrlarni tozalash"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Contract Selector -->
             <div class="max-w-md">
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Mijoz shartnomasini tanlang</label>
                 <select v-model="selectedReportContractId" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">-- Shartnomani tanlang --</option>
-                    <option v-for="c in contracts" :key="c.id" :value="c.id">
+                    <option value="">-- Shartnomani tanlang ({{ filteredReportContracts.length }} ta mos keldi) --</option>
+                    <option v-for="c in filteredReportContracts" :key="c.id" :value="c.id">
                         Shartnoma #{{ c.contract_number || c.id }} - {{ c.client?.last_name }} {{ c.client?.first_name }} ({{ c.unit?.floor?.building?.name || 'Bino' }} Xonadon: {{ c.unit?.unit_number }})
                     </option>
                 </select>

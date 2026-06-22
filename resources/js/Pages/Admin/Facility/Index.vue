@@ -3567,10 +3567,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
 
                                     <!-- Blueprint / Layout Image -->
-                                    <div class="flex items-center justify-center overflow-hidden bg-white p-2 min-h-[180px] max-h-[260px] mb-6">
+                                    <div class="h-60 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-2xl p-3 mb-6 relative group overflow-hidden">
                                         <img :src="selectedUnitDisplayImage" 
-                                             class="max-h-full max-w-full object-contain cursor-pointer hover:scale-102 transition-transform duration-300"
+                                             class="h-full max-w-full object-contain cursor-pointer transition-all duration-500 group-hover:scale-102"
                                              @click="openBlueprintFullscreenForUnit" />
+                                        
+                                        <!-- Magnifying Glass Icon Overlay -->
+                                        <div class="absolute top-3 right-3 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100 dark:border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-sm">
+                                            <svg class="w-4 h-4 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
                                     </div>
 
                                     <h4 class="text-[#a8a29e] text-xl font-medium mb-6 font-sans">

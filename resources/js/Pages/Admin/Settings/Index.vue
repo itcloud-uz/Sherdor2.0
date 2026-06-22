@@ -357,6 +357,30 @@ const saveRolePermissions = () => {
             <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 md:p-8 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-neon-primary/10 blur-[100px] group-hover:bg-neon-primary/20 transition-all pointer-events-none"></div>
 
+                <!-- Horizontal Tabs Navigation -->
+                <div class="flex overflow-x-auto pb-4 mb-8 border-b border-gray-100 gap-3 scrollbar-none shrink-0 -mx-6 md:-mx-8 px-6 md:px-8">
+                    <button v-for="tab in [
+                        { id: 'branding', label: '🎨 Brending', desc: 'Logotip va nomlar' },
+                        { id: 'financial', label: '🏦 Moliya', desc: 'Soliq va qarz foizi' },
+                        { id: 'profile', label: '👤 Profil & Dizayn', desc: 'Avatar va mavzular' },
+                        { id: 'lead_sources', label: '🎯 Lid Manbalari', desc: 'Mijoz kanallari' },
+                        { id: 'sms_broadcast', label: '💬 SMS Xabar', desc: 'Mijozlarga tarqatish' },
+                        { id: 'users_management', label: '👥 Xodimlar', desc: 'Login va rollar' },
+                        { id: 'roles_permissions', label: '🔐 Rollar & Ruxsat', desc: 'Modul ruxsatlari' }
+                    ]" 
+                    :key="tab.id"
+                    type="button"
+                    @click="activeTab = tab.id"
+                    class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-left shrink-0 border"
+                    :class="activeTab === tab.id 
+                        ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm font-semibold' 
+                        : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50/50'"
+                    >
+                        <div>{{ tab.label }}</div>
+                        <div class="text-[9px] font-normal text-gray-400 mt-0.5">{{ tab.desc }}</div>
+                    </button>
+                </div>
+
                     <!-- Branding Tab -->
                     <div v-show="activeTab === 'branding'" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                         <h3 class="text-blue-600 font-display text-lg tracking-widest uppercase border-b border-gray-200 pb-4 mb-6">Brending va Tashqi Ko'rinish</h3>
@@ -519,25 +543,25 @@ const saveRolePermissions = () => {
                         </div>
 
                         <!-- Sources List -->
-                        <div class="border border-gray-200 rounded-2xl overflow-hidden">
-                            <table class="w-full text-left border-collapse">
+                        <div class="border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse bg-white">
                                 <thead>
-                                    <tr class="bg-gray-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
-                                        <th class="p-4">#</th>
+                                    <tr class="bg-slate-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
+                                        <th class="p-4 w-16 text-center">#</th>
                                         <th class="p-4">Manba nomi</th>
-                                        <th class="p-4 text-right">Amallar</th>
+                                        <th class="p-4 text-right w-48">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm">
-                                    <tr v-for="(source, index) in leadSources" :key="source.id" class="hover:bg-gray-50/50 transition-colors">
-                                        <td class="p-4 font-mono text-xs text-gray-500">{{ index + 1 }}</td>
+                                    <tr v-for="(source, index) in leadSources" :key="source.id" class="hover:bg-amber-500/5 transition-colors">
+                                        <td class="p-4 font-mono text-xs text-gray-500 text-center">{{ index + 1 }}</td>
                                         <td class="p-4 font-semibold text-gray-900">{{ source.name }}</td>
                                         <td class="p-4 text-right flex justify-end gap-2">
-                                            <button @click="editSource(source)" class="p-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-all text-xs uppercase font-mono">
-                                                Tahrirlash
+                                            <button @click="editSource(source)" class="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all text-xs font-bold flex items-center gap-1">
+                                                ✏️ Tahrirlash
                                             </button>
-                                            <button @click="deleteSource(source.id)" class="p-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-all text-xs uppercase font-mono">
-                                                O'chirish
+                                            <button @click="deleteSource(source.id)" class="px-3 py-1.5 border border-gray-200 text-red-600 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all text-xs font-bold flex items-center gap-1">
+                                                🗑️ O'chirish
                                             </button>
                                         </td>
                                     </tr>
@@ -608,13 +632,34 @@ const saveRolePermissions = () => {
                                     </label>
                                 </div>
                                 
-                                <div class="border border-gray-200 rounded-2xl overflow-y-auto max-h-72 divide-y divide-gray-100">
-                                    <label v-for="client in clients" :key="client.id" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors text-sm">
-                                        <input type="checkbox" :value="client.id" v-model="selectedClients" class="rounded border-gray-300 text-neon-primary focus:ring-0">
-                                        <span class="flex-1 font-medium text-gray-900">{{ client.first_name }} {{ client.last_name }}</span>
-                                        <span class="font-mono text-xs text-gray-500">{{ client.phone }}</span>
-                                    </label>
-                                    <div v-if="clients.length === 0" class="p-8 text-center text-gray-500 font-mono">Mijozlar mavjud emas.</div>
+                                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                                    <div class="overflow-y-auto max-h-72">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr class="bg-slate-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
+                                                    <th class="p-3 w-12 text-center">Tanlash</th>
+                                                    <th class="p-3">Mijoz (Ism Sharif)</th>
+                                                    <th class="p-3 font-mono">Telefon raqam</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100 text-sm">
+                                                <tr v-for="client in clients" :key="client.id" class="hover:bg-amber-500/5 transition-colors">
+                                                    <td class="p-3 text-center">
+                                                        <input type="checkbox" :value="client.id" v-model="selectedClients" class="rounded border-gray-300 text-amber-500 focus:ring-0 w-4 h-4 cursor-pointer">
+                                                    </td>
+                                                    <td class="p-3 font-semibold text-gray-900">
+                                                        {{ client.first_name }} {{ client.last_name }}
+                                                    </td>
+                                                    <td class="p-3 font-mono text-xs text-gray-500">
+                                                        {{ client.phone }}
+                                                    </td>
+                                                </tr>
+                                                <tr v-if="clients.length === 0">
+                                                    <td colspan="3" class="p-8 text-center text-gray-500 font-mono">Mijozlar mavjud emas.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                                 <div v-if="smsForm.errors.client_ids" class="text-red-600 text-xs mt-1 font-mono">{{ smsForm.errors.client_ids }}</div>
                             </div>
@@ -719,39 +764,50 @@ const saveRolePermissions = () => {
                         </div>
 
                         <!-- Users List -->
-                        <div class="border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm bg-white">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-gray-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
+                                    <tr class="bg-slate-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
                                         <th class="p-4">Ism Sharif</th>
-                                        <th class="p-4">Foydalanuvchi nomi</th>
+                                        <th class="p-4">Foydalanuvchi nomi / Email</th>
                                         <th class="p-4">Rol</th>
                                         <th class="p-4">Ruxsat (Obyekt/Ombor)</th>
-                                        <th class="p-4 text-right">Amallar</th>
+                                        <th class="p-4 text-right w-48">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm">
-                                    <tr v-for="usr in users" :key="usr.id" class="hover:bg-gray-50/50 transition-colors">
+                                    <tr v-for="usr in users" :key="usr.id" class="hover:bg-amber-500/5 transition-colors">
                                         <td class="p-4 font-semibold text-gray-900">
                                             {{ usr.name }} {{ usr.last_name || '' }}
                                         </td>
                                         <td class="p-4 font-mono text-xs text-gray-600">{{ usr.username || 'Email: ' + usr.email }}</td>
                                         <td class="p-4">
-                                            <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-600 font-mono uppercase">
+                                            <span class="px-2.5 py-1 text-xs font-bold rounded-full font-mono uppercase border"
+                                                :class="{
+                                                    'bg-amber-50 text-amber-700 border-amber-200': ['Admin', 'Super Admin'].includes(usr.roles?.[0]?.name),
+                                                    'bg-blue-50 text-blue-700 border-blue-200': usr.roles?.[0]?.name === 'Manager',
+                                                    'bg-slate-50 text-slate-700 border-slate-200': !['Admin', 'Super Admin', 'Manager'].includes(usr.roles?.[0]?.name)
+                                                }">
                                                 {{ usr.roles && usr.roles.length > 0 ? usr.roles[0].name : 'Noma\'lum' }}
                                             </span>
                                         </td>
-                                        <td class="p-4 font-mono text-xs text-gray-500">
-                                            <span v-if="usr.building">{{ usr.building.name }} (Bino)</span>
-                                            <span v-else-if="usr.warehouse">{{ usr.warehouse.name }} (Ombor)</span>
-                                            <span v-else class="text-emerald-600 font-semibold">Barcha obyektlar (Cheklovsiz)</span>
+                                        <td class="p-4 text-xs font-semibold">
+                                            <span v-if="usr.building" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                                🏢 {{ usr.building.name }}
+                                            </span>
+                                            <span v-else-if="usr.warehouse" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                📦 {{ usr.warehouse.name }}
+                                            </span>
+                                            <span v-else class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                🔑 Barcha obyektlar
+                                            </span>
                                         </td>
                                         <td class="p-4 text-right flex justify-end gap-2">
-                                            <button @click="editUser(usr)" class="p-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-all text-xs uppercase font-mono">
-                                                Tahrirlash
+                                            <button @click="editUser(usr)" class="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all text-xs font-bold flex items-center gap-1">
+                                                ✏️ Tahrirlash
                                             </button>
-                                            <button @click="deleteUser(usr.id)" class="p-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-all text-xs uppercase font-mono">
-                                                O'chirish
+                                            <button @click="deleteUser(usr.id)" class="px-3 py-1.5 border border-gray-200 text-red-600 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all text-xs font-bold flex items-center gap-1">
+                                                🗑️ O'chirish
                                             </button>
                                         </td>
                                     </tr>
@@ -782,14 +838,29 @@ const saveRolePermissions = () => {
                                     Ruxsat berilgan modullar ro'yxati
                                 </h4>
                                 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label v-for="perm in permissions" :key="perm.id" class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
-                                        <input type="checkbox" :value="perm.name" v-model="rolePermissionsForm.permissions" class="rounded border-gray-300 text-neon-primary focus:ring-0">
-                                        <div class="flex-1">
-                                            <p class="text-sm font-semibold text-gray-800">{{ permissionLabel(perm.name) }}</p>
-                                            <p class="text-[10px] font-mono text-gray-400 uppercase mt-0.5">Permission: {{ perm.name }}</p>
-                                        </div>
-                                    </label>
+                                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                                    <table class="w-full text-left border-collapse bg-white">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-gray-200 font-mono text-xs uppercase text-gray-500">
+                                                <th class="p-4">Modul nomi</th>
+                                                <th class="p-4 font-mono">Tizim kodi (Permission)</th>
+                                                <th class="p-4 text-center w-32">Ruxsat (Holati)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100 text-sm">
+                                            <tr v-for="perm in permissions" :key="perm.id" class="hover:bg-amber-500/5 transition-colors">
+                                                <td class="p-4">
+                                                    <span class="font-semibold text-gray-800">{{ permissionLabel(perm.name) }}</span>
+                                                </td>
+                                                <td class="p-4 font-mono text-xs text-gray-500">
+                                                    {{ perm.name }}
+                                                </td>
+                                                <td class="p-4 text-center">
+                                                    <input type="checkbox" :value="perm.name" v-model="rolePermissionsForm.permissions" class="rounded border-gray-300 text-amber-500 focus:ring-0 w-4 h-4 cursor-pointer">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
 
                                 <div class="flex justify-end pt-4 border-t border-gray-200">

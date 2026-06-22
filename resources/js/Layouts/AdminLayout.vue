@@ -942,7 +942,7 @@ const formattedDate = computed(() => {
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col z-10 h-screen overflow-hidden relative">
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
             <!-- Top Header -->
             <header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-6 md:px-8 relative z-30 shrink-0 shadow-sm">
                 <!-- Left side: Title/Icon -->

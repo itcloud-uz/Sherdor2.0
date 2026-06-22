@@ -4767,7 +4767,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </Modal>
 
         <!-- MODAL: UNIFIED CLIENT CREATION & SELL -->
-        <div v-if="showUnifiedSellModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div v-if="showUnifiedSellModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showUnifiedSellModal = false"></div>
             <div class="relative bg-[#f8fafc] p-8 rounded-3xl w-full max-w-6xl shadow-2xl border border-gray-100 transition-all font-sans my-8 max-h-[90vh] overflow-y-auto">
                 <!-- Header -->
@@ -5066,7 +5066,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </div>
 
         <!-- 👁️ Showroom Fullscreen Modal -->
-        <div v-if="showShowroomModal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col select-none animate-[fadeIn_0.3s_ease-out]">
+        <div v-if="showShowroomModal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col select-none animate-[fadeIn_0.3s_ease-out]">
             <!-- Header -->
             <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center text-white shrink-0 bg-black/40">
                 <div class="flex items-center gap-3">

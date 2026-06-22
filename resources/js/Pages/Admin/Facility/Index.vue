@@ -318,6 +318,7 @@ function resetFilters() {
 }
 
 const showBlueprintFullscreen = ref(false);
+const activeViewMode = ref('split');
 const showBuildingPhotoFullscreen = ref(false);
 const selectedFloorIdForBlueprint = ref(null);
 
@@ -346,6 +347,7 @@ const currentBlueprintPath = computed(() => {
 
 function openBlueprintFullscreen() {
     selectedUnitForFullscreenBlueprint.value = null;
+    activeViewMode.value = '2d';
     showBlueprintFullscreen.value = true;
 }
 
@@ -2414,6 +2416,7 @@ const fullscreen3DModelSrc = computed(() => {
 function openBlueprintFullscreenForUnit() {
     if (selectedUnit.value) {
         selectedUnitForFullscreenBlueprint.value = selectedUnit.value;
+        activeViewMode.value = selectedUnit.value.model_3d_path ? 'split' : '2d';
         showBlueprintFullscreen.value = true;
     }
 }
@@ -4736,39 +4739,121 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </Modal>
 
         <!-- Blueprint Fullscreen Modal -->
-        <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="4xl">
-            <div class="p-6 relative bg-white dark:bg-zinc-900 rounded-2xl font-sans flex flex-col max-h-[90vh]">
-                <div class="flex justify-between items-center mb-4 shrink-0">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                        {{ fullscreen3DModelSrc ? 'Xonadon loyihasi (3D Render va 2D Chizma)' : '2D Chizma (Bino/Qavat Chizmasi)' }}
-                    </h3>
-                    <button @click="showBlueprintFullscreen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+        <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="5xl">
+            <div class="p-6 relative bg-slate-950 border border-slate-900 text-white rounded-3xl font-sans flex flex-col max-h-[90vh] min-h-[520px] select-none shadow-2xl">
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0 pb-4 border-b border-slate-900">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">📐</span>
+                        <div>
+                            <h3 class="text-base font-bold uppercase tracking-wider font-display">
+                                {{ fullscreen3DModelSrc ? 'Xonadon loyihasi chizmalari' : '2D Loyiha chizmasi' }}
+                            </h3>
+                            <p class="text-[10px] text-slate-400 font-medium">Render va texnik chizmalarni boshqarish rejimida ko'rish</p>
+                        </div>
+                    </div>
+
+                    <!-- Segmented View Mode Switcher -->
+                    <div v-if="fullscreen3DModelSrc" class="flex bg-slate-900/90 border border-slate-800/80 p-0.5 rounded-xl shrink-0">
+                        <button type="button" 
+                                @click="activeViewMode = 'split'"
+                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
+                                :class="activeViewMode === 'split' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
+                            Ikkisi ham
+                        </button>
+                        <button type="button" 
+                                @click="activeViewMode = '3d'"
+                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
+                                :class="activeViewMode === '3d' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
+                            3D Render
+                        </button>
+                        <button type="button" 
+                                @click="activeViewMode = '2d'"
+                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
+                                :class="activeViewMode === '2d' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
+                            2D Chizma
+                        </button>
+                    </div>
+
+                    <!-- Close Button -->
+                    <button @click="showBlueprintFullscreen = false" class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all shadow-sm">
+                        ✕
                     </button>
                 </div>
                 
-                <!-- Scrollable container if both exist -->
-                <div v-if="fullscreen3DModelSrc" class="flex-1 overflow-y-auto space-y-6 pr-2">
-                    <div class="flex flex-col items-center">
-                        <span class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider self-start">3D Ko'rinish (Render)</span>
-                        <div class="flex items-center justify-center bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-4 w-full min-h-[300px] max-h-[50vh]">
-                            <img :src="fullscreen3DModelSrc" class="max-h-full max-w-full object-contain rounded-lg" />
+                <!-- Body Area -->
+                <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <template v-if="fullscreen3DModelSrc">
+                        <!-- VIEW MODE: Split (Both) -->
+                        <div v-if="activeViewMode === 'split'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-y-auto pr-2">
+                            <!-- 3D Card -->
+                            <div class="flex flex-col bg-slate-900/40 border border-slate-900 rounded-2xl p-4 transition-all duration-300 hover:border-slate-800 relative group min-h-[380px]">
+                                <div class="flex justify-between items-center mb-3 shrink-0">
+                                    <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">3D Render ko'rinishi</span>
+                                    <a :href="fullscreen3DModelSrc" download class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all font-mono uppercase tracking-wider">
+                                        📥 Yuklab olish
+                                    </a>
+                                </div>
+                                <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900/60 rounded-xl p-4 min-h-[300px]">
+                                    <img :src="fullscreen3DModelSrc" class="max-h-[50vh] max-w-full object-contain rounded-lg shadow-lg hover:scale-102 transition-transform duration-500" />
+                                </div>
+                            </div>
+                            
+                            <!-- 2D Card -->
+                            <div class="flex flex-col bg-slate-900/40 border border-slate-900 rounded-2xl p-4 transition-all duration-300 hover:border-slate-800 relative group min-h-[380px]">
+                                <div class="flex justify-between items-center mb-3 shrink-0">
+                                    <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma</span>
+                                    <a :href="fullscreenBlueprintSrc" download class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all font-mono uppercase tracking-wider">
+                                        📥 Yuklab olish
+                                    </a>
+                                </div>
+                                <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900/60 rounded-xl p-4 min-h-[300px]">
+                                    <img :src="fullscreenBlueprintSrc" class="max-h-[50vh] max-w-full object-contain rounded-lg shadow-lg hover:scale-102 transition-transform duration-500 bg-white" />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider self-start">2D Chizma (Loyiha)</span>
-                        <div class="flex items-center justify-center bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-4 w-full min-h-[300px] max-h-[50vh]">
-                            <img :src="fullscreenBlueprintSrc" class="max-h-full max-w-full object-contain rounded-lg" />
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Only 2D layout -->
-                <div v-else class="flex-1 flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px]">
-                    <img :src="fullscreenBlueprintSrc" 
-                         class="max-h-full max-w-full object-contain" />
+                        <!-- VIEW MODE: 3D Only -->
+                        <div v-else-if="activeViewMode === '3d'" class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
+                            <div class="flex justify-between items-center mb-3 shrink-0">
+                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">Xonadon 3D renderi (To'liq ekran)</span>
+                                <a :href="fullscreen3DModelSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
+                                    📥 Rasm yuklash
+                                </a>
+                            </div>
+                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
+                                <img :src="fullscreen3DModelSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 animate-[fadeIn_0.3s_ease-out]" />
+                            </div>
+                        </div>
+
+                        <!-- VIEW MODE: 2D Only -->
+                        <div v-else class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
+                            <div class="flex justify-between items-center mb-3 shrink-0">
+                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma (To'liq ekran)</span>
+                                <a :href="fullscreenBlueprintSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
+                                    📥 Chizmani yuklash
+                                </a>
+                            </div>
+                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
+                                <img :src="fullscreenBlueprintSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 bg-white animate-[fadeIn_0.3s_ease-out]" />
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Only 2D Case -->
+                    <template v-else>
+                        <div class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
+                            <div class="flex justify-between items-center mb-3 shrink-0">
+                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma</span>
+                                <a :href="fullscreenBlueprintSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
+                                    📥 Chizmani yuklash
+                                </a>
+                            </div>
+                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
+                                <img :src="fullscreenBlueprintSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 bg-white" />
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
         </Modal>

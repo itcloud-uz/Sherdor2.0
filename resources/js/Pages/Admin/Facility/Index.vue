@@ -2404,6 +2404,13 @@ const fullscreenBlueprintSrc = computed(() => {
     return currentBlueprintPath.value ? `/storage/${currentBlueprintPath.value}` : '/modern_apartment_render.png';
 });
 
+const fullscreen3DModelSrc = computed(() => {
+    if (selectedUnitForFullscreenBlueprint.value && selectedUnitForFullscreenBlueprint.value.model_3d_path) {
+        return `/storage/${selectedUnitForFullscreenBlueprint.value.model_3d_path}`;
+    }
+    return null;
+});
+
 function openBlueprintFullscreenForUnit() {
     if (selectedUnit.value) {
         selectedUnitForFullscreenBlueprint.value = selectedUnit.value;
@@ -4730,16 +4737,36 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
         <!-- Blueprint Fullscreen Modal -->
         <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="4xl">
-            <div class="p-6 relative bg-white dark:bg-zinc-900 rounded-2xl font-sans">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">2D Chizma (Bino/Qavat Chizmasi)</h3>
+            <div class="p-6 relative bg-white dark:bg-zinc-900 rounded-2xl font-sans flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4 shrink-0">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                        {{ fullscreen3DModelSrc ? 'Xonadon loyihasi (3D Render va 2D Chizma)' : '2D Chizma (Bino/Qavat Chizmasi)' }}
+                    </h3>
                     <button @click="showBlueprintFullscreen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
-                <div class="flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px] max-h-[80vh]">
+                
+                <!-- Scrollable container if both exist -->
+                <div v-if="fullscreen3DModelSrc" class="flex-1 overflow-y-auto space-y-6 pr-2">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider self-start">3D Ko'rinish (Render)</span>
+                        <div class="flex items-center justify-center bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-4 w-full min-h-[300px] max-h-[50vh]">
+                            <img :src="fullscreen3DModelSrc" class="max-h-full max-w-full object-contain rounded-lg" />
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider self-start">2D Chizma (Loyiha)</span>
+                        <div class="flex items-center justify-center bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-4 w-full min-h-[300px] max-h-[50vh]">
+                            <img :src="fullscreenBlueprintSrc" class="max-h-full max-w-full object-contain rounded-lg" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Only 2D layout -->
+                <div v-else class="flex-1 flex items-center justify-center bg-gray-100 dark:bg-zinc-950 rounded-xl overflow-auto p-4 min-h-[400px]">
                     <img :src="fullscreenBlueprintSrc" 
                          class="max-h-full max-w-full object-contain" />
                 </div>

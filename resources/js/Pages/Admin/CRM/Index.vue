@@ -5420,196 +5420,200 @@ const ledgerReportData = computed(() => {
         </div>
 
         <!-- MODAL: CREATE CONTRACT -->
-        <div v-if="showCreateContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div v-if="showCreateContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
             <div class="absolute inset-0 bg-gray-500/50" @click="showCreateContractModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl w-full max-w-3xl border border-emerald-200">
-                <h2 class="text-xl font-bold text-gray-900 mb-6 uppercase tracking-widest shadow-neon-green/50">
+            <div class="relative bg-white border border-gray-200 shadow-sm p-6 rounded-2xl w-full max-w-3xl border border-emerald-200 flex flex-col max-h-[90vh]">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 uppercase tracking-widest shadow-neon-green/50 shrink-0">
                     {{ isEditingContract ? 'Shartnomani Tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
-                <form @submit.prevent="createContract" class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
-                            <input v-model="contractForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" title="O'tmish sanada shartnoma tuzish uchun">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
-                            <input v-model="contractForm.contract_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" placeholder="Masalan: SH-001">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Sotuv xodimi (Sotuvchi)</label>
-                            <select v-model="contractForm.user_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full p-2 text-xs h-9">
-                                <option value="">Sotuvchini tanlang (Ixtiyoriy)</option>
-                                <option v-for="user in salesAgentsList" :key="user.id" :value="user.id">
-                                    {{ user.name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">Xaridor Turi</label>
-                        <div class="flex gap-4 mb-3">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
-                                <span class="text-xs text-gray-900">Mijoz (Client)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow border-gray-300">
-                                <span class="text-xs text-gray-900 text-amber-600">Ta'sischi Xaridi (Partner)</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Client Select -->
-                        <SearchableSelect 
-                            v-if="contractForm.buyer_type === 'client'" 
-                            v-model="contractForm.client_id" 
-                            :options="clientsOptions" 
-                            placeholder="Mijozni tanlang" 
-                            :required="contractForm.buyer_type === 'client'"
-                        />
-                        
-                        <!-- Partner Select -->
-                        <SearchableSelect 
-                            v-if="contractForm.buyer_type === 'partner'" 
-                            v-model="contractForm.partner_id" 
-                            :options="partnersOptions" 
-                            placeholder="Ta'sischini tanlang" 
-                            :required="contractForm.buyer_type === 'partner'"
-                        />
-                    </div>
-                    <!-- Cascading Selection: Object -> Block -> Unit -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <!-- Object Select -->
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyektni Tanlang</label>
-                            <SearchableSelect 
-                                v-model="selectedFacilityName"
-                                @change="onFacilityChange"
-                                :options="facilityOptions"
-                                placeholder="Obyektni tanlang..."
-                                required
-                            />
-                        </div>
-
-                        <!-- Block Select -->
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash (Mavjud: {{ buildingsForSelectedFacility.length }})</label>
-                            <SearchableSelect 
-                                v-model="selectedBuildingId"
-                                @change="onBuildingChange"
-                                :disabled="!selectedFacilityName"
-                                :options="buildingOptions"
-                                placeholder="Blokni tanlang..."
-                                required
-                            />
-                        </div>
-
-                        <!-- Unit Select -->
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon/Do'kon tanlang (Mavjud: {{ sortedUnitsForSelectedBuilding.length }})</label>
-                            <SearchableSelect 
-                                v-model="contractForm.unit_id"
-                                :disabled="!selectedBuildingId"
-                                :options="unitOptions"
-                                placeholder="Xonadon/Do'kon tanlang..."
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Mulk Turi Selection -->
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('property_type_template') }}</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('residential_apartment') }}</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('commercial_shop') }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Unit Details -->
-                    <div v-if="selectedUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-gray-200 rounded-xl bg-gray-500/50">
-                        <div class="col-span-1 sm:col-span-2">
-                            <p class="text-[10px] font-mono text-gray-500 uppercase">{{ $t('object_block') }}</p>
-                            <p class="text-xs text-gray-900 font-bold">{{ selectedUnit.floor?.building?.name || 'Noma\'lum' }} (Maydon: {{ selectedUnit.area_sqm }} kv.m)</p>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('floor') }}</label>
-                            <input v-model="contractForm.floor" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qavatni kiriting">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
-                            <input v-model="contractForm.rooms" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Xonalar sonini kiriting">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="selectedUnit">
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
-                            <input v-model="contractForm.total_amount" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" required placeholder="Umumiy summani kiriting">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
-                            <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full opacity-70 cursor-not-allowed" readonly tabindex="-1">
-                        </div>
-                    </div>
-
-                    <!-- Payment Type Selection -->
-                    <div>
-                        <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('payment_type') }}</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('one_time_full_payment') }}</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
-                                <span class="text-xs text-gray-900">{{ $t('installment_payment') }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('down_payment') }}</label>
-                            <input v-model="contractForm.down_payment" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                        <div v-if="contractForm.payment_type === 'installment'">
-                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('term_months') }}</label>
-                            <input v-model="contractForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-200 mt-4">
-                        <h3 class="text-sm font-bold text-blue-600 uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
+                <form @submit.prevent="createContract" class="flex flex-col flex-1 min-h-0">
+                    <!-- Scrollable Form Body -->
+                    <div class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
-                                <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
+                                <input v-model="contractForm.created_at" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" title="O'tmish sanada shartnoma tuzish uchun">
                             </div>
-                            <div v-if="Number(contractForm.actual_paid_amount) > 0">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
-                                <select v-model="contractForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="Number(contractForm.actual_paid_amount) > 0">
-                                    <option value="" disabled>Kassani tanlang</option>
-                                    <option v-for="register in filteredCashRegisters" :key="register.id" :value="register.id">
-                                        {{ register.name }} ({{ register.type === 'bank' ? 'Bank' : 'Naqd' }})
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_number_optional') }}</label>
+                                <input v-model="contractForm.contract_number" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600" placeholder="Masalan: SH-001">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Sotuv xodimi (Sotuvchi)</label>
+                                <select v-model="contractForm.user_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full p-2 text-xs h-9">
+                                    <option value="">Sotuvchini tanlang (Ixtiyoriy)</option>
+                                    <option v-for="user in salesAgentsList" :key="user.id" :value="user.id">
+                                        {{ user.name }}
                                     </option>
                                 </select>
                             </div>
                         </div>
-                        <p v-if="contractForm.actual_paid_amount > 0" class="text-[10px] text-gray-500 mt-2 font-mono">
-                            Moliya bo'limi ushbu to'lovni tasdiqlayotganda ortiqcha summa avtomatik ravishda <strong class="text-amber-600">Naqdlashtirish (Qaytim)</strong> navbatiga tushadi.
-                        </p>
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">Xaridor Turi</label>
+                            <div class="flex gap-4 mb-3">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.buyer_type" value="client" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">Mijoz (Client)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.buyer_type" value="partner" class="text-amber-600 focus:ring-neon-yellow border-gray-300">
+                                    <span class="text-xs text-gray-900 text-amber-600">Ta'sischi Xaridi (Partner)</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Client Select -->
+                            <SearchableSelect 
+                                v-if="contractForm.buyer_type === 'client'" 
+                                v-model="contractForm.client_id" 
+                                :options="clientsOptions" 
+                                placeholder="Mijozni tanlang" 
+                                :required="contractForm.buyer_type === 'client'"
+                            />
+                            
+                            <!-- Partner Select -->
+                            <SearchableSelect 
+                                v-if="contractForm.buyer_type === 'partner'" 
+                                v-model="contractForm.partner_id" 
+                                :options="partnersOptions" 
+                                placeholder="Ta'sischini tanlang" 
+                                :required="contractForm.buyer_type === 'partner'"
+                            />
+                        </div>
+                        <!-- Cascading Selection: Object -> Block -> Unit -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <!-- Object Select -->
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Obyektni Tanlang</label>
+                                <SearchableSelect 
+                                    v-model="selectedFacilityName"
+                                    @change="onFacilityChange"
+                                    :options="facilityOptions"
+                                    placeholder="Obyektni tanlang..."
+                                    required
+                                />
+                            </div>
+
+                            <!-- Block Select -->
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Blok Tanlash (Mavjud: {{ buildingsForSelectedFacility.length }})</label>
+                                <SearchableSelect 
+                                    v-model="selectedBuildingId"
+                                    @change="onBuildingChange"
+                                    :disabled="!selectedFacilityName"
+                                    :options="buildingOptions"
+                                    placeholder="Blokni tanlang..."
+                                    required
+                                />
+                            </div>
+
+                            <!-- Unit Select -->
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Xonadon/Do'kon tanlang (Mavjud: {{ sortedUnitsForSelectedBuilding.length }})</label>
+                                <SearchableSelect 
+                                    v-model="contractForm.unit_id"
+                                    :disabled="!selectedBuildingId"
+                                    :options="unitOptions"
+                                    placeholder="Xonadon/Do'kon tanlang..."
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Mulk Turi Selection -->
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('property_type_template') }}</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.contract_type" value="residential" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">{{ $t('residential_apartment') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">{{ $t('commercial_shop') }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Unit Details -->
+                        <div v-if="selectedUnit" class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border border-gray-200 rounded-xl bg-gray-500/50">
+                            <div class="col-span-1 sm:col-span-2">
+                                <p class="text-[10px] font-mono text-gray-500 uppercase">{{ $t('object_block') }}</p>
+                                <p class="text-xs text-gray-900 font-bold">{{ selectedUnit.floor?.building?.name || 'Noma\'lum' }} (Maydon: {{ selectedUnit.area_sqm }} kv.m)</p>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('floor') }}</label>
+                                <input v-model="contractForm.floor" type="text" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Qavatni kiriting">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('number_of_rooms') }}</label>
+                                <input v-model="contractForm.rooms" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-gray-900" placeholder="Xonalar sonini kiriting">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="selectedUnit">
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
+                                <input v-model="contractForm.total_amount" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" required placeholder="Umumiy summani kiriting">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
+                                <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full opacity-70 cursor-not-allowed" readonly tabindex="-1">
+                            </div>
+                        </div>
+
+                        <!-- Payment Type Selection -->
+                        <div>
+                            <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase">{{ $t('payment_type') }}</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.payment_type" value="full" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">{{ $t('one_time_full_payment') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.payment_type" value="installment" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">{{ $t('installment_payment') }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div v-if="contractForm.payment_type === 'installment'">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('down_payment') }}</label>
+                                <input v-model="contractForm.down_payment" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                            </div>
+                            <div v-if="contractForm.payment_type === 'installment'">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('term_months') }}</label>
+                                <input v-model="contractForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 mt-4">
+                            <h3 class="text-sm font-bold text-blue-600 uppercase mb-4">Hozirgi Vaqtda To'lov Qabul Qilish (Ixtiyoriy)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
+                                    <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
+                                </div>
+                                <div v-if="Number(contractForm.actual_paid_amount) > 0">
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
+                                    <select v-model="contractForm.account_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" :required="Number(contractForm.actual_paid_amount) > 0">
+                                        <option value="" disabled>Kassani tanlang</option>
+                                        <option v-for="register in filteredCashRegisters" :key="register.id" :value="register.id">
+                                            {{ register.name }} ({{ register.type === 'bank' ? 'Bank' : 'Naqd' }})
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p v-if="contractForm.actual_paid_amount > 0" class="text-[10px] text-gray-500 mt-2 font-mono">
+                                Moliya bo'limi ushbu to'lovni tasdiqlayotganda ortiqcha summa avtomatik ravishda <strong class="text-amber-600">Naqdlashtirish (Qaytim)</strong> navbatiga tushadi.
+                            </p>
+                        </div>
                     </div>
 
-                    <div class="flex justify-end gap-4 mt-8">
+                    <!-- Fixed Footer Actions -->
+                    <div class="flex justify-end gap-4 mt-4 pt-4 border-t border-gray-100 shrink-0">
                         <button type="button" @click="showCreateContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>
                     </div>

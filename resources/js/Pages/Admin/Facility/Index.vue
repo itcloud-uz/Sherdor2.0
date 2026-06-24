@@ -319,6 +319,65 @@ function resetFilters() {
 
 const showBlueprintFullscreen = ref(false);
 const activeViewMode = ref('split');
+const zoomScale = ref(1);
+
+function zoomIn() {
+    if (zoomScale.value < 3.5) {
+        zoomScale.value += 0.25;
+    }
+}
+
+function zoomOut() {
+    if (zoomScale.value > 0.5) {
+        zoomScale.value -= 0.25;
+    }
+}
+
+function zoomReset() {
+    zoomScale.value = 1;
+}
+
+function shareUnitDetails() {
+    if (!selectedUnitForFullscreenBlueprint.value) return;
+    const unit = selectedUnitForFullscreenBlueprint.value;
+    const floor = selectedFloor.value?.floor_number || '';
+    const building = selectedBuilding.value?.name || '';
+    const text = `🏢 ${building}
+🔑 Xonadon: № ${unit.unit_number}
+🚪 Xonalar soni: ${unit.rooms_count || 1} xonali
+🏢 Qavat: ${floor}-qavat
+📐 Maydoni: ${unit.area_sqm} m²
+🧱 Podezd: ${unit.podyezd}-padezd
+💰 Narxi: ${formatSoM(unit.price)}
+🟢 Holati: ${unit.status === 'available' ? 'Sotuvda' : unit.status === 'reserved' ? 'Band qilingan' : 'Sotilgan'}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Xonadon ma'lumotlari nusxalandi!");
+    }).catch(err => {
+        console.error("Nusxalashda xatolik:", err);
+    });
+}
+
+function downloadActiveImage() {
+    const activeSrc = activeViewMode.value === '3d' && fullscreen3DModelSrc.value 
+        ? fullscreen3DModelSrc.value 
+        : fullscreenBlueprintSrc.value;
+    
+    if (!activeSrc) return;
+    
+    const link = document.createElement('a');
+    link.href = activeSrc;
+    link.download = `xonadon-${selectedUnitForFullscreenBlueprint.value?.unit_number || ''}-${activeViewMode.value}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function sellFromBlueprint() {
+    showBlueprintFullscreen.value = false;
+    openSellUnit(selectedUnitForFullscreenBlueprint.value);
+}
+
 const showBuildingPhotoFullscreen = ref(false);
 const selectedFloorIdForBlueprint = ref(null);
 
@@ -348,6 +407,7 @@ const currentBlueprintPath = computed(() => {
 function openBlueprintFullscreen() {
     selectedUnitForFullscreenBlueprint.value = null;
     activeViewMode.value = '2d';
+    zoomScale.value = 1;
     showBlueprintFullscreen.value = true;
 }
 
@@ -2417,6 +2477,7 @@ function openBlueprintFullscreenForUnit() {
     if (selectedUnit.value) {
         selectedUnitForFullscreenBlueprint.value = selectedUnit.value;
         activeViewMode.value = selectedUnit.value.model_3d_path ? 'split' : '2d';
+        zoomScale.value = 1;
         showBlueprintFullscreen.value = true;
     }
 }
@@ -4746,121 +4807,183 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </Modal>
 
         <!-- Blueprint Fullscreen Modal -->
-        <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="5xl">
-            <div class="p-6 relative bg-slate-950 border border-slate-900 text-white rounded-3xl font-sans flex flex-col max-h-[90vh] min-h-[520px] select-none shadow-2xl">
+        <Modal :show="showBlueprintFullscreen" @close="showBlueprintFullscreen = false" maxWidth="6xl">
+            <div class="p-6 relative bg-slate-50 text-slate-800 rounded-3xl font-sans flex flex-col max-h-[95vh] min-h-[580px] select-none shadow-2xl overflow-y-auto">
                 <!-- Header -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0 pb-4 border-b border-slate-900">
+                <div class="flex justify-between items-center mb-6 shrink-0 pb-4 border-b border-gray-200">
                     <div class="flex items-center gap-3">
                         <span class="text-xl">📐</span>
                         <div>
-                            <h3 class="text-base font-bold uppercase tracking-wider font-display">
-                                {{ fullscreen3DModelSrc ? 'Xonadon loyihasi chizmalari' : '2D Loyiha chizmasi' }}
+                            <h3 class="text-base font-bold uppercase tracking-wider text-gray-900">
+                                {{ selectedUnitForFullscreenBlueprint ? `Xonadon № ${selectedUnitForFullscreenBlueprint.unit_number} Tafsiloti` : 'Loyiha chizmasi' }}
                             </h3>
-                            <p class="text-[10px] text-slate-400 font-medium">Render va texnik chizmalarni boshqarish rejimida ko'rish</p>
+                            <p class="text-[10px] text-gray-500 font-medium">Bino: {{ selectedBuilding?.name || 'N/A' }} / Qavat: {{ selectedFloor?.floor_number }}</p>
                         </div>
                     </div>
-
-                    <!-- Segmented View Mode Switcher -->
-                    <div v-if="fullscreen3DModelSrc" class="flex bg-slate-900/90 border border-slate-800/80 p-0.5 rounded-xl shrink-0">
-                        <button type="button" 
-                                @click="activeViewMode = 'split'"
-                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
-                                :class="activeViewMode === 'split' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
-                            Ikkisi ham
-                        </button>
-                        <button type="button" 
-                                @click="activeViewMode = '3d'"
-                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
-                                :class="activeViewMode === '3d' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
-                            3D Render
-                        </button>
-                        <button type="button" 
-                                @click="activeViewMode = '2d'"
-                                class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
-                                :class="activeViewMode === '2d' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'">
-                            2D Chizma
-                        </button>
-                    </div>
-
                     <!-- Close Button -->
-                    <button @click="showBlueprintFullscreen = false" class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all shadow-sm">
+                    <button @click="showBlueprintFullscreen = false" class="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-all border border-gray-200 shadow-sm">
                         ✕
                     </button>
                 </div>
                 
                 <!-- Body Area -->
-                <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    <template v-if="fullscreen3DModelSrc">
-                        <!-- VIEW MODE: Split (Both) -->
-                        <div v-if="activeViewMode === 'split'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-y-auto pr-2">
-                            <!-- 3D Card -->
-                            <div class="flex flex-col bg-slate-900/40 border border-slate-900 rounded-2xl p-4 transition-all duration-300 hover:border-slate-800 relative group min-h-[380px]">
-                                <div class="flex justify-between items-center mb-3 shrink-0">
-                                    <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">3D Render ko'rinishi</span>
-                                    <a :href="fullscreen3DModelSrc" download class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all font-mono uppercase tracking-wider">
-                                        📥 Yuklab olish
-                                    </a>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                    <!-- Left Column (Visual Viewer - 70%) -->
+                    <div class="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 relative flex flex-col items-center justify-center min-h-[420px] overflow-hidden group shadow-sm">
+                        <!-- Main Display Image -->
+                        <div class="flex-1 w-full flex items-center justify-center overflow-hidden relative">
+                            <img :src="activeViewMode === '3d' && fullscreen3DModelSrc ? fullscreen3DModelSrc : fullscreenBlueprintSrc" 
+                                 class="max-h-[55vh] max-w-full object-contain rounded-xl transition-all duration-300 select-none pointer-events-none"
+                                 :style="{ transform: 'scale(' + zoomScale + ')', transformOrigin: 'center center' }" />
+                        </div>
+
+                        <!-- Floating Vertical Control Bar -->
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 bg-slate-900/80 backdrop-blur-md p-2 rounded-2xl border border-slate-700 shadow-lg text-white z-30">
+                            <button @click="zoomIn" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all font-bold text-lg" title="Kattalashtirish">+</button>
+                            <button @click="zoomOut" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all font-bold text-lg" title="Kichiklashtirish">-</button>
+                            <button @click="zoomReset" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/20 transition-all text-sm" title="Dastlabki holatga qaytarish">🔄</button>
+                        </div>
+
+                        <!-- Thumbnails Row -->
+                        <div class="mt-4 flex gap-4 justify-center shrink-0 border-t border-gray-100 pt-4 w-full">
+                            <!-- Thumbnail 1: 2D Plan -->
+                            <button type="button" 
+                                    @click="activeViewMode = '2d'"
+                                    class="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border-2 transition-all hover:scale-105 bg-gray-50"
+                                    :class="activeViewMode === '2d' ? 'border-amber-500 scale-102 shadow-sm' : 'border-gray-200 opacity-60 hover:opacity-100'">
+                                <div class="w-16 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-gray-100">
+                                    <img :src="fullscreenBlueprintSrc" class="max-h-full max-w-full object-contain" />
                                 </div>
-                                <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900/60 rounded-xl p-4 min-h-[300px]">
-                                    <img :src="fullscreen3DModelSrc" class="max-h-[50vh] max-w-full object-contain rounded-lg shadow-lg hover:scale-102 transition-transform duration-500" />
-                                </div>
-                            </div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-500 font-mono">2D Chizma</span>
+                            </button>
                             
-                            <!-- 2D Card -->
-                            <div class="flex flex-col bg-slate-900/40 border border-slate-900 rounded-2xl p-4 transition-all duration-300 hover:border-slate-800 relative group min-h-[380px]">
-                                <div class="flex justify-between items-center mb-3 shrink-0">
-                                    <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma</span>
-                                    <a :href="fullscreenBlueprintSrc" download class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all font-mono uppercase tracking-wider">
-                                        📥 Yuklab olish
-                                    </a>
+                            <!-- Thumbnail 2: 3D Render (only if available) -->
+                            <button v-if="fullscreen3DModelSrc" 
+                                    type="button" 
+                                    @click="activeViewMode = '3d'"
+                                    class="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border-2 transition-all hover:scale-105 bg-gray-50"
+                                    :class="activeViewMode === '3d' ? 'border-amber-500 scale-102 shadow-sm' : 'border-gray-200 opacity-60 hover:opacity-100'">
+                                <div class="w-16 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-gray-100">
+                                    <img :src="fullscreen3DModelSrc" class="max-h-full max-w-full object-contain" />
                                 </div>
-                                <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900/60 rounded-xl p-4 min-h-[300px]">
-                                    <img :src="fullscreenBlueprintSrc" class="max-h-[50vh] max-w-full object-contain rounded-lg shadow-lg hover:scale-102 transition-transform duration-500 bg-white" />
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-500 font-mono">3D Render</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (Details & Actions - 30%) -->
+                    <div class="flex flex-col justify-between">
+                        <div>
+                            <!-- Floor Plan Mini-map Card -->
+                            <div class="bg-white border border-gray-200 rounded-3xl p-4 shadow-sm relative group overflow-hidden">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest font-sans mb-3">Qavat Xaritasi</h4>
+                                <div class="w-full h-36 bg-gray-50 rounded-2xl overflow-hidden flex items-center justify-center p-2 relative border border-gray-100">
+                                    <img v-if="selectedFloor?.blueprint_path" :src="`/storage/${selectedFloor.blueprint_path}`" class="h-full w-full object-contain opacity-80" />
+                                    <div v-else class="text-xs text-gray-400 font-mono">Xarita yuklanmagan</div>
+                                    
+                                    <!-- Highlight Overlay if svg_polygon exists -->
+                                    <svg v-if="selectedUnitForFullscreenBlueprint?.svg_polygon" 
+                                         class="absolute inset-0 w-full h-full pointer-events-none" 
+                                         viewBox="0 0 1000 450" 
+                                         preserveAspectRatio="xMidYMid meet">
+                                        <polygon :points="selectedUnitForFullscreenBlueprint.svg_polygon" 
+                                                 fill="#f59e0b" 
+                                                 fill-opacity="0.4" 
+                                                 stroke="#d97706" 
+                                                 stroke-width="5" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Specs Grid -->
+                            <div class="grid grid-cols-2 gap-4 mt-6">
+                                <!-- 1. Xonadon raqami -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-lg text-amber-500 shrink-0">🔑</div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Xonadon</span>
+                                        <strong class="text-sm font-bold text-gray-900">№ {{ selectedUnitForFullscreenBlueprint?.unit_number }}</strong>
+                                    </div>
+                                </div>
+                                <!-- 2. Rooms count -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg text-blue-500 shrink-0">🚪</div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Xonalar</span>
+                                        <strong class="text-sm font-bold text-gray-900">{{ selectedUnitForFullscreenBlueprint?.rooms_count || 1 }} xonali</strong>
+                                    </div>
+                                </div>
+                                <!-- 3. Floor -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-lg text-purple-500 shrink-0">🏢</div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Qavat</span>
+                                        <strong class="text-sm font-bold text-gray-900">{{ selectedFloor?.floor_number }}-qavat</strong>
+                                    </div>
+                                </div>
+                                <!-- 4. Area -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg text-emerald-500 shrink-0">📐</div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Maydoni</span>
+                                        <strong class="text-sm font-bold text-gray-900">{{ selectedUnitForFullscreenBlueprint?.area_sqm }} m²</strong>
+                                    </div>
+                                </div>
+                                <!-- 5. Entry (Podezd) -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-lg text-indigo-500 shrink-0">🧱</div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Podezd</span>
+                                        <strong class="text-sm font-bold text-gray-900">{{ selectedUnitForFullscreenBlueprint?.podyezd }}-padezd</strong>
+                                    </div>
+                                </div>
+                                <!-- 6. Status -->
+                                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" 
+                                         :class="{
+                                             'bg-green-50 text-green-500': selectedUnitForFullscreenBlueprint?.status === 'available',
+                                             'bg-yellow-50 text-yellow-500': selectedUnitForFullscreenBlueprint?.status === 'reserved',
+                                             'bg-red-50 text-red-500': selectedUnitForFullscreenBlueprint?.status === 'sold'
+                                         }">
+                                         {{ selectedUnitForFullscreenBlueprint?.status === 'available' ? '🟢' : selectedUnitForFullscreenBlueprint?.status === 'reserved' ? '🟡' : '🔴' }}
+                                    </div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Holati</span>
+                                        <strong class="text-xs font-bold" 
+                                                :class="{
+                                                    'text-green-600': selectedUnitForFullscreenBlueprint?.status === 'available',
+                                                    'text-yellow-600': selectedUnitForFullscreenBlueprint?.status === 'reserved',
+                                                    'text-red-600': selectedUnitForFullscreenBlueprint?.status === 'sold'
+                                                }">
+                                            {{ $t(selectedUnitForFullscreenBlueprint?.status) || selectedUnitForFullscreenBlueprint?.status }}
+                                        </strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- VIEW MODE: 3D Only -->
-                        <div v-else-if="activeViewMode === '3d'" class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
-                            <div class="flex justify-between items-center mb-3 shrink-0">
-                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">Xonadon 3D renderi (To'liq ekran)</span>
-                                <a :href="fullscreen3DModelSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
-                                    📥 Rasm yuklash
-                                </a>
-                            </div>
-                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
-                                <img :src="fullscreen3DModelSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 animate-[fadeIn_0.3s_ease-out]" />
-                            </div>
-                        </div>
-
-                        <!-- VIEW MODE: 2D Only -->
-                        <div v-else class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
-                            <div class="flex justify-between items-center mb-3 shrink-0">
-                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma (To'liq ekran)</span>
-                                <a :href="fullscreenBlueprintSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
-                                    📥 Chizmani yuklash
-                                </a>
-                            </div>
-                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
-                                <img :src="fullscreenBlueprintSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 bg-white animate-[fadeIn_0.3s_ease-out]" />
+                        <!-- Action Buttons -->
+                        <div class="mt-6 space-y-4">
+                            <!-- Row 1: Main Download Button -->
+                            <button @click="downloadActiveImage" 
+                                    class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold font-sans rounded-2xl text-base shadow-sm transition-all text-center flex items-center justify-center gap-2">
+                                📥 Chizmani Yuklab Olish
+                            </button>
+                            
+                            <!-- Row 2: Share and Sell buttons side-by-side -->
+                            <div class="flex gap-4">
+                                <button @click="shareUnitDetails" 
+                                        class="flex-1 py-3.5 border border-gray-200 hover:border-amber-500 hover:bg-amber-50 text-gray-700 hover:text-amber-700 font-bold font-sans rounded-2xl text-sm shadow-sm transition-all text-center flex items-center justify-center gap-2">
+                                    🔗 Ulashish
+                                </button>
+                                <button v-if="selectedUnitForFullscreenBlueprint?.status !== 'sold'" 
+                                        @click="sellFromBlueprint" 
+                                        class="flex-1 py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-bold font-sans rounded-2xl text-sm shadow-sm transition-all text-center flex items-center justify-center gap-2">
+                                    🛒 Sotish
+                                </button>
                             </div>
                         </div>
-                    </template>
-
-                    <!-- Only 2D Case -->
-                    <template v-else>
-                        <div class="flex-1 flex flex-col bg-slate-900/20 border border-slate-900 rounded-2xl p-5 min-h-0">
-                            <div class="flex justify-between items-center mb-3 shrink-0">
-                                <span class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">2D Texnik chizma</span>
-                                <a :href="fullscreenBlueprintSrc" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl shadow transition-all font-mono uppercase tracking-wider flex items-center gap-1.5">
-                                    📥 Chizmani yuklash
-                                </a>
-                            </div>
-                            <div class="flex-1 flex items-center justify-center bg-slate-950/40 border border-slate-900 rounded-xl p-6 min-h-[350px]">
-                                <img :src="fullscreenBlueprintSrc" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl hover:scale-101 transition-transform duration-500 bg-white" />
-                            </div>
-                        </div>
-                    </template>
+                    </div>
                 </div>
             </div>
         </Modal>

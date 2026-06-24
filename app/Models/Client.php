@@ -24,6 +24,7 @@ class Client extends Model
         'gender',
         'passport_photo',
         'passport_photo_back',
+        'profile_photo',
         'source',
         'contract_language',
         'contract_id',

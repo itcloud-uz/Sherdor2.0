@@ -139,6 +139,7 @@ const clientForm = ref({
     district: '',
     passport_photo: null,
     passport_photo_back: null,
+    profile_photo: null,
     source: '',
     contract_language: 'O\'zbek tili',
     contract_id: ''
@@ -187,6 +188,115 @@ const availableNeighborhoods = computed(() => {
     if (!foundDistrict) return [];
     return foundDistrict.neighborhoods || [];
 });
+
+const showPassportLightbox = ref(false);
+const lightboxImageUrl = ref('');
+function openPassportPreview(url) {
+    lightboxImageUrl.value = url;
+    showPassportLightbox.value = true;
+}
+
+const loadedScripts = {};
+function loadScript(src) {
+    if (loadedScripts[src]) return loadedScripts[src];
+    loadedScripts[src] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = (err) => reject(err);
+        document.head.appendChild(script);
+    });
+    return loadedScripts[src];
+}
+
+async function initFaceDetector() {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js');
+}
+
+async function detectAndCropFace(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = async () => {
+                try {
+                    await initFaceDetector();
+                    
+                    const tracker = new window.tracking.ObjectTracker('face');
+                    tracker.setInitialScale(4);
+                    tracker.setStepSize(2);
+                    tracker.setEdgesDensity(0.1);
+                    
+                    const tempImg = document.createElement('img');
+                    tempImg.src = img.src;
+                    tempImg.style.position = 'absolute';
+                    tempImg.style.left = '-9999px';
+                    tempImg.style.top = '-9999px';
+                    document.body.appendChild(tempImg);
+                    
+                    tempImg.onload = () => {
+                        const task = window.tracking.track(tempImg, tracker);
+                        tracker.once('track', (event) => {
+                            task.stop();
+                            document.body.removeChild(tempImg);
+                            
+                            if (event.data && event.data.length > 0) {
+                                const face = event.data[0];
+                                const padX = face.width * 0.3;
+                                const padY = face.height * 0.3;
+                                
+                                const cropX = Math.max(0, face.x - padX);
+                                const cropY = Math.max(0, face.y - padY * 1.5);
+                                const cropW = Math.min(img.width - cropX, face.width + padX * 2);
+                                const cropH = Math.min(img.height - cropY, face.height + padY * 3);
+                                
+                                const canvas = document.createElement('canvas');
+                                canvas.width = 160;
+                                canvas.height = 160;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, 160, 160);
+                                
+                                canvas.toBlob((blob) => {
+                                    if (blob) {
+                                        const croppedFile = new File([blob], 'face_' + file.name, { type: 'image/jpeg' });
+                                        resolve(croppedFile);
+                                    } else {
+                                        resolve(null);
+                                    }
+                                }, 'image/jpeg', 0.9);
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                    };
+                } catch (err) {
+                    console.error("Face detection initialization failed:", err);
+                    resolve(null);
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function getProfilePreviewUrl(file) {
+    if (!file) return '';
+    if (typeof file === 'string') return '/storage/' + file;
+    return URL.createObjectURL(file);
+}
+
+async function onPassportPhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    clientForm.value.passport_photo = file;
+    
+    const croppedFace = await detectAndCropFace(file);
+    if (croppedFace) {
+        clientForm.value.profile_photo = croppedFace;
+    }
+}
 
 function onRegionChange() {
     clientForm.value.district = '';
@@ -424,6 +534,7 @@ function openCreateClientModal() {
         district: '',
         passport_photo: null,
         passport_photo_back: null,
+        profile_photo: null,
         source: '',
         contract_language: 'O\'zbek tili',
         contract_id: ''
@@ -453,6 +564,7 @@ function openEditClientModal(client) {
         district: client.district || '',
         passport_photo: null,
         passport_photo_back: null,
+        profile_photo: client.profile_photo || null,
         source: client.source || '',
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
@@ -3138,9 +3250,12 @@ const ledgerReportData = computed(() => {
                                     </td>
                                     <td class="p-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 flex items-center justify-center text-emerald-600 font-display font-bold text-xs shadow-sm shrink-0">
-                                                {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
-                                            </div>
+                                            <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs shadow-sm shrink-0 bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 text-emerald-600">
+                                                 <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                                 <template v-else>
+                                                     {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+                                                 </template>
+                                             </div>
                                             <div>
                                                 <p class="text-sm text-gray-900 font-bold leading-tight">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
                                                 <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
@@ -3332,9 +3447,12 @@ const ledgerReportData = computed(() => {
                                 <!-- Ism -->
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-                                            {{ getInitials(client.first_name, client.last_name) }}
-                                        </div>
+                                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm shadow-sm shrink-0 bg-[#fef9c3] text-[#ca8a04]">
+                                             <img v-if="client.profile_photo" :src="'/storage/' + client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                             <template v-else>
+                                                 {{ getInitials(client.first_name, client.last_name) }}
+                                             </template>
+                                         </div>
                                         <div>
                                             <h3 class="text-sm font-bold text-gray-900 leading-tight">
                                                 {{ client.last_name }} {{ client.first_name }}
@@ -3547,9 +3665,12 @@ const ledgerReportData = computed(() => {
                         <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm lg:col-span-2 flex flex-col md:flex-row gap-6">
                             <!-- Profile Card -->
                             <div class="w-full md:w-48 shrink-0 flex flex-col items-center text-center p-4 bg-slate-50 rounded-2xl border border-slate-100 justify-center">
-                                <div class="w-16 h-16 rounded-full bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center font-bold text-xl shadow-sm mb-3">
-                                    {{ getInitials(detailedClientData.first_name, detailedClientData.last_name) }}
-                                </div>
+                                <div class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-bold text-xl shadow-sm mb-3 bg-[#fef9c3] text-[#ca8a04]">
+                                     <img v-if="detailedClientData.profile_photo" :src="'/storage/' + detailedClientData.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                     <template v-else>
+                                         {{ getInitials(detailedClientData.first_name, detailedClientData.last_name) }}
+                                     </template>
+                                 </div>
                                 <h3 class="text-sm font-bold text-gray-900 leading-tight">
                                     {{ detailedClientData.last_name }} <br/> {{ detailedClientData.first_name }} {{ detailedClientData.middle_name || '' }}
                                 </h3>
@@ -3571,15 +3692,22 @@ const ledgerReportData = computed(() => {
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address || 'address' }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Qo'shilgan sana:</span> <strong class="text-gray-900 font-mono">{{ getUzFormattedDateFromString(detailedClientData.created_at) }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number || 'AA1234567' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between">
-                                        <span class="text-gray-400">Passport rasmlari:</span>
-                                        <strong class="text-gray-900">
-                                            <a v-if="detailedClientData.passport_photo" :href="'/storage/' + detailedClientData.passport_photo" target="_blank" class="text-amber-500 hover:underline">
-                                                Ko'rish
-                                            </a>
-                                            <span v-else>Rasmlar yo'q</span>
-                                        </strong>
-                                    </div>
+                                    <div class="py-1 border-b border-gray-50 flex justify-between items-center">
+                                         <span class="text-gray-400">Passport rasmlari:</span>
+                                         <div class="flex flex-col gap-1 items-end">
+                                             <div v-if="detailedClientData.passport_photo" class="flex items-center gap-2">
+                                                 <span class="text-[10px] text-gray-500 font-semibold">Old:</span>
+                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline text-[11px] font-bold">Ko'rish</button>
+                                                 <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline text-[11px] font-bold">Yuklash</a>
+                                             </div>
+                                             <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-2">
+                                                 <span class="text-[10px] text-gray-500 font-semibold">Orqa:</span>
+                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline text-[11px] font-bold">Ko'rish</button>
+                                                 <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline text-[11px] font-bold">Yuklash</a>
+                                             </div>
+                                             <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400">Rasmlar yo'q</span>
+                                         </div>
+                                     </div>
                                 </div>
                             </div>
                         </div>
@@ -3825,9 +3953,12 @@ const ledgerReportData = computed(() => {
                         <div>
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-red/20 to-black border border-red-200 flex items-center justify-center text-red-600 font-display font-bold text-sm shadow-sm">
-                                        {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
-                                    </div>
+                                    <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-sm shadow-sm bg-gradient-to-br from-neon-red/20 to-black border border-red-200 text-red-600">
+                                         <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                         <template v-else>
+                                             {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+                                         </template>
+                                     </div>
                                     <div>
                                         <h3 class="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{{ contract.client?.first_name }} {{ contract.client?.last_name }}</h3>
                                         <p class="text-[10px] font-mono text-red-600 mt-0.5">
@@ -5350,8 +5481,15 @@ const ledgerReportData = computed(() => {
                                     </svg>
                                     <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientForm.passport_photo.name">{{ clientForm.passport_photo.name }}</span>
                                 </template>
-                                <input type="file" class="hidden" @change="e => { clientForm.passport_photo = e.target.files[0] }">
+                                <input type="file" class="hidden" @change="onPassportPhotoChange">
                             </label>
+                            <!-- Face Preview -->
+                            <div v-if="clientForm.profile_photo" class="mt-2 flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-full overflow-hidden border border-[#f2a900] shrink-0">
+                                    <img :src="getProfilePreviewUrl(clientForm.profile_photo)" class="w-full h-full object-cover" />
+                                </div>
+                                <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Orqa tomon)</label>
@@ -6801,6 +6939,41 @@ const ledgerReportData = computed(() => {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 🖼️ Passport Lightbox Modal -->
+        <div v-if="showPassportLightbox" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm transition-all duration-300" @click.self="showPassportLightbox = false">
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-gray-150">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center shrink-0">
+                    <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                        <span>🖼️</span> Passport Hujjati Ko'rinishi
+                    </h3>
+                    <button @click="showPassportLightbox = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-auto p-6 flex justify-center items-center bg-gray-100">
+                    <template v-if="lightboxImageUrl.toLowerCase().endsWith('.pdf')">
+                        <iframe :src="lightboxImageUrl" class="w-full h-[60vh] border-0 rounded-xl shadow-inner"></iframe>
+                    </template>
+                    <template v-else>
+                        <img :src="lightboxImageUrl" class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-lg border border-gray-200" alt="Passport Document" />
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 shrink-0">
+                    <button @click="showPassportLightbox = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-100 transition-all uppercase tracking-wider">
+                        Yopish
+                    </button>
+                    <a :href="lightboxImageUrl" download class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 uppercase tracking-wider">
+                        📥 Yuklab olish
+                    </a>
+                </div>
             </div>
         </div>
 

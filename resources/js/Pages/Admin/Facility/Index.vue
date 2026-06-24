@@ -1469,6 +1469,7 @@ const quickClientForm = ref({
     district: '',
     passport_photo: null,
     passport_photo_back: null,
+    profile_photo: null,
     source: '',
     contract_language: 'O\'zbek tili',
     contract_id: ''
@@ -1518,6 +1519,108 @@ const availableQuickNeighborhoods = computed(() => {
     return foundDistrict.neighborhoods || [];
 });
 
+const loadedScripts = {};
+function loadScript(src) {
+    if (loadedScripts[src]) return loadedScripts[src];
+    loadedScripts[src] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = (err) => reject(err);
+        document.head.appendChild(script);
+    });
+    return loadedScripts[src];
+}
+
+async function initFaceDetector() {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js');
+}
+
+async function detectAndCropFace(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = async () => {
+                try {
+                    await initFaceDetector();
+                    
+                    const tracker = new window.tracking.ObjectTracker('face');
+                    tracker.setInitialScale(4);
+                    tracker.setStepSize(2);
+                    tracker.setEdgesDensity(0.1);
+                    
+                    const tempImg = document.createElement('img');
+                    tempImg.src = img.src;
+                    tempImg.style.position = 'absolute';
+                    tempImg.style.left = '-9999px';
+                    tempImg.style.top = '-9999px';
+                    document.body.appendChild(tempImg);
+                    
+                    tempImg.onload = () => {
+                        const task = window.tracking.track(tempImg, tracker);
+                        tracker.once('track', (event) => {
+                            task.stop();
+                            document.body.removeChild(tempImg);
+                            
+                            if (event.data && event.data.length > 0) {
+                                const face = event.data[0];
+                                const padX = face.width * 0.3;
+                                const padY = face.height * 0.3;
+                                
+                                const cropX = Math.max(0, face.x - padX);
+                                const cropY = Math.max(0, face.y - padY * 1.5);
+                                const cropW = Math.min(img.width - cropX, face.width + padX * 2);
+                                const cropH = Math.min(img.height - cropY, face.height + padY * 3);
+                                
+                                const canvas = document.createElement('canvas');
+                                canvas.width = 160;
+                                canvas.height = 160;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, 160, 160);
+                                
+                                canvas.toBlob((blob) => {
+                                    if (blob) {
+                                        const croppedFile = new File([blob], 'face_' + file.name, { type: 'image/jpeg' });
+                                        resolve(croppedFile);
+                                    } else {
+                                        resolve(null);
+                                    }
+                                }, 'image/jpeg', 0.9);
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                    };
+                } catch (err) {
+                    console.error("Face detection initialization failed:", err);
+                    resolve(null);
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function getProfilePreviewUrl(file) {
+    if (!file) return '';
+    if (typeof file === 'string') return '/storage/' + file;
+    return URL.createObjectURL(file);
+}
+
+async function onQuickPassportPhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    quickClientForm.value.passport_photo = file;
+    
+    const croppedFace = await detectAndCropFace(file);
+    if (croppedFace) {
+        quickClientForm.value.profile_photo = croppedFace;
+    }
+}
+
 function onQuickRegionChange() {
     quickClientForm.value.district = '';
     quickClientForm.value.address = '';
@@ -1547,6 +1650,7 @@ function openQuickClientAdd() {
         district: '',
         passport_photo: null,
         passport_photo_back: null,
+        profile_photo: null,
         source: '',
         contract_language: 'O\'zbek tili',
         contract_id: contractForm.value.contract_number || ''
@@ -5166,8 +5270,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </svg>
                                         <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="quickClientForm.passport_photo.name">{{ quickClientForm.passport_photo.name }}</span>
                                     </template>
-                                    <input type="file" class="hidden" @change="e => { quickClientForm.passport_photo = e.target.files[0] }">
+                                    <input type="file" class="hidden" @change="onQuickPassportPhotoChange">
                                 </label>
+                                <!-- Face Preview -->
+                                <div v-if="quickClientForm.profile_photo" class="mt-2 flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden border border-[#f2a900] shrink-0">
+                                        <img :src="getProfilePreviewUrl(quickClientForm.profile_photo)" class="w-full h-full object-cover" />
+                                    </div>
+                                    <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Orqa tomon)</label>

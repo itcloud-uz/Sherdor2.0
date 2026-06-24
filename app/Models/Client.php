@@ -23,6 +23,7 @@ class Client extends Model
         'birth_date',
         'gender',
         'passport_photo',
+        'passport_photo_back',
         'source',
         'contract_language',
         'contract_id',

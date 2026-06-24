@@ -203,7 +203,8 @@ class CrmController extends Controller
             'source' => 'nullable|string',
             'contract_language' => 'nullable|string',
             'contract_id' => 'nullable|string',
-            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
         ]);
 
         if (array_key_exists('passport_series', $validated)) {
@@ -215,6 +216,12 @@ class CrmController extends Controller
             $validated['passport_photo'] = $request->file('passport_photo')->store('passport_photos', 'public');
         } else {
             unset($validated['passport_photo']);
+        }
+
+        if ($request->hasFile('passport_photo_back')) {
+            $validated['passport_photo_back'] = $request->file('passport_photo_back')->store('passport_photos', 'public');
+        } else {
+            unset($validated['passport_photo_back']);
         }
 
         try {
@@ -258,7 +265,8 @@ class CrmController extends Controller
             'source' => 'nullable|string',
             'contract_language' => 'nullable|string',
             'contract_id' => 'nullable|string',
-            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048'
         ]);
 
         if (array_key_exists('passport_series', $validated)) {
@@ -273,6 +281,15 @@ class CrmController extends Controller
             $validated['passport_photo'] = $request->file('passport_photo')->store('passport_photos', 'public');
         } else {
             unset($validated['passport_photo']);
+        }
+
+        if ($request->hasFile('passport_photo_back')) {
+            if ($client->passport_photo_back && \Illuminate\Support\Facades\Storage::disk('public')->exists($client->passport_photo_back)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($client->passport_photo_back);
+            }
+            $validated['passport_photo_back'] = $request->file('passport_photo_back')->store('passport_photos', 'public');
+        } else {
+            unset($validated['passport_photo_back']);
         }
 
         try {

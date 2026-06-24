@@ -2794,7 +2794,8 @@ const ledgerReportData = computed(() => {
             </div>
         </template>
 
-        <!-- TAB 1: LEADS KANBAN / LIST VIEW -->
+        <div v-if="!showCreateClientModal && !showCreateContractModal && !showCreateLeadModal">
+            <!-- TAB 1: LEADS KANBAN / LIST VIEW -->
         <div v-if="activeTab === 'leads'" class="space-y-4">
             <!-- View Mode Switcher & Actions -->
             <div class="flex flex-col md:flex-row md:items-center justify-between bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 gap-4">
@@ -5212,23 +5213,23 @@ const ledgerReportData = computed(() => {
                 </div>
             </div>
         </div>
+        </div>
 
-        <!-- MODAL: CREATE / EDIT CLIENT -->
-        <div v-if="showCreateClientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showCreateClientModal = false"></div>
-            <div class="relative bg-[#f8fafc] p-8 rounded-3xl w-full max-w-6xl shadow-2xl border border-gray-100 transition-all font-sans my-8">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
-                        Mijoz qo'shish
-                    </h2>
-                    <button type="button" @click="showCreateClientModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+        <!-- INLINE SUBPAGE: CREATE / EDIT CLIENT -->
+        <div v-if="showCreateClientModal" class="bg-white p-8 rounded-3xl w-full shadow-md border border-gray-150 transition-all font-sans my-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
+                    {{ isEditingClient ? 'Mijozni tahrirlash' : 'Mijoz qo\'shish' }}
+                </h2>
+                <button type="button" @click="showCreateClientModal = false" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Orqaga
+                </button>
+            </div>
 
                 <form @submit.prevent="saveClient" class="space-y-6">
                     <!-- Row 1: Familiya, Ism, Otasining ismi -->
@@ -5394,19 +5395,25 @@ const ledgerReportData = computed(() => {
                         </button>
                     </div>
                 </form>
-            </div>
         </div>
 
         <!-- MODAL: CREATE CONTRACT -->
-        <div v-if="showCreateContractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-            <div class="absolute inset-0 bg-gray-500/50" @click="showCreateContractModal = false"></div>
-            <div class="relative bg-white border border-gray-200 shadow-sm p-6 rounded-2xl w-full max-w-3xl border border-emerald-200 flex flex-col max-h-[90vh]">
-                <h2 class="text-xl font-bold text-gray-900 mb-4 uppercase tracking-widest shadow-neon-green/50 shrink-0">
+        <div v-if="showCreateContractModal" class="bg-white p-8 rounded-3xl w-full shadow-md border border-gray-150 transition-all font-sans my-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
                     {{ isEditingContract ? 'Shartnomani Tahrirlash' : $t('add') + ' ' + $t('contract') }}
                 </h2>
-                <form @submit.prevent="createContract" class="flex flex-col flex-1 min-h-0">
-                    <!-- Scrollable Form Body -->
-                    <div class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
+                <button type="button" @click="showCreateContractModal = false" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Orqaga
+                </button>
+            </div>
+            <form @submit.prevent="createContract" class="space-y-4">
+                <div class="space-y-4 pb-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('contract_date_optional') }}</label>
@@ -5591,12 +5598,11 @@ const ledgerReportData = computed(() => {
                     </div>
 
                     <!-- Fixed Footer Actions -->
-                    <div class="flex justify-end gap-4 mt-4 pt-4 border-t border-gray-100 shrink-0">
-                        <button type="button" @click="showCreateContractModal = false" class="px-4 py-2 text-xs font-mono uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors">{{ $t('cancel') }}</button>
-                        <button type="submit" :disabled="isProcessing" class="px-6 py-2 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded hover:shadow-sm transition-all disabled:opacity-50">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>
+                    <div class="flex justify-end gap-4 mt-4 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showCreateContractModal = false" class="px-6 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-colors">{{ $t('cancel') }}</button>
+                        <button type="submit" :disabled="isProcessing" class="px-8 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>
                     </div>
                 </form>
-            </div>
         </div>
 
         <!-- LEAD DETAIL MODAL -->
@@ -6086,16 +6092,22 @@ const ledgerReportData = computed(() => {
             </div>
         </div>
 
-        <!-- CREATE LEAD MODAL -->
-        <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50 transition-all">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl w-full max-w-md rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-500/50">
-                    <h2 class="text-xl font-display font-bold text-gray-900 uppercase tracking-widest">{{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}</h2>
-                    <button @click="showCreateLeadModal = false" class="text-gray-500 hover:text-gray-900 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <div class="p-6">
+        <!-- INLINE SUBPAGE: CREATE LEAD -->
+        <div v-if="showCreateLeadModal" class="bg-white p-8 rounded-3xl w-full max-w-2xl mx-auto shadow-md border border-gray-150 transition-all font-sans my-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
+                    {{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}
+                </h2>
+                <button type="button" @click="showCreateLeadModal = false" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Orqaga
+                </button>
+            </div>
+            <div>
                     <form @submit.prevent="submitNewLead" class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('first_last_name') }}</label>
@@ -6125,7 +6137,6 @@ const ledgerReportData = computed(() => {
                         </button>
                     </form>
                 </div>
-            </div>
         </div>
 
         <!-- MODAL: QUICK SMS -->

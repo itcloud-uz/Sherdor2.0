@@ -2709,7 +2709,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 <template>
     <Head :title="$t('facility_command_center') || 'Facility Command Center'" />
     <AdminLayout>
-        <!-- Dynamic Breadcrumbs -->
+        <div v-if="!showUnifiedSellModal">
+            <!-- Dynamic Breadcrumbs -->
         <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6 font-sans">
             <button @click="currentObject = null; selectedBuilding = null; currentView = 'objects'" class="hover:text-blue-600 transition-colors flex items-center gap-1.5 font-medium">
                 🏠 Asosiy
@@ -5022,23 +5023,23 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
             </div>
         </Modal>
+        </div>
 
-        <!-- MODAL: UNIFIED CLIENT CREATION & SELL -->
-        <div v-if="showUnifiedSellModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showUnifiedSellModal = false"></div>
-            <div class="relative bg-[#f8fafc] p-8 rounded-3xl w-full max-w-6xl shadow-2xl border border-gray-100 transition-all font-sans my-8 max-h-[90vh] overflow-y-auto">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                    <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
-                        Mijoz qo'shish va shartnoma yaratish
-                    </h2>
-                    <button type="button" @click="showUnifiedSellModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+        <!-- INLINE SUBPAGE: UNIFIED CLIENT CREATION & SELL -->
+        <div v-if="showUnifiedSellModal" class="bg-white p-8 rounded-3xl w-full shadow-md border border-gray-150 transition-all font-sans my-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
+                    Mijoz qo'shish va shartnoma yaratish
+                </h2>
+                <button type="button" @click="showUnifiedSellModal = false" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Orqaga
+                </button>
+            </div>
 
                 <form @submit.prevent="submitUnifiedSell" class="space-y-6 text-left">
                     <!-- SECTION 1: Mijoz qo'shish -->
@@ -5303,7 +5304,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </button>
                     </div>
                 </form>
-            </div>
         </div>
 
         <!-- 👁️ Showroom Fullscreen Modal -->

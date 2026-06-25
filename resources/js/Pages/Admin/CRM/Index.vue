@@ -436,8 +436,12 @@ const cancelContract = async (id) => {
     isProcessing.value = true;
     try {
         await axios.post(route('admin.contracts.cancel', id));
-        showModal.value = false;
-        router.reload({ only: ['contracts'] });
+        if (selectedClientForDetail.value) {
+            selectClientForDetail(selectedClientForDetail.value);
+        } else {
+            showModal.value = false;
+            router.reload({ only: ['contracts'] });
+        }
     } catch (e) {
         alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));
     } finally {
@@ -1852,6 +1856,75 @@ const getClientLatestContract = (client) => {
 const selectedContract = ref(null);
 const showModal = ref(false);
 
+// Refund schedule generation state
+const showRefundGeneratorForm = ref(false);
+const refundInstallmentCount = ref(3);
+const refundInstallments = ref([]);
+
+const contractIncomeSum = computed(() => {
+    if (!selectedContract.value || !selectedContract.value.transactions) return 0;
+    return selectedContract.value.transactions
+        .filter(t => t.type === 'income' && t.status === 'approved')
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+});
+
+function distributeRefundInstallments() {
+    const totalToRefund = contractIncomeSum.value - Number(selectedContract.value.refunded_amount || 0);
+    if (totalToRefund <= 0) {
+        alert('Mijozga qaytariladigan ortiqcha mablag\' mavjud emas.');
+        return;
+    }
+    const count = Number(refundInstallmentCount.value) || 1;
+    const splitAmount = Math.round(totalToRefund / count);
+    
+    refundInstallments.value = [];
+    for (let i = 1; i <= count; i++) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        
+        // Handle remainder in the last installment
+        const amt = i === count ? (totalToRefund - (splitAmount * (count - 1))) : splitAmount;
+
+        refundInstallments.value.push({
+            amount: amt,
+            due_date: dateStr,
+            notes: `${i}-bosqich qaytarish`
+        });
+    }
+}
+
+function submitRefundSchedule() {
+    if (refundInstallments.value.length === 0) {
+        alert('Iltimos, grafikni taqsimlang.');
+        return;
+    }
+    const totalSum = refundInstallments.value.reduce((sum, inst) => sum + Number(inst.amount), 0);
+    const expectedTotal = contractIncomeSum.value - Number(selectedContract.value.refunded_amount || 0);
+    if (Math.abs(totalSum - expectedTotal) > 1) {
+        if (!confirm(`Taqsimlangan summa (${totalSum.toLocaleString()} so'm) qaytarilishi kerak bo'lgan summadan (${expectedTotal.toLocaleString()} so'm) farq qiladi. Davom etamizmi?`)) {
+            return;
+        }
+    }
+
+    isProcessing.value = true;
+    router.post(route('admin.contracts.refund_schedules.store', selectedContract.value.id), {
+        installments: refundInstallments.value
+    }, {
+        onSuccess: () => {
+            isProcessing.value = false;
+            showRefundGeneratorForm.value = false;
+            if (selectedClientForDetail.value) {
+                selectClientForDetail(selectedClientForDetail.value);
+            }
+        },
+        onError: (err) => {
+            isProcessing.value = false;
+            alert('Grafikni saqlashda xatolik.');
+        }
+    });
+}
+
 const refundTransactions = computed(() => {
     if (!selectedContract.value || !selectedContract.value.transactions) return [];
     return selectedContract.value.transactions.filter(t => 
@@ -2543,7 +2616,7 @@ const filteredClientPayments = computed(() => {
 
 const filteredClientDebts = computed(() => {
     const debts = (props.counterparties || [])
-        .filter(c => c.type === 'client' && Number(c.balance || 0) < 0)
+        .filter(c => c.type === 'client' && Number(c.balance || 0) !== 0)
         .map(c => {
             const clientContracts = c.customable?.contracts || [];
             const agreed = clientContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
@@ -2616,7 +2689,7 @@ const editTransactionForm = ref({
 function openQuickTransaction(type = 'income', client = null) {
     transactionForm.value = {
         type: type,
-        category_name: "Mijoz To'lovi (Shartnoma)",
+        category_name: type === 'expense' ? "Mijozga pulni qaytarish" : "Mijoz To'lovi (Shartnoma)",
         amount: '',
         currency: 'UZS',
         payment_method: 'cash',
@@ -4331,7 +4404,10 @@ const ledgerReportData = computed(() => {
                                             {{ getInitials(c.name ? c.name.split(' ')[1] : '', c.name ? c.name.split(' ')[0] : '') }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ c.name }}</p>
+                                            <div class="flex items-center gap-2">
+                                                <p class="font-bold text-gray-900 text-sm leading-tight">{{ c.name }}</p>
+                                                <span v-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                            </div>
                                             <span class="text-xs text-gray-500 font-mono mt-1 inline-block">{{ c.phone || '-' }}</span>
                                         </div>
                                     </div>
@@ -4340,12 +4416,14 @@ const ledgerReportData = computed(() => {
                                     {{ Number(c.paid_amount || 0).toLocaleString() }} so'm
                                     <div class="text-[10px] text-gray-400 font-normal font-sans">Kelishilgan: {{ Number(c.agreed_amount || 0).toLocaleString() }} so'm</div>
                                 </td>
-                                <td class="p-4 text-right font-bold text-red-600 text-base">{{ Number(c.debt_amount || 0).toLocaleString() }} so'm</td>
+                                <td class="p-4 text-right font-bold text-base" :class="c.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
+                                    {{ c.balance > 0 ? 'Qaytariladi: ' : '' }}{{ Number(c.debt_amount || 0).toLocaleString() }} so'm
+                                </td>
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-3">
                                         <!-- Quick pay debt button -->
-                                        <button @click="openQuickTransaction('income', c.customable)" class="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-500 hover:text-white transition-all shadow-sm font-sans">
-                                            + Qarzni to'lash
+                                        <button @click="openQuickTransaction(c.balance > 0 ? 'expense' : 'income', c.customable)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans" :class="c.balance > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white'">
+                                            {{ c.balance > 0 ? '+ Qaytarish' : '+ Qarzni to\'lash' }}
                                         </button>
                                         
                                         <!-- Edit/delete counterparty -->
@@ -5293,6 +5371,100 @@ const ledgerReportData = computed(() => {
                                         </td>
                                         <td class="p-3 text-sm font-mono font-bold text-emerald-600">{{ $currency(transaction.amount) }}</td>
                                         <td class="p-3 text-sm font-mono text-gray-900/60">{{ transaction.notes || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- REFUND SCHEDULES MODULE -->
+                    <div v-if="selectedContract.status === 'cancelled' || selectedContract.status === 'canceled'" class="mt-8 p-6 bg-red-50/30 border border-red-200/60 rounded-2xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-red-700 uppercase tracking-widest flex items-center gap-2">
+                                <span>💰</span> Mijozga qaytarish grafigi
+                            </h3>
+                            <button v-if="!showRefundGeneratorForm" @click="showRefundGeneratorForm = true; refundInstallments = JSON.parse(JSON.stringify(selectedContract.refund_schedules || []))" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
+                                {{ selectedContract.refund_schedules?.length ? '🎨 Grafikni qayta shakllantirish' : '➕ Grafik shakllantirish' }}
+                            </button>
+                            <button v-else @click="showRefundGeneratorForm = false" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
+                                ❌ Bekor qilish
+                            </button>
+                        </div>
+
+                        <!-- Refund schedules generator form -->
+                        <div v-if="showRefundGeneratorForm" class="space-y-4 bg-white p-5 border border-red-100 rounded-xl mb-6">
+                            <div class="flex items-center gap-4 flex-wrap">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Bo'lib qaytarish oylari (soni):</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" min="1" max="24" v-model="refundInstallmentCount" class="w-20 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-center focus:ring-2 focus:ring-red-500 focus:border-red-500 font-bold">
+                                        <button type="button" @click="distributeRefundInstallments" class="px-4 py-1.5 bg-red-50 border border-red-300 text-red-700 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all">
+                                            Taqsimlash
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 font-medium">
+                                    <p>Qaytariladigan umumiy summa: <span class="font-mono font-bold text-red-600">{{ $currency(contractIncomeSum - Number(selectedContract.refunded_amount || 0)) }}</span></p>
+                                    <p class="text-[10px] text-gray-400">Ortiqcha to'lovlar hamda kiritilgan kirim operatsiyalari asosida.</p>
+                                </div>
+                            </div>
+
+                            <!-- Installment items inputs list -->
+                            <div v-if="refundInstallments.length > 0" class="space-y-3 pt-3 border-t border-gray-100 max-h-80 overflow-y-auto">
+                                <div v-for="(inst, i) in refundInstallments" :key="i" class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg items-center border border-gray-150">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Summa ({{ i + 1 }}-bosqich):</label>
+                                        <input type="number" v-model="inst.amount" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono font-bold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Sana:</label>
+                                        <input type="date" v-model="inst.due_date" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Izoh:</label>
+                                        <input type="text" v-model="inst.notes" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 flex justify-end">
+                                    <button type="button" @click="submitRefundSchedule" :disabled="isProcessing" class="px-6 py-2 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-700 transition-all shadow-md disabled:opacity-50">
+                                        💾 Grafikni saqlash
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Refund schedules list table -->
+                        <div v-if="!showRefundGeneratorForm" class="overflow-x-auto rounded-xl border border-red-200 bg-white">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-red-50 text-red-700 uppercase font-bold border-b border-red-200">
+                                    <tr>
+                                        <th class="p-3">Bosqich</th>
+                                        <th class="p-3">Muddat (Sana)</th>
+                                        <th class="p-3 text-right">Summa</th>
+                                        <th class="p-3 text-right">Qaytarilgan</th>
+                                        <th class="p-3 text-right">Qoldiq</th>
+                                        <th class="p-3 text-center">Holat</th>
+                                        <th class="p-3">Izoh</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="(schedule, index) in selectedContract.refund_schedules" :key="schedule.id" class="hover:bg-red-50/20 transition-colors">
+                                        <td class="p-3 font-bold text-gray-900">#{{ index + 1 }}</td>
+                                        <td class="p-3 font-mono text-gray-900/80">{{ schedule.due_date }}</td>
+                                        <td class="p-3 text-right font-bold text-gray-900 font-mono">{{ $currency(schedule.amount) }}</td>
+                                        <td class="p-3 text-right text-emerald-600 font-mono">{{ $currency(schedule.paid_amount || 0) }}</td>
+                                        <td class="p-3 text-right text-red-600 font-mono font-bold">{{ $currency(schedule.amount - (schedule.paid_amount || 0)) }}</td>
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold border"
+                                                :class="{ 'bg-emerald-50 text-emerald-600 border-emerald-200': schedule.status === 'paid', 'bg-amber-50 text-amber-600 border-amber-200': schedule.status === 'partial', 'bg-red-50 text-red-600 border-red-200': schedule.status === 'overdue', 'text-gray-500 border-gray-300': schedule.status === 'pending' }">
+                                                {{ schedule.status }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-gray-500">{{ schedule.notes || '-' }}</td>
+                                    </tr>
+                                    <tr v-if="!selectedContract.refund_schedules?.length">
+                                        <td colspan="7" class="p-8 text-center text-gray-400">Bo'lib qaytarish grafigi shakllantirilmagan.</td>
                                     </tr>
                                 </tbody>
                             </table>

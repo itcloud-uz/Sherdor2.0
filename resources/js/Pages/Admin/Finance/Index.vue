@@ -824,7 +824,7 @@ const clientPayments = computed(() => {
 
 const clientDebts = computed(() => {
     return (props.counterparties || [])
-        .filter(c => c.type === 'client' && Number(c.balance || 0) < 0)
+        .filter(c => c.type === 'client' && Number(c.balance || 0) !== 0)
         .map(c => ({
             ...c,
             debt_amount: Math.abs(Number(c.balance))
@@ -3242,6 +3242,7 @@ function getCounterpartyStatus(c) {
                                         <th class="p-4">Obyekt</th>
                                         <th class="p-4 text-right">Tushum</th>
                                         <th class="p-4">Tranzaksiya turi</th>
+                                        <th class="p-4 text-center">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -3258,9 +3259,22 @@ function getCounterpartyStatus(c) {
                                                 {{ t.category?.name || 'Mijoz to\'lovi' }}
                                             </span>
                                         </td>
+                                        <td class="p-4 text-center">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button @click="openReceipt(t)" class="px-2.5 py-1 text-[11px] bg-orange-50 text-orange-600 border border-orange-200 rounded-lg font-bold hover:bg-orange-500 hover:text-white transition-all" title="Kvitansiya">
+                                                    📥
+                                                </button>
+                                                <button @click="openEditTransactionModal(t)" class="px-2.5 py-1 text-[11px] bg-blue-50 text-blue-600 border border-blue-200 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all" title="Tahrirlash">
+                                                    ✏️
+                                                </button>
+                                                <button @click="deleteTransaction(t.id)" class="px-2.5 py-1 text-[11px] bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-all" title="O'chirish">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                     <tr v-if="!filteredRegisterTransactions.length">
-                                        <td colspan="6" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
+                                        <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -3365,9 +3379,16 @@ function getCounterpartyStatus(c) {
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-for="(c, idx) in filteredClientDebts" :key="c.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
-                                    <td class="p-4 font-bold text-gray-900">{{ c.name }}</td>
+                                    <td class="p-4 font-bold text-gray-900">
+                                        <div class="flex items-center gap-2">
+                                            <span>{{ c.name }}</span>
+                                            <span v-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                        </div>
+                                    </td>
                                     <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
-                                    <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(c.debt_amount) }}</td>
+                                    <td class="p-4 text-right font-bold" :class="c.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ c.balance > 0 ? 'Qaytariladigan: ' : '' }}{{ formatMoney(c.debt_amount) }}
+                                    </td>
                                     <td class="p-4 text-center">
                                         <div class="flex items-center justify-center gap-2">
                                             <button @click="openEditCounterpartyModal(c)" class="px-2.5 py-1 text-[11px] bg-blue-50 text-blue-600 border border-blue-200 rounded-lg font-bold hover:bg-blue-500 hover:text-white transition-all">

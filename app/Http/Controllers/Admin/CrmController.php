@@ -62,7 +62,7 @@ class CrmController extends Controller
 
         // 4. Contracts Tab
         if ($tab === 'contracts') {
-            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->limit(500)->get();
+            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category', 'refundSchedules'])->latest()->limit(500)->get();
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
@@ -151,7 +151,7 @@ class CrmController extends Controller
 
         // 10. Client Payment Reports Tab (MIJOZ TO'LOV HISOBOTLARI)
         if ($tab === 'client_payment_reports') {
-            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category'])->latest()->get();
+            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category', 'refundSchedules'])->latest()->get();
         }
 
         return Inertia::render('Admin/CRM/Index', [
@@ -339,6 +339,9 @@ class CrmController extends Controller
             'contracts.transactions.creator',
             'contracts.transactions.approver',
             'contracts.transactions.category',
+            'contracts.refundSchedules' => function ($query) {
+                $query->orderBy('due_date', 'asc');
+            },
         ]);
         
         return response()->json([

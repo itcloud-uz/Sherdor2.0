@@ -73,4 +73,9 @@ class Client extends Model
     {
         return $this->hasMany(ClientComment::class)->latest();
     }
+
+    public function refundSchedules()
+    {
+        return $this->hasMany(RefundSchedule::class);
+    }
 }

@@ -74,7 +74,7 @@ class FinanceController extends Controller
         $machineOwners = MachineOwner::latest()->get();
         $counterparties = Counterparty::with(['customable', 'transactions'])->get();
         $counterparties->loadMorph('customable', [
-            \App\Models\Client::class => ['contracts'],
+            \App\Models\Client::class => ['contracts.refundSchedules'],
         ]);
         $buildings = Building::latest()->get();
         $clients = Client::latest()->limit(500)->get();
@@ -204,6 +204,7 @@ class FinanceController extends Controller
             'invoice_id' => 'nullable|exists:invoices,id',
             'contract_id' => 'nullable|exists:contracts,id',
             'payment_schedule_id' => 'nullable|exists:payment_schedules,id',
+            'refund_schedule_id' => 'nullable|exists:refund_schedules,id',
             'client_id' => 'nullable|exists:clients,id',
             'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
@@ -642,10 +643,57 @@ class FinanceController extends Controller
                 
             }
 
-        } elseif ($transaction->contract_id && $transaction->type === 'expense' && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {
+        } elseif ($transaction->contract_id && $transaction->type === 'expense') {
             $contract = \App\Models\Contract::find($transaction->contract_id);
-            if ($contract) {
+            if ($contract && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {
                 $contract->increment('refunded_amount', $transaction->amount);
+            }
+
+            // Apply refund amount to refund schedules
+            $remainingRefund = $transaction->amount;
+            
+            // Prioritize specific refund schedule if selected/linked
+            if ($transaction->refund_schedule_id) {
+                $specificRefundSchedule = \App\Models\RefundSchedule::find($transaction->refund_schedule_id);
+                if ($specificRefundSchedule && $specificRefundSchedule->status !== 'paid') {
+                    $needed = $specificRefundSchedule->amount - $specificRefundSchedule->paid_amount;
+                    if ($needed > 0) {
+                        if ($remainingRefund >= $needed) {
+                            $specificRefundSchedule->paid_amount += $needed;
+                            $specificRefundSchedule->status = 'paid';
+                            $specificRefundSchedule->save();
+                            $remainingRefund -= $needed;
+                        } else {
+                            $specificRefundSchedule->paid_amount += $remainingRefund;
+                            $specificRefundSchedule->status = 'partial';
+                            $specificRefundSchedule->save();
+                            $remainingRefund = 0;
+                        }
+                    }
+                }
+            }
+
+            if ($remainingRefund > 0) {
+                $refundSchedules = \App\Models\RefundSchedule::where('contract_id', $transaction->contract_id)
+                    ->where('status', '!=', 'paid')
+                    ->orderBy('due_date', 'asc')
+                    ->get();
+                foreach ($refundSchedules as $refundSchedule) {
+                    if ($remainingRefund <= 0) break;
+                    $needed = $refundSchedule->amount - $refundSchedule->paid_amount;
+                    if ($needed <= 0) continue;
+
+                    if ($remainingRefund >= $needed) {
+                        $refundSchedule->paid_amount += $needed;
+                        $refundSchedule->status = 'paid';
+                        $remainingRefund -= $needed;
+                    } else {
+                        $refundSchedule->paid_amount += $remainingRefund;
+                        $refundSchedule->status = 'partial';
+                        $remainingRefund = 0;
+                    }
+                    $refundSchedule->save();
+                }
             }
         }
 
@@ -844,6 +892,30 @@ class FinanceController extends Controller
                         $amountToRevert = 0;
                     }
                     $schedule->save();
+                }
+            }
+
+            // Revert CRM Contract Refund Schedules
+            if ($transaction->contract_id && $transaction->type === 'expense') {
+                $amountToRevert = $transaction->amount;
+                $refundSchedules = \App\Models\RefundSchedule::where('contract_id', $transaction->contract_id)
+                    ->where('paid_amount', '>', 0)
+                    ->orderBy('due_date', 'desc')
+                    ->get();
+
+                foreach ($refundSchedules as $refundSchedule) {
+                    if ($amountToRevert <= 0) break;
+
+                    if ($refundSchedule->paid_amount <= $amountToRevert) {
+                        $amountToRevert -= $refundSchedule->paid_amount;
+                        $refundSchedule->paid_amount = 0;
+                        $refundSchedule->status = 'pending';
+                    } else {
+                        $refundSchedule->paid_amount -= $amountToRevert;
+                        $refundSchedule->status = 'partial';
+                        $amountToRevert = 0;
+                    }
+                    $refundSchedule->save();
                 }
             }
 

@@ -303,10 +303,33 @@ class ContractController extends Controller
 
     public function destroy(\App\Models\Contract $contract)
     {
+        // Revert client counterparty balance if contract was active
+        if ($contract->status === 'active' && $contract->client_id) {
+            $counterparty = \App\Models\Counterparty::where([
+                'customable_type' => 'App\Models\Client',
+                'customable_id' => $contract->client_id,
+            ])->first();
+            if ($counterparty) {
+                $counterparty->increment('balance', $contract->total_amount);
+            }
+        }
+
+        // Delete associated transactions via FinanceController to revert kassa & counterparty balances
+        $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+        $transactions = $contract->transactions()->get();
+        foreach ($transactions as $transaction) {
+            $financeController->destroy($transaction);
+        }
+
         // Free up the unit if contract is destroyed
         if ($contract->unit) {
             $contract->unit->update(['status' => 'available']);
         }
+
+        // Delete payment schedules and refund schedules
+        $contract->paymentSchedules()->delete();
+        $contract->refundSchedules()->delete();
+
         $contract->delete();
         return redirect()->back()->with('message', 'Contract deleted successfully.');
     }
@@ -444,6 +467,33 @@ class ContractController extends Controller
             'message' => 'Shartnoma bekor qilindi',
             'contract' => $contract
         ]);
+    }
+
+    public function generateRefundSchedules(\Illuminate\Http\Request $request, \App\Models\Contract $contract)
+    {
+        $request->validate([
+            'installments' => 'required|array|min:1',
+            'installments.*.amount' => 'required|numeric|min:0.01',
+            'installments.*.due_date' => 'required|date',
+            'installments.*.notes' => 'nullable|string',
+        ]);
+
+        // Delete any existing refund schedules for this contract that have NOT been paid yet
+        $contract->refundSchedules()->where('paid_amount', '<=', 0)->delete();
+
+        foreach ($request->installments as $inst) {
+            \App\Models\RefundSchedule::create([
+                'contract_id' => $contract->id,
+                'client_id' => $contract->client_id,
+                'amount' => $inst['amount'],
+                'paid_amount' => 0,
+                'due_date' => $inst['due_date'],
+                'notes' => $inst['notes'] ?? null,
+                'status' => 'pending'
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Qaytarish grafigi muvaffaqiyatli shakllantirildi.');
     }
 
     public function getCancelledContracts()

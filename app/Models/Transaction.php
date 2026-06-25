@@ -14,7 +14,7 @@ class Transaction extends Model
         'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes',
         'transaction_hash', 'category', 'category_id', 'transaction_date', 'attachment_path', 'contract_id', 'client_id', 'account_type', 'partner_id', 'source',
         'worker_id', 'machinery_id', 'building_id', 'supplier_id', 'latitude', 'longitude', 'work_category',
-        'target_type', 'target_id', 'account_id', 'counterparty_id', 'invoice_id'
+        'target_type', 'target_id', 'account_id', 'counterparty_id', 'invoice_id', 'refund_schedule_id'
     ];
 
     public function creator()
@@ -65,5 +65,10 @@ class Transaction extends Model
     public function building()
     {
         return $this->belongsTo(\App\Models\Building::class);
+    }
+
+    public function refundSchedule()
+    {
+        return $this->belongsTo(\App\Models\RefundSchedule::class, 'refund_schedule_id');
     }
 }

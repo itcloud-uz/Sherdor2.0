@@ -231,4 +231,9 @@ class Contract extends Model
             }
         }
     }
+
+    public function refundSchedules()
+    {
+        return $this->hasMany(RefundSchedule::class);
+    }
 }

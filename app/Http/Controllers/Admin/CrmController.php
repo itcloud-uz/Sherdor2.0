@@ -331,6 +331,7 @@ class CrmController extends Controller
     public function getClientDetails(\App\Models\Client $client)
     {
         $client->load([
+            'comments.user',
             'contracts.unit.floor.building',
             'contracts.paymentSchedules' => function ($query) {
                 $query->orderBy('due_date', 'asc');
@@ -343,6 +344,51 @@ class CrmController extends Controller
         return response()->json([
             'status' => 'success',
             'client' => $client
+        ]);
+    }
+
+    public function addClientComment(Request $request, \App\Models\Client $client)
+    {
+        $validated = $request->validate([
+            'comment' => 'required|string|min:1'
+        ]);
+
+        $comment = $client->comments()->create([
+            'user_id' => auth()->id(),
+            'comment' => $validated['comment']
+        ]);
+
+        $comment->load('user');
+
+        return response()->json([
+            'status' => 'success',
+            'comment' => $comment
+        ]);
+    }
+
+    public function getClientComments(\App\Models\Client $client)
+    {
+        $comments = $client->comments()->with('user')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'comments' => $comments
+        ]);
+    }
+
+    public function updateScheduleNotes(Request $request, \App\Models\PaymentSchedule $schedule)
+    {
+        $validated = $request->validate([
+            'notes' => 'nullable|string'
+        ]);
+
+        $schedule->update([
+            'notes' => $validated['notes']
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'schedule' => $schedule
         ]);
     }
 

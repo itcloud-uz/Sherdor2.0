@@ -196,6 +196,89 @@ function openPassportPreview(url) {
     showPassportLightbox.value = true;
 }
 
+// Comments & Payment Details modals
+const showCommentsModal = ref(false);
+const newCommentText = ref('');
+const isSavingComment = ref(false);
+
+function openCommentsModal() {
+    showCommentsModal.value = true;
+}
+
+function submitClientComment() {
+    if (!newCommentText.value.trim()) return;
+    isSavingComment.value = true;
+    axios.post(route('admin.crm.clients.comments.store', detailedClientData.value.id), {
+        comment: newCommentText.value
+    })
+    .then(response => {
+        if (response.data.status === 'success') {
+            if (!detailedClientData.value.comments) {
+                detailedClientData.value.comments = [];
+            }
+            detailedClientData.value.comments.unshift(response.data.comment);
+            newCommentText.value = '';
+        }
+    })
+    .catch(err => {
+        console.error('Izoh qo\'shishda xatolik:', err);
+        alert('Izoh qo\'shishda xatolik yuz berdi');
+    })
+    .finally(() => {
+        isSavingComment.value = false;
+    });
+}
+
+const showPaymentNotesModal = ref(false);
+const editingScheduleNote = ref(null);
+const newScheduleNoteText = ref('');
+const isSavingScheduleNote = ref(false);
+
+function openPaymentNotesModal() {
+    showPaymentNotesModal.value = true;
+}
+
+function editScheduleNote(schedule) {
+    editingScheduleNote.value = schedule;
+    newScheduleNoteText.value = schedule.notes || '';
+}
+
+function saveScheduleNote() {
+    if (!editingScheduleNote.value) return;
+    isSavingScheduleNote.value = true;
+    axios.put(route('admin.crm.schedules.notes.update', editingScheduleNote.value.id), {
+        notes: newScheduleNoteText.value
+    })
+    .then(response => {
+        if (response.data.status === 'success') {
+            editingScheduleNote.value.notes = response.data.schedule.notes;
+            
+            // Sync with detailedClientData payment schedules list
+            if (detailedClientData.value && detailedClientData.value.contracts && detailedClientData.value.contracts[0]) {
+                const found = detailedClientData.value.contracts[0].payment_schedules.find(s => s.id === editingScheduleNote.value.id);
+                if (found) {
+                    found.notes = response.data.schedule.notes;
+                }
+            }
+            editingScheduleNote.value = null;
+            newScheduleNoteText.value = '';
+        }
+    })
+    .catch(err => {
+        console.error('To\'lov izohini saqlashda xatolik:', err);
+        alert('To\'lov izohini saqlashda xatolik yuz berdi');
+    })
+    .finally(() => {
+        isSavingScheduleNote.value = false;
+    });
+}
+
+const showPaymentHistoryModal = ref(false);
+
+function openPaymentHistoryModal() {
+    showPaymentHistoryModal.value = true;
+}
+
 const loadedScripts = {};
 function loadScript(src) {
     if (loadedScripts[src]) return loadedScripts[src];
@@ -3814,14 +3897,14 @@ const ledgerReportData = computed(() => {
                     <!-- Card 3: Izohlar (Comments) -->
                     <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                            <button @click="openCommentsModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                                 Izoh qo'shish
                             </button>
                         </div>
-                        <a href="#" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                        <a href="#" @click.prevent="openCommentsModal" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
                             Barchasi
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -3864,10 +3947,10 @@ const ledgerReportData = computed(() => {
                         <div class="flex justify-between items-center">
                             <h3 class="text-base font-bold text-gray-900 font-sans">To'lov jadvali</h3>
                             <div class="flex items-center gap-2">
-                                <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                <button @click="openPaymentNotesModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
                                     To'lov izohi
                                 </button>
-                                <button class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                <button @click="openPaymentHistoryModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
                                     To'lov tarixi
                                 </button>
                             </div>
@@ -6939,6 +7022,181 @@ const ledgerReportData = computed(() => {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 💬 Client Comments Modal -->
+        <div v-if="showCommentsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300" @click.self="showCommentsModal = false">
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-gray-150">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex justify-between items-center shrink-0 shadow-md">
+                    <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>💬</span> Mijoz Izohlari (Comments)
+                    </h3>
+                    <button @click="showCommentsModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Comments List -->
+                <div class="flex-1 overflow-auto p-6 space-y-4 bg-slate-50">
+                    <div v-if="detailedClientData?.comments && detailedClientData.comments.length > 0" class="space-y-3">
+                        <div v-for="c in detailedClientData.comments" :key="c.id" class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-1.5 text-xs text-gray-700">
+                            <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold uppercase">
+                                <span class="text-amber-600">{{ c.user?.name || 'Xodim' }}</span>
+                                <span>{{ new Date(c.created_at).toLocaleString() }}</span>
+                            </div>
+                            <p class="leading-relaxed font-medium text-gray-800">{{ c.comment }}</p>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-8 text-gray-400 text-xs">
+                        Hozircha izohlar mavjud emas. Yangi izoh qoldiring.
+                    </div>
+                </div>
+
+                <!-- Add Comment Form -->
+                <form @submit.prevent="submitClientComment" class="p-6 border-t border-gray-100 bg-white shrink-0 space-y-3">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Yangi izoh qo'shish</label>
+                    <textarea v-model="newCommentText" rows="3" required placeholder="Izoh matnini kiriting..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-3 text-xs shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"></textarea>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" @click="showCommentsModal = false" class="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Yopish
+                        </button>
+                        <button type="submit" :disabled="isSavingComment || !newCommentText.trim()" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50">
+                            <span v-if="isSavingComment" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Yuborish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 📝 Payment Notes Modal -->
+        <div v-if="showPaymentNotesModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300" @click.self="showPaymentNotesModal = false">
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-gray-150">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex justify-between items-center shrink-0 shadow-md">
+                    <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>📝</span> To'lov Izohlari (Schedule Notes)
+                    </h3>
+                    <button @click="showPaymentNotesModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Notes List / Edit Form -->
+                <div class="flex-1 overflow-auto p-6 bg-slate-50 space-y-6">
+                    <!-- If editing a specific note -->
+                    <div v-if="editingScheduleNote" class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                            <span>Jadval Row: #{{ editingScheduleNote.id }} ({{ formatDateOnly(editingScheduleNote.due_date) }})</span>
+                            <span class="text-amber-500">{{ Number(editingScheduleNote.expected_amount).toLocaleString() }} so'm</span>
+                        </div>
+                        <textarea v-model="newScheduleNoteText" rows="3" placeholder="Ushbu to'lov uchun izoh kiriting..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-3 text-xs shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"></textarea>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" @click="editingScheduleNote = null" class="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-150 transition-all uppercase tracking-wider">
+                                Orqaga
+                            </button>
+                            <button type="button" @click="saveScheduleNote" :disabled="isSavingScheduleNote" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50">
+                                <span v-if="isSavingScheduleNote" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                Izohni Saqlash
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- List of all schedules with notes -->
+                    <div v-else class="space-y-3">
+                        <div v-for="(s, idx) in detailedClientData?.contracts[0]?.payment_schedules" :key="s.id" class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center gap-4 hover:border-gray-200 transition-colors">
+                            <div class="flex-1 space-y-1">
+                                <div class="flex items-center gap-2 text-[10px] text-gray-400 font-semibold uppercase">
+                                    <span>{{ idx + 1 }}-To'lov</span>
+                                    <span>•</span>
+                                    <span>Sana: {{ formatDateOnly(s.due_date) }}</span>
+                                    <span>•</span>
+                                    <span :class="s.status === 'paid' ? 'text-emerald-600' : 'text-red-500'">{{ s.status.toUpperCase() }}</span>
+                                </div>
+                                <p class="text-xs text-gray-800 font-medium leading-relaxed">
+                                    <span class="text-gray-400 font-normal">Izoh:</span> {{ s.notes || '—' }}
+                                </p>
+                            </div>
+                            <button @click="editScheduleNote(s)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                                ✏️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+                    <button @click="showPaymentNotesModal = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-100 transition-all uppercase tracking-wider">
+                        Yopish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📊 Payment History Modal -->
+        <div v-if="showPaymentHistoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300" @click.self="showPaymentHistoryModal = false">
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-gray-150">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex justify-between items-center shrink-0 shadow-md">
+                    <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>📊</span> Mijoz To'lov Tarixi
+                    </h3>
+                    <button @click="showPaymentHistoryModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Table Content -->
+                <div class="flex-1 overflow-auto p-6 bg-slate-50">
+                    <div v-if="detailedClientData?.contracts[0]?.transactions && detailedClientData.contracts[0].transactions.length > 0" class="overflow-x-auto border border-gray-150 rounded-2xl bg-white shadow-sm">
+                        <table class="w-full border-collapse text-left text-xs whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
+                                    <th class="p-3 text-center w-12 font-mono text-[10px] uppercase">ID</th>
+                                    <th class="p-3 text-center font-mono text-[10px] uppercase">Sana</th>
+                                    <th class="p-3 text-right font-mono text-[10px] uppercase">Summa</th>
+                                    <th class="p-3 text-center font-mono text-[10px] uppercase">To'lov usuli</th>
+                                    <th class="p-3 font-mono text-[10px] uppercase">Izoh</th>
+                                    <th class="p-3 font-mono text-[10px] uppercase">Kassir / Qabul qiluvchi</th>
+                                    <th class="p-3 font-mono text-[10px] uppercase">Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-mono text-xs">
+                                <tr v-for="t in detailedClientData.contracts[0].transactions" :key="t.id" class="hover:bg-slate-50 transition-colors">
+                                    <td class="p-3 text-center text-gray-500">#{{ t.id }}</td>
+                                    <td class="p-3 text-center text-gray-700">
+                                        {{ t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : new Date(t.created_at).toLocaleDateString() }}
+                                    </td>
+                                    <td class="p-3 text-right font-bold text-emerald-600">{{ Number(t.amount || 0).toLocaleString() }} so'm</td>
+                                    <td class="p-3 text-center">
+                                        <span class="px-2 py-0.5 border border-gray-300 rounded text-[9px] uppercase font-bold text-gray-600 bg-gray-50">
+                                            {{ t.payment_method === 'cash' ? 'Naqd' : (t.payment_method === 'card' ? 'Karta' : 'Bank') }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-sans text-gray-800 leading-relaxed truncate max-w-xs" :title="t.notes">{{ t.notes || '—' }}</td>
+                                    <td class="p-3 font-sans text-gray-700">{{ t.creator?.name || '—' }}</td>
+                                    <td class="p-3 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase" :class="t.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : (t.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600')">
+                                            {{ t.status === 'approved' ? 'Tasdiqlangan' : (t.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div v-else class="text-center py-12 text-gray-400 text-xs">
+                        Amalga oshirilgan to'lov tranzaksiyalari topilmadi.
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+                    <button @click="showPaymentHistoryModal = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-100 transition-all uppercase tracking-wider">
+                        Yopish
+                    </button>
+                </div>
             </div>
         </div>
 

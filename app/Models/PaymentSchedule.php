@@ -17,7 +17,8 @@ class PaymentSchedule extends Model
         'last_sms_sent_at',
         'payment_method',
         'actual_payment_date',
-        'original_payment_amount'
+        'original_payment_amount',
+        'notes'
     ];
 
     protected static function booted()

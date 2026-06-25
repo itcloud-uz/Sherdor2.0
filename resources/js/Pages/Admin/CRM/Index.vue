@@ -3378,15 +3378,15 @@ const ledgerReportData = computed(() => {
                         <span>🏢</span> {{ blockName }}
                     </h3>
                     <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                        <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
-                            <thead class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                        <table class="w-full text-left border-collapse text-xs font-sans">
+                            <thead class="bg-[#f8fafc] border-b border-gray-200 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
                                 <tr>
-                                    <th class="p-4">Shartnoma</th>
-                                    <th class="p-4">Mijoz</th>
-                                    <th class="p-4">Boshlang'ich to'lov</th>
-                                    <th class="p-4">Jami Summa</th>
-                                    <th class="p-4">To'langan (Holati)</th>
-                                    <th class="p-4 text-right">Amallar</th>
+                                    <th class="p-4 py-4.5">Shartnoma</th>
+                                    <th class="p-4 py-4.5">Mijoz</th>
+                                    <th class="p-4 py-4.5">Boshlang'ich to'lov</th>
+                                    <th class="p-4 py-4.5">Jami Summa</th>
+                                    <th class="p-4 py-4.5">To'langan (Holati)</th>
+                                    <th class="p-4 py-4.5 text-right w-40">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -3396,7 +3396,7 @@ const ledgerReportData = computed(() => {
                                     @click="openScheduleModal(contract)"
                                     class="hover:bg-gray-50/50 transition-colors cursor-pointer group bg-white"
                                 >
-                                    <td class="p-4">
+                                    <td class="p-4 py-5">
                                         <h3 class="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
                                             {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
                                         </h3>
@@ -3404,7 +3404,7 @@ const ledgerReportData = computed(() => {
                                             {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
                                         </p>
                                     </td>
-                                    <td class="p-4">
+                                    <td class="p-4 py-5">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs shadow-sm shrink-0 bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 text-emerald-600">
                                                  <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
@@ -3418,17 +3418,17 @@ const ledgerReportData = computed(() => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-4 text-sm font-mono text-gray-900/80">
+                                    <td class="p-4 py-5 text-sm font-mono text-gray-900/80">
                                         {{ $currency(contract.down_payment) }}
                                     </td>
-                                    <td class="p-4 text-sm font-mono text-emerald-600 font-bold">
+                                    <td class="p-4 py-5 text-sm font-mono text-emerald-600 font-bold">
                                         {{ $currency(contract.total_amount) }}
                                         <div class="text-[10px] text-gray-500 mt-0.5 font-normal">
                                             <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
                                             <span v-else>{{ contract.term_months }} {{ $t('months') }}</span>
                                         </div>
                                     </td>
-                                    <td class="p-4">
+                                    <td class="p-4 py-5">
                                         <div class="flex flex-col gap-1 w-32">
                                             <div class="flex justify-between items-center">
                                                 <span class="text-xs font-mono text-gray-900">{{ $currency(calculatePaidAmount(contract)) }}</span>
@@ -3442,7 +3442,7 @@ const ledgerReportData = computed(() => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-4 text-right" @click.stop>
+                                    <td class="p-4 py-5 text-right" @click.stop>
                                         <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                                             <button @click="cancelContract(contract.id)" class="w-8 h-8 rounded-full bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors shadow-sm" title="Bekor qilish">
                                                 🚫

@@ -3378,33 +3378,37 @@ const ledgerReportData = computed(() => {
                         <span>🏢</span> {{ blockName }}
                     </h3>
                     <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                        <table class="w-full text-left border-collapse text-xs font-sans">
-                            <thead class="bg-[#f8fafc] border-b border-gray-200 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
+                        <table class="w-full text-left border-collapse text-xs font-sans min-w-[1100px]">
+                            <thead class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
                                 <tr>
-                                    <th class="p-4 py-4.5">Shartnoma</th>
-                                    <th class="p-4 py-4.5">Mijoz</th>
-                                    <th class="p-4 py-4.5">Boshlang'ich to'lov</th>
-                                    <th class="p-4 py-4.5">Jami Summa</th>
-                                    <th class="p-4 py-4.5">To'langan (Holati)</th>
-                                    <th class="p-4 py-4.5 text-right w-40">Amallar</th>
+                                    <th class="p-4 py-4">Shartnoma kodi</th>
+                                    <th class="p-4 py-4">Sana</th>
+                                    <th class="p-4 py-4">Xaridor</th>
+                                    <th class="p-4 py-4">Obyekt / Xonadon</th>
+                                    <th class="p-4 py-4">Maydoni & Narxi</th>
+                                    <th class="p-4 py-4">Boshlang'ich to'lov</th>
+                                    <th class="p-4 py-4">Jami Summa</th>
+                                    <th class="p-4 py-4">To'langan (Holati)</th>
+                                    <th class="p-4 py-4">Holat</th>
+                                    <th class="p-4 py-4 text-right w-40">Amallar</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100">
+                            <tbody class="divide-y divide-gray-150">
                                 <tr 
                                     v-for="contract in contracts" 
                                     :key="contract.id"
                                     @click="openScheduleModal(contract)"
-                                    class="hover:bg-gray-50/50 transition-colors cursor-pointer group bg-white"
+                                    class="hover:bg-emerald-50/15 transition-colors cursor-pointer group bg-white border-b border-gray-100"
                                 >
-                                    <td class="p-4 py-5">
-                                        <h3 class="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                                    <td class="p-4 py-4.5">
+                                        <h3 class="text-xs font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
                                             {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
                                         </h3>
-                                        <p class="text-[10px] font-mono text-blue-600 mt-0.5">
-                                            {{ $t('unit') }}: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
-                                        </p>
                                     </td>
-                                    <td class="p-4 py-5">
+                                    <td class="p-4 py-4.5 text-gray-600 font-mono whitespace-nowrap">
+                                        {{ new Date(contract.created_at).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                                    </td>
+                                    <td class="p-4 py-4.5">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs shadow-sm shrink-0 bg-gradient-to-br from-neon-green/20 to-black border border-emerald-200 text-emerald-600">
                                                  <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
@@ -3413,26 +3417,45 @@ const ledgerReportData = computed(() => {
                                                  </template>
                                              </div>
                                             <div>
-                                                <p class="text-sm text-gray-900 font-bold leading-tight">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
-                                                <span v-if="contract.is_legacy" class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                                <p class="text-xs text-gray-900 font-bold leading-tight">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
+                                                <div class="flex items-center gap-1 mt-0.5">
+                                                    <span class="text-[9px] text-gray-500 font-mono">{{ contract.client?.phone }}</span>
+                                                    <span v-if="contract.is_legacy" class="inline-flex items-center px-1 py-0.2 rounded text-[7px] font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/50 uppercase shadow-sm" title="{{ $t('imported_legacy') }}">{{ $t('imported') }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-4 py-5 text-sm font-mono text-gray-900/80">
-                                        {{ $currency(contract.down_payment) }}
+                                    <td class="p-4 py-4.5">
+                                        <h4 class="text-xs font-bold text-gray-900">
+                                            {{ contract.unit?.unit_number || 'N/A' }}
+                                        </h4>
+                                        <p class="text-[9px] text-gray-500 font-medium mt-0.5">
+                                            {{ contract.unit?.floor?.building?.name || 'Bino' }} • {{ contract.unit?.floor?.floor_number || contract.floor }}-qavat • {{ contract.unit?.rooms_count || contract.rooms || '—' }} xona
+                                        </p>
                                     </td>
-                                    <td class="p-4 py-5 text-sm font-mono text-emerald-600 font-bold">
-                                        {{ $currency(contract.total_amount) }}
-                                        <div class="text-[10px] text-gray-500 mt-0.5 font-normal">
-                                            <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
-                                            <span v-else>{{ contract.term_months }} {{ $t('months') }}</span>
+                                    <td class="p-4 py-4.5">
+                                        <div class="text-xs font-bold text-gray-800">
+                                            {{ contract.unit?.area_sqm || '—' }} m²
+                                        </div>
+                                        <div class="text-[9px] text-gray-500 font-mono mt-0.5">
+                                            {{ $currency(contract.price_per_sqm) }} / m²
                                         </div>
                                     </td>
-                                    <td class="p-4 py-5">
+                                    <td class="p-4 py-4.5 text-xs font-mono text-gray-700">
+                                        {{ $currency(contract.down_payment) }}
+                                    </td>
+                                    <td class="p-4 py-4.5 text-xs font-mono text-emerald-600 font-bold">
+                                        {{ $currency(contract.total_amount) }}
+                                        <div class="text-[9px] text-gray-500 mt-0.5 font-normal">
+                                            <span v-if="contract.payment_type === 'full'" class="text-blue-600 font-bold">Bir martalik</span>
+                                            <span v-else class="text-amber-600 font-bold">{{ contract.term_months }} oy (bo'lib to'lash)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 py-4.5">
                                         <div class="flex flex-col gap-1 w-32">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-xs font-mono text-gray-900">{{ $currency(calculatePaidAmount(contract)) }}</span>
-                                                <span class="text-[10px] text-emerald-600 font-bold">{{ calculateProgress(contract).toFixed(0) }}%</span>
+                                            <div class="flex justify-between items-center text-[10px]">
+                                                <span class="font-mono text-gray-800 font-bold">{{ $currency(calculatePaidAmount(contract)) }}</span>
+                                                <span class="text-emerald-600 font-bold">{{ calculateProgress(contract).toFixed(0) }}%</span>
                                             </div>
                                             <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
                                                 <div 
@@ -3442,15 +3465,27 @@ const ledgerReportData = computed(() => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-4 py-5 text-right" @click.stop>
-                                        <div class="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <td class="p-4 py-4.5">
+                                        <span 
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm"
+                                            :class="{
+                                                'bg-emerald-50 text-emerald-700 border-emerald-200': contract.status === 'active' || contract.status === 'approved',
+                                                'bg-red-50 text-red-700 border-red-200': contract.status === 'cancelled' || contract.status === 'canceled',
+                                                'bg-amber-50 text-amber-700 border-amber-200': contract.status === 'pending' || contract.status === 'draft',
+                                            }"
+                                        >
+                                            {{ contract.status === 'active' || contract.status === 'approved' ? 'Faol' : (contract.status === 'cancelled' || contract.status === 'canceled' ? 'Bekor qilingan' : contract.status) }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 py-4.5 text-right" @click.stop>
+                                        <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                             <button @click="cancelContract(contract.id)" class="w-8 h-8 rounded-full bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors shadow-sm" title="Bekor qilish">
                                                 🚫
                                             </button>
-                                            <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-black transition-colors shadow-sm" title="Tahrirlash">
+                                            <button @click="editContract(contract)" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm" title="Tahrirlash">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                             </button>
-                                            <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-black transition-colors shadow-sm" title="O'chirish">
+                                            <button v-if="isAdmin" @click="deleteContract(contract.id)" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm" title="O'chirish">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </div>

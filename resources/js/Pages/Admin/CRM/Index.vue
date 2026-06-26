@@ -1315,6 +1315,7 @@ const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
 const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
+const showExtraFilters = ref(false);
 
 const showExcelPreviewModal = ref(false);
 
@@ -3541,14 +3542,21 @@ const ledgerReportData = computed(() => {
                     </button>
                 </div>
 
-                <!-- Control bar -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <!-- Left controls: Add + Search -->
-                    <div class="flex flex-wrap items-center gap-4">
-                        <button @click="openCreateClientModal" class="px-5 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
-                            + Qo'shish
+                <!-- Control bar matching user design -->
+                <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 bg-white px-6 py-4 rounded-2xl border border-gray-150 shadow-sm">
+                    <!-- Left side: Back Button + Title -->
+                    <div class="flex items-center gap-3">
+                        <button @click="activeTab = 'dashboard'" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors shadow-sm" title="Orqaga">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
                         </button>
-                        
+                        <h2 class="text-xl font-bold text-gray-900 tracking-tight">Mijozlar</h2>
+                    </div>
+
+                    <!-- Right side: Filters & Actions -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Search Box -->
                         <div class="relative flex items-center">
                             <span class="absolute left-3.5 text-gray-400">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3559,38 +3567,13 @@ const ledgerReportData = computed(() => {
                                 v-model="searchQuery" 
                                 type="text" 
                                 placeholder="Qidirish" 
-                                class="bg-white border border-gray-200 text-gray-800 text-xs rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-64 transition-all"
+                                class="bg-white border border-gray-300 text-gray-800 text-xs rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-48 transition-all"
                             />
                         </div>
-                    </div>
 
-                    <!-- Right controls: Dropdowns + Excel -->
-                    <div class="flex flex-wrap items-center gap-3">
-                        <!-- Obyektlar filter -->
+                        <!-- Status Filter Dropdown -->
                         <div class="relative">
-                            <select v-model="selectedBuildingFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
-                                <option value="">Obyektlar</option>
-                                <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
-                            </select>
-                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                            </span>
-                        </div>
-
-                        <!-- Sotuv menejeri filter -->
-                        <div class="relative">
-                            <select v-model="selectedManagerFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
-                                <option value="">Sotuv menejeri</option>
-                                <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
-                            </select>
-                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                            </span>
-                        </div>
-
-                        <!-- Holat (Tasdiqlangan...) filter -->
-                        <div class="relative">
-                            <select v-model="selectedStatusFilter" class="bg-white border border-gray-200 text-gray-700 text-xs rounded-full pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <select v-model="selectedStatusFilter" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
                                 <option value="">Tasdiqlangan...</option>
                                 <option value="approved">Tasdiqlangan</option>
                                 <option value="pending">Kutilmoqda</option>
@@ -3601,14 +3584,58 @@ const ledgerReportData = computed(() => {
                             </span>
                         </div>
 
-                        <!-- Excel Export Preview Trigger -->
-                        <button @click="openExcelPreviewModal" class="px-5 py-2.5 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-full hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm font-sans">
+                        <!-- Filtr Button to toggle advanced filters -->
+                        <button 
+                            @click="showExtraFilters = !showExtraFilters" 
+                            class="px-4 py-2 bg-white border text-gray-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                            :class="showExtraFilters ? 'border-[#f2a900] text-[#f2a900] bg-amber-50/10' : 'border-gray-300 hover:bg-gray-50'"
+                        >
+                            <svg class="w-4 h-4 text-gray-500" :class="{ 'text-[#f2a900]': showExtraFilters }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 8.293A1 1 0 013 7.586V4z" />
+                            </svg>
+                            Filtr
+                        </button>
+
+                        <!-- Excel Export Button -->
+                        <button @click="openExcelPreviewModal" class="px-4 py-2 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm">
                             <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                 <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
                             </svg>
                             Excel
                         </button>
+
+                        <!-- Add Button -->
+                        <button @click="openCreateClientModal" class="px-4 py-2 bg-white border border-[#f2a900] hover:bg-amber-50/50 text-[#f2a900] text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                            <span class="text-[#f2a900] font-bold text-sm leading-none">+</span> Qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Extra Filters Row (Toggled by showExtraFilters) -->
+                <div v-if="showExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
+                    <!-- Obyektlar filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Obyekt bo'yicha filter</label>
+                        <select v-model="selectedBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha obyektlar</option>
+                            <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Sotuv menejeri filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Menejer bo'yicha filter</label>
+                        <select v-model="selectedManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha menejerlar</option>
+                            <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
                     </div>
                 </div>
 

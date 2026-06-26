@@ -1415,6 +1415,8 @@ const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
 const showExtraFilters = ref(false);
 
+const overdueViewMode = ref('cards');
+
 // Wizard Refs & Computed
 const currentStep = ref(1);
 const selectedPodyezd = ref('');
@@ -1725,18 +1727,18 @@ const availableManagers = computed(() => {
 const filteredClients = computed(() => {
     let result = props.clients || [];
     
+    // Only show clients who don't have contracts
+    result = result.filter(c => !c.contracts || c.contracts.length === 0);
+    
     // Apply tab filter
     if (activeTab.value === 'clients_new') {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        result = result.filter(c => !c.is_blacklisted && (new Date(c.created_at) >= thirtyDaysAgo || !c.contracts || c.contracts.length === 0));
+        result = result.filter(c => !c.is_blacklisted && (new Date(c.created_at) >= thirtyDaysAgo));
     } else if (activeTab.value === 'clients_active') {
-        result = result.filter(c => !c.is_blacklisted && c.contracts?.some(contract => contract.status === 'active' || contract.status === 'approved'));
+        result = [];
     } else if (activeTab.value === 'clients_debtors') {
-        result = result.filter(c => !c.is_blacklisted && c.contracts?.some(contract => 
-            contract.payment_schedules?.some(s => s.status === 'overdue') || 
-            contract.paymentSchedules?.some(s => s.status === 'overdue')
-        ));
+        result = [];
     } else if (activeTab.value === 'clients_blacklist') {
         result = result.filter(c => c.is_blacklisted);
     } else {
@@ -3725,45 +3727,6 @@ const ledgerReportData = computed(() => {
 
             <!-- Clients view when activeTab is not contracts -->
             <div v-else>
-                <!-- Client sub-tabs bar matching design -->
-                <div class="flex flex-wrap items-center gap-1.5 border-b border-gray-200 bg-white px-6 py-3 rounded-2xl mb-6 shadow-sm border border-gray-150">
-                    <button 
-                        @click="activeTab = 'clients'" 
-                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
-                        :class="activeTab === 'clients' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    >
-                        👥 Barchasi
-                    </button>
-                    <button 
-                        @click="activeTab = 'clients_new'" 
-                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
-                        :class="activeTab === 'clients_new' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    >
-                        🟢 Yangi
-                    </button>
-                    <button 
-                        @click="activeTab = 'clients_active'" 
-                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
-                        :class="activeTab === 'clients_active' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    >
-                        🤝 Faol
-                    </button>
-                    <button 
-                        @click="activeTab = 'clients_debtors'" 
-                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
-                        :class="activeTab === 'clients_debtors' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    >
-                        ⏳ Qarzdor
-                    </button>
-                    <button 
-                        @click="activeTab = 'clients_blacklist'" 
-                        class="px-4 py-2 font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
-                        :class="activeTab === 'clients_blacklist' ? 'bg-[#FEF5E7] text-[#D35400] font-bold border border-orange-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    >
-                        ❌ Qora ro'yxat
-                    </button>
-                </div>
-
                 <!-- Control bar matching user design -->
                 <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 bg-white px-6 py-4 rounded-2xl border border-gray-150 shadow-sm">
                     <!-- Left side: Back Button + Title -->
@@ -4887,63 +4850,190 @@ const ledgerReportData = computed(() => {
             </div>
         </div>
 
-        <!-- TAB: QARZDORLAR RADARI (STRICT COLLECTION OVERDUE RADAR) -->
+        <!-- TAB: QARZDORLAR (STRICT COLLECTION + OVERDUE SCHEDULES) -->
         <div v-if="activeTab === 'overdue'" class="space-y-6 font-sans">
             <!-- Header section matching design mockup -->
-            <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex justify-between items-center">
+            <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 class="text-xl font-bold font-sans text-red-600 flex items-center gap-2">
-                        <span>🚨</span> QAT'IY UNDURUV (RASSROCHKA)
+                        <span>⏳</span> Qarzdorlar
                     </h2>
-                    <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Uzoq muddatli va kechikkan to'lovlar radari.</p>
+                    <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Mijozlarning muddati o'tgan to'lovlari va qarzdorliklar nazorati.</p>
                 </div>
-                <a :href="route('admin.crm.export.overdue.excel')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm uppercase font-sans">
-                    📥 Excelga yuklash
-                </a>
-            </div>
-
-            <!-- Debtor Siren Cards Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="groupedStrictCollection && groupedStrictCollection.length > 0">
-                <div 
-                    v-for="group in groupedStrictCollection" 
-                    :key="group.client?.id"
-                    @click="openScheduleModal(group.schedules[0].contract)"
-                    class="bg-white border-2 border-red-100 hover:border-red-400 cursor-pointer rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-between"
-                >
-                    <div class="flex items-center gap-4">
-                        <!-- Red triangle alarm icon -->
-                        <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center shadow-sm shrink-0 border border-red-200 animate-pulse">
-                            ⚠️
-                        </div>
-                        <div>
-                            <p class="text-base font-bold text-gray-900">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
-                            <p class="text-xs text-red-600 mt-1 font-semibold">{{ group.schedules.length }} ta to'lov kechikkan</p>
-                        </div>
-                    </div>
-
-                    <div class="text-right space-y-1">
-                        <div class="text-xs text-gray-500 font-bold uppercase tracking-wider">Kechikkan summa</div>
-                        <div class="text-lg font-bold text-red-600 font-mono">{{ Number(group.total_amount || 0).toLocaleString() }} so'm</div>
-                        <div class="text-xs font-bold text-red-600 bg-red-50 rounded-full px-2.5 py-0.5 inline-block">
-                            max {{ group.max_days }} kun
-                        </div>
-                    </div>
-
-                    <!-- Actions Call & SMS -->
-                    <div class="flex items-center gap-2 shrink-0 ml-4 border-l border-gray-100 pl-4" @click.stop>
-                        <!-- Phone Call -->
-                        <a :href="`tel:${group.phone}`" class="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Qo'ng'iroq qilish">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                        </a>
-                        <!-- Message warning SMS -->
-                        <button @click="sendWarningSms(group.schedules[0].id)" class="w-10 h-10 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="SMS ogohlantirish">
-                            📱
+                
+                <!-- View Selector Toggle + Excel button -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <!-- Toggle Switch Container -->
+                    <div class="bg-gray-100 p-1 rounded-xl flex gap-1 shadow-inner border border-gray-200">
+                        <button 
+                            @click="overdueViewMode = 'cards'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            :class="overdueViewMode === 'cards' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'"
+                        >
+                            🚨 Qat'iy undiruv (Karta)
+                        </button>
+                        <button 
+                            @click="overdueViewMode = 'table'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            :class="overdueViewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'"
+                        >
+                            📊 Barcha qarzdorlar (Jadval)
                         </button>
                     </div>
+
+                    <a :href="route('admin.crm.export.overdue.excel')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm uppercase font-sans shrink-0">
+                        📥 Excelga yuklash
+                    </a>
                 </div>
             </div>
-            <div v-else class="text-center py-20 text-gray-400 font-sans border border-dashed border-gray-200 rounded-2xl bg-white">
-                Strict collection qarzdorliklar topilmadi. 🎉
+
+            <!-- View: Qat'iy undiruv (Cards) -->
+            <div v-if="overdueViewMode === 'cards'" class="space-y-6">
+                <!-- Debtor Siren Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="groupedStrictCollection && groupedStrictCollection.length > 0">
+                    <div 
+                        v-for="group in groupedStrictCollection" 
+                        :key="group.client?.id"
+                        @click="openScheduleModal(group.schedules[0].contract)"
+                        class="bg-white border-2 border-red-100 hover:border-red-400 cursor-pointer rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-between"
+                    >
+                        <div class="flex items-center gap-4">
+                            <!-- Red triangle alarm icon -->
+                            <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center shadow-sm shrink-0 border border-red-200 animate-pulse">
+                                ⚠️
+                            </div>
+                            <div>
+                                <p class="text-base font-bold text-gray-900">{{ group.client?.last_name }} {{ group.client?.first_name }}</p>
+                                <p class="text-xs text-red-600 mt-1 font-semibold">{{ group.schedules.length }} ta to'lov kechikkan</p>
+                            </div>
+                        </div>
+
+                        <div class="text-right space-y-1">
+                            <div class="text-xs text-gray-500 font-bold uppercase tracking-wider">Kechikkan summa</div>
+                            <div class="text-lg font-bold text-red-600 font-mono">{{ Number(group.total_amount || 0).toLocaleString() }} so'm</div>
+                            <div class="text-xs font-bold text-red-600 bg-red-50 rounded-full px-2.5 py-0.5 inline-block">
+                                max {{ group.max_days }} kun
+                            </div>
+                        </div>
+
+                        <!-- Actions Call & SMS -->
+                        <div class="flex items-center gap-2 shrink-0 ml-4 border-l border-gray-100 pl-4" @click.stop>
+                            <!-- Phone Call -->
+                            <a :href="`tel:${group.phone}`" class="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Qo'ng'iroq qilish">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            </a>
+                            <!-- Message warning SMS -->
+                            <button @click="sendWarningSms(group.schedules[0].id)" class="w-10 h-10 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="SMS ogohlantirish">
+                                📱
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="text-center py-20 text-gray-400 font-sans border border-dashed border-gray-200 rounded-2xl bg-white">
+                    Strict collection qarzdorliklar topilmadi. 🎉
+                </div>
+            </div>
+
+            <!-- View: Barcha qarzdorlar (Table) -->
+            <div v-else-if="overdueViewMode === 'table'" class="space-y-6">
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <table class="block w-full overflow-x-auto whitespace-nowrap text-left border-collapse text-xs font-sans">
+                        <thead>
+                            <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                                <th class="p-4 w-12 text-center">ID</th>
+                                <th class="p-4">Mijoz</th>
+                                <th class="p-4">Obyekt / Xonadon</th>
+                                <th class="p-4 text-center">Kechikkan to'lovlar</th>
+                                <th class="p-4">Kechikkan jami summa</th>
+                                <th class="p-4">Maksimal kechikish</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr 
+                                v-for="(group, index) in groupedOverdueSchedules" 
+                                :key="group.client?.id" 
+                                @click="openScheduleModal(group.schedules[0].contract)"
+                                class="hover:bg-gray-50/50 cursor-pointer transition-colors"
+                            >
+                                <!-- ID -->
+                                <td class="p-4 text-center font-medium text-gray-600">{{ index + 1 }}</td>
+                                
+                                <!-- Mijoz -->
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm shadow-sm shrink-0 bg-[#fee2e2] text-[#ef4444]">
+                                             <img v-if="group.client?.profile_photo" :src="'/storage/' + group.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                             <template v-else>
+                                                 {{ getInitials(group.client?.first_name, group.client?.last_name) }}
+                                             </template>
+                                         </div>
+                                        <div>
+                                            <h3 class="text-sm font-bold text-gray-900 leading-tight">
+                                                {{ group.client?.last_name }} {{ group.client?.first_name }}
+                                            </h3>
+                                            <div class="text-xs text-gray-500 mt-1 font-medium">{{ group.phone || 'N/A' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Obyekt / Xonadon -->
+                                <td class="p-4 text-[#0f766e] font-semibold">
+                                    <div v-if="group.schedules[0]?.contract?.unit">
+                                        {{ group.schedules[0].contract.unit.floor?.building?.name || '' }}
+                                        <span class="text-xs text-gray-400 font-normal">
+                                            ({{ group.schedules[0].contract.unit.unit_number }}-xonadon, {{ group.schedules[0].contract.unit.floor?.floor_number }}-qavat)
+                                        </span>
+                                    </div>
+                                    <span v-else>—</span>
+                                </td>
+
+                                <!-- Kechikkan to'lovlar -->
+                                <td class="p-4 text-center text-red-600 font-bold">
+                                    <span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-xs">
+                                        {{ group.schedules.length }} ta
+                                    </span>
+                                </td>
+
+                                <!-- Kechikkan jami summa -->
+                                <td class="p-4 text-[#ef4444] font-bold font-mono text-sm">
+                                    {{ Number(group.total_amount || 0).toLocaleString() }} so'm
+                                </td>
+
+                                <!-- Maksimal kechikish -->
+                                <td class="p-4 text-gray-700 font-semibold font-mono">
+                                    <span class="text-xs font-bold text-red-600 bg-red-50 rounded-full px-2.5 py-0.5 inline-block border border-red-150">
+                                        {{ group.max_days }} kun
+                                    </span>
+                                </td>
+
+                                <!-- Amallar -->
+                                <td class="p-4 text-right" @click.stop>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- Phone Call -->
+                                        <a :href="`tel:${group.phone}`" class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Qo'ng'iroq qilish">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        </a>
+                                        <!-- SMS ogohlantirish -->
+                                        <button @click="sendWarningSms(group.schedules[0].id)" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="SMS ogohlantirish">
+                                            📱
+                                        </button>
+                                        <!-- View details -->
+                                        <button @click="selectClientForDetail(group.client)" class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-all shadow-sm" title="Mijoz haqida">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-if="groupedOverdueSchedules.length === 0" class="py-20 text-center text-gray-400 font-mono text-sm border-t border-gray-100">
+                        Qarzdorlar topilmadi. 🎉
+                    </div>
+                </div>
             </div>
         </div>
 

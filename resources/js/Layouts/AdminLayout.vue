@@ -638,7 +638,7 @@ const formattedDate = computed(() => {
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="isClientsTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >
-                                🚨 Qarzdorlar radari
+                                ⏳ Qarzdorlar
                             </Link>
                         </div>
                     </div>

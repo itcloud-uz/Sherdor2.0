@@ -919,7 +919,12 @@ function getUnitLabel(u) {
     const isCommercial = u.type === 'commercial';
     const typeLabel = isCommercial ? "Do'kon" : 'Xonadon';
     const prefix = isCommercial && /^\d+$/.test(String(u.unit_number).trim()) ? 'D-' : '';
-    return `${typeLabel} ${prefix}${u.unit_number} (Qavat: ${u.floor?.floor_number ?? ''})`;
+    let statusText = '';
+    if (u.status === 'available') statusText = " - Sotuvda";
+    else if (u.status === 'reserved') statusText = " - Band qilingan";
+    else if (u.status === 'sold') statusText = " - Sotilgan";
+    else statusText = " - Noma'lum";
+    return `${typeLabel} ${prefix}${u.unit_number} (Qavat: ${u.floor?.floor_number ?? ''})${statusText}`;
 }
 
 const facilityOptions = computed(() => {
@@ -937,10 +942,12 @@ const buildingOptions = computed(() => {
 });
 
 const unitOptions = computed(() => {
-    return sortedUnitsForSelectedBuilding.value.map(u => ({
-        label: getUnitLabel(u),
-        value: u.id
-    }));
+    return sortedUnitsForSelectedBuilding.value
+        .filter(u => u.status === 'available' || (isEditingContract.value && u.id === contractForm.value.unit_id))
+        .map(u => ({
+            label: getUnitLabel(u),
+            value: u.id
+        }));
 });
 
 const clientsOptions = computed(() => {
@@ -1421,12 +1428,14 @@ const repairType = ref('tamirsiz');
 const allBuildingOptions = computed(() => {
     const buildingsMap = {};
     (props.units || []).forEach(u => {
-        const b = u.floor?.building;
-        if (b) {
-            buildingsMap[b.id] = {
-                label: `${b.name} - ${b.block_name || b.corpus_name || 'Asosiy Blok'}`,
-                value: b.id
-            };
+        if (u.status === 'available') {
+            const b = u.floor?.building;
+            if (b) {
+                buildingsMap[b.id] = {
+                    label: `${b.name} - ${b.block_name || b.corpus_name || 'Asosiy Blok'}`,
+                    value: b.id
+                };
+            }
         }
     });
     return Object.values(buildingsMap);
@@ -1435,6 +1444,7 @@ const allBuildingOptions = computed(() => {
 const availablePodyezds = computed(() => {
     if (!selectedBuildingId.value) return [];
     const podyezds = unitsForSelectedBuilding.value
+        .filter(u => u.status === 'available')
         .map(u => u.podyezd)
         .filter(Boolean);
     return [...new Set(podyezds)].sort((a, b) => Number(a) - Number(b));
@@ -1442,6 +1452,7 @@ const availablePodyezds = computed(() => {
 
 const unitsForSelectedBuildingAndPodyezd = computed(() => {
     let units = unitsForSelectedBuilding.value;
+    units = units.filter(u => u.status === 'available');
     if (selectedPodyezd.value) {
         units = units.filter(u => String(u.podyezd) === String(selectedPodyezd.value));
     }

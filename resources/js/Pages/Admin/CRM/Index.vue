@@ -602,6 +602,16 @@ function deleteLead(id) {
 function openCreateClientModal() {
     isEditingClient.value = false;
     editingClientId.value = null;
+    currentStep.value = 1;
+    selectedPodyezd.value = '';
+    basePrice.value = 0;
+    markupPercent.value = 0;
+    hasDiscount.value = false;
+    discountPercent.value = 0;
+    discountAmount.value = 0;
+    repairType.value = 'tamirsiz';
+    selectedBuildingId.value = '';
+    selectedFacilityName.value = '';
     clientForm.value = {
         first_name: '',
         last_name: '',
@@ -626,12 +636,23 @@ function openCreateClientModal() {
         contract_language: 'O\'zbek tili',
         contract_id: ''
     };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
     showCreateClientModal.value = true;
 }
 
 function openEditClientModal(client) {
     isEditingClient.value = true;
     editingClientId.value = client.id;
+    currentStep.value = 1;
+    selectedPodyezd.value = '';
+    basePrice.value = 0;
+    markupPercent.value = 0;
+    hasDiscount.value = false;
+    discountPercent.value = 0;
+    discountAmount.value = 0;
+    repairType.value = 'tamirsiz';
+    selectedBuildingId.value = '';
+    selectedFacilityName.value = '';
     clientForm.value = { 
         first_name: client.first_name, 
         last_name: client.last_name, 
@@ -656,7 +677,30 @@ function openEditClientModal(client) {
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
     };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
     showCreateClientModal.value = true;
+}
+
+function nextStep() {
+    if (currentStep.value === 1) {
+        if (!clientForm.value.first_name || !clientForm.value.last_name || !clientForm.value.phone) {
+            alert("Iltimos, barcha majburiy maydonlarni to'ldiring (Ism, Familiya, Telefon)!");
+            return;
+        }
+        currentStep.value = 2;
+    } else if (currentStep.value === 2) {
+        if (!contractForm.value.unit_id) {
+            alert("Iltimos, xonadonni tanlang!");
+            return;
+        }
+        currentStep.value = 3;
+    }
+}
+
+function prevStep() {
+    if (currentStep.value > 1) {
+        currentStep.value--;
+    }
 }
 
 function saveClient() {
@@ -673,12 +717,56 @@ function saveClient() {
             onError: () => isProcessing.value = false
         });
     } else {
-        router.post(route('admin.crm.clients.store'), clientForm.value, {
-            onSuccess: () => {
-                showCreateClientModal.value = false;
+        const formData = new FormData();
+        for (const key in clientForm.value) {
+            if (clientForm.value[key] !== null && clientForm.value[key] !== undefined) {
+                formData.append(key, clientForm.value[key]);
+            }
+        }
+        
+        axios.post(route('admin.crm.clients.store'), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Accept': 'application/json'
+            }
+        }).then(response => {
+            if (response.data && response.data.status === 'success') {
+                const client = response.data.client;
+                
+                contractForm.value.client_id = client.id;
+                contractForm.value.buyer_type = 'client';
+                contractForm.value.total_amount = finalContractPrice.value;
+                contractForm.value.price_per_sqm = pricePerSqm.value;
+                
+                const notesArr = [];
+                notesArr.push(`Tamir turi: ${repairType.value === 'tamirli' ? 'Tamirli' : 'Tamirsiz'}`);
+                if (hasDiscount.value) {
+                    notesArr.push(`Chegirma: ${discountPercent.value}% (${discountAmount.value.toLocaleString()} UZS)`);
+                }
+                if (markupPercent.value > 0) {
+                    notesArr.push(`Ustama/Foiz: ${markupPercent.value}%`);
+                }
+                contractForm.value.notes = notesArr.join(' • ');
+                
+                router.post(route('admin.contracts.store'), contractForm.value, {
+                    onSuccess: () => {
+                        showCreateClientModal.value = false;
+                        isProcessing.value = false;
+                        currentStep.value = 1;
+                    },
+                    onError: () => {
+                        isProcessing.value = false;
+                        alert("Mijoz yaratildi, ammo shartnoma kiritishda xatolik yuz berdi. Iltimos shartnomalarni tekshiring!");
+                    }
+                });
+            } else {
                 isProcessing.value = false;
-            },
-            onError: () => isProcessing.value = false
+                alert("Mijozni saqlashda xatolik: " + (response.data?.message || 'Noma\'lum xato'));
+            }
+        }).catch(error => {
+            isProcessing.value = false;
+            const msg = error.response?.data?.message || error.message || 'Noma\'lum server xatosi';
+            alert("Mijozni saqlashda xatolik: " + msg);
         });
     }
 }
@@ -778,6 +866,9 @@ function onFacilityChange() {
 }
 
 function onBuildingChange() {
+    if (typeof selectedPodyezd !== 'undefined') {
+        selectedPodyezd.value = '';
+    }
     contractForm.value.unit_id = '';
 }
 
@@ -1316,6 +1407,126 @@ const selectedBuildingFilter = ref('');
 const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
 const showExtraFilters = ref(false);
+
+// Wizard Refs & Computed
+const currentStep = ref(1);
+const selectedPodyezd = ref('');
+const basePrice = ref(0);
+const markupPercent = ref(0);
+const hasDiscount = ref(false);
+const discountPercent = ref(0);
+const discountAmount = ref(0);
+const repairType = ref('tamirsiz');
+
+const allBuildingOptions = computed(() => {
+    const buildingsMap = {};
+    (props.units || []).forEach(u => {
+        const b = u.floor?.building;
+        if (b) {
+            buildingsMap[b.id] = {
+                label: `${b.name} - ${b.block_name || b.corpus_name || 'Asosiy Blok'}`,
+                value: b.id
+            };
+        }
+    });
+    return Object.values(buildingsMap);
+});
+
+const availablePodyezds = computed(() => {
+    if (!selectedBuildingId.value) return [];
+    const podyezds = unitsForSelectedBuilding.value
+        .map(u => u.podyezd)
+        .filter(Boolean);
+    return [...new Set(podyezds)].sort((a, b) => Number(a) - Number(b));
+});
+
+const unitsForSelectedBuildingAndPodyezd = computed(() => {
+    let units = unitsForSelectedBuilding.value;
+    if (selectedPodyezd.value) {
+        units = units.filter(u => String(u.podyezd) === String(selectedPodyezd.value));
+    }
+    return units;
+});
+
+const sortedUnitsForSelectedBuildingAndPodyezd = computed(() => {
+    return [...unitsForSelectedBuildingAndPodyezd.value].sort((a, b) => {
+        const floorA = a.floor?.floor_number || 0;
+        const floorB = b.floor?.floor_number || 0;
+        if (floorA !== floorB) {
+            return floorA - floorB;
+        }
+        const numA = String(a.unit_number).replace(/\D/g, '');
+        const numB = String(b.unit_number).replace(/\D/g, '');
+        return (Number(numA) || 0) - (Number(numB) || 0);
+    });
+});
+
+const wizardUnitOptions = computed(() => {
+    return sortedUnitsForSelectedBuildingAndPodyezd.value.map(u => ({
+        label: getUnitLabel(u),
+        value: u.id
+    }));
+});
+
+const markupPrice = computed(() => {
+    return Math.round(basePrice.value * (1 + markupPercent.value / 100));
+});
+
+const pricePerSqm = computed(() => {
+    const area = Number(selectedUnit.value?.area_sqm) || 1;
+    return Math.round(basePrice.value / area);
+});
+
+const finalContractPrice = computed(() => {
+    let price = markupPrice.value;
+    if (hasDiscount.value) {
+        price = price - discountAmount.value;
+    }
+    return price;
+});
+
+
+function onPodyezdChange() {
+    contractForm.value.unit_id = '';
+}
+
+// Watchers for discount
+watch(discountPercent, (newVal) => {
+    if (hasDiscount.value) {
+        discountAmount.value = Math.round(markupPrice.value * (Number(newVal) / 100));
+    }
+});
+
+watch(discountAmount, (newVal) => {
+    if (hasDiscount.value && markupPrice.value > 0) {
+        discountPercent.value = Number(((Number(newVal) / markupPrice.value) * 100).toFixed(2));
+    }
+});
+
+watch(finalContractPrice, (newPrice) => {
+    contractForm.value.total_amount = newPrice;
+    if (contractForm.value.payment_type === 'installment') {
+        contractForm.value.down_payment = Math.round(newPrice * 0.3);
+    } else {
+        contractForm.value.down_payment = newPrice;
+    }
+});
+
+watch(hasDiscount, (newVal) => {
+    if (!newVal) {
+        discountPercent.value = 0;
+        discountAmount.value = 0;
+    }
+});
+
+watch(() => contractForm.value.unit_id, (newUnitId) => {
+    if (newUnitId && !isEditingClient.value) {
+        const u = props.units.find(unit => unit.id === newUnitId);
+        if (u) {
+            basePrice.value = Number(u.price) || 0;
+        }
+    }
+});
 
 const showExcelPreviewModal = ref(false);
 
@@ -5682,16 +5893,60 @@ const ledgerReportData = computed(() => {
                 </button>
             </div>
 
-                <form @submit.prevent="saveClient" class="space-y-6">
+            <!-- Stepper Progress Header -->
+            <div v-if="!isEditingClient" class="mb-8 max-w-4xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <!-- Step 1: Mijoz ma'lumotlari -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep > 1 ? 'bg-[#f2a900] text-white' : (currentStep === 1 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400')">
+                            <span v-if="currentStep > 1">✓</span>
+                            <span v-else>1</span>
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 1 ? 'text-gray-900 font-bold' : 'text-gray-400'">Mijoz ma'lumotlari</span>
+                    </div>
+
+                    <!-- Divider Line 1-2 -->
+                    <div class="flex-1 h-0.5 mx-4 transition-all duration-500"
+                         :class="currentStep > 1 ? 'bg-[#f2a900]' : 'bg-gray-100'"></div>
+
+                    <!-- Step 2: Shartnoma va xonadon -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep > 2 ? 'bg-[#f2a900] text-white' : (currentStep === 2 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400')">
+                            <span v-if="currentStep > 2">✓</span>
+                            <span v-else>2</span>
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-400'">Shartnoma va xonadon</span>
+                    </div>
+
+                    <!-- Divider Line 2-3 -->
+                    <div class="flex-1 h-0.5 mx-4 transition-all duration-500"
+                         :class="currentStep > 2 ? 'bg-[#f2a900]' : 'bg-gray-100'"></div>
+
+                    <!-- Step 3: To'lov ma'lumotlari -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep === 3 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400'">
+                            3
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 3 ? 'text-gray-900 font-bold' : 'text-gray-400'">To'lov ma'lumotlari</span>
+                    </div>
+                </div>
+            </div>
+
+            <form @submit.prevent="saveClient" class="space-y-6">
+                <!-- STEP 1: Mijoz ma'lumotlari -->
+                <div v-show="isEditingClient || currentStep === 1" class="space-y-6">
                     <!-- Row 1: Familiya, Ism, Otasining ismi -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Familiya</label>
-                            <input v-model="clientForm.last_name" type="text" placeholder="Familiyasini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Familiya</label>
+                            <input v-model="clientForm.last_name" type="text" placeholder="Familiyasini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" :required="isEditingClient || currentStep === 1">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ism</label>
-                            <input v-model="clientForm.first_name" type="text" placeholder="Ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Ism</label>
+                            <input v-model="clientForm.first_name" type="text" placeholder="Ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" :required="isEditingClient || currentStep === 1">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Otasining ismi</label>
@@ -5761,9 +6016,9 @@ const ledgerReportData = computed(() => {
                             <input v-model="clientForm.pinfl" type="text" placeholder="JSHSHIR ni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqam</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Telefon raqam</label>
                             <div class="relative">
-                                <input v-model="clientForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10" required>
+                                <input v-model="clientForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10" :required="isEditingClient || currentStep === 1">
                                 <button type="button" @click="clientForm.phone = '+998'" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -5772,7 +6027,7 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqam</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqam (Qo'shimcha)</label>
                             <div class="relative">
                                 <input v-model="clientForm.phone_2" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10">
                                 <button type="button" @click="clientForm.phone_2 = '+998'" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
@@ -5784,7 +6039,7 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) va Shartnoma tili -->
+                    <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) va Shartnoma tili (if editing) -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Old tomon)</label>
@@ -5829,7 +6084,7 @@ const ledgerReportData = computed(() => {
                                 <input type="file" class="hidden" @change="e => { clientForm.passport_photo_back = e.target.files[0] }">
                             </label>
                         </div>
-                        <div>
+                        <div v-if="isEditingClient">
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Shartnoma tili</label>
                             <div class="relative">
                                 <select v-model="clientForm.contract_language" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
@@ -5842,17 +6097,256 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex justify-center gap-4 pt-4">
-                        <button type="button" @click="showCreateClientModal = false" class="px-8 py-3 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[140px]">
+                <!-- STEP 2: Shartnoma va xonadon -->
+                <div v-show="!isEditingClient && currentStep === 2" class="space-y-6">
+                    <!-- Row 1: Source, Language, Contract Number -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Biz haqimizda qayerdan bildingiz?</label>
+                            <div class="relative">
+                                <select v-model="clientForm.source" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
+                                    <option value="" disabled>Tanlang</option>
+                                    <option value="Website">Website</option>
+                                    <option value="Telegram">Telegram</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Tanish bilish">Tanish bilish</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Shartnoma tili</label>
+                            <div class="relative">
+                                <select v-model="clientForm.contract_language" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
+                                    <option value="O'zbek tili">O'zbek tili</option>
+                                    <option value="Rus tili">Rus tili</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
+                            <div class="relative">
+                                <input v-model="contractForm.contract_number" type="text" placeholder="Shartnoma kodi kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all placeholder:text-gray-400">
+                                <span class="absolute right-4 top-3.5 text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Building, Entrance, Unit -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Bino</label>
+                            <div class="relative">
+                                <select v-model="selectedBuildingId" @change="onBuildingChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
+                                    <option value="">Blokni tanlang</option>
+                                    <option v-for="opt in allBuildingOptions" :key="opt.value" :value="opt.value">
+                                        {{ opt.label }}
+                                    </option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Podezd</label>
+                            <div class="relative">
+                                <select v-model="selectedPodyezd" @change="onPodyezdChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
+                                    <option value="">Podezdni tanlang</option>
+                                    <option v-for="p in availablePodyezds" :key="p" :value="p">
+                                        {{ p }}
+                                    </option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Xonadon</label>
+                            <div class="relative">
+                                <select v-model="contractForm.unit_id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
+                                    <option value="">Xonadonni tanlang</option>
+                                    <option v-for="opt in wizardUnitOptions" :key="opt.value" :value="opt.value">
+                                        {{ opt.label }}
+                                    </option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: To'lov ma'lumotlari -->
+                <div v-show="!isEditingClient && currentStep === 3" class="space-y-6">
+                    <!-- Row 1: Base Price, Markup Price, Price per Sqm, Area -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Uy narxi</label>
+                            <div class="relative flex items-center">
+                                <input type="text" readonly :value="basePrice.toLocaleString()" class="w-full bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-xl pl-4 pr-12 py-3 cursor-not-allowed font-medium">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ustama bilan uy narxi</label>
+                            <div class="relative flex items-center">
+                                <input type="text" readonly :value="markupPrice.toLocaleString()" class="w-full bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-xl pl-4 pr-12 py-3 cursor-not-allowed font-medium">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">1 m² maydon narxi (Ustamasiz)</label>
+                            <div class="relative flex items-center">
+                                <input type="text" readonly :value="pricePerSqm.toLocaleString()" class="w-full bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-xl pl-4 pr-12 py-3 cursor-not-allowed font-medium">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Maydoni</label>
+                            <div class="relative flex items-center">
+                                <input type="text" readonly :value="selectedUnit?.area_sqm || '0'" class="w-full bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-xl pl-4 pr-12 py-3 cursor-not-allowed font-medium">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">m²</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Repair type, Payment type, Markup %, Downpayment -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tamir turi</label>
+                            <div class="flex bg-gray-100 p-1 rounded-xl h-[42px] items-center">
+                                <button type="button" @click="repairType = 'tamirli'"
+                                        class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                                        :class="repairType === 'tamirli' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                                    Tamirli
+                                </button>
+                                <button type="button" @click="repairType = 'tamirsiz'"
+                                        class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                                        :class="repairType === 'tamirsiz' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                                    Tamirsiz
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Bo'lib to'lash turi</label>
+                            <div class="relative">
+                                <select v-model="contractForm.payment_type" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 3">
+                                    <option value="installment">Bo'lib to'lash</option>
+                                    <option value="full">Bir martalik to'liq to'lov</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Foiz stavkasi (%)</label>
+                            <input v-model.number="markupPercent" type="number" min="0" placeholder="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all" :required="!isEditingClient && currentStep === 3">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Oldindan to'lov</label>
+                            <div class="relative flex items-center">
+                                <input v-model.number="contractForm.down_payment" type="number" min="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-24 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all" :required="!isEditingClient && currentStep === 3">
+                                <span class="absolute right-4 text-[10px] font-semibold text-gray-400 pointer-events-none">
+                                    {{ finalContractPrice > 0 ? Math.round((contractForm.down_payment / finalContractPrice) * 100) : 0 }}% • UZS
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Term months, Discount toggle -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+                        <div v-if="contractForm.payment_type === 'installment'">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Nechi oyda bo'lib to'lash</label>
+                            <div class="relative">
+                                <select v-model.number="contractForm.term_months" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 3 && contractForm.payment_type === 'installment'">
+                                    <option value="" disabled>Tanlang</option>
+                                    <option :value="12">12 oy</option>
+                                    <option :value="18">18 oy</option>
+                                    <option :value="24">24 oy</option>
+                                    <option :value="36">36 oy</option>
+                                    <option :value="48">48 oy</option>
+                                </select>
+                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3" :class="contractForm.payment_type === 'installment' ? 'pt-6' : ''">
+                            <button type="button" @click="hasDiscount = !hasDiscount"
+                                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none animate-all"
+                                    :class="hasDiscount ? 'bg-[#f2a900]' : 'bg-gray-200'">
+                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                      :class="hasDiscount ? 'translate-x-5' : 'translate-x-0'"></span>
+                            </button>
+                            <span class="text-xs font-semibold text-gray-700">Chegirma</span>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Discount details -->
+                    <div v-if="hasDiscount" class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Chegirma foizi</label>
+                            <div class="relative flex items-center">
+                                <input v-model.number="discountPercent" type="number" min="0" max="100" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Chegirma miqdori</label>
+                            <div class="relative flex items-center">
+                                <input v-model.number="discountAmount" type="number" min="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-16 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all">
+                                <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-6 border-t border-gray-150 mt-8">
+                    <template v-if="isEditingClient">
+                        <button type="button" @click="showCreateClientModal = false"
+                                class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px]">
                             Bekor qilish
                         </button>
-                        <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[140px] shadow-sm disabled:opacity-50">
-                            Qo'shish
+                        <button type="submit" :disabled="isProcessing"
+                                class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm disabled:opacity-50">
+                            {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}
                         </button>
-                    </div>
-                </form>
+                    </template>
+                    <template v-else>
+                        <button v-if="currentStep > 1" type="button" @click="prevStep"
+                                class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px]">
+                            Orqaga
+                        </button>
+                        <button v-else type="button" @click="showCreateClientModal = false"
+                                class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px]">
+                            Bekor qilish
+                        </button>
+                        
+                        <button v-if="currentStep < 3" type="button" @click="nextStep"
+                                class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm">
+                            Davom etish
+                        </button>
+                        <button v-else type="submit" :disabled="isProcessing"
+                                class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm disabled:opacity-50">
+                            {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}
+                        </button>
+                    </template>
+                </div>
+            </form>
         </div>
 
         <!-- MODAL: CREATE CONTRACT -->

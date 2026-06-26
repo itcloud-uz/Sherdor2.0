@@ -3831,11 +3831,6 @@ const ledgerReportData = computed(() => {
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
                                 <th class="p-4 w-12 text-center">ID</th>
                                 <th class="p-4">Ism</th>
-                                <th class="p-4">Bino</th>
-                                <th class="p-4">Blok</th>
-                                <th class="p-4">Xonadon</th>
-                                <th class="p-4">Qavat</th>
-                                <th class="p-4">Uy narxi</th>
                                 <th class="p-4">Yaratilgan</th>
                                 <th class="p-4">Holat</th>
                                 <th class="p-4 text-right">Amallar</th>
@@ -3866,31 +3861,6 @@ const ledgerReportData = computed(() => {
                                             <div class="text-xs text-gray-500 mt-1 font-medium">{{ client.phone || 'N/A' }}</div>
                                         </div>
                                     </div>
-                                </td>
-                                
-                                <!-- Bino -->
-                                <td class="p-4 text-[#0f766e] font-semibold">
-                                    {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
-                                </td>
-                                
-                                <!-- Blok -->
-                                <td class="p-4 text-[#0f766e] font-semibold">
-                                    {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || (getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + ' Podezd' : '—') }}
-                                </td>
-                                
-                                <!-- Xonadon -->
-                                <td class="p-4 text-[#0f766e] font-semibold">
-                                    {{ getClientLatestContract(client)?.unit?.unit_number ? getClientLatestContract(client).unit.unit_number + '-Xonadon' : '—' }}
-                                </td>
-                                
-                                <!-- Qavat -->
-                                <td class="p-4 text-[#0f766e] font-semibold">
-                                    {{ getClientLatestContract(client)?.unit?.floor?.floor_number ? getClientLatestContract(client).unit.floor.floor_number + '-Qavat' : '—' }}
-                                </td>
-                                
-                                <!-- Uy narxi -->
-                                <td class="p-4 text-[#ef4444] font-bold">
-                                    {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('uz-UZ') + " so'm" : '—' }}
                                 </td>
                                 
                                 <!-- Yaratilgan -->

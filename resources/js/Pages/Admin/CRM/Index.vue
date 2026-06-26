@@ -3826,7 +3826,7 @@ const ledgerReportData = computed(() => {
 
                 <!-- Table -->
                 <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left border-collapse text-xs font-sans">
+                    <table class="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                         <thead>
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
                                 <th class="p-4 w-12 text-center">ID</th>
@@ -4937,7 +4937,7 @@ const ledgerReportData = computed(() => {
             <!-- View: Barcha qarzdorlar (Table) -->
             <div v-else-if="overdueViewMode === 'table'" class="space-y-6">
                 <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <table class="block w-full overflow-x-auto whitespace-nowrap text-left border-collapse text-xs font-sans">
+                    <table class="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                         <thead>
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
                                 <th class="p-4 w-12 text-center">ID</th>

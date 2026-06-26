@@ -1450,6 +1450,29 @@ function submitContract() {
 
 const showUnifiedSellModal = ref(false);
 const isProcessingUnified = ref(false);
+const currentStep = ref(1);
+
+function nextStep() {
+    if (currentStep.value === 1) {
+        if (!quickClientForm.value.first_name || !quickClientForm.value.last_name || !quickClientForm.value.phone) {
+            alert("Iltimos, barcha majburiy maydonlarni to'ldiring (Ism, Familiya, Telefon)!");
+            return;
+        }
+        currentStep.value = 2;
+    } else if (currentStep.value === 2) {
+        if (!quickClientForm.value.source) {
+            alert("Iltimos, 'Biz haqimizda qayerdan bildingiz?' maydonini to'ldiring!");
+            return;
+        }
+        currentStep.value = 3;
+    }
+}
+
+function prevStep() {
+    if (currentStep.value > 1) {
+        currentStep.value--;
+    }
+}
 const quickClientForm = ref({
     first_name: '',
     last_name: '',
@@ -1630,6 +1653,7 @@ function onQuickDistrictChange() {
 }
 
 function openQuickClientAdd() {
+    currentStep.value = 1;
     quickClientForm.value = {
         first_name: '',
         last_name: '',
@@ -5143,8 +5167,51 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </button>
             </div>
 
-                <form @submit.prevent="submitUnifiedSell" class="space-y-6 text-left">
-                    <!-- SECTION 1: Mijoz qo'shish -->
+            <!-- Stepper Progress Header -->
+            <div class="mb-8 max-w-4xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <!-- Step 1: Mijoz ma'lumotlari -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep > 1 ? 'bg-[#f2a900] text-white' : (currentStep === 1 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400')">
+                            <span v-if="currentStep > 1">✓</span>
+                            <span v-else>1</span>
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 1 ? 'text-gray-900 font-bold' : 'text-gray-400'">Mijoz ma'lumotlari</span>
+                    </div>
+
+                    <!-- Divider Line 1-2 -->
+                    <div class="flex-1 h-0.5 mx-4 transition-all duration-500"
+                         :class="currentStep > 1 ? 'bg-[#f2a900]' : 'bg-gray-100'"></div>
+
+                    <!-- Step 2: Shartnoma va xonadon -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep > 2 ? 'bg-[#f2a900] text-white' : (currentStep === 2 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400')">
+                            <span v-if="currentStep > 2">✓</span>
+                            <span v-else>2</span>
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-400'">Shartnoma va xonadon</span>
+                    </div>
+
+                    <!-- Divider Line 2-3 -->
+                    <div class="flex-1 h-0.5 mx-4 transition-all duration-500"
+                         :class="currentStep > 2 ? 'bg-[#f2a900]' : 'bg-gray-100'"></div>
+
+                    <!-- Step 3: To'lov ma'lumotlari -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                             :class="currentStep === 3 ? 'bg-[#f2a900] text-white ring-4 ring-amber-100' : 'bg-gray-100 text-gray-400'">
+                            3
+                        </div>
+                        <span class="text-xs font-semibold" :class="currentStep === 3 ? 'text-gray-900 font-bold' : 'text-gray-400'">To'lov ma'lumotlari</span>
+                    </div>
+                </div>
+            </div>
+
+            <form @submit.prevent="submitUnifiedSell" class="space-y-6 text-left">
+                <!-- STEP 1: Mijoz ma'lumotlari -->
+                <div v-show="currentStep === 1" class="space-y-6">
                     <div>
                         <h3 class="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-1.5 h-4 bg-amber-500 rounded-full"></span>
@@ -5154,11 +5221,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Familiya</label>
-                                <input v-model="quickClientForm.last_name" type="text" placeholder="Familiyasini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
+                                <input v-model="quickClientForm.last_name" type="text" placeholder="Familiyasini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" :required="currentStep === 1">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ism</label>
-                                <input v-model="quickClientForm.first_name" type="text" placeholder="Ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
+                                <input v-model="quickClientForm.first_name" type="text" placeholder="Ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" :required="currentStep === 1">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Otasining ismi</label>
@@ -5230,7 +5297,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon raqam</label>
                                 <div class="relative">
-                                    <input v-model="quickClientForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10" required>
+                                    <input v-model="quickClientForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all pr-10" :required="currentStep === 1">
                                     <button type="button" @click="quickClientForm.phone = '+998'" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -5251,8 +5318,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
 
-                        <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) va Shartnoma tili -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end mt-4">
+                        <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-end mt-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Old tomon)</label>
                                 <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
@@ -5296,10 +5363,38 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     <input type="file" class="hidden" @change="e => { quickClientForm.passport_photo_back = e.target.files[0] }">
                                 </label>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Shartnoma va xonadon -->
+                <div v-show="currentStep === 2" class="space-y-6">
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-1.5 h-4 bg-[#f2a900] rounded-full"></span>
+                            2. Shartnoma va xonadon
+                        </h3>
+                        <!-- Row 1: Source, Language, Contract ID -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shartnoma tili</label>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Biz haqimizda qayerdan bildingiz?</label>
                                 <div class="relative">
-                                    <select v-model="quickClientForm.contract_language" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                    <select v-model="quickClientForm.source" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="currentStep === 2">
+                                        <option value="" disabled>Tanlang</option>
+                                        <option value="Website">Website</option>
+                                        <option value="Telegram">Telegram</option>
+                                        <option value="Instagram">Instagram</option>
+                                        <option value="Tanish bilish">Tanish bilish</option>
+                                    </select>
+                                    <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Shartnoma tili</label>
+                                <div class="relative">
+                                    <select v-model="quickClientForm.contract_language" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="currentStep === 2">
                                         <option value="O'zbek tili">O'zbek tili</option>
                                         <option value="Rus tili">Rus tili</option>
                                     </select>
@@ -5308,44 +5403,52 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- SECTION 2: Xonadon ma'lumotlari -->
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                            <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
-                            2. Xonadon ma'lumotlari
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 bg-gray-50 p-5 rounded-2xl border border-gray-200 text-xs">
                             <div>
-                                <span class="text-gray-500 block mb-1">Xonadon:</span>
-                                <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.unit_number || 'N/A' }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-500 block mb-1">Bino / Podezd:</span>
-                                <strong class="text-gray-900 text-sm font-bold">{{ selectedFloor?.building?.name || 'N/A' }} / {{ currentSellingUnit?.podyezd || '1' }}-podezd</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-500 block mb-1">Qavat:</span>
-                                <strong class="text-gray-900 text-sm font-bold">{{ selectedFloor?.floor_number }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-500 block mb-1">Xonalar soni:</span>
-                                <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.rooms_count || '1' }} xona</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-500 block mb-1">Maydoni:</span>
-                                <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.area_sqm || 'N/A' }} m²</strong>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma id</label>
+                                <div class="relative">
+                                    <input v-model="quickClientForm.contract_id" type="text" placeholder="Shartnoma kodi kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all placeholder:text-gray-400">
+                                    <span class="absolute right-4 top-3.5 text-gray-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- SECTION 3: Shartnoma va to'lov -->
-                    <div class="border-t border-gray-200 pt-6">
+                        <!-- Tanlang Xonadon (Read only) -->
+                        <div class="mt-6">
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Tanlangan xonadon ma'lumotlari</label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 bg-gray-50 p-5 rounded-2xl border border-gray-200 text-xs">
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Xonadon:</span>
+                                    <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.unit_number || 'N/A' }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Bino / Podezd:</span>
+                                    <strong class="text-gray-900 text-sm font-bold">{{ selectedFloor?.building?.name || 'N/A' }} / {{ currentSellingUnit?.podyezd || '1' }}-podezd</strong>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Qavat:</span>
+                                    <strong class="text-gray-900 text-sm font-bold">{{ selectedFloor?.floor_number }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Xonalar soni:</span>
+                                    <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.rooms_count || '1' }} xona</strong>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Maydoni:</span>
+                                    <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.area_sqm || 'N/A' }} m²</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: To'lov ma'lumotlari -->
+                <div v-show="currentStep === 3" class="space-y-6">
+                    <div>
                         <h3 class="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-1.5 h-4 bg-blue-500 rounded-full"></span>
-                            3. Shartnoma va to'lov
+                            3. To'lov ma'lumotlari
                         </h3>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -5393,7 +5496,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div v-if="contractForm.is_down_payment_split" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-2">
                                 <div>
                                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Boshlang'ich to'lov muddati (oy)</label>
-                                    <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" required />
+                                    <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" :required="contractForm.is_down_payment_split" />
                                 </div>
                             </div>
                             <div v-if="contractForm.is_down_payment_split" class="text-xs text-amber-700 font-sans">
@@ -5401,18 +5504,26 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex justify-center gap-4 pt-6 border-t border-gray-200">
-                        <button type="button" @click="showUnifiedSellModal = false" class="px-8 py-3 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[140px]">
-                            Bekor qilish
-                        </button>
-                        <button type="submit" :disabled="isProcessingUnified" class="px-8 py-3 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[140px] shadow-sm disabled:opacity-50 flex items-center justify-center gap-2">
-                            <span v-if="isProcessingUnified" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            Qo'shish
-                        </button>
-                    </div>
-                </form>
+                <!-- Action Buttons -->
+                <div class="flex justify-center gap-4 pt-6 border-t border-gray-200">
+                    <button v-if="currentStep > 1" type="button" @click="prevStep" class="px-8 py-3 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[140px]">
+                        Orqaga
+                    </button>
+                    <button v-else type="button" @click="showUnifiedSellModal = false" class="px-8 py-3 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[140px]">
+                        Bekor qilish
+                    </button>
+                    
+                    <button v-if="currentStep < 3" type="button" @click="nextStep" class="px-8 py-3 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[140px] shadow-sm">
+                        Davom etish
+                    </button>
+                    <button v-else type="submit" :disabled="isProcessingUnified" class="px-8 py-3 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[140px] shadow-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                        <span v-if="isProcessingUnified" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Saqlash
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- 👁️ Showroom Fullscreen Modal -->

@@ -11,7 +11,7 @@ class ClientExportController extends Controller
 {
     public function exportExcel(Request $request)
     {
-        $clients = Client::with('contracts.unit')->latest()->get();
+        $clients = Client::doesntHave('contracts')->latest()->get();
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -27,13 +27,9 @@ class ClientExportController extends Controller
             // Add BOM to fix UTF-8 in Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Shartnomalar', 'Ro\'yxatga olingan sana'], ';');
+            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Ro\'yxatga olingan sana'], ';');
 
             foreach ($clients as $client) {
-                $contractsList = $client->contracts->map(function($c) {
-                    return $c->contract_number . " (" . ($c->unit ? 'Unit: ' . $c->unit->unit_number : '') . ")";
-                })->join(', ');
-
                 fputcsv($file, [
                     $client->id,
                     $client->last_name,
@@ -42,7 +38,6 @@ class ClientExportController extends Controller
                     $client->phone ? '="' . $client->phone . '"' : '',
                     $client->passport_number ?? $client->passport_series,
                     $client->pinfl ? '="' . $client->pinfl . '"' : '',
-                    $contractsList ?: 'Shartnoma yo\'q',
                     $client->created_at->format('Y-m-d H:i')
                 ], ';');
             }

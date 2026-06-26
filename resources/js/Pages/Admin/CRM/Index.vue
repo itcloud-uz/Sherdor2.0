@@ -7214,27 +7214,17 @@ const ledgerReportData = computed(() => {
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">C</th>
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">D</th>
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">E</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">F</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">G</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">H</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">I</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">J</th>
-                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">K</th>
+                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">F</th>
                                 </tr>
                                 <!-- Column header names (Row 1) -->
                                 <tr class="border-b border-gray-300 text-center font-bold text-gray-700 bg-gray-50/50">
                                     <td class="border-r border-gray-200 py-1.5 bg-[#f1f3f4] text-gray-400 font-medium text-center">1</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 text-left font-bold text-gray-900">Ф.И.О.</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Тугилган сана</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Шартнома берилgan sana</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Объект</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Блок</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Подъезд</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Этаж</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Хонадон рақами</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Нархи</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Телефон</td>
-                                    <td class="px-3 py-1.5 font-bold text-gray-900">ЖШШИР</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">ЖШШИР</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Паспорт</td>
+                                    <td class="px-3 py-1.5 font-bold text-gray-900">Қоʻшилган сана</td>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 font-mono text-[11px]">
@@ -7251,41 +7241,21 @@ const ledgerReportData = computed(() => {
                                     <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
                                         {{ getDummyBirthDate(client) }}
                                     </td>
-                                    <!-- Shartnoma berilgan sana -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
-                                        {{ getClientLatestContract(client) ? formatDateOnly(getClientLatestContract(client).created_at) : '—' }}
-                                    </td>
-                                    <!-- Obyekt -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans font-medium text-gray-700">
-                                        {{ getClientLatestContract(client)?.unit?.floor?.building?.name || '—' }}
-                                    </td>
-                                    <!-- Blok -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans text-gray-700">
-                                        {{ getClientLatestContract(client)?.unit?.floor?.building?.block_name || getClientLatestContract(client)?.unit?.floor?.building?.corpus_name || '—' }}
-                                    </td>
-                                    <!-- Pod'ezd -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans text-gray-700">
-                                        {{ getClientLatestContract(client)?.unit?.podyezd ? getClientLatestContract(client).unit.podyezd + '-padezd' : '—' }}
-                                    </td>
-                                    <!-- Etaj -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-semibold text-gray-800">
-                                        {{ getClientLatestContract(client)?.unit?.floor?.floor_number || '—' }}
-                                    </td>
-                                    <!-- Xonadon raqami -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-semibold text-gray-800">
-                                        {{ getClientLatestContract(client)?.unit?.unit_number || '—' }}
-                                    </td>
-                                    <!-- Narxi -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-right font-bold text-gray-900">
-                                        {{ getClientLatestContract(client)?.total_amount ? Number(getClientLatestContract(client).total_amount).toLocaleString('en-US') : '—' }}
-                                    </td>
                                     <!-- Telefon -->
                                     <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-900">
                                         {{ client.phone ? client.phone.replace('+998', '') : '—' }}
                                     </td>
                                     <!-- PINFL (JSHSHIR) -->
-                                    <td class="px-3 py-1 text-center text-gray-700">
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-700">
                                         {{ client.pinfl || '—' }}
+                                    </td>
+                                    <!-- Pasport -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center font-sans text-gray-700">
+                                        {{ client.passport_number || client.passport_series || '—' }}
+                                    </td>
+                                    <!-- Qo'shilgan sana -->
+                                    <td class="px-3 py-1 text-center text-gray-600 font-sans">
+                                        {{ getUzFormattedDateFromString(client.created_at) }}
                                     </td>
                                 </tr>
                             </tbody>

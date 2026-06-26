@@ -133,7 +133,6 @@ const clientForm = ref({
     created_at: '',
     birth_date: '',
     phone_2: '+998',
-    phone_3: '+998',
     gender: 'erkak',
     region: '',
     district: '',
@@ -625,7 +624,6 @@ function openCreateClientModal() {
         created_at: new Date().toISOString().split('T')[0],
         birth_date: '',
         phone_2: '+998',
-        phone_3: '+998',
         gender: 'erkak',
         region: '',
         district: '',
@@ -666,7 +664,6 @@ function openEditClientModal(client) {
         created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : '',
         birth_date: client.birth_date || '',
         phone_2: client.phone_2 || '+998',
-        phone_3: client.phone_3 || '+998',
         gender: client.gender || 'erkak',
         region: client.region || '',
         district: client.district || '',
@@ -4059,16 +4056,15 @@ const ledgerReportData = computed(() => {
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs font-sans text-gray-700">
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">ID:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.id }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_2 || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 3:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_3 || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Jinsi:</span> <strong class="text-gray-900">{{ getClientGender(detailedClientData) }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tug'ilgan sanasi:</span> <strong class="text-gray-900 font-mono">{{ getDummyBirthDate(detailedClientData) }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">{{ detailedClientData.region || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">{{ detailedClientData.district || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address || 'address' }}</strong></div>
+                                    <div v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_2 }}</strong></div>
+                                    <div v-if="detailedClientData.gender" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Jinsi:</span> <strong class="text-gray-900">{{ getClientGender(detailedClientData) }}</strong></div>
+                                    <div v-if="detailedClientData.birth_date" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tug'ilgan sanasi:</span> <strong class="text-gray-900 font-mono">{{ getDummyBirthDate(detailedClientData) }}</strong></div>
+                                    <div v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">{{ detailedClientData.region }}</strong></div>
+                                    <div v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">{{ detailedClientData.district }}</strong></div>
+                                    <div v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address }}</strong></div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Qo'shilgan sana:</span> <strong class="text-gray-900 font-mono">{{ getUzFormattedDateFromString(detailedClientData.created_at) }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number || 'AA1234567' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between items-center">
+                                    <div v-if="detailedClientData.passport_number && detailedClientData.passport_number !== '—' && detailedClientData.passport_number !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number }}</strong></div>
+                                    <div v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back" class="py-1 border-b border-gray-50 flex justify-between items-center">
                                          <span class="text-gray-400">Passport rasmlari:</span>
                                          <div class="flex flex-col gap-1 items-end">
                                              <div v-if="detailedClientData.passport_photo" class="flex items-center gap-2">
@@ -4081,7 +4077,6 @@ const ledgerReportData = computed(() => {
                                                  <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline text-[11px] font-bold">Ko'rish</button>
                                                  <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline text-[11px] font-bold">Yuklash</a>
                                              </div>
-                                             <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400">Rasmlar yo'q</span>
                                          </div>
                                      </div>
                                 </div>

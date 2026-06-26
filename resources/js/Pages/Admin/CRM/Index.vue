@@ -1412,6 +1412,11 @@ const selectedStatusFilter = ref('');
 const selectedManagerFilter = ref('');
 const showExtraFilters = ref(false);
 
+const selectedContractStatusFilter = ref('');
+const selectedContractBuildingFilter = ref('');
+const selectedContractManagerFilter = ref('');
+const showContractExtraFilters = ref(false);
+
 const overdueViewMode = ref('cards');
 
 // Wizard Refs & Computed
@@ -1549,7 +1554,11 @@ function closeExcelPreviewModal() {
 }
 
 function downloadExcel() {
-    window.location.href = route('admin.crm.export.clients.excel');
+    if (activeTab.value === 'contracts') {
+        window.location.href = route('admin.crm.export.contracts.excel');
+    } else {
+        window.location.href = route('admin.crm.export.clients.excel');
+    }
     closeExcelPreviewModal();
 }
 
@@ -1792,22 +1801,48 @@ const activeContracts = computed(() => {
 const contractSearchQuery = ref('');
 
 const groupedContracts = computed(() => {
-    let contracts = (props.contracts || []).filter(c => c.status !== 'canceled' && c.status !== 'cancelled');
+    let contracts = props.contracts || [];
     
+    // Status Filter
+    if (selectedContractStatusFilter.value === 'approved') {
+        contracts = contracts.filter(c => c.status === 'active' || c.status === 'approved');
+    } else if (selectedContractStatusFilter.value === 'pending') {
+        contracts = contracts.filter(c => c.status === 'pending' || c.status === 'draft');
+    } else if (selectedContractStatusFilter.value === 'cancelled') {
+        contracts = contracts.filter(c => c.status === 'cancelled' || c.status === 'canceled');
+    } else {
+        // By default show active/approved and pending/draft, exclude cancelled/canceled
+        contracts = contracts.filter(c => c.status !== 'canceled' && c.status !== 'cancelled');
+    }
+
+    // Search query filter
     if (contractSearchQuery.value) {
-        const query = contractSearchQuery.value.toLowerCase();
+        const query = contractSearchQuery.value.toLowerCase().trim();
         contracts = contracts.filter(c => {
             const clientFirstName = (c.client?.first_name || '').toLowerCase();
             const clientLastName = (c.client?.last_name || '').toLowerCase();
-            const clientFullName = `${clientFirstName} ${clientLastName}`;
+            const clientMiddleName = (c.client?.middle_name || '').toLowerCase();
+            const clientFullName = `${clientFirstName} ${clientLastName} ${clientMiddleName}`;
             const contractNumber = (c.contract_number || '').toLowerCase();
             const unitNumber = (c.unit?.unit_number || '').toString().toLowerCase();
+            const clientPhone = (c.client?.phone || '').toLowerCase();
             return clientFirstName.includes(query) || 
                    clientLastName.includes(query) || 
                    clientFullName.includes(query) || 
                    contractNumber.includes(query) || 
-                   unitNumber.includes(query);
+                   unitNumber.includes(query) ||
+                   clientPhone.includes(query);
         });
+    }
+
+    // Advanced building filter
+    if (selectedContractBuildingFilter.value) {
+        contracts = contracts.filter(c => c.unit?.floor?.building?.name === selectedContractBuildingFilter.value);
+    }
+
+    // Advanced manager filter
+    if (selectedContractManagerFilter.value) {
+        contracts = contracts.filter(c => c.partner?.user?.name === selectedContractManagerFilter.value);
     }
 
     const groups = {};
@@ -1825,6 +1860,10 @@ const groupedContracts = computed(() => {
     });
 
     return sortedGroups;
+});
+
+const flatGroupedContracts = computed(() => {
+    return Object.values(groupedContracts.value).flat();
 });
 
 const canceledContracts = computed(() => {
@@ -3586,13 +3625,101 @@ const ledgerReportData = computed(() => {
 
             <!-- Contracts section inside Client Database Roster -->
             <div v-if="activeTab === 'contracts'" class="space-y-6">
-                <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <input 
-                        v-model="contractSearchQuery" 
-                        type="text" 
-                        :placeholder="$t('search') + '...'" 
-                        class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 border-emerald-200 focus:border-emerald-500 focus:ring-neon-green shadow-sm focus:shadow-sm"
-                    >
+                <!-- Control bar matching user design -->
+                <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 bg-white px-6 py-4 rounded-2xl border border-gray-150 shadow-sm">
+                    <!-- Left side: Back Button + Title -->
+                    <div class="flex items-center gap-3">
+                        <button @click="activeTab = 'dashboard'" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors shadow-sm" title="Orqaga">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
+                        <h2 class="text-xl font-bold text-gray-900 tracking-tight">Shartnomalar</h2>
+                    </div>
+
+                    <!-- Right side: Filters & Actions -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Search Box -->
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3.5 text-gray-400">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input 
+                                v-model="contractSearchQuery" 
+                                type="text" 
+                                placeholder="Qidirish" 
+                                class="bg-white border border-gray-300 text-gray-800 text-xs rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] w-48 transition-all"
+                            />
+                        </div>
+
+                        <!-- Status Filter Dropdown -->
+                        <div class="relative">
+                            <select v-model="selectedContractStatusFilter" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                                <option value="">Tasdiqlangan...</option>
+                                <option value="approved">Tasdiqlangan</option>
+                                <option value="pending">Kutilmoqda</option>
+                                <option value="cancelled">Bekor qilingan</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
+                        <!-- Filtr Button to toggle advanced filters -->
+                        <button 
+                            @click="showContractExtraFilters = !showContractExtraFilters" 
+                            class="px-4 py-2 bg-white border text-gray-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                            :class="showContractExtraFilters ? 'border-[#f2a900] text-[#f2a900] bg-amber-50/10' : 'border-gray-300 hover:bg-gray-50'"
+                        >
+                            <svg class="w-4 h-4 text-gray-500" :class="{ 'text-[#f2a900]': showContractExtraFilters }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 8.293A1 1 0 013 7.586V4z" />
+                            </svg>
+                            Filtr
+                        </button>
+
+                        <!-- Excel Export Button -->
+                        <button @click="openExcelPreviewModal" class="px-4 py-2 bg-white border border-emerald-500 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-all flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
+                            </svg>
+                            Excel
+                        </button>
+
+                        <!-- Add Button -->
+                        <button @click="showCreateContractModal = true" class="px-4 py-2 bg-white border border-[#f2a900] hover:bg-amber-50/50 text-[#f2a900] text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                            <span class="text-[#f2a900] font-bold text-sm leading-none">+</span> Qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Extra Filters Row (Toggled by showContractExtraFilters) -->
+                <div v-if="showContractExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
+                    <!-- Obyektlar filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Obyekt bo'yicha filter</label>
+                        <select v-model="selectedContractBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha obyektlar</option>
+                            <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Sotuv menejeri filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Menejer bo'yicha filter</label>
+                        <select v-model="selectedContractManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha menejerlar</option>
+                            <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
                 </div>
                 
                 <div v-for="(contracts, blockName) in groupedContracts" :key="blockName" class="mb-8">
@@ -7171,7 +7298,7 @@ const ledgerReportData = computed(() => {
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
                         </svg>
-                        <span class="text-base font-bold font-sans">Mijozlar ro'yxati</span>
+                        <span class="text-base font-bold font-sans">{{ activeTab === 'contracts' ? 'Shartnomalar ro\'yxati' : 'Mijozlar ro\'yxati' }}</span>
                     </div>
                     <button @click="closeExcelPreviewModal" class="text-gray-400 hover:text-gray-600 transition-colors">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -7205,7 +7332,35 @@ const ledgerReportData = computed(() => {
                 <div class="flex-1 overflow-auto bg-gray-100 p-6 custom-scrollbar max-h-[55vh]">
                     <div class="inline-block min-w-full align-middle border border-gray-300 rounded-xl overflow-hidden bg-white">
                         <table class="w-full border-collapse text-left text-xs font-sans whitespace-nowrap">
-                            <thead>
+                            <thead v-if="activeTab === 'contracts'">
+                                <!-- Column letter indicators -->
+                                <tr class="bg-gray-50 text-gray-400 font-medium text-center border-b border-gray-200">
+                                    <th class="border-r border-gray-200 w-10 py-1 bg-[#f1f3f4]"></th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">A</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">B</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">C</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">D</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">E</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">F</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">G</th>
+                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">H</th>
+                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">I</th>
+                                </tr>
+                                <!-- Column header names (Row 1) -->
+                                <tr class="border-b border-gray-300 text-center font-bold text-gray-700 bg-gray-50/50">
+                                    <td class="border-r border-gray-200 py-1.5 bg-[#f1f3f4] text-gray-400 font-medium text-center">1</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 text-left font-bold text-gray-900">Shartnoma kodi</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Sana</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Xaridor F.I.Sh</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Telefon</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Bino</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Xonadon</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Boshlang'ich to'lov</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Jami Summa</td>
+                                    <td class="px-3 py-1.5 font-bold text-gray-900">Holat</td>
+                                </tr>
+                            </thead>
+                            <thead v-else>
                                 <!-- Column letter indicators -->
                                 <tr class="bg-gray-50 text-gray-400 font-medium text-center border-b border-gray-200">
                                     <th class="border-r border-gray-200 w-10 py-1 bg-[#f1f3f4]"></th>
@@ -7221,13 +7376,57 @@ const ledgerReportData = computed(() => {
                                     <td class="border-r border-gray-200 py-1.5 bg-[#f1f3f4] text-gray-400 font-medium text-center">1</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 text-left font-bold text-gray-900">Ф.И.О.</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Тугилган сана</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Телефон</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Telefon</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">ЖШШИР</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Паспорт</td>
                                     <td class="px-3 py-1.5 font-bold text-gray-900">Қоʻшилган сана</td>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 font-mono text-[11px]">
+                            <tbody v-if="activeTab === 'contracts'" class="divide-y divide-gray-200 font-mono text-[11px]">
+                                <tr v-for="(contract, index) in flatGroupedContracts" :key="contract.id" class="hover:bg-gray-50/50 border-b border-gray-200 text-gray-800">
+                                    <!-- Row number indicator -->
+                                    <td class="border-r border-gray-200 py-1 text-center bg-[#f1f3f4] text-gray-400 font-medium w-10 select-none">
+                                        {{ index + 2 }}
+                                    </td>
+                                    <!-- Shartnoma kodi -->
+                                    <td class="border-r border-gray-200 px-3 py-1 font-sans text-left font-semibold text-gray-900">
+                                        {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
+                                    </td>
+                                    <!-- Sana -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
+                                        {{ new Date(contract.created_at).toLocaleDateString('uz-UZ') }}
+                                    </td>
+                                    <!-- Xaridor F.I.Sh -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-left text-gray-950 font-medium font-sans">
+                                        {{ contract.client ? (contract.client.last_name + ' ' + contract.client.first_name) : '—' }}
+                                    </td>
+                                    <!-- Telefon -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-900">
+                                        {{ contract.client?.phone || '—' }}
+                                    </td>
+                                    <!-- Bino -->
+                                    <td class="border-r border-gray-200 px-3 py-1 font-sans text-gray-700">
+                                        {{ contract.unit?.floor?.building?.name || '—' }}
+                                    </td>
+                                    <!-- Xonadon -->
+                                    <td class="border-r border-gray-200 px-3 py-1 font-sans text-gray-700 text-center">
+                                        {{ contract.unit?.unit_number || '—' }}
+                                    </td>
+                                    <!-- Boshlang'ich to'lov -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-right text-gray-700 font-semibold">
+                                        {{ $currency(contract.down_payment) }}
+                                    </td>
+                                    <!-- Jami Summa -->
+                                    <td class="border-r border-gray-200 px-3 py-1 text-right text-emerald-600 font-bold">
+                                        {{ $currency(contract.total_amount) }}
+                                    </td>
+                                    <!-- Holat -->
+                                    <td class="px-3 py-1 text-center font-sans">
+                                        {{ contract.status === 'active' || contract.status === 'approved' ? 'Faol' : (contract.status === 'cancelled' || contract.status === 'canceled' ? 'Bekor qilingan' : contract.status) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody v-else class="divide-y divide-gray-200 font-mono text-[11px]">
                                 <tr v-for="(client, index) in filteredClients" :key="client.id" class="hover:bg-gray-50/50 border-b border-gray-200 text-gray-800">
                                     <!-- Row number indicator -->
                                     <td class="border-r border-gray-200 py-1 text-center bg-[#f1f3f4] text-gray-400 font-medium w-10 select-none">

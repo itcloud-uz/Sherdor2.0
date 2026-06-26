@@ -178,4 +178,64 @@ class ClientExportController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function exportContractsExcel(Request $request)
+    {
+        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building'])->latest()->get();
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=contracts_" . date('Y-m-d_H-i') . ".csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($contracts) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM to fix UTF-8 in Excel
+            fputs($file, "\xEF\xBB\xBF");
+
+            fputcsv($file, [
+                'Shartnoma kodi', 
+                'Sana', 
+                'Xaridor F.I.Sh', 
+                'Telefon', 
+                'Bino', 
+                'Xonadon', 
+                'Maydoni (m²)', 
+                'Kvadrat metr narxi', 
+                'Boshlang\'ich to\'lov', 
+                'Jami Summa', 
+                'Holat'
+            ], ';');
+
+            foreach ($contracts as $contract) {
+                $clientName = $contract->client ? trim("{$contract->client->last_name} {$contract->client->first_name} {$contract->client->middle_name}") : '';
+                $clientPhone = $contract->client ? $contract->client->phone : '';
+                $buildingName = $contract->unit?->floor?->building?->name ?? '';
+                $unitNumber = $contract->unit?->unit_number ?? '';
+                $area = $contract->unit?->area_sqm ?? '';
+                
+                fputcsv($file, [
+                    $contract->contract_number ?? ('Contract #' . str_pad($contract->id, 5, '0', STR_PAD_LEFT)),
+                    $contract->created_at->format('Y-m-d'),
+                    $clientName,
+                    $clientPhone ? '="' . $clientPhone . '"' : '',
+                    $buildingName,
+                    $unitNumber,
+                    $area,
+                    $contract->price_per_sqm,
+                    $contract->down_payment,
+                    $contract->total_amount,
+                    $contract->status === 'active' || $contract->status === 'approved' ? 'Faol' : ($contract->status === 'cancelled' || $contract->status === 'canceled' ? 'Bekor qilingan' : $contract->status)
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

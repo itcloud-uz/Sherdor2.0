@@ -78,7 +78,7 @@ class FinanceController extends Controller
         ]);
         $buildings = Building::latest()->get();
         $clients = Client::latest()->limit(500)->get();
-        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->limit(500)->get();
+        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->get();
 
         $transactions = [];
         $financialLiabilities = [];

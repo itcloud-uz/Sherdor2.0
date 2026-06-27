@@ -1201,6 +1201,9 @@ watch(() => form.value.counterparty_id, (newVal) => {
         }
     } else {
         clientSearchQuery.value = '';
+        form.value.client_id = '';
+        form.value.supplier_id = '';
+        form.value.worker_id = '';
     }
 });
 
@@ -1638,10 +1641,15 @@ const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
 // Client search and payment type selector state
+// Client search and payment type selector state
 const availableUnits = computed(() => {
     if (!props.contracts) return [];
     let list = props.contracts;
     
+    // Developer console log to help identify any relation loading issues on the client side
+    console.log("[Antigravity DEBUG] availableUnits contracts list:", list);
+    console.log("[Antigravity DEBUG] current form.building_id:", form.value.building_id);
+
     // Filter by building if selected
     if (form.value.building_id) {
         list = list.filter(c => {
@@ -1680,27 +1688,27 @@ const filteredClientsList = computed(() => {
         return props.contracts?.some(c => c.client_id == x.customable_id);
     });
     
-    // Filter by building if selected
-    if (form.value.building_id) {
-        list = list.filter(x => {
-            return props.contracts?.some(c => {
-                const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
-                return c.client_id == x.customable_id && bId == form.value.building_id;
+    // IF search query is empty, filter suggestions by building and unit to guide selection
+    if (!clientSearchQuery.value) {
+        if (form.value.building_id) {
+            list = list.filter(x => {
+                return props.contracts?.some(c => {
+                    const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+                    return c.client_id == x.customable_id && bId == form.value.building_id;
+                });
             });
-        });
+        }
+        if (selectedUnitId.value) {
+            list = list.filter(x => {
+                return props.contracts?.some(c => {
+                    return c.client_id == x.customable_id && c.unit_id == selectedUnitId.value;
+                });
+            });
+        }
+        return list;
     }
     
-    // Filter by unit if selected
-    if (selectedUnitId.value) {
-        list = list.filter(x => {
-            return props.contracts?.some(c => {
-                return c.client_id == x.customable_id && c.unit_id == selectedUnitId.value;
-            });
-        });
-    }
-    
-    if (!clientSearchQuery.value) return list;
-    
+    // IF search query is NOT empty, allow searching all clients globally across all buildings/units
     const q = clientSearchQuery.value.toLowerCase().trim();
     const selected = props.counterparties?.find(x => x.id === form.value.counterparty_id);
     if (selected && selected.name.toLowerCase().trim() === q) return list;

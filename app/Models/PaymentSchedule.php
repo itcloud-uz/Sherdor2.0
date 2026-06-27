@@ -18,7 +18,8 @@ class PaymentSchedule extends Model
         'payment_method',
         'actual_payment_date',
         'original_payment_amount',
-        'notes'
+        'notes',
+        'payment_type'
     ];
 
     protected static function booted()

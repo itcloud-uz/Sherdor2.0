@@ -1681,6 +1681,50 @@ function getContractFinancials(contract) {
     return { total, paid, debt, percent };
 }
 
+function getContractDownPaymentStats(contract) {
+    if (!contract) return { total: 0, paid: 0, count: 0, payments: [] };
+    const schedules = contract.payment_schedules || contract.paymentSchedules || [];
+    const dpSchedules = schedules.filter(s => s.payment_type === 'down_payment');
+    
+    const total = dpSchedules.reduce((sum, s) => sum + Number(s.expected_amount || 0), 0);
+    const paid = dpSchedules.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
+    const count = dpSchedules.length;
+    
+    const payments = [];
+    const contractTransactions = contract.transactions || [];
+    const dpScheduleIds = dpSchedules.map(s => s.id);
+    
+    contractTransactions.forEach(t => {
+        if (t.status === 'approved' && t.type === 'income') {
+            const isLinked = t.payment_schedule_id && dpScheduleIds.includes(t.payment_schedule_id);
+            const isInitial = t.category && (t.category.name.toLowerCase().includes('boshlang') || t.category.name.toLowerCase().includes('initial'));
+            const isInitialNote = t.notes && (t.notes.toLowerCase().includes('boshlang') || t.notes.toLowerCase().includes('initial'));
+            if (isLinked || ((isInitial || isInitialNote) && !payments.some(p => p.id === t.id))) {
+                payments.push({
+                    id: t.id,
+                    amount: Number(t.amount),
+                    date: t.transaction_date || t.created_at
+                });
+            }
+        }
+    });
+
+    // Fallback if no transactions found but schedules show paid amount
+    if (payments.length === 0 && paid > 0) {
+        dpSchedules.forEach(s => {
+            if (Number(s.paid_amount) > 0) {
+                payments.push({
+                    id: s.id,
+                    amount: Number(s.paid_amount),
+                    date: s.actual_payment_date || s.due_date
+                });
+            }
+        });
+    }
+
+    return { total, paid, count, payments };
+}
+
 function getContractSchedules(contract) {
     if (!contract) return [];
     return contract.payment_schedules || contract.paymentSchedules || [];
@@ -2294,9 +2338,6 @@ const splitLedgerData = computed(() => {
         return { downPaymentRows: [], installmentRows: [], isSplit: false };
     }
     
-    const isSplit = selectedContract.value.is_down_payment_split;
-    const splitMonths = parseInt(selectedContract.value.down_payment_split_months) || 1;
-    
     // Sort schedules by due_date
     const allSchedules = [...selectedContract.value.payment_schedules].sort((a, b) => 
         new Date(a.due_date) - new Date(b.due_date)
@@ -2306,10 +2347,12 @@ const splitLedgerData = computed(() => {
         new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at)
     );
     
-    if (isSplit) {
-        const dpSchedules = allSchedules.slice(0, splitMonths);
-        const instSchedules = allSchedules.slice(splitMonths);
-        
+    const dpSchedules = allSchedules.filter(s => s.payment_type === 'down_payment');
+    const instSchedules = allSchedules.filter(s => s.payment_type !== 'down_payment');
+    
+    const hasDownPayment = dpSchedules.length > 0;
+    
+    if (hasDownPayment) {
         const dpResult = computeLedgerRows(dpSchedules, 0, payments);
         const instResult = computeLedgerRows(instSchedules, 0, dpResult.remainingPayments);
         
@@ -2319,7 +2362,7 @@ const splitLedgerData = computed(() => {
             isSplit: true
         };
     } else {
-        const result = computeLedgerRows(allSchedules, Number(selectedContract.value.down_payment || 0), payments);
+        const result = computeLedgerRows(allSchedules, 0, payments);
         return {
             downPaymentRows: [],
             installmentRows: result.rows,
@@ -4338,6 +4381,21 @@ const ledgerReportData = computed(() => {
                                 <span class="text-gray-400 block mb-1">Chegirma</span>
                                 <strong class="text-gray-900 text-base font-bold">{{ Number(detailedClientData.contracts[0]?.discount || 0).toLocaleString('en-US') }} so'm</strong>
                             </div>
+                            <div v-if="detailedClientData.contracts[0]?.down_payment > 0">
+                                <span class="text-gray-400 block mb-1">Boshlang'ich to'lov</span>
+                                <div class="flex flex-col">
+                                    <strong class="text-indigo-600 text-base font-bold">
+                                        {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                                    </strong>
+                                    <span class="text-[10px] text-gray-500 font-medium leading-tight">
+                                        To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm
+                                        <template v-if="getContractDownPaymentStats(detailedClientData.contracts[0]).payments.length > 0">
+                                            ({{ getContractDownPaymentStats(detailedClientData.contracts[0]).payments.length }} marta: 
+                                            {{ getContractDownPaymentStats(detailedClientData.contracts[0]).payments.map(p => Number(p.amount).toLocaleString('en-US')).join(' + ') }})
+                                        </template>
+                                    </span>
+                                </div>
+                            </div>
                             <div>
                                 <span class="text-gray-400 block mb-1">To'langan</span>
                                 <strong class="text-amber-500 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm</strong>
@@ -4394,7 +4452,7 @@ const ledgerReportData = computed(() => {
                                         <td class="p-3 text-right font-bold text-emerald-600">{{ Number(schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
                                         <td class="p-3 text-right font-bold text-red-500">{{ Number(schedule.expected_amount - schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
                                         <td class="p-3 text-center font-sans text-gray-700">
-                                            {{ schedule.payment_type || (index === 0 ? 'Bosh to\'lov' : 'Oylik to\'lov') }}
+                                            {{ schedule.payment_type === 'down_payment' ? 'Bosh to\'lov' : (schedule.payment_type === 'installment' ? 'Oylik to\'lov' : (schedule.payment_type === 'full' ? 'To\'liq to\'lov' : (index === 0 ? 'Bosh to\'lov' : 'Oylik to\'lov'))) }}
                                         </td>
                                         <td class="p-3 text-right font-bold text-indigo-600">
                                             {{ Number(schedule.penalty_for_this_month || 0).toLocaleString('en-US') }}

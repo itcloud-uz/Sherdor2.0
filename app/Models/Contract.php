@@ -143,26 +143,28 @@ class Contract extends Model
                 'paid_amount' => 0,
                 'due_date' => $baseDate->format('Y-m-d'),
                 'status' => 'pending',
-                'original_payment_amount' => $this->total_amount
+                'original_payment_amount' => $this->total_amount,
+                'payment_type' => 'full'
             ]);
             return;
         }
 
-        // 1. Generate split down payment schedules if enabled
-        $downPaymentTerm = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 1;
-        
-        if ($this->is_down_payment_split && $this->down_payment > 0 && $downPaymentTerm > 0) {
+        // 1. Generate down payment schedules if down_payment > 0
+        if ($this->down_payment > 0) {
+            $downPaymentTerm = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 1;
             $downPaymentMonthly = $this->down_payment / $downPaymentTerm;
             for ($i = 1; $i <= $downPaymentTerm; $i++) {
-                $dueDate = $baseDate->copy()->addMonths($i);
+                $dueDate = $this->is_down_payment_split ? $baseDate->copy()->addMonths($i) : $baseDate->copy();
                 $status = $dueDate->isPast() ? 'overdue' : 'pending';
                 \App\Models\PaymentSchedule::create([
                     'contract_id' => $this->id,
                     'expected_amount' => $downPaymentMonthly,
                     'remaining_debt' => $downPaymentMonthly,
-                    'due_date' => $dueDate->toDateTimeString(),
+                    'paid_amount' => 0,
+                    'due_date' => $dueDate->format('Y-m-d'),
                     'status' => $status,
-                    'original_payment_amount' => $downPaymentMonthly
+                    'original_payment_amount' => $downPaymentMonthly,
+                    'payment_type' => 'down_payment'
                 ]);
             }
         }
@@ -174,7 +176,7 @@ class Contract extends Model
                 $monthly = $remaining / $this->term_months;
                 
                 // If down payment is split, regular installments start after the down payment period
-                $startOffset = $this->is_down_payment_split ? $downPaymentTerm : 0;
+                $startOffset = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 0;
                 
                 for ($i = 1; $i <= $this->term_months; $i++) {
                     $dueDate = $baseDate->copy()->addMonths($startOffset + $i);
@@ -184,9 +186,11 @@ class Contract extends Model
                         'contract_id' => $this->id,
                         'expected_amount' => $monthly,
                         'remaining_debt' => $monthly,
-                        'due_date' => $dueDate->toDateTimeString(),
+                        'paid_amount' => 0,
+                        'due_date' => $dueDate->format('Y-m-d'),
                         'status' => $status,
-                        'original_payment_amount' => $monthly
+                        'original_payment_amount' => $monthly,
+                        'payment_type' => 'installment'
                     ]);
                 }
             }

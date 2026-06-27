@@ -556,29 +556,38 @@ class FinanceController extends Controller
             }
         }
 
-        // 8. Payment Schedule Reductions (Only if NOT Boshlang'ich to'lov)
-        $isInitialPayment = false;
-        if ($transaction->category_id) {
-            $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
-            if ($cat) {
-                $catName = strtolower($cat->name);
-                if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
-                    $isInitialPayment = true;
-                }
-            }
-        }
-
-        if ($transaction->contract_id && $transaction->type === 'income' && !$isInitialPayment) {
+        // 8. Payment Schedule Reductions (Partitioned by down_payment vs installment)
+        if ($transaction->contract_id && $transaction->type === 'income') {
             $appliedAmount = $validated['applied_amount'] ?? ($transaction->converted_amount ?? $transaction->amount);
-            $refundAmount = ($transaction->converted_amount ?? $transaction->amount) - $appliedAmount;
 
             if ($appliedAmount > 0) {
                 $remainingAmount = $appliedAmount;
+                $targetType = 'installment'; // default target type
+
+                // Let's check if the category or note indicates Boshlang'ich to'lov
+                $isInitialPayment = false;
+                if ($transaction->category_id) {
+                    $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
+                    if ($cat) {
+                        $catName = strtolower($cat->name);
+                        if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
+                            $isInitialPayment = true;
+                        }
+                    }
+                }
+                if ($transaction->notes && (str_contains(strtolower($transaction->notes), "boshlang'ich") || str_contains(strtolower($transaction->notes), "initial"))) {
+                    $isInitialPayment = true;
+                }
+
+                if ($isInitialPayment) {
+                    $targetType = 'down_payment';
+                }
 
                 // Prioritize specific payment schedule if selected
                 if ($transaction->payment_schedule_id) {
                     $specificSchedule = PaymentSchedule::find($transaction->payment_schedule_id);
                     if ($specificSchedule && $specificSchedule->contract_id == $transaction->contract_id && $specificSchedule->status !== 'paid') {
+                        $targetType = $specificSchedule->payment_type ?? 'installment';
                         $needed = $specificSchedule->expected_amount - $specificSchedule->paid_amount;
                         if ($needed > 0) {
                             if ($remainingAmount >= $needed) {
@@ -603,10 +612,17 @@ class FinanceController extends Controller
                 }
 
                 if ($remainingAmount > 0) {
-                    $schedules = PaymentSchedule::where('contract_id', $transaction->contract_id)
-                        ->where('status', '!=', 'paid')
-                        ->orderBy('due_date', 'asc')
-                        ->get();
+                    // Get unpaid schedules of the target type (either down_payment or installment/full)
+                    $schedulesQuery = PaymentSchedule::where('contract_id', $transaction->contract_id)
+                        ->where('status', '!=', 'paid');
+                        
+                    if ($targetType === 'down_payment') {
+                        $schedulesQuery->where('payment_type', 'down_payment');
+                    } else {
+                        $schedulesQuery->whereIn('payment_type', ['installment', 'full']);
+                    }
+
+                    $schedules = $schedulesQuery->orderBy('due_date', 'asc')->get();
                         
                     $isFirst = !$transaction->payment_schedule_id;
                     foreach ($schedules as $schedule) {
@@ -614,6 +630,12 @@ class FinanceController extends Controller
                         
                         $needed = $schedule->expected_amount - $schedule->paid_amount;
                         if ($needed <= 0) continue;
+                        
+                        // Link transaction to this schedule if not already linked
+                        if (!$transaction->payment_schedule_id) {
+                            $transaction->payment_schedule_id = $schedule->id;
+                            $transaction->save();
+                        }
                         
                         if ($remainingAmount >= $needed) {
                             $schedule->paid_amount += $needed;
@@ -642,7 +664,6 @@ class FinanceController extends Controller
                 }
                 
             }
-
         } elseif ($transaction->contract_id && $transaction->type === 'expense') {
             $contract = \App\Models\Contract::find($transaction->contract_id);
             if ($contract && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {

@@ -154,6 +154,23 @@ class ContractController extends Controller
                 }
                 $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
 
+                $firstDownPaymentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                    ->where('payment_type', 'down_payment')
+                    ->where('status', '!=', 'paid')
+                    ->orderBy('due_date', 'asc')
+                    ->first();
+                $scheduleId = $firstDownPaymentSchedule ? $firstDownPaymentSchedule->id : null;
+                if (!$scheduleId) {
+                    $firstInstallmentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                        ->where('payment_type', 'installment')
+                        ->where('status', '!=', 'paid')
+                        ->orderBy('due_date', 'asc')
+                        ->first();
+                    if ($firstInstallmentSchedule) {
+                        $scheduleId = $firstInstallmentSchedule->id;
+                    }
+                }
+
                 $transaction = \App\Models\Transaction::create([
                     'type' => 'income',
                     'amount' => $paymentAmount,
@@ -164,6 +181,7 @@ class ContractController extends Controller
                     'counterparty_id' => $counterpartyId,
                     'building_id' => $buildingId,
                     'category_id' => $incomeCategory->id,
+                    'payment_schedule_id' => $scheduleId,
                     'status' => 'pending',
                     'transaction_date' => $baseDate,
                     'created_at' => $baseDate,
@@ -262,6 +280,23 @@ class ContractController extends Controller
                     }
                     $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
 
+                    $firstDownPaymentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                        ->where('payment_type', 'down_payment')
+                        ->where('status', '!=', 'paid')
+                        ->orderBy('due_date', 'asc')
+                        ->first();
+                    $scheduleId = $firstDownPaymentSchedule ? $firstDownPaymentSchedule->id : null;
+                    if (!$scheduleId) {
+                        $firstInstallmentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                            ->where('payment_type', 'installment')
+                            ->where('status', '!=', 'paid')
+                            ->orderBy('due_date', 'asc')
+                            ->first();
+                        if ($firstInstallmentSchedule) {
+                            $scheduleId = $firstInstallmentSchedule->id;
+                        }
+                    }
+
                     $transaction = \App\Models\Transaction::create([
                         'type' => 'income',
                         'amount' => $difference,
@@ -272,6 +307,7 @@ class ContractController extends Controller
                         'counterparty_id' => $counterpartyId,
                         'building_id' => $buildingId,
                         'category_id' => $incomeCategory->id,
+                        'payment_schedule_id' => $scheduleId,
                         'status' => 'pending',
                         'transaction_date' => now()->toDateTimeString(),
                         'notes' => 'Shartnomani tahrirlash paytidagi qo\'shimcha to\'lov (' . $paymentMethod . ')',

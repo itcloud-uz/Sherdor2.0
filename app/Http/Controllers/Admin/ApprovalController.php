@@ -124,6 +124,23 @@ class ApprovalController extends Controller
                             }
                         }
 
+                        $firstDownPaymentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                            ->where('payment_type', 'down_payment')
+                            ->where('status', '!=', 'paid')
+                            ->orderBy('due_date', 'asc')
+                            ->first();
+                        $scheduleId = $firstDownPaymentSchedule ? $firstDownPaymentSchedule->id : null;
+                        if (!$scheduleId) {
+                            $firstInstallmentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                                ->where('payment_type', 'installment')
+                                ->where('status', '!=', 'paid')
+                                ->orderBy('due_date', 'asc')
+                                ->first();
+                            if ($firstInstallmentSchedule) {
+                                $scheduleId = $firstInstallmentSchedule->id;
+                            }
+                        }
+
                         $transaction = \App\Models\Transaction::create([
                             'type' => 'income',
                             'amount' => $paymentAmount,
@@ -134,6 +151,7 @@ class ApprovalController extends Controller
                             'counterparty_id' => $counterpartyId,
                             'building_id' => $buildingId,
                             'category_id' => $incomeCategory->id,
+                            'payment_schedule_id' => $scheduleId,
                             'status' => 'pending',
                             'transaction_date' => now(),
                             'notes' => 'Shartnoma tasdiqlangandagi boshlang\'ich to\'lov (' . $paymentMethod . ')',
@@ -224,6 +242,13 @@ class ApprovalController extends Controller
                         }
                     }
 
+                    $contractId = $payload['contract_id'];
+                    $firstUnpaid = \App\Models\PaymentSchedule::where('contract_id', $contractId)
+                        ->where('status', '!=', 'paid')
+                        ->orderBy('due_date', 'asc')
+                        ->first();
+                    $scheduleId = $firstUnpaid ? $firstUnpaid->id : null;
+
                     $transaction = Transaction::create([
                         'type' => 'income',
                         'amount' => $payload['amount'],
@@ -235,6 +260,7 @@ class ApprovalController extends Controller
                         'counterparty_id' => $counterpartyId,
                         'building_id' => $buildingId,
                         'account_type' => $request->account_type ?? 'main',
+                        'payment_schedule_id' => $scheduleId,
                         'created_by' => $approval->user_id,
                         'status' => 'pending',
                         'transaction_date' => now(),

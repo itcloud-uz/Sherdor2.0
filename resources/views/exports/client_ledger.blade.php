@@ -43,9 +43,6 @@
 <body>
 
     @php
-        $isSplit = (bool)$contract->is_down_payment_split;
-        $splitMonths = (int)($contract->down_payment_split_months ?? 1);
-        
         $allSchedules = $contract->paymentSchedules->sortBy('due_date');
         $allTransactions = $contract->transactions->filter(function($t) {
             return $t->status === 'approved';
@@ -64,19 +61,35 @@
             return $t->transaction_date ?: $t->created_at;
         });
 
-        $firstDueDate = $allSchedules->first() ? \Carbon\Carbon::parse($allSchedules->first()->due_date) : null;
+        $dpSchedules = $allSchedules->filter(fn($s) => $s->payment_type === 'down_payment');
+        $instSchedules = $allSchedules->filter(fn($s) => $s->payment_type !== 'down_payment');
+
+        $firstInstDueDate = $instSchedules->first() ? \Carbon\Carbon::parse($instSchedules->first()->due_date) : ($allSchedules->first() ? \Carbon\Carbon::parse($allSchedules->first()->due_date) : null);
         
-        // Categorize incomes into Down Payment (pre-transactions) and Monthly Installments
-        $preTransactions = collect();
-        $activePayments = collect();
-        
+        $dpIncomes = collect();
+        $instIncomes = collect();
+
         foreach ($incomes as $t) {
-            $tDate = \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at);
-            // If it occurred before first schedule due date (or if no schedules exist), it is down payment
-            if ($firstDueDate && $tDate->lt($firstDueDate)) {
-                $preTransactions->push($t);
+            $isDp = false;
+            if ($t->payment_schedule_id) {
+                $sched = $allSchedules->firstWhere('id', $t->payment_schedule_id);
+                if ($sched && $sched->payment_type === 'down_payment') {
+                    $isDp = true;
+                }
             } else {
-                $activePayments->push($t);
+                $catName = $t->category ? strtolower($t->category->name) : '';
+                $notesText = strtolower($t->notes ?: '');
+                if (str_contains($catName, "boshlang") || str_contains($catName, "initial") ||
+                    str_contains($notesText, "boshlang") || str_contains($notesText, "initial") ||
+                    ($firstInstDueDate && \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->lt($firstInstDueDate))) {
+                    $isDp = true;
+                }
+            }
+
+            if ($isDp) {
+                $dpIncomes->push($t);
+            } else {
+                $instIncomes->push($t);
             }
         }
 
@@ -84,43 +97,96 @@
         $totalExpectedInstallment = 0;
         $totalPaidAll = 0;
         $totalRefundedAll = 0;
+        $running_balance = 0;
 
-        // 1. Add down payment rows at the top
-        foreach ($preTransactions as $t) {
-            $rows[] = (object)[
-                'is_down_payment' => true,
-                'due_date_label' => "Boshlang'ich to'lov",
-                'expected_amount' => null,
-                'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
-                'paid_amount' => $t->amount,
-                'payment_method' => $t->payment_method ?: 'Naqd',
-                'refund_date' => null,
-                'refund_amount' => null,
-                'qoldiq' => null
-            ];
-            $totalPaidAll += $t->amount;
+        // 1. Process down payment schedules
+        if ($dpSchedules->isNotEmpty()) {
+            foreach ($dpSchedules as $schedule) {
+                $schedulePayments = $dpIncomes->filter(fn($p) => $p->payment_schedule_id == $schedule->id);
+                if ($schedulePayments->isEmpty()) {
+                    $schedulePayments = $dpIncomes->filter(fn($p) => empty($p->payment_schedule_id));
+                }
+                
+                $paid_amount = $schedule->paid_amount;
+                $paid_date = $schedule->actual_payment_date ? \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') : ($schedulePayments->isNotEmpty() ? \Carbon\Carbon::parse($schedulePayments->first()->transaction_date ?: $schedulePayments->first()->created_at)->format('d.m.Y') : '');
+                
+                $methodLabel = '';
+                if ($schedule->payment_method) {
+                    $methodLabel = $schedule->payment_method;
+                } elseif ($schedulePayments->isNotEmpty()) {
+                    $methodLabel = $schedulePayments->first()->payment_method;
+                }
+
+                $running_balance += ($paid_amount - $schedule->expected_amount);
+
+                $rows[] = (object)[
+                    'is_down_payment' => true,
+                    'due_date_label' => "Bosh to'lov (" . \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y') . ")",
+                    'expected_amount' => $schedule->expected_amount,
+                    'paid_date' => $paid_date,
+                    'paid_amount' => $paid_amount > 0 ? $paid_amount : null,
+                    'payment_method' => $methodLabel,
+                    'refund_date' => null,
+                    'refund_amount' => null,
+                    'qoldiq' => $running_balance
+                ];
+                
+                $totalExpectedInstallment += $schedule->expected_amount;
+                $totalPaidAll += $paid_amount;
+            }
+            
+            $linkedDpIncomeIds = $dpSchedules->flatMap(fn($s) => $dpIncomes->filter(fn($p) => $p->payment_schedule_id == $s->id)->pluck('id'))->toArray();
+            $unlinkedDpIncomes = $dpIncomes->whereNotIn('id', $linkedDpIncomeIds);
+            foreach ($unlinkedDpIncomes as $t) {
+                $running_balance += $t->amount;
+                $rows[] = (object)[
+                    'is_down_payment' => true,
+                    'due_date_label' => "Boshlang'ich to'lov",
+                    'expected_amount' => null,
+                    'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
+                    'paid_amount' => $t->amount,
+                    'payment_method' => $t->payment_method ?: 'Naqd',
+                    'refund_date' => null,
+                    'refund_amount' => null,
+                    'qoldiq' => $running_balance
+                ];
+                $totalPaidAll += $t->amount;
+            }
+        } else {
+            foreach ($dpIncomes as $t) {
+                $running_balance += $t->amount;
+                $rows[] = (object)[
+                    'is_down_payment' => true,
+                    'due_date_label' => "Boshlang'ich to'lov",
+                    'expected_amount' => null,
+                    'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
+                    'paid_amount' => $t->amount,
+                    'payment_method' => $t->payment_method ?: 'Naqd',
+                    'refund_date' => null,
+                    'refund_amount' => null,
+                    'qoldiq' => $running_balance
+                ];
+                $totalPaidAll += $t->amount;
+            }
         }
 
-        // 2. Add monthly installment rows
-        $running_balance = 0;
-        foreach ($allSchedules as $index => $schedule) {
-            // Find payments associated with this schedule (or that fall within this month)
-            $schedulePayments = $activePayments->filter(fn($p) => $p->payment_schedule_id == $schedule->id);
+        // 2. Process monthly installments
+        foreach ($instSchedules as $index => $schedule) {
+            $schedulePayments = $instIncomes->filter(fn($p) => $p->payment_schedule_id == $schedule->id);
             
             if ($schedulePayments->isEmpty()) {
                 $currentDueDate = \Carbon\Carbon::parse($schedule->due_date);
-                $nextSchedule = $allSchedules->values()->get($index + 1);
+                $nextSchedule = $instSchedules->values()->get($index + 1);
                 $nextDueDate = $nextSchedule ? \Carbon\Carbon::parse($nextSchedule->due_date) : null;
                 
-                $schedulePayments = $activePayments->filter(function($p) use ($currentDueDate, $nextDueDate) {
+                $schedulePayments = $instIncomes->filter(function($p) use ($currentDueDate, $nextDueDate) {
                     $tDate = \Carbon\Carbon::parse($p->transaction_date ?: $p->created_at);
                     return $tDate->gte($currentDueDate->copy()->subDays(5)) && ($nextDueDate ? $tDate->lt($nextDueDate->copy()->subDays(5)) : true);
                 });
             }
 
-            // Find refunds in this month
             $currentDueDate = \Carbon\Carbon::parse($schedule->due_date);
-            $nextSchedule = $allSchedules->values()->get($index + 1);
+            $nextSchedule = $instSchedules->values()->get($index + 1);
             $nextDueDate = $nextSchedule ? \Carbon\Carbon::parse($nextSchedule->due_date) : null;
             
             $scheduleRefunds = $refunds->filter(function($r) use ($currentDueDate, $nextDueDate) {
@@ -128,14 +194,15 @@
                 return $rDate->gte($currentDueDate->copy()->startOfMonth()) && ($nextDueDate ? $rDate->lt($nextDueDate->copy()->startOfMonth()) : true);
             });
 
-            $paid_amount = $schedulePayments->sum('amount');
+            $paid_amount = $schedule->paid_amount > 0 ? $schedule->paid_amount : $schedulePayments->sum('amount');
             $refunded_amount = $scheduleRefunds->sum('amount');
             
-            $paid_date = $schedulePayments->isNotEmpty() ? \Carbon\Carbon::parse($schedulePayments->first()->transaction_date ?: $schedulePayments->first()->created_at)->format('d.m.Y') : '';
+            $paid_date = $schedule->actual_payment_date ? \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') : ($schedulePayments->isNotEmpty() ? \Carbon\Carbon::parse($schedulePayments->first()->transaction_date ?: $schedulePayments->first()->created_at)->format('d.m.Y') : '');
             
-            // Map payment method label
             $methodLabel = '';
-            if ($schedulePayments->isNotEmpty()) {
+            if ($schedule->payment_method) {
+                $methodLabel = $schedule->payment_method;
+            } elseif ($schedulePayments->isNotEmpty()) {
                 $m = strtolower($schedulePayments->first()->payment_method ?: '');
                 if ($m === 'naqd' || $m === 'cash') $methodLabel = 'Naqt';
                 elseif ($m === 'plastik' || $m === 'card' || $m === 'karta') $methodLabel = 'Plastik';
@@ -164,7 +231,6 @@
             $totalRefundedAll += $refunded_amount;
         }
 
-        // Categorize payments for summary box
         $bankPaid = 0;
         $cashPaid = 0;
         foreach ($incomes as $t) {

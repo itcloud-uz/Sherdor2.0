@@ -1626,13 +1626,21 @@ const handlePaymentTypeChange = () => {
             form.value.category_id = existingCat.id;
             form.value.category_name = existingCat.name;
         } else {
-            isNewCategory.value = true;
-            form.value.category_id = '';
-            form.value.category_name = "Boshlang'ich to'lov";
+            // Find general "Mijoz To'lovi (Shartnoma)" as fallback category so category_id doesn't become empty!
+            const fallbackCat = props.categories?.find(c => c.name.toLowerCase().includes("mijoz to'lovi") || c.name.toLowerCase().includes("mijoz to’lovi") || c.name.toLowerCase().includes("client"));
+            if (fallbackCat) {
+                isNewCategory.value = false;
+                form.value.category_id = fallbackCat.id;
+                form.value.category_name = fallbackCat.name;
+            } else {
+                isNewCategory.value = true;
+                form.value.category_id = '';
+                form.value.category_name = "Boshlang'ich to'lov";
+            }
         }
     } else {
         form.value.notes = "Oylik to'lov";
-        const existingCat = props.categories?.find(c => c.name.toLowerCase().includes("mijoz to'lovi") || c.name.toLowerCase().includes("mijoz to’lovi"));
+        const existingCat = props.categories?.find(c => c.name.toLowerCase().includes("mijoz to'lovi") || c.name.toLowerCase().includes("mijoz to’lovi") || c.name.toLowerCase().includes("client"));
         if (existingCat) {
             isNewCategory.value = false;
             form.value.category_id = existingCat.id;
@@ -1654,10 +1662,17 @@ watch(() => form.value.category_id, (newVal) => {
                 clientPaymentType.value = 'initial';
                 form.value.notes = "Boshlang'ich to'lov";
             } else if (name.includes("mijoz") || name.includes("client")) {
-                clientPaymentType.value = 'monthly';
-                form.value.notes = "Oylik to'lov";
+                // Keep current client payment type if already set to initial or monthly
+                if (clientPaymentType.value !== 'initial' && clientPaymentType.value !== 'monthly') {
+                    clientPaymentType.value = 'monthly';
+                    form.value.notes = "Oylik to'lov";
+                }
+            } else {
+                clientPaymentType.value = '';
             }
         }
+    } else {
+        clientPaymentType.value = '';
     }
 });
 
@@ -5181,12 +5196,44 @@ function getCounterpartyStatus(c) {
 
 
                                 <!-- Unpaid Installment Schedule list -->
-                                <div v-if="form.contract_id && clientPaymentType === 'monthly' && contractSchedules.length > 0" class="mt-3 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
+                                <div v-if="form.contract_id && clientPaymentType === 'monthly' && contractSchedules.filter(s => s.payment_type !== 'down_payment').length > 0" class="mt-3 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
                                     <label class="block text-[10px] font-mono text-slate-500 uppercase mb-2">
                                         To'lov Rejasi (Oylik to'lovlar)
                                     </label>
                                     <div class="max-h-36 overflow-y-auto space-y-1">
-                                        <div v-for="(s, index) in contractSchedules" :key="s.id" 
+                                        <div v-for="(s, index) in contractSchedules.filter(s => s.payment_type !== 'down_payment')" :key="s.id" 
+                                             @click="selectScheduleAmount(s)"
+                                             class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
+                                             :class="form.payment_schedule_id === s.id ? 'border-orange-500 bg-orange-50/60 font-bold shadow-sm' : 'border-transparent hover:border-orange-200 hover:bg-orange-50/50'">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-mono text-[9px]">
+                                                    {{ index + 1 }}
+                                                </span>
+                                                <span class="text-slate-600 font-medium">
+                                                    Muddati: {{ s.due_date ? new Date(s.due_date).toLocaleDateString() : 'Noma\'lum' }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
+                                                    {{ formatMoney(Number(s.expected_amount) - Number(s.paid_amount || 0), 'so\'m') }}
+                                                </span>
+                                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                                                      :class="s.status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                                                    {{ s.status === 'partial' ? 'Qisman' : 'Kutilmoqda' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-1">💡 To'lov summasini avtomatik to'ldirish uchun kerakli qatorni bosing.</p>
+                                </div>
+
+                                <!-- Unpaid Down Payment Schedule list -->
+                                <div v-if="form.contract_id && clientPaymentType === 'initial' && contractSchedules.filter(s => s.payment_type === 'down_payment').length > 0" class="mt-3 space-y-1 bg-white border border-slate-100 rounded-xl p-3 shadow-inner">
+                                    <label class="block text-[10px] font-mono text-slate-500 uppercase mb-2">
+                                        To'lov Rejasi (Boshlang'ich to'lovlar)
+                                    </label>
+                                    <div class="max-h-36 overflow-y-auto space-y-1">
+                                        <div v-for="(s, index) in contractSchedules.filter(s => s.payment_type === 'down_payment')" :key="s.id" 
                                              @click="selectScheduleAmount(s)"
                                              class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
                                              :class="form.payment_schedule_id === s.id ? 'border-orange-500 bg-orange-50/60 font-bold shadow-sm' : 'border-transparent hover:border-orange-200 hover:bg-orange-50/50'">

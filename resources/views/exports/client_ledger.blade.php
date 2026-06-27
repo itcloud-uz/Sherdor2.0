@@ -214,82 +214,60 @@
     <div class="header-subtitle">MIJOZNING SHAXSIY VARAQASI</div>
 
     <!-- General Info Grid -->
-    <table class="info-layout-table">
-        <tr>
-            <!-- Left Side: Contract details -->
-            <td style="width: 33%;">
-                <table class="nested-info-table">
-                    <tr>
-                        <td class="label-cell">Shartnoma sanasi</td>
-                        <td class="value-cell">{{ $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d.m.Y') : '___' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Shartnoma raqami:</td>
-                        <td class="value-cell">{{ $contract->contract_number ?: '#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Qavat</td>
-                        <td class="value-cell">{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '___') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Xonadon raqami</td>
-                        <td class="value-cell" style="mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->unit ? $contract->unit->unit_number : '___' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Xonadon maydoni</td>
-                        <td class="value-cell">{{ $contract->unit ? number_format($contract->unit->area_sqm, 2, ',', ' ') : '___' }}</td>
-                    </tr>
-                </table>
-            </td>
-            
-            <!-- Middle Side: Client details -->
-            <td style="width: 34%;">
-                <table class="nested-info-table borderless">
-                    <tr>
-                        <td class="label-cell" style="text-align: right; padding-right: 10px;">Mijoz F.I.Sh:</td>
-                        <td class="value-cell" style="text-align: left; font-weight: bold;">{{ $contract->client->full_name }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell" style="text-align: right; padding-right: 10px;">PINFL:</td>
-                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->pinfl }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell" style="text-align: right; padding-right: 10px;">Pasport raqami:</td>
-                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell" style="text-align: right; padding-right: 10px;">Telefon raqami:</td>
-                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->phone }}</td>
-                    </tr>
-                </table>
-            </td>
-            
-            <!-- Right Side: Financial details -->
-            <td style="width: 33%;">
-                <table class="nested-info-table">
-                    <tr>
-                        <td class="label-cell">Xonadon umumiy narxi</td>
-                        <td class="value-cell" style="font-weight: bold;">{{ number_format($contract->total_amount, 0, ',', ' ') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Boshlang'ich to'lov</td>
-                        <td class="value-cell">{{ number_format($contract->down_payment, 0, ',', ' ') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">To'lov muddati</td>
-                        <td class="value-cell">{{ $contract->term_months }} oy</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Qoldiq so'mma</td>
-                        <td class="value-cell" style="font-weight: bold;">{{ number_format($contract->total_amount - $contract->down_payment, 0, ',', ' ') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-cell">Oylik to'lov so'mmasi</td>
-                        <td class="value-cell" style="font-weight: bold;">{{ number_format($contract->paymentSchedules->first() ? $contract->paymentSchedules->first()->expected_amount : (($contract->total_amount - $contract->down_payment) / ($contract->term_months ?: 1)), 0, ',', ' ') }}</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
+    <!-- General Info Grid (Flat Table for PDF & Excel alignment) -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+        <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 13%;">
+            <col style="width: 12%;">
+            <col style="width: 13%;">
+            <col style="width: 11%;">
+            <col style="width: 12%;">
+            <col style="width: 12%;">
+            <col style="width: 12%;">
+        </colgroup>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Shartnoma sanasi</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d.m.Y') : '___' }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Mijoz F.I.Sh:</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; font-size: 8px;">{{ $contract->client->full_name }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon umumiy narxi</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->total_amount, 0, ',', ' ') }}</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Shartnoma raqami:</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->contract_number ?: '#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">PINFL:</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->pinfl }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Boshlang'ich to'lov</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ number_format($contract->down_payment, 0, ',', ' ') }}</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Qavat</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '___') }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Pasport raqami:</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">To'lov muddati</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->term_months }} oy</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon raqami</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->unit ? $contract->unit->unit_number : '___' }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Telefon raqami:</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->phone }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Qoldiq so'mma</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->total_amount - $contract->down_payment, 0, ',', ' ') }}</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon maydoni</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->unit ? number_format($contract->unit->area_sqm, 2, ',', ' ') : '___' }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-size: 8px;"></td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px;"></td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Oylik to'lov so'mmasi</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->paymentSchedules->first() ? $contract->paymentSchedules->first()->expected_amount : (($contract->total_amount - $contract->down_payment) / ($contract->term_months ?: 1)), 0, ',', ' ') }}</td>
+            </tr>
+        </tbody>
     </table>
 
     <!-- Main Payment Ledger Table -->

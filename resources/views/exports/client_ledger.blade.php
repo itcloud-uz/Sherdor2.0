@@ -4,40 +4,40 @@
     <meta charset="utf-8">
     <title>Mijozning Shaxsiy Varaqasi</title>
     <style>
-        @page { size: A4 landscape; margin: 8mm; }
-        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 10px; line-height: 1.3; color: #000; margin: 0; padding: 0; }
+        @page { size: A4 portrait; margin: 6mm 8mm; }
+        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 9px; line-height: 1.25; color: #000; margin: 0; padding: 0; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
         
-        .header-title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 2px; text-transform: uppercase; }
-        .header-subtitle { font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase; }
+        .header-title { font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 2px; text-transform: uppercase; }
+        .header-subtitle { font-size: 10px; font-weight: bold; text-align: center; margin-bottom: 12px; text-transform: uppercase; }
         
-        .info-layout-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .info-layout-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
         .info-layout-table td { border: none; padding: 0; vertical-align: top; }
         
-        .nested-info-table { border-collapse: collapse; width: 98%; margin: 0 auto; }
-        .nested-info-table td { border: 1px solid #000; padding: 4px 6px; font-size: 10px; text-align: left; }
+        .nested-info-table { border-collapse: collapse; width: 99%; margin: 0 auto; }
+        .nested-info-table td { border: 1px solid #000; padding: 3px 5px; font-size: 8px; text-align: left; }
         .nested-info-table td.label-cell { font-weight: bold; background-color: #f9f9f9; width: 50%; }
         .nested-info-table td.value-cell { text-align: right; }
         .nested-info-table.borderless td { border: none; background: none; }
         .nested-info-table.borderless td.label-cell { font-weight: bold; width: 40%; }
         .nested-info-table.borderless td.value-cell { text-align: left; }
         
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
-        .main-table th, .main-table td { border: 1px solid #000; padding: 5px 3px; font-size: 9px; text-align: center; }
-        .main-table th.yellow-header { background-color: #ffff00; font-weight: bold; font-size: 10px; }
-        .main-table th.gray-header { background-color: #d9d9d9; font-weight: bold; font-size: 10px; }
-        .main-table th.sub-header { background-color: #f2f2f2; font-weight: normal; font-size: 9px; }
+        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }
+        .main-table th, .main-table td { border: 1px solid #000; padding: 4px 3px; font-size: 8px; text-align: center; }
+        .main-table th.yellow-header { background-color: #f2a900; color: #fff; font-weight: bold; font-size: 9px; }
+        .main-table th.gray-header { background-color: #555555; color: #fff; font-weight: bold; font-size: 9px; }
+        .main-table th.sub-header { background-color: #f2f2f2; font-weight: bold; font-size: 8px; color: #333; }
         
-        .summary-table { width: 45%; border-collapse: collapse; margin: 15px auto; }
-        .summary-table td { border: 1px solid #000; padding: 5px 8px; font-size: 10px; font-weight: bold; }
+        .summary-table { width: 50%; border-collapse: collapse; margin: 10px auto; }
+        .summary-table td { border: 1px solid #000; padding: 4px 6px; font-size: 8px; font-weight: bold; }
         .summary-table td.label-cell { text-align: left; background-color: #f9f9f9; }
         .summary-table td.value-cell { text-align: right; }
         .summary-table td.highlight { background-color: #f2f2f2; }
         
-        .footer-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        .footer-table td { border: none; padding: 5px; font-size: 10px; vertical-align: top; }
+        .footer-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .footer-table td { border: none; padding: 4px; font-size: 8px; vertical-align: top; }
     </style>
 </head>
 <body>
@@ -61,184 +61,121 @@
             return $t->transaction_date ?: $t->created_at;
         });
 
-        $dpSchedules = $allSchedules->filter(fn($s) => $s->payment_type === 'down_payment');
-        $instSchedules = $allSchedules->filter(fn($s) => $s->payment_type !== 'down_payment');
-
-        $firstInstDueDate = $instSchedules->first() ? \Carbon\Carbon::parse($instSchedules->first()->due_date) : ($allSchedules->first() ? \Carbon\Carbon::parse($allSchedules->first()->due_date) : null);
-        
-        $dpIncomes = collect();
-        $instIncomes = collect();
-
-        foreach ($incomes as $t) {
-            $isDp = false;
-            if ($t->payment_schedule_id) {
-                $sched = $allSchedules->firstWhere('id', $t->payment_schedule_id);
-                if ($sched && $sched->payment_type === 'down_payment') {
-                    $isDp = true;
-                }
-            } else {
-                $catName = $t->category ? strtolower($t->category->name) : '';
-                $notesText = strtolower($t->notes ?: '');
-                if (str_contains($catName, "boshlang") || str_contains($catName, "initial") ||
-                    str_contains($notesText, "boshlang") || str_contains($notesText, "initial") ||
-                    ($firstInstDueDate && \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->lt($firstInstDueDate))) {
-                    $isDp = true;
-                }
-            }
-
-            if ($isDp) {
-                $dpIncomes->push($t);
-            } else {
-                $instIncomes->push($t);
-            }
-        }
-
+        // Build the combined, split rows chronologically (matching Vue view)
         $rows = [];
-        $totalExpectedInstallment = 0;
         $totalPaidAll = 0;
         $totalRefundedAll = 0;
+        $totalExpectedInstallment = 0;
         $running_balance = 0;
 
-        // 1. Process down payment schedules
-        if ($dpSchedules->isNotEmpty()) {
-            foreach ($dpSchedules as $schedule) {
-                $schedulePayments = $dpIncomes->filter(fn($p) => $p->payment_schedule_id == $schedule->id);
-                if ($schedulePayments->isEmpty()) {
-                    $schedulePayments = $dpIncomes->filter(fn($p) => empty($p->payment_schedule_id));
-                }
-                
-                $paid_amount = $schedule->paid_amount;
-                $paid_date = $schedule->actual_payment_date ? \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') : ($schedulePayments->isNotEmpty() ? \Carbon\Carbon::parse($schedulePayments->first()->transaction_date ?: $schedulePayments->first()->created_at)->format('d.m.Y') : '');
-                
-                $methodLabel = '';
-                if ($schedule->payment_method) {
-                    $methodLabel = $schedule->payment_method;
-                } elseif ($schedulePayments->isNotEmpty()) {
-                    $methodLabel = $schedulePayments->first()->payment_method;
-                }
+        // 1. Add all approved income transactions as completed rows
+        foreach ($incomes as $t) {
+            $convAmount = $t->converted_amount ?? $t->amount;
+            $running_balance += $convAmount;
+            $totalPaidAll += $convAmount;
 
-                $running_balance += ($paid_amount - $schedule->expected_amount);
-
-                $rows[] = (object)[
-                    'is_down_payment' => true,
-                    'due_date_label' => "Bosh to'lov (" . \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y') . ")",
-                    'expected_amount' => $schedule->expected_amount,
-                    'paid_date' => $paid_date,
-                    'paid_amount' => $paid_amount > 0 ? $paid_amount : null,
-                    'payment_method' => $methodLabel,
-                    'refund_date' => null,
-                    'refund_amount' => null,
-                    'qoldiq' => $running_balance
-                ];
-                
-                $totalExpectedInstallment += $schedule->expected_amount;
-                $totalPaidAll += $paid_amount;
+            // Determine type
+            $pType = 'installment';
+            $catName = $t->category ? strtolower($t->category->name) : '';
+            $notesText = strtolower($t->notes ?: '');
+            if (str_contains($catName, "boshlang") || str_contains($catName, "initial") ||
+                str_contains($notesText, "boshlang") || str_contains($notesText, "initial")) {
+                $pType = 'down_payment';
             }
-            
-            $linkedDpIncomeIds = $dpSchedules->flatMap(fn($s) => $dpIncomes->filter(fn($p) => $p->payment_schedule_id == $s->id)->pluck('id'))->toArray();
-            $unlinkedDpIncomes = $dpIncomes->whereNotIn('id', $linkedDpIncomeIds);
-            foreach ($unlinkedDpIncomes as $t) {
-                $running_balance += $t->amount;
-                $rows[] = (object)[
-                    'is_down_payment' => true,
-                    'due_date_label' => "Boshlang'ich to'lov",
-                    'expected_amount' => null,
-                    'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
-                    'paid_amount' => $t->amount,
-                    'payment_method' => $t->payment_method ?: 'Naqd',
-                    'refund_date' => null,
-                    'refund_amount' => null,
-                    'qoldiq' => $running_balance
-                ];
-                $totalPaidAll += $t->amount;
-            }
-        } else {
-            foreach ($dpIncomes as $t) {
-                $running_balance += $t->amount;
-                $rows[] = (object)[
-                    'is_down_payment' => true,
-                    'due_date_label' => "Boshlang'ich to'lov",
-                    'expected_amount' => null,
-                    'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
-                    'paid_amount' => $t->amount,
-                    'payment_method' => $t->payment_method ?: 'Naqd',
-                    'refund_date' => null,
-                    'refund_amount' => null,
-                    'qoldiq' => $running_balance
-                ];
-                $totalPaidAll += $t->amount;
-            }
-        }
-
-        // 2. Process monthly installments
-        foreach ($instSchedules as $index => $schedule) {
-            $schedulePayments = $instIncomes->filter(fn($p) => $p->payment_schedule_id == $schedule->id);
-            
-            if ($schedulePayments->isEmpty()) {
-                $currentDueDate = \Carbon\Carbon::parse($schedule->due_date);
-                $nextSchedule = $instSchedules->values()->get($index + 1);
-                $nextDueDate = $nextSchedule ? \Carbon\Carbon::parse($nextSchedule->due_date) : null;
-                
-                $schedulePayments = $instIncomes->filter(function($p) use ($currentDueDate, $nextDueDate) {
-                    $tDate = \Carbon\Carbon::parse($p->transaction_date ?: $p->created_at);
-                    return $tDate->gte($currentDueDate->copy()->subDays(5)) && ($nextDueDate ? $tDate->lt($nextDueDate->copy()->subDays(5)) : true);
-                });
-            }
-
-            $currentDueDate = \Carbon\Carbon::parse($schedule->due_date);
-            $nextSchedule = $instSchedules->values()->get($index + 1);
-            $nextDueDate = $nextSchedule ? \Carbon\Carbon::parse($nextSchedule->due_date) : null;
-            
-            $scheduleRefunds = $refunds->filter(function($r) use ($currentDueDate, $nextDueDate) {
-                $rDate = \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at);
-                return $rDate->gte($currentDueDate->copy()->startOfMonth()) && ($nextDueDate ? $rDate->lt($nextDueDate->copy()->startOfMonth()) : true);
-            });
-
-            $paid_amount = $schedule->paid_amount > 0 ? $schedule->paid_amount : $schedulePayments->sum('amount');
-            $refunded_amount = $scheduleRefunds->sum('amount');
-            
-            $paid_date = $schedule->actual_payment_date ? \Carbon\Carbon::parse($schedule->actual_payment_date)->format('d.m.Y') : ($schedulePayments->isNotEmpty() ? \Carbon\Carbon::parse($schedulePayments->first()->transaction_date ?: $schedulePayments->first()->created_at)->format('d.m.Y') : '');
-            
-            $methodLabel = '';
-            if ($schedule->payment_method) {
-                $methodLabel = $schedule->payment_method;
-            } elseif ($schedulePayments->isNotEmpty()) {
-                $m = strtolower($schedulePayments->first()->payment_method ?: '');
-                if ($m === 'naqd' || $m === 'cash') $methodLabel = 'Naqt';
-                elseif ($m === 'plastik' || $m === 'card' || $m === 'karta') $methodLabel = 'Plastik';
-                elseif ($m === 'bank') $methodLabel = 'Bank';
-                else $methodLabel = ucfirst($schedulePayments->first()->payment_method);
-            }
-            
-            $refund_date = $scheduleRefunds->isNotEmpty() ? \Carbon\Carbon::parse($scheduleRefunds->first()->transaction_date ?: $scheduleRefunds->first()->created_at)->format('d.m.Y') : '';
-
-            $running_balance += ($paid_amount - $schedule->expected_amount - $refunded_amount);
 
             $rows[] = (object)[
-                'is_down_payment' => false,
-                'due_date_label' => \Carbon\Carbon::parse($schedule->due_date)->format('d.m.Y'),
-                'expected_amount' => $schedule->expected_amount,
-                'paid_date' => $paid_date,
-                'paid_amount' => $paid_amount > 0 ? $paid_amount : null,
-                'payment_method' => $methodLabel,
-                'refund_date' => $refund_date ?: null,
-                'refund_amount' => $refunded_amount > 0 ? $refunded_amount : null,
-                'qoldiq' => $running_balance
+                'is_txn' => true,
+                'date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->timestamp,
+                'due_date_label' => '',
+                'expected_amount' => null,
+                'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
+                'paid_amount' => $convAmount,
+                'payment_method' => $t->payment_method ?: 'Naqd',
+                'refund_date' => null,
+                'refund_amount' => null,
+                'qoldiq' => $running_balance,
+                'is_down_payment' => ($pType === 'down_payment')
             ];
-
-            $totalExpectedInstallment += $schedule->expected_amount;
-            $totalPaidAll += $paid_amount;
-            $totalRefundedAll += $refunded_amount;
         }
 
+        // 2. Add all approved refunds
+        foreach ($refunds as $r) {
+            $running_balance -= $r->amount;
+            $totalRefundedAll += $r->amount;
+
+            $rows[] = (object)[
+                'is_txn' => true,
+                'date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->timestamp,
+                'due_date_label' => '',
+                'expected_amount' => null,
+                'paid_date' => null,
+                'paid_amount' => null,
+                'payment_method' => null,
+                'refund_date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->format('d.m.Y'),
+                'refund_amount' => $r->amount,
+                'qoldiq' => $running_balance,
+                'is_down_payment' => false
+            ];
+        }
+
+        // 3. Add all unpaid/partially paid schedules
+        foreach ($allSchedules as $s) {
+            $remaining = $s->expected_amount - $s->paid_amount;
+            if ($remaining > 0.01) {
+                $running_balance -= $remaining;
+                $totalExpectedInstallment += $remaining;
+
+                $rows[] = (object)[
+                    'is_txn' => false,
+                    'date' => \Carbon\Carbon::parse($s->due_date)->timestamp,
+                    'due_date_label' => ($s->payment_type === 'down_payment' ? "Bosh to'lov (" : "") . \Carbon\Carbon::parse($s->due_date)->format('d.m.Y') . ($s->payment_type === 'down_payment' ? ")" : ""),
+                    'expected_amount' => $remaining,
+                    'paid_date' => null,
+                    'paid_amount' => null,
+                    'payment_method' => null,
+                    'refund_date' => null,
+                    'refund_amount' => null,
+                    'qoldiq' => $running_balance,
+                    'is_down_payment' => ($s->payment_type === 'down_payment')
+                ];
+            }
+        }
+
+        // 4. Sort chronologically
+        usort($rows, function($a, $b) {
+            if ($a->date !== $b->date) {
+                return $a->date - $b->date;
+            }
+            if ($a->is_txn !== $b->is_txn) {
+                return $a->is_txn ? -1 : 1;
+            }
+            return 0;
+        });
+
+        // 5. Re-calculate the running balance in chronological order so the ledger math is 100% correct
+        $running_balance = 0;
+        foreach ($rows as $row) {
+            if ($row->is_txn) {
+                if ($row->refund_amount) {
+                    $running_balance -= $row->refund_amount;
+                } else {
+                    $running_balance += $row->paid_amount;
+                }
+            } else {
+                $running_balance -= $row->expected_amount;
+            }
+            $row->qoldiq = $running_balance;
+        }
+
+        // Calculate totals for summary box
         $bankPaid = 0;
         $cashPaid = 0;
         foreach ($incomes as $t) {
             $method = strtolower($t->payment_method ?: '');
             if ($method === 'bank') {
-                $bankPaid += $t->amount;
+                $bankPaid += ($t->converted_amount ?? $t->amount);
             } else {
-                $cashPaid += $t->amount;
+                $cashPaid += ($t->converted_amount ?? $t->amount);
             }
         }
         

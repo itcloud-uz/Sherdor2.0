@@ -278,6 +278,26 @@ function openPaymentHistoryModal() {
     showPaymentHistoryModal.value = true;
 }
 
+const showExportFormatModal = ref(false);
+const exportContractId = ref(null);
+
+function openExportFormatModal(contractId) {
+    exportContractId.value = contractId;
+    showExportFormatModal.value = true;
+}
+
+function closeExportFormatModal() {
+    showExportFormatModal.value = false;
+    exportContractId.value = null;
+}
+
+function handleExport(format) {
+    if (!exportContractId.value) return;
+    const url = `/admin/crm/ledger/${exportContractId.value}/export/${format}?lang=${locale.value || 'uz'}`;
+    window.open(url, '_blank');
+    closeExportFormatModal();
+}
+
 const loadedScripts = {};
 function loadScript(src) {
     if (loadedScripts[src]) return loadedScripts[src];
@@ -4499,6 +4519,12 @@ const ledgerReportData = computed(() => {
                                 <button @click="openPaymentHistoryModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
                                     To'lov tarixi
                                 </button>
+                                <button @click="openExportFormatModal(detailedClientData.contracts[0].id)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Yuklab olish
+                                </button>
                             </div>
                         </div>
 
@@ -8329,6 +8355,46 @@ const ledgerReportData = computed(() => {
                         📥 Yuklab olish
                     </a>
                 </div>
+            </div>
+        </div>
+
+        <!-- 📥 Export Format Selection Modal (Glassmorphic) -->
+        <div v-if="showExportFormatModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300" @click.self="closeExportFormatModal">
+            <div class="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-white/20 p-6 space-y-6 animate-fade-in-up">
+                <!-- Header -->
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider font-sans flex items-center gap-2">
+                        <span>📥</span> To'lov grafigini yuklab olish
+                    </h3>
+                    <button @click="closeExportFormatModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Body / Question -->
+                <div class="text-center space-y-2">
+                    <p class="text-xs text-gray-600 font-medium leading-relaxed font-sans">
+                        To'lov grafigini qaysi formatda yuklab olishni istaysiz?
+                    </p>
+                </div>
+
+                <!-- Buttons Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button @click="handleExport('xlsx')" class="p-4 bg-emerald-50 hover:bg-emerald-600 border border-emerald-300 hover:border-emerald-600 text-emerald-700 hover:text-white rounded-2xl transition-all shadow-sm flex flex-col items-center justify-center gap-2 group">
+                        <span class="text-2xl group-hover:scale-110 transition-transform">📊</span>
+                        <span class="text-xs font-bold uppercase tracking-wider font-sans">Excel (xlsx)</span>
+                    </button>
+
+                    <button @click="handleExport('pdf')" class="p-4 bg-red-50 hover:bg-red-600 border border-red-300 hover:border-red-600 text-red-700 hover:text-white rounded-2xl transition-all shadow-sm flex flex-col items-center justify-center gap-2 group">
+                        <span class="text-2xl group-hover:scale-110 transition-transform">📕</span>
+                        <span class="text-xs font-bold uppercase tracking-wider font-sans">PDF Format</span>
+                    </button>
+                </div>
+
+                <!-- Cancel Button -->
+                <button @click="closeExportFormatModal" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider font-sans">
+                    Bekor qilish
+                </button>
             </div>
         </div>
 

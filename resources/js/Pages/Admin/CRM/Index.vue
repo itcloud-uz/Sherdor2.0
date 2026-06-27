@@ -4186,17 +4186,57 @@ const ledgerReportData = computed(() => {
 
                 <!-- Header Row -->
                 <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-950 font-sans tracking-tight">{{ selectedClientForDetail.last_name }} {{ selectedClientForDetail.first_name }}</h1>
-                        <div class="text-xs text-gray-500 font-mono mt-1">{{ getUzFormattedDate() }}</div>
+                    <div class="flex items-center gap-3">
+                        <!-- Square Back Button -->
+                        <button @click="closeClientDetail" class="w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center rounded-xl transition-all shadow-sm">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-950 font-sans tracking-tight leading-tight">
+                                {{ selectedClientForDetail.last_name }} {{ selectedClientForDetail.first_name }}
+                            </h1>
+                            <!-- Badges -->
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <span class="inline-flex items-center bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold font-sans uppercase">
+                                    Mijoz
+                                </span>
+                                <template v-if="detailedClientData && detailedClientData.contracts && detailedClientData.contracts.length > 0">
+                                    <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        Shartnoma #{{ detailedClientData.contracts[0].contract_number }}
+                                    </span>
+                                    <span v-if="detailedClientData.contracts[0].unit?.podyezd" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                        {{ detailedClientData.contracts[0].unit.podyezd }}-podezd
+                                    </span>
+                                    <span v-if="detailedClientData.contracts[0].unit?.unit_number" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                                        {{ detailedClientData.contracts[0].unit.unit_number }}-uy
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Go back button -->
-                    <button @click="closeClientDetail" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Orqaga
-                    </button>
+                    <!-- Right Actions -->
+                    <div class="flex items-center gap-2" v-if="detailedClientData">
+                        <!-- Tasdiqlash Button -->
+                        <button v-if="selectedContract && selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1 disabled:opacity-50">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" /></svg>
+                            Tasdiqlash
+                        </button>
+                        <!-- Bekor qilish Button -->
+                        <button v-if="selectedContract && selectedContract.status !== 'cancelled'" @click="cancelContract(selectedContract.id)" :disabled="isProcessing" class="px-4 py-2 bg-[#ff4d4d] hover:bg-[#e60000] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1 disabled:opacity-50">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            Bekor qilish
+                        </button>
+                        <!-- Tahrirlash Button -->
+                        <button @click="openEditClientModal(detailedClientData)" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Tahrirlash
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Skeleton Loader -->
@@ -4210,6 +4250,62 @@ const ledgerReportData = computed(() => {
 
                 <!-- Detailed Client View Content -->
                 <div v-else-if="detailedClientData" class="space-y-6">
+                    <!-- Card 0: Financial Cards Row (Image 2 style) -->
+                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <!-- Card 1: Uy narxi -->
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
+                            <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
+                                <span>Uy narxi</span>
+                                <span class="text-emerald-500 bg-emerald-50 w-5 h-5 rounded-full flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="text-lg font-bold text-emerald-600 font-sans tracking-tight">
+                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Chegirma -->
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
+                            <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
+                                <span>Chegirma</span>
+                            </div>
+                            <div class="text-lg font-bold text-amber-500 font-sans tracking-tight">
+                                {{ Number(detailedClientData.contracts[0]?.discount || 0).toLocaleString('en-US') }} so'm
+                            </div>
+                        </div>
+
+                        <!-- Card 3: To'langan -->
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
+                            <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
+                                <span>To'langan</span>
+                                <span class="text-xs font-bold text-gray-700 font-mono">{{ getContractFinancials(detailedClientData.contracts[0]).percent }}%</span>
+                            </div>
+                            <div class="text-lg font-bold text-amber-500 font-sans tracking-tight">
+                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm
+                            </div>
+                            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
+                                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="`width: ${getContractFinancials(detailedClientData.contracts[0]).percent}%`"></div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4: Qarz yoki Qolgan -->
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
+                            <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
+                                <span>Qarz yoki Qolgan</span>
+                                <span class="text-red-500 bg-red-50 w-5 h-5 rounded-full flex items-center justify-center" v-if="getContractFinancials(detailedClientData.contracts[0]).debt > 0">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="text-lg font-bold text-red-600 font-sans tracking-tight">
+                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).debt).toLocaleString('en-US') }} so'm
+                            </div>
+                        </div>
+                    </div>
                     <!-- Card 1: Uy haqida ma'lumot -->
                     <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0 && detailedClientData.contracts[0]?.unit" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
                         <!-- Left: Layout Image Preview -->
@@ -4369,6 +4465,15 @@ const ledgerReportData = computed(() => {
                                         </strong>
                                     </div>
                                     <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Kadastr:</span> <strong class="text-gray-900">yo'q</strong></div>
+                                    <div v-if="detailedClientData.contracts[0]?.down_payment > 0" class="py-1 border-b border-gray-50 flex justify-between">
+                                        <span class="text-gray-400">Boshlang'ich to'lov:</span>
+                                        <strong class="text-gray-900 font-mono text-right">
+                                            {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                                            <span class="text-[10px] text-gray-500 font-normal block">
+                                                (To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm)
+                                            </span>
+                                        </strong>
+                                    </div>
                                     
                                     <!-- Kunlik Penya Darajasi & Hisoblash -->
                                     <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center gap-2">
@@ -4461,51 +4566,6 @@ const ledgerReportData = computed(() => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
                         </a>
-                    </div>
-
-                    <!-- Card 4: Financial Overview Bar -->
-                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div class="flex flex-wrap items-center gap-x-8 gap-y-4 text-xs font-sans">
-                            <div>
-                                <span class="text-gray-400 block mb-1">Uy narxi</span>
-                                <strong class="text-emerald-600 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-400 block mb-1">Chegirma</span>
-                                <strong class="text-gray-900 text-base font-bold">{{ Number(detailedClientData.contracts[0]?.discount || 0).toLocaleString('en-US') }} so'm</strong>
-                            </div>
-                            <div v-if="detailedClientData.contracts[0]?.down_payment > 0">
-                                <span class="text-gray-400 block mb-1">Boshlang'ich to'lov</span>
-                                <div class="flex flex-col">
-                                    <strong class="text-indigo-600 text-base font-bold">
-                                        {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
-                                    </strong>
-                                    <span class="text-[10px] text-gray-500 font-medium leading-tight">
-                                        To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm
-                                        <template v-if="getContractDownPaymentStats(detailedClientData.contracts[0]).payments.length > 0">
-                                            ({{ getContractDownPaymentStats(detailedClientData.contracts[0]).payments.length }} marta: 
-                                            {{ getContractDownPaymentStats(detailedClientData.contracts[0]).payments.map(p => Number(p.amount).toLocaleString('en-US')).join(' + ') }})
-                                        </template>
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <span class="text-gray-400 block mb-1">To'langan</span>
-                                <strong class="text-amber-500 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm</strong>
-                            </div>
-                            <div>
-                                <span class="text-gray-400 block mb-1">Qarzdorlik</span>
-                                <strong class="text-red-500 text-base font-bold">{{ Number(getContractFinancials(detailedClientData.contracts[0]).debt).toLocaleString('en-US') }} so'm</strong>
-                            </div>
-                        </div>
-
-                        <!-- Progress bar -->
-                        <div class="w-full md:w-64 flex items-center gap-3">
-                            <div class="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="`width: ${getContractFinancials(detailedClientData.contracts[0]).percent}%`"></div>
-                            </div>
-                            <span class="text-xs font-bold text-gray-700 font-mono">{{ getContractFinancials(detailedClientData.contracts[0]).percent }}%</span>
-                        </div>
                     </div>
 
                     <!-- Card 5: To'lov jadvali -->

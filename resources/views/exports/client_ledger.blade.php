@@ -1,8 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns="http://www.w3.org/TR/REC-html40">
 <head>
     <meta charset="utf-8">
     <title>Mijozning Shaxsiy Varaqasi</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                    <x:Name>Shaxsiy Varaqa</x:Name>
+                    <x:WorksheetOptions>
+                        <x:Print>
+                            <x:ValidPrinterInfo/>
+                            <x:PaperSizeIndex>9</x:PaperSizeIndex> <!-- A4 -->
+                            <x:HorizontalResolution>600</x:HorizontalResolution>
+                            <x:VerticalResolution>600</x:VerticalResolution>
+                        </x:Print>
+                        <x:Selected/>
+                        <x:DoNotDisplayGridlines/>
+                    </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+    </xml>
+    <![endif]-->
     <style>
         @page { size: A4 portrait; margin: 6mm 8mm; }
         body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 9px; line-height: 1.25; color: #000; margin: 0; padding: 0; }
@@ -85,7 +111,7 @@
 
             $rows[] = (object)[
                 'is_txn' => true,
-                'date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->timestamp,
+                'date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->startOfDay()->timestamp,
                 'due_date_label' => '',
                 'expected_amount' => null,
                 'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
@@ -105,7 +131,7 @@
 
             $rows[] = (object)[
                 'is_txn' => true,
-                'date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->timestamp,
+                'date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->startOfDay()->timestamp,
                 'due_date_label' => '',
                 'expected_amount' => null,
                 'paid_date' => null,
@@ -127,7 +153,7 @@
 
                 $rows[] = (object)[
                     'is_txn' => false,
-                    'date' => \Carbon\Carbon::parse($s->due_date)->timestamp,
+                    'date' => \Carbon\Carbon::parse($s->due_date)->startOfDay()->timestamp,
                     'due_date_label' => ($s->payment_type === 'down_payment' ? "Bosh to'lov (" : "") . \Carbon\Carbon::parse($s->due_date)->format('d.m.Y') . ($s->payment_type === 'down_payment' ? ")" : ""),
                     'expected_amount' => $remaining,
                     'paid_date' => null,
@@ -206,7 +232,7 @@
                     </tr>
                     <tr>
                         <td class="label-cell">Xonadon raqami</td>
-                        <td class="value-cell">{{ $contract->unit ? $contract->unit->unit_number : '___' }}</td>
+                        <td class="value-cell" style="mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->unit ? $contract->unit->unit_number : '___' }}</td>
                     </tr>
                     <tr>
                         <td class="label-cell">Xonadon maydoni</td>
@@ -224,15 +250,15 @@
                     </tr>
                     <tr>
                         <td class="label-cell" style="text-align: right; padding-right: 10px;">PINFL:</td>
-                        <td class="value-cell" style="text-align: left;">{{ $contract->client->pinfl }}</td>
+                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->pinfl }}</td>
                     </tr>
                     <tr>
                         <td class="label-cell" style="text-align: right; padding-right: 10px;">Pasport raqami:</td>
-                        <td class="value-cell" style="text-align: left;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
+                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
                     </tr>
                     <tr>
                         <td class="label-cell" style="text-align: right; padding-right: 10px;">Telefon raqami:</td>
-                        <td class="value-cell" style="text-align: left;">{{ $contract->client->phone }}</td>
+                        <td class="value-cell" style="text-align: left; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->phone }}</td>
                     </tr>
                 </table>
             </td>
@@ -266,7 +292,17 @@
     </table>
 
     <!-- Main Payment Ledger Table -->
-    <table class="main-table">
+    <table class="main-table" style="width: 100%; border-collapse: collapse;">
+        <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 13%;">
+            <col style="width: 12%;">
+            <col style="width: 13%;">
+            <col style="width: 11%;">
+            <col style="width: 12%;">
+            <col style="width: 12%;">
+            <col style="width: 12%;">
+        </colgroup>
         <thead>
             <tr>
                 <th colspan="2" class="yellow-header">Kutilayotgan to'lov</th>

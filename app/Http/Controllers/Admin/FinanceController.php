@@ -289,6 +289,25 @@ class FinanceController extends Controller
             }
         }
 
+        // Automatic financial relation mapping and fallback inferences
+        if (!empty($validated['payment_schedule_id']) && empty($validated['contract_id'])) {
+            $sched = \App\Models\PaymentSchedule::find($validated['payment_schedule_id']);
+            if ($sched) {
+                $validated['contract_id'] = $sched->contract_id;
+            }
+        }
+
+        if (!empty($validated['contract_id']) && empty($validated['client_id'])) {
+            $contract = \App\Models\Contract::find($validated['contract_id']);
+            if ($contract) {
+                $validated['client_id'] = $contract->client_id;
+            }
+        }
+
+        if (empty($validated['client_id']) && !empty($validated['target_type']) && $validated['target_type'] === 'client' && !empty($validated['target_id'])) {
+            $validated['client_id'] = $validated['target_id'];
+        }
+
         $transaction = Transaction::create($validated);
 
         if ($requiresConsensus) {
@@ -334,6 +353,23 @@ class FinanceController extends Controller
         if (!empty($validated['account_id'])) {
             $transaction->account_id = $validated['account_id'];
             $transaction->save();
+        }
+
+        // Auto-repair missing financial linkages
+        if (empty($transaction->contract_id) && !empty($transaction->payment_schedule_id)) {
+            $sched = \App\Models\PaymentSchedule::find($transaction->payment_schedule_id);
+            if ($sched) {
+                $transaction->contract_id = $sched->contract_id;
+            }
+        }
+        if (empty($transaction->client_id) && !empty($transaction->contract_id)) {
+            $contract = \App\Models\Contract::find($transaction->contract_id);
+            if ($contract) {
+                $transaction->client_id = $contract->client_id;
+            }
+        }
+        if (empty($transaction->client_id) && !empty($transaction->target_type) && $transaction->target_type === 'client' && !empty($transaction->target_id)) {
+            $transaction->client_id = $transaction->target_id;
         }
 
         $transaction->status = 'approved';
@@ -570,12 +606,12 @@ class FinanceController extends Controller
                     $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
                     if ($cat) {
                         $catName = strtolower($cat->name);
-                        if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
+                        if (str_contains($catName, "boshlang'ich") || str_contains($catName, "boshlang’ich") || str_contains($catName, "initial")) {
                             $isInitialPayment = true;
                         }
                     }
                 }
-                if ($transaction->notes && (str_contains(strtolower($transaction->notes), "boshlang'ich") || str_contains(strtolower($transaction->notes), "initial"))) {
+                if ($transaction->notes && (str_contains(strtolower($transaction->notes), "boshlang'ich") || str_contains(strtolower($transaction->notes), "boshlang’ich") || str_contains(strtolower($transaction->notes), "initial"))) {
                     $isInitialPayment = true;
                 }
 

@@ -65,6 +65,7 @@ const showQuickTransferModal = ref(false);
 // Client search states
 const clientSearchQuery = ref('');
 const clientPaymentType = ref('monthly');
+const selectedUnitId = ref('');
 const showClientDropdown = ref(false);
 
 const isAdmin = computed(() => {
@@ -1071,11 +1072,11 @@ const showCounterpartyField = computed(() => {
 // Watch individual IDs to automatically set counterparty_id
 watch(() => form.value.partner_id, (newVal) => {
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => (x.type === 'partner' || x.type === 'shareholder') && x.customable_id === newVal);
+        const c = props.counterparties.find(x => (x.type === 'partner' || x.type === 'shareholder') && x.customable_id == newVal);
         if (c) {
             form.value.counterparty_id = c.id;
         } else {
-            const cAlt = props.counterparties.find(x => x.customable_id === newVal && x.customable_type?.includes('Partner'));
+            const cAlt = props.counterparties.find(x => x.customable_id == newVal && x.customable_type?.includes('Partner'));
             if (cAlt) form.value.counterparty_id = cAlt.id;
         }
     }
@@ -1083,7 +1084,7 @@ watch(() => form.value.partner_id, (newVal) => {
 
 watch(() => form.value.worker_id, (newVal) => {
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id === newVal);
+        const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id == newVal);
         if (c) {
             form.value.counterparty_id = c.id;
         }
@@ -1092,7 +1093,7 @@ watch(() => form.value.worker_id, (newVal) => {
 
 watch(() => form.value.supplier_id, (newVal) => {
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => x.type === 'supplier' && x.customable_id === newVal);
+        const c = props.counterparties.find(x => x.type === 'supplier' && x.customable_id == newVal);
         if (c) {
             form.value.counterparty_id = c.id;
         }
@@ -1101,7 +1102,7 @@ watch(() => form.value.supplier_id, (newVal) => {
 
 watch(() => form.value.client_id, (newVal) => {
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => x.type === 'client' && x.customable_id === newVal);
+        const c = props.counterparties.find(x => x.type === 'client' && x.customable_id == newVal);
         if (c) {
             form.value.counterparty_id = c.id;
         }
@@ -1111,7 +1112,7 @@ watch(() => form.value.client_id, (newVal) => {
 // Watch account selection to default the currency
 watch(() => form.value.account_id, (newVal) => {
     if (newVal && props.registers) {
-        const reg = props.registers.find(r => r.id === newVal);
+        const reg = props.registers.find(r => r.id == newVal);
         if (reg) {
             form.value.currency = reg.currency;
             if (reg.building_id) {
@@ -1121,14 +1122,53 @@ watch(() => form.value.account_id, (newVal) => {
     }
 });
 
-// Watch contract selection to automatically select the building
+// Watch contract selection to automatically select the building and unit
 watch(() => form.value.contract_id, (newVal) => {
     if (newVal && props.contracts) {
-        const c = props.contracts.find(x => x.id === newVal);
+        const c = props.contracts.find(x => x.id == newVal);
         if (c) {
             const buildingId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
             if (buildingId) {
                 form.value.building_id = buildingId;
+            }
+            if (c.unit_id) {
+                selectedUnitId.value = c.unit_id;
+            }
+        }
+    } else {
+        selectedUnitId.value = '';
+    }
+});
+
+// Watch unit selection to automatically sync contract, building and client
+watch(() => selectedUnitId.value, (newVal) => {
+    if (newVal && props.contracts) {
+        const c = props.contracts.find(x => x.unit_id == newVal);
+        if (c) {
+            form.value.contract_id = c.id;
+            const buildingId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            if (buildingId) {
+                form.value.building_id = buildingId;
+            }
+            if (c.client_id && props.counterparties) {
+                const cp = props.counterparties.find(x => x.type === 'client' && x.customable_id == c.client_id);
+                if (cp) {
+                    form.value.counterparty_id = cp.id;
+                }
+            }
+        }
+    }
+});
+
+// Watch building selection to clear unit and contract if building mismatch
+watch(() => form.value.building_id, (newVal) => {
+    if (newVal && selectedUnitId.value && props.contracts) {
+        const c = props.contracts.find(x => x.unit_id == selectedUnitId.value);
+        if (c) {
+            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            if (bId != newVal) {
+                selectedUnitId.value = '';
+                form.value.contract_id = '';
             }
         }
     }
@@ -1139,15 +1179,24 @@ watch(() => form.value.counterparty_id, (newVal) => {
     form.value.contract_id = '';
     form.value.payment_schedule_id = '';
     selectedInvoiceIds.value = [];
+    selectedUnitId.value = '';
 
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => x.id === newVal);
+        const c = props.counterparties.find(x => x.id == newVal);
         if (c) {
             form.value.client_id = c.type === 'client' ? c.customable_id : '';
             form.value.supplier_id = c.type === 'supplier' ? c.customable_id : '';
             form.value.worker_id = c.type === 'employee' ? c.customable_id : '';
             if (c.type === 'client') {
                 clientSearchQuery.value = c.name;
+                
+                // Auto-select contract if client has only 1 active contract
+                if (props.contracts) {
+                    const clientContractsList = props.contracts.filter(x => x.client_id == c.customable_id);
+                    if (clientContractsList.length === 1) {
+                        form.value.contract_id = clientContractsList[0].id;
+                    }
+                }
             }
         }
     } else {
@@ -1589,9 +1638,69 @@ const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
 // Client search and payment type selector state
+const availableUnits = computed(() => {
+    if (!props.contracts) return [];
+    let list = props.contracts;
+    
+    // Filter by building if selected
+    if (form.value.building_id) {
+        list = list.filter(c => {
+            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            return bId == form.value.building_id;
+        });
+    }
+    
+    // Filter by client if selected
+    if (form.value.client_id) {
+        list = list.filter(c => c.client_id == form.value.client_id);
+    }
+    
+    // Map to unique units
+    const units = [];
+    const seenIds = new Set();
+    list.forEach(c => {
+        if (c.unit && !seenIds.has(c.unit.id)) {
+            seenIds.add(c.unit.id);
+            units.push({
+                id: c.unit.id,
+                unit_number: c.unit.unit_number,
+                building_name: c.unit.floor?.building?.name || ''
+            });
+        }
+    });
+    
+    return units.sort((a, b) => String(a.unit_number).localeCompare(String(b.unit_number), undefined, {numeric: true}));
+});
+
 const filteredClientsList = computed(() => {
-    const list = props.counterparties?.filter(x => x.type === 'client') || [];
+    let list = props.counterparties?.filter(x => x.type === 'client') || [];
+    
+    // Filter only clients who have at least one contract
+    list = list.filter(x => {
+        return props.contracts?.some(c => c.client_id == x.customable_id);
+    });
+    
+    // Filter by building if selected
+    if (form.value.building_id) {
+        list = list.filter(x => {
+            return props.contracts?.some(c => {
+                const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+                return c.client_id == x.customable_id && bId == form.value.building_id;
+            });
+        });
+    }
+    
+    // Filter by unit if selected
+    if (selectedUnitId.value) {
+        list = list.filter(x => {
+            return props.contracts?.some(c => {
+                return c.client_id == x.customable_id && c.unit_id == selectedUnitId.value;
+            });
+        });
+    }
+    
     if (!clientSearchQuery.value) return list;
+    
     const q = clientSearchQuery.value.toLowerCase().trim();
     const selected = props.counterparties?.find(x => x.id === form.value.counterparty_id);
     if (selected && selected.name.toLowerCase().trim() === q) return list;
@@ -1816,6 +1925,7 @@ function submitTransaction() {
             };
             selectedInvoiceIds.value = [];
             extraNotesInput.value = '';
+            selectedUnitId.value = '';
             documentNumberInput.value = '';
             clientSearchQuery.value = '';
             clientPaymentType.value = 'monthly';
@@ -1878,6 +1988,7 @@ function openQuickTransaction(type) {
     invoiceCurrencyFilter.value = '';
     clientSearchQuery.value = '';
     clientPaymentType.value = 'monthly';
+    selectedUnitId.value = '';
     documentNumberInput.value = String(nextDocNumber.value);
     isEditingDocNumber.value = false;
     extraNotesInput.value = '';
@@ -5163,6 +5274,19 @@ function getCounterpartyStatus(c) {
 
                         <!-- Conditional client section -->
                         <div v-if="requiresClient" class="md:col-span-2 border border-orange-100 p-4 rounded-xl bg-orange-50/10 space-y-3">
+                            <!-- Xonadon selector (Apartment/Unit Filter) -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                    Xonadon (Filtr)
+                                </label>
+                                <select v-model="selectedUnitId" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                                    <option value="">Barcha xonadonlar</option>
+                                    <option v-for="u in availableUnits" :key="u.id" :value="u.id">
+                                        {{ u.unit_number }} (Obyekt: {{ u.building_name }})
+                                    </option>
+                                </select>
+                            </div>
+
                             <div class="relative">
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Mijoz (Kontragent)

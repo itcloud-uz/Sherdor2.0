@@ -14,6 +14,15 @@ class ContractObserver
     public function created(Contract $contract): void
     {
         if ($contract->payment_type === 'full') {
+            PaymentSchedule::create([
+                'contract_id' => $contract->id,
+                'expected_amount' => $contract->total_amount,
+                'remaining_debt' => $contract->total_amount,
+                'paid_amount' => 0,
+                'due_date' => $contract->created_at ? Carbon::parse($contract->created_at)->format('Y-m-d') : Carbon::now()->format('Y-m-d'),
+                'status' => 'pending',
+                'original_payment_amount' => $contract->total_amount
+            ]);
             return;
         }
 

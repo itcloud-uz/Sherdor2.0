@@ -697,6 +697,23 @@ class FinanceController extends Controller
             }
         }
 
+        // 9. Auto-activate contract if payments are complete / down payment is paid
+        if ($transaction->contract_id && $transaction->type === 'income') {
+            $contract = \App\Models\Contract::find($transaction->contract_id);
+            if ($contract && in_array($contract->status, ['draft', 'awaiting_payment'])) {
+                $totalApproved = \App\Models\Transaction::where('contract_id', $contract->id)
+                    ->where('type', 'income')
+                    ->where('status', 'approved')
+                    ->sum('amount');
+                
+                $requiredAmount = $contract->payment_type === 'full' ? $contract->total_amount : $contract->down_payment;
+                
+                if ($totalApproved >= $requiredAmount) {
+                    $contract->activateContract();
+                }
+            }
+        }
+
         return redirect()->back()->with('message', 'Transaction approved.');
     }
 

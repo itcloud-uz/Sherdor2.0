@@ -134,6 +134,20 @@ class Contract extends Model
 
         $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
 
+        // If it's a one-time full payment, generate a single schedule
+        if ($this->payment_type === 'full') {
+            \App\Models\PaymentSchedule::create([
+                'contract_id' => $this->id,
+                'expected_amount' => $this->total_amount,
+                'remaining_debt' => $this->total_amount,
+                'paid_amount' => 0,
+                'due_date' => $baseDate->format('Y-m-d'),
+                'status' => 'pending',
+                'original_payment_amount' => $this->total_amount
+            ]);
+            return;
+        }
+
         // 1. Generate split down payment schedules if enabled
         $downPaymentTerm = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 1;
         
@@ -179,10 +193,13 @@ class Contract extends Model
         }
     }
 
-    public function markAsActiveSold()
+    public function activateContract()
     {
-        if ($this->ai_verification_status === 'passed') {
-            $this->update(['status' => 'active']);
+        if (in_array($this->status, ['draft', 'awaiting_payment'])) {
+            $this->update([
+                'status' => 'active',
+                'ai_verification_status' => 'passed'
+            ]);
             
             if ($this->unit) {
                 $this->unit->update(['status' => 'sold']);
@@ -201,6 +218,13 @@ class Contract extends Model
                     $counterparty->decrement('balance', $this->total_amount);
                 }
             }
+        }
+    }
+
+    public function markAsActiveSold()
+    {
+        if ($this->ai_verification_status === 'passed') {
+            $this->activateContract();
 
             // Auto-approve any pending transactions associated with this contract
             $pendingTransactions = \App\Models\Transaction::where('contract_id', $this->id)->where('status', 'pending')->get();

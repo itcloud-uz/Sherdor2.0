@@ -507,24 +507,7 @@ class ContractController extends Controller
 
     public function forceActivate(\App\Models\Contract $contract)
     {
-        $contract->update(['status' => 'active', 'ai_verification_status' => 'passed']);
-        if ($contract->unit) {
-            $contract->unit->update(['status' => 'sold']);
-        }
-
-        // Generate Payment Schedules
-        $contract->generatePaymentSchedules();
-
-        // Deduct purchase price from client counterparty balance
-        if ($contract->client_id) {
-            $counterparty = \App\Models\Counterparty::where([
-                'customable_type' => 'App\Models\Client',
-                'customable_id' => $contract->client_id,
-            ])->first();
-            if ($counterparty) {
-                $counterparty->decrement('balance', $contract->total_amount);
-            }
-        }
+        $contract->activateContract();
 
         // Retrieve counterparty and building info
         $counterpartyId = null;

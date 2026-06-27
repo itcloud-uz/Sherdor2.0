@@ -757,7 +757,7 @@ class FinanceController extends Controller
         // 9. Auto-activate contract if payments are complete / down payment is paid
         if ($transaction->contract_id && $transaction->type === 'income') {
             $contract = \App\Models\Contract::find($transaction->contract_id);
-            if ($contract && in_array($contract->status, ['draft', 'awaiting_payment'])) {
+            if ($contract && in_array($contract->status, ['draft', 'awaiting_payment', 'awaiting_signature'])) {
                 $totalApproved = \App\Models\Transaction::where('contract_id', $contract->id)
                     ->where('type', 'income')
                     ->where('status', 'approved')
@@ -769,6 +769,11 @@ class FinanceController extends Controller
                     $contract->activateContract();
                 }
             }
+        }
+
+        // 10. Run self-healing reconciliation for this contract to make sure all payment schedules are 100% correct
+        if ($transaction->contract_id) {
+            self::reconcileContractPayments($transaction->contract_id);
         }
 
         return redirect()->back()->with('message', 'Transaction approved.');
@@ -805,6 +810,134 @@ class FinanceController extends Controller
             $owner = MachineOwner::find($id);
             if ($owner) {
                 $txnType === 'expense' ? $owner->decrement('balance', $amount) : null;
+            }
+        }
+    }
+
+    public static function reconcileContractPayments($contractId)
+    {
+        $contract = \App\Models\Contract::with(['paymentSchedules'])->find($contractId);
+        if (!$contract) return;
+
+        // If no schedules exist, and contract is active/completed/awaiting_signature, generate them
+        if ($contract->paymentSchedules()->count() === 0 && in_array($contract->status, ['active', 'completed', 'awaiting_signature'])) {
+            $contract->generatePaymentSchedules();
+            // Reload relations
+            $contract = \App\Models\Contract::with(['paymentSchedules'])->find($contractId);
+        }
+
+        $schedules = $contract->paymentSchedules;
+        if ($schedules->count() === 0) return;
+
+        // Reset all schedules to unpaid state
+        foreach ($schedules as $s) {
+            $s->paid_amount = 0;
+            $s->remaining_debt = $s->expected_amount;
+            $s->status = \Carbon\Carbon::parse($s->due_date)->isPast() ? 'overdue' : 'pending';
+            $s->actual_payment_date = null;
+            $s->payment_method = null;
+            $s->save();
+        }
+
+        // Get all approved income transactions for this contract
+        $transactions = \App\Models\Transaction::where('contract_id', $contractId)
+            ->where('type', 'income')
+            ->where('status', 'approved')
+            ->orderBy('transaction_date', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($transactions as $tx) {
+            $remainingAmount = $tx->amount;
+            
+            // Determine target schedule type
+            $targetType = 'installment';
+            $isInitialPayment = false;
+            if ($tx->category_id) {
+                $categoryName = \App\Models\TransactionCategory::where('id', $tx->category_id)->value('name');
+                if ($categoryName) {
+                    $categoryNameLower = strtolower($categoryName);
+                    if (str_contains($categoryNameLower, "boshlang'ich") || str_contains($categoryNameLower, "boshlang’ich") || str_contains($categoryNameLower, "initial")) {
+                        $isInitialPayment = true;
+                    }
+                }
+            }
+            if ($tx->notes && (str_contains(strtolower($tx->notes), "boshlang'ich") || str_contains(strtolower($tx->notes), "boshlang’ich") || str_contains(strtolower($tx->notes), "initial"))) {
+                $isInitialPayment = true;
+            }
+
+            if ($isInitialPayment) {
+                $targetType = 'down_payment';
+            }
+
+            // 1. If transaction specifies a payment_schedule_id, try to apply to it first
+            if ($tx->payment_schedule_id) {
+                $sched = $schedules->firstWhere('id', $tx->payment_schedule_id);
+                if ($sched && $sched->status !== 'paid') {
+                    $needed = $sched->expected_amount - $sched->paid_amount;
+                    if ($needed > 0) {
+                        if ($remainingAmount >= $needed) {
+                            $sched->paid_amount += $needed;
+                            $sched->status = 'paid';
+                            $sched->remaining_debt = 0;
+                            $sched->actual_payment_date = $tx->transaction_date ?? $tx->created_at;
+                            $sched->payment_method = $tx->payment_method;
+                            $sched->save();
+                            $remainingAmount -= $needed;
+                        } else {
+                            $sched->paid_amount += $remainingAmount;
+                            $sched->status = 'partial';
+                            $sched->remaining_debt = $sched->expected_amount - $sched->paid_amount;
+                            $sched->actual_payment_date = $tx->transaction_date ?? $tx->created_at;
+                            $sched->payment_method = $tx->payment_method;
+                            $sched->save();
+                            $remainingAmount = 0;
+                        }
+                    }
+                }
+            }
+
+            // 2. Apply remaining amount to schedules of the target type chronologically
+            if ($remainingAmount > 0) {
+                $targetSchedules = $schedules
+                    ->filter(function($s) use ($targetType) {
+                        if ($targetType === 'down_payment') {
+                            return $s->payment_type === 'down_payment' && $s->status !== 'paid';
+                        } else {
+                            return in_array($s->payment_type, ['installment', 'full']) && $s->status !== 'paid';
+                        }
+                    })
+                    ->sortBy('due_date');
+
+                foreach ($targetSchedules as $sched) {
+                    if ($remainingAmount <= 0) break;
+                    
+                    $needed = $sched->expected_amount - $sched->paid_amount;
+                    if ($needed <= 0) continue;
+
+                    // Link transaction to the first schedule it pays if not set
+                    if (!$tx->payment_schedule_id) {
+                        $tx->payment_schedule_id = $sched->id;
+                        $tx->save();
+                    }
+
+                    if ($remainingAmount >= $needed) {
+                        $sched->paid_amount += $needed;
+                        $sched->status = 'paid';
+                        $sched->remaining_debt = 0;
+                        $sched->actual_payment_date = $tx->transaction_date ?? $tx->created_at;
+                        $sched->payment_method = $tx->payment_method;
+                        $remainingAmount -= $needed;
+                    } else {
+                        $sched->paid_amount += $remainingAmount;
+                        $sched->status = 'partial';
+                        $sched->remaining_debt = $sched->expected_amount - $sched->paid_amount;
+                        $sched->actual_payment_date = $tx->transaction_date ?? $tx->created_at;
+                        $sched->payment_method = $tx->payment_method;
+                        $remainingAmount = 0;
+                    }
+                    $sched->save();
+                }
             }
         }
     }

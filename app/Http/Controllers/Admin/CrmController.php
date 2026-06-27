@@ -50,6 +50,23 @@ class CrmController extends Controller
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
+        // Self-healing: automatically reconcile contracts with mismatched transaction/schedule sums
+        if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+            $contractsToReconcile = Contract::whereIn('status', ['active', 'completed', 'awaiting_payment', 'awaiting_signature'])->get();
+            foreach ($contractsToReconcile as $c) {
+                $schedPaidSum = \DB::table('payment_schedules')->where('contract_id', $c->id)->sum('paid_amount');
+                $txnApprovedSum = \DB::table('transactions')
+                    ->where('contract_id', $c->id)
+                    ->where('type', 'income')
+                    ->where('status', 'approved')
+                    ->sum('amount');
+                
+                if (abs($schedPaidSum - $txnApprovedSum) > 0.01) {
+                    \App\Http\Controllers\Admin\FinanceController::reconcileContractPayments($c->id);
+                }
+            }
+        }
+
         // 3. Clients tabs
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
             $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();

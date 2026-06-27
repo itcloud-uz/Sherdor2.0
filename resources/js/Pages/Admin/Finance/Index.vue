@@ -66,6 +66,8 @@ const showQuickTransferModal = ref(false);
 const clientSearchQuery = ref('');
 const clientPaymentType = ref('monthly');
 const selectedUnitId = ref('');
+const selectedBuildingName = ref('');
+const selectedBlockId = ref('');
 const showClientDropdown = ref(false);
 
 const isAdmin = computed(() => {
@@ -1160,17 +1162,17 @@ watch(() => selectedUnitId.value, (newVal) => {
     }
 });
 
-// Watch building selection to clear unit and contract if building mismatch
+// Watch building selection to automatically sync selectedBuildingName and selectedBlockId
 watch(() => form.value.building_id, (newVal) => {
-    if (newVal && selectedUnitId.value && props.contracts) {
-        const c = props.contracts.find(x => x.unit_id == selectedUnitId.value);
-        if (c) {
-            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
-            if (bId != newVal) {
-                selectedUnitId.value = '';
-                form.value.contract_id = '';
-            }
+    if (newVal && props.buildings) {
+        const b = props.buildings.find(x => x.id == newVal);
+        if (b) {
+            selectedBuildingName.value = b.name;
+            selectedBlockId.value = b.id;
         }
+    } else {
+        selectedBuildingName.value = '';
+        selectedBlockId.value = '';
     }
 });
 
@@ -1640,8 +1642,52 @@ const requiresClient = computed(() => {
 const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner') || selectedCategoryName.value.includes('sarmoya') || selectedCategoryName.value.includes('investitsiya'));
 const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
 
-// Client search and payment type selector state
-// Client search and payment type selector state
+const uniqueBuildingNames = computed(() => {
+    if (!props.buildings) return [];
+    const names = [];
+    const seen = new Set();
+    props.buildings.forEach(b => {
+        if (b.name && !seen.has(b.name)) {
+            seen.add(b.name);
+            names.push(b.name);
+        }
+    });
+    return names;
+});
+
+const availableBlocks = computed(() => {
+    if (!selectedBuildingName.value || !props.buildings) return [];
+    return props.buildings
+        .filter(b => b.name === selectedBuildingName.value)
+        .map(b => ({
+            id: b.id,
+            name: b.block_name || b.corpus_name || 'Asosiy blok'
+        }));
+});
+
+const handleBuildingNameChange = () => {
+    selectedBlockId.value = '';
+    form.value.building_id = '';
+    selectedUnitId.value = '';
+    form.value.contract_id = '';
+    form.value.counterparty_id = '';
+    clientSearchQuery.value = '';
+    
+    // Auto-select if there is only 1 block
+    if (availableBlocks.value.length === 1) {
+        selectedBlockId.value = availableBlocks.value[0].id;
+        handleBlockIdChange();
+    }
+};
+
+const handleBlockIdChange = () => {
+    form.value.building_id = selectedBlockId.value;
+    selectedUnitId.value = '';
+    form.value.contract_id = '';
+    form.value.counterparty_id = '';
+    clientSearchQuery.value = '';
+};
+
 // Client search and payment type selector state
 const availableUnits = computed(() => {
     if (!props.contracts) return [];
@@ -1930,6 +1976,8 @@ function submitTransaction() {
             selectedInvoiceIds.value = [];
             extraNotesInput.value = '';
             selectedUnitId.value = '';
+            selectedBuildingName.value = '';
+            selectedBlockId.value = '';
             documentNumberInput.value = '';
             clientSearchQuery.value = '';
             clientPaymentType.value = 'monthly';
@@ -1985,6 +2033,20 @@ function openQuickTransaction(type) {
         selectedParentRegisterId.value = '';
         selectedSubRegisterId.value = '';
         form.value.account_id = '';
+    }
+
+    if (form.value.building_id && props.buildings) {
+        const b = props.buildings.find(x => x.id == form.value.building_id);
+        if (b) {
+            selectedBuildingName.value = b.name;
+            selectedBlockId.value = b.id;
+        } else {
+            selectedBuildingName.value = '';
+            selectedBlockId.value = '';
+        }
+    } else {
+        selectedBuildingName.value = '';
+        selectedBlockId.value = '';
     }
 
     selectedInvoiceIds.value = [];
@@ -5208,9 +5270,21 @@ function getCounterpartyStatus(c) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Qurilish obyekti
                             </label>
-                            <select v-model="form.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <select v-model="selectedBuildingName" @change="handleBuildingNameChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Qurilish obyekti tanlang</option>
-                                <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
+                                <option v-for="name in uniqueBuildingNames" :key="name" :value="name">
+                                    {{ name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div v-if="selectedBuildingName">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Blok / Korpus
+                            </label>
+                            <select v-model="selectedBlockId" @change="handleBlockIdChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" :required="availableBlocks.length > 0">
+                                <option value="" disabled>Blok tanlang</option>
+                                <option v-for="b in availableBlocks" :key="b.id" :value="b.id">
                                     {{ b.name }}
                                 </option>
                             </select>

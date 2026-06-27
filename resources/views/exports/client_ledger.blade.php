@@ -10,23 +10,24 @@
         <o:OfficeDocumentSettings>
             <o:AllowPNG/>
         </o:OfficeDocumentSettings>
-        <x:ExcelWorkbook>
-            <x:ExcelWorksheets>
-                <x:ExcelWorksheet>
-                    <x:Name>Shaxsiy Varaqa</x:Name>
-                    <x:WorksheetOptions>
-                        <x:Print>
-                            <x:ValidPrinterInfo/>
-                            <x:PaperSizeIndex>9</x:PaperSizeIndex> <!-- A4 -->
-                            <x:HorizontalResolution>600</x:HorizontalResolution>
-                            <x:VerticalResolution>600</x:VerticalResolution>
-                        </x:Print>
-                        <x:Selected/>
-                        <x:DoNotDisplayGridlines/>
-                    </x:WorksheetOptions>
-                </x:ExcelWorksheet>
-            </x:ExcelWorksheets>
-        </x:ExcelWorkbook>
+        @php $x = 'x:'; @endphp
+        {!! "<{$x}ExcelWorkbook>" !!}
+            {!! "<{$x}ExcelWorksheets>" !!}
+                {!! "<{$x}ExcelWorksheet>" !!}
+                    {!! "<{$x}Name>Shaxsiy Varaqa</{$x}Name>" !!}
+                    {!! "<{$x}WorksheetOptions>" !!}
+                        {!! "<{$x}Print>" !!}
+                            {!! "<{$x}ValidPrinterInfo/>" !!}
+                            {!! "<{$x}PaperSizeIndex>9</{$x}PaperSizeIndex>" !!} <!-- A4 -->
+                            {!! "<{$x}HorizontalResolution>600</{$x}HorizontalResolution>" !!}
+                            {!! "<{$x}VerticalResolution>600</{$x}VerticalResolution>" !!}
+                        {!! "</{$x}Print>" !!}
+                        {!! "<{$x}Selected/>" !!}
+                        {!! "<{$x}DoNotDisplayGridlines/>" !!}
+                    {!! "</{$x}WorksheetOptions>" !!}
+                {!! "</{$x}ExcelWorksheet>" !!}
+            {!! "</{$x}ExcelWorksheets>" !!}
+        {!! "</{$x}ExcelWorkbook>" !!}
     </xml>
     <![endif]-->
     <style>

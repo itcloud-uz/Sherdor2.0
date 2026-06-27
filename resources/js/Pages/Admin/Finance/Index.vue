@@ -1642,6 +1642,7 @@ const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('a
 
 // Client search and payment type selector state
 // Client search and payment type selector state
+// Client search and payment type selector state
 const availableUnits = computed(() => {
     if (!props.contracts) return [];
     let list = props.contracts;
@@ -1650,11 +1651,11 @@ const availableUnits = computed(() => {
     console.log("[Antigravity DEBUG] availableUnits contracts list:", list);
     console.log("[Antigravity DEBUG] current form.building_id:", form.value.building_id);
 
-    // Filter by building if selected
+    // Filter by building if selected, with safe fallback for missing/null building ID relations
     if (form.value.building_id) {
         list = list.filter(c => {
             const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
-            return bId == form.value.building_id;
+            return !bId || bId == form.value.building_id;
         });
     }
     
@@ -1683,24 +1684,19 @@ const availableUnits = computed(() => {
 const filteredClientsList = computed(() => {
     let list = props.counterparties?.filter(x => x.type === 'client') || [];
     
-    // Filter only clients who have at least one contract
-    list = list.filter(x => {
-        return props.contracts?.some(c => c.client_id == x.customable_id);
-    });
-    
-    // IF search query is empty, filter suggestions by building and unit to guide selection
+    // IF search query is empty, filter suggestions by building and unit to guide selection (with resilient fallbacks)
     if (!clientSearchQuery.value) {
-        if (form.value.building_id) {
+        if (form.value.building_id && props.contracts) {
             list = list.filter(x => {
-                return props.contracts?.some(c => {
+                return props.contracts.some(c => {
                     const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
-                    return c.client_id == x.customable_id && bId == form.value.building_id;
+                    return c.client_id == x.customable_id && (!bId || bId == form.value.building_id);
                 });
             });
         }
-        if (selectedUnitId.value) {
+        if (selectedUnitId.value && props.contracts) {
             list = list.filter(x => {
-                return props.contracts?.some(c => {
+                return props.contracts.some(c => {
                     return c.client_id == x.customable_id && c.unit_id == selectedUnitId.value;
                 });
             });

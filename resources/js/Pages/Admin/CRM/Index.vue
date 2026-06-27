@@ -1730,6 +1730,80 @@ function getContractSchedules(contract) {
     return contract.payment_schedules || contract.paymentSchedules || [];
 }
 
+function getContractPaymentRows(contract) {
+    if (!contract) return [];
+    
+    const rows = [];
+    
+    // 1. Add all approved income transactions as completed rows
+    const txns = contract.transactions || [];
+    txns.forEach(t => {
+        if (t.status === 'approved' && t.type === 'income') {
+            // Determine type
+            let pType = 'installment';
+            const catName = t.category?.name || '';
+            const notes = t.notes || '';
+            if (
+                catName.toLowerCase().includes('boshlang') || 
+                catName.toLowerCase().includes('initial') ||
+                notes.toLowerCase().includes('boshlang') ||
+                notes.toLowerCase().includes('initial') ||
+                notes.toLowerCase().includes('bosh to\'lov') ||
+                notes.toLowerCase().includes('bosh to’lov')
+            ) {
+                pType = 'down_payment';
+            }
+            
+            rows.push({
+                is_txn: true,
+                id: 'txn_' + t.id,
+                date: t.transaction_date || t.created_at,
+                amount: Number(t.amount),
+                expected_amount: Number(t.amount),
+                paid_amount: Number(t.amount),
+                remaining_debt: 0,
+                payment_type: pType,
+                penalty: 0,
+                status: 'paid'
+            });
+        }
+    });
+    
+    // 2. Add all unpaid/partially paid schedules as outstanding rows
+    const schedules = contract.payment_schedules || contract.paymentSchedules || [];
+    schedules.forEach(s => {
+        const remaining = Number(s.expected_amount || 0) - Number(s.paid_amount || 0);
+        if (remaining > 0.01) {
+            rows.push({
+                is_txn: false,
+                id: 'sched_' + s.id,
+                date: s.due_date,
+                amount: remaining,
+                expected_amount: remaining,
+                paid_amount: 0,
+                remaining_debt: remaining,
+                payment_type: s.payment_type,
+                penalty: Number(s.penalty_for_this_month || 0),
+                status: s.status // 'pending' or 'overdue'
+            });
+        }
+    });
+    
+    // 3. Sort chronologically by date
+    return rows.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateA.getTime() !== dateB.getTime()) {
+            return dateA.getTime() - dateB.getTime();
+        }
+        // If same date, put paid transactions first
+        if (a.is_txn !== b.is_txn) {
+            return a.is_txn ? -1 : 1;
+        }
+        return String(a.id).localeCompare(String(b.id));
+    });
+}
+
 const filteredLeads = computed(() => {
     let list = props.leads || [];
     if (leadsSearchQuery.value) {
@@ -4444,9 +4518,9 @@ const ledgerReportData = computed(() => {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 font-mono text-xs">
-                                    <tr v-for="(schedule, index) in getContractSchedules(detailedClientData.contracts[0])" :key="schedule.id" class="hover:bg-slate-50/50 transition-colors">
+                                    <tr v-for="(schedule, index) in getContractPaymentRows(detailedClientData.contracts[0])" :key="schedule.id" class="hover:bg-slate-50/50 transition-colors">
                                         <td class="p-3 text-center text-gray-500">{{ index + 1 }}</td>
-                                        <td class="p-3 text-center text-gray-700">{{ formatDateOnly(schedule.due_date) }}</td>
+                                        <td class="p-3 text-center text-gray-700">{{ formatDateOnly(schedule.date) }}</td>
                                         <td class="p-3 text-right font-bold text-gray-900">{{ Number(schedule.expected_amount || 0).toLocaleString('en-US') }}</td>
                                         <td class="p-3 text-right font-bold text-emerald-600">{{ Number(schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
                                         <td class="p-3 text-right font-bold text-red-500">{{ Number(schedule.expected_amount - schedule.paid_amount || 0).toLocaleString('en-US') }}</td>
@@ -4454,7 +4528,7 @@ const ledgerReportData = computed(() => {
                                             {{ schedule.payment_type === 'down_payment' ? 'Bosh to\'lov' : (schedule.payment_type === 'installment' ? 'Oylik to\'lov' : (schedule.payment_type === 'full' ? 'To\'liq to\'lov' : (index === 0 ? 'Bosh to\'lov' : 'Oylik to\'lov'))) }}
                                         </td>
                                         <td class="p-3 text-right font-bold text-indigo-600">
-                                            {{ Number(schedule.penalty_for_this_month || 0).toLocaleString('en-US') }}
+                                            {{ Number(schedule.penalty || 0).toLocaleString('en-US') }}
                                         </td>
                                         <td class="p-3 text-center">
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-sans"
@@ -4463,7 +4537,7 @@ const ledgerReportData = computed(() => {
                                             </span>
                                         </td>
                                     </tr>
-                                    <tr v-if="getContractSchedules(detailedClientData.contracts[0]).length === 0">
+                                    <tr v-if="getContractPaymentRows(detailedClientData.contracts[0]).length === 0">
                                         <td colspan="8" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
                                     </tr>
                                 </tbody>

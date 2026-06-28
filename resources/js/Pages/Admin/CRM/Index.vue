@@ -4307,265 +4307,485 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
                     <!-- Card 1: Uy haqida ma'lumot -->
-                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0 && detailedClientData.contracts[0]?.unit" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
-                        <!-- Left: Layout Image Preview -->
-                        <div class="w-full md:w-64 h-48 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden relative group cursor-pointer flex items-center justify-center shrink-0">
-                            <!-- Floorplan Preview -->
-                            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                                <svg class="w-12 h-12 text-[#f2a900]/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                                <span class="text-xs font-bold text-gray-800">{{ detailedClientData.contracts[0]?.unit?.rooms || '2' }}-xonali xonadon</span>
-                                <span class="text-[10px] text-gray-400 font-mono mt-1">Maydoni: {{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.5' }} kv.m</span>
-                            </div>
-                            <!-- Hover overlay -->
-                            <div class="absolute inset-0 bg-[#0d1117]/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                <span class="px-4 py-2 bg-white/95 rounded-xl text-xs font-bold text-gray-900 shadow-lg flex items-center gap-1.5">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    Ko'rib chiqish
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Right: Info details -->
-                        <div class="flex-1 flex flex-col justify-between">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Uy haqida ma'lumot</span>
-                                <h2 class="text-xl font-bold text-gray-950 font-sans mb-4">
-                                    {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'Farg\'ona City' }}
-                                </h2>
-
-                                <!-- Columns grid -->
-                                <div class="grid grid-cols-4 gap-4 max-w-lg mb-4">
-                                    <div>
-                                        <p class="text-lg font-bold text-gray-900 leading-none">
-                                            {{ detailedClientData.contracts[0]?.unit?.floor?.building?.block_name || detailedClientData.contracts[0]?.unit?.floor?.building?.corpus_name || 'Г Блок' }}
-                                        </p>
-                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Bino/Blok</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-lg font-bold text-gray-900 leading-none">
-                                            {{ detailedClientData.contracts[0]?.unit?.rooms || '2' }}
-                                        </p>
-                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Xona</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-lg font-bold text-gray-900 leading-none">
-                                            {{ detailedClientData.contracts[0]?.unit?.podyezd ? detailedClientData.contracts[0].unit.podyezd + '-padezd' : '1-padezd' }}
-                                        </p>
-                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Podezd</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-lg font-bold text-gray-900 leading-none">
-                                            {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '3' }}
-                                        </p>
-                                        <p class="text-[10px] text-gray-400 font-semibold mt-1">Qavat</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Footer details of the apartment -->
-                            <div class="border-t border-gray-100 pt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-sans text-gray-700">
-                                <div>Xonadon raqami: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}</strong></div>
-                                <div>Tafsilot: <strong class="text-gray-900">—</strong></div>
-                                <div>Maydoni: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.54' }} m²</strong></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- If no contract/unit exists -->
-                    <div v-else class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between min-h-[120px] relative overflow-hidden">
-                        <div class="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-slate-50 rounded-full opacity-50 blur-xl"></div>
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
-                                <svg class="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                            </div>
-                            <div class="text-left">
-                                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider font-sans">Uy haqida ma'lumot topilmadi</h3>
-                                <p class="text-xs text-gray-500 font-sans mt-0.5">Ushbu mijoz hali uy sotib olmagan.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Ma'lumotlar & Shartnomalar -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Left: Profile and Personal Details (2 cols) -->
-                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm lg:col-span-2 flex flex-col md:flex-row gap-6">
-                            <!-- Profile Card -->
-                            <div class="w-full md:w-48 shrink-0 flex flex-col items-center text-center p-4 bg-slate-50 rounded-2xl border border-slate-100 justify-center">
-                                <div class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-bold text-xl shadow-sm mb-3 bg-[#fef9c3] text-[#ca8a04]">
-                                     <img v-if="detailedClientData.profile_photo" :src="'/storage/' + detailedClientData.profile_photo" class="w-full h-full object-cover" alt="Profile" />
-                                     <template v-else>
-                                         {{ getInitials(detailedClientData.first_name, detailedClientData.last_name) }}
-                                     </template>
-                                 </div>
-                                <h3 class="text-sm font-bold text-gray-900 leading-tight">
-                                    {{ detailedClientData.last_name }} <br/> {{ detailedClientData.first_name }} {{ detailedClientData.middle_name || '' }}
+                    <!-- CASE 1: Client has contract -->
+                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0 && detailedClientData.contracts[0]?.unit">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Card 1: Mijoz ma'lumotlari -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left">
+                                <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                    <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                    Mijoz ma'lumotlari
                                 </h3>
-                                <span class="text-[10px] font-bold text-blue-600 mt-2 bg-blue-50 px-2 py-0.5 rounded-full uppercase">Mijoz</span>
+                                
+                                <div class="space-y-3.5">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Telefon raqami:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Telefon raqami 2:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone_2 }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.pinfl">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">JSHSHIR (PINFL):</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.birth_date">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Tug'ilgan sanasi:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_number">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport raqami:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Viloyat (Region):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.region }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Tuman (District):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.district }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Manzil (Address):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.address }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport rasmlari:</span>
+                                        <div class="flex gap-2">
+                                            <div v-if="detailedClientData.passport_photo" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
+                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Old:</span>
+                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
+                                                <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
+                                            </div>
+                                            <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
+                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Orqa:</span>
+                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
+                                                <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Personal Details -->
-                            <div class="flex-1">
-                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Ma'lumotlar</h4>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs font-sans text-gray-700">
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">ID:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.id }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone }}</strong></div>
-                                    <div v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Telefon raqami 2:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.phone_2 }}</strong></div>
-                                    <div v-if="detailedClientData.birth_date" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tug'ilgan sanasi:</span> <strong class="text-gray-900 font-mono">{{ getDummyBirthDate(detailedClientData) }}</strong></div>
-                                    <div v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Region:</span> <strong class="text-gray-900">{{ detailedClientData.region }}</strong></div>
-                                    <div v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tuman:</span> <strong class="text-gray-900">{{ detailedClientData.district }}</strong></div>
-                                    <div v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Manzil:</span> <strong class="text-gray-900">{{ detailedClientData.address }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Qo'shilgan sana:</span> <strong class="text-gray-900 font-mono">{{ getUzFormattedDateFromString(detailedClientData.created_at) }}</strong></div>
-                                    <div v-if="detailedClientData.passport_number && detailedClientData.passport_number !== '—' && detailedClientData.passport_number !== '-'" class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Passport raqami:</span> <strong class="text-gray-900 font-mono">{{ detailedClientData.passport_number }}</strong></div>
-                                    <div v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back" class="py-1 border-b border-gray-50 flex justify-between items-center">
-                                         <span class="text-gray-400">Passport rasmlari:</span>
-                                         <div class="flex flex-col gap-1 items-end">
-                                             <div v-if="detailedClientData.passport_photo" class="flex items-center gap-2">
-                                                 <span class="text-[10px] text-gray-500 font-semibold">Old:</span>
-                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline text-[11px] font-bold">Ko'rish</button>
-                                                 <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline text-[11px] font-bold">Yuklash</a>
-                                             </div>
-                                             <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-2">
-                                                 <span class="text-[10px] text-gray-500 font-semibold">Orqa:</span>
-                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline text-[11px] font-bold">Ko'rish</button>
-                                                 <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline text-[11px] font-bold">Yuklash</a>
-                                             </div>
-                                         </div>
-                                     </div>
+                            <!-- Card 2: Uy haqida ma'lumot -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                        <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                        Uy haqida ma'lumot
+                                    </h3>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                        <!-- Left: Plan Details -->
+                                        <div class="md:col-span-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative group cursor-pointer min-h-[140px]">
+                                            <svg class="w-10 h-10 text-[#f2a900]/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                            <h4 class="text-base font-bold text-gray-900 font-sans tracking-tight leading-tight">
+                                                {{ detailedClientData.contracts[0]?.unit?.unit_number }}-uy
+                                            </h4>
+                                            <p class="text-[11px] text-gray-500 font-medium mt-1 leading-tight">
+                                                {{ detailedClientData.contracts[0]?.unit?.rooms || '1' }}-xonali • {{ detailedClientData.contracts[0]?.unit?.area_sqm }} m²
+                                            </p>
+                                            <div class="absolute inset-0 bg-[#0d1117]/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-2xl">
+                                                <span class="px-3 py-1.5 bg-white/95 rounded-xl text-[10px] font-bold text-gray-900 shadow-lg flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    Ko'rish
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right: Grid of details -->
+                                        <div class="md:col-span-7 grid grid-cols-2 gap-3">
+                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Bino</span>
+                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
+                                                    {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'Farg\'ona City' }}
+                                                </strong>
+                                            </div>
+                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Podezd</span>
+                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
+                                                    {{ detailedClientData.contracts[0]?.unit?.podyezd || '1' }}-podezd
+                                                </strong>
+                                            </div>
+                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Qavat</span>
+                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
+                                                    {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '3' }}-qavat
+                                                </strong>
+                                            </div>
+                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Xonadon</span>
+                                                <strong class="text-gray-900 font-mono text-xs font-bold leading-tight block">
+                                                    {{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Footer -->
+                                <div class="border-t border-gray-100 pt-3 mt-4 flex justify-between text-xs text-gray-500 font-sans">
+                                    <div>Xonadon raqami: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}</strong></div>
+                                    <div>Maydoni: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.54' }} m²</strong></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Contract details (1 col) -->
-                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
-                            <div>
-                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Shartnomalar</h4>
-                                <div class="space-y-2 text-xs font-sans text-gray-700">
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Tasdiqlangan:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.approver?.name || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Sotuv menejeri:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.creator?.name || '—' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between">
-                                        <span class="text-gray-400">Holat:</span> 
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" 
-                                              :class="detailedClientData.contracts[0]?.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
-                                            {{ detailedClientData.contracts[0]?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
-                                        </span>
-                                    </div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">To'lov turi:</span> <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'full' ? 'Bir martalik umumiy to\'lov' : 'Bo\'lib to\'lash' }}</strong></div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between">
-                                        <span class="text-gray-400">Muddati:</span>
-                                        <strong class="text-gray-900 font-mono">
-                                            <span v-if="detailedClientData.contracts[0]?.payment_type === 'full'">Bir martalik</span>
-                                            <span v-else>{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</span>
-                                        </strong>
-                                    </div>
-                                    <div class="py-1 border-b border-gray-50 flex justify-between"><span class="text-gray-400">Kadastr:</span> <strong class="text-gray-900">yo'q</strong></div>
-                                    <div v-if="detailedClientData.contracts[0]?.down_payment > 0" class="py-1 border-b border-gray-50 flex justify-between">
-                                        <span class="text-gray-400">Boshlang'ich to'lov:</span>
-                                        <strong class="text-gray-900 font-mono text-right">
-                                            {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
-                                            <span class="text-[10px] text-gray-500 font-normal block">
-                                                (To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm)
+                        <!-- Bottom Row: Shartnoma & Izohlar -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                            <!-- Card 3: Shartnoma -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left flex flex-col justify-between min-h-[300px]">
+                                <div>
+                                    <div class="flex justify-between items-center mb-5">
+                                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                                            <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                            Shartnoma
+                                        </h3>
+                                        
+                                        <div class="flex items-center gap-2">
+                                            <span v-if="selectedContract && selectedContract.status !== 'active'" class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-xl text-xs font-bold font-mono">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Kutilmoqda
                                             </span>
-                                        </strong>
-                                    </div>
-                                    
-                                    <!-- Kunlik Penya Darajasi & Hisoblash -->
-                                    <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center gap-2">
-                                        <span class="text-gray-400">Kunlik Penya Darajasi (%):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" step="0.01" v-model="selectedContract.daily_penalty_rate" class="bg-white border border-gray-300 text-gray-900 rounded px-1.5 py-0.5 text-xs w-16 text-center font-bold font-mono">
-                                            <button @click="recalculatePenalty" :disabled="isProcessing" class="px-2.5 py-1 bg-blue-50 border border-blue-300 text-blue-600 text-[10px] font-bold uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50">
-                                                Hisoblash
+                                            <button @click="recalculatePenalty" :disabled="isProcessing" class="w-7 h-7 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:text-[#f2a900] hover:border-[#f2a900] transition-colors" title="Penya qayta hisoblash">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" /></svg>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center">
-                                        <span class="text-gray-400">Jamg'arilgan Penya Summasi:</span>
-                                        <strong class="text-indigo-600 font-bold font-mono">{{ $currency(selectedContract.total_penalty_accumulated || 0) }}</strong>
-                                    </div>
-
-                                    <!-- AI Hujjat Tekshiruvi & Sotildi qilish -->
-                                    <div v-if="selectedContract" class="py-2 border-b border-gray-50">
-                                        <div class="flex justify-between items-center mb-1">
-                                            <span class="text-gray-400">AI Hujjat Tekshiruvi:</span>
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono" 
-                                                  :class="{ 'text-gray-500 bg-gray-50': !selectedContract.ai_verification_status, 'text-emerald-600 bg-emerald-50': selectedContract.ai_verification_status === 'passed', 'text-red-600 bg-red-50': selectedContract.ai_verification_status === 'failed' }">
-                                                {{ selectedContract.ai_verification_status === 'passed' ? 'Tasdiqlangan' : 
-                                                   (selectedContract.ai_verification_status === 'failed' ? 'Imzolanmagan' : 'Kutilmoqda') }}
+                                    <div class="space-y-2.5 text-xs text-gray-700">
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">Tasdiqlangan:</span>
+                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.approver?.name || '—' }}</strong>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">Sotuv menejeri:</span>
+                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.creator?.name || '—' }}</strong>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">Holat:</span> 
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" 
+                                                  :class="detailedClientData.contracts[0]?.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                                                {{ detailedClientData.contracts[0]?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
                                             </span>
                                         </div>
-                                        <div class="flex items-center justify-between gap-2 mt-2">
-                                            <div class="flex flex-col">
-                                                <span v-if="uploadStatus === 'uploading'" class="text-[10px] text-blue-600 animate-pulse font-sans">{{ uploadMessage }}</span>
-                                                <span v-else-if="uploadStatus === 'success'" class="text-[10px] text-emerald-600 font-sans">{{ uploadMessage }}</span>
-                                                <span v-else-if="uploadStatus === 'error'" class="text-[10px] text-red-600 font-sans">{{ uploadMessage }}</span>
-                                                <span v-else class="text-[10px] text-gray-400 font-sans">Rasmi yoki PDF yuklang</span>
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">To'lov turi:</span>
+                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'full' ? 'Bir martalik umumiy to\'lov' : 'Bo\'lib to\'lash' }}</strong>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">Muddati:</span>
+                                            <strong class="text-gray-900 font-mono">
+                                                <span v-if="detailedClientData.contracts[0]?.payment_type === 'full'">Bir martalik</span>
+                                                <span v-else>{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</span>
+                                            </strong>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b border-gray-50">
+                                            <span class="text-gray-400 font-medium">Kadastr:</span>
+                                            <strong class="text-gray-900">yo'q</strong>
+                                        </div>
+                                        <div v-if="detailedClientData.contracts[0]?.down_payment > 0" class="py-1 border-b border-gray-50 flex justify-between">
+                                            <span class="text-gray-400 font-medium">Boshlang'ich to'lov:</span>
+                                            <strong class="text-gray-900 font-mono text-right">
+                                                {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                                                <span class="text-[10px] text-gray-500 font-normal block">
+                                                    (To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm)
+                                                </span>
+                                            </strong>
+                                        </div>
+
+                                        <!-- Kunlik Penya Darajasi & Hisoblash -->
+                                        <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center gap-2">
+                                            <span class="text-gray-400 font-medium">Kunlik Penya (%):</span>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <input type="number" step="0.01" v-model="selectedContract.daily_penalty_rate" class="bg-white border border-gray-300 text-gray-900 rounded px-1.5 py-0.5 text-xs w-14 text-center font-bold font-mono">
+                                                <button @click="recalculatePenalty" :disabled="isProcessing" class="px-2 py-0.5 bg-blue-50 border border-blue-300 text-blue-600 text-[10px] font-bold uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50">
+                                                    Hisob
+                                                </button>
                                             </div>
-                                            <div class="flex items-center gap-1">
-                                                <input type="file" ref="detailFileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png" @change="uploadSignature">
-                                                <button @click="detailFileInput.click()" :disabled="isProcessing" class="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 font-bold text-[10px] uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                                    Yuklash
-                                                </button>
-                                                <button v-if="selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold text-[10px] uppercase rounded hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                    Sotildi qilish
-                                                </button>
+                                        </div>
+
+                                        <div v-if="selectedContract" class="py-1.5 border-b border-gray-50 flex justify-between items-center">
+                                            <span class="text-gray-400 font-medium">Jamg'arilgan Penya:</span>
+                                            <strong class="text-indigo-600 font-bold font-mono">{{ $currency(selectedContract.total_penalty_accumulated || 0) }}</strong>
+                                        </div>
+
+                                        <!-- AI Hujjat Tekshiruvi & Tasdiqlash -->
+                                        <div v-if="selectedContract" class="py-2 border-b border-gray-50">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-gray-400 font-medium">AI Hujjat:</span>
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono" 
+                                                      :class="{ 'text-gray-500 bg-gray-50': !selectedContract.ai_verification_status, 'text-emerald-600 bg-emerald-50': selectedContract.ai_verification_status === 'passed', 'text-red-600 bg-red-50': selectedContract.ai_verification_status === 'failed' }">
+                                                    {{ selectedContract.ai_verification_status === 'passed' ? 'Tasdiqlangan' : 
+                                                       (selectedContract.ai_verification_status === 'failed' ? 'Imzolanmagan' : 'Kutilmoqda') }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center justify-between gap-2 mt-2">
+                                                <div class="flex flex-col">
+                                                    <span v-if="uploadStatus === 'uploading'" class="text-[9px] text-blue-600 animate-pulse font-sans">{{ uploadMessage }}</span>
+                                                    <span v-else-if="uploadStatus === 'success'" class="text-[9px] text-emerald-600 font-sans">{{ uploadMessage }}</span>
+                                                    <span v-else-if="uploadStatus === 'error'" class="text-[9px] text-red-600 font-sans">{{ uploadMessage }}</span>
+                                                    <span v-else class="text-[9px] text-gray-400 font-sans">Rasm/PDF</span>
+                                                </div>
+                                                <div class="flex items-center gap-1">
+                                                    <input type="file" ref="detailFileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png" @change="uploadSignature">
+                                                    <button @click="detailFileInput.click()" :disabled="isProcessing" class="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-600 font-bold text-[9px] uppercase rounded hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-0.5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                                        Yuklash
+                                                    </button>
+                                                    <button v-if="selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold text-[9px] uppercase rounded hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 flex items-center gap-0.5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                        Tasdiqlash
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3 mt-5">
+                                    <button @click="openDocumentPreview('contract', detailedClientData.contracts[0])" class="flex-1 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        Shartnoma
+                                    </button>
+                                    <button @click="openDocumentPreview('grafik', detailedClientData.contracts[0])" class="flex-1 py-2.5 bg-white border border-[#f2a900] hover:bg-amber-50/50 text-[#f2a900] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg>
+                                        Grafik
+                                    </button>
+                                    <button @click="selectClientForDetail(detailedClientData)" class="flex-1 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" /></svg>
+                                        Yangilash
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Card 4: Izohlar -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left flex flex-col justify-between min-h-[300px]">
+                                <div>
+                                    <div class="flex justify-between items-center mb-5">
+                                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                                            <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                            Izohlar
+                                        </h3>
+                                        
+                                        <button @click="openCommentsModal" class="w-7 h-7 bg-[#f2a900] hover:bg-[#d99700] text-white rounded-lg flex items-center justify-center transition-colors">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                        </button>
+                                    </div>
+
+                                    <div v-if="detailedClientData?.comments && detailedClientData.comments.length > 0" class="space-y-3 max-h-[180px] overflow-y-auto pr-1">
+                                        <div v-for="c in detailedClientData.comments.slice(0, 3)" :key="c.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-gray-700">
+                                            <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold mb-1">
+                                                <span class="text-amber-600 font-bold">{{ c.user?.name || 'Xodim' }}</span>
+                                                <span>{{ new Date(c.created_at).toLocaleString() }}</span>
+                                            </div>
+                                            <p class="text-gray-800 leading-relaxed font-sans">{{ c.comment }}</p>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-xs text-gray-500 font-sans text-center py-6 flex flex-col items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                        Izohlar yo'q
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-gray-50 pt-3 mt-4 text-right">
+                                    <a href="#" @click.prevent="openCommentsModal" class="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1">
+                                        Barchasi
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CASE 2: Client has NO contract -->
+                    <div v-else class="space-y-6">
+                        <!-- Notice -->
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between min-h-[120px] relative overflow-hidden">
+                            <div class="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-slate-50 rounded-full opacity-50 blur-xl"></div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                                    <svg class="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider font-sans">Uy haqida ma'lumot topilmadi</h3>
+                                    <p class="text-xs text-gray-500 font-sans mt-0.5">Ushbu mijoz hali uy sotib olmagan.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                            <!-- Card 1: Mijoz ma'lumotlari -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left">
+                                <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                    <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                    Mijoz ma'lumotlari
+                                </h3>
+                                
+                                <div class="space-y-3.5">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Telefon raqami:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Telefon raqami 2:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone_2 }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.pinfl">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">JSHSHIR (PINFL):</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.birth_date">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Tug'ilgan sanasi:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_number">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport raqami:</span>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Viloyat (Region):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.region }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Tuman (District):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.district }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Manzil (Address):</span>
+                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.address }}</strong>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back">
+                                        <span class="text-gray-400 shrink-0">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport rasmlari:</span>
+                                        <div class="flex gap-2">
+                                            <div v-if="detailedClientData.passport_photo" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
+                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Old:</span>
+                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
+                                                <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
+                                            </div>
+                                            <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
+                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Orqa:</span>
+                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
+                                                <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Action Buttons below -->
-                            <div class="mt-6 pt-4 border-t border-gray-50 flex items-center gap-2">
-                                <button @click="openDocumentPreview('contract', detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-amber-200 hover:bg-amber-50/50 rounded-2xl transition-colors">
-                                    <svg class="w-8 h-8 text-amber-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                                        <path d="M14 2v6h6" opacity="0.3"/>
-                                    </svg>
-                                    <span class="text-[10px] font-bold text-amber-800">Shartnoma</span>
-                                </button>
-                                <button @click="openDocumentPreview('grafik', detailedClientData.contracts[0])" class="flex-1 flex flex-col items-center justify-center p-2 border border-emerald-200 hover:bg-emerald-50/50 rounded-2xl transition-colors">
-                                    <svg class="w-8 h-8 text-emerald-600 mb-1" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                                        <path d="M14 2v6h6m-3 4l-4 4m0-4l4 4"/>
-                                    </svg>
-                                    <span class="text-[10px] font-bold text-emerald-800">Grafik</span>
-                                </button>
-                                <button @click="selectClientForDetail(detailedClientData)" class="flex-1 flex flex-col items-center justify-center p-2 border border-gray-200 hover:bg-gray-50 rounded-2xl transition-colors">
-                                    <svg class="w-8 h-8 text-gray-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" />
-                                    </svg>
-                                    <span class="text-[10px] font-bold text-gray-600">Yangilash</span>
-                                </button>
+                            <!-- Card 4: Izohlar -->
+                            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left flex flex-col justify-between min-h-[300px]">
+                                <div>
+                                    <div class="flex justify-between items-center mb-5">
+                                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                                            <span class="w-1.5 h-5 bg-[#f2a900] rounded-full"></span>
+                                            Izohlar
+                                        </h3>
+                                        
+                                        <button @click="openCommentsModal" class="w-7 h-7 bg-[#f2a900] hover:bg-[#d99700] text-white rounded-lg flex items-center justify-center transition-colors">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                        </button>
+                                    </div>
+
+                                    <div v-if="detailedClientData?.comments && detailedClientData.comments.length > 0" class="space-y-3 max-h-[180px] overflow-y-auto pr-1">
+                                        <div v-for="c in detailedClientData.comments.slice(0, 3)" :key="c.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-gray-700">
+                                            <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold mb-1">
+                                                <span class="text-amber-600 font-bold">{{ c.user?.name || 'Xodim' }}</span>
+                                                <span>{{ new Date(c.created_at).toLocaleString() }}</span>
+                                            </div>
+                                            <p class="text-gray-800 leading-relaxed font-sans">{{ c.comment }}</p>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-xs text-gray-500 font-sans text-center py-6 flex flex-col items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                        Izohlar yo'q
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-gray-50 pt-3 mt-4 text-right">
+                                    <a href="#" @click.prevent="openCommentsModal" class="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1">
+                                        Barchasi
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Card 3: Izohlar (Comments) -->
-                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <button @click="openCommentsModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Izoh qo'shish
-                            </button>
-                        </div>
-                        <a href="#" @click.prevent="openCommentsModal" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                            Barchasi
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </a>
                     </div>
 
                     <!-- Card 5: To'lov jadvali -->

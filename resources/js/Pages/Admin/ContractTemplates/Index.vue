@@ -443,7 +443,9 @@ function goToStep2() {
         step.value = 2;
     }).catch(err => {
         isProcessing.value = false;
-        alert("Faylni tahlil qilishda xatolik yuz berdi: " + (err.response?.data?.message || err.message));
+        setTimeout(() => {
+            alert("Faylni tahlil qilishda xatolik yuz berdi: " + (err.response?.data?.message || err.message));
+        }, 50);
     });
 }
 

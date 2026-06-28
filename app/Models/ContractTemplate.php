@@ -275,10 +275,14 @@ class ContractTemplate extends Model
         $pythonScript = base_path('app/Python/docx_processor.py');
         
         $executors = [
-            'py -3.12',
-            'C:\\Users\\FBI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+            base_path('venv/bin/python3'),
+            base_path('venv/bin/python'),
+            base_path('venv/Scripts/python.exe'),
+            'python3',
             'python',
-            'py'
+            'py -3.12',
+            'py',
+            'C:\\Users\\FBI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
         ];
 
         $output = '';

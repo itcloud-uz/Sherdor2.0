@@ -273,7 +273,7 @@ class ContractTemplate extends Model
     public static function runPython(string $args): string
     {
         $pythonScript = base_path('app/Python/docx_processor.py');
-        $pythonPath = env('PYTHON_PATH', 'python3');
+        $pythonPath = config('app.python_path', 'python3');
 
         // Resolve relative virtual environment paths to absolute paths
         if (strpos($pythonPath, 'venv/') === 0 || strpos($pythonPath, 'venv\\') === 0) {

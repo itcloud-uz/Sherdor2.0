@@ -2344,7 +2344,6 @@ function openContractModalForLead() {
     showCallPanelModal.value = false;
     isEditingContract.value = false;
     currentContractId.value = null;
-    currentContractStep.value = 1;
     
     // Clear and prepare contract form
     contractForm.value = { 
@@ -7175,6 +7174,64 @@ const ledgerReportData = computed(() => {
                             <div class="relative flex items-center">
                                 <input v-model.number="discountAmount" type="number" min="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-16 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all">
                                 <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shablon va variantlar -->
+                    <div v-if="filteredTemplates.length > 0" class="border-t border-gray-100 pt-6 mt-6 space-y-4">
+                        <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <span class="w-1 h-4 bg-[#f2a900] rounded-full"></span>
+                            Shartnoma Shablon va Shartlari
+                        </h4>
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shartnoma shabloni</label>
+                            <select v-model="contractForm.contract_template_id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10">
+                                <option value="">Tizimning standart shabloni (Tizim bo'yicha)</option>
+                                <option v-for="tpl in filteredTemplates" :key="tpl.id" :value="tpl.id">
+                                    {{ tpl.name }} ({{ tpl.type === 'residential' ? 'Turar-joy' : (tpl.type === 'commercial' ? 'No-turar joy' : 'Boshqa') }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Variant Groups -->
+                        <div v-if="selectedTemplate && selectedTemplate.variant_groups && selectedTemplate.variant_groups.length > 0" class="mt-3 space-y-4 border border-blue-200 rounded-xl p-3 bg-blue-500/5">
+                            <h5 class="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-2">Shartnomaning o'zgaruvchan bandlari (Variantlar)</h5>
+                            
+                            <div v-for="group in selectedTemplate.variant_groups" :key="group.id" class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ group.label }} *</label>
+                                    <select v-model="contractForm.selected_variants[group.anchor].key" @change="onVariantChange(group.anchor)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-2 px-3 text-gray-900">
+                                        <option value="">-- Tanlang --</option>
+                                        <option v-for="v in group.variants" :key="v.id" :value="v.key">{{ v.label }}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dynamic Sub-placeholders for Selected Variant -->
+                                <div v-if="getSelectedVariant(group.anchor)" class="grid grid-cols-2 gap-4 pl-3 border-l-2 border-blue-300">
+                                    <div v-for="pKey in getSelectedVariant(group.anchor).placeholders" :key="pKey">
+                                        <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">{{ pKey }}</label>
+                                        <input v-model="contractForm.selected_variants[group.anchor].placeholders[pKey]" 
+                                               @input="onSubPlaceholderInput(group.anchor, pKey)"
+                                               type="text" 
+                                               class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-1.5 px-2 text-gray-900">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Template Placeholders (Editable Manually) -->
+                        <div v-if="customPlaceholders.length > 0" class="mt-3 space-y-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
+                            <h5 class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Qo'shimcha shablon o'zgaruvchilari (Qo'lda kiritish)</h5>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div v-for="pKey in customPlaceholders" :key="pKey">
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ pKey }}</label>
+                                    <input v-model="contractForm.selected_variants.custom_placeholders[pKey]" 
+                                           type="text" 
+                                           class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-1.5 px-2 text-gray-900"
+                                           :placeholder="pKey + ' qiymatini kiriting'">
+                                </div>
                             </div>
                         </div>
                     </div>

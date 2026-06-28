@@ -4345,23 +4345,25 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Telefon raqami 2:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone_2 }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">
+                                            {{ detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-' ? detailedClientData.phone_2 : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.pinfl">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">JSHSHIR (PINFL):</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.birth_date">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
@@ -4369,39 +4371,45 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_number">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Pasport raqami:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Viloyat (Region):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.region }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-' ? detailedClientData.region : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Tuman (District):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.district }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-' ? detailedClientData.district : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Manzil (Address):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.address }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-' ? detailedClientData.address : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
@@ -4417,6 +4425,7 @@ const ledgerReportData = computed(() => {
                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
                                                 <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
                                             </div>
+                                            <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400 italic">Yuklanmagan</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4723,23 +4732,25 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Telefon raqami 2:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.phone_2 }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">
+                                            {{ detailedClientData.phone_2 && detailedClientData.phone_2 !== '+998' && detailedClientData.phone_2.trim() !== '' && detailedClientData.phone_2 !== '—' && detailedClientData.phone_2 !== '-' ? detailedClientData.phone_2 : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.pinfl">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">JSHSHIR (PINFL):</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.birth_date">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
@@ -4747,39 +4758,45 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_number">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Pasport raqami:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number }}</strong>
+                                        <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.passport_number || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Viloyat (Region):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.region }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.region && detailedClientData.region !== '—' && detailedClientData.region !== '-' ? detailedClientData.region : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Tuman (District):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.district }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.district && detailedClientData.district !== '—' && detailedClientData.district !== '-' ? detailedClientData.district : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-'">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </span>
                                         <span class="w-28 text-gray-400 font-medium">Manzil (Address):</span>
-                                        <strong class="text-gray-900 text-xs">{{ detailedClientData.address }}</strong>
+                                        <strong class="text-gray-900 text-xs">
+                                            {{ detailedClientData.address && detailedClientData.address !== 'address' && detailedClientData.address !== '—' && detailedClientData.address !== '-' ? detailedClientData.address : '—' }}
+                                        </strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700" v-if="detailedClientData.passport_photo || detailedClientData.passport_photo_back">
+                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
@@ -4795,6 +4812,7 @@ const ledgerReportData = computed(() => {
                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
                                                 <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
                                             </div>
+                                            <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400 italic">Yuklanmagan</span>
                                         </div>
                                     </div>
                                 </div>

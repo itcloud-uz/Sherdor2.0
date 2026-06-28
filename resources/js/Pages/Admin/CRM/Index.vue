@@ -2601,9 +2601,11 @@ const docPreviewTitle = ref('');
 const docPreviewUrl = ref('');
 const docDownloadUrl = ref('');
 const docDownloadDocxUrl = ref('');
+const docPreviewLoading = ref(false);
 
 function openDocumentPreview(type, contract) {
     if (!contract) return;
+    docPreviewLoading.value = true;
     if (type === 'contract') {
         docPreviewTitle.value = 'Shartnoma';
         docPreviewUrl.value = route('admin.contracts.document.preview', contract.id) + '?lang=' + locale.value;
@@ -6584,8 +6586,16 @@ const ledgerReportData = computed(() => {
                 </div>
                 
                 <!-- Body: IFrame rendering the doc preview -->
-                <div class="flex-1 bg-slate-100 p-4 relative overflow-hidden">
-                    <iframe :src="docPreviewUrl" class="w-full h-full rounded-lg border border-gray-200 bg-white shadow-inner" style="min-height: 100%;"></iframe>
+                <div class="flex-1 bg-slate-100 p-4 relative overflow-hidden flex items-center justify-center">
+                    <div v-if="docPreviewLoading" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-all animate-in fade-in duration-300">
+                        <!-- Spinning Rings -->
+                        <div class="relative w-12 h-12 mb-4">
+                            <div class="absolute inset-0 border-4 border-blue-600/20 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-t-blue-600 rounded-full animate-spin"></div>
+                        </div>
+                        <p class="text-xs font-mono text-gray-500 uppercase tracking-widest animate-pulse">Hujjat tayyorlanmoqda...</p>
+                    </div>
+                    <iframe :src="docPreviewUrl" @load="docPreviewLoading = false" class="w-full h-full rounded-lg border border-gray-200 bg-white shadow-inner" style="min-height: 100%;"></iframe>
                 </div>
 
                 <!-- Footer with Download Button -->

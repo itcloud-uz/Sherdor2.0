@@ -3,6 +3,21 @@
         <Head title="Shartnoma Shablonlari (DOCX)" />
 
         <div class="p-6 min-h-screen flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar">
+            <!-- Full Page Overlay Loader -->
+            <div v-if="isProcessing" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center transition-all animate-in fade-in duration-300">
+                <div class="bg-white border border-gray-200 shadow-2xl rounded-2xl p-8 flex flex-col items-center justify-center space-y-6 max-w-sm mx-4 transform scale-95 transition-transform duration-300 animate-in zoom-in-95">
+                    <!-- Spinning Rings -->
+                    <div class="relative w-16 h-16">
+                        <div class="absolute inset-0 border-4 border-blue-600/20 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-t-blue-600 rounded-full animate-spin"></div>
+                    </div>
+                    <div class="text-center space-y-2">
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wider font-mono">Tahlil qilinmoqda</h4>
+                        <p class="text-[10px] text-gray-500 font-sans leading-relaxed">Hujjat matni, jadvallari va o'zgaruvchan kalit so'zlari skanerlanmoqda. Iltimos kuting...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
                 <div>

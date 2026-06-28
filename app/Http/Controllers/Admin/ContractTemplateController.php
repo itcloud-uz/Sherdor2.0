@@ -19,7 +19,15 @@ class ContractTemplateController extends Controller
     public function detect(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:docx'
+            'file' => [
+                'required',
+                'file',
+                function ($attribute, $value, $fail) {
+                    if (strtolower($value->getClientOriginalExtension()) !== 'docx') {
+                        $fail('Fayl faqat .docx formatida bo\'lishi kerak.');
+                    }
+                }
+            ]
         ]);
 
         $file = $request->file('file');
@@ -49,11 +57,26 @@ class ContractTemplateController extends Controller
 
     public function store(Request $request)
     {
+        if (is_string($request->placeholders)) {
+            $request->merge(['placeholders' => json_decode($request->placeholders, true)]);
+        }
+        if (is_string($request->variant_groups)) {
+            $request->merge(['variant_groups' => json_decode($request->variant_groups, true)]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:residential,commercial,custom',
             'description' => 'nullable|string',
-            'file' => 'required|file|mimes:docx',
+            'file' => [
+                'required',
+                'file',
+                function ($attribute, $value, $fail) {
+                    if (strtolower($value->getClientOriginalExtension()) !== 'docx') {
+                        $fail('Fayl faqat .docx formatida bo\'lishi kerak.');
+                    }
+                }
+            ],
             'placeholders' => 'required|array',
             'variant_groups' => 'nullable|array'
         ]);
@@ -137,10 +160,27 @@ class ContractTemplateController extends Controller
 
     public function update(Request $request, ContractTemplate $template)
     {
+        if (is_string($request->placeholders)) {
+            $request->merge(['placeholders' => json_decode($request->placeholders, true)]);
+        }
+        if (is_string($request->variant_groups)) {
+            $request->merge(['variant_groups' => json_decode($request->variant_groups, true)]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:residential,commercial,custom',
             'description' => 'nullable|string',
+            'file' => [
+                'nullable',
+                'file',
+                function ($attribute, $value, $fail) {
+                    if (strtolower($value->getClientOriginalExtension()) !== 'docx') {
+                        $fail('Fayl faqat .docx formatida bo\'lishi kerak.');
+                    }
+                }
+            ],
+            'placeholders' => 'nullable|array',
             'variant_groups' => 'nullable|array'
         ]);
 
@@ -149,6 +189,58 @@ class ContractTemplateController extends Controller
             'type' => $request->type,
             'description' => $request->description
         ]);
+
+        if ($request->hasFile('file')) {
+            // Delete old file
+            if ($template->docx_path && file_exists(storage_path('app/' . $template->docx_path))) {
+                @unlink(storage_path('app/' . $template->docx_path));
+            }
+
+            // Save new original file
+            $file = $request->file('file');
+            $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
+            $originalPath = $file->storeAs('contract_templates', $originalFilename);
+            $absoluteOriginalPath = storage_path('app/' . $originalPath);
+
+            // Prepare replacements
+            $replacements = [];
+            if ($request->has('placeholders')) {
+                foreach ($request->placeholders as $c) {
+                    if (!empty($c['key']) && !empty($c['text']) && ($c['confirmed'] ?? true)) {
+                        $replacements[$c['text']] = $c['key'];
+                    }
+                }
+            }
+
+            // Create new processed template
+            $templateFilename = 'tpl_' . time() . '_' . uniqid() . '.docx';
+            $templatePath = 'contract_templates/' . $templateFilename;
+            $absoluteTemplatePath = storage_path('app/' . $templatePath);
+
+            $pythonScript = base_path('app/Python/docx_processor.py');
+            
+            $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
+            $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
+            file_put_contents($tempReplFile, $replJson);
+
+            $replaceCmd = 'py -3.12 "' . $pythonScript . '" replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"';
+            shell_exec($replaceCmd);
+            @unlink($tempReplFile);
+
+            // Generate preview
+            $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteTemplatePath . '"';
+            $previewOutput = shell_exec($previewCmd);
+            $previewData = json_decode($previewOutput, true);
+            $previewHtml = $previewData['html'] ?? '';
+
+            @unlink($absoluteOriginalPath);
+
+            $template->update([
+                'docx_path' => $templatePath,
+                'preview_html' => $previewHtml,
+                'placeholders' => array_values(array_unique(array_values($replacements)))
+            ]);
+        }
 
         // Sync variant groups and variants
         $template->variantGroups()->delete();

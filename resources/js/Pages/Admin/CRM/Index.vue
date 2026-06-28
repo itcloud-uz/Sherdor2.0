@@ -708,7 +708,7 @@ function openEditClientModal(client) {
         district: client.district || '',
         passport_photo: null,
         passport_photo_back: null,
-        profile_photo: client.profile_photo || null,
+        profile_photo: null,
         source: client.source || '',
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
@@ -749,8 +749,16 @@ function saveClient() {
             onSuccess: () => {
                 showCreateClientModal.value = false;
                 isProcessing.value = false;
+                if (detailedClientData.value && detailedClientData.value.id === editingClientId.value) {
+                    selectClientForDetail(detailedClientData.value);
+                }
             },
-            onError: () => isProcessing.value = false
+            onError: (errors) => {
+                isProcessing.value = false;
+                console.error("Mijozni saqlashda xatolik:", errors);
+                const errorMsgs = Object.values(errors).join("\n");
+                alert("Mijozni saqlashda xatolik yuz berdi:\n" + errorMsgs);
+            }
         });
     } else {
         const formData = new FormData();

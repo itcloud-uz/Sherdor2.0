@@ -159,13 +159,25 @@ class LedgerExportController extends Controller
     {
         $contract->load(['client', 'unit.floor.building', 'template']);
 
-        if ($contract->contract_template_id && $contract->template && $contract->template->docx_path) {
+        $template = $contract->template;
+        if (!$template && $contract->contract_template_id) {
+            $template = \App\Models\ContractTemplate::find($contract->contract_template_id);
+        }
+        if (!$template) {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $template = \App\Models\ContractTemplate::where('type', $type)->latest()->first();
+        }
+
+        if ($template && $template->docx_path) {
             try {
                 $selectedVariants = $contract->selected_variants ?? [];
-                $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                $docxPath = $template->compileDocx($contract, $selectedVariants);
                 $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
-                return response()->download($absoluteDocxPath, "contract_{$contract->id}.docx");
+                return response()->download($absoluteDocxPath, "contract_{$contract->id}.docx")->deleteFileAfterSend(true);
             } catch (\Exception $e) {
                 return back()->withErrors(['message' => 'DOCX shablonini generatsiya qilishda xatolik: ' . $e->getMessage()]);
             }

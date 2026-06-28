@@ -2679,8 +2679,8 @@ function openDocumentPreview(type, contract) {
     if (type === 'contract') {
         docPreviewTitle.value = 'Shartnoma';
         docPreviewUrl.value = route('admin.contracts.document.preview', contract.id) + '?lang=' + locale.value;
-        docDownloadUrl.value = route('admin.contracts.document.export.pdf', contract.id) + '?lang=' + locale.value;
-        docDownloadDocxUrl.value = contract.contract_template_id ? route('admin.contracts.document.export.docx', contract.id) : '';
+        docDownloadUrl.value = route('admin.contracts.document.export.docx', contract.id) + '?lang=' + locale.value;
+        docDownloadDocxUrl.value = route('admin.contracts.document.export.docx', contract.id) + '?lang=' + locale.value;
     } else {
         docPreviewTitle.value = 'To\'lov Grafiki';
         docPreviewUrl.value = route('admin.contracts.ledger.preview', contract.id);
@@ -6160,8 +6160,8 @@ const ledgerReportData = computed(() => {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Mijoz shaxsiy varaqasi (Excel)
                                 </a>
                             </template>
-                            <a :href="`/admin/crm/contracts/${selectedContract.id}/export-doc/pdf?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple text-neon-purple text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-purple hover:text-black transition-all shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Shartnoma
+                            <a :href="`/admin/crm/contracts/${selectedContract.id}/export-doc/docx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple text-neon-purple text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-purple hover:text-black transition-all shadow-sm">
+                                💾 Shartnoma (Word)
                             </a>
                             <button @click="cancelContract(selectedContract.id)" :disabled="isProcessing" class="px-4 py-2 bg-red-50 border border-red-500 text-red-600 text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-red-600 hover:text-black transition-all shadow-sm disabled:opacity-50">
                                 🚫 Bekor qilish
@@ -6670,12 +6670,12 @@ const ledgerReportData = computed(() => {
 
                 <!-- Footer with Download Button -->
                 <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                    <a v-if="docPreviewTitle === 'Shartnoma' && docDownloadDocxUrl" :href="docDownloadDocxUrl" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <a v-if="docPreviewTitle === 'Shartnoma'" :href="docDownloadDocxUrl" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
                         💾 Word (.docx) Yuklab olish
                     </a>
-                    <a :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <a v-else :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        {{ docPreviewTitle === 'Shartnoma' ? 'PDF Yuklab olish' : 'Yuklab olish' }}
+                        Yuklab olish
                     </a>
                 </div>
             </div>

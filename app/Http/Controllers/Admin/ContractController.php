@@ -394,9 +394,7 @@ class ContractController extends Controller
                 $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
                 // Convert docx to html using python
-                $pythonScript = base_path('app/Python/docx_processor.py');
-                $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteDocxPath . '"';
-                $previewOutput = shell_exec($previewCmd);
+                $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
                 $previewData = json_decode($previewOutput, true);
                 
                 $content = $previewData['html'] ?? '';

@@ -252,18 +252,56 @@ class ContractTemplate extends Model
         }
         $outputDocxPath = $outputDirectory . '/' . $outputDocxName;
 
-        $pythonScript = base_path('app/Python/docx_processor.py');
-        
-        $command = 'py -3.12 "' . $pythonScript . '" compile "' . $templateDocx . '" "' . addslashes($tempJson) . '" "' . $outputDocxPath . '"';
-        
-        $output = shell_exec($command);
-        @unlink($tempJson);
+        $outputDocxPath = $outputDirectory . '/' . $outputDocxName;
+
+        try {
+            self::runPython('compile "' . $templateDocx . '" "' . addslashes($tempJson) . '" "' . $outputDocxPath . '"');
+        } finally {
+            @unlink($tempJson);
+        }
 
         if (!file_exists($outputDocxPath)) {
-            throw new \Exception("Failed to generate DOCX contract. Python output: " . $output);
+            throw new \Exception("Failed to generate DOCX contract.");
         }
 
         return 'public/contracts/' . $outputDocxName;
+    }
+
+    /**
+     * Executes Python document processor command trying multiple Python executors
+     */
+    public static function runPython(string $args): string
+    {
+        $pythonScript = base_path('app/Python/docx_processor.py');
+        
+        $executors = [
+            'py -3.12',
+            'C:\\Users\\FBI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+            'python',
+            'py'
+        ];
+
+        $output = '';
+        $success = false;
+
+        foreach ($executors as $executor) {
+            $command = $executor . ' "' . $pythonScript . '" ' . $args . ' 2>&1';
+            $output = shell_exec($command);
+            
+            if ($output) {
+                json_decode($output);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $success = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$success) {
+            throw new \Exception("Python execution failed. Output: " . ($output ?: 'No output.'));
+        }
+
+        return $output;
     }
 
     /**

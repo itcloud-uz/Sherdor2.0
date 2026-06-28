@@ -34,25 +34,26 @@ class ContractTemplateController extends Controller
         $tempPath = $file->store('temp');
         $absolutePath = storage_path('app/' . $tempPath);
 
-        $pythonScript = base_path('app/Python/docx_processor.py');
+        try {
+            // Detect placeholders
+            $placeholders = json_decode(ContractTemplate::runPython('detect "' . $absolutePath . '"'), true);
 
-        // Detect placeholders
-        $detectCmd = 'py -3.12 "' . $pythonScript . '" detect "' . $absolutePath . '"';
-        $detectOutput = shell_exec($detectCmd);
-        $placeholders = json_decode($detectOutput, true);
+            // Render preview HTML
+            $previewData = json_decode(ContractTemplate::runPython('preview "' . $absolutePath . '"'), true);
 
-        // Render preview HTML
-        $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absolutePath . '"';
-        $previewOutput = shell_exec($previewCmd);
-        $previewData = json_decode($previewOutput, true);
+            @unlink($absolutePath);
 
-        @unlink($absolutePath);
-
-        return response()->json([
-            'placeholders' => $placeholders,
-            'preview_html' => $previewData['html'] ?? '',
-            'warnings' => $previewData['warnings'] ?? []
-        ]);
+            return response()->json([
+                'placeholders' => $placeholders,
+                'preview_html' => $previewData['html'] ?? '',
+                'warnings' => $previewData['warnings'] ?? []
+            ]);
+        } catch (\Exception $e) {
+            @unlink($absolutePath);
+            return response()->json([
+                'message' => 'Faylni tahlil qilishda xatolik: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
@@ -101,21 +102,22 @@ class ContractTemplateController extends Controller
         $templatePath = 'contract_templates/' . $templateFilename;
         $absoluteTemplatePath = storage_path('app/' . $templatePath);
 
-        $pythonScript = base_path('app/Python/docx_processor.py');
-        
         $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
         $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
         file_put_contents($tempReplFile, $replJson);
 
-        $replaceCmd = 'py -3.12 "' . $pythonScript . '" replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"';
-        shell_exec($replaceCmd);
-        @unlink($tempReplFile);
+        try {
+            ContractTemplate::runPython('replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"');
+            @unlink($tempReplFile);
 
-        // 4. Generate the HTML preview from the processed template
-        $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteTemplatePath . '"';
-        $previewOutput = shell_exec($previewCmd);
-        $previewData = json_decode($previewOutput, true);
-        $previewHtml = $previewData['html'] ?? '';
+            // 4. Generate the HTML preview from the processed template
+            $previewData = json_decode(ContractTemplate::runPython('preview "' . $absoluteTemplatePath . '"'), true);
+            $previewHtml = $previewData['html'] ?? '';
+        } catch (\Exception $e) {
+            @unlink($tempReplFile);
+            @unlink($absoluteOriginalPath);
+            return back()->withErrors(['message' => 'Shablon yaratishda xatolik: ' . $e->getMessage()]);
+        }
 
         // Clean up original file
         @unlink($absoluteOriginalPath);
@@ -217,21 +219,22 @@ class ContractTemplateController extends Controller
             $templatePath = 'contract_templates/' . $templateFilename;
             $absoluteTemplatePath = storage_path('app/' . $templatePath);
 
-            $pythonScript = base_path('app/Python/docx_processor.py');
-            
             $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
             $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
             file_put_contents($tempReplFile, $replJson);
 
-            $replaceCmd = 'py -3.12 "' . $pythonScript . '" replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"';
-            shell_exec($replaceCmd);
-            @unlink($tempReplFile);
+            try {
+                ContractTemplate::runPython('replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"');
+                @unlink($tempReplFile);
 
-            // Generate preview
-            $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteTemplatePath . '"';
-            $previewOutput = shell_exec($previewCmd);
-            $previewData = json_decode($previewOutput, true);
-            $previewHtml = $previewData['html'] ?? '';
+                // Generate preview
+                $previewData = json_decode(ContractTemplate::runPython('preview "' . $absoluteTemplatePath . '"'), true);
+                $previewHtml = $previewData['html'] ?? '';
+            } catch (\Exception $e) {
+                @unlink($tempReplFile);
+                @unlink($absoluteOriginalPath);
+                return back()->withErrors(['message' => 'Shablon tahrirlashda xatolik: ' . $e->getMessage()]);
+            }
 
             @unlink($absoluteOriginalPath);
 

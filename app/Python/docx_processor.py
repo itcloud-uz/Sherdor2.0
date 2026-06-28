@@ -167,7 +167,7 @@ def detect_placeholders(docx_path):
         })
 
     # 9. Detect payment terms/durations: e.g. 6 (olti) bank, 36 (o'ttiz olti) oy
-    durations = re.findall(r'\b\d+\s*\([a-zA-Z'`ʻ’]+\)\s*(?:bank|ish|kun|oy)\b', combined_text)
+    durations = re.findall(r"\b\d+\s*\([a-zA-Z'`ʻ’]+\)\s*(?:bank|ish|kun|oy)\b", combined_text)
     for dur in set(durations):
         key = "MUDDAT_OY" if "oy" in dur.lower() else "TOLOV_MUDDAT_KUN"
         label = "Kredit/To'lov muddati (oylarda)" if "oy" in dur.lower() else "Dastlabki to'lov muddati (kunlarda)"

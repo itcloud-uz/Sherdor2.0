@@ -7798,31 +7798,11 @@ const ledgerReportData = computed(() => {
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Viloyat</label>
-                                        <div class="relative">
-                                            <select v-model="clientInfoForm.region" @change="onRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
-                                                <option value="">Tanlang</option>
-                                                <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">
-                                                    {{ regionObj.name }}
-                                                </option>
-                                            </select>
-                                            <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                            </span>
-                                        </div>
+                                        <input v-model="clientInfoForm.region" type="text" placeholder="Viloyatni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
-                                        <div class="relative">
-                                            <select v-model="clientInfoForm.district" @change="onDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
-                                                <option value="">Tanlang</option>
-                                                <option v-for="districtObj in availableDistricts" :key="districtObj.id" :value="districtObj.name">
-                                                    {{ districtObj.name }}
-                                                </option>
-                                            </select>
-                                            <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                            </span>
-                                        </div>
+                                        <input v-model="clientInfoForm.district" type="text" placeholder="Tuman / Shaharni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Mahalla, ko'cha nomi</label>

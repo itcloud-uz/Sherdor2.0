@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContractTemplate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class ContractTemplateController extends Controller
 {
@@ -32,7 +33,7 @@ class ContractTemplateController extends Controller
 
         $file = $request->file('file');
         $tempPath = $file->store('temp', 'local');
-        $absolutePath = storage_path('app/' . $tempPath);
+        $absolutePath = Storage::disk('local')->path($tempPath);
 
         try {
             // Detect placeholders
@@ -41,7 +42,7 @@ class ContractTemplateController extends Controller
             // Render preview HTML
             $previewData = json_decode(ContractTemplate::runPython('preview "' . $absolutePath . '"'), true);
 
-            @unlink($absolutePath);
+            Storage::disk('local')->delete($tempPath);
 
             return response()->json([
                 'placeholders' => $placeholders,
@@ -49,7 +50,7 @@ class ContractTemplateController extends Controller
                 'warnings' => $previewData['warnings'] ?? []
             ]);
         } catch (\Exception $e) {
-            @unlink($absolutePath);
+            Storage::disk('local')->delete($tempPath);
             return response()->json([
                 'message' => 'Faylni tahlil qilishda xatolik: ' . $e->getMessage()
             ], 500);
@@ -87,7 +88,7 @@ class ContractTemplateController extends Controller
         // 1. Save the original uploaded file
         $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
         $originalPath = $file->storeAs('contract_templates', $originalFilename, 'local');
-        $absoluteOriginalPath = storage_path('app/' . $originalPath);
+        $absoluteOriginalPath = Storage::disk('local')->path($originalPath);
 
         // 2. Prepare the replacements JSON
         $replacements = [];
@@ -100,7 +101,7 @@ class ContractTemplateController extends Controller
         // 3. Apply replacements using python to create the actual template file
         $templateFilename = 'tpl_' . time() . '_' . uniqid() . '.docx';
         $templatePath = 'contract_templates/' . $templateFilename;
-        $absoluteTemplatePath = storage_path('app/' . $templatePath);
+        $absoluteTemplatePath = Storage::disk('local')->path($templatePath);
 
         $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
         $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
@@ -115,12 +116,12 @@ class ContractTemplateController extends Controller
             $previewHtml = $previewData['html'] ?? '';
         } catch (\Exception $e) {
             @unlink($tempReplFile);
-            @unlink($absoluteOriginalPath);
+            Storage::disk('local')->delete($originalPath);
             return back()->withErrors(['message' => 'Shablon yaratishda xatolik: ' . $e->getMessage()]);
         }
 
         // Clean up original file
-        @unlink($absoluteOriginalPath);
+        Storage::disk('local')->delete($originalPath);
 
         // 5. Create ContractTemplate
         $template = ContractTemplate::create([
@@ -194,15 +195,15 @@ class ContractTemplateController extends Controller
 
         if ($request->hasFile('file')) {
             // Delete old file
-            if ($template->docx_path && file_exists(storage_path('app/' . $template->docx_path))) {
-                @unlink(storage_path('app/' . $template->docx_path));
+            if ($template->docx_path && Storage::disk('local')->exists($template->docx_path)) {
+                Storage::disk('local')->delete($template->docx_path);
             }
 
             // Save new original file
             $file = $request->file('file');
             $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
             $originalPath = $file->storeAs('contract_templates', $originalFilename, 'local');
-            $absoluteOriginalPath = storage_path('app/' . $originalPath);
+            $absoluteOriginalPath = Storage::disk('local')->path($originalPath);
 
             // Prepare replacements
             $replacements = [];
@@ -217,7 +218,7 @@ class ContractTemplateController extends Controller
             // Create new processed template
             $templateFilename = 'tpl_' . time() . '_' . uniqid() . '.docx';
             $templatePath = 'contract_templates/' . $templateFilename;
-            $absoluteTemplatePath = storage_path('app/' . $templatePath);
+            $absoluteTemplatePath = Storage::disk('local')->path($templatePath);
 
             $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
             $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
@@ -232,11 +233,11 @@ class ContractTemplateController extends Controller
                 $previewHtml = $previewData['html'] ?? '';
             } catch (\Exception $e) {
                 @unlink($tempReplFile);
-                @unlink($absoluteOriginalPath);
+                Storage::disk('local')->delete($originalPath);
                 return back()->withErrors(['message' => 'Shablon tahrirlashda xatolik: ' . $e->getMessage()]);
             }
 
-            @unlink($absoluteOriginalPath);
+            Storage::disk('local')->delete($originalPath);
 
             $template->update([
                 'docx_path' => $templatePath,
@@ -277,8 +278,8 @@ class ContractTemplateController extends Controller
 
     public function destroy(ContractTemplate $template)
     {
-        if ($template->docx_path && file_exists(storage_path('app/' . $template->docx_path))) {
-            @unlink(storage_path('app/' . $template->docx_path));
+        if ($template->docx_path && Storage::disk('local')->exists($template->docx_path)) {
+            Storage::disk('local')->delete($template->docx_path);
         }
         $template->delete();
 

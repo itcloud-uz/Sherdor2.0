@@ -237,7 +237,7 @@ class ContractTemplate extends Model
         }
 
         // Run python to compile DOCX
-        $templateDocx = storage_path('app/' . $this->docx_path);
+        $templateDocx = \Illuminate\Support\Facades\Storage::disk('local')->path($this->docx_path);
         if (!file_exists($templateDocx)) {
             throw new \Exception("DOCX template file not found: " . $templateDocx);
         }

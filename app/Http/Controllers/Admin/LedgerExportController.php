@@ -202,11 +202,24 @@ class LedgerExportController extends Controller
             $locale = 'uz'; // fallback
         }
 
-        if ($contract->contract_template_id && $contract->template) {
-            if ($contract->template->docx_path) {
+        // Resolve a template if not selected, so we never fall back to broken/old hardcoded blade views
+        $template = $contract->template;
+        if (!$template && $contract->contract_template_id) {
+            $template = \App\Models\ContractTemplate::find($contract->contract_template_id);
+        }
+        if (!$template) {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $template = \App\Models\ContractTemplate::where('type', $type)->latest()->first();
+        }
+
+        if ($template) {
+            if ($template->docx_path) {
                 try {
                     $selectedVariants = $contract->selected_variants ?? [];
-                    $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                    $docxPath = $template->compileDocx($contract, $selectedVariants);
                     $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
                     $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
@@ -218,7 +231,7 @@ class LedgerExportController extends Controller
                     $content = 'Preview generation failed: ' . $e->getMessage();
                 }
             } else {
-                $content = $contract->template->compile($contract);
+                $content = $template->compile($contract);
             }
             return view('contracts.compiled', compact('content'));
         } else {

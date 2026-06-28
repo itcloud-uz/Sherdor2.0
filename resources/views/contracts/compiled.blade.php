@@ -36,23 +36,7 @@
             font-size: 10px;
         }
         
-        /* Ensure signature/address tables with exactly 2 columns are split 50-50 */
-        tr td:first-child:nth-last-child(2),
-        tr td:first-child:nth-last-child(2) ~ td {
-            width: 50%;
-        }
 
-        /* Ensure signature/address tables with exactly 3 columns (left, spacer, right) have correct widths */
-        tr td:first-child:nth-last-child(3) {
-            width: 48%;
-        }
-        tr td:first-child:nth-last-child(3) + td {
-            width: 4%;
-        }
-        tr td:first-child:nth-last-child(3) + td + td {
-            width: 48%;
-        }
-        
         /* Style paragraphs */
         p { 
             margin-bottom: 8px; 

@@ -40,6 +40,7 @@ class FacilityController extends Controller
             'buildings' => $buildings,
             'clients' => $clients,
             'partners' => $partners,
+            'users' => \App\Models\User::select('id', 'name')->orderBy('name', 'asc')->get(),
             'registers' => \App\Models\CashRegister::where('is_active', true)->get(),
             'reportData' => $reportData,
             'filters' => [

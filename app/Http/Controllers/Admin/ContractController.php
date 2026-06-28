@@ -14,9 +14,10 @@ class ContractController extends Controller
         }
 
         $validated = $request->validate([
-            'buyer_type' => 'required|in:client,partner',
+            'buyer_type' => 'required|in:client,partner,employee',
             'client_id' => 'required_if:buyer_type,client|nullable|exists:clients,id',
             'partner_id' => 'required_if:buyer_type,partner|nullable|exists:partners,id',
+            'employee_id' => 'required_if:buyer_type,employee|nullable|exists:users,id',
             'unit_id' => 'required|exists:units,id',
             'contract_type' => 'required|string|in:residential,commercial',
             'price_per_sqm' => 'required|numeric|min:0',
@@ -35,7 +36,8 @@ class ContractController extends Controller
             'rooms' => 'nullable|integer|min:1',
             'user_id' => 'nullable|exists:users,id',
             'contract_template_id' => 'nullable|exists:contract_templates,id',
-            'selected_variants' => 'nullable|array'
+            'selected_variants' => 'nullable|array',
+            'custom_monthly_amount' => 'nullable|numeric|min:0'
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';
@@ -62,8 +64,29 @@ class ContractController extends Controller
             'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
             'contract_template_id' => $validated['contract_template_id'] ?? null,
             'selected_variants' => $validated['selected_variants'] ?? null,
+            'custom_monthly_amount' => $validated['custom_monthly_amount'] ?? null,
             'status' => 'draft'
         ]);
+
+        if ($validated['buyer_type'] === 'employee') {
+            $user = \App\Models\User::find($validated['employee_id']);
+            if ($user) {
+                // Split user name into first name and last name
+                $parts = explode(' ', $user->name);
+                $lastName = $parts[0] ?? 'Xodim';
+                $firstName = $parts[1] ?? ($parts[0] ? '' : 'Xodim');
+                $client = \App\Models\Client::firstOrCreate(
+                    ['phone' => $user->phone ?? ('user_' . $user->id)],
+                    [
+                        'first_name' => $firstName ?: $user->name,
+                        'last_name' => $lastName,
+                        'middle_name' => '',
+                    ]
+                );
+                $contract->client_id = $client->id;
+            }
+        }
+        
         
         if (!empty($validated['created_at'])) {
             $contract->created_at = $validated['created_at'];

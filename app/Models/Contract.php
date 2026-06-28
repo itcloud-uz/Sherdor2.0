@@ -30,13 +30,15 @@ class Contract extends Model
         'payment_type',
         'user_id',
         'contract_template_id',
-        'selected_variants'
+        'selected_variants',
+        'custom_monthly_amount'
     ];
 
     protected $casts = [
         'ai_verification_logs' => 'array',
         'is_down_payment_split' => 'boolean',
         'selected_variants' => 'array',
+        'custom_monthly_amount' => 'float',
     ];
 
     protected static function boot()
@@ -219,25 +221,38 @@ class Contract extends Model
         if (($this->payment_type ?? 'installment') === 'installment' && ($this->term_months ?? 1) > 0) {
             $remaining = $this->total_amount - $this->down_payment;
             if ($remaining > 0) {
-                $monthly = $remaining / $this->term_months;
+                $monthly = ($this->custom_monthly_amount && $this->custom_monthly_amount > 0) 
+                           ? $this->custom_monthly_amount 
+                           : ($remaining / $this->term_months);
                 
                 // If down payment is split, regular installments start after the down payment period
                 $startOffset = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 0;
                 
+                $accumulated = 0;
                 for ($i = 1; $i <= $this->term_months; $i++) {
                     $dueDate = $baseDate->copy()->addMonths($startOffset + $i);
                     $status = $dueDate->isPast() ? 'overdue' : 'pending';
                     
-                    \App\Models\PaymentSchedule::create([
-                        'contract_id' => $this->id,
-                        'expected_amount' => $monthly,
-                        'remaining_debt' => $monthly,
-                        'paid_amount' => 0,
-                        'due_date' => $dueDate->format('Y-m-d'),
-                        'status' => $status,
-                        'original_payment_amount' => $monthly,
-                        'payment_type' => 'installment'
-                    ]);
+                    if ($i === (int)$this->term_months) {
+                        // Last month gets the exact remaining balance
+                        $amount = $remaining - $accumulated;
+                    } else {
+                        $amount = min($monthly, $remaining - $accumulated);
+                    }
+                    $accumulated += $amount;
+                    
+                    if ($amount > 0) {
+                        \App\Models\PaymentSchedule::create([
+                            'contract_id' => $this->id,
+                            'expected_amount' => $amount,
+                            'remaining_debt' => $amount,
+                            'paid_amount' => 0,
+                            'due_date' => $dueDate->format('Y-m-d'),
+                            'status' => $status,
+                            'original_payment_amount' => $amount,
+                            'payment_type' => 'installment'
+                        ]);
+                    }
                 }
             }
         }

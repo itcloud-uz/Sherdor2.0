@@ -31,7 +31,7 @@ class ContractTemplateController extends Controller
         ]);
 
         $file = $request->file('file');
-        $tempPath = $file->store('temp');
+        $tempPath = $file->store('temp', 'local');
         $absolutePath = storage_path('app/' . $tempPath);
 
         try {
@@ -86,7 +86,7 @@ class ContractTemplateController extends Controller
         
         // 1. Save the original uploaded file
         $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
-        $originalPath = $file->storeAs('contract_templates', $originalFilename);
+        $originalPath = $file->storeAs('contract_templates', $originalFilename, 'local');
         $absoluteOriginalPath = storage_path('app/' . $originalPath);
 
         // 2. Prepare the replacements JSON
@@ -201,7 +201,7 @@ class ContractTemplateController extends Controller
             // Save new original file
             $file = $request->file('file');
             $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
-            $originalPath = $file->storeAs('contract_templates', $originalFilename);
+            $originalPath = $file->storeAs('contract_templates', $originalFilename, 'local');
             $absoluteOriginalPath = storage_path('app/' . $originalPath);
 
             // Prepare replacements

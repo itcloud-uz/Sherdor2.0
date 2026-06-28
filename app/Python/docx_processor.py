@@ -19,16 +19,54 @@ def detect_placeholders(docx_path):
     
     # Extract text from paragraphs
     for p in doc.paragraphs:
-        if p.text.strip():
-            text_segments.append(p.text)
+        txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+        txt = re.sub(r'\s+', ' ', txt).strip()
+        if txt:
+            text_segments.append(txt)
             
     # Extract text from tables
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    if p.text.strip():
-                        text_segments.append(p.text)
+                    txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+                    txt = re.sub(r'\s+', ' ', txt).strip()
+                    if txt:
+                        text_segments.append(txt)
+
+    # Extract text from headers and footers
+    for section in doc.sections:
+        for header in [section.header, section.first_page_header, section.even_page_header]:
+            if header:
+                for p in header.paragraphs:
+                    txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+                    txt = re.sub(r'\s+', ' ', txt).strip()
+                    if txt:
+                        text_segments.append(txt)
+                for t in header.tables:
+                    for row in t.rows:
+                        for cell in row.cells:
+                            for p in cell.paragraphs:
+                                txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+                                txt = re.sub(r'\s+', ' ', txt).strip()
+                                if txt:
+                                    text_segments.append(txt)
+                                    
+        for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
+            if footer:
+                for p in footer.paragraphs:
+                    txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+                    txt = re.sub(r'\s+', ' ', txt).strip()
+                    if txt:
+                        text_segments.append(txt)
+                for t in footer.tables:
+                    for row in t.rows:
+                        for cell in row.cells:
+                            for p in cell.paragraphs:
+                                txt = p.text.replace('\xa0', ' ').replace('\t', ' ')
+                                txt = re.sub(r'\s+', ' ', txt).strip()
+                                if txt:
+                                    text_segments.append(txt)
                         
     combined_text = "\n".join(text_segments)
     
@@ -207,8 +245,20 @@ def replace_text_in_paragraph(paragraph, old_text, new_text):
     return True
 
 def replace_text_in_document(doc, old_text, new_text):
+    old_text = re.sub(r'\s+', ' ', old_text).replace('\xa0', ' ').strip()
+    if not old_text:
+        return False
+        
     modified = False
+    
+    def normalize_paragraph(p):
+        for run in p.runs:
+            if run.text:
+                run.text = run.text.replace('\xa0', ' ').replace('\t', ' ')
+                run.text = re.sub(r' +', ' ', run.text)
+
     for p in doc.paragraphs:
+        normalize_paragraph(p)
         if replace_text_in_paragraph(p, old_text, new_text):
             modified = True
             
@@ -216,32 +266,36 @@ def replace_text_in_document(doc, old_text, new_text):
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
+                    normalize_paragraph(p)
                     if replace_text_in_paragraph(p, old_text, new_text):
                         modified = True
                         
-    # Search in header and footer
     for section in doc.sections:
         for header in [section.header, section.first_page_header, section.even_page_header]:
             if header:
                 for p in header.paragraphs:
+                    normalize_paragraph(p)
                     if replace_text_in_paragraph(p, old_text, new_text):
                         modified = True
                 for t in header.tables:
                     for row in t.rows:
                         for cell in row.cells:
                             for p in cell.paragraphs:
+                                normalize_paragraph(p)
                                 if replace_text_in_paragraph(p, old_text, new_text):
                                     modified = True
                                     
         for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
             if footer:
                 for p in footer.paragraphs:
+                    normalize_paragraph(p)
                     if replace_text_in_paragraph(p, old_text, new_text):
                         modified = True
                 for t in footer.tables:
                     for row in t.rows:
                         for cell in row.cells:
                             for p in cell.paragraphs:
+                                normalize_paragraph(p)
                                 if replace_text_in_paragraph(p, old_text, new_text):
                                     modified = True
     return modified

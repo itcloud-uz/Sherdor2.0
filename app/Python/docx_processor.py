@@ -106,6 +106,21 @@ def detect_placeholders(docx_path):
             "label": "Mijozning to'liq F.I.Sh",
             "type": "text"
         })
+
+    if "A. Mamanov" in combined_text:
+        candidates.append({
+            "text": "A. Mamanov",
+            "key": "MIJOZ_FISH_QISQA",
+            "label": "Mijoz F.I.Sh qisqartmasi (Masalan: A. Mamanov)",
+            "type": "text"
+        })
+    elif "A.Mamanov" in combined_text:
+        candidates.append({
+            "text": "A.Mamanov",
+            "key": "MIJOZ_FISH_QISQA",
+            "label": "Mijoz F.I.Sh qisqartmasi (Masalan: A.Mamanov)",
+            "type": "text"
+        })
         
     if "Samarqand viloyati Urgut tumani I.I.B" in combined_text:
         candidates.append({

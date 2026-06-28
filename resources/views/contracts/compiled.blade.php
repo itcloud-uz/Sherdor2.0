@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <title>Shartnoma</title>
     <style>
+        /* Remove yellow highlight background from templates */
+        * {
+            background-color: transparent !important;
+            background: transparent !important;
+        }
+
         body { 
             font-family: 'DejaVu Sans', 'Arial', sans-serif; 
             font-size: 11px; 
@@ -35,6 +41,17 @@
         tr td:first-child:nth-last-child(2) ~ td {
             width: 50% !important;
         }
+
+        /* Ensure signature/address tables with exactly 3 columns (left, spacer, right) have correct widths */
+        tr td:first-child:nth-last-child(3) {
+            width: 48% !important;
+        }
+        tr td:first-child:nth-last-child(3) + td {
+            width: 4% !important;
+        }
+        tr td:first-child:nth-last-child(3) + td + td {
+            width: 48% !important;
+        }
         
         /* Style paragraphs */
         p { 
@@ -45,8 +62,8 @@
         
         /* Style images inside table cells (like tiger logo or headers) */
         img { 
-            max-width: 100% !important; 
-            height: auto !important; 
+            max-height: 75px !important; /* Limit height of any logo to 75px so it doesn't take too much space */
+            width: auto !important; 
             display: block; 
             margin: 0 auto; 
         }

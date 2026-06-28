@@ -399,27 +399,42 @@ class ContractController extends Controller
                 $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
 
                 $isSofficeAvailable = false;
+                $sofficePath = 'soffice';
                 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                     $checkCmd = 'where soffice 2>nul';
-                    $sofficePath = shell_exec($checkCmd);
-                    if ($sofficePath) {
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
                         $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
+                    } else {
+                        $paths = [
+                            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+                            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+                        ];
+                        foreach ($paths as $p) {
+                            if (file_exists($p)) {
+                                $isSofficeAvailable = true;
+                                $sofficePath = '"' . $p . '"';
+                                break;
+                            }
+                        }
                     }
                 } else {
                     $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
-                    $sofficePath = shell_exec($checkCmd);
-                    if ($sofficePath) {
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
                         $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
                     }
                 }
 
                 if ($isSofficeAvailable) {
-                    $binary = 'soffice';
+                    $binary = $sofficePath;
                     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
                         $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
                     }
                     
-                    $convertCmd = escapeshellcmd($binary) . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    $convertCmd = $binary . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
                     shell_exec($convertCmd);
 
                     if (file_exists($absolutePdfPath)) {

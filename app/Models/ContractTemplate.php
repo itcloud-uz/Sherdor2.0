@@ -154,6 +154,7 @@ class ContractTemplate extends Model
             'YIL' => $yil,
             'SHARTNOMA_RAQAMI' => $contract->contract_number ?: $contract->id,
             'MIJOZ_FISH' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
+            'MIJOZ_FISH_QISQA' => $client ? (mb_substr($client->first_name, 0, 1, 'UTF-8') . '. ' . ($client->last_name ?: '')) : '_______',
             'MIJOZ_MANZILI' => $client ? ($client->address ?? '_______') : '_______',
             'MIJOZ_JSHSHIR' => $client ? ($client->pinfl ?? '_______') : '_______',
             'PASPORT_SERIYA' => $client ? ($client->passport_series ?? '_______') : '_______',

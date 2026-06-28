@@ -60,6 +60,13 @@ watch(activeTab, (newTab) => {
 // Basic settings forms
 const form = useForm({
     company_name: props.settings?.company_name || 'ITCloud Sher-Dor ERP',
+    company_address: props.settings?.company_address || '',
+    company_bank_account: props.settings?.company_bank_account || '',
+    company_bank_name: props.settings?.company_bank_name || '',
+    company_mfo: props.settings?.company_mfo || '',
+    company_inn: props.settings?.company_inn || '',
+    company_director: props.settings?.company_director || '',
+    company_phone: props.settings?.company_phone || '',
     primary_theme_color: props.settings?.primary_theme_color || '#00F0FF',
     neon_glow_intensity: props.settings?.neon_glow_intensity || '0 0 15px',
     default_currency: props.settings?.default_currency || 'USD',
@@ -387,8 +394,45 @@ const saveRolePermissions = () => {
                         
                         <form @submit.prevent="submit" class="space-y-6">
                             <div>
-                                <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Company Name</label>
+                                <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya nomi (KORXONA)</label>
                                 <input v-model="form.company_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya manzili</label>
+                                    <input v-model="form.company_address" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya telefoni</label>
+                                    <input v-model="form.company_phone" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Bank Hisob raqami (H/R)</label>
+                                    <input v-model="form.company_bank_account" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Bank nomi</label>
+                                    <input v-model="form.company_bank_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Bank MFO</label>
+                                    <input v-model="form.company_mfo" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya INN</label>
+                                    <input v-model="form.company_inn" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Direktor F.I.Sh.</label>
+                                    <input v-model="form.company_director" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
                             </div>
                             
                             <div>

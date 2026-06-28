@@ -10,7 +10,13 @@ class ContractTemplate extends Model
         'name',
         'type',
         'description',
-        'content'
+        'docx_path',
+        'preview_html',
+        'placeholders'
+    ];
+
+    protected $casts = [
+        'placeholders' => 'array'
     ];
 
     public function contracts()
@@ -18,8 +24,13 @@ class ContractTemplate extends Model
         return $this->hasMany(Contract::class);
     }
 
+    public function variantGroups()
+    {
+        return $this->hasMany(ClauseVariantGroup::class, 'contract_template_id');
+    }
+
     /**
-     * Compile the template content by replacing placeholders with actual contract data.
+     * Compile the template preview HTML by replacing placeholders with actual contract data.
      */
     public function compile(Contract $contract): string
     {
@@ -38,15 +49,16 @@ class ContractTemplate extends Model
         $client = $contract->client;
         $unit = $contract->unit;
 
-        // Default Company info
-        $korxonaNomi = '«SHER-DOR» xususiy korxonasi';
-        $direktorName = 'J.Raxmonov';
-        $korxonaManzili = 'Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy';
-        $korxonaHr = '2020 8000 6005 5796 1001';
-        $korxonaBank = 'ATB “Agrobank” Urgut tuman filiali';
-        $korxonaMfo = '00300';
-        $korxonaInn = '202 162 496';
-        $korxonaTelefon = '(97) 708-44-44, (93) 573-29-29';
+        // Fetch company settings from database
+        $settings = SystemSetting::first();
+        $korxonaNomi = $settings->company_name ?? '«SHER-DOR» xususiy korxonasi';
+        $korxonaManzili = $settings->company_address ?? 'Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy';
+        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
+        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
+        $korxonaMfo = $settings->company_mfo ?? '00300';
+        $korxonaInn = $settings->company_inn ?? '202 162 496';
+        $korxonaDirector = $settings->company_director ?? 'J.Raxmonov';
+        $korxonaTelefon = $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29';
 
         $totalAmount = $contract->total_amount ?? 0;
         $downPayment = $contract->down_payment ?? 0;
@@ -58,41 +70,200 @@ class ContractTemplate extends Model
         $termMonthsWords = self::numberToWords($termMonths);
 
         $replacements = [
-            '{{KUN}}' => $kun,
-            '{{OY}}' => $oy,
-            '{{YIL}}' => $yil,
-            '{{SHARTNOMA_RAQAMI}}' => $contract->contract_number ?: $contract->id,
-            '{{MIJOZ_FISH}}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
-            '{{MIJOZ_MANZILI}}' => $client ? ($client->address ?? '_______') : '_______',
-            '{{MIJOZ_JSHSHIR}}' => $client ? ($client->pinfl ?? '_______') : '_______',
-            '{{PASPORT_SERIYA}}' => $client ? ($client->passport_series ?? '_______') : '_______',
-            '{{PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
-            '{{PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
-            '{{BLOK}}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
-            '{{QAVAT}}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->number : '_______'),
-            '{{XONA_RAQAMI}}' => $unit ? $unit->unit_number : '_______',
-            '{{XONALAR_SONI}}' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'),
-            '{{MAYDON}}' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______',
-            '{{KV_METR_NARXI}}' => number_format($contract->price_per_sqm, 0, ',', ' '),
-            '{{UMUMIY_NARX}}' => number_format($totalAmount, 0, ',', ' '),
-            '{{UMUMIY_NARX_SOZ_BILAN}}' => $totalAmountWords,
-            '{{BOSHLANGICH_TOLOV}}' => number_format($downPayment, 0, ',', ' '),
-            '{{BOSHLANGICH_TOLOV_SOZ_BILAN}}' => $downPaymentWords,
-            '{{BOSHLANGICH_TOLOV_FOIZ}}' => $downPaymentPercent,
-            '{{MUDDAT_OY}}' => $termMonths,
-            '{{MUDDAT_OY_SOZ_BILAN}}' => $termMonthsWords,
-            '{{MIJOZ_TELEFON}}' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
-            '{{DIREKTOR}}' => $direktorName,
-            '{{KORXONA_NOMI}}' => $korxonaNomi,
-            '{{KORXONA_MANZILI}}' => $korxonaManzili,
-            '{{KORXONA_BANK_ACCOUNT}}' => $korxonaHr,
-            '{{KORXONA_BANK}}' => $korxonaBank,
-            '{{KORXONA_MFO}}' => $korxonaMfo,
-            '{{KORXONA_INN}}' => $korxonaInn,
-            '{{KORXONA_TELEFON}}' => $korxonaTelefon,
+            '{{ KUN }}' => $kun, '{{KUN}}' => $kun,
+            '{{ OY }}' => $oy, '{{OY}}' => $oy,
+            '{{ YIL }}' => $yil, '{{YIL}}' => $yil,
+            '{{ SHARTNOMA_RAQAMI }}' => $contract->contract_number ?: $contract->id, '{{SHARTNOMA_RAQAMI}}' => $contract->contract_number ?: $contract->id,
+            '{{ MIJOZ_FISH }}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum', '{{MIJOZ_FISH}}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
+            '{{ MIJOZ_MANZILI }}' => $client ? ($client->address ?? '_______') : '_______', '{{MIJOZ_MANZILI}}' => $client ? ($client->address ?? '_______') : '_______',
+            '{{ MIJOZ_JSHSHIR }}' => $client ? ($client->pinfl ?? '_______') : '_______', '{{MIJOZ_JSHSHIR}}' => $client ? ($client->pinfl ?? '_______') : '_______',
+            '{{ PASPORT_SERIYA }}' => $client ? ($client->passport_series ?? '_______') : '_______', '{{PASPORT_SERIYA}}' => $client ? ($client->passport_series ?? '_______') : '_______',
+            '{{ PASPORT_SANA }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______', '{{PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            '{{ PASPORT_JOYI }}' => $client ? ($client->passport_issued_by ?? '_______') : '_______', '{{PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            '{{ BLOK }}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______', '{{BLOK}}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
+            '{{ QAVAT }}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->number : '_______'), '{{QAVAT}}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->number : '_______'),
+            '{{ XONA_RAQAMI }}' => $unit ? $unit->unit_number : '_______', '{{XONA_RAQAMI}}' => $unit ? $unit->unit_number : '_______',
+            '{{ XONALAR_SONI }}' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'), '{{XONALAR_SONI}}' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'),
+            '{{ MAYDON }}' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______', '{{MAYDON}}' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______',
+            '{{ KV_METR_NARXI }}' => number_format($contract->price_per_sqm, 0, ',', ' '), '{{KV_METR_NARXI}}' => number_format($contract->price_per_sqm, 0, ',', ' '),
+            '{{ UMUMIY_NARX }}' => number_format($totalAmount, 0, ',', ' '), '{{UMUMIY_NARX}}' => number_format($totalAmount, 0, ',', ' '),
+            '{{ UMUMIY_NARX_SOZ_BILAN }}' => $totalAmountWords, '{{UMUMIY_NARX_SOZ_BILAN}}' => $totalAmountWords,
+            '{{ BOSHLANGICH_TOLOV }}' => number_format($downPayment, 0, ',', ' '), '{{BOSHLANGICH_TOLOV}}' => number_format($downPayment, 0, ',', ' '),
+            '{{ BOSHLANGICH_TOLOV_SOZ_BILAN }}' => $downPaymentWords, '{{BOSHLANGICH_TOLOV_SOZ_BILAN}}' => $downPaymentWords,
+            '{{ BOSHLANGICH_TOLOV_FOIZ }}' => $downPaymentPercent, '{{BOSHLANGICH_TOLOV_FOIZ}}' => $downPaymentPercent,
+            '{{ MUDDAT_OY }}' => $termMonths, '{{MUDDAT_OY}}' => $termMonths,
+            '{{ MUDDAT_OY_SOZ_BILAN }}' => $termMonthsWords, '{{MUDDAT_OY_SOZ_BILAN}}' => $termMonthsWords,
+            '{{ MIJOZ_TELEFON }}' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______', '{{MIJOZ_TELEFON}}' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
+            '{{ DIREKTOR }}' => $korxonaDirector, '{{DIREKTOR}}' => $korxonaDirector,
+            '{{ KORXONA_NOMI }}' => $korxonaNomi, '{{KORXONA_NOMI}}' => $korxonaNomi,
+            '{{ KORXONA_MANZILI }}' => $korxonaManzili, '{{KORXONA_MANZILI}}' => $korxonaManzili,
+            '{{ KORXONA_BANK_ACCOUNT }}' => $korxonaHr, '{{KORXONA_BANK_ACCOUNT}}' => $korxonaHr,
+            '{{ KORXONA_BANK }}' => $korxonaBank, '{{KORXONA_BANK}}' => $korxonaBank,
+            '{{ KORXONA_MFO }}' => $korxonaMfo, '{{KORXONA_MFO}}' => $korxonaMfo,
+            '{{ KORXONA_INN }}' => $korxonaInn, '{{KORXONA_INN}}' => $korxonaInn,
+            '{{ KORXONA_TELEFON }}' => $korxonaTelefon, '{{KORXONA_TELEFON}}' => $korxonaTelefon,
         ];
 
-        return str_replace(array_keys($replacements), array_values($replacements), $this->content);
+        return str_replace(array_keys($replacements), array_values($replacements), $this->preview_html ?? '');
+    }
+
+    /**
+     * Renders the docx template with variables and selected variants using Python.
+     */
+    public function compileDocx(Contract $contract, array $selectedVariants = []): string
+    {
+        $contract->load(['client', 'unit.floor.building']);
+
+        $date = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
+        $monthsUz = [
+            1 => 'yanvar', 2 => 'fevral', 3 => 'mart', 4 => 'aprel',
+            5 => 'may', 6 => 'iyun', 7 => 'iyul', 8 => 'avgust',
+            9 => 'sentabr', 10 => 'oktabr', 11 => 'noyabr', 12 => 'dekabr'
+        ];
+        $kun = $date->format('d');
+        $oy = $monthsUz[(int)$date->format('m')] ?? 'mart';
+        $yil = $date->format('Y');
+
+        $client = $contract->client;
+        $unit = $contract->unit;
+
+        // Fetch company settings from database
+        $settings = SystemSetting::first();
+        $korxonaNomi = $settings->company_name ?? '«SHER-DOR» xususiy korxonasi';
+        $korxonaManzili = $settings->company_address ?? 'Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy';
+        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
+        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
+        $korxonaMfo = $settings->company_mfo ?? '00300';
+        $korxonaInn = $settings->company_inn ?? '202 162 496';
+        $korxonaDirector = $settings->company_director ?? 'J.Raxmonov';
+        $korxonaTelefon = $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29';
+
+        $totalAmount = $contract->total_amount ?? 0;
+        $downPayment = $contract->down_payment ?? 0;
+        $totalAmountWords = self::numberToWords($totalAmount);
+        $downPaymentWords = self::numberToWords($downPayment);
+        $downPaymentPercent = $totalAmount > 0 ? round(($downPayment / $totalAmount) * 100) : 0;
+        
+        $termMonths = $contract->term_months ?? 1;
+        $termMonthsWords = self::numberToWords($termMonths);
+
+        // Core placeholders context
+        $context = [
+            'KUN' => $kun,
+            'OY' => $oy,
+            'YIL' => $yil,
+            'SHARTNOMA_RAQAMI' => $contract->contract_number ?: $contract->id,
+            'MIJOZ_FISH' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
+            'MIJOZ_MANZILI' => $client ? ($client->address ?? '_______') : '_______',
+            'MIJOZ_JSHSHIR' => $client ? ($client->pinfl ?? '_______') : '_______',
+            'PASPORT_SERIYA' => $client ? ($client->passport_series ?? '_______') : '_______',
+            'PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            'PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            'BLOK' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
+            'QAVAT' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->number : '_______'),
+            'XONA_RAQAMI' => $unit ? $unit->unit_number : '_______',
+            'XONALAR_SONI' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'),
+            'MAYDON' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______',
+            'KV_METR_NARXI' => number_format($contract->price_per_sqm, 0, ',', ' '),
+            'UMUMIY_NARX' => number_format($totalAmount, 0, ',', ' '),
+            'UMUMIY_NARX_SOZ_BILAN' => $totalAmountWords,
+            'BOSHLANGICH_TOLOV' => number_format($downPayment, 0, ',', ' '),
+            'BOSHLANGICH_TOLOV_SOZ_BILAN' => $downPaymentWords,
+            'BOSHLANGICH_TOLOV_FOIZ' => $downPaymentPercent,
+            'MUDDAT_OY' => $termMonths,
+            'MUDDAT_OY_SOZ_BILAN' => $termMonthsWords,
+            'MIJOZ_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
+            'DIREKTOR' => $korxonaDirector,
+            'KORXONA_NOMI' => $korxonaNomi,
+            'KORXONA_MANZILI' => $korxonaManzili,
+            'KORXONA_BANK_ACCOUNT' => $korxonaHr,
+            'KORXONA_BANK' => $korxonaBank,
+            'KORXONA_MFO' => $korxonaMfo,
+            'KORXONA_INN' => $korxonaInn,
+            'KORXONA_TELEFON' => $korxonaTelefon,
+        ];
+
+        // Process selected variants for dynamic clauses
+        foreach ($this->variantGroups as $group) {
+            $anchorKey = trim($group->anchor, '{} '); // remove braces from {{ANCHOR}} to match key
+            
+            $variantData = $selectedVariants[$group->anchor] ?? $selectedVariants[$anchorKey] ?? null;
+            if ($variantData) {
+                $variantKey = $variantData['key'] ?? null;
+                $variant = $group->variants()->where('key', $variantKey)->first();
+                
+                if ($variant) {
+                    $variantText = $variant->content;
+                    $subPlaceholdersData = $variantData['placeholders'] ?? [];
+                    
+                    // Add automatic helper sub-placeholders:
+                    $subPlaceholdersData['JAMI_NARX'] = number_format($totalAmount, 0, ',', ' ');
+                    $subPlaceholdersData['JAMI_NARX_SOZDA'] = $totalAmountWords;
+                    
+                    // Calculate BOSHLANGICH_TOLOV based on percent if provided
+                    if (isset($subPlaceholdersData['BOSHLANGICH_FOIZ'])) {
+                        $foiz = (float)$subPlaceholdersData['BOSHLANGICH_FOIZ'];
+                        $calcDownPayment = round($totalAmount * ($foiz / 100));
+                        $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                        $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = self::numberToWords($calcDownPayment);
+                    }
+                    
+                    if (isset($subPlaceholdersData['MUDDAT_OY'])) {
+                        $m = (int)$subPlaceholdersData['MUDDAT_OY'];
+                        $subPlaceholdersData['MUDDAT_OY_SOZ_BILAN'] = self::numberToWords($m);
+                        
+                        $calcDownPayment = isset($subPlaceholdersData['BOSHLANGICH_FOIZ']) 
+                            ? round($totalAmount * ((float)$subPlaceholdersData['BOSHLANGICH_FOIZ'] / 100))
+                            : $downPayment;
+                        $remaining = $totalAmount - $calcDownPayment;
+                        $monthly = $m > 0 ? round($remaining / $m) : 0;
+                        $subPlaceholdersData['OYLIK_TOLOV'] = number_format($monthly, 0, ',', ' ');
+                        $subPlaceholdersData['OYLIK_TOLOV_SOZ_BILAN'] = self::numberToWords($monthly);
+                    }
+                    
+                    // Build substitutions for the variant text
+                    $variantReplacements = [];
+                    foreach ($subPlaceholdersData as $k => $v) {
+                        $variantReplacements["{{ $k }}"] = $v;
+                        $variantReplacements["{{$k}}"] = $v;
+                    }
+                    
+                    $compiledVariantText = str_replace(array_keys($variantReplacements), array_values($variantReplacements), $variantText);
+                    $context[$anchorKey] = $compiledVariantText;
+                }
+            } else {
+                $context[$anchorKey] = '';
+            }
+        }
+
+        // Run python to compile DOCX
+        $templateDocx = storage_path('app/' . $this->docx_path);
+        if (!file_exists($templateDocx)) {
+            throw new \Exception("DOCX template file not found: " . $templateDocx);
+        }
+
+        $tempJson = tempnam(sys_get_temp_dir(), 'docx_ctx_');
+        file_put_contents($tempJson, json_encode($context, JSON_UNESCAPED_UNICODE));
+
+        $outputDocxName = 'contract_' . $contract->id . '_' . time() . '.docx';
+        $outputDirectory = storage_path('app/public/contracts');
+        if (!file_exists($outputDirectory)) {
+            mkdir($outputDirectory, 0755, true);
+        }
+        $outputDocxPath = $outputDirectory . '/' . $outputDocxName;
+
+        $pythonScript = base_path('app/Python/docx_processor.py');
+        
+        $command = 'py -3.12 "' . $pythonScript . '" compile "' . $templateDocx . '" "' . addslashes($tempJson) . '" "' . $outputDocxPath . '"';
+        
+        $output = shell_exec($command);
+        @unlink($tempJson);
+
+        if (!file_exists($outputDocxPath)) {
+            throw new \Exception("Failed to generate DOCX contract. Python output: " . $output);
+        }
+
+        return 'public/contracts/' . $outputDocxName;
     }
 
     /**

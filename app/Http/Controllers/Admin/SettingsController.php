@@ -40,6 +40,13 @@ class SettingsController extends Controller
     {
         $request->validate([
             'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string|max:255',
+            'company_bank_account' => 'nullable|string|max:255',
+            'company_bank_name' => 'nullable|string|max:255',
+            'company_mfo' => 'nullable|string|max:255',
+            'company_inn' => 'nullable|string|max:255',
+            'company_director' => 'nullable|string|max:255',
+            'company_phone' => 'nullable|string|max:255',
             'primary_theme_color' => 'nullable|string|max:20',
             'neon_glow_intensity' => 'nullable|string|max:50',
             'default_currency' => 'nullable|string|max:10',
@@ -51,7 +58,11 @@ class SettingsController extends Controller
 
         $settings = SystemSetting::first() ?? new SystemSetting();
 
-        $fields = ['company_name', 'primary_theme_color', 'neon_glow_intensity', 'default_currency', 'tax_rate', 'default_penalty_rate'];
+        $fields = [
+            'company_name', 'company_address', 'company_bank_account', 'company_bank_name',
+            'company_mfo', 'company_inn', 'company_director', 'company_phone',
+            'primary_theme_color', 'neon_glow_intensity', 'default_currency', 'tax_rate', 'default_penalty_rate'
+        ];
         foreach ($fields as $field) {
             if ($request->has($field)) {
                 $settings->{$field} = $request->{$field};

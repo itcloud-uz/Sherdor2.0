@@ -1,28 +1,28 @@
 <template>
     <AdminLayout>
-        <Head title="Shartnoma Shablonlari" />
+        <Head title="Shartnoma Shablonlari (DOCX)" />
 
-        <div class="p-6 h-screen flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar">
+        <div class="p-6 min-h-screen flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar">
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">📝 Shartnoma Shablonlari</h1>
-                    <p class="text-xs text-gray-500 font-mono mt-1">Mijozlar bilan tuziladigan shartnoma turlari uchun shablonlarni boshqarish</p>
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">📝 Shartnoma Shablonlari (DOCX)</h1>
+                    <p class="text-xs text-gray-500 font-mono mt-1">Tayyor Word (.docx) shablonlar va o'zgaruvchan bandlar tizimi</p>
                 </div>
-                <button @click="openCreateModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
-                    + Yangi Shablon
+                <button v-if="!showWizard" @click="openCreateWizard" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                    + Yangi DOCX Shablon
                 </button>
             </div>
 
-            <!-- Templates List -->
-            <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
+            <!-- List View (shown when wizard is closed) -->
+            <div v-if="!showWizard" class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 border-b border-gray-200">
                                 <th class="p-4 text-xs font-mono text-gray-500 uppercase">Shablon nomi</th>
                                 <th class="p-4 text-xs font-mono text-gray-500 uppercase">Turi</th>
-                                <th class="p-4 text-xs font-mono text-gray-500 uppercase">Tavsifi</th>
+                                <th class="p-4 text-xs font-mono text-gray-500 uppercase">O'zgaruvchan bandlar</th>
                                 <th class="p-4 text-xs font-mono text-gray-500 uppercase">Yaratilgan sana</th>
                                 <th class="p-4 text-xs font-mono text-gray-500 uppercase text-right">Amallar</th>
                             </tr>
@@ -31,21 +31,29 @@
                             <tr v-for="tpl in templates" :key="tpl.id" class="hover:bg-gray-50/50 transition-colors">
                                 <td class="p-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ tpl.name }}</div>
+                                    <div class="text-xs text-gray-500 font-mono mt-0.5">{{ tpl.description || 'Tavsif yo\'q' }}</div>
                                 </td>
                                 <td class="p-4">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
                                           :class="tpl.type === 'residential' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : (tpl.type === 'commercial' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100')">
-                                        {{ tpl.type === 'residential' ? 'Turar-joy (Uy)' : (tpl.type === 'commercial' ? 'No-turar joy (Do\'kon)' : 'Boshqa') }}
+                                        {{ tpl.type === 'residential' ? 'Turar-joy' : (tpl.type === 'commercial' ? 'No-turar' : 'Boshqa') }}
                                     </span>
                                 </td>
                                 <td class="p-4">
-                                    <div class="text-xs text-gray-600 font-mono line-clamp-1 max-w-sm">{{ tpl.description || 'Kiritilmagan' }}</div>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span v-for="group in tpl.variant_groups" :key="group.id" class="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[9px] font-mono">
+                                            {{ group.label }} ({{ group.variants.length }} ta variant)
+                                        </span>
+                                        <span v-if="!tpl.variant_groups || tpl.variant_groups.length === 0" class="text-xs text-gray-400 font-mono">
+                                            Mavjud emas
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="p-4 text-xs text-gray-500 font-mono">
                                     {{ new Date(tpl.created_at).toLocaleDateString() }}
                                 </td>
                                 <td class="p-4 text-right flex justify-end gap-2">
-                                    <button @click="openEditModal(tpl)" class="p-1 px-2 border border-gray-200 rounded text-xs hover:bg-gray-100 transition-colors text-gray-700">
+                                    <button @click="openEditWizard(tpl)" class="p-1 px-2 border border-gray-200 rounded text-xs hover:bg-gray-100 transition-colors text-gray-700">
                                         ✏️ Tahrirlash
                                     </button>
                                     <button @click="deleteTemplate(tpl)" class="p-1 px-2 border border-red-200 rounded text-xs bg-red-50 text-red-700 hover:bg-red-100 transition-colors">
@@ -63,85 +71,215 @@
                 </div>
             </div>
 
-            <!-- Create / Edit Modal -->
-            <div v-if="showModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                    <!-- Modal Header -->
-                    <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">{{ isEditing ? 'Shablonni Tahrirlash' : 'Yangi Shablon Yaratish' }}</h3>
-                            <p class="text-xs text-gray-500 font-mono mt-0.5">Shablon ma'lumotlari va HTML tarkibini kiriting</p>
-                        </div>
-                        <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            <!-- Create / Edit Wizard View -->
+            <div v-if="showWizard" class="bg-white border border-gray-200 shadow-md rounded-xl p-6 flex flex-col space-y-6 animate-in fade-in duration-200">
+                <!-- Wizard Navigation Steps -->
+                <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-gray-900">{{ isEditing ? 'Shablonni tahrirlash' : 'Yangi shablon qo\'shish' }}</h2>
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold font-mono">Qadam {{ step }} / 3</span>
                     </div>
+                    <div class="flex gap-2">
+                        <button @click="showWizard = false" class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                            Bekor qilish
+                        </button>
+                    </div>
+                </div>
 
-                    <!-- Modal Body (Two columns) -->
-                    <div class="flex-1 flex overflow-hidden min-h-0">
-                        <!-- Left Side: Editor Form -->
-                        <div class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
+                <!-- Step Indicator Header -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="border-b-4 pb-2 text-xs font-mono font-bold tracking-wider" 
+                         :class="step >= 1 ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-400'">
+                        1. FAYL YUKLASH & SOZLAMALAR
+                    </div>
+                    <div class="border-b-4 pb-2 text-xs font-mono font-bold tracking-wider" 
+                         :class="step >= 2 ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-400'">
+                        2. O'ZGARUVCHILAR & PREVIEW
+                    </div>
+                    <div class="border-b-4 pb-2 text-xs font-mono font-bold tracking-wider" 
+                         :class="step >= 3 ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-400'">
+                        3. O'ZGARUVCHAN BANDLAR
+                    </div>
+                </div>
+
+                <!-- STEP 1: Upload and Details -->
+                <div v-show="step === 1" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shablon nomi *</label>
-                                <input v-model="form.name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3" placeholder="Masalan: Uy-joy shartnomasi (Hissadorlik)" required>
+                                <input v-model="wizardForm.name" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2.5 px-3" placeholder="Masalan: Uy-joy Hissadorlik Shartnomasi v1" required>
                             </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Mulk turi *</label>
-                                    <select v-model="form.type" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3">
-                                        <option value="residential">Turar-joy (Uy)</option>
-                                        <option value="commercial">No-turar joy (Do'kon)</option>
-                                        <option value="custom">Boshqa (Custom)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">HTML Fayl Yuklash (Avtomatik to'ldirish)</label>
-                                    <button type="button" @click="triggerFileUpload" class="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-300 border-dashed rounded-lg text-xs py-2 px-3 text-gray-700 transition-colors flex items-center justify-between">
-                                        <span>📂 Faylni tanlash...</span>
-                                        <span class="text-[10px] text-gray-400">.html yoki .txt</span>
-                                    </button>
-                                    <input type="file" ref="fileUploadInput" class="hidden" accept=".html,.txt" @change="handleHtmlFileUpload">
-                                </div>
-                            </div>
-
                             <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shablon haqida tavsif</label>
-                                <textarea v-model="form.description" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3 h-16 resize-none" placeholder="Ushbu shablonning maqsadi haqida qisqacha izoh kiriting..."></textarea>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Mulk turi *</label>
+                                <select v-model="wizardForm.type" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2.5 px-3">
+                                    <option value="residential">Turar-joy (Uy)</option>
+                                    <option value="commercial">No-turar joy (Do'kon)</option>
+                                    <option value="custom">Boshqa (Custom)</option>
+                                </select>
                             </div>
-
-                            <div class="flex-1 flex flex-col min-h-[300px]">
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">HTML Tarkibi (Shartnoma matni) *</label>
-                                <textarea v-model="form.content" class="flex-1 w-full bg-slate-900 text-slate-100 font-mono text-xs rounded-lg shadow-sm p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none h-[300px]" placeholder="<html><body>Shartnoma matni...</body></html>" required></textarea>
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Qisqacha tavsifi</label>
+                                <textarea v-model="wizardForm.description" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs py-2 px-3 h-20 resize-none" placeholder="Ushbu shablon qanday holatlarda ishlatilishi haqida..."></textarea>
                             </div>
                         </div>
 
-                        <!-- Right Side: Placeholders Cheat Sheet -->
-                        <div class="w-72 border-l border-gray-200 bg-gray-50 p-5 overflow-y-auto custom-scrollbar flex flex-col">
-                            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">📋 Mavjud o'zgaruvchilar (Placeholders)</h4>
-                            <p class="text-[10px] text-gray-500 mb-4">Shartnoma matniga quyidagi o'zgaruvchilarni kiriting. Tizim ularni shartnoma qilingan vaqtda mijoz ma'lumotlariga almashtiradi. (Nusxa olish uchun bosing)</p>
+                        <!-- DOCX Upload Dropzone -->
+                        <div class="flex flex-col justify-between">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Word (.docx) Fayl namunasi *</label>
                             
-                            <div class="space-y-4 flex-1">
-                                <div v-for="(group, gName) in placeholderGroups" :key="gName" class="space-y-1.5">
-                                    <h5 class="text-[10px] font-bold text-gray-700 uppercase tracking-widest">{{ gName }}</h5>
-                                    <div class="space-y-1">
-                                        <div v-for="(desc, code) in group" :key="code" 
-                                             @click="copyPlaceholder(code)"
-                                             class="flex items-center justify-between p-1 px-2 bg-white border border-gray-200 rounded cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all group">
-                                            <span class="text-[10px] font-mono text-blue-600 font-bold select-all">{{ code }}</span>
-                                            <span class="text-[9px] text-gray-500 text-right truncate max-w-[120px]">{{ desc }}</span>
+                            <div v-if="!isEditing || wizardForm.newFileUploaded || true"
+                                 @dragover.prevent="" 
+                                 @drop.prevent="handleDocxDrop"
+                                 @click="triggerDocxSelect"
+                                 class="flex-1 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-6 bg-slate-50 hover:bg-slate-100/50 cursor-pointer transition-all group min-h-[160px]">
+                                <input type="file" ref="docxInput" class="hidden" accept=".docx" @change="handleDocxSelect">
+                                <div class="text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">📄</div>
+                                <span class="text-xs font-semibold text-gray-700">{{ selectedFileName || 'Word (.docx) faylini sudrab o\'ting yoki tanlang' }}</span>
+                                <span class="text-[10px] text-gray-400 mt-1 font-mono">Maksimal o\'lcham: 10MB</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t border-gray-100">
+                        <button @click="goToStep2" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm" :disabled="!wizardForm.name || (!isEditing && !wizardForm.file) || isProcessing">
+                            <span v-if="isProcessing" class="animate-spin mr-1">🌀</span> Tahlil qilish & Keyingi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Placeholders & Live Preview -->
+                <div v-show="step === 2" class="space-y-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[55vh]">
+                        <!-- Left Pane: Live HTML Preview -->
+                        <div class="border border-gray-200 rounded-xl bg-slate-100 p-4 flex flex-col overflow-hidden">
+                            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                👁️ Hujjat namunasi (Preview)
+                            </h4>
+                            <div class="flex-1 bg-white rounded-lg p-6 overflow-y-auto custom-scrollbar border border-gray-200 text-xs text-gray-900 docx-preview-content" v-html="previewHtml">
+                            </div>
+                        </div>
+
+                        <!-- Right Pane: Auto-detected Placeholders table -->
+                        <div class="border border-gray-200 rounded-xl bg-slate-100 p-4 flex flex-col overflow-hidden">
+                            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">🔍 Matnda aniqlangan o'zgaruvchilar</h4>
+                            <p class="text-[9px] text-gray-500 font-mono mb-2">Tizim namunaviy ma'lumotlarni topdi. Ularni shablon o'zgaruvchilariga almashtirishni tasdiqlang:</p>
+                            
+                            <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-lg border border-gray-200">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-gray-50 border-b border-gray-100">
+                                            <th class="p-2 text-[10px] font-mono text-gray-500 uppercase">Matndagi qiymat</th>
+                                            <th class="p-2 text-[10px] font-mono text-gray-500 uppercase">Placeholder kaliti</th>
+                                            <th class="p-2 text-[10px] font-mono text-gray-500 uppercase text-center">Tasdiq</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="(p, idx) in detectedPlaceholders" :key="idx" class="hover:bg-gray-50">
+                                            <td class="p-2 font-mono text-[10px] text-gray-900 truncate max-w-[140px]" :title="p.text">{{ p.text }}</td>
+                                            <td class="p-2">
+                                                <input v-model="p.key" type="text" class="bg-slate-50 border border-gray-200 text-blue-600 rounded px-1.5 py-0.5 text-[10px] font-mono font-bold w-full focus:ring-1 focus:ring-blue-500 focus:bg-white" required>
+                                            </td>
+                                            <td class="p-2 text-center">
+                                                <input v-model="p.confirmed" type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                                            </td>
+                                        </tr>
+                                        <tr v-if="detectedPlaceholders.length === 0">
+                                            <td colspan="3" class="p-4 text-center text-gray-400 font-mono text-[10px]">
+                                                O'zgaruvchilar topilmadi yoki fayl tahlil qilinmoqda...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4 border-t border-gray-100">
+                        <button @click="step = 1" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                            Orqaga
+                        </button>
+                        <button @click="step = 3" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                            Keyingi (Bandlar va Variantlar)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Clause Variant Groups -->
+                <div v-show="step === 3" class="space-y-4">
+                    <div class="border border-gray-200 rounded-xl bg-slate-50 p-4">
+                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 O'zgaruvchan bandlar (Shartnoma variantlari)</h4>
+                                <p class="text-[9px] text-gray-500 font-mono mt-0.5">Masalan: to'lov shartlari (Naqt, Grafik, Ipoteka) kabi bandlarni qo'shing</p>
+                            </div>
+                            <button type="button" @click="addVariantGroup" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-gray-900 border border-gray-300 text-[10px] font-bold rounded font-mono">
+                                + Yangi band guruhi
+                            </button>
+                        </div>
+
+                        <!-- Variant Groups List -->
+                        <div class="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+                            <div v-for="(g, gIdx) in wizardForm.variant_groups" :key="gIdx" class="bg-white border border-gray-200 rounded-lg p-4 relative space-y-3">
+                                <!-- Remove Group Button -->
+                                <button type="button" @click="removeVariantGroup(gIdx)" class="absolute right-3 top-3 text-red-500 hover:text-red-700 font-bold text-sm">&times;</button>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Band nomi *</label>
+                                        <input v-model="g.label" type="text" class="w-full bg-slate-50 border border-gray-300 text-gray-900 rounded p-1.5 text-xs font-semibold" placeholder="Masalan: To'lov shartlari" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Matndagi Anchor (Jinja2 tag) *</label>
+                                        <input v-model="g.anchor" type="text" class="w-full bg-slate-50 border border-gray-300 text-blue-600 rounded p-1.5 text-xs font-mono font-bold" placeholder="Masalan: TO_LOV_SHARTI" required>
+                                    </div>
+                                </div>
+
+                                <!-- Variants of this group -->
+                                <div class="border-t border-gray-100 pt-2 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <h5 class="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Variantlar:</h5>
+                                        <button type="button" @click="addVariant(gIdx)" class="text-[9px] text-blue-600 hover:text-blue-800 font-bold font-mono">+ Variant qo'shish</button>
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <div v-for="(v, vIdx) in g.variants" :key="vIdx" class="bg-slate-50 border border-gray-150 rounded p-3 relative space-y-2">
+                                            <button type="button" @click="removeVariant(gIdx, vIdx)" class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-xs">&times;</button>
+                                            
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant nomi (Sarlavha)</label>
+                                                    <input v-model="v.label" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px]" placeholder="Masalan: Grafik bo'yicha" required>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant kodi (Key) *</label>
+                                                    <input v-model="v.key" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: GRAFIK" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant matni (Original Word'dagi band matni, sub-o'zgaruvchilar ishlatsa bo'ladi)</label>
+                                                <textarea v-model="v.content" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1.5 text-[10px] h-12 font-mono" placeholder="Masalan: 3.1-bandda ko'rsatilgan summaning {{ BOSHLANGICH_FOIZ }}% to'lanadi..." required></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant o'zgaruvchilari (Vergul bilan ajrating)</label>
+                                                <input v-model="v.placeholdersString" @input="v.placeholders = v.placeholdersString.split(',').map(s => s.trim()).filter(Boolean)" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: BOSHLANGICH_FOIZ, MUDDAT_OY">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div v-if="wizardForm.variant_groups.length === 0" class="p-8 text-center text-xs text-gray-400 font-mono bg-white rounded border border-gray-200">
+                                Hali o'zgaruvchan bandlar qo'shilmadi (Ixtiyoriy)
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Modal Footer -->
-                    <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-                        <button @click="showModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-100 text-gray-700 transition-colors">
-                            Bekor qilish
+                    <div class="flex justify-between pt-4 border-t border-gray-100">
+                        <button @click="step = 2" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                            Orqaga
                         </button>
-                        <button @click="saveTemplate" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm" :disabled="isProcessing">
-                            {{ isEditing ? 'Yangilash' : 'Saqlash' }}
+                        <button @click="saveTemplate" class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm" :disabled="isProcessing">
+                            <span v-if="isProcessing" class="animate-spin mr-1">🌀</span> Shablonni Saqlash
                         </button>
                     </div>
                 </div>
@@ -151,114 +289,201 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import axios from 'axios';
 
 const props = defineProps({
     templates: Array
 });
 
-const showModal = ref(false);
+const showWizard = ref(false);
 const isEditing = ref(false);
 const editingTemplateId = ref(null);
 const isProcessing = ref(false);
-const fileUploadInput = ref(null);
+const step = ref(1);
 
-const form = ref({
+const docxInput = ref(null);
+const selectedFileName = ref('');
+const previewHtml = ref('');
+const detectedPlaceholders = ref([]);
+
+const wizardForm = ref({
     name: '',
     type: 'residential',
     description: '',
-    content: ''
+    file: null,
+    newFileUploaded: false,
+    variant_groups: []
 });
 
-const placeholderGroups = {
-    "Mijoz ma'lumotlari": {
-        "{{MIJOZ_FISH}}": "Mijozning to'liq F.I.Sh.",
-        "{{MIJOZ_MANZILI}}": "Mijozning yashash manzili",
-        "{{MIJOZ_JSHSHIR}}": "JShShIR (PINFL)",
-        "{{PASPORT_SERIYA}}": "Pasport seriyasi va raqami",
-        "{{PASPORT_SANA}}": "Pasport berilgan sana",
-        "{{PASPORT_JOYI}}": "Pasport bergan I.I.B",
-        "{{MIJOZ_TELEFON}}": "Mijozning telefoni(lari)"
-    },
-    "O'b'yekt ma'lumotlari": {
-        "{{BLOK}}": "Bino bloki/korpusi",
-        "{{QAVAT}}": "Xonadon/Do'kon qavati",
-        "{{XONA_RAQAMI}}": "Xonadon/Do'kon raqami",
-        "{{XONALAR_SONI}}": "Xonalar soni",
-        "{{MAYDON}}": "Umumiy maydoni (kv.m)"
-    },
-    "Moliyaviy shartlar": {
-        "{{KV_METR_NARXI}}": "1 kv.m narxi (QQS bilan)",
-        "{{UMUMIY_NARX}}": "Shartnomaning umumiy summasi",
-        "{{UMUMIY_NARX_SOZ_BILAN}}": "Umumiy summa so'z bilan",
-        "{{BOSHLANGICH_TOLOV}}": "Boshlang'ich to'lov",
-        "{{BOSHLANGICH_TOLOV_SOZ_BILAN}}": "Boshlang'ich to'lov so'z bilan",
-        "{{BOSHLANGICH_TOLOV_FOIZ}}": "Boshlang'ich to'lov foizi",
-        "{{MUDDAT_OY}}": "Bo'lib to'lash muddati",
-        "{{MUDDAT_OY_SOZ_BILAN}}": "To'lov muddati so'z bilan"
-    },
-    "Sana va Korxona": {
-        "{{KUN}}": "Shartnoma kuni",
-        "{{OY}}": "Shartnoma oyi (nom bilan)",
-        "{{YIL}}": "Shartnoma yili",
-        "{{SHARTNOMA_RAQAMI}}": "Shartnoma kodi/raqami",
-        "{{DIREKTOR}}": "Direktorning ismi",
-        "{{KORXONA_NOMI}}": "Korxona nomi"
-    }
-};
-
-function openCreateModal() {
+function openCreateWizard() {
     isEditing.value = false;
     editingTemplateId.value = null;
-    form.value = {
+    selectedFileName.value = '';
+    previewHtml.value = '';
+    detectedPlaceholders.value = [];
+    step.value = 1;
+    wizardForm.value = {
         name: '',
         type: 'residential',
         description: '',
-        content: ''
+        file: null,
+        newFileUploaded: false,
+        variant_groups: []
     };
-    showModal.value = true;
+    showWizard.value = true;
 }
 
-function openEditModal(template) {
+function openEditWizard(template) {
     isEditing.value = true;
     editingTemplateId.value = template.id;
-    form.value = {
+    selectedFileName.value = template.docx_path ? template.docx_path.split('/').pop() : '';
+    previewHtml.value = template.preview_html || '';
+    detectedPlaceholders.value = []; // loaded only if new file is uploaded
+    step.value = 1;
+
+    // Load variant groups and format placeholders
+    const variantGroups = (template.variant_groups || []).map(g => {
+        return {
+            label: g.label,
+            anchor: g.anchor,
+            variants: g.variants.map(v => {
+                return {
+                    key: v.key,
+                    label: v.label,
+                    content: v.content,
+                    placeholders: v.placeholders || [],
+                    placeholdersString: (v.placeholders || []).join(', ')
+                };
+            })
+        };
+    });
+
+    wizardForm.value = {
         name: template.name,
         type: template.type,
         description: template.description || '',
-        content: template.content
+        file: null,
+        newFileUploaded: false,
+        variant_groups: variantGroups
     };
-    showModal.value = true;
+    showWizard.value = true;
 }
 
-function triggerFileUpload() {
-    fileUploadInput.value.click();
+function triggerDocxSelect() {
+    docxInput.value.click();
 }
 
-function handleHtmlFileUpload(e) {
+function handleDocxSelect(e) {
     const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        form.value.content = event.target.result;
-    };
-    reader.readAsText(file);
+    if (file) {
+        wizardForm.value.file = file;
+        wizardForm.value.newFileUploaded = true;
+        selectedFileName.value = file.name;
+    }
 }
 
-function saveTemplate() {
-    if (!form.value.name || !form.value.content) {
-        alert("Iltimos, barcha majburiy maydonlarni to'ldiring!");
+function handleDocxDrop(e) {
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.docx')) {
+        wizardForm.value.file = file;
+        wizardForm.value.newFileUploaded = true;
+        selectedFileName.value = file.name;
+    } else {
+        alert("Faqat .docx formatidagi Word fayllarini yuklashingiz mumkin!");
+    }
+}
+
+function goToStep2() {
+    if (isEditing.value && !wizardForm.value.newFileUploaded) {
+        // No new file, just proceed with existing previewHtml
+        step.value = 2;
+        return;
+    }
+
+    if (!wizardForm.value.file) {
+        alert("Iltimos, avval Word faylini yuklang!");
         return;
     }
 
     isProcessing.value = true;
+    const formData = new FormData();
+    formData.append('file', wizardForm.value.file);
+
+    axios.post(route('admin.contract-templates.detect'), formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    }).then(res => {
+        detectedPlaceholders.value = (res.data.placeholders || []).map(p => {
+            return {
+                ...p,
+                confirmed: true
+            };
+        });
+        previewHtml.value = res.data.preview_html || '';
+        isProcessing.value = false;
+        step.value = 2;
+    }).catch(err => {
+        isProcessing.value = false;
+        alert("Faylni tahlil qilishda xatolik yuz berdi: " + (err.response?.data?.message || err.message));
+    });
+}
+
+// Variant Groups Helpers
+function addVariantGroup() {
+    wizardForm.value.variant_groups.push({
+        label: '',
+        anchor: '',
+        variants: []
+    });
+}
+
+function removeVariantGroup(idx) {
+    wizardForm.value.variant_groups.splice(idx, 1);
+}
+
+function addVariant(gIdx) {
+    wizardForm.value.variant_groups[gIdx].variants.push({
+        key: '',
+        label: '',
+        content: '',
+        placeholders: [],
+        placeholdersString: ''
+    });
+}
+
+function removeVariant(gIdx, vIdx) {
+    wizardForm.value.variant_groups[gIdx].variants.splice(vIdx, 1);
+}
+
+function saveTemplate() {
+    isProcessing.value = true;
+
+    // Build form data
+    const formData = new FormData();
+    formData.append('name', wizardForm.value.name);
+    formData.append('type', wizardForm.value.type);
+    formData.append('description', wizardForm.value.description || '');
+
+    if (wizardForm.value.file) {
+        formData.append('file', wizardForm.value.file);
+    }
+
+    // Attach confirmed placeholders mapping
+    formData.append('placeholders', JSON.stringify(detectedPlaceholders.value));
+    
+    // Attach variant groups
+    formData.append('variant_groups', JSON.stringify(wizardForm.value.variant_groups));
 
     if (isEditing.value) {
-        router.put(route('admin.contract-templates.update', editingTemplateId.value), form.value, {
+        // In Laravel, PUT requests with file uploads can be problematic. We use POST with _method=PUT
+        formData.append('_method', 'PUT');
+        router.post(route('admin.contract-templates.update', editingTemplateId.value), formData, {
             onSuccess: () => {
-                showModal.value = false;
+                showWizard.value = false;
                 isProcessing.value = false;
             },
             onError: () => {
@@ -266,9 +491,9 @@ function saveTemplate() {
             }
         });
     } else {
-        router.post(route('admin.contract-templates.store'), form.value, {
+        router.post(route('admin.contract-templates.store'), formData, {
             onSuccess: () => {
-                showModal.value = false;
+                showWizard.value = false;
                 isProcessing.value = false;
             },
             onError: () => {
@@ -283,12 +508,20 @@ function deleteTemplate(template) {
         router.delete(route('admin.contract-templates.destroy', template.id));
     }
 }
-
-function copyPlaceholder(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        // Simple micro notification/alert
-    }).catch(err => {
-        console.error('Nusxalashda xatolik:', err);
-    });
-}
 </script>
+
+<style>
+.docx-preview-content table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 10px 0 !important;
+}
+.docx-preview-content th, .docx-preview-content td {
+    border: 1px solid #ddd !important;
+    padding: 6px 10px !important;
+}
+.docx-preview-content img {
+    max-width: 100% !important;
+    height: auto !important;
+}
+</style>

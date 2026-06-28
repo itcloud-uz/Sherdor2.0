@@ -8,6 +8,13 @@ class SystemSetting extends Model
 {
     protected $fillable = [
         'company_name',
+        'company_address',
+        'company_bank_account',
+        'company_bank_name',
+        'company_mfo',
+        'company_inn',
+        'company_director',
+        'company_phone',
         'logo_path',
         'primary_theme_color',
         'neon_glow_intensity',

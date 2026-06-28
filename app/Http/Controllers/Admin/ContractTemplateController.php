@@ -12,40 +12,179 @@ class ContractTemplateController extends Controller
     public function index()
     {
         return Inertia::render('Admin/ContractTemplates/Index', [
-            'templates' => ContractTemplate::latest()->get()
+            'templates' => ContractTemplate::with('variantGroups.variants')->latest()->get()
+        ]);
+    }
+
+    public function detect(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:docx'
+        ]);
+
+        $file = $request->file('file');
+        $tempPath = $file->store('temp');
+        $absolutePath = storage_path('app/' . $tempPath);
+
+        $pythonScript = base_path('app/Python/docx_processor.py');
+
+        // Detect placeholders
+        $detectCmd = 'py -3.12 "' . $pythonScript . '" detect "' . $absolutePath . '"';
+        $detectOutput = shell_exec($detectCmd);
+        $placeholders = json_decode($detectOutput, true);
+
+        // Render preview HTML
+        $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absolutePath . '"';
+        $previewOutput = shell_exec($previewCmd);
+        $previewData = json_decode($previewOutput, true);
+
+        @unlink($absolutePath);
+
+        return response()->json([
+            'placeholders' => $placeholders,
+            'preview_html' => $previewData['html'] ?? '',
+            'warnings' => $previewData['warnings'] ?? []
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:residential,commercial,custom',
             'description' => 'nullable|string',
-            'content' => 'required|string',
+            'file' => 'required|file|mimes:docx',
+            'placeholders' => 'required|array',
+            'variant_groups' => 'nullable|array'
         ]);
 
-        ContractTemplate::create($validated);
+        $file = $request->file('file');
+        
+        // 1. Save the original uploaded file
+        $originalFilename = 'tpl_orig_' . time() . '_' . uniqid() . '.docx';
+        $originalPath = $file->storeAs('contract_templates', $originalFilename);
+        $absoluteOriginalPath = storage_path('app/' . $originalPath);
 
-        return redirect()->back()->with('message', 'Shablon muvaffaqiyatli yaratildi.');
+        // 2. Prepare the replacements JSON
+        $replacements = [];
+        foreach ($request->placeholders as $c) {
+            if (!empty($c['key']) && !empty($c['text']) && ($c['confirmed'] ?? true)) {
+                $replacements[$c['text']] = $c['key'];
+            }
+        }
+
+        // 3. Apply replacements using python to create the actual template file
+        $templateFilename = 'tpl_' . time() . '_' . uniqid() . '.docx';
+        $templatePath = 'contract_templates/' . $templateFilename;
+        $absoluteTemplatePath = storage_path('app/' . $templatePath);
+
+        $pythonScript = base_path('app/Python/docx_processor.py');
+        
+        $replJson = json_encode($replacements, JSON_UNESCAPED_UNICODE);
+        $tempReplFile = tempnam(sys_get_temp_dir(), 'docx_repl_');
+        file_put_contents($tempReplFile, $replJson);
+
+        $replaceCmd = 'py -3.12 "' . $pythonScript . '" replace "' . $absoluteOriginalPath . '" "' . addslashes($tempReplFile) . '" "' . $absoluteTemplatePath . '"';
+        shell_exec($replaceCmd);
+        @unlink($tempReplFile);
+
+        // 4. Generate the HTML preview from the processed template
+        $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteTemplatePath . '"';
+        $previewOutput = shell_exec($previewCmd);
+        $previewData = json_decode($previewOutput, true);
+        $previewHtml = $previewData['html'] ?? '';
+
+        // Clean up original file
+        @unlink($absoluteOriginalPath);
+
+        // 5. Create ContractTemplate
+        $template = ContractTemplate::create([
+            'name' => $request->name,
+            'type' => $request->type,
+            'description' => $request->description,
+            'docx_path' => $templatePath,
+            'preview_html' => $previewHtml,
+            'placeholders' => array_values(array_unique(array_values($replacements)))
+        ]);
+
+        // 6. Create Variant Groups & Variants
+        if ($request->has('variant_groups')) {
+            foreach ($request->variant_groups as $g) {
+                if (empty($g['anchor']) || empty($g['label'])) continue;
+                
+                $group = $template->variantGroups()->create([
+                    'anchor' => $g['anchor'],
+                    'label' => $g['label']
+                ]);
+
+                if (!empty($g['variants'])) {
+                    foreach ($g['variants'] as $v) {
+                        if (empty($v['key']) || empty($v['label']) || empty($v['content'])) continue;
+                        
+                        $group->variants()->create([
+                            'key' => $v['key'],
+                            'label' => $v['label'],
+                            'content' => $v['content'],
+                            'placeholders' => $v['placeholders'] ?? []
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->route('admin.contract-templates.index')->with('message', 'Shablon muvaffaqiyatli yaratildi.');
     }
 
     public function update(Request $request, ContractTemplate $template)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:residential,commercial,custom',
             'description' => 'nullable|string',
-            'content' => 'required|string',
+            'variant_groups' => 'nullable|array'
         ]);
 
-        $template->update($validated);
+        $template->update([
+            'name' => $request->name,
+            'type' => $request->type,
+            'description' => $request->description
+        ]);
 
-        return redirect()->back()->with('message', 'Shablon muvaffaqiyatli yangilandi.');
+        // Sync variant groups and variants
+        $template->variantGroups()->delete();
+
+        if ($request->has('variant_groups')) {
+            foreach ($request->variant_groups as $g) {
+                if (empty($g['anchor']) || empty($g['label'])) continue;
+                
+                $group = $template->variantGroups()->create([
+                    'anchor' => $g['anchor'],
+                    'label' => $g['label']
+                ]);
+
+                if (!empty($g['variants'])) {
+                    foreach ($g['variants'] as $v) {
+                        if (empty($v['key']) || empty($v['label']) || empty($v['content'])) continue;
+                        
+                        $group->variants()->create([
+                            'key' => $v['key'],
+                            'label' => $v['label'],
+                            'content' => $v['content'],
+                            'placeholders' => $v['placeholders'] ?? []
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->route('admin.contract-templates.index')->with('message', 'Shablon muvaffaqiyatli yangilandi.');
     }
 
     public function destroy(ContractTemplate $template)
     {
+        if ($template->docx_path && file_exists(storage_path('app/' . $template->docx_path))) {
+            @unlink(storage_path('app/' . $template->docx_path));
+        }
         $template->delete();
 
         return redirect()->back()->with('message', 'Shablon muvaffaqiyatli o\'chirildi.');

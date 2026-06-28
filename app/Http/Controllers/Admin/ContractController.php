@@ -34,7 +34,8 @@ class ContractController extends Controller
             'floor' => 'nullable|string|max:50',
             'rooms' => 'nullable|integer|min:1',
             'user_id' => 'nullable|exists:users,id',
-            'contract_template_id' => 'nullable|exists:contract_templates,id'
+            'contract_template_id' => 'nullable|exists:contract_templates,id',
+            'selected_variants' => 'nullable|array'
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';
@@ -60,6 +61,7 @@ class ContractController extends Controller
             'rooms' => $validated['rooms'] ?? null,
             'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
             'contract_template_id' => $validated['contract_template_id'] ?? null,
+            'selected_variants' => $validated['selected_variants'] ?? null,
             'status' => 'draft'
         ]);
         
@@ -226,7 +228,8 @@ class ContractController extends Controller
             'payment_method' => 'nullable|string|in:bank,main,credit',
             'account_id' => 'nullable|exists:cash_registers,id',
             'user_id' => 'nullable|exists:users,id',
-            'contract_template_id' => 'nullable|exists:contract_templates,id'
+            'contract_template_id' => 'nullable|exists:contract_templates,id',
+            'selected_variants' => 'nullable|array'
         ]);
 
         if (($validated['payment_type'] ?? 'installment') === 'full') {
@@ -384,7 +387,27 @@ class ContractController extends Controller
         }
 
         // Generate PDF
-        if ($contract->contract_template_id && $contract->template) {
+        if ($contract->contract_template_id && $contract->template && $contract->template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                // Convert docx to html using python
+                $pythonScript = base_path('app/Python/docx_processor.py');
+                $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteDocxPath . '"';
+                $previewOutput = shell_exec($previewCmd);
+                $previewData = json_decode($previewOutput, true);
+                
+                $content = $previewData['html'] ?? '';
+                
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
+            } catch (\Exception $e) {
+                // fallback to legacy compilation
+                $content = $contract->template->compile($contract);
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
+            }
+        } elseif ($contract->contract_template_id && $contract->template) {
             $content = $contract->template->compile($contract);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
         } else {

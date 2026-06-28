@@ -674,7 +674,7 @@ function openCreateClientModal() {
         contract_language: 'O\'zbek tili',
         contract_id: ''
     };
-    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
     showCreateClientModal.value = true;
 }
 
@@ -714,7 +714,7 @@ function openEditClientModal(client) {
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
     };
-    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
     showCreateClientModal.value = true;
 }
 
@@ -826,11 +826,75 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} });
 
 const filteredTemplates = computed(() => {
     if (!props.contractTemplates) return [];
     return props.contractTemplates.filter(t => t.type === contractForm.value.contract_type || t.type === 'custom');
+});
+
+const selectedTemplate = computed(() => {
+    if (!contractForm.value.contract_template_id) return null;
+    return props.contractTemplates.find(t => t.id === contractForm.value.contract_template_id);
+});
+
+function getSelectedVariant(anchor) {
+    const tpl = selectedTemplate.value;
+    if (!tpl) return null;
+    const group = tpl.variant_groups.find(g => g.anchor === anchor);
+    if (!group) return null;
+    const key = contractForm.value.selected_variants?.[anchor]?.key;
+    return group.variants.find(v => v.key === key);
+}
+
+function onVariantChange(anchor) {
+    const variant = getSelectedVariant(anchor);
+    if (variant && variant.placeholders) {
+        const ph = {};
+        variant.placeholders.forEach(pKey => {
+            ph[pKey] = '';
+        });
+        contractForm.value.selected_variants[anchor].placeholders = ph;
+    } else if (contractForm.value.selected_variants[anchor]) {
+        contractForm.value.selected_variants[anchor].placeholders = {};
+    }
+}
+
+function onSubPlaceholderInput(anchor, pKey) {
+    const val = contractForm.value.selected_variants[anchor].placeholders[pKey];
+    
+    if (pKey === 'BOSHLANGICH_FOIZ') {
+        const percent = parseFloat(val);
+        if (!isNaN(percent)) {
+            const calculated = Math.round(contractForm.value.total_amount * (percent / 100));
+            contractForm.value.down_payment = calculated;
+        }
+    }
+    
+    if (pKey === 'MUDDAT_OY') {
+        const months = parseInt(val);
+        if (!isNaN(months)) {
+            contractForm.value.term_months = months;
+        }
+    }
+}
+
+watch(() => contractForm.value.contract_template_id, (newVal) => {
+    if (!newVal) {
+        contractForm.value.selected_variants = {};
+        return;
+    }
+    const tpl = props.contractTemplates.find(t => t.id === newVal);
+    if (tpl && tpl.variant_groups) {
+        const sv = {};
+        tpl.variant_groups.forEach(g => {
+            sv[g.anchor] = {
+                key: '',
+                placeholders: {}
+            };
+        });
+        contractForm.value.selected_variants = sv;
+    }
 });
 
 function editContract(contract) {
@@ -860,7 +924,8 @@ function editContract(contract) {
         floor: contract.floor || contract.unit?.floor?.floor_number || '',
         rooms: contract.rooms || contract.unit?.rooms_count || '',
         user_id: contract.user_id || '',
-        contract_template_id: contract.contract_template_id || ''
+        contract_template_id: contract.contract_template_id || '',
+        selected_variants: contract.selected_variants || {}
     };
     showCreateContractModal.value = true;
 }
@@ -895,7 +960,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -2535,6 +2600,7 @@ const showDocPreviewModal = ref(false);
 const docPreviewTitle = ref('');
 const docPreviewUrl = ref('');
 const docDownloadUrl = ref('');
+const docDownloadDocxUrl = ref('');
 
 function openDocumentPreview(type, contract) {
     if (!contract) return;
@@ -2542,10 +2608,12 @@ function openDocumentPreview(type, contract) {
         docPreviewTitle.value = 'Shartnoma';
         docPreviewUrl.value = route('admin.contracts.document.preview', contract.id) + '?lang=' + locale.value;
         docDownloadUrl.value = route('admin.contracts.document.export.pdf', contract.id) + '?lang=' + locale.value;
+        docDownloadDocxUrl.value = contract.contract_template_id ? route('admin.contracts.document.export.docx', contract.id) : '';
     } else {
         docPreviewTitle.value = 'To\'lov Grafiki';
         docPreviewUrl.value = route('admin.contracts.ledger.preview', contract.id);
         docDownloadUrl.value = route('admin.contracts.export.xlsx', contract.id);
+        docDownloadDocxUrl.value = '';
     }
     showDocPreviewModal.value = true;
 }
@@ -6521,10 +6589,13 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Footer with Download Button -->
-                <div class="p-4 border-t border-gray-200 flex justify-end bg-gray-50">
+                <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+                    <a v-if="docPreviewTitle === 'Shartnoma' && docDownloadDocxUrl" :href="docDownloadDocxUrl" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                        💾 Word (.docx) Yuklab olish
+                    </a>
                     <a :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Yuklab olish
+                        {{ docPreviewTitle === 'Shartnoma' ? 'PDF Yuklab olish' : 'Yuklab olish' }}
                     </a>
                 </div>
             </div>
@@ -7196,6 +7267,32 @@ const ledgerReportData = computed(() => {
                                     {{ tpl.name }} ({{ tpl.type === 'residential' ? 'Turar-joy' : (tpl.type === 'commercial' ? 'No-turar joy' : 'Boshqa') }})
                                 </option>
                             </select>
+                        </div>
+
+                        <!-- Dynamic Variant Groups -->
+                        <div v-if="selectedTemplate && selectedTemplate.variant_groups && selectedTemplate.variant_groups.length > 0" class="mt-3 space-y-4 border border-blue-200 rounded-xl p-3 bg-blue-500/10">
+                            <h5 class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Shartnomaning o'zgaruvchan bandlari (Variantlar)</h5>
+                            
+                            <div v-for="group in selectedTemplate.variant_groups" :key="group.id" class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ group.label }} *</label>
+                                    <select v-model="contractForm.selected_variants[group.anchor].key" @change="onVariantChange(group.anchor)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-2 px-3 text-gray-900">
+                                        <option value="">-- Tanlang --</option>
+                                        <option v-for="v in group.variants" :key="v.id" :value="v.key">{{ v.label }}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dynamic Sub-placeholders for Selected Variant -->
+                                <div v-if="getSelectedVariant(group.anchor)" class="grid grid-cols-2 gap-4 pl-3 border-l-2 border-blue-300">
+                                    <div v-for="pKey in getSelectedVariant(group.anchor).placeholders" :key="pKey">
+                                        <label class="block text-[9px] font-mono text-gray-500 mb-1 uppercase">{{ pKey }}</label>
+                                        <input v-model="contractForm.selected_variants[group.anchor].placeholders[pKey]" 
+                                               @input="onSubPlaceholderInput(group.anchor, pKey)"
+                                               type="text" 
+                                               class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-1.5 px-2 text-gray-900">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Dynamic Unit Details -->

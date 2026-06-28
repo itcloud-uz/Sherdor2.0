@@ -29,12 +29,14 @@ class Contract extends Model
         'rooms',
         'payment_type',
         'user_id',
-        'contract_template_id'
+        'contract_template_id',
+        'selected_variants'
     ];
 
     protected $casts = [
         'ai_verification_logs' => 'array',
         'is_down_payment_split' => 'boolean',
+        'selected_variants' => 'array',
     ];
 
     public function client()

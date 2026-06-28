@@ -195,7 +195,7 @@ class CrmController extends Controller
             'counterparties' => $counterparties,
             'categories' => \App\Models\TransactionCategory::all(),
             'buildings' => \App\Models\Building::latest()->get(),
-            'contractTemplates' => \App\Models\ContractTemplate::all(),
+            'contractTemplates' => \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get(),
         ]);
     }
 

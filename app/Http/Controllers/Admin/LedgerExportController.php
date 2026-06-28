@@ -56,9 +56,29 @@ class LedgerExportController extends Controller
             $locale = 'uz'; // fallback
         }
 
-        if ($contract->contract_template_id && $contract->template) {
+        if ($contract->contract_template_id && $contract->template && $contract->template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                // Convert docx to html
+                $pythonScript = base_path('app/Python/docx_processor.py');
+                $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteDocxPath . '"';
+                $previewOutput = shell_exec($previewCmd);
+                $previewData = json_decode($previewOutput, true);
+                
+                $content = $previewData['html'] ?? '';
+                
+                $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+                return $pdf->download("contract_{$contract->id}.pdf");
+            } catch (\Exception $e) {
+                return back()->withErrors(['message' => 'PDF generatsiya qilishda xatolik: ' . $e->getMessage()]);
+            }
+        } elseif ($contract->contract_template_id && $contract->template) {
             $content = $contract->template->compile($contract);
             $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+            return $pdf->download("contract_{$contract->id}.pdf");
         } else {
             $type = $contract->contract_type ?? 'residential';
             if (!in_array($type, ['residential', 'commercial'])) {
@@ -66,9 +86,27 @@ class LedgerExportController extends Controller
             }
             $viewPath = "contracts.{$locale}.{$type}";
             $pdf = Pdf::loadView($viewPath, compact('contract'));
+            return $pdf->download("contract_{$contract->id}.pdf");
+        }
+    }
+
+    public function exportContractDocx(Contract $contract, Request $request)
+    {
+        $contract->load(['client', 'unit.floor.building', 'template']);
+
+        if ($contract->contract_template_id && $contract->template && $contract->template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                return response()->download($absoluteDocxPath, "contract_{$contract->id}.docx");
+            } catch (\Exception $e) {
+                return back()->withErrors(['message' => 'DOCX shablonini generatsiya qilishda xatolik: ' . $e->getMessage()]);
+            }
         }
 
-        return $pdf->download("contract_{$contract->id}.pdf");
+        return back()->withErrors(['message' => 'Ushbu shartnoma uchun DOCX shabloni mavjud emas.']);
     }
 
     public function previewLedger(Contract $contract, Request $request)
@@ -88,7 +126,24 @@ class LedgerExportController extends Controller
         }
 
         if ($contract->contract_template_id && $contract->template) {
-            $content = $contract->template->compile($contract);
+            if ($contract->template->docx_path) {
+                try {
+                    $selectedVariants = $contract->selected_variants ?? [];
+                    $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                    $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                    $pythonScript = base_path('app/Python/docx_processor.py');
+                    $previewCmd = 'py -3.12 "' . $pythonScript . '" preview "' . $absoluteDocxPath . '"';
+                    $previewOutput = shell_exec($previewCmd);
+                    $previewData = json_decode($previewOutput, true);
+                    
+                    $content = $previewData['html'] ?? '';
+                } catch (\Exception $e) {
+                    $content = 'Preview generation failed: ' . $e->getMessage();
+                }
+            } else {
+                $content = $contract->template->compile($contract);
+            }
             return view('contracts.compiled', compact('content'));
         } else {
             $type = $contract->contract_type ?? 'residential';

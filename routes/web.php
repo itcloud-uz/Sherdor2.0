@@ -80,11 +80,13 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/crm/ledger/{contract}/preview', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewLedger'])->name('contracts.ledger.preview');
     
     Route::get('/crm/contracts/{contract}/export-doc/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportContractPdf'])->name('contracts.document.export.pdf');
+    Route::get('/crm/contracts/{contract}/export-doc/docx', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportContractDocx'])->name('contracts.document.export.docx');
     Route::get('/crm/contracts/{contract}/preview-doc', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewContract'])->name('contracts.document.preview');
     Route::post('/contracts/{contract}/upload-signature', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAndVerifySignature'])->name('contracts.upload_signature');
 
     // Contract Templates routes
     Route::get('/crm/contract-templates', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'index'])->name('contract-templates.index');
+    Route::post('/crm/contract-templates/detect', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'detect'])->name('contract-templates.detect');
     Route::post('/crm/contract-templates', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'store'])->name('contract-templates.store');
     Route::put('/crm/contract-templates/{template}', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'update'])->name('contract-templates.update');
     Route::delete('/crm/contract-templates/{template}', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'destroy'])->name('contract-templates.destroy');

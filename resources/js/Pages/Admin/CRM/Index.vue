@@ -5534,7 +5534,7 @@ const ledgerReportData = computed(() => {
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm text-xs space-y-2">
                         <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">🏢 {{ selectedReportContract.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} Ma'lumotlari</p>
                         <div class="flex justify-between"><span>Bino:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.building?.name || '—' }}</strong></div>
-                        <div class="flex justify-between"><span>Qavat / Maydon:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.number }}-qavat / {{ selectedReportContract.unit?.area_sqm }} m²</strong></div>
+                        <div class="flex justify-between"><span>Qavat / Maydon:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.floor_number }}-qavat / {{ selectedReportContract.unit?.area_sqm }} m²</strong></div>
                         <div class="flex justify-between"><span>Xona soni / Raqami:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.rooms }} xona / {{ selectedReportContract.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} {{ selectedReportContract.unit?.unit_number }}</strong></div>
                     </div>
                 </div>

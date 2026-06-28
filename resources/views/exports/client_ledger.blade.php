@@ -245,7 +245,7 @@
             </tr>
             <tr>
                 <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Qavat</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->number : '___') }}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___') }}</td>
                 <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Pasport raqami:</td>
                 <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
                 <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">To'lov muddati</td>

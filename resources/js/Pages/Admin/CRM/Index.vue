@@ -134,7 +134,6 @@ const clientForm = ref({
     created_at: '',
     birth_date: '',
     phone_2: '+998',
-    gender: 'erkak',
     region: '',
     district: '',
     passport_photo: null,
@@ -596,58 +595,8 @@ function openEditLeadModal(lead) {
 function openCreateLeadModal() {
     isEditingLead.value = false;
     editingLeadId.value = null;
-    selectedLeadForDetail.value = {
-        id: 'new',
-        full_name: '',
-        phone: '',
-        email: '',
-        source: 'manual',
-        status: 'new'
-    };
-    
-    // Reset forms
-    houseForm.value = {
-        source: 'manual',
-        budget: '',
-        currency: 'USD',
-        payment_type: 'cash',
-        facility_id: '',
-        building_id: '',
-        podyezd: '',
-        floor: '',
-        rooms: '',
-        area: ''
-    };
-    
-    clientInfoForm.value = {
-        last_name: '',
-        first_name: '',
-        middle_name: '',
-        passport_series: '',
-        pinfl: '',
-        phone: '+998',
-        phone_2: '+998',
-        region: '',
-        district: '',
-        address: '',
-        passport_issued_date: '',
-        passport_issued_by: '',
-        birth_date: '',
-        source: 'manual',
-        passport_photo: null,
-        passport_photo_back: null,
-        profile_photo: null
-    };
-    
-    meetingForm.value = {
-        type: 'office',
-        date: '',
-        time: ''
-    };
-    
-    activeCallPanelTab.value = 'client'; // Go directly to Client Info tab as requested
-    showLeadDetailModal.value = false;
-    showCallPanelModal.value = true;
+    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' };
+    showCreateLeadModal.value = true;
 }
 
 function submitNewLead() {
@@ -714,7 +663,6 @@ function openCreateClientModal() {
         created_at: new Date().toISOString().split('T')[0],
         birth_date: '',
         phone_2: '+998',
-        gender: 'erkak',
         region: '',
         district: '',
         passport_photo: null,
@@ -754,7 +702,6 @@ function openEditClientModal(client) {
         created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : '',
         birth_date: client.birth_date || '',
         phone_2: client.phone_2 || '+998',
-        gender: client.gender || 'erkak',
         region: client.region || '',
         district: client.district || '',
         passport_photo: null,
@@ -1824,22 +1771,6 @@ function exportExcel(contract) {
     window.location.href = route('admin.contracts.export.xlsx', contract.id);
 }
 
-function getClientGender(client) {
-    if (!client) return '—';
-    if (client.gender) {
-        if (client.gender === 'female') return 'Ayol';
-        if (client.gender === 'male') return 'Erkak';
-        return client.gender;
-    }
-    const ln = (client.last_name || '').toLowerCase();
-    const mn = (client.middle_name || '').toLowerCase();
-    const fn = (client.first_name || '').toLowerCase();
-    if (ln.endsWith('ova') || ln.endsWith('eva') || mn.endsWith('ovna') || mn.endsWith('evna') || mn.endsWith('qizi') || fn.endsWith('a')) {
-        return 'Ayol';
-    }
-    return 'Erkak';
-}
-
 function getContractFinancials(contract) {
     if (!contract) return { total: 0, paid: 0, debt: 0, percent: 0 };
     const total = Number(contract.total_amount || 0);
@@ -2218,85 +2149,19 @@ const houseForm = ref({
 });
 
 const clientInfoForm = ref({
-    last_name: '',
     first_name: '',
+    last_name: '',
     middle_name: '',
     passport_series: '',
-    pinfl: '',
-    phone: '+998',
-    phone_2: '+998',
-    region: '',
-    district: '',
-    address: '',
     passport_issued_date: '',
     passport_issued_by: '',
-    birth_date: '',
-    source: 'manual',
-    passport_photo: null,
-    passport_photo_back: null,
-    profile_photo: null
+    phone: '',
+    phone_2: '+998',
+    email: '',
+    region: '',
+    district: '',
+    address: ''
 });
-
-const availableCallPanelDistricts = computed(() => {
-    let r = clientInfoForm.value.region;
-    if (!r) return [];
-    r = r.toLowerCase();
-    let foundRegion = regionsData[r];
-    if (!foundRegion) {
-        foundRegion = Object.values(regionsData).find(
-            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
-        );
-    }
-    if (!foundRegion) return [];
-    return Object.entries(foundRegion.districts).map(([key, value]) => ({
-        id: key,
-        name: value.name
-    }));
-});
-
-const availableCallPanelNeighborhoods = computed(() => {
-    let r = clientInfoForm.value.region;
-    if (!r) return [];
-    r = r.toLowerCase();
-    let foundRegion = regionsData[r];
-    if (!foundRegion) {
-        foundRegion = Object.values(regionsData).find(
-            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
-        );
-    }
-    if (!foundRegion) return [];
-
-    let d = clientInfoForm.value.district;
-    if (!d) return [];
-    d = d.toLowerCase();
-
-    const foundDistrict = Object.values(foundRegion.districts).find(
-        item => item.name.toLowerCase() === d
-    );
-    if (!foundDistrict) return [];
-
-    return foundDistrict.neighborhoods || [];
-});
-
-async function onCallPanelPassportPhotoChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    clientInfoForm.value.passport_photo = file;
-    
-    const croppedFace = await detectAndCropFace(file);
-    if (croppedFace) {
-        clientInfoForm.value.profile_photo = croppedFace;
-    }
-}
-
-function onCallPanelRegionChange() {
-    clientInfoForm.value.district = '';
-    clientInfoForm.value.address = '';
-}
-
-function onCallPanelDistrictChange() {
-    clientInfoForm.value.address = '';
-}
 
 const meetingForm = ref({
     type: 'office',
@@ -2334,40 +2199,19 @@ function openCallPanelModal(lead, defaultTab = 'history') {
         area: ''
     };
     
-    const nameParts = (lead.full_name || '').trim().split(/\s+/);
-    let lastName = '';
-    let firstName = '';
-    let middleName = '';
-    
-    if (nameParts.length >= 3) {
-        lastName = nameParts[0];
-        firstName = nameParts[1];
-        middleName = nameParts.slice(2).join(' ');
-    } else if (nameParts.length === 2) {
-        lastName = nameParts[0];
-        firstName = nameParts[1];
-    } else if (nameParts.length === 1) {
-        firstName = nameParts[0];
-    }
-    
     clientInfoForm.value = {
-        last_name: lastName,
-        first_name: firstName,
-        middle_name: middleName,
-        passport_series: '',
-        pinfl: '',
-        phone: lead.phone || '+998',
-        phone_2: '+998',
-        region: '',
-        district: '',
-        address: '',
-        passport_issued_date: '',
-        passport_issued_by: '',
-        birth_date: '',
-        source: lead.source || 'manual',
-        passport_photo: null,
-        passport_photo_back: null,
-        profile_photo: null
+        first_name: lead.first_name || lead.full_name || '',
+        last_name: lead.last_name || '',
+        middle_name: lead.middle_name || '',
+        passport_series: lead.passport_series || '',
+        passport_issued_date: lead.passport_issued_date || '',
+        passport_issued_by: lead.passport_issued_by || '',
+        phone: lead.phone || '',
+        phone_2: lead.phone_2 || '+998',
+        email: lead.email || '',
+        region: lead.region || '',
+        district: lead.district || '',
+        address: lead.address || ''
     };
     
     meetingForm.value = {
@@ -2397,81 +2241,33 @@ function rejectLead(lead) {
 
 function saveCallPanelClientInfo() {
     isProcessing.value = true;
-
-    // Prepare FormData for multipart upload
-    const formData = new FormData();
-    for (const key in clientInfoForm.value) {
-        if (clientInfoForm.value[key] !== null && clientInfoForm.value[key] !== undefined) {
-            formData.append(key, clientInfoForm.value[key]);
-        }
-    }
-
-    if (selectedLeadForDetail.value.id === 'new') {
-        // First create Client
-        axios.post(route('admin.crm.clients.store'), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.data && response.data.status === 'success') {
-                const client = response.data.client;
-                // Then create Lead as qualified
-                return axios.post(route('api.leads.store'), {
-                    full_name: `${client.last_name} ${client.first_name} ${client.middle_name || ''}`.trim(),
-                    phone: client.phone,
-                    email: client.email || '',
-                    source: client.source || 'manual',
-                    status: 'qualified',
-                    is_manual: true
-                });
-            } else {
-                throw new Error(response.data?.message || "Mijozni saqlashda xatolik");
-            }
-        })
-        .then(() => {
-            alert("Yangi lid va mijoz ma'lumotlari muvaffaqiyatli saqlandi!");
-            showCallPanelModal.value = false;
-            router.reload({ preserveScroll: true });
-        })
-        .catch(error => {
-            const msg = error.response?.data?.message || error.message || 'Noma\'lum xato';
-            alert("Xatolik yuz berdi: " + msg);
-        })
-        .finally(() => {
-            isProcessing.value = false;
-        });
-    } else {
-        // Create Client, then update Lead status to qualified
-        axios.post(route('admin.crm.clients.store'), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.data && response.data.status === 'success') {
-                return axios.post(route('admin.crm.leads.update_status', selectedLeadForDetail.value.id), {
-                    status: 'qualified'
-                });
-            } else {
-                throw new Error(response.data?.message || "Mijozni saqlashda xatolik");
-            }
-        })
-        .then(() => {
-            alert("Mijoz ma'lumotlari muvaffaqiyatli saqlandi va lid saralandi!");
-            showCallPanelModal.value = false;
-            router.reload({ preserveScroll: true });
-        })
-        .catch(error => {
-            const msg = error.response?.data?.message || error.message || 'Noma\'lum xato';
-            alert("Xatolik yuz berdi: " + msg);
-        })
-        .finally(() => {
-            isProcessing.value = false;
-        });
-    }
+    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), {
+        first_name: clientInfoForm.value.first_name,
+        last_name: clientInfoForm.value.last_name,
+        middle_name: clientInfoForm.value.middle_name,
+        passport_series: clientInfoForm.value.passport_series,
+        passport_issued_date: clientInfoForm.value.passport_issued_date,
+        passport_issued_by: clientInfoForm.value.passport_issued_by,
+        phone: clientInfoForm.value.phone,
+        phone_2: clientInfoForm.value.phone_2,
+        email: clientInfoForm.value.email,
+        region: clientInfoForm.value.region,
+        district: clientInfoForm.value.district,
+        address: clientInfoForm.value.address,
+        source: selectedLeadForDetail.value.source || 'manual',
+        user_id: selectedLeadForDetail.value.user_id || null
+    })
+    .then(() => {
+        alert("Mijoz ma'lumotlari muvaffaqiyatli saqlandi!");
+        showCallPanelModal.value = false;
+        router.reload({ preserveScroll: true });
+    })
+    .catch(error => {
+        alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+    })
+    .finally(() => {
+        isProcessing.value = false;
+    });
 }
 
 function saveCallPanelHouseInfo() {
@@ -3823,7 +3619,7 @@ const ledgerReportData = computed(() => {
                         📞 Qo'ng'iroqlar tarixi
                     </button>
                     <button 
-                        @click="openCreateLeadModal"
+                        @click="openCreateClientModal"
                         class="px-4 py-1.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
                     >
                         + Yangi Lid qo'shish
@@ -7804,27 +7600,22 @@ const ledgerReportData = computed(() => {
             </div>
         </div>
 
-        <!-- LEAD INTERACTION CALL PANEL FULLSCREEN PAGE -->
+        <!-- LEAD INTERACTION FULLSCREEN PAGE -->
         <div v-if="showCallPanelModal && selectedLeadForDetail" class="fixed inset-0 z-[100] bg-slate-50 text-slate-800 font-sans flex flex-col select-none overflow-y-auto w-full h-full animate-[fadeIn_0.3s_ease-out]">
-            <!-- Header -->
-            <div class="px-6 py-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">📋</span>
-                    <div>
-                        <h2 class="text-base md:text-lg font-bold uppercase tracking-wider text-gray-900 font-display">Lid bilan ishlash paneli</h2>
-                        <p class="text-[10px] md:text-xs text-gray-500 font-medium">Lid ma'lumotlarini to'ldirish va muloqotlar tarixi</p>
-                    </div>
+            <div class="flex flex-col w-full min-h-screen">
+                <!-- Header -->
+                <div class="px-8 py-5 border-b border-gray-200/60 bg-white/70 backdrop-blur-md flex justify-between items-center sticky top-0 z-10 shadow-sm">
+                    <span class="text-base font-bold text-gray-900 uppercase tracking-wider font-sans">Lid bilan ishlash paneli</span>
+                    <button @click="showCallPanelModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
-                <!-- Close Button -->
-                <button @click="showCallPanelModal = false" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-xs font-bold rounded-xl transition-all border border-gray-200 shadow-sm flex items-center gap-1.5">
-                    ✕ Chiqish
-                </button>
-            </div>
 
-            <!-- Body -->
-            <div class="flex-1 p-6 md:p-8">
-                <div class="max-w-7xl mx-auto w-full bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8 flex flex-col lg:flex-row gap-6 min-h-[550px]">
-                    <!-- Left Menu: 4 block tabs -->
+                <!-- Body -->
+                <div class="flex-1 overflow-y-auto p-6 flex flex-col lg:flex-row gap-6 min-h-[500px]">
+                    <!-- Left Menu: 4 block tabs (Image 2) -->
                     <div class="w-full lg:w-1/3 flex flex-col gap-4 text-left">
                         <!-- Tab 1: Uy sotib olish -->
                         <div @click="activeCallPanelTab = 'house'" 
@@ -7888,8 +7679,8 @@ const ledgerReportData = computed(() => {
                     </div>
 
                     <!-- Right Content Area: Forms based on active tab -->
-                    <div class="flex-1 bg-slate-50 border border-gray-150 rounded-3xl p-6 shadow-sm min-h-[400px]">
-                        <!-- Tab Content: Qong'iroqlar tarixi -->
+                    <div class="flex-1 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm min-h-[400px]">
+                        <!-- Tab Content: Qong'iroqlar tarixi (Image 2) -->
                         <div v-if="activeCallPanelTab === 'history'" class="h-full flex flex-col text-left">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest font-mono">Qong'iroqlar tarixi</h3>
@@ -7902,7 +7693,7 @@ const ledgerReportData = computed(() => {
                                 <p class="text-xs text-gray-400 font-medium font-sans">Qong'iroqlar tarixi mavjud emas</p>
                             </div>
                             <div class="flex-1 overflow-y-auto space-y-3" v-else>
-                                <div v-for="log in leadCallLogs" :key="log.id" class="p-4 border border-gray-100 rounded-2xl bg-white flex items-center justify-between text-left shadow-sm">
+                                <div v-for="log in leadCallLogs" :key="log.id" class="p-4 border border-gray-100 rounded-2xl bg-gray-50/50 flex items-center justify-between text-left">
                                     <div>
                                         <p class="text-xs font-bold text-gray-900 font-mono">{{ log.phone }}</p>
                                         <p class="text-[10px] text-gray-400 mt-1 font-mono">{{ formatDate(log.created_at) }}</p>
@@ -7915,48 +7706,48 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Tab Content: Mijoz malumotlari (Image 2 style) -->
+                        <!-- Tab Content: Mijoz malumotlari (Image 3) -->
                         <div v-if="activeCallPanelTab === 'client'" class="space-y-6 text-left">
-                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-200 pb-2 font-mono">MIJOZ MA'LUMOTLARINI KIRITISH</h3>
-                            <form @submit.prevent="saveCallPanelClientInfo" class="space-y-4">
+                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">MA'LUMOTINI QO'SHISH</h3>
+                            <form @submit.prevent="saveCallPanelClientInfo" class="space-y-6">
                                 <!-- Row 1: Familiya, Ism, Otasining ismi -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">* Familiya</label>
-                                        <input v-model="clientInfoForm.last_name" required type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="Familiyasini kiriting">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Familiya</label>
+                                        <input v-model="clientInfoForm.last_name" type="text" placeholder="Familiyasini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">* Ism</label>
-                                        <input v-model="clientInfoForm.first_name" required type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="Ismini kiriting">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Ism</label>
+                                        <input v-model="clientInfoForm.first_name" type="text" placeholder="Ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Otasining ismi</label>
-                                        <input v-model="clientInfoForm.middle_name" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="Otasining ismini kiriting">
-                                    </div>
-                                </div>
-
-                                <!-- Row 2: Passport raqami, Tug'ilgan sanasi, Kim tomonidan berilgan -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Passport raqami</label>
-                                        <input v-model="clientInfoForm.passport_series" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="AA1234567">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Tug'ilgan sanasi</label>
-                                        <input v-model="clientInfoForm.birth_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Kim tomonidan berilgan</label>
-                                        <input v-model="clientInfoForm.passport_issued_by" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="Kim tomonidan berilgan">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Otasining ismi</label>
+                                        <input v-model="clientInfoForm.middle_name" type="text" placeholder="Otasining ismini kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
                                 </div>
 
-                                <!-- Row 3: Viloyat, Tuman, Passport berilgan sana -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Row 2: Passport raqami, Berilgan vaqti, Kim tomonidan berilgan -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Viloyat</label>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Passport raqami</label>
+                                        <input v-model="clientInfoForm.passport_series" type="text" placeholder="AA1234567" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Berilgan vaqti</label>
+                                        <input v-model="clientInfoForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Kim tomonidan berilgan</label>
+                                        <input v-model="clientInfoForm.passport_issued_by" type="text" placeholder="Kim tomonidan berilgan" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Viloyat, Tuman, Mahalla ko'cha -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Viloyat</label>
                                         <div class="relative">
-                                            <select v-model="clientInfoForm.region" @change="onCallPanelRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                            <select v-model="clientInfoForm.region" @change="onRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                                 <option value="">Tanlang</option>
                                                 <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">
                                                     {{ regionObj.name }}
@@ -7968,11 +7759,11 @@ const ledgerReportData = computed(() => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Tuman / Shahar</label>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
                                         <div class="relative">
-                                            <select v-model="clientInfoForm.district" @change="onCallPanelDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
+                                            <select v-model="clientInfoForm.district" @change="onDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
                                                 <option value="">Tanlang</option>
-                                                <option v-for="districtObj in availableCallPanelDistricts" :key="districtObj.id" :value="districtObj.name">
+                                                <option v-for="districtObj in availableDistricts" :key="districtObj.id" :value="districtObj.name">
                                                     {{ districtObj.name }}
                                                 </option>
                                             </select>
@@ -7982,88 +7773,25 @@ const ledgerReportData = computed(() => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Passport berilgan sana</label>
-                                        <input v-model="clientInfoForm.passport_issued_date" type="date" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Mahalla, ko'cha nomi</label>
+                                        <input v-model="clientInfoForm.address" type="text" placeholder="Manzilni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
                                 </div>
 
-                                <!-- Row 4: Telefon raqam, Telefon raqam 2, JShShIR -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Row 4: Phone, Phone 2, Email -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">* Telefon raqami</label>
-                                        <input v-model="clientInfoForm.phone" required type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="+998">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">* Telefon raqami</label>
+                                        <input v-model="clientInfoForm.phone" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" required>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Telefon raqami 2</label>
-                                        <input v-model="clientInfoForm.phone_2" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="+998">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Qo'shimcha raqam</label>
+                                        <input v-model="clientInfoForm.phone_2" type="text" placeholder="+998" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">JShShIR (PINFL)</label>
-                                        <input v-model="clientInfoForm.pinfl" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="14 xonali JShShIR">
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Elektron pochta</label>
+                                        <input v-model="clientInfoForm.email" type="email" placeholder="example@mail.com" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                                     </div>
-                                </div>
-
-                                <!-- Row 5: Pasport rasmlari, Lid manbasi, Manzil -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-2">Passport rasmi (Old)</label>
-                                        <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                            <template v-if="!clientInfoForm.passport_photo">
-                                                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Old)</span>
-                                            </template>
-                                            <template v-else>
-                                                <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientInfoForm.passport_photo.name">{{ clientInfoForm.passport_photo.name }}</span>
-                                            </template>
-                                            <input type="file" class="hidden" @change="onCallPanelPassportPhotoChange">
-                                        </label>
-                                        <!-- Face Preview -->
-                                        <div v-if="clientInfoForm.profile_photo" class="mt-2 flex items-center gap-2">
-                                            <div class="w-10 h-10 rounded-full overflow-hidden border border-[#f2a900] shrink-0">
-                                                <img :src="getProfilePreviewUrl(clientInfoForm.profile_photo)" class="w-full h-full object-cover" />
-                                            </div>
-                                            <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-2">Passport rasmi (Orqa)</label>
-                                        <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                            <template v-if="!clientInfoForm.passport_photo_back">
-                                                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Orqa)</span>
-                                            </template>
-                                            <template v-else>
-                                                <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientInfoForm.passport_photo_back.name">{{ clientInfoForm.passport_photo_back.name }}</span>
-                                            </template>
-                                            <input type="file" class="hidden" @change="e => { clientInfoForm.passport_photo_back = e.target.files[0] }">
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Lid manbasi</label>
-                                        <div class="relative">
-                                            <select v-model="clientInfoForm.source" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
-                                                <option value="manual">Manual (Qo'lda)</option>
-                                                <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
-                                            </select>
-                                            <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-semibold text-gray-700 uppercase mb-1.5">Mahalla, ko'cha, uy/xonadon (Manzil)</label>
-                                    <input v-model="clientInfoForm.address" type="text" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400" placeholder="Manzil tafsilotlarini kiriting">
                                 </div>
 
                                 <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
@@ -8090,7 +7818,7 @@ const ledgerReportData = computed(() => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Budjet</label>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> COMMON.BUDGET</label>
                                         <div class="flex">
                                             <input v-model="houseForm.budget" required type="text" class="flex-1 border border-gray-200 rounded-l-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Budjet summasi">
                                             <select v-model="houseForm.currency" class="border-t border-r border-b border-gray-200 rounded-r-xl px-4 py-3 bg-gray-50 text-gray-700 font-mono text-sm">
@@ -8148,7 +7876,7 @@ const ledgerReportData = computed(() => {
                             </form>
                         </div>
 
-                        <!-- Tab Content: Uchrashuv belgilash -->
+                        <!-- Tab Content: Uchrashuv belgilash (Image 5) -->
                         <div v-if="activeCallPanelTab === 'meeting'" class="space-y-6 text-left">
                             <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">UCHRASHUV BELGILASH</h3>
                             <form @submit.prevent="saveCallPanelMeeting" class="space-y-4">

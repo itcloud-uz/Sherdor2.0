@@ -202,7 +202,7 @@ function previewUnitBlueprint(unit) {
     if (!unit) return;
     const blueprint = unit.blueprint_path || unit.floor?.blueprint_path || unit.floor?.building?.blueprint_path || unit.model_3d_path;
     const url = blueprint ? '/storage/' + blueprint : '/modern_apartment_render.png';
-    lightboxTitle.value = `Xonadon № ${unit.unit_number || ''} Chizmasi`;
+    lightboxTitle.value = `${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} № ${unit.unit_number || ''} Chizmasi`;
     lightboxImageUrl.value = url;
     showPassportLightbox.value = true;
 }
@@ -724,7 +724,7 @@ function nextStep() {
         currentStep.value = 2;
     } else if (currentStep.value === 2) {
         if (!contractForm.value.unit_id) {
-            alert("Iltimos, xonadonni tanlang!");
+            alert("Iltimos, xonadon yoki do'konni tanlang!");
             return;
         }
         currentStep.value = 3;
@@ -4637,8 +4637,8 @@ const ledgerReportData = computed(() => {
                                             </h2>
                                             <div class="flex items-center gap-4 mt-2">
                                                 <div>
-                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">XONADON</span>
-                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.unit_number }}-Xonadon</strong>
+                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "DO'KON" : "XONADON" }}</span>
+                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.unit_number }}-{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }}</strong>
                                                 </div>
                                                 <div class="h-8 w-px bg-gray-150"></div>
                                                 <div>
@@ -4676,7 +4676,7 @@ const ledgerReportData = computed(() => {
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm col-span-2">
-                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Xonadon holati</span>
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} holati</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
                                                 {{ getContractRepairType(detailedClientData.contracts[0]) }}
                                             </strong>
@@ -5507,7 +5507,7 @@ const ledgerReportData = computed(() => {
                 <select v-model="selectedReportContractId" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">-- Shartnomani tanlang ({{ filteredReportContracts.length }} ta mos keldi) --</option>
                     <option v-for="c in filteredReportContracts" :key="c.id" :value="c.id">
-                        Shartnoma #{{ c.contract_number || c.id }} - {{ c.client?.last_name }} {{ c.client?.first_name }} ({{ c.unit?.floor?.building?.name || 'Bino' }} Xonadon: {{ c.unit?.unit_number }})
+                        Shartnoma #{{ c.contract_number || c.id }} - {{ c.client?.last_name }} {{ c.client?.first_name }} ({{ c.unit?.floor?.building?.name || 'Bino' }} {{ c.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }}: {{ c.unit?.unit_number }})
                     </option>
                 </select>
             </div>
@@ -5532,10 +5532,10 @@ const ledgerReportData = computed(() => {
                     </div>
                     <!-- Apartment summary -->
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm text-xs space-y-2">
-                        <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">🏢 Xonadon Ma'lumotlari</p>
+                        <p class="font-bold text-gray-700 border-b border-gray-200 pb-1.5">🏢 {{ selectedReportContract.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} Ma'lumotlari</p>
                         <div class="flex justify-between"><span>Bino:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.building?.name || '—' }}</strong></div>
                         <div class="flex justify-between"><span>Qavat / Maydon:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.floor?.number }}-qavat / {{ selectedReportContract.unit?.area_sqm }} m²</strong></div>
-                        <div class="flex justify-between"><span>Xona soni / Raqami:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.rooms }} xona / Xonadon {{ selectedReportContract.unit?.unit_number }}</strong></div>
+                        <div class="flex justify-between"><span>Xona soni / Raqami:</span> <strong class="text-gray-900">{{ selectedReportContract.unit?.rooms }} xona / {{ selectedReportContract.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} {{ selectedReportContract.unit?.unit_number }}</strong></div>
                     </div>
                 </div>
 
@@ -6782,7 +6782,7 @@ const ledgerReportData = computed(() => {
                             <span v-if="currentStep > 2">✓</span>
                             <span v-else>2</span>
                         </div>
-                        <span class="text-xs font-semibold" :class="currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-400'">Shartnoma va xonadon</span>
+                        <span class="text-xs font-semibold" :class="currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-400'">Shartnoma va xonadon / do'kon</span>
                     </div>
 
                     <!-- Divider Line 2-3 -->
@@ -7037,10 +7037,10 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Xonadon</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Xonadon / Do'kon</label>
                             <div class="relative">
                                 <select v-model="contractForm.unit_id" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all appearance-none cursor-pointer pr-10" :required="!isEditingClient && currentStep === 2">
-                                    <option value="">Xonadonni tanlang</option>
+                                    <option value="">Xonadon / Do'konni tanlang</option>
                                     <option v-for="opt in wizardUnitOptions" :key="opt.value" :value="opt.value">
                                         {{ opt.label }}
                                     </option>
@@ -8103,7 +8103,7 @@ const ledgerReportData = computed(() => {
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Xaridor F.I.Sh</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Telefon</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Bino</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Xonadon</td>
+                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Xonadon / Do'kon</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Boshlang'ich to'lov</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Jami Summa</td>
                                     <td class="px-3 py-1.5 font-bold text-gray-900">Holat</td>
@@ -8157,9 +8157,9 @@ const ledgerReportData = computed(() => {
                                     <td class="border-r border-gray-200 px-3 py-1 font-sans text-gray-700">
                                         {{ contract.unit?.floor?.building?.name || '—' }}
                                     </td>
-                                    <!-- Xonadon -->
+                                    <!-- Xonadon / Do'kon -->
                                     <td class="border-r border-gray-200 px-3 py-1 font-sans text-gray-700 text-center">
-                                        {{ contract.unit?.unit_number || '—' }}
+                                        {{ (contract.unit?.type === 'commercial' && /^\d+$/.test(String(contract.unit?.unit_number).trim()) ? 'D-' : '') + (contract.unit?.unit_number || '—') }}
                                     </td>
                                     <!-- Boshlang'ich to'lov -->
                                     <td class="border-r border-gray-200 px-3 py-1 text-right text-gray-700 font-semibold">

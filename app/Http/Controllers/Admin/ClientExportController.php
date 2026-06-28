@@ -203,7 +203,7 @@ class ClientExportController extends Controller
                 'Xaridor F.I.Sh', 
                 'Telefon', 
                 'Bino', 
-                'Xonadon', 
+                'Xonadon / Do\'kon', 
                 'Maydoni (m²)', 
                 'Kvadrat metr narxi', 
                 'Boshlang\'ich to\'lov', 
@@ -216,6 +216,9 @@ class ClientExportController extends Controller
                 $clientPhone = $contract->client ? $contract->client->phone : '';
                 $buildingName = $contract->unit?->floor?->building?->name ?? '';
                 $unitNumber = $contract->unit?->unit_number ?? '';
+                if ($contract->unit?->type === 'commercial' && preg_match('/^\d+$/', trim($unitNumber))) {
+                    $unitNumber = 'D-' . $unitNumber;
+                }
                 $area = $contract->unit?->area_sqm ?? '';
                 
                 fputcsv($file, [

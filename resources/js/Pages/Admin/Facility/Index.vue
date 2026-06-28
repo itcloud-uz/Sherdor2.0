@@ -342,8 +342,10 @@ function shareUnitDetails() {
     const unit = selectedUnitForFullscreenBlueprint.value;
     const floor = selectedFloor.value?.floor_number || '';
     const building = selectedBuilding.value?.name || '';
+    const typeLabel = unit.type === 'commercial' ? "Do'kon" : "Xonadon";
+    const formattedUnitNumber = (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number;
     const text = `🏢 ${building}
-🔑 Xonadon: № ${unit.unit_number}
+🔑 ${typeLabel}: № ${formattedUnitNumber}
 🚪 Xonalar soni: ${unit.rooms_count || 1} xonali
 🏢 Qavat: ${floor}-qavat
 📐 Maydoni: ${unit.area_sqm} m²
@@ -352,7 +354,7 @@ function shareUnitDetails() {
 🟢 Holati: ${unit.status === 'available' ? 'Sotuvda' : unit.status === 'reserved' ? 'Band qilingan' : 'Sotilgan'}`;
 
     navigator.clipboard.writeText(text).then(() => {
-        alert("Xonadon ma'lumotlari nusxalandi!");
+        alert(`${typeLabel} ma'lumotlari nusxalandi!`);
     }).catch(err => {
         console.error("Nusxalashda xatolik:", err);
     });
@@ -2620,18 +2622,18 @@ function printCalculatorDetails() {
                 <div class="top-right-content">
                     <div class="title-xona"><span>${unit.rooms_count || 1}</span> XONA</div>
                     
-                    <div class="section-title">Xonadon ma'lumotlari</div>
+                    <div class="section-title">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} ma'lumotlari</div>
                     <ul class="bullet-list" style="margin-bottom: 25px;">
                         <li class="bullet-item">Blok / Korpus: <strong>${cleanedBlockName}</strong></li>
                         <li class="bullet-item">Qavat: <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
-                        <li class="bullet-item">Xonadon raqami: <strong>№ ${unit.unit_number}</strong></li>
+                        <li class="bullet-item">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami: <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
                         <li class="bullet-item">Umumiy maydoni: <strong>${unit.area_sqm} kv.m</strong></li>
                         <li class="bullet-item">Xonalar soni: <strong>${unit.rooms_count || 1} xonali</strong></li>
                     </ul>
 
                     <div class="section-title">To'lov shartlari</div>
                     <ul class="bullet-list">
-                        <li class="bullet-item">Boshlang'ich uy narxi</li>
+                        <li class="bullet-item">Boshlang'ich ${unit.type === 'commercial' ? "do'kon" : "uy"} narxi</li>
                         <li class="bullet-item-val">${formatSoM(calcPrice.value)}</li>
                         <li class="bullet-item">Kvadrat metr narxi</li>
                         <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
@@ -3922,7 +3924,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </h4>
                                     <div class="space-y-4 text-base font-sans text-gray-700">
                                         <div>
-                                            <span class="text-gray-500">Xonadon:</span>
+                                            <span class="text-gray-500">{{ selectedUnit.type === 'commercial' ? "Do'kon raqami:" : "Xonadon:" }}</span>
                                             <strong class="text-gray-900 font-bold ml-1">{{ (selectedUnit.type === 'commercial' && /^\d+$/.test(String(selectedUnit.unit_number).trim()) ? 'D-' : '') + selectedUnit.unit_number }}</strong>
                                         </div>
                                         <div>
@@ -3984,7 +3986,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     <div class="space-y-4 font-sans text-sm">
                                         <!-- Xonadon Maydoni -->
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Xonadon maydoni (kv.m)</label>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} maydoni (kv.m)</label>
                                             <div class="bg-slate-100 border border-slate-200 text-slate-700 rounded-xl px-4 py-3 font-semibold font-sans">
                                                 {{ selectedUnit?.area_sqm || 0 }} kv.m
                                             </div>
@@ -3999,7 +4001,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 </div>
                                             </div>
                                             <div>
-                                                <label class="block text-sm font-medium text-gray-500 mb-1">Uy narxi (Jami)</label>
+                                                <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Uy" }} narxi (Jami)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                     <input type="number" v-model.number="calcPrice" @input="onPriceInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                                 </div>
@@ -5273,7 +5275,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <span class="text-2xl">📐</span>
                     <div>
                         <h2 class="text-base md:text-lg font-bold uppercase tracking-wider text-gray-900 font-display">
-                            {{ selectedUnitForFullscreenBlueprint ? `Xonadon № ${selectedUnitForFullscreenBlueprint.unit_number} Tafsiloti` : 'Loyiha chizmasi' }}
+                            {{ selectedUnitForFullscreenBlueprint ? `${selectedUnitForFullscreenBlueprint.type === 'commercial' ? "Do'kon" : "Xonadon"} № ${selectedUnitForFullscreenBlueprint.unit_number} Tafsiloti` : 'Loyiha chizmasi' }}
                         </h2>
                         <p class="text-[10px] md:text-xs text-gray-500 font-medium">Bino: {{ selectedBuilding?.name || 'N/A' }} / Qavat: {{ selectedFloor?.floor_number }}</p>
                     </div>
@@ -5361,7 +5363,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-lg text-amber-500 shrink-0">🔑</div>
                                         <div>
-                                            <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Xonadon</span>
+                                            <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ selectedUnitForFullscreenBlueprint?.type === 'commercial' ? "Do'kon" : "Xonadon" }}</span>
                                             <strong class="text-sm font-bold text-gray-900">№ {{ selectedUnitForFullscreenBlueprint?.unit_number }}</strong>
                                         </div>
                                     </div>
@@ -5735,10 +5737,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                         <!-- Tanlang Xonadon (Read only) -->
                         <div class="mt-6">
-                            <label class="block text-xs font-semibold text-gray-700 mb-2">Tanlangan xonadon ma'lumotlari</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Tanlangan {{ currentSellingUnit?.type === 'commercial' ? "do'kon" : "xonadon" }} ma'lumotlari</label>
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 bg-gray-50 p-5 rounded-2xl border border-gray-200 text-xs">
                                 <div>
-                                    <span class="text-gray-500 block mb-1">Xonadon:</span>
+                                    <span class="text-gray-500 block mb-1">{{ currentSellingUnit?.type === 'commercial' ? "Do'kon raqami:" : "Xonadon:" }}</span>
                                     <strong class="text-gray-900 text-sm font-bold">{{ currentSellingUnit?.unit_number || 'N/A' }}</strong>
                                 </div>
                                 <div>

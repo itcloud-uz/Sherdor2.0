@@ -62,13 +62,66 @@ class LedgerExportController extends Controller
                 $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
                 $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
-                // Convert docx to html
+                // 1. Try LibreOffice/soffice conversion first for pixel-perfect PDF rendering
+                $outputDirectory = dirname($absoluteDocxPath);
+                $pdfFileName = pathinfo($absoluteDocxPath, PATHINFO_FILENAME) . '.pdf';
+                $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
+
+                $isSofficeAvailable = false;
+                $sofficePath = 'soffice';
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                    $checkCmd = 'where soffice 2>nul';
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
+                        $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
+                    } else {
+                        $paths = [
+                            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+                            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+                        ];
+                        foreach ($paths as $p) {
+                            if (file_exists($p)) {
+                                $isSofficeAvailable = true;
+                                $sofficePath = '"' . $p . '"';
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
+                        $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
+                    }
+                }
+
+                if ($isSofficeAvailable) {
+                    $binary = $sofficePath;
+                    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+                        $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
+                    }
+                    
+                    $convertCmd = $binary . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    shell_exec($convertCmd);
+
+                    if (file_exists($absolutePdfPath)) {
+                        $response = response()->download($absolutePdfPath, "contract_{$contract->id}.pdf")->deleteFileAfterSend(true);
+                        @unlink($absoluteDocxPath);
+                        return $response;
+                    }
+                }
+
+                // 2. Fallback to Mammoth + DomPDF if LibreOffice is not installed
                 $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
                 $previewData = json_decode($previewOutput, true);
                 
                 $content = $previewData['html'] ?? '';
                 
                 $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+                @unlink($absoluteDocxPath);
+                
                 return $pdf->download("contract_{$contract->id}.pdf");
             } catch (\Exception $e) {
                 return back()->withErrors(['message' => 'PDF generatsiya qilishda xatolik: ' . $e->getMessage()]);
@@ -134,6 +187,7 @@ class LedgerExportController extends Controller
                     $previewData = json_decode($previewOutput, true);
                     
                     $content = $previewData['html'] ?? '';
+                    @unlink($absoluteDocxPath);
                 } catch (\Exception $e) {
                     $content = 'Preview generation failed: ' . $e->getMessage();
                 }

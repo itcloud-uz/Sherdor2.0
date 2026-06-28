@@ -268,48 +268,32 @@ class ContractTemplate extends Model
     }
 
     /**
-     * Executes Python document processor command trying multiple Python executors
+     * Executes Python document processor command using the configured PYTHON_PATH.
      */
     public static function runPython(string $args): string
     {
         $pythonScript = base_path('app/Python/docx_processor.py');
+        $pythonPath = env('PYTHON_PATH', 'python3');
+
+        // Resolve relative virtual environment paths to absolute paths
+        if (strpos($pythonPath, 'venv/') === 0 || strpos($pythonPath, 'venv\\') === 0) {
+            $pythonPath = base_path($pythonPath);
+        }
+
+        $command = $pythonPath . ' "' . $pythonScript . '" ' . $args . ' 2>&1';
+        $output = shell_exec($command);
         
-        $executors = [
-            base_path('venv/bin/python3'),
-            base_path('venv/bin/python'),
-            base_path('venv/Scripts/python.exe'),
-            'python3',
-            'python',
-            'py -3.12',
-            'py',
-            'C:\\Users\\FBI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
-        ];
-
-        $output = '';
-        $success = false;
-
-        foreach ($executors as $executor) {
-            $command = $executor . ' "' . $pythonScript . '" ' . $args . ' 2>&1';
-            $output = shell_exec($command);
-            
-            if ($output) {
-                $decoded = json_decode($output, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    if (is_array($decoded) && isset($decoded['error'])) {
-                        $output = $decoded['error'] . (isset($decoded['traceback']) ? "\n" . $decoded['traceback'] : '');
-                    } else {
-                        $success = true;
-                        break;
-                    }
+        if ($output) {
+            $decoded = json_decode($output, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                if (is_array($decoded) && isset($decoded['error'])) {
+                    throw new \Exception($decoded['error'] . (isset($decoded['traceback']) ? "\n" . $decoded['traceback'] : ''));
                 }
+                return $output;
             }
         }
 
-        if (!$success) {
-            throw new \Exception("Python execution failed. Output: " . ($output ?: 'No output.'));
-        }
-
-        return $output;
+        throw new \Exception("Python execution failed. Path used: {$pythonPath}. Output: " . ($output ?: 'No output.'));
     }
 
     /**

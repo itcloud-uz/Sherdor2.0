@@ -410,10 +410,24 @@ class ContractController extends Controller
         }
 
         // Generate PDF
-        if ($contract->contract_template_id && $contract->template && $contract->template->docx_path) {
+        // Resolve a template if not selected, so we never fall back to broken/old hardcoded blade views
+        $template = $contract->template;
+        if (!$template && $contract->contract_template_id) {
+            $template = \App\Models\ContractTemplate::find($contract->contract_template_id);
+        }
+        if (!$template) {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $template = \App\Models\ContractTemplate::where('type', $type)->latest()->first();
+        }
+
+        // Generate PDF using DOCX template
+        if ($template && $template->docx_path) {
             try {
                 $selectedVariants = $contract->selected_variants ?? [];
-                $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
+                $docxPath = $template->compileDocx($contract, $selectedVariants);
                 $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
                 // 1. Try LibreOffice/soffice conversion first for pixel-perfect PDF rendering
@@ -488,11 +502,11 @@ class ContractController extends Controller
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
             } catch (\Exception $e) {
                 // fallback to legacy compilation
-                $content = $contract->template->compile($contract);
+                $content = $template ? $template->compile($contract) : '';
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
             }
-        } elseif ($contract->contract_template_id && $contract->template) {
-            $content = $contract->template->compile($contract);
+        } elseif ($template) {
+            $content = $template->compile($contract);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
         } else {
             $type = $contract->contract_type ?? 'residential';

@@ -39,6 +39,44 @@ class Contract extends Model
         'selected_variants' => 'array',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($contract) {
+            if (empty($contract->contract_template_id)) {
+                $type = $contract->contract_type ?? 'residential';
+                $template = ContractTemplate::where('type', $type)->latest()->first();
+                if ($template) {
+                    $contract->contract_template_id = $template->id;
+                    
+                    $variants = [];
+                    foreach ($template->variantGroups as $group) {
+                        $defaultVariant = $group->variants()->first();
+                        if ($defaultVariant) {
+                            $variants[$group->anchor] = [
+                                'key' => $defaultVariant->key,
+                                'placeholders' => []
+                            ];
+                            foreach ($defaultVariant->placeholders as $p) {
+                                $val = '';
+                                if ($p === 'BOSHLANGICH_FOIZ') {
+                                    $val = $defaultVariant->key === 'NAQD' ? '100' : '20';
+                                } elseif ($p === 'TOLOV_MUDDAT_KUN') {
+                                    $val = '6';
+                                } elseif ($p === 'MUDDAT_OY') {
+                                    $val = (string)($contract->term_months ?: 36);
+                                }
+                                $variants[$group->anchor]['placeholders'][$p] = $val;
+                            }
+                        }
+                    }
+                    $contract->selected_variants = $variants;
+                }
+            }
+        });
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);

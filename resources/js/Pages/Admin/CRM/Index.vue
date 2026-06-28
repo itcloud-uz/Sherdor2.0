@@ -30,6 +30,7 @@ const props = defineProps({
     isEskizConnected: Boolean,
     leadSources: Array,
     cashRegisters: Array,
+    contractTemplates: Array,
 });
 
 const isAdmin = computed(() => {
@@ -673,7 +674,7 @@ function openCreateClientModal() {
         contract_language: 'O\'zbek tili',
         contract_id: ''
     };
-    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
     showCreateClientModal.value = true;
 }
 
@@ -713,7 +714,7 @@ function openEditClientModal(client) {
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
     };
-    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
+    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
     showCreateClientModal.value = true;
 }
 
@@ -825,7 +826,12 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' });
+
+const filteredTemplates = computed(() => {
+    if (!props.contractTemplates) return [];
+    return props.contractTemplates.filter(t => t.type === contractForm.value.contract_type || t.type === 'custom');
+});
 
 function editContract(contract) {
     isEditingContract.value = true;
@@ -853,7 +859,8 @@ function editContract(contract) {
         account_id: firstTx ? firstTx.account_id || '' : '',
         floor: contract.floor || contract.unit?.floor?.floor_number || '',
         rooms: contract.rooms || contract.unit?.rooms_count || '',
-        user_id: contract.user_id || ''
+        user_id: contract.user_id || '',
+        contract_template_id: contract.contract_template_id || ''
     };
     showCreateContractModal.value = true;
 }
@@ -888,7 +895,7 @@ function createContract() {
         router.post(route('admin.contracts.store'), contractForm.value, {
             onSuccess: () => {
                 showCreateContractModal.value = false;
-                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '' };
+                contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '' };
                 isProcessing.value = false;
             },
             onError: () => isProcessing.value = false
@@ -7178,6 +7185,17 @@ const ledgerReportData = computed(() => {
                                     <span class="text-xs text-gray-900">{{ $t('commercial_shop') }}</span>
                                 </label>
                             </div>
+                        </div>
+
+                        <!-- Shartnoma shabloni Selection -->
+                        <div v-if="filteredTemplates.length > 0" class="mt-2">
+                            <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Shartnoma shabloni (Ixtiyoriy)</label>
+                            <select v-model="contractForm.contract_template_id" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-2 px-3 text-gray-900">
+                                <option value="">Tizimning standart shabloni (Tizim bo'yicha)</option>
+                                <option v-for="tpl in filteredTemplates" :key="tpl.id" :value="tpl.id">
+                                    {{ tpl.name }} ({{ tpl.type === 'residential' ? 'Turar-joy' : (tpl.type === 'commercial' ? 'No-turar joy' : 'Boshqa') }})
+                                </option>
+                            </select>
                         </div>
 
                         <!-- Dynamic Unit Details -->

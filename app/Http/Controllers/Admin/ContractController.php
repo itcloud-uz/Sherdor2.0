@@ -33,7 +33,8 @@ class ContractController extends Controller
             'account_id' => 'nullable|exists:cash_registers,id',
             'floor' => 'nullable|string|max:50',
             'rooms' => 'nullable|integer|min:1',
-            'user_id' => 'nullable|exists:users,id'
+            'user_id' => 'nullable|exists:users,id',
+            'contract_template_id' => 'nullable|exists:contract_templates,id'
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';
@@ -58,6 +59,7 @@ class ContractController extends Controller
             'floor' => $validated['floor'] ?? null,
             'rooms' => $validated['rooms'] ?? null,
             'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
+            'contract_template_id' => $validated['contract_template_id'] ?? null,
             'status' => 'draft'
         ]);
         
@@ -224,6 +226,7 @@ class ContractController extends Controller
             'payment_method' => 'nullable|string|in:bank,main,credit',
             'account_id' => 'nullable|exists:cash_registers,id',
             'user_id' => 'nullable|exists:users,id',
+            'contract_template_id' => 'nullable|exists:contract_templates,id'
         ]);
 
         if (($validated['payment_type'] ?? 'installment') === 'full') {
@@ -373,22 +376,25 @@ class ContractController extends Controller
     public function generatePdf(\App\Models\Contract $contract)
     {
         // Ensure relations are loaded
-        $contract->load(['client', 'unit', 'paymentSchedules']);
+        $contract->load(['client', 'unit', 'paymentSchedules', 'template']);
 
         $locale = app()->getLocale();
         if (!in_array($locale, ['uz', 'ru', 'en'])) {
             $locale = 'uz'; // fallback
         }
 
-        $type = $contract->contract_type ?? 'residential';
-        if (!in_array($type, ['residential', 'commercial'])) {
-            $type = 'residential';
-        }
-        
-        $viewPath = "contracts.{$locale}.{$type}";
-
         // Generate PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewPath, compact('contract'));
+        if ($contract->contract_template_id && $contract->template) {
+            $content = $contract->template->compile($contract);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
+        } else {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $viewPath = "contracts.{$locale}.{$type}";
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewPath, compact('contract'));
+        }
         
         $fileName = 'contract_' . $contract->id . '_' . time() . '.pdf';
         $path = 'contracts/' . $fileName;

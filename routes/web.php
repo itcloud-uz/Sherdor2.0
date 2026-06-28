@@ -81,8 +81,13 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     
     Route::get('/crm/contracts/{contract}/export-doc/pdf', [\App\Http\Controllers\Admin\LedgerExportController::class, 'exportContractPdf'])->name('contracts.document.export.pdf');
     Route::get('/crm/contracts/{contract}/preview-doc', [\App\Http\Controllers\Admin\LedgerExportController::class, 'previewContract'])->name('contracts.document.preview');
-    
     Route::post('/contracts/{contract}/upload-signature', [\App\Http\Controllers\Admin\ContractController::class, 'uploadAndVerifySignature'])->name('contracts.upload_signature');
+
+    // Contract Templates routes
+    Route::get('/crm/contract-templates', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'index'])->name('contract-templates.index');
+    Route::post('/crm/contract-templates', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'store'])->name('contract-templates.store');
+    Route::put('/crm/contract-templates/{template}', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'update'])->name('contract-templates.update');
+    Route::delete('/crm/contract-templates/{template}', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'destroy'])->name('contract-templates.destroy');
     Route::get('/facility/report/export', [\App\Http\Controllers\Admin\FacilityController::class, 'exportReport'])->name('facility.report.export');
     Route::get('/facility', [\App\Http\Controllers\Admin\FacilityController::class, 'index'])->name('facility');
     Route::post('/facility/buildings', [\App\Http\Controllers\Admin\FacilityController::class, 'storeBuilding'])->name('facility.buildings.store');

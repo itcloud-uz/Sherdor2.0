@@ -28,7 +28,8 @@ class Contract extends Model
         'floor',
         'rooms',
         'payment_type',
-        'user_id'
+        'user_id',
+        'contract_template_id'
     ];
 
     protected $casts = [
@@ -39,6 +40,11 @@ class Contract extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(ContractTemplate::class, 'contract_template_id');
     }
 
     public function user()

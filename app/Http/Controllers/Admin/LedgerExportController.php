@@ -49,21 +49,25 @@ class LedgerExportController extends Controller
 
     public function exportContractPdf(Contract $contract, Request $request)
     {
-        $contract->load(['client', 'unit.floor.building']);
+        $contract->load(['client', 'unit.floor.building', 'template']);
 
         $locale = $request->query('lang', app()->getLocale());
         if (!in_array($locale, ['uz', 'ru', 'en'])) {
             $locale = 'uz'; // fallback
         }
 
-        $type = $contract->contract_type ?? 'residential';
-        if (!in_array($type, ['residential', 'commercial'])) {
-            $type = 'residential';
+        if ($contract->contract_template_id && $contract->template) {
+            $content = $contract->template->compile($contract);
+            $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+        } else {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $viewPath = "contracts.{$locale}.{$type}";
+            $pdf = Pdf::loadView($viewPath, compact('contract'));
         }
-        
-        $viewPath = "contracts.{$locale}.{$type}";
 
-        $pdf = Pdf::loadView($viewPath, compact('contract'));
         return $pdf->download("contract_{$contract->id}.pdf");
     }
 
@@ -76,19 +80,23 @@ class LedgerExportController extends Controller
 
     public function previewContract(Contract $contract, Request $request)
     {
-        $contract->load(['client', 'unit.floor.building']);
+        $contract->load(['client', 'unit.floor.building', 'template']);
 
         $locale = $request->query('lang', app()->getLocale());
         if (!in_array($locale, ['uz', 'ru', 'en'])) {
             $locale = 'uz'; // fallback
         }
 
-        $type = $contract->contract_type ?? 'residential';
-        if (!in_array($type, ['residential', 'commercial'])) {
-            $type = 'residential';
+        if ($contract->contract_template_id && $contract->template) {
+            $content = $contract->template->compile($contract);
+            return view('contracts.compiled', compact('content'));
+        } else {
+            $type = $contract->contract_type ?? 'residential';
+            if (!in_array($type, ['residential', 'commercial'])) {
+                $type = 'residential';
+            }
+            $viewPath = "contracts.{$locale}.{$type}";
+            return view($viewPath, compact('contract'));
         }
-        
-        $viewPath = "contracts.{$locale}.{$type}";
-        return view($viewPath, compact('contract'));
     }
 }

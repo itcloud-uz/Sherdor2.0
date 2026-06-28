@@ -2340,6 +2340,39 @@ function openLeadDetailModal(lead) {
     showLeadDetailModal.value = true;
 }
 
+function openContractModalForLead() {
+    showCallPanelModal.value = false;
+    isEditingContract.value = false;
+    currentContractId.value = null;
+    currentContractStep.value = 1;
+    
+    // Clear and prepare contract form
+    contractForm.value = { 
+        buyer_type: 'client', 
+        partner_id: '', 
+        client_id: '', 
+        unit_id: '', 
+        contract_number: '', 
+        contract_type: 'residential', 
+        price_per_sqm: '', 
+        total_amount: '', 
+        down_payment: '', 
+        term_months: 36, 
+        payment_type: 'installment', 
+        created_at: new Date().toISOString().split('T')[0], 
+        actual_paid_amount: '', 
+        payment_method: 'bank', 
+        account_id: '', 
+        floor: '', 
+        rooms: '', 
+        user_id: '', 
+        contract_template_id: '', 
+        selected_variants: { custom_placeholders: {} } 
+    };
+    
+    showCreateContractModal.value = true;
+}
+
 function getLeadInitials(fullName) {
     if (!fullName) return '?';
     const parts = fullName.trim().split(/\s+/);
@@ -7838,74 +7871,24 @@ const ledgerReportData = computed(() => {
                         </div>
 
                         <!-- Tab Content: Uy sotib olish (Image 4) -->
-                        <div v-if="activeCallPanelTab === 'house'" class="space-y-6 text-left">
-                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-2 font-mono">MA'LUMOTINI QO'SHISH</h3>
-                            <form @submit.prevent="saveCallPanelHouseInfo" class="space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Manba</label>
-                                        <select v-model="houseForm.source" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
-                                            <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
-                                            <option value="manual">Qo'lda kiritilgan</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> COMMON.BUDGET</label>
-                                        <div class="flex">
-                                            <input v-model="houseForm.budget" required type="text" class="flex-1 border border-gray-200 rounded-l-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Budjet summasi">
-                                            <select v-model="houseForm.currency" class="border-t border-r border-b border-gray-200 rounded-r-xl px-4 py-3 bg-gray-50 text-gray-700 font-mono text-sm">
-                                                <option value="USD">USD</option>
-                                                <option value="UZS">UZS</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> To'lov turi</label>
-                                        <select v-model="houseForm.payment_type" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
-                                            <option value="cash">Naqd pul</option>
-                                            <option value="installment">Muddatli to'lov</option>
-                                            <option value="bank">Bank orqali</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Obyekt nomi</label>
-                                        <select v-model="houseForm.facility_id" required class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
-                                            <option value="">Obyektni tanlang</option>
-                                            <option value="sherdor_1">Sherdor 1</option>
-                                            <option value="sherdor_2">Sherdor 2.0</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Bino nomi</label>
-                                        <input v-model="houseForm.building_id" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Bino blokini kiriting">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Podezd</label>
-                                        <input v-model="houseForm.podyezd" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 1">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Qavat</label>
-                                        <input v-model="houseForm.floor" required type="number" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 3">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Nechchi xonali</label>
-                                        <input v-model="houseForm.rooms" required type="number" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: 2">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1.5"><span class="text-red-500 font-bold">*</span> Maydoni</label>
-                                        <input v-model="houseForm.area" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Maydon kv.m">
-                                    </div>
+                        <div v-if="activeCallPanelTab === 'house'" class="space-y-6 text-left flex flex-col items-center justify-center h-full">
+                            <div class="text-center w-full max-w-sm mx-auto">
+                                <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mx-auto mb-6 shadow-sm border border-amber-100">
+                                    <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
                                 </div>
-
-                                <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
-                                    <button type="button" @click="rejectLead(selectedLeadForDetail)" class="px-5 py-2.5 border border-[#f2a900] text-[#f2a900] text-xs font-bold rounded-xl hover:bg-amber-50/50 transition-all font-sans">
-                                        Lidni rad etish
-                                    </button>
-                                    <button type="submit" :disabled="isProcessing" class="px-6 py-2.5 bg-[#f2a900] text-white text-xs font-bold rounded-xl hover:bg-[#d99700] transition-all font-sans shadow-md">
-                                        Saqlash
-                                    </button>
-                                </div>
-                            </form>
+                                <h3 class="text-lg font-bold text-gray-900 mb-3 font-sans">Uy sotib olish va Shartnoma</h3>
+                                <p class="text-sm text-gray-500 mb-8 font-sans leading-relaxed">
+                                    Ushbu lid uchun obyektni tanlash, narxlarni belgilash va to'liq shartnoma yaratish jarayonini boshlash uchun quyidagi tugmani bosing.
+                                </p>
+                                <button @click="openContractModalForLead" class="w-full py-4 bg-[#f2a900] text-white font-bold rounded-2xl hover:bg-[#d99700] transition-all shadow-[0_8px_16px_-6px_rgba(242,169,0,0.4)] flex items-center justify-center gap-2 text-sm uppercase tracking-wider font-mono">
+                                    <span>Shartnoma rasmiylashtirish</span>
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Tab Content: Uchrashuv belgilash (Image 5) -->

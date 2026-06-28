@@ -368,13 +368,13 @@ const formattedDate = computed(() => {
         <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-64 h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
             <div class="h-20 flex items-center justify-center border-b border-gray-100 px-4">
                 <div class="flex items-center gap-3 w-full">
-                    <div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                        <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain" />
-                        <span v-else class="text-blue-600 font-bold text-xl font-display">S</span>
+                    <div class="w-12 h-12 rounded-full border-2 border-[#dfb15b] bg-[#090b10] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                        <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-cover" />
+                        <img v-else src="/logo-sherdor.png" class="w-full h-full object-cover scale-110" />
                     </div>
                     <div class="truncate">
-                        <h1 class="text-sm font-display font-bold tracking-wide text-gray-900 truncate">{{ $t('sher_dor') }}</h1>
-                        <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest truncate">ERP System</p>
+                        <h1 class="text-base font-sans font-bold tracking-wider text-slate-800 uppercase leading-none">SHER-DOR</h1>
+                        <p class="text-[9px] font-sans font-semibold text-slate-400 uppercase tracking-[0.18em] leading-none mt-1">ERP SYSTEM</p>
                     </div>
                 </div>
             </div>

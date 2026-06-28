@@ -207,6 +207,13 @@ function previewUnitBlueprint(unit) {
     showPassportLightbox.value = true;
 }
 
+function getContractRepairType(contract) {
+    if (!contract || !contract.notes) return "Tamirsiz";
+    if (contract.notes.includes("Tamir turi: Tamirli")) return "Tamirli";
+    if (contract.notes.includes("Tamir turi: Tamirsiz")) return "Tamirsiz";
+    return "Tamirsiz";
+}
+
 // Comments & Payment Details modals
 const showCommentsModal = ref(false);
 const newCommentText = ref('');
@@ -4423,62 +4430,94 @@ const ledgerReportData = computed(() => {
                                         Uy haqida ma'lumot
                                     </h3>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                        <!-- Left: Plan Details -->
-                                        <div @click="previewUnitBlueprint(detailedClientData.contracts[0]?.unit)" class="md:col-span-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative group cursor-pointer min-h-[140px]">
-                                            <svg class="w-10 h-10 text-[#f2a900]/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <h4 class="text-base font-bold text-gray-900 font-sans tracking-tight leading-tight">
-                                                {{ detailedClientData.contracts[0]?.unit?.unit_number }}-uy
-                                            </h4>
-                                            <p class="text-[11px] text-gray-500 font-medium mt-1 leading-tight">
-                                                {{ detailedClientData.contracts[0]?.unit?.rooms || '1' }}-xonali • {{ detailedClientData.contracts[0]?.unit?.area_sqm }} m²
-                                            </p>
-                                            <div class="absolute inset-0 bg-[#0d1117]/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-2xl">
-                                                <span class="px-3 py-1.5 bg-white/95 rounded-xl text-[10px] font-bold text-gray-900 shadow-lg flex items-center gap-1">
-                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                    Ko'rish
-                                                </span>
+                                    <!-- Top Row: Images and Building Info -->
+                                    <div class="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+                                        <!-- Images -->
+                                        <div class="flex gap-2.5">
+                                            <!-- Blueprint Thumbnail -->
+                                            <div @click="previewUnitBlueprint(detailedClientData.contracts[0]?.unit)" 
+                                                 class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
+                                                <img :src="detailedClientData.contracts[0]?.unit?.blueprint_path ? '/storage/' + detailedClientData.contracts[0]?.unit?.blueprint_path : 
+                                                           (detailedClientData.contracts[0]?.unit?.floor?.blueprint_path ? '/storage/' + detailedClientData.contracts[0]?.unit?.floor?.blueprint_path : '/modern_apartment_render.png')" 
+                                                     class="w-full h-full object-cover" alt="2D Layout" />
+                                                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </div>
+                                            </div>
+                                            <!-- 3D Render Thumbnail -->
+                                            <div v-if="detailedClientData.contracts[0]?.unit?.model_3d_path"
+                                                 @click="openPassportPreview('/storage/' + detailedClientData.contracts[0]?.unit?.model_3d_path)" 
+                                                 class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
+                                                <img :src="'/storage/' + detailedClientData.contracts[0]?.unit?.model_3d_path" 
+                                                     class="w-full h-full object-cover" alt="3D Render" />
+                                                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </div>
+                                            </div>
+                                            <!-- Fallback 3D Render Thumbnail -->
+                                            <div v-else
+                                                 @click="previewUnitBlueprint(detailedClientData.contracts[0]?.unit)"
+                                                 class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
+                                                <img src="/modern_apartment_render.png" 
+                                                     class="w-full h-full object-cover" alt="3D Render Fallback" />
+                                                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <!-- Right: Grid of details -->
-                                        <div class="md:col-span-7 grid grid-cols-2 gap-3">
-                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
-                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Bino</span>
-                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
-                                                    {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'Farg\'ona City' }}
-                                                </strong>
-                                            </div>
-                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
-                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Podezd</span>
-                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
-                                                    {{ detailedClientData.contracts[0]?.unit?.podyezd || '1' }}-podezd
-                                                </strong>
-                                            </div>
-                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
-                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Qavat</span>
-                                                <strong class="text-gray-900 text-xs font-bold leading-tight block">
-                                                    {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '3' }}-qavat
-                                                </strong>
-                                            </div>
-                                            <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3">
-                                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Xonadon</span>
-                                                <strong class="text-gray-900 font-mono text-xs font-bold leading-tight block">
-                                                    {{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}
-                                                </strong>
+                                        <!-- Building Info -->
+                                        <div class="flex-1 text-left">
+                                            <h2 class="text-base sm:text-lg font-bold text-gray-950 font-sans tracking-tight">
+                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'SHER-DOR TJM' }}
+                                            </h2>
+                                            <div class="flex items-center gap-4 mt-2">
+                                                <div>
+                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">XONADON</span>
+                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.unit_number }}-Xonadon</strong>
+                                                </div>
+                                                <div class="h-8 w-px bg-gray-150"></div>
+                                                <div>
+                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">MAYDONI</span>
+                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.area_sqm }} m²</strong>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Footer -->
-                                <div class="border-t border-gray-100 pt-3 mt-4 flex justify-between text-xs text-gray-500 font-sans">
-                                    <div>Xonadon raqami: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.unit_number || '236' }}</strong></div>
-                                    <div>Maydoni: <strong class="text-gray-900 font-mono">{{ detailedClientData.contracts[0]?.unit?.area_sqm || '72.54' }} m²</strong></div>
+                                    <!-- Details Cards Grid -->
+                                    <div class="grid grid-cols-2 gap-3.5 mt-6">
+                                        <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Bino</span>
+                                            <strong class="text-sm font-bold text-gray-900 block mt-1">
+                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'SHER-DOR TJM' }}
+                                            </strong>
+                                        </div>
+                                        <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Podezd</span>
+                                            <strong class="text-sm font-bold text-gray-900 block mt-1">
+                                                {{ detailedClientData.contracts[0]?.unit?.podyezd ? detailedClientData.contracts[0].unit.podyezd + '-padezd' : '1-padezd' }}
+                                            </strong>
+                                        </div>
+                                        <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Qavat</span>
+                                            <strong class="text-sm font-bold text-gray-900 block mt-1">
+                                                {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '1' }}-Qavat
+                                            </strong>
+                                        </div>
+                                        <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Xonalar soni</span>
+                                            <strong class="text-sm font-bold text-gray-900 block mt-1">
+                                                {{ detailedClientData.contracts[0]?.unit?.rooms || '1' }}
+                                            </strong>
+                                        </div>
+                                        <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm col-span-2">
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Xonadon holati</span>
+                                            <strong class="text-sm font-bold text-gray-900 block mt-1">
+                                                {{ getContractRepairType(detailedClientData.contracts[0]) }}
+                                            </strong>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

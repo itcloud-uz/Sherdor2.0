@@ -104,6 +104,14 @@ class ContractTemplate extends Model
             '{{ KORXONA_TELEFON }}' => $korxonaTelefon, '{{KORXONA_TELEFON}}' => $korxonaTelefon,
         ];
 
+        $selectedVariants = $contract->selected_variants ?? [];
+        if (isset($selectedVariants['custom_placeholders']) && is_array($selectedVariants['custom_placeholders'])) {
+            foreach ($selectedVariants['custom_placeholders'] as $customKey => $customVal) {
+                $replacements["{{ $customKey }}"] = $customVal;
+                $replacements["{{$customKey}}"] = $customVal;
+            }
+        }
+
         return str_replace(array_keys($replacements), array_values($replacements), $this->preview_html ?? '');
     }
 
@@ -183,6 +191,13 @@ class ContractTemplate extends Model
             'KORXONA_INN' => $korxonaInn,
             'KORXONA_TELEFON' => $korxonaTelefon,
         ];
+
+        $selectedVariants = $contract->selected_variants ?? [];
+        if (isset($selectedVariants['custom_placeholders']) && is_array($selectedVariants['custom_placeholders'])) {
+            foreach ($selectedVariants['custom_placeholders'] as $customKey => $customVal) {
+                $context[$customKey] = $customVal;
+            }
+        }
 
         // Process selected variants for dynamic clauses
         foreach ($this->variantGroups as $group) {

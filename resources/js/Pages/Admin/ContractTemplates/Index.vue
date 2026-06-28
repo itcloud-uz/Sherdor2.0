@@ -191,12 +191,18 @@
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
                                         <tr v-for="(p, idx) in detectedPlaceholders" :key="idx" class="hover:bg-gray-50">
-                                            <td class="p-2 font-mono text-[10px] text-gray-900 truncate max-w-[140px]" :title="p.text">{{ p.text }}</td>
+                                            <td class="p-2 font-mono text-[10px] text-gray-900 truncate max-w-[140px]" :title="p.text">
+                                                <input v-if="p.is_custom" v-model="p.text" type="text" class="bg-white border border-gray-300 text-gray-800 rounded px-1 py-0.5 text-[10px] font-mono w-full" placeholder="Matndagi qiymat..." required>
+                                                <span v-else>{{ p.text }}</span>
+                                            </td>
                                             <td class="p-2">
                                                 <input v-model="p.key" type="text" class="bg-slate-50 border border-gray-200 text-blue-600 rounded px-1.5 py-0.5 text-[10px] font-mono font-bold w-full focus:ring-1 focus:ring-blue-500 focus:bg-white" required>
                                             </td>
                                             <td class="p-2 text-center">
-                                                <input v-model="p.confirmed" type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <input v-model="p.confirmed" type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                                                    <button v-if="p.is_custom" type="button" @click="removeCustomPlaceholder(idx)" class="text-red-500 hover:text-red-700 font-bold text-sm leading-none">&times;</button>
+                                                </div>
                                             </td>
                                         </tr>
                                         <tr v-if="detectedPlaceholders.length === 0">
@@ -206,6 +212,12 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="p-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center rounded-b-lg">
+                                <span class="text-[8px] text-gray-400 font-mono">* Namunadagi matnni va unga mos kalitni kiriting</span>
+                                <button type="button" @click="addNewPlaceholder" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold rounded font-mono">
+                                    + Yangi o'zgaruvchi
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -455,6 +467,19 @@ function goToStep2() {
             alert("Faylni tahlil qilishda xatolik yuz berdi: " + (err.response?.data?.message || err.message));
         }, 50);
     });
+}
+
+function addNewPlaceholder() {
+    detectedPlaceholders.value.push({
+        text: '',
+        key: '',
+        confirmed: true,
+        is_custom: true
+    });
+}
+
+function removeCustomPlaceholder(idx) {
+    detectedPlaceholders.value.splice(idx, 1);
 }
 
 // Variant Groups Helpers

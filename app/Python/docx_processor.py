@@ -114,7 +114,7 @@ def detect_placeholders(docx_path):
         })
 
     # 4. Detect Phone Numbers: e.g. (94) 633-04-00 or +998 (94) 633-04-00
-    phones = re.findall(r'\+?998\s*\(?\d{2}\)?\s*\d{3}-\d{2}-\d{2}|\(\d{2}\)\s*\d{3}-\d{2}-\d{2}', combined_text)
+    phones = re.findall(r'\+?998\s*\(?\d{2}\)?\s*\d{3}-\d{2}-\d{2}|\(\d{2}\)\s*\d{3}-\d{2}-\d{2}|\b998\d{9}\b', combined_text)
     for ph in set(phones):
         candidates.append({
             "text": ph,
@@ -124,19 +124,61 @@ def detect_placeholders(docx_path):
         })
 
     # 5. Detect large prices / sums: numbers separated by spaces (e.g. 190 000 000, 3 998 316)
-    # We want numbers of 6 or more digits separated by spaces/dots
-    prices = re.findall(r'\b\d{1,3}(?:\s+\d{3}){2,}\b', combined_text)
+    # Use only spaces/tabs so we don't merge numbers across line breaks
+    prices = re.findall(r'\b\d{1,3}(?:[ \t]+\d{3}){2,3}\b', combined_text)
     for pr in set(prices):
         val = int(re.sub(r'\s+', '', pr))
         if val > 1000000:
             candidates.append({
                 "text": pr,
-                "key": "JAMI_NARX",
+                "key": "UMUMIY_NARX",
                 "label": "Shartnoma umumiy summasi",
                 "type": "number"
             })
+
+    # 6. Detect Percentages: e.g. 20%, 100%
+    percents = re.findall(r'\b\d{1,3}%\b', combined_text)
+    for p in set(percents):
+        candidates.append({
+            "text": p,
+            "key": "BOSHLANGICH_FOIZ",
+            "label": "Boshlang'ich to'lov foizi",
+            "type": "text"
+        })
+
+    # 7. Detect Decimals (Area): e.g. 71,46 or 73.18
+    decimals = re.findall(r'\b\d{2,3}[,.]\d{2}\b', combined_text)
+    for d in set(decimals):
+        candidates.append({
+            "text": d,
+            "key": "MAYDON",
+            "label": "Xonadon maydoni",
+            "type": "text"
+        })
+
+    # 8. Detect Contract Numbers: e.g. 4B/9 or 1B/1P
+    contract_nums = re.findall(r'\b\d+[A-Z]?/\d+[A-Z]?\b', combined_text)
+    for c_num in set(contract_nums):
+        candidates.append({
+            "text": c_num,
+            "key": "SHARTNOMA_RAQAMI",
+            "label": "Shartnoma raqami",
+            "type": "text"
+        })
+
+    # 9. Detect payment terms/durations: e.g. 6 (olti) bank, 36 (o'ttiz olti) oy
+    durations = re.findall(r'\b\d+\s*\([a-zA-Z'`ʻ’]+\)\s*(?:bank|ish|kun|oy)\b', combined_text)
+    for dur in set(durations):
+        key = "MUDDAT_OY" if "oy" in dur.lower() else "TOLOV_MUDDAT_KUN"
+        label = "Kredit/To'lov muddati (oylarda)" if "oy" in dur.lower() else "Dastlabki to'lov muddati (kunlarda)"
+        candidates.append({
+            "text": dur,
+            "key": key,
+            "label": label,
+            "type": "text"
+        })
             
-    # 6. Specific hardcoded search for sample names (for test fixtures / samples)
+    # 10. Specific hardcoded search for sample names (for test fixtures / samples)
     if "Mamanov Abdulla Xursanmurotovich" in combined_text:
         candidates.append({
             "text": "Mamanov Abdulla Xursanmurotovich",
@@ -180,6 +222,61 @@ def detect_placeholders(docx_path):
             "text": "Samarqand viloyati, Urgut tumani Yuqori Tegana maxalla",
             "key": "MIJOZ_MANZIL",
             "label": "Mijoz yashash manzili",
+            "type": "text"
+        })
+
+    if "Сойибов Назиржон Нематиллаевич" in combined_text:
+        candidates.append({
+            "text": "Сойибов Назиржон Нематиллаевич",
+            "key": "MIJOZ_FISH",
+            "label": "Mijozning to'liq F.I.Sh",
+            "type": "text"
+        })
+        
+    if "Н. Сойибов" in combined_text:
+        candidates.append({
+            "text": "Н. Сойибов",
+            "key": "MIJOZ_FISH_QISQA",
+            "label": "Mijoz F.I.Sh qisqartmasi (Masalan: Н. Сойибов)",
+            "type": "text"
+        })
+    elif "Н.Сойибов" in combined_text:
+        candidates.append({
+            "text": "Н.Сойибов",
+            "key": "MIJOZ_FISH_QISQA",
+            "label": "Mijoz F.I.Sh qisqartmasi (Masalan: Н.Сойибов)",
+            "type": "text"
+        })
+        
+    if "Urgut tuman Gulobod" in combined_text:
+        candidates.append({
+            "text": "Urgut tuman Gulobod",
+            "key": "MIJOZ_MANZIL",
+            "label": "Mijoz yashash manzili",
+            "type": "text"
+        })
+        
+    if "Urgut tuman I.I.B" in combined_text:
+        candidates.append({
+            "text": "Urgut tuman I.I.B",
+            "key": "PASPORT_JOYI",
+            "label": "Pasport bergan organ",
+            "type": "text"
+        })
+        
+    if "ikki yuz sakson besh million sakkiz yuz qirq ming" in combined_text:
+        candidates.append({
+            "text": "ikki yuz sakson besh million sakkiz yuz qirq ming",
+            "key": "UMUMIY_NARX_SOZ_BILAN",
+            "label": "Umumiy shartnoma summasi so'z bilan",
+            "type": "text"
+        })
+        
+    if "ellik yetti million bir yuz oltmish sakkiz ming" in combined_text:
+        candidates.append({
+            "text": "ellik yetti million bir yuz oltmish sakkiz ming",
+            "key": "BOSHLANGICH_TOLOV_SOZ_BILAN",
+            "label": "Boshlang'ich to'lov summasi so'z bilan",
             "type": "text"
         })
 

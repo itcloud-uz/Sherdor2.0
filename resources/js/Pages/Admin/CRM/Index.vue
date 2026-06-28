@@ -835,6 +835,36 @@ const selectedTemplate = computed(() => {
     return props.contractTemplates.find(t => t.id === contractForm.value.contract_template_id);
 });
 
+const customPlaceholders = computed(() => {
+    if (!selectedTemplate.value || !Array.isArray(selectedTemplate.value.placeholders)) {
+        return [];
+    }
+    const EXCLUDED = [
+        'KUN', 'OY', 'YIL', 'SHARTNOMA_RAQAMI', 'MIJOZ_FISH', 'MIJOZ_FISH_QISQA',
+        'MIJOZ_MANZILI', 'MIJOZ_JSHSHIR', 'PASPORT_SERIYA', 'PASPORT_SANA', 'PASPORT_JOYI',
+        'BLOK', 'QAVAT', 'XONA_RAQAMI', 'XONALAR_SONI', 'MAYDON', 'KV_METR_NARXI',
+        'UMUMIY_NARX', 'UMUMIY_NARX_SOZ_BILAN', 'BOSHLANGICH_TOLOV', 'BOSHLANGICH_TOLOV_SOZ_BILAN',
+        'BOSHLANGICH_TOLOV_FOIZ', 'MUDDAT_OY', 'MUDDAT_OY_SOZ_BILAN', 'MIJOZ_TELEFON',
+        'DIREKTOR', 'KORXONA_NOMI', 'KORXONA_MANZILI', 'KORXONA_BANK_ACCOUNT',
+        'KORXONA_BANK', 'KORXONA_MFO', 'KORXONA_INN', 'KORXONA_TELEFON',
+        'BOSHLANGICH_FOIZ', 'TOLOV_MUDDAT_KUN', 'JAMI_NARX', 'JAMI_NARX_SOZDA', 'OYLIK_TOLOV', 'OYLIK_TOLOV_SOZ_BILAN'
+    ];
+    const filtered = selectedTemplate.value.placeholders.filter(p => !EXCLUDED.includes(p));
+    
+    if (contractForm.value && contractForm.value.selected_variants) {
+        if (!contractForm.value.selected_variants.custom_placeholders) {
+            contractForm.value.selected_variants.custom_placeholders = {};
+        }
+        filtered.forEach(p => {
+            if (contractForm.value.selected_variants.custom_placeholders[p] === undefined) {
+                contractForm.value.selected_variants.custom_placeholders[p] = '';
+            }
+        });
+    }
+    
+    return filtered;
+});
+
 function getSelectedVariant(anchor) {
     const tpl = selectedTemplate.value;
     if (!tpl) return null;
@@ -882,16 +912,18 @@ watch(() => contractForm.value.contract_template_id, (newVal) => {
         return;
     }
     const tpl = props.contractTemplates.find(t => t.id === newVal);
+    const sv = {
+        custom_placeholders: {}
+    };
     if (tpl && tpl.variant_groups) {
-        const sv = {};
         tpl.variant_groups.forEach(g => {
             sv[g.anchor] = {
                 key: '',
                 placeholders: {}
             };
         });
-        contractForm.value.selected_variants = sv;
     }
+    contractForm.value.selected_variants = sv;
 });
 
 function editContract(contract) {
@@ -922,7 +954,13 @@ function editContract(contract) {
         rooms: contract.rooms || contract.unit?.rooms_count || '',
         user_id: contract.user_id || '',
         contract_template_id: contract.contract_template_id || '',
-        selected_variants: contract.selected_variants || {}
+        selected_variants: (() => {
+            const sv = contract.selected_variants || {};
+            if (!sv.custom_placeholders) {
+                sv.custom_placeholders = {};
+            }
+            return sv;
+        })()
     };
     showCreateContractModal.value = true;
 }
@@ -7301,6 +7339,20 @@ const ledgerReportData = computed(() => {
                                                type="text" 
                                                class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-1.5 px-2 text-gray-900">
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Template Placeholders (Editable Manually) -->
+                        <div v-if="customPlaceholders.length > 0" class="mt-3 space-y-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
+                            <h5 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Qo'shimcha shablon o'zgaruvchilari (Qo'lda kiritish)</h5>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div v-for="pKey in customPlaceholders" :key="pKey">
+                                    <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ pKey }}</label>
+                                    <input v-model="contractForm.selected_variants.custom_placeholders[pKey]" 
+                                           type="text" 
+                                           class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full text-xs py-1.5 px-2 text-gray-900"
+                                           :placeholder="pKey + ' qiymatini kiriting'">
                                 </div>
                             </div>
                         </div>

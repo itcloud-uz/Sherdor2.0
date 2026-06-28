@@ -540,6 +540,13 @@ function loadStandardPaymentVariants() {
                 content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng har oyning 10-sanasiga qadar oyiga {{ OYLIK_TOLOV }} ({{ OYLIK_TOLOV_SOZ_BILAN }}) so‘mdan yoki ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lab boriladi va kadastr hujjati tayyor bo‘lgandan so‘ng o‘zaro hisob-kitob qilinib qoldiq summa ipoteka krediti asosida to‘lanadi.",
                 placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
                 placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+            },
+            {
+                label: "Bo'lib to'lash",
+                key: "INSTALLMENT",
+                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy davomida bo‘lib to‘lash shartlari asosida to‘lanadi.",
+                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
             }
         ]
     });

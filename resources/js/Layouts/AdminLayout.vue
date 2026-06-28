@@ -615,7 +615,7 @@ const formattedDate = computed(() => {
 
                             <!-- Shartnoma shablonlari -->
                             <Link
-                                :href="route('contract-templates.index')"
+                                :href="route('admin.contract-templates.index')"
                                 class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                 :class="$page.component === 'Admin/ContractTemplates/Index' ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
                             >

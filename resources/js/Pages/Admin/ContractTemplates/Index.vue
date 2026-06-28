@@ -256,7 +256,7 @@ function saveTemplate() {
     isProcessing.value = true;
 
     if (isEditing.value) {
-        router.put(route('contract-templates.update', editingTemplateId.value), form.value, {
+        router.put(route('admin.contract-templates.update', editingTemplateId.value), form.value, {
             onSuccess: () => {
                 showModal.value = false;
                 isProcessing.value = false;
@@ -266,7 +266,7 @@ function saveTemplate() {
             }
         });
     } else {
-        router.post(route('contract-templates.store'), form.value, {
+        router.post(route('admin.contract-templates.store'), form.value, {
             onSuccess: () => {
                 showModal.value = false;
                 isProcessing.value = false;
@@ -280,7 +280,7 @@ function saveTemplate() {
 
 function deleteTemplate(template) {
     if (confirm(`Haqiqatan ham "${template.name}" shablonini o'chirib tashlamoqchimisiz?`)) {
-        router.delete(route('contract-templates.destroy', template.id));
+        router.delete(route('admin.contract-templates.destroy', template.id));
     }
 }
 

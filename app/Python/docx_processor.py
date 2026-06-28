@@ -300,6 +300,40 @@ def replace_text_in_document(doc, old_text, new_text):
                                     modified = True
     return modified
 
+def auto_replace_room_specification_table(doc):
+    for table in doc.tables:
+        is_spec_table = False
+        header_row_idx = -1
+        
+        for r_idx, row in enumerate(table.rows):
+            cells_text = [c.text.lower() for c in row.cells]
+            has_blok = any("блок" in t or "blok" in t for t in cells_text)
+            has_qavat = any("қават" in t or "qavat" in t for t in cells_text)
+            has_maydon = any("maydon" in t or "майдон" in t or "общая площадь" in t for t in cells_text)
+            
+            if has_blok and has_qavat and has_maydon:
+                is_spec_table = True
+                header_row_idx = r_idx
+                break
+                
+        if is_spec_table and header_row_idx != -1 and header_row_idx + 1 < len(table.rows):
+            data_row = table.rows[header_row_idx + 1]
+            header_cells = table.rows[header_row_idx].cells
+            for col_idx, cell in enumerate(data_row.cells):
+                header_txt = header_cells[col_idx].text.lower()
+                if "блок" in header_txt or "blok" in header_txt:
+                    cell.text = "{{ BLOK }}"
+                elif "қават" in header_txt or "qavat" in header_txt:
+                    cell.text = "{{ QAVAT }}"
+                elif "хона" in header_txt or "xona" in header_txt:
+                    cell.text = "{{ XONALAR_SONI }}"
+                elif "майдон" in header_txt or "maydon" in header_txt:
+                    cell.text = "{{ MAYDON }}"
+                elif "1 kv" in header_txt or "1кв" in header_txt or "1 кв" in header_txt:
+                    cell.text = "{{ KV_METR_NARXI }}"
+                elif "умумий нарх" in header_txt or "umumiy narx" in header_txt or "umumiy summa" in header_txt or "умумий сумма" in header_txt:
+                    cell.text = "{{ UMUMIY_NARX }}"
+
 def apply_replacements(docx_path, replacements, output_path):
     """
     Replaces specified text strings with placeholder tags in the docx file and saves it.
@@ -308,6 +342,39 @@ def apply_replacements(docx_path, replacements, output_path):
         return {"error": f"File not found: {docx_path}"}
         
     doc = docx.Document(docx_path)
+    
+    # 1. Add company-specific and document-specific custom replacements (fallbacks)
+    custom = {
+        "Mamanov Abdulla Xursanmurotovich": "MIJOZ_FISH",
+        "A. Mamanov": "MIJOZ_FISH_QISQA",
+        "A.Mamanov": "MIJOZ_FISH_QISQA",
+        "32601823990061": "MIJOZ_JSHSHIR",
+        "AD №9160055": "PASPORT_SERIYA",
+        "AD № 9160055": "PASPORT_SERIYA",
+        "AD№9160055": "PASPORT_SERIYA",
+        "26/10/2024": "PASPORT_SANA",
+        "Samarqand viloyati Urgut tumani I.I.B": "PASPORT_JOYI",
+        "Samarqand viloyati, Urgut tuman Yuqori Tegana Do`stlik maxallasida, ro`yxatda turuvchi": "MIJOZ_MANZILI",
+        "Samarqand viloyati, Urgut tumani Yuqori Tegana maxalla": "MIJOZ_MANZILI",
+        "(94) 633-04-00": "MIJOZ_TELEFON",
+        "(93) 114-82-72": "MIJOZ_TELEFON",
+        "4B/9": "SHARTNOMA_RAQAMI",
+        "285 840 000": "UMUMIY_NARX",
+        "ikki yuz sakson besh million sakkiz yuz qirq ming": "UMUMIY_NARX_SOZ_BILAN",
+        "57 168 000": "BOSHLANGICH_TOLOV",
+        "ellik yetti million bir yuz oltmish sakkiz ming": "BOSHLANGICH_TOLOV_SOZ_BILAN"
+    }
+    for k, v in custom.items():
+        if k not in replacements:
+            replacements[k] = v
+
+    # 2. Run custom table cell replacements for the rooms/specification table
+    auto_replace_room_specification_table(doc)
+
+    # 3. Replaces date headers
+    replace_text_in_document(doc, "“13 ” mart 2025-yil", "“{{ KUN }}” {{ OY }} {{ YIL }}-yil")
+    replace_text_in_document(doc, "“13” mart 2025-yil", "“{{ KUN }}” {{ OY }} {{ YIL }}-yil")
+    replace_text_in_document(doc, "13 mart 2025-yil", "{{ KUN }} {{ OY }} {{ YIL }}-yil")
     
     # Sort replacements by original text length desc to avoid substring replacement bugs
     sorted_replacements = sorted(replacements.items(), key=lambda x: len(x[0]), reverse=True)

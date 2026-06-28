@@ -393,7 +393,55 @@ class ContractController extends Controller
                 $docxPath = $contract->template->compileDocx($contract, $selectedVariants);
                 $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
-                // Convert docx to html using python
+                // 1. Try LibreOffice/soffice conversion first for pixel-perfect PDF rendering
+                $outputDirectory = dirname($absoluteDocxPath);
+                $pdfFileName = pathinfo($absoluteDocxPath, PATHINFO_FILENAME) . '.pdf';
+                $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
+
+                $isSofficeAvailable = false;
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                    $checkCmd = 'where soffice 2>nul';
+                    $sofficePath = shell_exec($checkCmd);
+                    if ($sofficePath) {
+                        $isSofficeAvailable = true;
+                    }
+                } else {
+                    $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
+                    $sofficePath = shell_exec($checkCmd);
+                    if ($sofficePath) {
+                        $isSofficeAvailable = true;
+                    }
+                }
+
+                if ($isSofficeAvailable) {
+                    $binary = 'soffice';
+                    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+                        $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
+                    }
+                    
+                    $convertCmd = escapeshellcmd($binary) . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    shell_exec($convertCmd);
+
+                    if (file_exists($absolutePdfPath)) {
+                        $fileName = 'contract_' . $contract->id . '_' . time() . '.pdf';
+                        $path = 'contracts/' . $fileName;
+                        \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($absolutePdfPath));
+                        
+                        // Clean up temporary files
+                        @unlink($absolutePdfPath);
+                        @unlink($absoluteDocxPath);
+                        
+                        $contract->pdf_path = $path;
+                        $contract->generateDraft();
+                        
+                        return response()->json([
+                            'message' => 'PDF generated successfully via LibreOffice',
+                            'pdf_url' => asset('storage/' . $path)
+                        ]);
+                    }
+                }
+
+                // 2. Fallback to Mammoth + DomPDF if LibreOffice is not installed
                 $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
                 $previewData = json_decode($previewOutput, true);
                 

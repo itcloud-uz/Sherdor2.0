@@ -293,10 +293,14 @@ class ContractTemplate extends Model
             $output = shell_exec($command);
             
             if ($output) {
-                json_decode($output);
+                $decoded = json_decode($output, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $success = true;
-                    break;
+                    if (is_array($decoded) && isset($decoded['error'])) {
+                        $output = $decoded['error'] . (isset($decoded['traceback']) ? "\n" . $decoded['traceback'] : '');
+                    } else {
+                        $success = true;
+                        break;
+                    }
                 }
             }
         }

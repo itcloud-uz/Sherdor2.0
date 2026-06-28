@@ -432,7 +432,10 @@ function goToStep2() {
             'Content-Type': 'multipart/form-data'
         }
     }).then(res => {
-        detectedPlaceholders.value = (res.data.placeholders || []).map(p => {
+        if (res.data.error || !Array.isArray(res.data.placeholders)) {
+            throw new Error(res.data.error || "Fayl tahlil qilinmadi yoki noto'g'ri ma'lumot qaytdi.");
+        }
+        detectedPlaceholders.value = res.data.placeholders.map(p => {
             return {
                 ...p,
                 confirmed: true

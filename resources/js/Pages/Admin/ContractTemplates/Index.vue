@@ -228,9 +228,14 @@
                                 <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 O'zgaruvchan bandlar (Shartnoma variantlari)</h4>
                                 <p class="text-[9px] text-gray-500 font-mono mt-0.5">Masalan: to'lov shartlari (Naqt, Grafik, Ipoteka) kabi bandlarni qo'shing</p>
                             </div>
-                            <button type="button" @click="addVariantGroup" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-gray-900 border border-gray-300 text-[10px] font-bold rounded font-mono">
-                                + Yangi band guruhi
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" @click="addVariantGroup" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-gray-900 border border-gray-300 text-[10px] font-bold rounded font-mono">
+                                    + Yangi band guruhi
+                                </button>
+                                <button type="button" @click="loadStandardPaymentVariants" class="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold rounded font-mono">
+                                    ⚡ Standart to'lov shartlarini yuklash (Naqd, Grafik, Ipoteka)
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Variant Groups List -->
@@ -273,7 +278,7 @@
                                             </div>
                                             <div>
                                                 <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant matni (Original Word'dagi band matni, sub-o'zgaruvchilar ishlatsa bo'ladi)</label>
-                                                <textarea v-model="v.content" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1.5 text-[10px] h-12 font-mono" placeholder="Masalan: 3.1-bandda ko'rsatilgan summaning {{ BOSHLANGICH_FOIZ }}% to'lanadi..." required></textarea>
+                                                <textarea v-model="v.content" @input="onVariantContentInput(v)" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1.5 text-[10px] h-12 font-mono" placeholder="Masalan: 3.1-bandda ko'rsatilgan summaning {{ BOSHLANGICH_FOIZ }}% to'lanadi..." required></textarea>
                                             </div>
                                             <div>
                                                 <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant o'zgaruvchilari (Vergul bilan ajrating)</label>
@@ -477,6 +482,59 @@ function addVariant(gIdx) {
 
 function removeVariant(gIdx, vIdx) {
     wizardForm.value.variant_groups[gIdx].variants.splice(vIdx, 1);
+}
+
+function loadStandardPaymentVariants() {
+    const exists = wizardForm.value.variant_groups.some(g => g.anchor === 'TOLOV_SHARTLARI');
+    if (exists) {
+        alert("To'lov shartlari (TOLOV_SHARTLARI) guruhi allaqachon qo'shilgan!");
+        return;
+    }
+    
+    wizardForm.value.variant_groups.push({
+        label: "To'lov shartlari",
+        anchor: "TOLOV_SHARTLARI",
+        variants: [
+            {
+                label: "Naqd to'lov",
+                key: "NAQD",
+                content: "1. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi mablag‘ «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida to‘lanadi.",
+                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN",
+                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN"]
+            },
+            {
+                label: "Grafik asosida",
+                key: "GRAFIK",
+                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy ichida ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lanadi.",
+                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+            },
+            {
+                label: "Ipoteka asosida",
+                key: "IPOTEKA",
+                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng har oyning 10-sanasiga qadar oyiga {{ OYLIK_TOLOV }} ({{ OYLIK_TOLOV_SOZ_BILAN }}) so‘mdan yoki ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lab boriladi va kadastr hujjati tayyor bo‘lgandan so‘ng o‘zaro hisob-kitob qilinib qoldiq summa ipoteka krediti asosida to‘lanadi.",
+                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+            }
+        ]
+    });
+}
+
+function onVariantContentInput(v) {
+    const text = v.content || '';
+    const regex = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        matches.push(match[1]);
+    }
+    
+    // Filter out auto-calculated placeholders
+    const autoCalculated = ['BOSHLANGICH_TOLOV', 'BOSHLANGICH_TOLOV_SOZ_BILAN', 'MUDDAT_OY_SOZ_BILAN', 'OYLIK_TOLOV', 'OYLIK_TOLOV_SOZ_BILAN'];
+    const uniquePlaceholders = [...new Set(matches)].filter(p => !autoCalculated.includes(p));
+    
+    v.placeholders = uniquePlaceholders;
+    v.placeholdersString = uniquePlaceholders.join(', ');
 }
 
 function saveTemplate() {

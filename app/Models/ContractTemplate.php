@@ -69,7 +69,23 @@ class ContractTemplate extends Model
         $termMonths = $contract->term_months ?? 1;
         $termMonthsWords = self::numberToWords($termMonths);
 
+        $blockVal = ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '';
+        $floorVal = $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '');
+        $unitVal = $unit ? $unit->unit_number : '';
+        $unitType = $unit ? $unit->type : 'residential';
+
+        $blockDesc = self::formatBlockUz($blockVal);
+        $floorDesc = self::formatFloorUz($floorVal);
+        $unitDesc = self::formatUnitUz($unitVal, $unitType);
+        $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
+
         $replacements = [
+            '{{ XONA_TAFSILOTI }}' => $combinedVal, '{{XONA_TAFSILOTI}}' => $combinedVal,
+            '{{ XONADON_TAFSILOTI }}' => $combinedVal, '{{XONADON_TAFSILOTI}}' => $combinedVal,
+            '{{ OBYEKT_TAFSILOTI }}' => $combinedVal, '{{OBYEKT_TAFSILOTI}}' => $combinedVal,
+            '{{ ХОНА_ТАФСИЛОТИ }}' => $combinedVal, '{{ХОНА_ТАФСИЛОТИ}}' => $combinedVal,
+            '{{ ХОНАДОН_ТАФСИЛОТИ }}' => $combinedVal, '{{ХОНАДОН_ТАФСИЛОТИ}}' => $combinedVal,
+            '{{ ОБЪЕКТ_ТАФСИЛОТИ }}' => $combinedVal, '{{ОБЪЕКТ_ТАФСИЛОТИ}}' => $combinedVal,
             '{{ KUN }}' => $kun, '{{KUN}}' => $kun,
             '{{ OY }}' => $oy, '{{OY}}' => $oy,
             '{{ YIL }}' => $yil, '{{YIL}}' => $yil,
@@ -155,8 +171,24 @@ class ContractTemplate extends Model
         $termMonths = $contract->term_months ?? 1;
         $termMonthsWords = self::numberToWords($termMonths);
 
+        $blockVal = ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '';
+        $floorVal = $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '');
+        $unitVal = $unit ? $unit->unit_number : '';
+        $unitType = $unit ? $unit->type : 'residential';
+
+        $blockDesc = self::formatBlockUz($blockVal);
+        $floorDesc = self::formatFloorUz($floorVal);
+        $unitDesc = self::formatUnitUz($unitVal, $unitType);
+        $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
+
         // Core placeholders context
         $context = [
+            'XONA_TAFSILOTI' => $combinedVal,
+            'XONADON_TAFSILOTI' => $combinedVal,
+            'OBYEKT_TAFSILOTI' => $combinedVal,
+            'ХОНА_ТАФСИЛОТИ' => $combinedVal,
+            'ХОНАДОН_ТАФСИЛОТИ' => $combinedVal,
+            'ОБЪЕКТ_ТАФСИЛОТИ' => $combinedVal,
             'KUN' => $kun,
             'OY' => $oy,
             'YIL' => $yil,
@@ -368,5 +400,99 @@ class ContractTemplate extends Model
         }
         
         return implode(' ', $words);
+    }
+
+    /**
+     * Convert number to ordinal words in Uzbek.
+     */
+    public static function numberToOrdinalUzbekWords($number): string
+    {
+        $number = (int)$number;
+        if ($number == 0) {
+            return 'nolinchi';
+        }
+        
+        $words = self::numberToWords($number);
+        $parts = explode(' ', $words);
+        $lastWord = end($parts);
+        
+        $ordinals = [
+            'bir' => 'birinchi',
+            'ikki' => 'ikkinchi',
+            'uch' => 'uchinchi',
+            'to\'rt' => 'to\'rtinchi',
+            'besh' => 'beshinchi',
+            'olti' => 'oltinchi',
+            'yetti' => 'yettinchi',
+            'sakkiz' => 'sakkizinchi',
+            'to\'qqiz' => 'to\'qqizinchi',
+            'o\'n' => 'o\'ninchi',
+            'yigirma' => 'yigirmanchi',
+            'o\'ttiz' => 'o\'ttizinchi',
+            'qirq' => 'qirqinchi',
+            'ellik' => 'ellikinchi',
+            'oltmish' => 'oltmishinchi',
+            'yetmish' => 'yetmishinchi',
+            'sakson' => 'saksoninchi',
+            'to\'qson' => 'to\'qsoninchi',
+            'yuz' => 'yuzinchi',
+            'ming' => 'minginchi',
+            'million' => 'millioninchi',
+            'milliard' => 'milliardinchi',
+            'nol' => 'nolinchi'
+        ];
+        
+        if (isset($ordinals[$lastWord])) {
+            $parts[count($parts) - 1] = $ordinals[$lastWord];
+        } else {
+            $lastChar = substr($lastWord, -1);
+            if (in_array($lastChar, ['a', 'e', 'i', 'o', 'u'])) {
+                $parts[count($parts) - 1] = $lastWord . 'nchi';
+            } else {
+                $parts[count($parts) - 1] = $lastWord . 'inchi';
+            }
+        }
+        
+        return implode(' ', $parts);
+    }
+
+    public static function formatBlockUz($blockName): string
+    {
+        if (empty($blockName)) {
+            return '_______-blok';
+        }
+        $blockName = trim($blockName);
+        if (is_numeric($blockName)) {
+            $word = self::numberToOrdinalUzbekWords($blockName);
+            return "{$blockName}-({$word}) blok";
+        }
+        return "{$blockName}-blok";
+    }
+
+    public static function formatFloorUz($floorNumber): string
+    {
+        if ($floorNumber === null || $floorNumber === '') {
+            return '_______-qavati';
+        }
+        $floorNumber = (int)$floorNumber;
+        if ($floorNumber < 0) {
+            return "{$floorNumber}-(podvol) qavati";
+        }
+        $word = self::numberToOrdinalUzbekWords($floorNumber);
+        return "{$floorNumber}-({$word}) qavati";
+    }
+
+    public static function formatUnitUz($unitNumber, $type): string
+    {
+        if (empty($unitNumber)) {
+            return '_______-xonadon';
+        }
+        $unitNumber = trim($unitNumber);
+        $suffix = ($type === 'commercial') ? 'savdo do\'koni' : 'xonadoni';
+        if (is_numeric($unitNumber)) {
+            $word = self::numberToOrdinalUzbekWords($unitNumber);
+            return "{$unitNumber}-({$word}) {$suffix}";
+        }
+        return "{$unitNumber}-{$suffix}";
     }
 }

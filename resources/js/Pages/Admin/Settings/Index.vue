@@ -60,6 +60,7 @@ watch(activeTab, (newTab) => {
 // Basic settings forms
 const form = useForm({
     company_name: props.settings?.company_name || 'ITCloud Sher-Dor ERP',
+    app_name: props.settings?.app_name || 'Sher-Dor ERP',
     company_address: props.settings?.company_address || '',
     company_bank_account: props.settings?.company_bank_account || '',
     company_bank_name: props.settings?.company_bank_name || '',
@@ -393,9 +394,15 @@ const saveRolePermissions = () => {
                         <h3 class="text-blue-600 font-display text-lg tracking-widest uppercase border-b border-gray-200 pb-4 mb-6">Brending va Tashqi Ko'rinish</h3>
                         
                         <form @submit.prevent="submit" class="space-y-6">
-                            <div>
-                                <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya nomi (KORXONA)</label>
-                                <input v-model="form.company_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Kompaniya nomi (KORXONA)</label>
+                                    <input v-model="form.company_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono text-gray-500 mb-2 uppercase">Tizim Nomi (Brand Name)</label>
+                                    <input v-model="form.app_name" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary transition-all">
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

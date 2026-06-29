@@ -61,7 +61,7 @@ const unitNumber = computed(() => {
 </script>
 
 <template>
-    <Head title="To'lovni Tasdiqlash | Sher-Dor ERP" />
+    <Head :title="`To'lovni Tasdiqlash | ${$page.props.branding?.app_name || 'Sher-Dor ERP'}`" />
 
     <div class="min-h-screen bg-[#050505] bg-[url('/bg-noise.png')] bg-repeat text-white flex items-center justify-center p-4 relative overflow-hidden font-mono">
         <!-- Ambient lights -->
@@ -146,7 +146,7 @@ const unitNumber = computed(() => {
                 <!-- Footer / Support -->
                 <div class="mt-8 pt-6 border-t border-white/10 text-center relative z-10">
                     <p class="text-[10px] text-text-muted mb-2">Tranzaksiya ID: <span class="text-white">{{ transaction.receipt_hash }}</span></p>
-                    <p class="text-[10px] text-white/30 uppercase tracking-widest">Sher-Dor ERP - ITCloud tomonidan ishlab chiqilgan</p>
+                    <p class="text-[10px] text-white/30 uppercase tracking-widest">{{ $page.props.branding?.app_name || 'Sher-Dor ERP' }} - ITCloud tomonidan ishlab chiqilgan</p>
                 </div>
             </div>
         </div>

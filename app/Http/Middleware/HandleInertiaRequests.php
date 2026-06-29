@@ -38,6 +38,7 @@ class HandleInertiaRequests extends Middleware
                     'primary_theme_color' => $dbSettings->primary_theme_color,
                     'neon_glow_intensity' => $dbSettings->neon_glow_intensity,
                     'default_currency' => $dbSettings->default_currency,
+                    'app_name' => $dbSettings->app_name,
                 ];
             }
             return [
@@ -46,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'primary_theme_color' => '#00F0FF',
                 'neon_glow_intensity' => '0 0 15px',
                 'default_currency' => 'USD',
+                'app_name' => 'Sher-Dor ERP',
             ];
         });
 
@@ -63,6 +65,7 @@ class HandleInertiaRequests extends Middleware
                 'primary_theme_color' => $request->user()?->theme_color ?? $settings['primary_theme_color'] ?? '#00F0FF',
                 'neon_glow_intensity' => $settings['neon_glow_intensity'] ?? '0 0 15px',
                 'default_currency' => $settings['default_currency'] ?? 'USD',
+                'app_name' => $settings['app_name'] ?? 'Sher-Dor ERP',
             ],
             'locale' => $request->user()?->language ?? session('locale', config('app.locale')),
             'facilitiesMenu' => $request->user() ? \Illuminate\Support\Facades\Cache::remember('facilities_menu_tree_v2', 60, function () {

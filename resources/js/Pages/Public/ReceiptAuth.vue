@@ -9,7 +9,7 @@
         <div class="w-full max-w-md z-10">
             <div class="glass-panel p-4 md:p-8 rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] ">
                 <div class="text-center mb-8">
-                    <h1 class="text-3xl font-display font-bold text-white tracking-widest mb-2 uppercase">Sher-Dor</h1>
+                    <h1 class="text-3xl font-display font-bold text-white tracking-widest mb-2 uppercase">{{ $page.props.branding?.app_name || 'Sher-Dor' }}</h1>
                     <p class="text-neon-cyan text-sm tracking-widest uppercase">Xavfsizlik Darvozasi</p>
                 </div>
 

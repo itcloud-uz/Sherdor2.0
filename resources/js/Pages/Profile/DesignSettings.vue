@@ -160,7 +160,7 @@ const updateThemeStyle = (style) => {
                         </button>
                         <button type="button" @click="updateThemeStyle('galaxy')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'galaxy' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
                             <span class="text-3xl">🌌</span>
-                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'galaxy' ? 'text-neon-primary font-bold' : 'text-text-muted'">Sher-Dor Galaxy</span>
+                            <span class="font-mono text-xs uppercase text-center" :class="form.theme_style === 'galaxy' ? 'text-neon-primary font-bold' : 'text-text-muted'">{{ $page.props.branding?.app_name || 'Sher-Dor' }} Galaxy</span>
                         </button>
                         <button type="button" @click="updateThemeStyle('cyberpunk')" class="p-4 rounded-xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden" :class="form.theme_style === 'cyberpunk' ? 'border-neon-primary bg-neon-primary/10 shadow-[0_0_15px_rgba(var(--color-neon-primary-rgb),0.3)]' : 'border-white/10 hover:border-white/30 bg-black/40'">
                             <span class="text-3xl">🤖</span>

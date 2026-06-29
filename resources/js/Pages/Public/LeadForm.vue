@@ -41,7 +41,7 @@ const submitLead = async () => {
 </script>
 
 <template>
-    <Head title="Maxsus Taklif - Sher-Dor ERP" />
+    <Head :title="'Maxsus Taklif - ' + ($page.props.branding?.app_name || 'Sher-Dor ERP')" />
     
     <div class="min-h-screen text-white font-sans overflow-hidden relative flex flex-col items-center justify-center selection:bg-neon-cyan/30 selection:text-white">
         
@@ -141,7 +141,7 @@ const submitLead = async () => {
             </div>
             
             <p class="mt-8 text-[10px] font-mono text-white/30 tracking-widest uppercase">
-                &copy; {{ new Date().getFullYear() }} Sher-Dor ERP System
+                &copy; {{ new Date().getFullYear() }} {{ $page.props.branding?.app_name || 'Sher-Dor ERP System' }}
             </p>
         </main>
     </div>

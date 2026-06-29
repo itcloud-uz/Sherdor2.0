@@ -591,7 +591,7 @@ watch(
                     if (objectParam) {
                         currentObject.value = objectParam;
                     } else if (!currentObject.value) {
-                        currentObject.value = 'SHER-DOR TJM';
+                        currentObject.value = (page.props.branding?.app_name || 'SHER-DOR') + ' TJM';
                     }
                     selectedBuilding.value = null;
                 } else if (viewParam === 'blocks') {

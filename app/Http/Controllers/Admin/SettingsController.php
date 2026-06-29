@@ -40,6 +40,7 @@ class SettingsController extends Controller
     {
         $request->validate([
             'company_name' => 'nullable|string|max:255',
+            'app_name' => 'nullable|string|max:255',
             'company_address' => 'nullable|string|max:255',
             'company_bank_account' => 'nullable|string|max:255',
             'company_bank_name' => 'nullable|string|max:255',
@@ -59,7 +60,7 @@ class SettingsController extends Controller
         $settings = SystemSetting::first() ?? new SystemSetting();
 
         $fields = [
-            'company_name', 'company_address', 'company_bank_account', 'company_bank_name',
+            'company_name', 'app_name', 'company_address', 'company_bank_account', 'company_bank_name',
             'company_mfo', 'company_inn', 'company_director', 'company_phone',
             'primary_theme_color', 'neon_glow_intensity', 'default_currency', 'tax_rate', 'default_penalty_rate'
         ];

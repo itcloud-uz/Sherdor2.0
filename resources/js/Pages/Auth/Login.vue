@@ -52,7 +52,7 @@ const installPWA = async () => {
 </script>
 
 <template>
-    <Head title="Tizimga Kirish - Sher-Dor ERP" />
+    <Head :title="'Tizimga Kirish - ' + ($page.props.branding?.app_name || 'Sher-Dor ERP')" />
  
     <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-white/30 selection:text-white font-sans text-white bg-cover bg-center bg-no-repeat bg-fixed" :style="$page.props.branding?.background_image_path ? { backgroundImage: 'url(/storage/' + $page.props.branding.background_image_path + ')' } : {}">
         
@@ -65,12 +65,13 @@ const installPWA = async () => {
                 <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] sm:rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-4 sm:mb-6 overflow-hidden">
                     <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain p-2" />
                     <span v-else class="font-display font-black text-3xl sm:text-4xl text-black">
-                        {{ ($page.props.branding?.company_name || 'Sher-Dor').charAt(0).toUpperCase() }}
+                        {{ ($page.props.branding?.app_name || 'Sher-Dor').charAt(0).toUpperCase() }}
                     </span>
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-widest">{{ $t('sher_dor') }}</h1>
+                <h1 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-widest">{{ $page.props.branding?.app_name || $t('sher_dor') }}</h1>
                 <p class="text-gray-400 font-medium text-xs sm:text-sm mt-2">Boshqaruv Tizimiga Kirish</p>
             </div>
+
  
             <!-- Apple Glassmorphism Panel -->
             <div class="bg-white/5 p-6 sm:p-4 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 backdrop-blur-md shadow-[0_0_50px_rgba(0,0,0,0.5)]">

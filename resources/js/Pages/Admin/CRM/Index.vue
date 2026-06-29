@@ -4633,7 +4633,7 @@ const ledgerReportData = computed(() => {
                                         <!-- Building Info -->
                                         <div class="flex-1 text-left">
                                             <h2 class="text-base sm:text-lg font-bold text-gray-950 font-sans tracking-tight">
-                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'SHER-DOR TJM' }}
+                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
                                             </h2>
                                             <div class="flex items-center gap-4 mt-2">
                                                 <div>
@@ -4654,7 +4654,7 @@ const ledgerReportData = computed(() => {
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
                                             <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Bino</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || 'SHER-DOR TJM' }}
+                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">

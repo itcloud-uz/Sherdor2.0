@@ -373,7 +373,7 @@ const formattedDate = computed(() => {
                         <img v-else src="/logo-sherdor.png" class="w-full h-full object-cover scale-110" />
                     </div>
                     <div class="truncate">
-                        <h1 class="text-base font-sans font-bold tracking-wider text-slate-800 uppercase leading-none">SHER-DOR</h1>
+                        <h1 class="text-base font-sans font-bold tracking-wider text-slate-800 uppercase leading-none">{{ $page.props.branding?.app_name || 'SHER-DOR' }}</h1>
                         <p class="text-[9px] font-sans font-semibold text-slate-400 uppercase tracking-[0.18em] leading-none mt-1">ERP SYSTEM</p>
                     </div>
                 </div>

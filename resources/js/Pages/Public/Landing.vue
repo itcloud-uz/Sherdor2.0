@@ -44,7 +44,7 @@ const panels = [
 </script>
 
 <template>
-    <Head title="Sher-Dor ERP - Tizim Imkoniyatlari" />
+    <Head :title="($page.props.branding?.app_name || 'Sher-Dor ERP') + ' - Tizim Imkoniyatlari'" />
     
     <div class="min-h-screen text-white font-sans overflow-x-hidden relative selection:bg-purple-500/30 selection:text-white">
         
@@ -82,7 +82,7 @@ const panels = [
             </div>
             
             <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 max-w-4xl leading-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">
-                Sher-Dor ERP <br />
+                {{ $page.props.branding?.app_name || 'Sher-Dor ERP' }} <br />
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-red-400 to-amber-400">Ishonchli Boshqaruv Tizimi</span>
             </h1>
             
@@ -218,7 +218,7 @@ const panels = [
             
             <div class="text-gray-500 font-medium text-sm mt-8 border-t border-white/10 pt-8 inline-block w-full max-w-md">
                 Dasturchi: <strong>Shodiyor Xolmurodov</strong> <br>
-                &copy; 2026 ITCloud.uz | Sher-Dor ERP System v2.0
+                &copy; {{ new Date().getFullYear() }} ITCloud.uz | {{ $page.props.branding?.app_name || 'Sher-Dor ERP System' }} v2.0
             </div>
         </footer>
 

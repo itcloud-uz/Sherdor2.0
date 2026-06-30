@@ -111,13 +111,13 @@ onMounted(() => {
     <div class="min-h-screen bg-black text-white relative overflow-hidden font-sans">
         
         <!-- Warp Speed Starfield Canvas (Base Layer) -->
-        <canvas ref="canvasRef" class="absolute inset-0 z-0 pointer-events-none"></canvas>
+        <canvas ref="canvasRef" class="absolute inset-0 z-[-1] pointer-events-none"></canvas>
         
         <!-- Radial Gradient Overlay (For Readability) -->
-        <div class="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-black/40 to-black/80 pointer-events-none"></div>
+        <div class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-black/40 to-black/80 pointer-events-none"></div>
 
         <!-- Content Wrapper (Strictly above stars) -->
-        <div class="relative z-10">
+        <div class="relative z-50">
             <!-- Glassmorphism Navbar -->
             <nav class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto backdrop-blur-md bg-white/5 border-b border-white/10 rounded-b-3xl mb-8 shadow-lg sticky top-0 z-50">
                 <div class="flex items-center gap-3">
@@ -132,7 +132,7 @@ onMounted(() => {
             </nav>
 
             <!-- Hero Section -->
-            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center relative z-20">
+            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center relative z-50">
                 <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.2)]">
                     <span class="text-sm font-medium text-purple-300 tracking-wide uppercase">Yangi Avlod ERP Tizimi</span>
                 </div>

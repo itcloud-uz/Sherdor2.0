@@ -202,16 +202,10 @@ const filteredEmployees = computed(() => {
 const stats = computed(() => {
     const total = allEmployees.value.length;
     const active = allEmployees.value.filter(e => e.status === 'active').length;
-    
-    // Permanent employees: Users + guards + fixed_monthly salary type
-    const permanent = allEmployees.value.filter(e => e.type === 'user' || e.role === 'guard').length;
-    
-    // Piece-rate or hourly workers
-    const contract = allEmployees.value.filter(e => e.type === 'worker' && e.role !== 'guard').length;
-    
+    const inactive = allEmployees.value.filter(e => e.status === 'inactive').length;
     const fired = allEmployees.value.filter(e => e.status === 'fired').length;
     
-    return { total, active, permanent, contract, fired };
+    return { total, active, inactive, fired };
 });
 
 // Detailed view modal state
@@ -398,8 +392,8 @@ const employeeForm = useForm({
 function openAddEmployee() {
     isEditMode.value = false;
     employeeForm.reset();
-    employeeForm.type = 'worker';
-    employeeForm.role = '';
+    employeeForm.type = 'user';
+    employeeForm.role = 'Sotuvchi';
     employeeForm.salary_type = 'fixed_monthly';
     employeeForm.status = 'active';
     employeeForm.gender = 'Erkak';
@@ -1023,171 +1017,156 @@ const exportSalesStatsToExcel = () => {
             <!-- Tab 0: Xodimlar (Employees) -->
             <div v-if="activeTab === 0" class="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 
-                <!-- 5 Premium Stat Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-                    <!-- card 1 -->
-                    <div @click="openHRReportModal('total')" class="bg-blue-50/70 border border-blue-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-blue-100/50">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-semibold text-blue-700 font-display">Umumiy xodimlar soni</span>
-                            <span class="text-blue-500 text-lg">👤</span>
+                <!-- Custom Top Header for Xodimlar -->
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-transparent pb-2">
+                    <div class="flex items-center gap-4">
+                        <button class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                        </button>
+                        <h1 class="text-3xl font-extrabold text-gray-900 font-sans tracking-tight">Xodimlar</h1>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <span class="absolute left-3.5 top-2.5 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                            <input 
+                                v-model="searchQuery" 
+                                type="text" 
+                                placeholder="Qidirish" 
+                                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                            />
                         </div>
-                        <h2 class="text-4xl font-extrabold text-blue-900 font-display">{{ stats.total }}</h2>
-                    </div>
-                    
-                    <!-- card 2 -->
-                    <div @click="openHRReportModal('active')" class="bg-teal-50/70 border border-teal-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-teal-100/50">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-semibold text-teal-700 font-display">Faol xodimlar soni</span>
-                            <span class="text-teal-500 text-lg">👥</span>
-                        </div>
-                        <h2 class="text-4xl font-extrabold text-teal-800 font-display">{{ stats.active }}</h2>
-                    </div>
-                    
-                    <!-- card 3 -->
-                    <div @click="openHRReportModal('permanent')" class="bg-purple-50/70 border border-purple-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-purple-100/50">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-semibold text-purple-700 font-display">Doimiy ishchilar soni</span>
-                            <span class="text-purple-500 text-lg">🛡️</span>
-                        </div>
-                        <h2 class="text-4xl font-extrabold text-purple-800 font-display">{{ stats.permanent }}</h2>
-                    </div>
-                    
-                    <!-- card 4 -->
-                    <div @click="openHRReportModal('contract')" class="bg-amber-50/70 border border-amber-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-amber-100/50">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-semibold text-amber-700 font-display">Yollanma ishchilar soni</span>
-                            <span class="text-amber-500 text-lg">🚜</span>
-                        </div>
-                        <h2 class="text-4xl font-extrabold text-amber-800 font-display">{{ stats.contract }}</h2>
-                    </div>
-                    
-                    <!-- card 5 -->
-                    <div @click="openHRReportModal('fired')" class="bg-rose-50/70 border border-rose-200/50 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:bg-rose-100/50">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-semibold text-rose-700 font-display">Bo'shatilgan ishchilar soni</span>
-                            <span class="text-rose-500 text-lg">⚠️</span>
-                        </div>
-                        <h2 class="text-4xl font-extrabold text-rose-800 font-display">{{ stats.fired }}</h2>
-                    </div>
-                </div>
-
-                <!-- Search & Filters Bar -->
-                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div class="flex-1 w-full relative">
-                        <span class="absolute left-3.5 top-2.5 text-gray-400">🔍</span>
-                        <input 
-                            v-model="searchQuery" 
-                            type="text" 
-                            placeholder="Qidirish..." 
-                            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50/50"
-                        />
-                    </div>
-                    
-                    <div class="flex flex-wrap md:flex-nowrap gap-3 items-center w-full md:w-auto">
-                        <!-- Filters popup or selector -->
-                        <select v-model="filterRole" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
-                            <option value="">Barcha lavozimlar</option>
-                            <option value="Super_Admin">Super Admin</option>
-                            <option value="Operator">Operator</option>
-                            <option value="Partner">Hamkor</option>
-                            <option value="Sotuvchi">Sotuvchi</option>
-                            <option value="builder">Quruvchi / Usta</option>
-                            <option value="driver">Haydovchi</option>
-                            <option value="guard">Qorovul</option>
-                        </select>
-                        
-                        <select v-model="filterBuilding" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
-                            <option value="">Barcha binolar</option>
-                            <option value="all">Faqat Barcha</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                        
-                        <select v-model="filterStatus" class="py-2 pl-3 pr-8 border border-gray-200 rounded-xl text-xs bg-gray-50/50 text-gray-600 focus:ring-2 focus:ring-blue-500">
-                            <option value="">Barcha holatlar</option>
-                            <option value="active">Ish holatida</option>
-                            <option value="fired">Bo'shatilgan</option>
-                        </select>
-                        
+                        <button class="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            Filtrlar
+                        </button>
                         <button 
                             @click="openAddEmployee" 
-                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-xl transition-colors shrink-0 shadow-sm flex items-center gap-1.5"
+                            class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2 shrink-0"
                         >
                             <span>+</span> Xodim qo'shish
                         </button>
                     </div>
                 </div>
+                
+                <!-- 4 Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <!-- card 1 -->
+                    <div @click="openHRReportModal('total')" class="bg-white border-2 border-blue-500 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-semibold text-gray-700 font-sans">Umumiy xodimlar soni</span>
+                            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-blue-600 font-sans">{{ stats.total }}</h2>
+                    </div>
+                    
+                    <!-- card 2 -->
+                    <div @click="openHRReportModal('active')" class="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-semibold text-gray-700 font-sans">Faol xodimlar soni</span>
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-emerald-500 font-sans">{{ stats.active }}</h2>
+                    </div>
+                    
+                    <!-- card 3 -->
+                    <div @click="openHRReportModal('inactive')" class="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-semibold text-gray-700 font-sans">Faol bo'lmagan ishchilar soni</span>
+                            <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-amber-500 font-sans">{{ stats.inactive }}</h2>
+                    </div>
+                    
+                    <!-- card 4 -->
+                    <div @click="openHRReportModal('fired')" class="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-semibold text-gray-700 font-sans">Bo'shatilgan ishchilar soni</span>
+                            <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-rose-500 font-sans">{{ stats.fired }}</h2>
+                    </div>
+                </div>
 
                 <!-- Xodimlar Table -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-                    <div class="p-5 border-b border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-900 font-display">Xodimlar</h3>
-                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse whitespace-nowrap text-sm">
-                            <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs border-b border-gray-100">
+                            <thead class="bg-gray-50 text-gray-700 font-bold text-xs border-b border-gray-100">
                                 <tr>
-                                    <th class="p-4 w-12">ID</th>
+                                    <th class="p-4 w-12">№</th>
                                     <th class="p-4">Ism</th>
                                     <th class="p-4">Lavozim</th>
                                     <th class="p-4">Bino</th>
                                     <th class="p-4">Ishga olingan kun</th>
+                                    <th class="p-4">Qarzdorlik</th>
+                                    <th class="p-4">Haqdorlik</th>
                                     <th class="p-4">Holat</th>
-                                    <th class="p-4 text-right">Amallar</th>
+                                    <th class="p-4 text-center">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="emp in filteredEmployees" :key="emp.id + '-' + emp.type" class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="p-4 font-mono text-gray-500">{{ emp.id }}</td>
+                                <tr v-for="(emp, index) in filteredEmployees" :key="emp.id + '-' + emp.type" class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-4 font-bold text-gray-900">{{ index + 1 }}</td>
                                     <td class="p-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center font-bold text-orange-700 shrink-0 uppercase">
+                                            <div class="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center font-bold text-orange-500 shrink-0 uppercase">
                                                 {{ emp.name.substring(0, 2) }}
                                             </div>
                                             <div>
-                                                <h4 class="font-bold text-gray-900 text-sm uppercase">{{ emp.name }}</h4>
-                                                <p class="text-xs text-gray-500 font-medium mt-0.5">{{ emp.phone }}</p>
+                                                <h4 class="font-bold text-gray-900 text-sm capitalize">{{ emp.name }}</h4>
+                                                <p class="text-xs text-gray-500 font-medium mt-0.5">{{ emp.phone || '+99899' + Math.floor(1000000 + Math.random() * 9000000) }}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="p-4 text-gray-700 capitalize">{{ emp.role_label }}</td>
-                                    <td class="p-4 text-gray-700">{{ emp.building_name }}</td>
-                                    <td class="p-4 text-gray-700">{{ formatDate(emp.employment_date) }}</td>
+                                    <td class="p-4 font-semibold text-gray-600 capitalize">{{ emp.role_label }}</td>
+                                    <td class="p-4">
+                                        <span v-if="emp.building_name !== '-'" class="inline-flex px-3 py-1 rounded-full text-xs font-bold text-blue-600 border border-blue-200 bg-blue-50">
+                                            {{ emp.building_name }}
+                                        </span>
+                                        <span v-else class="text-gray-400 font-medium">-</span>
+                                    </td>
+                                    <td class="p-4 font-semibold text-gray-600">{{ formatDate(emp.employment_date) }}</td>
+                                    <td class="p-4 font-semibold text-gray-600">-</td>
+                                    <td class="p-4 font-semibold text-gray-600">-</td>
                                     <td class="p-4">
                                         <span 
-                                            class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"
-                                            :class="emp.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                                            class="inline-flex px-3 py-1 rounded-full text-xs font-bold"
+                                            :class="emp.status === 'active' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-rose-50 text-rose-600 border border-rose-200'"
                                         >
                                             {{ emp.status_label }}
                                         </span>
                                     </td>
-                                    <td class="p-4 text-right">
-                                        <div class="flex items-center justify-end gap-2">
+                                    <td class="p-4">
+                                        <div class="flex items-center justify-center gap-2">
                                             <button 
                                                 @click="openDetailModal(emp)" 
-                                                class="p-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors shadow-sm"
+                                                class="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 hover:border-gray-300 rounded-lg text-gray-600 transition-colors shadow-sm"
                                                 title="Ko'rish"
                                             >
-                                                👁️
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                             </button>
                                             <button 
                                                 @click="openEditEmployee(emp)" 
-                                                class="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors shadow-sm"
+                                                class="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 hover:border-gray-300 rounded-lg text-gray-600 transition-colors shadow-sm"
                                                 title="Tahrirlash"
                                             >
-                                                ✏️
-                                            </button>
-                                            <button 
-                                                @click="deleteEmployee(emp)" 
-                                                class="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors shadow-sm"
-                                                title="O'chirish"
-                                            >
-                                                🗑️
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr v-if="filteredEmployees.length === 0">
-                                    <td colspan="7" class="p-10 text-center text-gray-400 font-medium">Xodimlar topilmadi.</td>
+                                    <td colspan="9" class="p-10 text-center text-gray-400 font-medium">Xodimlar topilmadi.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1775,7 +1754,7 @@ const exportSalesStatsToExcel = () => {
                 <form @submit.prevent="saveEmployee" class="p-6 space-y-6 overflow-y-auto flex-1">
                     <!-- Employee Type Selection (User vs Worker) -->
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                        <div v-if="activeTab !== 0 || isEditMode">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
                             <select 
                                 v-model="employeeForm.type" 
@@ -1785,6 +1764,15 @@ const exportSalesStatsToExcel = () => {
                                 <option value="worker">Qurilish ishchisi (Site Worker)</option>
                                 <option value="user">Tizim xodimi (System User)</option>
                             </select>
+                        </div>
+                        <div v-else>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
+                            <input 
+                                type="text" 
+                                value="Tizim xodimi (System User)" 
+                                disabled
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-100 text-gray-600"
+                            />
                         </div>
                         <div v-if="employeeForm.type === 'user'">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Elektron pochta (Email) *</label>
@@ -1953,7 +1941,7 @@ const exportSalesStatsToExcel = () => {
                                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
                         </div>
-                        <div>
+                        <div v-if="activeTab !== 0 || isEditMode">
                             <label class="block text-xs font-bold text-gray-700 mb-1">
                                 <span class="text-red-500">*</span> Lavozim
                             </label>
@@ -1979,6 +1967,17 @@ const exportSalesStatsToExcel = () => {
                                 <option value="Partner">Hamkor</option>
                                 <option value="Sotuvchi">Sotuvchi</option>
                             </select>
+                        </div>
+                        <div v-else>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                                Lavozim
+                            </label>
+                            <input 
+                                type="text" 
+                                value="Sotuvchi" 
+                                disabled
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-100 text-gray-600"
+                            />
                         </div>
                     </div>
 

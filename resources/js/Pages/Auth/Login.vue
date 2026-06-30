@@ -1,7 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
-import GalaxyBackground from '@/Components/GalaxyBackground.vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 defineProps({
     canResetPassword: {
@@ -30,11 +29,8 @@ const showPassword = ref(false);
 
 onMounted(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent the mini-infobar from appearing on mobile
         e.preventDefault();
-        // Stash the event so it can be triggered later.
         deferredPrompt.value = e;
-        // Update UI notify the user they can install the PWA
         showInstallButton.value = true;
     });
 });
@@ -52,66 +48,76 @@ const installPWA = async () => {
 </script>
 
 <template>
-    <Head :title="'Tizimga Kirish - ' + ($page.props.branding?.app_name || 'Sher-Dor ERP')" />
+    <Head title="Tizimga Kirish - SBE" />
  
-    <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-white/30 selection:text-white font-sans text-white bg-cover bg-center bg-no-repeat bg-fixed" :style="$page.props.branding?.background_image_path ? { backgroundImage: 'url(/storage/' + $page.props.branding.background_image_path + ')' } : {}">
+    <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-cyan-500/30 selection:text-white font-sans text-white bg-gradient-to-br from-gray-900 via-blue-900 to-black z-0">
         
-        <!-- Authentic Galaxy Background -->
-        <GalaxyBackground />
+        <!-- Cyber/Blueprint Background Effects -->
+        <div class="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            <!-- Grid Lines (Blueprint effect) -->
+            <div class="absolute inset-0 blueprint-grid opacity-20"></div>
+            <!-- Glowing Orbs -->
+            <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/20 blur-[120px]"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px]"></div>
+            <!-- Particles/Lines -->
+            <div class="particles-container absolute inset-0"></div>
+        </div>
  
-        <div class="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out] px-2 sm:px-0">
+        <div class="w-full max-w-md relative z-10 animate-fade-in-up px-2 sm:px-0 flex flex-col items-center">
             
-            <div class="text-center mb-6 sm:mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] sm:rounded-[1.5rem] bg-gradient-to-tr from-gray-200 to-white shadow-[0_0_30px_rgba(255,255,255,0.15)] mb-4 sm:mb-6 overflow-hidden">
-                    <img v-if="$page.props.branding?.logo_path" :src="'/storage/' + $page.props.branding.logo_path" class="w-full h-full object-contain p-2" />
-                    <span v-else class="font-display font-black text-3xl sm:text-4xl text-black">
-                        {{ ($page.props.branding?.app_name || 'Sher-Dor').charAt(0).toUpperCase() }}
-                    </span>
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-widest">{{ $page.props.branding?.app_name || $t('sher_dor') }}</h1>
-                <p class="text-gray-400 font-medium text-xs sm:text-sm mt-2">Boshqaruv Tizimiga Kirish</p>
-            </div>
-
- 
-            <!-- Apple Glassmorphism Panel -->
-            <div class="bg-white/5 p-6 sm:p-4 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 backdrop-blur-md shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            <!-- Glassmorphism Panel -->
+            <div class="w-full bg-white/5 p-8 sm:p-10 rounded-3xl border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_50px_rgba(6,182,212,0.15)] relative overflow-hidden group">
+                <!-- Inner top glow -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
                 
+                <div class="text-center mb-8">
+                    <!-- Logo Area -->
+                    <div class="relative inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-black/40 border border-white/10 shadow-[0_0_25px_rgba(6,182,212,0.3)] mb-6 overflow-hidden backdrop-blur-md transition-transform duration-500 hover:scale-105 hover:border-cyan-400/50 hover:shadow-[0_0_35px_rgba(6,182,212,0.5)] flex items-center justify-center">
+                        <img src="/images/itcloud-logo.png" alt="ITCloud" class="w-full h-full object-cover" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=ITC&background=000&color=06b6d4&rounded=true&font-size=0.33'" />
+                    </div>
+                    
+                    <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight drop-shadow-md">SBE</h1>
+                    <p class="text-gray-400 text-sm sm:text-base mt-2 font-medium tracking-wide">Boshqaruv Tizimiga Kirish</p>
+                </div>
+ 
                 <div v-if="status" class="mb-6 text-sm font-medium text-green-400 bg-green-400/10 border border-green-400/20 p-3 rounded-xl text-center">
                     {{ status }}
                 </div>
  
-                <form @submit.prevent="submit" class="space-y-6">
+                <form @submit.prevent="submit" class="space-y-5">
                     <div>
-                        <label for="email" class="block text-sm font-medium mb-2 ml-1" style="color: #cbd5e1 !important;">Email manzil</label>
-                        <input
-                            id="email"
-                            type="email"
-                            v-model="form.email"
-                            required
-                            autofocus
-                            autocomplete="username"
-                            class="w-full px-5 py-4 bg-black/45 border border-white/10 text-white placeholder-white/35 rounded-2xl focus:bg-black/65 focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all outline-none"
-                            placeholder="admin@itcloud.uz"
-                        />
+                        <label for="email" class="block text-sm font-medium mb-2 text-gray-300">Email manzil</label>
+                        <div class="relative">
+                            <input
+                                id="email"
+                                type="email"
+                                v-model="form.email"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                class="w-full px-5 py-3.5 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl focus:bg-white/10 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all outline-none shadow-inner"
+                                placeholder="admin@itcloud.uz"
+                            />
+                        </div>
                         <p v-if="form.errors.email" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.email }}</p>
                     </div>
  
                     <div>
-                        <label for="password" class="block text-sm font-medium mb-2 ml-1" style="color: #cbd5e1 !important;">Parol</label>
-                        <div class="relative">
+                        <label for="password" class="block text-sm font-medium mb-2 text-gray-300">Parol</label>
+                        <div class="relative group-input">
                             <input
                                 id="password"
                                 :type="showPassword ? 'text' : 'password'"
                                 v-model="form.password"
                                 required
                                 autocomplete="current-password"
-                                class="w-full pl-5 pr-12 py-4 bg-black/45 border border-white/10 text-white placeholder-white/35 rounded-2xl focus:bg-black/65 focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all outline-none"
+                                class="w-full pl-5 pr-12 py-3.5 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl focus:bg-white/10 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all outline-none shadow-inner"
                                 placeholder="••••••••"
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors focus:outline-none p-1"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors focus:outline-none p-1"
                                 tabindex="-1"
                             >
                                 <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,28 +133,28 @@ const installPWA = async () => {
                     </div>
  
                     <div class="flex items-center justify-between mt-2">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox" v-model="form.remember" class="w-5 h-5 rounded-md border-white/20 bg-black/45 text-black checked:bg-white checked:border-white focus:ring-white/30 focus:ring-offset-black transition-all cursor-pointer">
-                            <span class="text-sm transition-colors" style="color: #cbd5e1 !important;">Eslab qolish</span>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input type="checkbox" v-model="form.remember" class="w-4 h-4 rounded border-white/20 bg-white/5 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-0 transition-all cursor-pointer">
+                            <span class="text-xs sm:text-sm text-gray-400 group-hover:text-gray-300 transition-colors">Eslab qolish</span>
                         </label>
  
                         <Link
                             v-if="canResetPassword"
                             :href="route('password.request')"
-                            class="text-sm hover:text-white transition-colors hover:underline"
-                            style="color: #cbd5e1 !important;"
+                            class="text-xs sm:text-sm text-gray-400 hover:text-cyan-400 transition-colors hover:underline"
                         >
                             Parolni unutdingizmi?
                         </Link>
                     </div>
  
-                    <div class="pt-2 sm:pt-4 space-y-3 sm:space-y-4">
+                    <div class="pt-4 space-y-4">
                         <button
                             type="submit"
-                            class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-white text-black font-display font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all transform active:scale-95 disabled:opacity-50 flex justify-center items-center gap-3"
+                            class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-base sm:text-lg rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:transform-none flex justify-center items-center gap-3 relative overflow-hidden"
                             :disabled="form.processing"
                         >
-                            <svg v-if="form.processing" class="animate-spin -ml-1 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <div class="absolute inset-0 w-full h-full bg-white/20 blur-md transform -translate-x-full hover:animate-[shimmer_1.5s_infinite]"></div>
+                            <svg v-if="form.processing" class="animate-spin -ml-1 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -159,18 +165,20 @@ const installPWA = async () => {
                             v-if="showInstallButton"
                             @click="installPWA"
                             type="button"
-                            class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-white/10 border border-white/20 text-white font-display font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl hover:bg-white/25 transition-all transform active:scale-95 flex justify-center items-center gap-2"
+                            class="w-full px-6 py-3.5 bg-transparent border border-white/20 text-gray-300 font-medium text-sm sm:text-base rounded-xl hover:bg-white/5 hover:border-white/40 hover:text-white transition-all transform active:scale-95 flex justify-center items-center gap-2"
                         >
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                             Ilovani O'rnatish
                         </button>
                     </div>
                 </form>
             </div>
             
-            <div class="text-center mt-6 sm:mt-8">
-                <Link :href="route('landing')" class="text-sm font-medium transition-colors border-b border-dashed border-white/20 pb-1" style="color: #cbd5e1 !important;">
-                    ← Asosiy sahifaga qaytish
+            <!-- Back to Home -->
+            <div class="mt-8 text-center">
+                <Link :href="route('landing')" class="text-sm font-medium text-gray-400 hover:text-cyan-400 transition-colors flex items-center gap-2 group">
+                    <span class="transform group-hover:-translate-x-1 transition-transform">←</span>
+                    Asosiy sahifaga qaytish
                 </Link>
             </div>
         </div>
@@ -178,26 +186,86 @@ const installPWA = async () => {
 </template>
 
 <style scoped>
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Blueprint Grid */
+.blueprint-grid {
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    background-position: center center;
+    perspective: 1000px;
+    transform-origin: center;
+    animation: grid-move 20s linear infinite;
+}
+
+@keyframes grid-move {
+    0% {
+        transform: translateY(0) rotateX(20deg) scale(1.5);
+    }
+    100% {
+        transform: translateY(30px) rotateX(20deg) scale(1.5);
+    }
+}
+
+/* Moving Particles simulation via CSS multiple backgrounds */
+.particles-container {
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.15) 2px, transparent 3px),
+        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 2px, transparent 3px),
+        radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.1) 1.5px, transparent 2px),
+        radial-gradient(circle at 70% 90%, rgba(6, 182, 212, 0.2) 2px, transparent 3px),
+        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.2) 2.5px, transparent 3.5px);
+    background-size: 150px 150px, 200px 200px, 100px 100px, 250px 250px, 300px 300px;
+    animation: particles-drift 30s linear infinite;
+}
+
+@keyframes particles-drift {
+    0% {
+        background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+    }
+    100% {
+        background-position: 150px 150px, -200px 200px, 100px -100px, -250px -250px, 300px 300px;
+    }
+}
+
 /* Chrome, Safari, Edge autofill style override */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #090d16 inset !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,0.05) inset !important;
     -webkit-text-fill-color: #ffffff !important;
     transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Firefox autofill style override */
 input:autofill {
-    background-color: #090d16 !important;
+    background-color: rgba(255,255,255,0.05) !important;
     color: #ffffff !important;
 }
 
-/* Checkbox styling when checked (visible black tick on white background) */
 input[type="checkbox"]:checked {
-    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%23000000' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
-    background-color: #ffffff !important;
-    border-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%2306b6d4' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+    background-color: transparent !important;
+    border-color: #06b6d4 !important;
 }
 </style>

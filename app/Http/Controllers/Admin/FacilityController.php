@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Floor;
 use App\Models\Unit;
+use App\Models\Podez;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,7 @@ class FacilityController extends Controller
 {
     public function index(Request $request)
     {
-        $buildings = Building::with(['floors.units', 'stages'])->get();
+        $buildings = Building::with(['podezes.floors.units', 'floors.units', 'stages'])->get();
         $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->latest()->limit(200)->get();
         $partners = \App\Models\Partner::with('user:id,name')->get();
 
@@ -83,7 +84,18 @@ class FacilityController extends Controller
                 'floors_data.*.floor_number' => 'required|integer',
                 'floors_data.*.shops_count' => 'required|integer|min:0',
                 'floors_data.*.apartments_count' => 'required|integer|min:0',
+                'podezes' => 'nullable|array',
+                'podezes.*.id' => 'nullable',
+                'podezes.*.name' => 'required|string|max:255',
+                'podezes.*.number' => 'required|integer|min:1',
+                'podezes.*.floors' => 'required|integer|min:1|max:50',
+                'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
             ]);
+
+            if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {
+                $maxFloors = collect($request->input('podezes'))->max('floors') ?? 1;
+                $validated['total_floors'] = $maxFloors;
+            }
 
             $photoPath = null;
             if ($request->hasFile('photo')) {
@@ -199,7 +211,11 @@ class FacilityController extends Controller
 
             // Generate floors and units outside the transaction above (generateFloorsAndUnits has its own transaction)
             if ($building) {
-                $this->generateFloorsAndUnits($building, $request->input('floors_data'));
+                if ($request->has('podezes') && is_array($request->input('podezes'))) {
+                    $this->syncPodezes($building, $request->input('podezes'));
+                } else {
+                    $this->generateFloorsAndUnits($building, $request->input('floors_data'));
+                }
             }
 
             return redirect()->back()->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
@@ -244,7 +260,18 @@ class FacilityController extends Controller
                 'floors_data.*.floor_number' => 'required|integer',
                 'floors_data.*.shops_count' => 'required|integer|min:0',
                 'floors_data.*.apartments_count' => 'required|integer|min:0',
+                'podezes' => 'nullable|array',
+                'podezes.*.id' => 'nullable',
+                'podezes.*.name' => 'required|string|max:255',
+                'podezes.*.number' => 'required|integer|min:1',
+                'podezes.*.floors' => 'required|integer|min:1|max:50',
+                'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
             ]);
+
+            if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {
+                $maxFloors = collect($request->input('podezes'))->max('floors') ?? 1;
+                $validated['total_floors'] = $maxFloors;
+            }
 
             $photoPath = $building->photo_path;
             if ($request->hasFile('photo')) {
@@ -310,7 +337,11 @@ class FacilityController extends Controller
                 'photo_path' => $photoPath,
             ]);
 
-            $this->generateFloorsAndUnits($building, $request->input('floors_data'));
+            if ($request->has('podezes') && is_array($request->input('podezes'))) {
+                $this->syncPodezes($building, $request->input('podezes'));
+            } else {
+                $this->generateFloorsAndUnits($building, $request->input('floors_data'));
+            }
 
             return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');
         } catch (\Exception $e) {
@@ -634,57 +665,114 @@ class FacilityController extends Controller
             $blueprintPath = $request->file('blueprint')->store('blueprints/floors', 'public');
         }
 
-        $floor = Floor::create([
-            'building_id' => $validated['building_id'],
-            'floor_number' => $validated['floor_number'],
-            'total_units' => $validated['total_units'],
-            'total_commercial_units' => $validated['total_commercial_units'] ?? 0,
-            'blueprint_path' => $blueprintPath,
-        ]);
+        $building = Building::with('podezes')->findOrFail($validated['building_id']);
+        $podezes = $building->podezes;
 
-        $building = Building::find($validated['building_id']);
-        $entrancesCount = $building ? (int) ($building->entrances_count ?? 1) : 1;
-        if ($entrancesCount < 1) $entrancesCount = 1;
+        if ($podezes->count() > 0) {
+            $totalPodezes = $podezes->count();
+            $resUnitsPerEntrance = (int) ceil($validated['total_units'] / $totalPodezes);
+            $commUnitsPerEntrance = (int) ceil(($validated['total_commercial_units'] ?? 0) / $totalPodezes);
 
-        if ($validated['total_units'] > 0) {
-            $resUnitsPerEntrance = (int) ceil($validated['total_units'] / $entrancesCount);
-            if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
-            for ($i = 1; $i <= $validated['total_units']; $i++) {
-                $prefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
-                $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
-                $podyezd = (int) ceil($i / $resUnitsPerEntrance);
-                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
-
-                Unit::create([
-                    'floor_id' => $floor->id,
-                    'unit_number' => $unitNumber,
-                    'type' => 'residential',
-                    'area_sqm' => 0,
-                    'price' => 0,
-                    'status' => 'available',
-                    'podyezd' => $podyezd,
+            foreach ($podezes as $podez) {
+                $floor = Floor::create([
+                    'building_id' => $building->id,
+                    'podez_id' => $podez->id,
+                    'floor_number' => $validated['floor_number'],
+                    'total_units' => $resUnitsPerEntrance,
+                    'total_commercial_units' => $commUnitsPerEntrance,
+                    'blueprint_path' => $blueprintPath,
                 ]);
+
+                if ($resUnitsPerEntrance > 0) {
+                    for ($i = 1; $i <= $resUnitsPerEntrance; $i++) {
+                        $prefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
+                        // To keep unit numbering unique, we can include podez number
+                        $unitNumber = $prefix . '-' . $podez->podez_number . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+
+                        Unit::create([
+                            'floor_id' => $floor->id,
+                            'podez_id' => $podez->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'residential',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                            'podyezd' => $podez->podez_number,
+                        ]);
+                    }
+                }
+
+                if ($commUnitsPerEntrance > 0) {
+                    for ($i = 1; $i <= $commUnitsPerEntrance; $i++) {
+                        $prefix = 'D' . $floor->floor_number;
+                        $unitNumber = $prefix . '-' . $podez->podez_number . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+
+                        Unit::create([
+                            'floor_id' => $floor->id,
+                            'podez_id' => $podez->id,
+                            'unit_number' => $unitNumber,
+                            'type' => 'commercial',
+                            'area_sqm' => 0,
+                            'price' => 0,
+                            'status' => 'available',
+                            'podyezd' => $podez->podez_number,
+                        ]);
+                    }
+                }
             }
-        }
+        } else {
+            // Legacy fallback
+            $floor = Floor::create([
+                'building_id' => $building->id,
+                'floor_number' => $validated['floor_number'],
+                'total_units' => $validated['total_units'],
+                'total_commercial_units' => $validated['total_commercial_units'] ?? 0,
+                'blueprint_path' => $blueprintPath,
+            ]);
 
-        if (($validated['total_commercial_units'] ?? 0) > 0) {
-            $commUnitsPerEntrance = (int) ceil($validated['total_commercial_units'] / $entrancesCount);
-            if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
-            for ($i = 1; $i <= $validated['total_commercial_units']; $i++) {
-                $prefix = 'D' . $floor->floor_number;
-                $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
-                $podyezd = (int) ceil($i / $commUnitsPerEntrance);
-                if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+            $entrancesCount = (int) ($building->entrances_count ?? 1);
+            if ($entrancesCount < 1) $entrancesCount = 1;
 
-                Unit::create([
-                    'floor_id' => $floor->id,
-                    'unit_number' => $unitNumber,
-                    'type' => 'commercial',
-                    'area_sqm' => 0,
-                    'price' => 0,
-                    'status' => 'available',
-                    'podyezd' => $podyezd,
-                ]);
+            if ($validated['total_units'] > 0) {
+                $resUnitsPerEntrance = (int) ceil($validated['total_units'] / $entrancesCount);
+                if ($resUnitsPerEntrance < 1) $resUnitsPerEntrance = 1;
+                for ($i = 1; $i <= $validated['total_units']; $i++) {
+                    $prefix = $floor->floor_number < 0 ? 'B' . abs($floor->floor_number) : 'A' . $floor->floor_number;
+                    $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $podyezd = (int) ceil($i / $resUnitsPerEntrance);
+                    if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
+                    Unit::create([
+                        'floor_id' => $floor->id,
+                        'unit_number' => $unitNumber,
+                        'type' => 'residential',
+                        'area_sqm' => 0,
+                        'price' => 0,
+                        'status' => 'available',
+                        'podyezd' => $podyezd,
+                    ]);
+                }
+            }
+
+            if (($validated['total_commercial_units'] ?? 0) > 0) {
+                $commUnitsPerEntrance = (int) ceil($validated['total_commercial_units'] / $entrancesCount);
+                if ($commUnitsPerEntrance < 1) $commUnitsPerEntrance = 1;
+                for ($i = 1; $i <= $validated['total_commercial_units']; $i++) {
+                    $prefix = 'D' . $floor->floor_number;
+                    $unitNumber = $prefix . str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $podyezd = (int) ceil($i / $commUnitsPerEntrance);
+                    if ($podyezd > $entrancesCount) $podyezd = $entrancesCount;
+
+                    Unit::create([
+                        'floor_id' => $floor->id,
+                        'unit_number' => $unitNumber,
+                        'type' => 'commercial',
+                        'area_sqm' => 0,
+                        'price' => 0,
+                        'status' => 'available',
+                        'podyezd' => $podyezd,
+                    ]);
+                }
             }
         }
 
@@ -871,15 +959,23 @@ class FacilityController extends Controller
 
         $floor = Floor::findOrFail($validated['floor_id']);
         $building = $floor->building;
-        $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
-        if ($ec < 1) $ec = 1;
 
-        if (isset($validated['podyezd'])) {
-            if ($validated['podyezd'] > $ec) {
-                $validated['podyezd'] = $ec;
+        if ($floor->podez_id) {
+            $validated['podez_id'] = $floor->podez_id;
+            if ($floor->podez) {
+                $validated['podyezd'] = $floor->podez->podez_number;
             }
         } else {
-            $validated['podyezd'] = $ec;
+            $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
+            if ($ec < 1) $ec = 1;
+
+            if (isset($validated['podyezd'])) {
+                if ($validated['podyezd'] > $ec) {
+                    $validated['podyezd'] = $ec;
+                }
+            } else {
+                $validated['podyezd'] = $ec;
+            }
         }
 
         $blueprintPath = null;
@@ -930,12 +1026,30 @@ class FacilityController extends Controller
 
         $floor = $unit->floor;
         $building = $floor ? $floor->building : null;
-        $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
-        if ($ec < 1) $ec = 1;
 
-        if (isset($validated['podyezd'])) {
-            if ($validated['podyezd'] > $ec) {
-                $validated['podyezd'] = $ec;
+        if ($building && $building->podezes()->count() > 0) {
+            if (isset($validated['podyezd'])) {
+                $podez = $building->podezes()->where('podez_number', $validated['podyezd'])->first();
+                if ($podez) {
+                    $validated['podez_id'] = $podez->id;
+                    // Move to the corresponding floor of that podez
+                    $targetFloor = $building->floors()
+                        ->where('podez_id', $podez->id)
+                        ->where('floor_number', $floor->floor_number)
+                        ->first();
+                    if ($targetFloor) {
+                        $validated['floor_id'] = $targetFloor->id;
+                    }
+                }
+            }
+        } else {
+            $ec = $building ? (int) ($building->entrances_count ?? 1) : 1;
+            if ($ec < 1) $ec = 1;
+
+            if (isset($validated['podyezd'])) {
+                if ($validated['podyezd'] > $ec) {
+                    $validated['podyezd'] = $ec;
+                }
             }
         }
 
@@ -1158,5 +1272,114 @@ class FacilityController extends Controller
         ]);
 
         return redirect()->back()->with('message', 'Showroom rasmi o\'chirildi!');
+    }
+
+    private function syncPodezes(Building $building, ?array $podezesData): void
+    {
+        if (is_null($podezesData)) {
+            return;
+        }
+
+        DB::transaction(function () use ($building, $podezesData) {
+            $existingPodezes = $building->podezes()->get()->keyBy('id');
+            $requestedIds = [];
+
+            foreach ($podezesData as $podezItem) {
+                $id = $podezItem['id'] ?? null;
+                $isTemp = is_string($id) && str_starts_with($id, 'temp_');
+
+                $data = [
+                    'podez_name' => $podezItem['name'],
+                    'podez_number' => (int) $podezItem['number'],
+                    'podez_type' => $podezItem['type'] ?? 'Staircase',
+                    'total_floors' => (int) $podezItem['floors'],
+                ];
+
+                if ($id && !$isTemp && $existingPodezes->has($id)) {
+                    $podez = $existingPodezes->get($id);
+                    $podez->update($data);
+                    $requestedIds[] = $podez->id;
+                } else {
+                    $podez = $building->podezes()->create($data);
+                    $requestedIds[] = $podez->id;
+                }
+
+                $this->syncFloorsForPodez($podez);
+            }
+
+            foreach ($existingPodezes as $oldId => $oldPodez) {
+                if (!in_array($oldId, $requestedIds)) {
+                    $hasNonAvailableUnits = Unit::where('podez_id', $oldId)
+                        ->where('status', '!=', 'available')
+                        ->exists();
+
+                    if ($hasNonAvailableUnits) {
+                        throw new \Exception("Bu podezda band qilingan yoki sotilgan kvartiralar bor! Avval ularni bekor qiling.");
+                    }
+
+                    Unit::where('podez_id', $oldId)->delete();
+                    Floor::where('podez_id', $oldId)->delete();
+                    $oldPodez->delete();
+                }
+            }
+
+            $building->update([
+                'entrances_count' => count($requestedIds),
+            ]);
+        });
+    }
+
+    private function syncFloorsForPodez(Podez $podez): void
+    {
+        $totalFloors = (int) $podez->total_floors;
+        $building = $podez->building;
+
+        $existingFloors = $podez->floors()->get()->keyBy('floor_number');
+        $desiredFloorNumbers = range(1, $totalFloors);
+
+        foreach ($existingFloors as $floorNum => $floor) {
+            if (!in_array($floorNum, $desiredFloorNumbers)) {
+                $hasNonAvailable = $floor->units()->where('status', '!=', 'available')->exists();
+                if (!$hasNonAvailable) {
+                    $floor->units()->delete();
+                    $floor->delete();
+                } else {
+                    throw new \Exception("Podezda band qilingan yoki sotilgan kvartiralar bor qavatni o'chirib bo'lmaydi.");
+                }
+            }
+        }
+
+        foreach ($desiredFloorNumbers as $fNum) {
+            if (!$existingFloors->has($fNum)) {
+                Floor::create([
+                    'building_id' => $building->id,
+                    'podez_id' => $podez->id,
+                    'floor_number' => $fNum,
+                    'total_units' => 0,
+                    'total_commercial_units' => 0,
+                ]);
+            }
+        }
+    }
+
+    public function destroyPodez($id)
+    {
+        $podez = Podez::findOrFail($id);
+
+        $hasNonAvailableUnits = Unit::where('podez_id', $podez->id)
+            ->where('status', '!=', 'available')
+            ->exists();
+
+        if ($hasNonAvailableUnits) {
+            return redirect()->back()->withErrors(['error' => 'Bu podezda band qilingan yoki sotilgan kvartiralar bor! Avval ularni bekor qiling.']);
+        }
+
+        DB::transaction(function () use ($podez) {
+            Unit::where('podez_id', $podez->id)->delete();
+            Floor::where('podez_id', $podez->id)->delete();
+            $podez->delete();
+        });
+
+        return redirect()->back()->with('message', 'Podez o\'chirildi!');
     }
 }

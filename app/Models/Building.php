@@ -44,6 +44,11 @@ class Building extends Model
         return $this->hasMany(Floor::class);
     }
 
+    public function podezes()
+    {
+        return $this->hasMany(Podez::class, 'building_id');
+    }
+
     public function stages()
     {
         return $this->hasMany(ConstructionStage::class);

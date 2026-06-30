@@ -104,6 +104,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyFloor'])->name('facility.floors.destroy');
     Route::post('/facility/units', [\App\Http\Controllers\Admin\FacilityController::class, 'storeUnit'])->name('facility.units.store');
     Route::put('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateUnit'])->name('facility.units.update');
+    Route::delete('/facility/podezes/{podez}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyPodez'])->name('facility.podezes.destroy');
 
     // Developer Settings
     Route::get('/developer/settings', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'index'])->name('developer.settings');

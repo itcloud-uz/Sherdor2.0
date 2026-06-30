@@ -487,12 +487,26 @@ const sortedFloors = computed(() => {
 
 const podyezdsToShow = computed(() => {
     if (!selectedBuilding.value) return [];
-    const count = selectedBuilding.value.entrances_count || 1;
-    const all = Array.from({ length: count }, (_, i) => i + 1);
-    if (selectedPodyezdFilter.value && all.includes(selectedPodyezdFilter.value)) {
-        return [selectedPodyezdFilter.value];
+    if (selectedBuilding.value.podezes && selectedBuilding.value.podezes.length > 0) {
+        let all = [...selectedBuilding.value.podezes].sort((a, b) => a.podez_number - b.podez_number);
+        if (selectedPodyezdFilter.value) {
+            all = all.filter(p => p.podez_number === selectedPodyezdFilter.value);
+        }
+        return all;
     }
-    return all;
+    
+    const count = selectedBuilding.value.entrances_count || 1;
+    let allNumbers = Array.from({ length: count }, (_, i) => i + 1);
+    if (selectedPodyezdFilter.value && allNumbers.includes(selectedPodyezdFilter.value)) {
+        allNumbers = [selectedPodyezdFilter.value];
+    }
+    return allNumbers.map(num => ({
+        id: 'legacy-' + num,
+        podez_number: num,
+        podez_name: num + '-podyezd',
+        podez_type: 'Staircase',
+        total_floors: selectedBuilding.value.total_floors
+    }));
 });
 
 const formattedCurrentDate = computed(() => {
@@ -1212,6 +1226,9 @@ function openAddBlock(objName) {
     setTimeout(() => {
         buildingForm.reset();
         buildingForm.name = objName;
+        buildingForm.podezes = [
+            { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase' }
+        ];
         // Find the first building in this group to copy its location details
         const existing = props.buildings.find(b => b.name === objName);
         if (existing) {
@@ -1935,6 +1952,7 @@ const buildingForm = useForm({
     photo: null,
     is_object_only: 0,
     floors_data: [],
+    podezes: [],
     // Detailed Attributes
     block_name: '',
     corpus_name: '',
@@ -1958,6 +1976,7 @@ const floorForm = useForm({
 
 const unitForm = useForm({
     floor_id: null,
+    podez_id: null,
     unit_number: '',
     type: 'residential',
     area_sqm: '',
@@ -2058,7 +2077,49 @@ function openEditBuilding(isObject = false) {
             apartments_count: !isCommercial ? (f.total_units || 0) : 0
         };
     });
+    buildingForm.podezes = (selectedBuilding.value.podezes || []).map(p => ({
+        id: p.id,
+        name: p.podez_name,
+        number: p.podez_number,
+        floors: p.total_floors,
+        type: p.podez_type || 'Staircase',
+    }));
+    if (buildingForm.podezes.length === 0) {
+        buildingForm.podezes = [
+            { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase' }
+        ];
+    }
     showAddBuildingModal.value = true;
+}
+
+function addPodezToForm() {
+    const nextNum = buildingForm.podezes.length + 1;
+    buildingForm.podezes.push({
+        id: 'temp_' + Date.now() + '_' + Math.random(),
+        name: 'P-' + nextNum,
+        number: nextNum,
+        floors: 5,
+        type: 'Staircase'
+    });
+}
+
+function removePodezFromForm(podezId) {
+    if (buildingForm.podezes.length > 1) {
+        const existingPodez = (selectedBuilding.value?.podezes || []).find(p => p.id === podezId);
+        if (existingPodez) {
+            let unitsCount = 0;
+            if (existingPodez.floors) {
+                existingPodez.floors.forEach(f => {
+                    if (f.units) unitsCount += f.units.length;
+                });
+            }
+            if (unitsCount > 0) {
+                alert("Bu podezda kvartiralar bor! Avval kvartiralarni o'chiring.");
+                return;
+            }
+        }
+        buildingForm.podezes = buildingForm.podezes.filter(p => p.id !== podezId);
+    }
 }
 
 function openEditObjectContainer(blocksList) {
@@ -2778,6 +2839,7 @@ function openEditUnit(unit) {
     unitForm.toilets_count = unit.toilets_count || 1;
     unitForm.orientation = unit.orientation || '';
     unitForm.podyezd = unit.podyezd || 1;
+    unitForm.podez_id = unit.podez_id || null;
     unitForm.has_balcony = unit.has_balcony ? true : false;
     unitForm.blueprint = null;
     unitForm.model_3d = null;
@@ -2897,13 +2959,38 @@ function getUnitTextColor(status) {
     return 'text-gray-900';
 }
 
-function getUnitsByFloorAndPodyezd(floor, podyezdNumber) {
+function getUnitsByFloorAndPodyezd(floor, p) {
     if (!floor || !floor.units) return [];
-    return floor.units.filter(u => (u.podyezd || 1) === podyezdNumber).sort((a, b) => {
+    
+    let pNum = typeof p === 'object' ? p.podez_number : p;
+    let pId = typeof p === 'object' ? p.id : null;
+    
+    let units = floor.units;
+    
+    if (pId && !String(pId).startsWith('legacy-')) {
+        units = units.filter(u => u.podez_id === pId || (u.podyezd || 1) === pNum);
+    } else {
+        units = units.filter(u => (u.podyezd || 1) === pNum);
+    }
+    
+    return [...units].sort((a, b) => {
         const numA = String(a.unit_number).replace(/\D/g, '');
         const numB = String(b.unit_number).replace(/\D/g, '');
         return (Number(numA) || 0) - (Number(numB) || 0);
     });
+}
+
+function getSortedFloorsForPodez(podez) {
+    if (!podez) return [];
+    let floors = [];
+    if (selectedBuilding.value && selectedBuilding.value.floors) {
+        if (podez.id && !String(podez.id).startsWith('legacy-')) {
+            floors = selectedBuilding.value.floors.filter(f => f.podez_id === podez.id);
+        } else {
+            floors = selectedBuilding.value.floors;
+        }
+    }
+    return [...floors].sort((a, b) => a.floor_number - b.floor_number);
 }
 
 function getFloorStatsText(floor) {
@@ -3748,19 +3835,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
  
                                  <!-- Chessboard Grid -->
                                  <div class="overflow-x-auto pb-4">
-                                     <div v-if="selectedBuilding.floors?.length" class="flex flex-row gap-8 min-w-max p-1">
-                                         <div v-for="p in podyezdsToShow" :key="'podyezd-'+p" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
+                                     <div v-if="selectedBuilding.floors?.length || selectedBuilding.podezes?.length" class="flex flex-row gap-8 min-w-max p-1">
+                                         <div v-for="p in podyezdsToShow" :key="'podyezd-'+p.id" class="flex flex-col min-w-[320px] max-w-[480px] overflow-x-auto pb-4 scrollbar-thin">
                                             <h4 class="text-sm font-medium text-gray-800 font-sans mb-6 text-center">
-                                                {{ p }}-padezd
+                                                {{ p.podez_name }}
                                             </h4>
                                             <div class="space-y-4">
-                                                <div v-for="floor in sortedFloors" :key="'floor-'+p+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
+                                                <div v-for="floor in getSortedFloorsForPodez(p)" :key="'floor-'+p.id+'-'+floor.id" class="flex items-center gap-4 group/floor-row">
                                                     <div class="w-24 flex flex-col shrink-0 justify-center">
                                                         <div class="flex items-center justify-between">
                                                             <span class="text-[10px] font-sans font-bold text-amber-600 uppercase tracking-wider">{{ floor.floor_number < 0 ? `${floor.floor_number} YERTO'LA` : `${floor.floor_number}-QAVAT` }}</span>
                                                             <div class="flex gap-1.5 opacity-0 group-hover/floor-row:opacity-100 transition-opacity">
                                                                 <button @click="openEditFloor(floor)" class="text-[10px] hover:scale-110 transition-transform" title="Tahrirlash">✏️</button>
-                                                                <button @click="selectedFloor = floor; unitForm.podyezd = p; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
+                                                                <button @click="selectedFloor = floor; unitForm.podez_id = p.id; unitForm.podyezd = p.podez_number; showAddUnitModal = true; isEditingUnit = false" class="text-[10px] hover:scale-110 font-bold text-blue-600 transition-transform" title="Xonadon qo'shish">+</button>
                                                             </div>
                                                         </div>
                                                         <span class="text-[9px] font-sans text-amber-600 font-semibold mt-0.5">
@@ -4765,7 +4852,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                     <!-- YANGI BLOK QO'SHISH FORM -->
                     <div v-else-if="isAddingBlock && !isEditingBuilding" class="space-y-4">
-                        <!-- ROW 1: BLOK NOMI & PODEZ NOMI -->
                         <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -4778,48 +4864,43 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
 
-                        <!-- ROW 2: QAVATLAR SONI & YERTO'LA NECHA QAVATNI TASHKIL QILADI -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">QAVATLAR SONI</label>
-                                <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
+                        <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
+                        <div class="border-t border-slate-100 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Podezlar (Podez - Staircase/Entrance)</span>
+                                <button type="button" @click="addPodezToForm" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-sans font-bold uppercase rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                                    + Podez Qo'shish
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">YERTO'LA NECHA QAVATNI TASHKIL QILADI</label>
-                                <input v-model="buildingForm.basement_floors" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                        </div>
-
-                        <!-- ROW 3: JAMI DO'KONLAR & JAMI KVARTIRALAR -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">JAMI DO'KONLAR</label>
-                                <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">JAMI KVARTIRALAR</label>
-                                <input v-model="buildingForm.total_apartments" @input="onTotalApartmentsInput" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                        </div>
-
-                        <!-- QAVATLAR BO'YICHA SOZLAMALAR -->
-                        <div v-if="buildingForm.floors_data && buildingForm.floors_data.length > 0" class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2.5">
-                            <h4 class="text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">QAVATLAR BO'YICHA DO'KONLAR VA UYLAR SONI</h4>
-                            <div class="max-h-[160px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                                <div v-for="item in buildingForm.floors_data" :key="item.floor_number" class="flex items-center justify-between bg-white p-2 rounded border border-slate-100 gap-3">
-                                    <span class="text-xs font-semibold text-slate-600 font-sans">
-                                        {{ item.floor_number < 0 ? `${item.floor_number} yerto'la` : `${item.floor_number}-qavat` }}
-                                    </span>
-                                    <div class="flex gap-2 items-center">
-                                        <!-- Shops input (only show for commercial floors) -->
-                                        <div v-if="item.floor_number <= 1" class="flex items-center gap-1.5">
-                                            <span class="text-[9px] text-slate-400 font-bold uppercase">Do'kon:</span>
-                                            <input v-model.number="item.shops_count" type="number" min="0" class="w-16 bg-white border border-slate-200 text-slate-800 text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                            
+                            <div class="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                                <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Podez #{{ idx + 1 }}</span>
+                                        <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
+                                            🗑️ O'chirish
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Nomi</label>
+                                            <input v-model="podez.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
                                         </div>
-                                        <!-- Apartments input (only show for residential floors) -->
-                                        <div v-if="item.floor_number >= 2" class="flex items-center gap-1.5">
-                                            <span class="text-[9px] text-slate-400 font-bold uppercase">Uy:</span>
-                                            <input v-model.number="item.apartments_count" type="number" min="0" class="w-16 bg-white border border-slate-200 text-slate-800 text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Raqami</label>
+                                            <input v-model.number="podez.number" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Qavatlar Soni</label>
+                                            <input v-model.number="podez.floors" type="number" min="1" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Turi</label>
+                                            <select v-model="podez.type" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none cursor-pointer">
+                                                <option value="Staircase">Staircase</option>
+                                                <option value="Elevator">Elevator</option>
+                                                <option value="Corridor">Corridor</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -4906,48 +4987,43 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                             </div>
 
-                            <!-- ROW 2: QAVATLAR SONI & YERTO'LA NECHA QAVATNI TASHKIL QILADI -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Qavatlar soni</label>
-                                    <input v-model="buildingForm.total_floors" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
+                            <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
+                            <div class="border-t border-slate-100 pt-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Podezlar (Podez - Staircase/Entrance)</span>
+                                    <button type="button" @click="addPodezToForm" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-sans font-bold uppercase rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                                        + Podez Qo'shish
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">Yerto'la necha qavatni tashkil qiladi</label>
-                                    <input v-model="buildingForm.basement_floors" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                            </div>
-
-                            <!-- ROW 3: JAMI DO'KONLAR & JAMI KVARTIRALAR -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">Jami Do'konlar</label>
-                                    <input v-model="buildingForm.total_shops" @input="onTotalShopsInput" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider text-wrap">Jami Kvartiralar</label>
-                                    <input v-model="buildingForm.total_apartments" @input="onTotalApartmentsInput" type="number" min="0" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                            </div>
-
-                            <!-- QAVATLAR BO'YICHA SOZLAMALAR -->
-                            <div v-if="buildingForm.floors_data && buildingForm.floors_data.length > 0" class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2.5">
-                                <h4 class="text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">QAVATLAR BO'YICHA DO'KONLAR VA UYLAR SONI</h4>
-                                <div class="max-h-[160px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                                    <div v-for="item in buildingForm.floors_data" :key="item.floor_number" class="flex items-center justify-between bg-white p-2 rounded border border-slate-100 gap-3">
-                                        <span class="text-xs font-semibold text-slate-600 font-sans">
-                                            {{ item.floor_number < 0 ? `${item.floor_number} yerto'la` : `${item.floor_number}-qavat` }}
-                                        </span>
-                                        <div class="flex gap-2 items-center">
-                                            <!-- Shops input (only show for commercial floors) -->
-                                            <div v-if="item.floor_number <= 1" class="flex items-center gap-1.5">
-                                                <span class="text-[9px] text-slate-400 font-bold uppercase">Do'kon:</span>
-                                                <input v-model.number="item.shops_count" type="number" min="0" class="w-16 bg-white border border-slate-200 text-slate-800 text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                
+                                <div class="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Podez #{{ idx + 1 }}</span>
+                                            <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
+                                                🗑️ O'chirish
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Nomi</label>
+                                                <input v-model="podez.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
                                             </div>
-                                            <!-- Apartments input (only show for residential floors) -->
-                                            <div v-if="item.floor_number >= 2" class="flex items-center gap-1.5">
-                                                <span class="text-[9px] text-slate-400 font-bold uppercase">Uy:</span>
-                                                <input v-model.number="item.apartments_count" type="number" min="0" class="w-16 bg-white border border-slate-200 text-slate-800 text-xs rounded px-2 py-1 outline-none text-center focus:border-blue-500">
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Raqami</label>
+                                                <input v-model.number="podez.number" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Qavatlar Soni</label>
+                                                <input v-model.number="podez.floors" type="number" min="1" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Turi</label>
+                                                <select v-model="podez.type" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none cursor-pointer">
+                                                    <option value="Staircase">Staircase</option>
+                                                    <option value="Elevator">Elevator</option>
+                                                    <option value="Corridor">Corridor</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>

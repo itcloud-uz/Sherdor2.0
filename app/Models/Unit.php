@@ -8,6 +8,7 @@ class Unit extends Model
 {
     protected $fillable = [
         'floor_id',
+        'podez_id',
         'unit_number',
         'type',
         'area_sqm',
@@ -28,5 +29,10 @@ class Unit extends Model
     public function floor()
     {
         return $this->belongsTo(Floor::class);
+    }
+
+    public function podez()
+    {
+        return $this->belongsTo(Podez::class, 'podez_id');
     }
 }

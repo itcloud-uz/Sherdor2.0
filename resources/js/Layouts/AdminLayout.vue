@@ -347,7 +347,7 @@ const formattedDate = computed(() => {
         <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-gray-500/50  z-40 md:hidden"></div>
 
         <!-- Sidebar -->
-        <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-64 h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
+        <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-[260px] h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
             <div class="h-20 flex items-center justify-center border-b border-gray-100 px-4">
                 <div class="flex items-center gap-3 w-full">
                     <div class="w-12 h-12 rounded-full border-2 border-[#dfb15b] bg-[#090b10] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
@@ -367,12 +367,12 @@ const formattedDate = computed(() => {
                     <div v-if="item.name === 'finance_core'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isFinanceMenuOpen = !isFinanceMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="route().current('admin.finance') ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
+                            :class="route().current('admin.finance') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors font-bold" :class="route().current('admin.finance') ? 'text-blue-600' : ''">$</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.finance') ? 'text-blue-700 font-semibold' : ''">Moliya</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors font-bold" :class="route().current('admin.finance') ? 'text-blue-600' : ''">$</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.finance') ? 'text-blue-700 font-semibold' : ''">Moliya</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -387,84 +387,77 @@ const formattedDate = computed(() => {
                             <!-- Kassalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 8 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(8)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(8) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Kassalar
                             </Link>
 
                             <!-- Tranzaksiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 2 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(2, 'transactions')
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(2, 'transactions') ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Tranzaksiyalar
                             </Link>
 
                             <!-- Pul o'tkazmalari -->
                             <Link
                                 :href="route('admin.finance', { tab: 6 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(6)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(6) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Pul o'tkazmalari
                             </Link>
 
                             <!-- Botdan kirimlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 12 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(12)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(12) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Botdan kirimlar
                             </Link>
 
                             <!-- Qo'shimcha operatsiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 1 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(1)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(1) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Qo'shimcha operatsiyalar
                             </Link>
 
                             <!-- Hisobotlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 11 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(11)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(11) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Hisobotlar
                             </Link>
 
                             <!-- Harakatlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 13 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(13)
-                                    ? 'bg-[#FEF5E7] text-[#D35400] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-950'"
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                <span :class="isFinanceSubTabActive(13) ? 'text-[#F2994A]' : 'text-gray-300'" class="text-xs">●</span>
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Harakatlar
                             </Link>
                         </div>
@@ -474,12 +467,12 @@ const formattedDate = computed(() => {
                     <div v-else-if="item.name === 'crm'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isCrmMenuOpen = !isCrmMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
+                            :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="((route().current('admin.crm') && !['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'].includes($page.url.split('tab=')[1]?.split('&')[0])) || route().current('admin.telephony.index') || route().current('admin.ai_agents')) ? 'text-blue-700 font-semibold' : ''">CRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -494,17 +487,17 @@ const formattedDate = computed(() => {
                             <!-- Dashboard -->
                             <Link
                                 :href="route('admin.crm', { tab: 'dashboard' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('dashboard') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isCrmTabActive('dashboard') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                📊 Dashboard
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Dashboard
                             </Link>
 
                             <!-- Lidlar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'leads' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('leads') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isCrmTabActive('leads') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 🎯 Lidlar
                             </Link>
@@ -512,8 +505,8 @@ const formattedDate = computed(() => {
                             <!-- Postlar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'posts' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('posts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isCrmTabActive('posts') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 📝 Postlar
                             </Link>
@@ -521,8 +514,8 @@ const formattedDate = computed(() => {
                             <!-- Sozlamalar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'settings' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isCrmTabActive('settings') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isCrmTabActive('settings') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 ⚙️ Sozlamalar
                             </Link>
@@ -530,8 +523,8 @@ const formattedDate = computed(() => {
                             <!-- SMS -->
                             <Link
                                 :href="route('admin.ai_agents')"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="route().current('admin.ai_agents') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="route().current('admin.ai_agents') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 💬 SMS
                             </Link>
@@ -539,8 +532,8 @@ const formattedDate = computed(() => {
                             <!-- IP Telefoniya -->
                             <Link
                                 :href="route('admin.telephony.index')"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="route().current('admin.telephony.index') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="route().current('admin.telephony.index') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 📞 IP Telefoniya
                             </Link>
@@ -551,12 +544,12 @@ const formattedDate = computed(() => {
                     <div v-else-if="item.name === 'clients_database'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isClientsMenuOpen = !isClientsMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
+                            :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">💼</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Sotuv bo'limi</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-600' : ''">💼</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="(route().current('admin.crm') && ['clients_new', 'clients', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'overdue', 'sales_agents'].includes($page.url.split('tab=')[1]?.split('&')[0])) ? 'text-blue-700 font-semibold' : ''">Sotuv bo'limi</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -571,17 +564,17 @@ const formattedDate = computed(() => {
                             <!-- Sotuv xodimlari -->
                             <Link
                                 :href="route('admin.crm', { tab: 'sales_agents' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('sales_agents') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('sales_agents') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                👤 Sotuv xodimlari
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Sotuv xodimlari
                             </Link>
 
                             <!-- Mijozlar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'clients' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0]) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes($page.url.split('tab=')[1]?.split('&')[0]) ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 👥 Mijozlar
                             </Link>
@@ -589,8 +582,8 @@ const formattedDate = computed(() => {
                             <!-- Shartnomalar -->
                             <Link
                                 :href="route('admin.crm', { tab: 'contracts' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('contracts') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('contracts') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 📄 Shartnomalar
                             </Link>
@@ -598,8 +591,8 @@ const formattedDate = computed(() => {
                             <!-- Shartnoma shablonlari -->
                             <Link
                                 :href="route('admin.contract-templates.index')"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="$page.component === 'Admin/ContractTemplates/Index' ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="$page.component === 'Admin/ContractTemplates/Index' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 📝 Shablonlar
                             </Link>
@@ -607,8 +600,8 @@ const formattedDate = computed(() => {
                             <!-- Mijoz to'lovlari -->
                             <Link
                                 :href="route('admin.crm', { tab: 'client_payments' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('client_payments') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('client_payments') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 💳 Mijoz to'lovlari
                             </Link>
@@ -616,8 +609,8 @@ const formattedDate = computed(() => {
                             <!-- Mijoz to'lov hisobotlari -->
                             <Link
                                 :href="route('admin.crm', { tab: 'client_payment_reports' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('client_payment_reports') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('client_payment_reports') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 📊 To'lov hisobotlari
                             </Link>
@@ -626,8 +619,8 @@ const formattedDate = computed(() => {
                             <Link
                                 v-if="hasPerm('access debtors')"
                                 :href="route('admin.crm', { tab: 'overdue' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isClientsTabActive('overdue') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('overdue') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 ⏳ Qarzdorlar
                             </Link>
@@ -638,12 +631,12 @@ const formattedDate = computed(() => {
                     <div v-else-if="item.name === 'facility_manager'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isFacilityMenuOpen = !isFacilityMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="route().current('admin.facility') ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
+                            :class="route().current('admin.facility') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.facility') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.facility') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.facility') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.facility') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -777,12 +770,12 @@ const formattedDate = computed(() => {
                     <div v-else-if="item.name === 'hr_payroll'" class="space-y-1" :key="item.name + '-group'">
                         <button
                             @click="isHrMenuOpen = !isHrMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="route().current('admin.hr') ? 'bg-blue-50/70 border-blue-100' : ''"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
+                            :class="route().current('admin.hr') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.hr') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.hr') ? 'text-blue-700 font-semibold' : ''">HRM</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.hr') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.hr') ? 'text-blue-700 font-semibold' : ''">HRM</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -797,37 +790,37 @@ const formattedDate = computed(() => {
                             <!-- Xodimlar -->
                             <Link
                                 :href="route('admin.hr', { tab: 0 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(0) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isHrTabActive(0) ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                👥 Xodimlar
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Xodimlar
                             </Link>
                             
                             <!-- Sotuv xodimlari -->
                             <Link
                                 :href="route('admin.hr', { tab: 'sales_agents' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive('sales_agents') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isHrTabActive('sales_agents') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                👤 Sotuv xodimlari
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Sotuv xodimlari
                             </Link>
                             
                             <!-- Maoshlar -->
                             <Link
                                 :href="route('admin.hr', { tab: 1 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(1) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isHrTabActive(1) ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                💸 Maoshlar
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Maoshlar
                             </Link>
                             
                             <!-- KPI -->
                             <Link
                                 :href="route('admin.hr', { tab: 2 })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isHrTabActive(2) ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isHrTabActive(2) ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                📈 KPI
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> KPI
                             </Link>
                         </div>
                     </div>
@@ -838,11 +831,11 @@ const formattedDate = computed(() => {
                     <Link
                         v-else
                         :href="route(item.route)"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100"
-                        :class="currentNav?.name === item.name ? 'bg-blue-50 border-blue-100' : ''"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent"
+                        :class="currentNav?.name === item.name ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                     >
-                        <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                        <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                        <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                        <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="currentNav?.name === item.name ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
                     </Link>
                 </template>
             </nav>

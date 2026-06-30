@@ -194,12 +194,18 @@ class FinanceController extends Controller
 
     public function store(Request $request)
     {
+        // Normalize payment_method
+        if ($request->payment_method === 'bank') {
+            $request->merge(['payment_method' => 'bank_transfer']);
+        }
+
         $validated = $request->validate([
             'type' => 'required|in:income,expense',
             'amount' => 'required|numeric|min:0',
             'currency' => 'nullable|string',
             'payment_method' => 'required|in:cash,card,bank_transfer',
             'account_id' => 'required|exists:cash_registers,id',
+            'overpayment_account_id' => 'nullable|exists:cash_registers,id',
             'counterparty_id' => 'nullable|exists:counterparties,id',
             'invoice_id' => 'nullable|exists:invoices,id',
             'contract_id' => 'nullable|exists:contracts,id',
@@ -308,7 +314,55 @@ class FinanceController extends Controller
             $validated['client_id'] = $validated['target_id'];
         }
 
+        $overpaid = 0;
+        $overpaymentAccountId = $request->overpayment_account_id;
+        $contract = null;
+        if ($validated['type'] === 'income' && !empty($validated['contract_id']) && !empty($overpaymentAccountId)) {
+            $contract = \App\Models\Contract::find($validated['contract_id']);
+            if ($contract) {
+                $total = (float)$contract->total_amount;
+                $paid = (float)\DB::table('payment_schedules')->where('contract_id', $contract->id)->sum('paid_amount');
+                $debt = max(0.0, $total - $paid);
+                
+                $originalAmount = (float)$validated['amount'];
+                if ($originalAmount > $debt) {
+                    $overpaid = $originalAmount - $debt;
+                    $validated['amount'] = $debt;
+                    if (!empty($validated['exchange_rate'])) {
+                        $validated['converted_amount'] = $debt * $validated['exchange_rate'];
+                    }
+                }
+            }
+        }
+
         $transaction = Transaction::create($validated);
+
+        if ($overpaid > 0 && $contract) {
+            $overpaymentCategory = \App\Models\TransactionCategory::firstOrCreate(
+                ['name' => 'Mijoz Ortiqcha To\'lovi (Bank)'],
+                ['type' => 'income', 'description' => 'Shartnoma qiymatidan ortiqcha to\'langan va bank orqali kelib tushgan summa']
+            );
+            
+            $overpaymentTx = \App\Models\Transaction::create([
+                'type' => 'income',
+                'amount' => $overpaid,
+                'currency' => $transaction->currency,
+                'payment_method' => 'bank_transfer',
+                'account_id' => $overpaymentAccountId,
+                'client_id' => $transaction->client_id,
+                'counterparty_id' => $transaction->counterparty_id,
+                'building_id' => $transaction->building_id,
+                'category_id' => $overpaymentCategory->id,
+                'status' => 'pending',
+                'transaction_date' => $transaction->transaction_date,
+                'notes' => 'Mijoz ortiqcha to\'lovi - Shartnoma #' . ($contract->contract_number ?: $contract->id) . ' dan ortgan',
+                'created_by' => auth()->id()
+            ]);
+            
+            if (!empty($validated['auto_approve']) && !$requiresConsensus) {
+                $this->approveTransaction($request, $overpaymentTx);
+            }
+        }
 
         if ($requiresConsensus) {
             $consensusRequest = ConsensusRequest::create([

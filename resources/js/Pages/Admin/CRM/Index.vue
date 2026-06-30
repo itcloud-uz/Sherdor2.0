@@ -3232,6 +3232,34 @@ const selectedCounterpartyContracts = computed(() => {
     return cp?.customable?.contracts || [];
 });
 
+const selectedContractObject = computed(() => {
+    if (!transactionForm.value.contract_id) return null;
+    
+    if (detailedClientData.value && detailedClientData.value.contracts) {
+        const found = detailedClientData.value.contracts.find(c => c.id == transactionForm.value.contract_id);
+        if (found) return found;
+    }
+    
+    if (props.contracts) {
+        const found = props.contracts.find(c => c.id == transactionForm.value.contract_id);
+        if (found) return found;
+    }
+
+    if (selectedCounterpartyContracts.value) {
+        const found = selectedCounterpartyContracts.value.find(c => c.id == transactionForm.value.contract_id);
+        if (found) return found;
+    }
+
+    return null;
+});
+
+const overpaidAmount = computed(() => {
+    if (!selectedContractObject.value) return 0;
+    const financials = getContractFinancials(selectedContractObject.value);
+    const amount = Number(transactionForm.value.amount || 0);
+    return Math.max(0, amount - financials.debt);
+});
+
 const showQuickTransactionModal = ref(false);
 const showEditTransactionModal = ref(false);
 const showReceiptModal = ref(false);
@@ -3244,6 +3272,7 @@ const transactionForm = ref({
     currency: 'UZS',
     payment_method: 'cash',
     account_id: '',
+    overpayment_account_id: '',
     counterparty_id: '',
     contract_id: '',
     client_id: '',
@@ -3266,6 +3295,7 @@ function openQuickTransaction(type = 'income', client = null) {
         currency: 'UZS',
         payment_method: 'cash',
         account_id: props.cashRegisters && props.cashRegisters.length > 0 ? props.cashRegisters[0].id : '',
+        overpayment_account_id: '',
         counterparty_id: '',
         contract_id: '',
         client_id: '',
@@ -8549,6 +8579,22 @@ const ledgerReportData = computed(() => {
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh (Eslatma)</label>
                         <textarea v-model="transactionForm.notes" rows="3" placeholder="To'lov bo'yicha qo'shimcha ma'lumotlar..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- Overpayment Account Selector (for Bank Overpayments) -->
+                    <div v-if="transactionForm.type === 'income' && transactionForm.payment_method === 'bank' && overpaidAmount > 0" class="p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-2">
+                        <label class="block text-xs font-bold text-orange-800 uppercase tracking-wider">
+                            ⚠️ Ortiqcha to'lov kassasi (Hisob)
+                        </label>
+                        <select v-model="transactionForm.overpayment_account_id" required class="w-full bg-white border border-orange-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-bold">
+                            <option value="">-- Ortiqcha summa uchun hisob tanlang --</option>
+                            <option v-for="cr in cashRegisters" :key="cr.id" :value="cr.id">
+                                {{ cr.name }} ({{ cr.currency }})
+                            </option>
+                        </select>
+                        <p class="text-[10px] text-orange-700 font-mono">
+                            Mijoz shartnomaning qoldiq summasidan <strong class="text-orange-900 font-bold">{{ Number(overpaidAmount).toLocaleString() }} so'm</strong> ortiqcha to'lamoqda. Iltimos, ortiqcha summa o'tishi kerak bo'lgan bank/kassa hisobini tanlang.
+                        </p>
                     </div>
 
                     <!-- Action Buttons -->

@@ -11,22 +11,6 @@ const isCrmMenuOpen = ref(false);
 const isClientsMenuOpen = ref(false);
 const isFacilityMenuOpen = ref(false);
 const isHrMenuOpen = ref(false);
-const isSettingsMenuOpen = ref(false);
-
-const isSettingsTabActive = (tabId) => {
-    const currentRoute = route().current();
-    if (currentRoute !== 'admin.settings.index') return false;
-    try {
-        const url = new URL(page.url, window.location.origin);
-        const tabParam = url.searchParams.get('tab');
-        if (tabParam === null) {
-            return tabId === 'branding';
-        }
-        return tabParam === tabId;
-    } catch (e) {
-        return false;
-    }
-};
 
 const isTabActive = (tabId) => {
     const currentRoute = route().current();
@@ -310,9 +294,7 @@ onMounted(() => {
         if (currentRoute.includes('hr')) {
             isHrMenuOpen.value = true;
         }
-        if (currentRoute.includes('settings')) {
-            isSettingsMenuOpen.value = true;
-        }
+
     }
 
     refreshInterval = setInterval(() => {
@@ -850,91 +832,7 @@ const formattedDate = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Custom nested menu for settings -->
-                    <div v-else-if="item.name === 'settings'" class="space-y-1" :key="item.name + '-group'">
-                        <button
-                            @click="isSettingsMenuOpen = !isSettingsMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-blue-50 border border-transparent hover:border-blue-100 text-left"
-                            :class="route().current('admin.settings.index') ? 'bg-blue-50/70 border-blue-100' : ''"
-                        >
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg text-gray-500 group-hover:text-blue-600 transition-colors" :class="route().current('admin.settings.index') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-sm font-medium text-gray-600 group-hover:text-blue-700 transition-colors" :class="route().current('admin.settings.index') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
-                            </div>
-                            <svg
-                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
-                                :class="isSettingsMenuOpen ? 'rotate-180' : ''"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            >
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        
-                        <div v-show="isSettingsMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <!-- Brending va Tashqi Ko'rinish -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'branding' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('branding') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🎨 Brending va Tashqi Ko'rinish
-                            </Link>
 
-                            <!-- Financial Defaults -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'financial' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('financial') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🏦 Financial Defaults
-                            </Link>
-
-                            <!-- Profil va Dizayn -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'profile' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('profile') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                👤 Profil va Dizayn
-                            </Link>
-
-                            <!-- Manbalar (Lead Sources) -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'lead_sources' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('lead_sources') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🎯 Manbalar (Lead Sources)
-                            </Link>
-
-                            <!-- SMS Xabarnoma -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'sms_broadcast' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('sms_broadcast') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                💬 SMS Xabarnoma
-                            </Link>
-
-                            <!-- Xodimlar (Users) -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'users_management' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('users_management') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                👥 Xodimlar (Users)
-                            </Link>
-
-                            <!-- Rollar va Ruxsatlar -->
-                            <Link
-                                :href="route('admin.settings.index', { tab: 'roles_permissions' })"
-                                class="flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
-                                :class="isSettingsTabActive('roles_permissions') ? 'text-blue-600 bg-blue-50/50 font-semibold border border-blue-100/30' : ''"
-                            >
-                                🔐 Rollar va Ruxsatlar
-                            </Link>
-                        </div>
-                    </div>
 
                     <!-- Regular Items -->
                     <Link

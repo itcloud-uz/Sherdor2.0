@@ -1,230 +1,398 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import GalaxyBackground from '@/Components/GalaxyBackground.vue';
+import { Head, Link } from '@inertiajs/vue3';
 
-const panels = [
-    {
-        title: 'Admin Paneli',
-        icon: '👑',
-        color: 'from-purple-600 to-purple-400',
-        features: [
-            'Barcha obyektlar va sotuvlarni to\'liq nazorat qilish',
-            'Moliyaviy oqim va kassani yuritish',
-            'Xodimlarni boshqarish va oylik hisoblash',
-            'Tasdiqlashlar (Multi-sig) va ruxsatnomalar',
-            'Shartnomalarni yaratish va PDF skaner'
-        ]
-    },
-    {
-        title: 'Partner Paneli',
-        icon: '💼',
-        color: 'from-amber-500 to-yellow-300',
-        features: [
-            'Kiritilgan investitsiyalarni kuzatib borish',
-            'Obyektlardagi sotuvlardan tushgan foydani ko\'rish',
-            'Admin tomonidan yuborilgan xarajatlarni tasdiqlash',
-            'Foyda taqsimoti (Dividentlar) tahlili',
-            'Qurilish jarayonining real vaqt monitoringi'
-        ]
-    },
-    {
-        title: 'Operator Paneli',
-        icon: '🏗️',
-        color: 'from-red-600 to-red-400',
-        features: [
-            'Mijozlar bilan ishlash (CRM bazasi)',
-            'Shartnomalar tayyorlash va kiritish',
-            'Kvartiralar (shaxmatka) holatini ko\'rish',
-            'Kunlik uchrashuvlarni rejalashtirish',
-            'AI yordamida hujjatlarni skaner qilish'
-        ]
-    }
-];
+defineProps({
+    canLogin: { type: Boolean },
+    canRegister: { type: Boolean },
+    laravelVersion: { type: String },
+    phpVersion: { type: String },
+});
+
+const showDemo = ref(false);
 </script>
 
 <template>
-    <Head :title="($page.props.branding?.app_name || 'Sher-Dor ERP') + ' - Tizim Imkoniyatlari'" />
-    
-    <div class="min-h-screen text-white font-sans overflow-x-hidden relative selection:bg-purple-500/30 selection:text-white">
-        
-        <!-- Authentic Galaxy Background -->
-        <GalaxyBackground />
+    <Head title="SBE - Sales & Build ERP" />
+    <div class="min-h-screen bg-[#050505] text-white relative overflow-hidden font-sans">
+        <!-- Space Background / Stars -->
+        <div class="stars-bg absolute inset-0 z-0"></div>
+        <div class="twinkling absolute inset-0 z-0 opacity-40"></div>
 
-        <!-- Navigation (Apple Glassmorphism) -->
-        <nav class="relative z-50 flex items-center justify-between p-6 md:px-12 bg-gray-500/50 border-b border-white/10 sticky top-0  shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)]">
-                    <span class="font-display font-bold text-xl text-white">S</span>
+        <!-- Glassmorphism Orbs -->
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/30 blur-[120px] pointer-events-none z-0"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-orange-600/30 blur-[120px] pointer-events-none z-0"></div>
+        <div class="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-blue-600/30 blur-[120px] pointer-events-none z-0"></div>
+
+        <!-- Content Wrapper -->
+        <div class="relative z-10">
+            <!-- Navbar -->
+            <nav class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto backdrop-blur-md bg-white/[0.02] border-b border-white/5 rounded-b-3xl mb-8 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <img src="/sbe-logo.png" alt="SBE Logo" class="h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=SBE&background=1e1e1e&color=fff&rounded=true'" />
+                    <span class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-purple-600 drop-shadow-sm tracking-tight">SBE</span>
                 </div>
-                <span class="font-display font-bold text-xl tracking-widest text-white">{{ $t('sher_dor') }}</span>
-            </div>
-            <div class="hidden md:flex gap-8 items-center text-sm font-medium tracking-wide text-gray-300">
-                <a href="#panels" class="hover:text-amber-400 transition-colors">Tizim Bo'limlari</a>
-                <a href="#about" class="hover:text-amber-400 transition-colors">Qo'llanma</a>
-                <a href="#contact" class="hover:text-amber-400 transition-colors">Texnik Yordam</a>
-            </div>
-            <div class="flex items-center gap-3">
-                <Link :href="route('admin.developer.settings')" class="px-5 py-2 text-sm font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 rounded-full transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-                    ⚙️ CMS Sozlamalari
-                </Link>
-                <Link :href="route('login')" class="px-5 py-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-colors ">
-                    Tizimga Kirish
-                </Link>
-            </div>
-        </nav>
-
-        <!-- Hero Section -->
-        <main class="relative z-10 flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium tracking-wide mb-8 ">
-                <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse"></span>
-                Siz uchun maxsus ishlab chiqildi
-            </div>
-            
-            <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 max-w-4xl leading-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">
-                {{ $page.props.branding?.app_name || 'Sher-Dor ERP' }} <br />
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-red-400 to-amber-400">Ishonchli Boshqaruv Tizimi</span>
-            </h1>
-            
-            <p class="text-lg md:text-xl text-gray-400 max-w-3xl mb-12 font-light leading-relaxed">
-                Hurmatli mijoz, bu tizim orqali siz kompaniyangizdagi barcha moliyaviy oqimlarni, sotuvlarni va qurilish jarayonlarini to'liq raqamlashtirasiz. Quyida tizimning ishlash tamoyillari bilan tanishishingiz mumkin.
-            </p>
-            
-            <div class="flex flex-col sm:flex-row items-center gap-6">
-                <a href="#panels" class="px-8 py-4 bg-gradient-to-r from-purple-600 to-red-600 text-white font-medium text-lg rounded-full shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_40px_rgba(239,68,68,0.6)] hover:scale-105 transition-all w-full sm:w-auto border border-white/20 ">
-                    Bo'limlar Bilan Tanishish
-                </a>
-                <Link :href="route('login')" class="px-8 py-4 bg-black/40 border border-amber-500/30 text-amber-400 font-medium text-lg rounded-full hover:bg-white/10 transition-all w-full sm:w-auto  flex items-center justify-center gap-2">
-                    Tizimga Kirish <span class="opacity-50">→</span>
-                </Link>
-            </div>
-        </main>
-
-        <!-- Panels Overview -->
-        <section id="panels" class="relative z-10 py-24 px-4 max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-5xl font-display font-bold mb-4">Uch Darajali <span class="text-purple-400">Nazorat Panellari</span></h2>
-                <p class="text-gray-400 text-lg">Har bir roldagi xodim va hamkor uchun maxsus imkoniyatlar</p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div 
-                    v-for="(panel, idx) in panels" 
-                    :key="idx"
-                    class="bg-black/40 p-4 md:p-8 rounded-[2rem] border border-white/10  transition-all duration-500 hover:border-white/30 hover:-translate-y-2 group shadow-[0_0_30px_rgba(0,0,0,0.5)]"
-                >
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 bg-gradient-to-br border border-white/20 shadow-lg" :class="panel.color">
-                        {{ panel.icon }}
-                    </div>
-                    <h3 class="text-2xl font-display font-bold text-white mb-4">{{ panel.title }}</h3>
-                    <ul class="space-y-3">
-                        <li v-for="(feature, fIdx) in panel.features" :key="fIdx" class="flex items-start gap-3 text-gray-300 text-sm leading-relaxed">
-                            <span class="text-amber-400 mt-0.5">✦</span>
-                            {{ feature }}
-                        </li>
-                    </ul>
+                <div class="flex gap-4">
+                    <Link v-if="canLogin" :href="route('login')" class="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all text-sm font-semibold backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                        Kirish
+                    </Link>
                 </div>
-            </div>
-        </section>
+            </nav>
 
-        <!-- Technical Capabilities -->
-        <section id="about" class="relative z-10 py-24 px-4 border-y border-white/10 bg-black/40  mt-12">
-            <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
-                <div class="flex-1 space-y-8">
-                    <h2 class="text-3xl md:text-4xl font-display font-bold leading-tight">
-                        Zamonaviy Texnologiyalar <br>
-                        Sizning Xizmatingizda
-                    </h2>
-                    <p class="text-gray-400 leading-relaxed text-lg">
-                        Tizim eng so'nggi dasturlash yechimlari bilan qurilgan bo'lib, quyidagi qulayliklarni taklif etadi:
-                    </p>
-                    <ul class="space-y-6">
-                        <li class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/40 text-2xl shadow-[0_0_15px_rgba(168,85,247,0.3)]">🧠</div>
-                            <div>
-                                <h4 class="font-bold text-white mb-1">Sun'iy Intellekt (AI)</h4>
-                                <p class="text-sm text-gray-400">Shartnoma PDF fayllarini avtomatik o'qish (OCR) hamda mijozlarga javob qaytaruvchi aqlli botlar.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/40 text-2xl shadow-[0_0_15px_rgba(245,158,11,0.3)]">🛡️</div>
-                            <div>
-                                <h4 class="font-bold text-white mb-1">Xavfsizlik Va Izolyatsiya</h4>
-                                <p class="text-sm text-gray-400">Har bir qilinayotgan xarajat ham Admin, ham Prorab tomonidan tasdiqlanishi shart. Ma'lumotlar shifrlangan.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0 border border-red-500/40 text-2xl shadow-[0_0_15px_rgba(239,68,68,0.3)]">📊</div>
-                            <div>
-                                <h4 class="font-bold text-white mb-1">Real Vaqt (Real-Time) Tahlili</h4>
-                                <p class="text-sm text-gray-400">Sotuvlar, muddatli to'lovlar, valyuta kurslaridagi o'zgarishlarni soniyasma-soniya kuzatish imkoniyati.</p>
-                            </div>
-                        </li>
-                    </ul>
+            <!-- Hero Section -->
+            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center">
+                <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-md">
+                    <span class="text-sm font-medium text-blue-300 tracking-wide uppercase">Yangi Avlod ERP Tizimi</span>
                 </div>
-                <div class="flex-1 relative w-full aspect-square md:aspect-video lg:aspect-square max-h-[500px] rounded-[3rem] border border-white/20 bg-[#0A0A10]/80 overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.15)]  flex flex-col justify-center items-center">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/20 rounded-full blur-[80px]"></div>
-                    <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px]"></div>
-                    
-                    <div class="relative z-10 text-center p-4 md:p-8">
-                        <div class="inline-flex gap-3 mb-8">
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">👑</div>
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">💼</div>
-                            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10  flex items-center justify-center shadow-lg">🏗️</div>
+                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8 drop-shadow-lg">
+                    SBE – Qurilish va Savdo Kompaniyalari Uchun <br/>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-purple-500 to-blue-500 animate-gradient-x">Yagona Boshqaruv Ekosistemasi</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mb-12 leading-relaxed drop-shadow-md">
+                    Moliya, CRM, Qurilish ob'ektlari va Kadrlar bo'limini bitta oynadan boshqaring. Ma'lumotlaringiz xavfsizligi va biznesingizning to'liq nazorati sizning qo'lingizda.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-6 w-full justify-center px-4">
+                    <Link v-if="canLogin" :href="route('login')" class="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all font-bold text-lg shadow-[0_0_30px_rgba(79,70,229,0.5)] hover:shadow-[0_0_40px_rgba(79,70,229,0.7)] hover:-translate-y-1 transform duration-300">
+                        Tizim bilan tanishish
+                    </Link>
+                    <button @click="showDemo = true" class="group px-8 py-4 rounded-full bg-black/40 backdrop-blur-md border border-purple-500/50 hover:bg-purple-500/10 transition-all font-bold text-lg text-purple-300 hover:text-purple-200 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:-translate-y-1 transform duration-300 flex items-center justify-center gap-2">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                        </span>
+                        Demo rejimda sinab ko'rish
+                    </button>
+                </div>
+            </main>
+
+            <!-- Features Section -->
+            <section class="max-w-7xl mx-auto px-6 py-24 relative z-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">💡</div>
+                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Aklli CRM va Shartnomalar</h3>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Mijozlar bazasini (Lead) boshqarish, shartnomalarni avtomatlashtirilgan PDF formatida generatsiya qilish, SMS xabarnomalar va to'lov grafigini (shaxmatka) real vaqt rejimida kuzatish.</p>
                         </div>
-                        <h3 class="text-2xl font-bold text-white mb-2">Bitta Tizim</h3>
-                        <p class="text-gray-400">Uchta mukammal yechim</p>
+                    </div>
+                    
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]">💰</div>
+                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Moliya va Kassa Nazorati</h3>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ko'p valyutali hisob-kitoblar, daromad va xarajatlarni toifalar bo'yicha tahlil qilish, investorlar o'rtasida foyda (divident) taqsimotini avtomatik hisoblash va tasdiqlash tizimi (Multi-sig).</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-purple-500/30 transition-all duration-500 group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">🏗️</div>
+                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Qurilish va Omborxona</h3>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ob'ektlardagi qurilish jarayonlarini bosqichma-bosqich nazorat qilish, ombordagi materiallar (kirim-chiqim) hisobi, ta'minotchilar bilan hisob-kitoblar va texnikalar ijarasi monitoringi.</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-pink-500/30 transition-all duration-500 group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.2)]">👥</div>
+                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">HR, Oyliklar va Face ID</h3>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ishchilarni yuzni tanish texnologiyasi (Face ID) orqali davomat qilish, brigadalar ishi, KPI va oylik maoshlarni avtomatlashtirilgan hisob-kitobi.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Partners Section -->
+            <section class="max-w-7xl mx-auto px-6 py-24 text-center">
+                <h2 class="text-3xl md:text-4xl font-extrabold mb-14 drop-shadow-lg">
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">Xalqaro va Mahalliy Qurilish Gigantlari Bizni Tanlaydi</span>
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-6 items-stretch justify-center">
+                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex items-center justify-center font-bold text-xl text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">Sherdor</div>
+                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex items-center justify-center font-bold text-xl text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">Delta</div>
+                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">
+                        <span>Hakim O'g'lu</span>
+                        <span class="text-xs text-blue-400 mt-1.5 font-medium tracking-wider uppercase">(Turkiya)</span>
+                    </div>
+                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 text-center shadow-lg">
+                        <span>Göztepe Builder Global</span>
+                    </div>
+                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 text-center shadow-lg">
+                        <span>Hayot House</span>
+                        <span class="text-[10px] text-blue-400 mt-1.5 font-medium tracking-wider uppercase">(Toshkent & Samarqand)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="mt-12 border-t border-white/10 pt-16 pb-8 glass-card bg-black/40">
+                <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center gap-3 mb-6">
+                            <img src="/sbe-logo.png" alt="SBE" class="h-10 opacity-90" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=SBE&background=1e1e1e&color=fff&rounded=true'" />
+                            <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">SBE</span>
+                        </div>
+                        <p class="text-gray-400 text-sm max-w-sm leading-relaxed">
+                            SBE – Sales & Build ERP tizimi orqali biznesingizni yangi bosqichga olib chiqing. Barcha murakkab jarayonlar endi bitta aqlli va xavfsiz tizimda.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-6 text-white drop-shadow-sm">Kontaktlar</h4>
+                        <ul class="text-gray-400 space-y-4 text-sm font-medium">
+                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">📞</span> +998 33 518 00 05</li>
+                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">📞</span> +998 91 187 37 30</li>
+                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">✉️</span> itclouduz@gmail.com</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-6 text-white drop-shadow-sm">Ijtimoiy tarmoqlar</h4>
+                        <ul class="text-gray-400 space-y-4 text-sm font-medium">
+                            <li><a href="#" class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">✈️</span> @ITcloud_me</a></li>
+                            <li><a href="#" class="flex items-center gap-3 hover:text-pink-400 transition-colors"><span class="text-lg">📸</span> Shodiyor_kholmurodov</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center text-gray-500 text-xs border-t border-white/5 pt-8 font-medium">
+                    <p>Dasturchi: Shodiyor Xolmurodov &nbsp;|&nbsp; © 2026 ITCloud.uz &nbsp;|&nbsp; SBE - Sales & Build ERP v2.0</p>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Demo Modal -->
+        <div v-if="showDemo" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl bg-black/70 transition-all duration-300">
+            <div class="relative w-full max-w-6xl h-[85vh] rounded-3xl border border-white/10 bg-[#0a0a0a]/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-fade-in-up ring-1 ring-white/5">
+                
+                <!-- Mac-like Header -->
+                <div class="flex justify-between items-center px-5 py-3 border-b border-white/10 bg-white/5 backdrop-blur-md">
+                    <div class="flex items-center gap-4">
+                        <div class="flex gap-2">
+                            <div class="w-3.5 h-3.5 rounded-full bg-red-500 border border-red-600 cursor-pointer hover:bg-red-600 transition-colors shadow-sm" @click="showDemo = false"></div>
+                            <div class="w-3.5 h-3.5 rounded-full bg-yellow-500 border border-yellow-600 shadow-sm"></div>
+                            <div class="w-3.5 h-3.5 rounded-full bg-green-500 border border-green-600 shadow-sm"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-4">SBE Dashboard Demo</span>
+                    </div>
+                    <button @click="showDemo = false" class="text-gray-400 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-md">
+                        Yopish
+                    </button>
+                </div>
+
+                <!-- Dashboard Mockup -->
+                <div class="flex flex-1 overflow-hidden backdrop-blur-3xl">
+                    <!-- Sidebar -->
+                    <div class="w-64 border-r border-white/5 bg-black/40 p-5 flex flex-col gap-3">
+                        <div class="mb-6 px-2 flex items-center gap-2">
+                            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">SBE ERP</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner">
+                            📊 <span class="font-medium text-sm">Boshqaruv Paneli</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                            💼 <span class="font-medium text-sm">Moliya</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                            🤝 <span class="font-medium text-sm">CRM va Mijozlar</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                            🏢 <span class="font-medium text-sm">Qurilish Ob'ektlari</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                            📦 <span class="font-medium text-sm">Omborxona</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                            👥 <span class="font-medium text-sm">HR va Oyliklar</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 bg-gradient-to-br from-gray-900/40 to-black/60 p-8 overflow-y-auto relative">
+                        
+                        <!-- Topbar -->
+                        <div class="flex justify-between items-center mb-10">
+                            <div class="relative w-96">
+                                <input type="text" placeholder="Qidirish..." class="w-full bg-white/5 border border-white/10 rounded-full py-2.5 px-5 pl-12 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-inner">
+                                <span class="absolute left-4 top-2.5 text-gray-400">🔍</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button class="text-gray-400 hover:text-white">🔔</button>
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center font-bold shadow-lg border border-white/10">A</div>
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                <div class="absolute right-0 top-0 w-24 h-24 bg-green-500/10 rounded-bl-full"></div>
+                                <div class="text-gray-400 text-sm font-medium mb-3">Umumiy Daromad</div>
+                                <div class="text-3xl font-bold text-green-400 drop-shadow-sm">$2,450,000</div>
+                                <div class="mt-2 text-xs text-green-500 flex items-center gap-1">↑ +12.5% o'tgan oydan</div>
+                            </div>
+                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                <div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-bl-full"></div>
+                                <div class="text-gray-400 text-sm font-medium mb-3">Faol Shartnomalar</div>
+                                <div class="text-3xl font-bold text-blue-400 drop-shadow-sm">142</div>
+                                <div class="mt-2 text-xs text-blue-500 flex items-center gap-1">↑ +8 ta yangi</div>
+                            </div>
+                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                <div class="absolute right-0 top-0 w-24 h-24 bg-orange-500/10 rounded-bl-full"></div>
+                                <div class="text-gray-400 text-sm font-medium mb-3">Qurilish Bosqichi</div>
+                                <div class="text-3xl font-bold text-orange-400 drop-shadow-sm">68%</div>
+                                <div class="mt-3 w-full bg-gray-700/50 rounded-full h-1.5">
+                                    <div class="bg-orange-400 h-1.5 rounded-full" style="width: 68%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart & Transactions -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Dummy Chart -->
+                            <div class="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6 h-80 flex flex-col justify-end relative overflow-hidden shadow-lg">
+                                <div class="absolute top-6 left-6 font-bold text-gray-200 text-lg">Sotuvlar Grafigi (Yillik)</div>
+                                
+                                <!-- Chart Lines -->
+                                <div class="absolute inset-0 flex flex-col justify-between pt-20 pb-6 px-6 pointer-events-none opacity-20">
+                                    <div class="border-b border-white border-dashed w-full"></div>
+                                    <div class="border-b border-white border-dashed w-full"></div>
+                                    <div class="border-b border-white border-dashed w-full"></div>
+                                    <div class="border-b border-white border-dashed w-full"></div>
+                                </div>
+                                
+                                <div class="flex items-end justify-between h-48 gap-3 mt-4 relative z-10 w-full px-2">
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-white/10 px-2 py-1 rounded text-xs transition-opacity">$12k</div></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[60%]"></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[50%]"></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[80%]"></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[70%]"></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[90%]"></div>
+                                    <div class="w-full bg-gradient-to-t from-purple-500/90 to-purple-400/50 rounded-t-md h-[100%] shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500 mt-3 px-2">
+                                    <span>Yan</span><span>Fev</span><span>Mar</span><span>Apr</span><span>May</span><span>Iyun</span><span class="text-purple-400 font-bold">Iyul</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Transactions -->
+                            <div class="col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg flex flex-col h-80">
+                                <div class="font-bold text-gray-200 text-lg mb-5">So'nggi Tranzaksiyalar</div>
+                                <div class="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-200">Aliyev Vali</div>
+                                                <div class="text-xs text-gray-500">Kvartira to'lovi</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-green-400 font-bold">+$12,500</div>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-200">Delta Cement</div>
+                                                <div class="text-xs text-gray-500">Material xaridi</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-red-400 font-bold">-$4,200</div>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-200">Ish haqi</div>
+                                                <div class="text-xs text-gray-500">1-brigada</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-red-400 font-bold">-$8,900</div>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-200">Investor M.</div>
+                                                <div class="text-xs text-gray-500">Sarmoya</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-green-400 font-bold">+$50,000</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Footer / Contact -->
-        <footer id="contact" class="relative z-10 pt-20 pb-10 px-4 text-center border-t border-white/10 bg-[#05050A]/80 ">
-            <h2 class="text-3xl font-display font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-purple-400">Texnik Yordam va Qo'llab-Quvvatlash</h2>
-            <p class="text-gray-400 mb-12 max-w-2xl mx-auto text-lg">Tizim bo'yicha savollaringiz yoki qo'shimcha modullar kerak bo'lsa, Dasturchilar Jamoasi bilan istalgan vaqtda bog'lanishingiz mumkin.</p>
-            
-            <div class="flex flex-wrap justify-center gap-6 mb-16 max-w-5xl mx-auto">
-                <a href="tel:+998335180005" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-amber-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl mb-4 shadow-lg">📱</div>
-                    <span class="font-bold text-white text-xl">+998 33 518 00 05</span>
-                    <span class="text-sm text-gray-400 mt-2">Asosiy Raqam</span>
-                </a>
-                
-                <a href="tel:+998911873730" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-purple-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-purple-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📞</div>
-                    <span class="font-bold text-white text-xl">+998 91 187 37 30</span>
-                    <span class="text-sm text-gray-400 mt-2">Qo'shimcha Raqam</span>
-                </a>
-                
-                <a href="mailto:itclouduz@gmail.com" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-red-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-red-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✉️</div>
-                    <span class="font-bold text-white text-xl">itclouduz@gmail.com</span>
-                    <span class="text-sm text-gray-400 mt-2">Elektron Pochta</span>
-                </a>
-
-                <a href="https://t.me/ITcloud_me" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-2xl mb-4 shadow-lg">✈️</div>
-                    <span class="font-bold text-white text-xl">@ITcloud_me</span>
-                    <span class="text-sm text-gray-400 mt-2">Telegram orqali yozish</span>
-                </a>
-                
-                <a href="https://instagram.com/Shodiyor_kholmurodov" target="_blank" class="flex flex-col items-center p-4 md:p-8 bg-black/40 border border-white/10 rounded-[2rem] hover:border-pink-500/50 hover:bg-white/5 transition-all  flex-1 min-w-[250px] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-600 to-orange-400 flex items-center justify-center text-2xl mb-4 shadow-lg">📷</div>
-                    <span class="font-bold text-white text-xl">Shodiyor_kholmurodov</span>
-                    <span class="text-sm text-gray-400 mt-2">Instagram sahifa</span>
-                </a>
-            </div>
-            
-            <div class="text-gray-500 font-medium text-sm mt-8 border-t border-white/10 pt-8 inline-block w-full max-w-md">
-                Dasturchi: <strong>Shodiyor Xolmurodov</strong> <br>
-                &copy; {{ new Date().getFullYear() }} ITCloud.uz | {{ $page.props.branding?.app_name || 'Sher-Dor ERP System' }} v2.0
-            </div>
-        </footer>
-
+        </div>
     </div>
 </template>
 
 <style scoped>
-html { scroll-behavior: smooth; }
+.glass-card {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Gradient Text Animation */
+@keyframes gradient-x {
+    0%, 100% {
+        background-size: 200% 200%;
+        background-position: left center;
+    }
+    50% {
+        background-size: 200% 200%;
+        background-position: right center;
+    }
+}
+.animate-gradient-x {
+    animation: gradient-x 5s ease infinite;
+}
+
+/* Custom Scrollbar for Demo */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Stars Background Effect */
+.stars-bg {
+    background: #050505 url('https://raw.githubusercontent.com/danielstuart14/CSS_FRACTAL_GALAXY/master/stars.png') repeat top center;
+    z-index: 0;
+}
+.twinkling {
+    background: transparent url('https://raw.githubusercontent.com/danielstuart14/CSS_FRACTAL_GALAXY/master/twinkling.png') repeat top center;
+    z-index: 1;
+    animation: move-twink-back 150s linear infinite;
+}
+
+@keyframes move-twink-back {
+    from {background-position: 0 0;}
+    to {background-position: -10000px 5000px;}
+}
 </style>

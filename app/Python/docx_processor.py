@@ -147,7 +147,7 @@ def detect_placeholders(docx_path):
         })
 
     # 7. Detect Decimals (Area): e.g. 71,46 or 73.18
-    decimals = re.findall(r'\b\d{2,3}[,.]\d{2}\b', combined_text)
+    decimals = re.findall(r'\b\d{2,3}[,.]\d{2}(?!\d)', combined_text)
     for d in set(decimals):
         candidates.append({
             "text": d,
@@ -277,6 +277,20 @@ def detect_placeholders(docx_path):
             "text": "ellik yetti million bir yuz oltmish sakkiz ming",
             "key": "BOSHLANGICH_TOLOV_SOZ_BILAN",
             "label": "Boshlang'ich to'lov summasi so'z bilan",
+            "type": "text"
+        })
+
+    # 11. Detect combined block/floor/room description (e.g. 4-(to'rtinchi) blok 4-(to'rtinchi) qavati, 9-(to'qqizinchi) xonadoni)
+    location_matches = re.findall(
+        r'\d+\s*-\s*\([^)]+\)\s+blok[a-z]*\s+-?\d+\s*-\s*\([^)]+\)\s+qavat[a-z]*\s*,\s*\d+\s*-\s*\([^)]+\)\s+(?:xonadon[a-z]*|savdo\s+do[\'`ʻ’]koni[a-z]*)',
+        combined_text,
+        re.IGNORECASE
+    )
+    for loc in set(location_matches):
+        candidates.append({
+            "text": loc,
+            "key": "XONA_TAFSILOTI",
+            "label": "Xona/Xonadon to'liq tafsiloti (Blok, Qavat, Raqam)",
             "type": "text"
         })
 

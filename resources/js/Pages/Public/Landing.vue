@@ -10,6 +10,7 @@ defineProps({
 });
 
 const showDemo = ref(false);
+const activeTab = ref('dashboard');
 
 // Warp Speed Starfield Animation Logic
 const canvasRef = ref(null);
@@ -285,22 +286,22 @@ onMounted(() => {
                         <div class="mb-6 px-2 flex items-center gap-2">
                             <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">SBE ERP</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner">
+                        <div @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-blue-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             📊 <span class="font-medium text-sm">Boshqaruv Paneli</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                        <div @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'bg-gradient-to-r from-green-600/20 to-green-500/10 text-green-400 border-green-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             💼 <span class="font-medium text-sm">Moliya</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                        <div @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'bg-gradient-to-r from-orange-600/20 to-orange-500/10 text-orange-400 border-orange-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             🤝 <span class="font-medium text-sm">CRM va Mijozlar</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                        <div @click="activeTab = 'construction'" :class="activeTab === 'construction' ? 'bg-gradient-to-r from-purple-600/20 to-purple-500/10 text-purple-400 border-purple-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             🏢 <span class="font-medium text-sm">Qurilish Ob'ektlari</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                        <div @click="activeTab = 'inventory'" :class="activeTab === 'inventory' ? 'bg-gradient-to-r from-yellow-600/20 to-yellow-500/10 text-yellow-400 border-yellow-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             📦 <span class="font-medium text-sm">Omborxona</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-all cursor-pointer">
+                        <div @click="activeTab = 'hr'" :class="activeTab === 'hr' ? 'bg-gradient-to-r from-pink-600/20 to-pink-500/10 text-pink-400 border-pink-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
                             👥 <span class="font-medium text-sm">HR va Oyliklar</span>
                         </div>
                     </div>
@@ -320,105 +321,273 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <!-- Stats -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                <div class="absolute right-0 top-0 w-24 h-24 bg-green-500/10 rounded-bl-full"></div>
-                                <div class="text-gray-400 text-sm font-medium mb-3">Umumiy Daromad</div>
-                                <div class="text-3xl font-bold text-green-400 drop-shadow-sm">$2,450,000</div>
-                                <div class="mt-2 text-xs text-green-500 flex items-center gap-1">↑ +12.5% o'tgan oydan</div>
+                        <!-- TAB: Dashboard -->
+                        <div v-if="activeTab === 'dashboard'" class="animate-fade-in-up">
+                            <!-- Stats -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-24 h-24 bg-green-500/10 rounded-bl-full"></div>
+                                    <div class="text-gray-400 text-sm font-medium mb-3">Umumiy Daromad</div>
+                                    <div class="text-3xl font-bold text-green-400 drop-shadow-sm">$2,450,000</div>
+                                    <div class="mt-2 text-xs text-green-500 flex items-center gap-1">↑ +12.5% o'tgan oydan</div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-bl-full"></div>
+                                    <div class="text-gray-400 text-sm font-medium mb-3">Faol Shartnomalar</div>
+                                    <div class="text-3xl font-bold text-blue-400 drop-shadow-sm">142</div>
+                                    <div class="mt-2 text-xs text-blue-500 flex items-center gap-1">↑ +8 ta yangi</div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-24 h-24 bg-orange-500/10 rounded-bl-full"></div>
+                                    <div class="text-gray-400 text-sm font-medium mb-3">Qurilish Bosqichi</div>
+                                    <div class="text-3xl font-bold text-orange-400 drop-shadow-sm">68%</div>
+                                    <div class="mt-3 w-full bg-gray-700/50 rounded-full h-1.5">
+                                        <div class="bg-orange-400 h-1.5 rounded-full" style="width: 68%"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                <div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-bl-full"></div>
-                                <div class="text-gray-400 text-sm font-medium mb-3">Faol Shartnomalar</div>
-                                <div class="text-3xl font-bold text-blue-400 drop-shadow-sm">142</div>
-                                <div class="mt-2 text-xs text-blue-500 flex items-center gap-1">↑ +8 ta yangi</div>
-                            </div>
-                            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                <div class="absolute right-0 top-0 w-24 h-24 bg-orange-500/10 rounded-bl-full"></div>
-                                <div class="text-gray-400 text-sm font-medium mb-3">Qurilish Bosqichi</div>
-                                <div class="text-3xl font-bold text-orange-400 drop-shadow-sm">68%</div>
-                                <div class="mt-3 w-full bg-gray-700/50 rounded-full h-1.5">
-                                    <div class="bg-orange-400 h-1.5 rounded-full" style="width: 68%"></div>
+
+                            <!-- Chart & Transactions -->
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <!-- Dummy Chart -->
+                                <div class="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6 h-80 flex flex-col justify-end relative overflow-hidden shadow-lg">
+                                    <div class="absolute top-6 left-6 font-bold text-gray-200 text-lg">Sotuvlar Grafigi (Yillik)</div>
+                                    
+                                    <!-- Chart Lines -->
+                                    <div class="absolute inset-0 flex flex-col justify-between pt-20 pb-6 px-6 pointer-events-none opacity-20">
+                                        <div class="border-b border-white border-dashed w-full"></div>
+                                        <div class="border-b border-white border-dashed w-full"></div>
+                                        <div class="border-b border-white border-dashed w-full"></div>
+                                        <div class="border-b border-white border-dashed w-full"></div>
+                                    </div>
+                                    
+                                    <div class="flex items-end justify-between h-48 gap-3 mt-4 relative z-10 w-full px-2">
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-white/10 px-2 py-1 rounded text-xs transition-opacity">$12k</div></div>
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[60%]"></div>
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[50%]"></div>
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[80%]"></div>
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[70%]"></div>
+                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[90%]"></div>
+                                        <div class="w-full bg-gradient-to-t from-purple-500/90 to-purple-400/50 rounded-t-md h-[100%] shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-500 mt-3 px-2">
+                                        <span>Yan</span><span>Fev</span><span>Mar</span><span>Apr</span><span>May</span><span>Iyun</span><span class="text-purple-400 font-bold">Iyul</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Transactions -->
+                                <div class="col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg flex flex-col h-80">
+                                    <div class="font-bold text-gray-200 text-lg mb-5">So'nggi Tranzaksiyalar</div>
+                                    <div class="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
+                                                <div>
+                                                    <div class="text-sm font-semibold text-gray-200">Aliyev Vali</div>
+                                                    <div class="text-xs text-gray-500">Kvartira to'lovi</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-green-400 font-bold">+$12,500</div>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
+                                                <div>
+                                                    <div class="text-sm font-semibold text-gray-200">Delta Cement</div>
+                                                    <div class="text-xs text-gray-500">Material xaridi</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-red-400 font-bold">-$4,200</div>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
+                                                <div>
+                                                    <div class="text-sm font-semibold text-gray-200">Ish haqi</div>
+                                                    <div class="text-xs text-gray-500">1-brigada</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-red-400 font-bold">-$8,900</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Chart & Transactions -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <!-- Dummy Chart -->
-                            <div class="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6 h-80 flex flex-col justify-end relative overflow-hidden shadow-lg">
-                                <div class="absolute top-6 left-6 font-bold text-gray-200 text-lg">Sotuvlar Grafigi (Yillik)</div>
-                                
-                                <!-- Chart Lines -->
-                                <div class="absolute inset-0 flex flex-col justify-between pt-20 pb-6 px-6 pointer-events-none opacity-20">
-                                    <div class="border-b border-white border-dashed w-full"></div>
-                                    <div class="border-b border-white border-dashed w-full"></div>
-                                    <div class="border-b border-white border-dashed w-full"></div>
-                                    <div class="border-b border-white border-dashed w-full"></div>
+                        <!-- TAB: Finance -->
+                        <div v-else-if="activeTab === 'finance'" class="animate-fade-in-up">
+                            <h2 class="text-2xl font-bold mb-6">Moliya Bo'limi</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
+                                    <div class="text-gray-400 text-sm mb-1">Kassa qoldig'i</div>
+                                    <div class="text-2xl font-bold text-white">$450,200</div>
                                 </div>
-                                
-                                <div class="flex items-end justify-between h-48 gap-3 mt-4 relative z-10 w-full px-2">
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-white/10 px-2 py-1 rounded text-xs transition-opacity">$12k</div></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[60%]"></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[50%]"></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[80%]"></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[70%]"></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[90%]"></div>
-                                    <div class="w-full bg-gradient-to-t from-purple-500/90 to-purple-400/50 rounded-t-md h-[100%] shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
+                                    <div class="text-gray-400 text-sm mb-1">Xarajatlar (Oy)</div>
+                                    <div class="text-2xl font-bold text-red-400">-$34,500</div>
                                 </div>
-                                <div class="flex justify-between text-xs text-gray-500 mt-3 px-2">
-                                    <span>Yan</span><span>Fev</span><span>Mar</span><span>Apr</span><span>May</span><span>Iyun</span><span class="text-purple-400 font-bold">Iyul</span>
+                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
+                                    <div class="text-gray-400 text-sm mb-1">Kutilayotgan to'lovlar</div>
+                                    <div class="text-2xl font-bold text-yellow-400">$128,000</div>
+                                </div>
+                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
+                                    <div class="text-gray-400 text-sm mb-1">Sof foyda</div>
+                                    <div class="text-2xl font-bold text-green-400">$89,400</div>
                                 </div>
                             </div>
-                            
-                            <!-- Transactions -->
-                            <div class="col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg flex flex-col h-80">
-                                <div class="font-bold text-gray-200 text-lg mb-5">So'nggi Tranzaksiyalar</div>
-                                <div class="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
-                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
-                                            <div>
-                                                <div class="text-sm font-semibold text-gray-200">Aliyev Vali</div>
-                                                <div class="text-xs text-gray-500">Kvartira to'lovi</div>
-                                            </div>
+                            <div class="bg-white/5 rounded-2xl p-6 border border-white/5 h-64 flex items-center justify-center">
+                                <span class="text-gray-500">Moliya hisobotlari jadvali va kassa operatsiyalari shu yerda aks etadi.</span>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CRM -->
+                        <div v-else-if="activeTab === 'crm'" class="animate-fade-in-up">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold">CRM va Mijozlar</h2>
+                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">+ Yangi Mijoz</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
+                                    <h3 class="text-lg font-bold text-gray-300 mb-4 border-b border-white/10 pb-2">Yangi (Leadlar) <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">24</span></h3>
+                                    <div class="space-y-3">
+                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                                            <div class="font-bold">Azizov B.</div>
+                                            <div class="text-xs text-gray-400">+998 90 123 45 67</div>
                                         </div>
-                                        <div class="text-green-400 font-bold">+$12,500</div>
+                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                                            <div class="font-bold">Umarov S.</div>
+                                            <div class="text-xs text-gray-400">+998 99 876 54 32</div>
+                                        </div>
                                     </div>
-                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
-                                            <div>
-                                                <div class="text-sm font-semibold text-gray-200">Delta Cement</div>
-                                                <div class="text-xs text-gray-500">Material xaridi</div>
-                                            </div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
+                                    <h3 class="text-lg font-bold text-orange-300 mb-4 border-b border-white/10 pb-2">Muzokarada <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">8</span></h3>
+                                    <div class="space-y-3">
+                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5 border-l-2 border-l-orange-500">
+                                            <div class="font-bold">Karimova D.</div>
+                                            <div class="text-xs text-gray-400">3-xona kvartira sora...</div>
                                         </div>
-                                        <div class="text-red-400 font-bold">-$4,200</div>
                                     </div>
-                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
-                                            <div>
-                                                <div class="text-sm font-semibold text-gray-200">Ish haqi</div>
-                                                <div class="text-xs text-gray-500">1-brigada</div>
-                                            </div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
+                                    <h3 class="text-lg font-bold text-green-300 mb-4 border-b border-white/10 pb-2">Shartnoma <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">142</span></h3>
+                                    <div class="space-y-3">
+                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5 border-l-2 border-l-green-500">
+                                            <div class="font-bold">MCHJ "Biznes Qurilish"</div>
+                                            <div class="text-xs text-gray-400">100% to'lov tasdiqlandi</div>
                                         </div>
-                                        <div class="text-red-400 font-bold">-$8,900</div>
-                                    </div>
-                                    <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
-                                            <div>
-                                                <div class="text-sm font-semibold text-gray-200">Investor M.</div>
-                                                <div class="text-xs text-gray-500">Sarmoya</div>
-                                            </div>
-                                        </div>
-                                        <div class="text-green-400 font-bold">+$50,000</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- TAB: Construction -->
+                        <div v-else-if="activeTab === 'construction'" class="animate-fade-in-up">
+                            <h2 class="text-2xl font-bold mb-6">Qurilish Ob'ektlari</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 bg-green-500/20 text-green-400 px-3 py-1 rounded-bl-xl text-xs font-bold">Faol</div>
+                                    <h3 class="text-xl font-bold mb-2 text-purple-300">Hayot House - A Blok</h3>
+                                    <p class="text-sm text-gray-400 mb-4">Manzil: Toshkent sh., Chilonzor tumani</p>
+                                    <div class="mb-2 flex justify-between text-sm">
+                                        <span class="text-gray-300">Bajarilish holati</span>
+                                        <span class="font-bold">75%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700/50 rounded-full h-2 mb-4">
+                                        <div class="bg-purple-500 h-2 rounded-full" style="width: 75%"></div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">Monolit tugadi</span>
+                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">G'isht terish</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 bg-blue-500/20 text-blue-400 px-3 py-1 rounded-bl-xl text-xs font-bold">Yangi</div>
+                                    <h3 class="text-xl font-bold mb-2 text-blue-300">Göztepe Premium</h3>
+                                    <p class="text-sm text-gray-400 mb-4">Manzil: Samarqand sh., So'g'diyona</p>
+                                    <div class="mb-2 flex justify-between text-sm">
+                                        <span class="text-gray-300">Bajarilish holati</span>
+                                        <span class="font-bold">12%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700/50 rounded-full h-2 mb-4">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 12%"></div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">Kotlovan qazish</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Inventory -->
+                        <div v-else-if="activeTab === 'inventory'" class="animate-fade-in-up">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold">Omborxona</h2>
+                                <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">+ Material Kirim</button>
+                            </div>
+                            <div class="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                                <table class="w-full text-left text-sm text-gray-400">
+                                    <thead class="text-xs text-gray-200 uppercase bg-white/5">
+                                        <tr>
+                                            <th class="px-6 py-4">Mahsulot nomi</th>
+                                            <th class="px-6 py-4">Kategoriya</th>
+                                            <th class="px-6 py-4">Qoldiq</th>
+                                            <th class="px-6 py-4">O'lchov birligi</th>
+                                            <th class="px-6 py-4">Holati</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="px-6 py-4 font-bold text-white">M-400 Sement</td>
+                                            <td class="px-6 py-4">Qurilish materiallari</td>
+                                            <td class="px-6 py-4">120</td>
+                                            <td class="px-6 py-4">Tonna</td>
+                                            <td class="px-6 py-4"><span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Yetarli</span></td>
+                                        </tr>
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="px-6 py-4 font-bold text-white">Armatura 12 talik</td>
+                                            <td class="px-6 py-4">Metall</td>
+                                            <td class="px-6 py-4">5</td>
+                                            <td class="px-6 py-4">Tonna</td>
+                                            <td class="px-6 py-4"><span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">Kam qoldi</span></td>
+                                        </tr>
+                                        <tr class="hover:bg-white/5">
+                                            <td class="px-6 py-4 font-bold text-white">G'isht (Pishgan)</td>
+                                            <td class="px-6 py-4">Qurilish materiallari</td>
+                                            <td class="px-6 py-4">45,000</td>
+                                            <td class="px-6 py-4">Dona</td>
+                                            <td class="px-6 py-4"><span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Yetarli</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: HR -->
+                        <div v-else-if="activeTab === 'hr'" class="animate-fade-in-up">
+                            <h2 class="text-2xl font-bold mb-6">HR, FaceID va Oyliklar</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                    <div class="w-16 h-16 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 text-2xl mb-4">👥</div>
+                                    <div class="text-3xl font-bold text-white">124 ta</div>
+                                    <div class="text-sm text-gray-400 mt-1">Umumiy xodimlar</div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                    <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-2xl mb-4">✓</div>
+                                    <div class="text-3xl font-bold text-white">118 ta</div>
+                                    <div class="text-sm text-gray-400 mt-1">Bugun ishga kelgan (FaceID)</div>
+                                </div>
+                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                    <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 text-2xl mb-4">✗</div>
+                                    <div class="text-3xl font-bold text-white">6 ta</div>
+                                    <div class="text-sm text-gray-400 mt-1">Kelmaganlar</div>
+                                </div>
+                            </div>
+                            <div class="bg-white/5 rounded-2xl p-6 border border-white/5 text-center py-12">
+                                <span class="text-gray-500 text-lg">Bu yerda xodimlarni boshqarish, oylik hisoblash va KPI nazorati olib boriladi.</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -442,7 +611,7 @@ onMounted(() => {
     }
 }
 .animate-fade-in-up {
-    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom Scrollbar for Demo */

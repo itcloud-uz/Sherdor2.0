@@ -61,7 +61,8 @@ watch(activeTab, (newTab) => {
         const url = new URL(window.location.href);
         const currentTab = url.searchParams.get('tab');
         if (currentTab !== newTab) {
-            router.replace(route('admin.settings.index', { tab: newTab }), {
+            router.get(route('admin.settings.index', { tab: newTab }), {}, {
+                replace: true,
                 preserveState: true,
                 preserveScroll: true
             });

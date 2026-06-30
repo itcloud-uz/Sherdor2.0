@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 
-import SettingsSidebar from '@/Components/SettingsSidebar.vue';
+import AccordionItem from '@/Components/AccordionItem.vue';
 import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import ColorPickerInput from '@/Components/ColorPickerInput.vue';
 import LogoUploader from '@/Components/LogoUploader.vue';
@@ -69,6 +69,26 @@ watch(activeTab, (newTab) => {
     } catch (e) {}
 });
 
+// Accordion States for Branding
+const openAccordions = ref({
+    branding_company: true,
+    branding_colors: false,
+    branding_fonts: false,
+    system_locale: true,
+    company_details: true,
+    security_auth: true,
+    security_sessions: false,
+    notif_channels: true,
+    roles: true,
+    users: true,
+    sources: true,
+    sms: true,
+});
+
+const toggleAccordion = (key) => {
+    openAccordions.value[key] = !openAccordions.value[key];
+};
+
 // FORM: System & Branding
 const form = useForm({
     company_name: props.settings?.company_name || 'ITCloud Sher-Dor ERP',
@@ -99,46 +119,32 @@ const form = useForm({
 function submitSystemSettings() {
     form.post(route('admin.settings.update'), {
         preserveScroll: true,
-        onSuccess: () => triggerToast('Sozlamalar saqlandi ✓')
+        onSuccess: () => triggerToast('Saqlandi ✓')
     });
 }
 
-// FORM: Profile (Includes language/theme)
-const themeStyle = user.theme_style || 'apple_glass';
-const profileForm = useForm({
-    name: user.name || '',
-    email: user.email || '',
-    phone: user.phone || '',
-    password: '',
-    language: user.language || 'uz',
-    theme_color: user.theme_color || '#2563EB',
-    theme_style: themeStyle,
-    label_font_size: user.label_font_size || 12,
-    avatar: null,
-});
-
-function submitProfile() {
-    profileForm.post(route('settings.update'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            profileForm.password = '';
-            triggerToast('Profil yangilandi ✓');
-        }
-    });
-}
-
-// Security Form (Dummy structure for UI, not functional backend yet)
+// Security Form
 const securityForm = useForm({
     password_policy: true,
     two_factor: false
 });
+const submitSecuritySettings = () => {
+    // Dummy submit
+    triggerToast('Saqlandi ✓');
+    securityForm.isDirty = false;
+};
 
-// Notifications Form (Dummy structure for UI)
+// Notifications Form
 const notifForm = useForm({
     email_notif: true,
     sms_notif: true,
     sys_notif: true
 });
+const submitNotifSettings = () => {
+    // Dummy submit
+    triggerToast('Saqlandi ✓');
+    notifForm.isDirty = false;
+};
 
 // Other existing logics
 const sourceForm = useForm({ id: null, name: '' });
@@ -146,7 +152,7 @@ const isEditingSource = ref(false);
 const saveSource = () => {
     if (isEditingSource.value) {
         sourceForm.put(route('admin.settings.lead_sources.update', sourceForm.id), {
-            onSuccess: () => { sourceForm.reset(); isEditingSource.value = false; triggerToast('Yangilandi ✓'); }
+            onSuccess: () => { sourceForm.reset(); isEditingSource.value = false; triggerToast('Saqlandi ✓'); }
         });
     } else {
         sourceForm.post(route('admin.settings.lead_sources.store'), {
@@ -215,8 +221,13 @@ const loadRolePermissions = () => {
 };
 const saveRolePermissions = () => {
     if (!rolePermissionsForm.role_id) { alert('Rolni tanlang.'); return; }
-    rolePermissionsForm.post(route('admin.settings.roles_permissions.update'), { onSuccess: () => triggerToast('Yangilandi ✓') });
+    rolePermissionsForm.post(route('admin.settings.roles_permissions.update'), { onSuccess: () => triggerToast('Saqlandi ✓') });
 };
+
+// Global dirty state check
+const hasUnsavedChanges = computed(() => {
+    return form.isDirty || securityForm.isDirty || notifForm.isDirty || sourceForm.isDirty || smsForm.isDirty || userForm.isDirty || rolePermissionsForm.isDirty;
+});
 </script>
 
 <template>
@@ -225,392 +236,447 @@ const saveRolePermissions = () => {
     <AdminLayout>
         <!-- TOAST NOTIFICATION -->
         <div 
-            class="fixed top-[24px] right-[24px] z-50 flex items-center px-[20px] py-[12px] rounded-[8px] shadow-lg transition-all duration-300 transform"
+            class="fixed top-[24px] right-[24px] z-50 flex items-center px-[20px] py-[16px] rounded-[8px] shadow-lg transition-all duration-300 transform"
             :class="[
                 showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0',
                 toastType === 'success' ? 'bg-[#10B981] text-white' : 'bg-[#EF4444] text-white'
             ]"
         >
-            <span class="mr-[12px] font-bold">{{ toastMessage }}</span>
+            <span class="mr-[12px] text-[14px] font-semibold">{{ toastMessage }}</span>
             <button @click="showToast = false" class="text-white/80 hover:text-white">✕</button>
         </div>
 
+        <!-- UNSAVED CHANGES WARNING -->
+        <div 
+            v-if="hasUnsavedChanges"
+            class="fixed bottom-[24px] right-[24px] z-40 bg-[#F59E0B] text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-4 animate-[slideUp_0.3s_ease-out]"
+        >
+            <span class="text-[20px]">⚠️</span>
+            <div>
+                <p class="text-[14px] font-bold">Saqlanmagan o'zgarishlar bor</p>
+                <p class="text-[12px] opacity-90">Iltimos, o'zgarishlarni saqlang</p>
+            </div>
+            <button @click="submitSystemSettings" class="ml-4 px-4 py-2 bg-white text-[#F59E0B] rounded-lg text-sm font-bold shadow-sm hover:bg-orange-50 transition-colors">
+                Saqlash
+            </button>
+        </div>
+
         <!-- MAIN CONTAINER -->
-        <div class="max-w-[1200px] mx-auto p-[16px] lg:p-[32px] bg-[#F8FAFC] min-h-screen">
-            <div class="flex flex-col md:flex-row bg-white rounded-[12px] shadow-sm overflow-hidden border border-[#E2E8F0] min-h-[calc(100vh-100px)]">
+        <div class="max-w-[1200px] mx-auto p-[16px] lg:px-[32px] lg:py-[24px] bg-[#F8FAFC] min-h-screen">
+            
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-[28px] font-semibold text-[#1E293B] mb-2">Sozlamalar</h1>
+                    <p class="text-[15px] text-[#64748B]">Tizimni o'zingizga moslashtiring</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] overflow-hidden">
                 
-                <!-- LEFT SIDEBAR -->
-                <SettingsSidebar 
-                    :activeSection="activeTab" 
-                    @change-section="(tab) => activeTab = tab" 
-                />
+                <!-- TOP NAVIGATION TABS -->
+                <div class="flex overflow-x-auto border-b-2 border-[#E2E8F0] px-4 md:px-8 pt-4 gap-8 scrollbar-hide bg-white sticky top-0 z-10">
+                    <button 
+                        @click="activeTab = 'branding'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'branding' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>🎨</span> Brending va Tashqi Ko'rinish
+                    </button>
+                    <button 
+                        @click="activeTab = 'system'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'system' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>⚙️</span> Tizim
+                    </button>
+                    <button 
+                        @click="activeTab = 'company'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'company' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>🏢</span> Kompaniya
+                    </button>
+                    <button 
+                        @click="activeTab = 'security'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'security' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>🛡️</span> Xavfsizlik
+                    </button>
+                    <button 
+                        @click="activeTab = 'notifications'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'notifications' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>📢</span> Bildirishnomalar
+                    </button>
+                    <button 
+                        @click="activeTab = 'roles'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'roles' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>👥</span> Rollar va Xodimlar
+                    </button>
+                    <button 
+                        @click="activeTab = 'marketing'"
+                        class="pb-3 text-[15px] font-semibold border-b-[3px] transition-colors whitespace-nowrap flex items-center gap-2"
+                        :class="activeTab === 'marketing' ? 'border-[#2563EB] text-[#1E293B]' : 'border-transparent text-[#64748B] hover:text-[#2563EB]'"
+                    >
+                        <span>🎯</span> Marketing (SMS, Lid)
+                    </button>
+                </div>
 
                 <!-- MAIN CONTENT AREA -->
-                <div class="flex-1 p-[24px] lg:p-[32px] overflow-y-auto bg-white">
+                <div class="p-4 md:p-8 bg-[#F8FAFC]">
 
                     <!-- ===================================== -->
                     <!-- 1. BRANDING & APPEARANCE -->
                     <!-- ===================================== -->
-                    <div v-show="activeTab === 'branding'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <!-- SECTION HEADER -->
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Brending va Tashqi Ko'rinish</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Kompaniyangiz brendingini va tizimning vizual ranglarini moslashtiring.</p>
-                        </div>
-                        
+                    <div v-show="activeTab === 'branding'" class="animate-[fadeIn_0.3s_ease-out]">
                         <form @submit.prevent="submitSystemSettings">
-                            <!-- Logo Upload Section -->
-                            <div class="mb-[32px]">
-                                <LogoUploader v-model="form.logo" label="Kompaniya Logosi" />
-                            </div>
-
-                            <!-- Fields Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-y-[24px] gap-x-[16px] mb-[32px]">
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Kompaniya Nomi</label>
-                                    <input v-model="form.company_name" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                            
+                            <AccordionItem title="🏢 KOMPANIYA MA'LUMOTLARI" :isOpen="openAccordions.branding_company" @toggle="toggleAccordion('branding_company')">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Nomi</label>
+                                        <input v-model="form.company_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Tizim Nomi</label>
+                                        <input v-model="form.app_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="col-span-full">
+                                        <LogoUploader v-model="form.logo" label="Logotipni yuklang" />
+                                    </div>
                                 </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Kompaniya Tizim Nomi</label>
-                                    <input v-model="form.app_name" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="submit" :disabled="form.processing" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
                                 </div>
-                            </div>
+                            </AccordionItem>
 
-                            <!-- Colors Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[32px]">
-                                <ColorPickerInput v-model="form.primary_theme_color" label="Asosiy Rang (PRIMARY)" />
-                                <ColorPickerInput v-model="form.secondary_theme_color" label="Ikkinchi Rang (SECONDARY)" />
-                                <ColorPickerInput v-model="form.bg_theme_color" label="Fon Rangi (BACKGROUND)" />
-                            </div>
+                            <AccordionItem title="🎨 RANGLAR" :isOpen="openAccordions.branding_colors" @toggle="toggleAccordion('branding_colors')">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <ColorPickerInput v-model="form.primary_theme_color" label="Asosiy Rang (Primary)" />
+                                    <ColorPickerInput v-model="form.secondary_theme_color" label="Ikkinchi Rang (Secondary)" />
+                                    <ColorPickerInput v-model="form.bg_theme_color" label="Fon Rangi (Background)" />
+                                </div>
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="submit" :disabled="form.processing" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
+                                </div>
+                            </AccordionItem>
 
-                            <!-- Save Action -->
-                            <div class="pt-[24px] border-t border-[#E2E8F0] flex justify-end gap-3">
-                                <button type="button" @click="form.reset()" class="px-[20px] py-[10px] bg-white text-[#64748B] border border-[#E2E8F0] rounded-[8px] text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash (Reset)</button>
-                                <button type="submit" :disabled="form.processing || !form.isDirty" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span v-if="form.processing">Saqlanmoqda...</span>
-                                    <span v-else>Saqlash</span>
-                                </button>
-                            </div>
                         </form>
                     </div>
 
                     <!-- ===================================== -->
                     <!-- 2. SYSTEM SETTINGS -->
                     <!-- ===================================== -->
-                    <div v-show="activeTab === 'system'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Tizim Sozlamalari</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Til, sana formati, pul birligi va boshqa mahalliy sozlamalar.</p>
-                        </div>
-                        
+                    <div v-show="activeTab === 'system'" class="animate-[fadeIn_0.3s_ease-out]">
                         <form @submit.prevent="submitSystemSettings">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-y-[24px] gap-x-[16px] mb-[32px]">
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Tizim Tili</label>
-                                    <select v-model="form.system_language" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
-                                        <option value="uz">O'zbekcha (Lotin)</option>
-                                        <option value="ru">Русский</option>
-                                        <option value="en">English</option>
-                                    </select>
+                            <AccordionItem title="⚙️ ASOSIY TIZIM SOZLAMALARI" :isOpen="openAccordions.system_locale" @toggle="toggleAccordion('system_locale')">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Tizim Tili</label>
+                                        <select v-model="form.system_language" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                            <option value="uz">O'zbekcha</option>
+                                            <option value="ru">Русский</option>
+                                            <option value="en">English</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Vaqt Mintaqasi (Timezone)</label>
+                                        <select v-model="form.timezone" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                            <option value="Asia/Tashkent">Asia/Tashkent (+05:00)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Sanalar Formati</label>
+                                        <select v-model="form.date_format" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                            <option value="DD.MM.YYYY">DD.MM.YYYY (Masalan: 31.12.2023)</option>
+                                            <option value="YYYY-MM-DD">YYYY-MM-DD (Masalan: 2023-12-31)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Pul Birligi</label>
+                                        <select v-model="form.default_currency" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                            <option value="UZS">UZS (So'm)</option>
+                                            <option value="USD">USD (Dollar)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Aniqlik Darajasi (Decimal Places)</label>
+                                        <select v-model="form.decimal_places" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                            <option value="0">0 (1 000)</option>
+                                            <option value="2">2 (1 000.00)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Vaqt Mintaqasi (Timezone)</label>
-                                    <select v-model="form.timezone" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
-                                        <option value="Asia/Tashkent">Asia/Tashkent (+05:00)</option>
-                                    </select>
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="button" @click="form.reset()" class="px-6 py-2.5 bg-white text-[#64748B] border border-[#E2E8F0] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash</button>
+                                    <button type="submit" :disabled="form.processing" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
                                 </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Sanalar Formati</label>
-                                    <select v-model="form.date_format" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
-                                        <option value="DD.MM.YYYY">DD.MM.YYYY (31.12.2023)</option>
-                                        <option value="YYYY-MM-DD">YYYY-MM-DD (2023-12-31)</option>
-                                    </select>
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Pul Birligi</label>
-                                    <select v-model="form.default_currency" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
-                                        <option value="UZS">UZS (So'm)</option>
-                                        <option value="USD">USD (Dollar)</option>
-                                    </select>
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Aniqlik Darajasi (Decimal Places)</label>
-                                    <select v-model="form.decimal_places" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
-                                        <option value="0">0 (1 000)</option>
-                                        <option value="2">2 (1 000.00)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="pt-[24px] border-t border-[#E2E8F0] flex justify-end gap-3">
-                                <button type="button" @click="form.reset()" class="px-[20px] py-[10px] bg-white text-[#64748B] border border-[#E2E8F0] rounded-[8px] text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash</button>
-                                <button type="submit" :disabled="form.processing || !form.isDirty" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span v-if="form.processing">Saqlanmoqda...</span><span v-else>Saqlash</span>
-                                </button>
-                            </div>
+                            </AccordionItem>
                         </form>
                     </div>
 
                     <!-- ===================================== -->
                     <!-- 3. COMPANY DETAILS -->
                     <!-- ===================================== -->
-                    <div v-show="activeTab === 'company'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Kompaniya Ma'lumotlari</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Yuridik va aloqa ma'lumotlari hisob-faktura hamda hujjatlarda ko'rsatiladi.</p>
-                        </div>
-                        
+                    <div v-show="activeTab === 'company'" class="animate-[fadeIn_0.3s_ease-out]">
                         <form @submit.prevent="submitSystemSettings">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-y-[24px] gap-x-[16px] mb-[32px]">
-                                <div class="flex flex-col md:col-span-2">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Kompaniya Nomini (Yuridik)</label>
-                                    <input v-model="form.company_name" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                            <AccordionItem title="🏢 REKVIZITLAR VA ALOQA" :isOpen="openAccordions.company_details" @toggle="toggleAccordion('company_details')">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="flex flex-col md:col-span-2">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Nomini (Yuridik)</label>
+                                        <input v-model="form.company_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Telefon Raqami</label>
+                                        <input v-model="form.company_phone" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Elektron Pochta</label>
+                                        <input v-model="form.company_email" type="email" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col md:col-span-2">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Manzili</label>
+                                        <input v-model="form.company_address" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Nomi</label>
+                                        <input v-model="form.company_bank_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Hisob Raqami</label>
+                                        <input v-model="form.company_bank_account" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">INN</label>
+                                        <input v-model="form.company_inn" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">MFO</label>
+                                        <input v-model="form.company_mfo" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                    </div>
                                 </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Telefon Raqami</label>
-                                    <input v-model="form.company_phone" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="button" @click="form.reset()" class="px-6 py-2.5 bg-white text-[#64748B] border border-[#E2E8F0] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash</button>
+                                    <button type="submit" :disabled="form.processing" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
                                 </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Elektron Pochta</label>
-                                    <input v-model="form.company_email" type="email" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                                <div class="flex flex-col md:col-span-2">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Manzili</label>
-                                    <input v-model="form.company_address" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Bank Nomi</label>
-                                    <input v-model="form.company_bank_name" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">Bank Hisob Raqami</label>
-                                    <input v-model="form.company_bank_account" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">INN</label>
-                                    <input v-model="form.company_inn" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                                <div class="flex flex-col">
-                                    <label class="text-[12px] font-medium text-[#64748B] mb-[6px]">MFO</label>
-                                    <input v-model="form.company_mfo" type="text" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                </div>
-                            </div>
-
-                            <div class="pt-[24px] border-t border-[#E2E8F0] flex justify-end gap-3">
-                                <button type="button" @click="form.reset()" class="px-[20px] py-[10px] bg-white text-[#64748B] border border-[#E2E8F0] rounded-[8px] text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash</button>
-                                <button type="submit" :disabled="form.processing || !form.isDirty" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span v-if="form.processing">Saqlanmoqda...</span><span v-else>Saqlash</span>
-                                </button>
-                            </div>
+                            </AccordionItem>
                         </form>
                     </div>
 
                     <!-- ===================================== -->
                     <!-- 4. SECURITY -->
                     <!-- ===================================== -->
-                    <div v-show="activeTab === 'security'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Xavfsizlik</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Hisob xavfsizligi, parollar va faol sessiyalarni boshqarish.</p>
-                        </div>
-                        
-                        <form @submit.prevent="() => triggerToast('Xavfsizlik sozlamalari saqlandi ✓')">
-                            <div class="space-y-[24px] mb-[32px]">
-                                <div class="flex items-center justify-between p-[16px] border border-[#E2E8F0] rounded-[12px] bg-[#F8FAFC]">
-                                    <div>
-                                        <h4 class="text-[16px] font-semibold text-[#1E293B] mb-[4px]">Qat'iy Parol Siyosati</h4>
-                                        <p class="text-[12px] text-[#64748B]">Parol kamida 8 ta belgi, raqam va maxsus belgilardan iborat bo'lishini talab qilish.</p>
+                    <div v-show="activeTab === 'security'" class="animate-[fadeIn_0.3s_ease-out]">
+                        <form @submit.prevent="submitSecuritySettings">
+                            <AccordionItem title="🔐 AUTENTIFIKATSIYA SOZLAMALARI" :isOpen="openAccordions.security_auth" @toggle="toggleAccordion('security_auth')">
+                                <div class="space-y-6">
+                                    <div class="flex items-center justify-between p-4 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC]">
+                                        <div>
+                                            <h4 class="text-[15px] font-semibold text-[#1E293B] mb-1">Qat'iy Parol Siyosati</h4>
+                                            <p class="text-[13px] text-[#64748B]">Parol kamida 8 ta belgi, raqam va maxsus belgilardan iborat bo'lishi kerak.</p>
+                                        </div>
+                                        <ToggleSwitch v-model="securityForm.password_policy" />
                                     </div>
-                                    <ToggleSwitch v-model="securityForm.password_policy" />
+                                    <div class="flex items-center justify-between p-4 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC]">
+                                        <div>
+                                            <h4 class="text-[15px] font-semibold text-[#1E293B] mb-1">2-Faktorli Autentifikatsiya (2FA)</h4>
+                                            <p class="text-[13px] text-[#64748B]">Tizimga kirishda SMS yoki Authenticator orqali tasdiqlashni yoqish.</p>
+                                        </div>
+                                        <ToggleSwitch v-model="securityForm.two_factor" />
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between p-[16px] border border-[#E2E8F0] rounded-[12px] bg-[#F8FAFC]">
-                                    <div>
-                                        <h4 class="text-[16px] font-semibold text-[#1E293B] mb-[4px]">2-Faktorli Autentifikatsiya (2FA)</h4>
-                                        <p class="text-[12px] text-[#64748B]">Tizimga kirishda SMS yoki Authenticator orqali tasdiqlashni yoqish.</p>
-                                    </div>
-                                    <ToggleSwitch v-model="securityForm.two_factor" />
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="submit" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
                                 </div>
-                                
-                                <div class="border border-[#E2E8F0] rounded-[12px] overflow-hidden">
-                                    <div class="px-[16px] py-[12px] bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                        <h4 class="text-[14px] font-semibold text-[#1E293B]">Faol Sessiyalar</h4>
-                                    </div>
-                                    <div class="p-[16px] flex items-center justify-between">
-                                        <div class="flex items-center gap-[12px]">
-                                            <span class="text-[24px]">💻</span>
+                            </AccordionItem>
+
+                            <AccordionItem title="💻 FAOL SESSIYALAR" :isOpen="openAccordions.security_sessions" @toggle="toggleAccordion('security_sessions')">
+                                <div class="border border-[#E2E8F0] rounded-lg overflow-hidden">
+                                    <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-[28px]">💻</span>
                                             <div>
-                                                <p class="text-[14px] font-semibold text-[#1E293B]">Windows - Chrome</p>
-                                                <p class="text-[12px] text-[#64748B]">Toshkent, O'zbekiston • Hozir faol</p>
+                                                <p class="text-[15px] font-semibold text-[#1E293B]">Windows - Chrome</p>
+                                                <p class="text-[13px] text-[#64748B]">Toshkent, O'zbekiston • Hozir faol</p>
                                             </div>
                                         </div>
-                                        <button type="button" class="px-[12px] py-[6px] text-[12px] font-semibold text-[#DC2626] bg-[#FEE2E2] hover:bg-[#FECACA] rounded-[6px] transition-colors">Barcha boshqa sessiyalarni yopish</button>
+                                        <button type="button" class="px-4 py-2 text-[13px] font-semibold text-[#DC2626] bg-[#FEE2E2] hover:bg-[#FECACA] border border-[#FECACA] rounded-lg transition-colors">Boshqa sessiyalarni yopish</button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="pt-[24px] border-t border-[#E2E8F0] flex justify-end gap-3">
-                                <button type="submit" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all">
-                                    Saqlash
-                                </button>
-                            </div>
+                            </AccordionItem>
                         </form>
                     </div>
 
                     <!-- ===================================== -->
                     <!-- 5. NOTIFICATIONS -->
                     <!-- ===================================== -->
-                    <div v-show="activeTab === 'notifications'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Bildirishnomalar</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Tizim qaysi holatlarda sizni ogohlantirishini tanlang.</p>
-                        </div>
+                    <div v-show="activeTab === 'notifications'" class="animate-[fadeIn_0.3s_ease-out]">
+                        <form @submit.prevent="submitNotifSettings">
+                            <AccordionItem title="📢 XABARNOMALAR KANALLARI" :isOpen="openAccordions.notif_channels" @toggle="toggleAccordion('notif_channels')">
+                                <div class="space-y-6">
+                                    <div class="flex items-center justify-between p-4 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC]">
+                                        <div>
+                                            <h4 class="text-[15px] font-semibold text-[#1E293B] mb-1">Tizim Ichki Bildirishnomalari</h4>
+                                            <p class="text-[13px] text-[#64748B]">Muhim voqealar va yangiliklar haqida tizim ichida xabar berish.</p>
+                                        </div>
+                                        <ToggleSwitch v-model="notifForm.sys_notif" />
+                                    </div>
+                                    <div class="flex items-center justify-between p-4 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC]">
+                                        <div>
+                                            <h4 class="text-[15px] font-semibold text-[#1E293B] mb-1">Email Bildirishnomalar</h4>
+                                            <p class="text-[13px] text-[#64748B]">Hisobotlar va tizim xatoliklarini elektron pochtaga yuborish.</p>
+                                        </div>
+                                        <ToggleSwitch v-model="notifForm.email_notif" />
+                                    </div>
+                                    <div class="flex items-center justify-between p-4 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC]">
+                                        <div>
+                                            <h4 class="text-[15px] font-semibold text-[#1E293B] mb-1">SMS Bildirishnomalar</h4>
+                                            <p class="text-[13px] text-[#64748B]">Muhim tranzaksiyalar va to'lovlar haqida SMS xabar berish.</p>
+                                        </div>
+                                        <ToggleSwitch v-model="notifForm.sms_notif" />
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
+                                    <button type="submit" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">Saqlash</button>
+                                </div>
+                            </AccordionItem>
+                        </form>
+                    </div>
+
+                    <!-- ===================================== -->
+                    <!-- 6. ROLES & USERS -->
+                    <!-- ===================================== -->
+                    <div v-show="activeTab === 'roles'" class="animate-[fadeIn_0.3s_ease-out]">
                         
-                        <form @submit.prevent="() => triggerToast('Bildirishnomalar saqlandi ✓')">
-                            <div class="space-y-[24px] mb-[32px]">
-                                <div class="flex items-center justify-between p-[16px] border border-[#E2E8F0] rounded-[12px] bg-[#F8FAFC]">
-                                    <div>
-                                        <h4 class="text-[16px] font-semibold text-[#1E293B] mb-[4px]">Tizim Ichki Bildirishnomalari</h4>
-                                        <p class="text-[12px] text-[#64748B]">Muhim voqealar va yangiliklar haqida tizim ichida xabar berish.</p>
-                                    </div>
-                                    <ToggleSwitch v-model="notifForm.sys_notif" />
-                                </div>
-                                <div class="flex items-center justify-between p-[16px] border border-[#E2E8F0] rounded-[12px] bg-[#F8FAFC]">
-                                    <div>
-                                        <h4 class="text-[16px] font-semibold text-[#1E293B] mb-[4px]">Email Bildirishnomalar</h4>
-                                        <p class="text-[12px] text-[#64748B]">Hisobotlar va tizim xatoliklarini elektron pochtaga yuborish.</p>
-                                    </div>
-                                    <ToggleSwitch v-model="notifForm.email_notif" />
-                                </div>
-                                <div class="flex items-center justify-between p-[16px] border border-[#E2E8F0] rounded-[12px] bg-[#F8FAFC]">
-                                    <div>
-                                        <h4 class="text-[16px] font-semibold text-[#1E293B] mb-[4px]">SMS Bildirishnomalar</h4>
-                                        <p class="text-[12px] text-[#64748B]">Muhim tranzaksiyalar va to'lovlar haqida SMS xabar berish.</p>
-                                    </div>
-                                    <ToggleSwitch v-model="notifForm.sms_notif" />
-                                </div>
+                        <AccordionItem title="👥 XODIMLAR BOSHQARUVI" :isOpen="openAccordions.users" @toggle="toggleAccordion('users')">
+                            <div class="mb-4 flex justify-between items-end">
+                                <p class="text-[13px] text-[#64748B]">Foydalanuvchilarni boshqarish va ularni rollarga biriktirish.</p>
+                                <button class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-colors">+ Xodim Qo'shish</button>
                             </div>
-
-                            <div class="pt-[24px] border-t border-[#E2E8F0] flex justify-end gap-3">
-                                <button type="submit" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all">
-                                    Saqlash
-                                </button>
+                            <div class="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                                        <tr>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B]">Ism</th>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B]">Login</th>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B]">Rol</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="usr in users" :key="usr.id" class="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
+                                            <td class="p-4 text-[14px] font-semibold text-[#1E293B]">{{ usr.name }}</td>
+                                            <td class="p-4 text-[14px] text-[#64748B]">{{ usr.username }}</td>
+                                            <td class="p-4 text-[14px] text-[#64748B]">
+                                                <span class="px-2 py-1 bg-slate-100 rounded text-xs font-medium">{{ usr.roles?.length ? usr.roles[0].name : '-' }}</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </form>
-                    </div>
+                        </AccordionItem>
 
-                    <!-- ===================================== -->
-                    <!-- EXISTING TABS (MIGRATED INTO NEW UI) -->
-                    <!-- ===================================== -->
-                    <div v-show="activeTab === 'roles_permissions'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Rollar va Huquqlar</h3>
-                            <p class="text-[14px] text-[#64748B] font-regular">Xodimlar roliga qarab tizimdagi modullarni ko'rish ruxsatnomalarini sozlash.</p>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="border border-[#E2E8F0] rounded-[12px] p-6 bg-[#F8FAFC]">
-                                <label class="block text-[12px] font-medium text-[#64748B] mb-[6px]">Rolni Tanlang</label>
-                                <select v-model="selectedRoleIdForPermissions" @change="loadRolePermissions" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] text-[#1E293B] focus:border-[#2563EB] bg-white outline-none">
-                                    <option value="">-- Rol tanlang --</option>
-                                    <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
-                                </select>
-                            </div>
-                            <div class="border border-[#E2E8F0] rounded-[12px] p-6 bg-white" v-if="selectedRoleIdForPermissions">
-                                <h4 class="text-[14px] font-bold text-[#1E293B] mb-4">Ruxsatnomalar:</h4>
-                                <form @submit.prevent="saveRolePermissions">
-                                    <div class="space-y-3 mb-6">
-                                        <label v-for="perm in permissions" :key="perm.id" class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-[#F8FAFC]">
-                                            <input type="checkbox" :value="perm.name" v-model="rolePermissionsForm.permissions" class="w-5 h-5 text-[#2563EB] rounded border-[#E2E8F0] focus:ring-[#2563EB]">
-                                            <span class="text-[14px] text-[#1E293B] font-medium">{{ permissionLabel(perm.name) }}</span>
-                                        </label>
-                                    </div>
-                                    <button type="submit" :disabled="rolePermissionsForm.processing" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold w-full hover:bg-[#059669]">
-                                        {{ rolePermissionsForm.processing ? 'Saqlanmoqda...' : 'Saqlash' }}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- USERS MANAGEMENT -->
-                    <div v-show="activeTab === 'users_management'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0] flex justify-between items-end">
-                            <div>
-                                <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Xodimlar Boshqaruvi</h3>
-                                <p class="text-[14px] text-[#64748B]">Foydalanuvchilarni boshqarish.</p>
-                            </div>
-                            <!-- (The logic here is kept minimal for UI integration, users add/edit can be handled similarly) -->
-                            <button class="px-[20px] py-[10px] bg-[#2563EB] text-white rounded-[8px] text-[14px] font-semibold">+ Xodim Qo'shish</button>
-                        </div>
-                        <div class="border border-[#E2E8F0] rounded-[12px] overflow-hidden bg-white">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                    <tr><th class="p-4 text-[12px] font-medium text-[#64748B]">Ism</th><th class="p-4 text-[12px] font-medium text-[#64748B]">Login</th><th class="p-4 text-[12px] font-medium text-[#64748B]">Rol</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="usr in users" :key="usr.id" class="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
-                                        <td class="p-4 text-[14px] font-medium text-[#1E293B]">{{ usr.name }}</td>
-                                        <td class="p-4 text-[14px] text-[#64748B]">{{ usr.username }}</td>
-                                        <td class="p-4 text-[14px] text-[#64748B]">{{ usr.roles?.length ? usr.roles[0].name : '-' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- LEAD SOURCES -->
-                    <div v-show="activeTab === 'lead_sources'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">Lid Manbalari</h3>
-                            <p class="text-[14px] text-[#64748B]">Mijozlarning qayerdan kelganligini qayd etish manzillari.</p>
-                        </div>
-                        <form @submit.prevent="saveSource" class="flex gap-4 mb-8">
-                            <input v-model="sourceForm.name" type="text" placeholder="Manba nomini kiriting..." class="flex-1 h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] outline-none focus:border-[#2563EB]">
-                            <button type="submit" :disabled="sourceForm.processing" class="px-[20px] py-[10px] bg-[#2563EB] text-white rounded-[8px] text-[14px] font-semibold">{{ isEditingSource ? 'Yangilash' : 'Qo\'shish' }}</button>
-                            <button v-if="isEditingSource" type="button" @click="sourceForm.reset(); isEditingSource = false" class="px-[20px] py-[10px] bg-[#F1F5F9] text-[#64748B] rounded-[8px] text-[14px] font-semibold">Bekor qilish</button>
-                        </form>
-                        <div class="border border-[#E2E8F0] rounded-[12px] overflow-hidden bg-white">
-                            <table class="w-full text-left">
-                                <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                    <tr><th class="p-4 text-[12px] font-medium text-[#64748B]">#</th><th class="p-4 text-[12px] font-medium text-[#64748B]">Manba Nomi</th><th class="p-4 text-[12px] font-medium text-[#64748B] text-right">Amallar</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(src, idx) in leadSources" :key="src.id" class="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
-                                        <td class="p-4 text-[14px] text-[#64748B]">{{ idx + 1 }}</td>
-                                        <td class="p-4 text-[14px] font-medium text-[#1E293B]">{{ src.name }}</td>
-                                        <td class="p-4 text-right flex justify-end gap-2">
-                                            <button @click="editSource(src)" class="px-[12px] py-[6px] border border-[#E2E8F0] rounded-[6px] text-[12px] font-semibold text-[#1E293B] hover:bg-[#F1F5F9]">Tahrirlash</button>
-                                            <button @click="deleteSource(src.id)" class="px-[12px] py-[6px] bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[12px] font-semibold hover:bg-[#FECACA]">O'chirish</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- SMS BROADCAST -->
-                    <div v-show="activeTab === 'sms_broadcast'" class="animate-[fadeIn_0.2s_ease-out]">
-                        <div class="mb-[32px] pb-[16px] border-b border-[#E2E8F0]">
-                            <h3 class="text-[24px] font-bold text-[#1E293B] font-display mb-[8px]">SMS Xabarnomalar Yuborish</h3>
-                            <p class="text-[14px] text-[#64748B]">Mijozlarga ommaviy xabarnomalar yuborish.</p>
-                        </div>
-                        <form @submit.prevent="sendBroadcastSms" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <AccordionItem title="🔐 ROLLAR VA HUQUQLAR" :isOpen="openAccordions.roles" @toggle="toggleAccordion('roles')">
+                            <p class="text-[13px] text-[#64748B] mb-6">Xodimlar roliga qarab tizimdagi modullarni ko'rish ruxsatnomalarini sozlang.</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <label class="block text-[12px] font-medium text-[#64748B] mb-2">Shablon Tanlash</label>
-                                    <select v-model="activeTemplate" @change="handleTemplateChange" class="w-full h-[40px] px-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] outline-none">
-                                        <option value="">Shablon tanlang...</option>
-                                        <option v-for="t in smsTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                    <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Rolni Tanlang</label>
+                                    <select v-model="selectedRoleIdForPermissions" @change="loadRolePermissions" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] bg-white outline-none">
+                                        <option value="">-- Rol tanlang --</option>
+                                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
                                     </select>
                                 </div>
+                                <div v-if="selectedRoleIdForPermissions" class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-5">
+                                    <h4 class="text-[15px] font-bold text-[#1E293B] mb-4">Ruxsatnomalar:</h4>
+                                    <form @submit.prevent="saveRolePermissions">
+                                        <div class="space-y-3 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <label v-for="perm in permissions" :key="perm.id" class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors border border-transparent hover:border-slate-200">
+                                                <input type="checkbox" :value="perm.name" v-model="rolePermissionsForm.permissions" class="w-5 h-5 text-[#2563EB] rounded border-[#E2E8F0] focus:ring-[#2563EB]">
+                                                <span class="text-[14px] text-[#1E293B] font-medium">{{ permissionLabel(perm.name) }}</span>
+                                            </label>
+                                        </div>
+                                        <div class="border-t border-[#E2E8F0] pt-4">
+                                            <button type="submit" :disabled="rolePermissionsForm.processing" class="w-full px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">
+                                                {{ rolePermissionsForm.processing ? 'Saqlanmoqda...' : 'Saqlash' }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-[12px] font-medium text-[#64748B] mb-2">Xabar Matni</label>
-                                <textarea v-model="smsForm.message" required rows="4" class="w-full p-[12px] border border-[#E2E8F0] rounded-[8px] text-[14px] outline-none focus:border-[#2563EB]"></textarea>
+                        </AccordionItem>
+                    </div>
+
+                    <!-- ===================================== -->
+                    <!-- 7. MARKETING (SMS, LEAD SOURCES) -->
+                    <!-- ===================================== -->
+                    <div v-show="activeTab === 'marketing'" class="animate-[fadeIn_0.3s_ease-out]">
+                        
+                        <AccordionItem title="🎯 LID MANBALARI" :isOpen="openAccordions.sources" @toggle="toggleAccordion('sources')">
+                            <p class="text-[13px] text-[#64748B] mb-6">Mijozlarning qayerdan kelganligini qayd etish manzillari (Masalan: Instagram, Telegram).</p>
+                            
+                            <form @submit.prevent="saveSource" class="flex flex-wrap gap-4 mb-8 items-end">
+                                <div class="flex-1 min-w-[280px]">
+                                    <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Manba Nomi</label>
+                                    <input v-model="sourceForm.name" type="text" placeholder="Masalan: Instagram Reklama" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]">
+                                </div>
+                                <button type="submit" :disabled="sourceForm.processing" class="px-6 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 h-[40px]">
+                                    {{ isEditingSource ? 'Yangilash' : 'Qo\'shish' }}
+                                </button>
+                                <button v-if="isEditingSource" type="button" @click="sourceForm.reset(); isEditingSource = false" class="px-6 py-2.5 bg-white text-[#64748B] border border-[#E2E8F0] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] h-[40px]">Bekor qilish</button>
+                            </form>
+                            
+                            <div class="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
+                                <table class="w-full text-left">
+                                    <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                                        <tr>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B]">#</th>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B]">Manba Nomi</th>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B] text-right">Amallar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(src, idx) in leadSources" :key="src.id" class="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
+                                            <td class="p-4 text-[14px] text-[#64748B]">{{ idx + 1 }}</td>
+                                            <td class="p-4 text-[14px] font-semibold text-[#1E293B]">{{ src.name }}</td>
+                                            <td class="p-4 text-right flex justify-end gap-2">
+                                                <button @click="editSource(src)" class="px-3 py-1.5 border border-[#E2E8F0] rounded-md text-[13px] font-semibold text-[#1E293B] hover:bg-[#F1F5F9]">Tahrirlash</button>
+                                                <button @click="deleteSource(src.id)" class="px-3 py-1.5 bg-[#FEE2E2] border border-[#FECACA] text-[#DC2626] rounded-md text-[13px] font-semibold hover:bg-[#FECACA]">O'chirish</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <button type="submit" :disabled="smsForm.processing" class="px-[20px] py-[10px] bg-[#10B981] text-white rounded-[8px] text-[14px] font-semibold hover:bg-[#059669]">
-                                {{ smsForm.processing ? 'Yuborilmoqda...' : 'Yuborish' }}
-                            </button>
-                        </form>
+                        </AccordionItem>
+
+                        <AccordionItem title="💬 SMS XABARNOMALAR" :isOpen="openAccordions.sms" @toggle="toggleAccordion('sms')">
+                            <p class="text-[13px] text-[#64748B] mb-6">Mijozlarga ommaviy SMS xabarnomalar va e'lonlar yuborish.</p>
+                            
+                            <form @submit.prevent="sendBroadcastSms" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="flex flex-col">
+                                        <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Shablon Tanlash</label>
+                                        <select v-model="activeTemplate" @change="handleTemplateChange" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] outline-none bg-white">
+                                            <option value="">Shablon tanlang...</option>
+                                            <option v-for="t in smsTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Xabar Matni</label>
+                                    <textarea v-model="smsForm.message" required rows="4" class="w-full p-3 border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]"></textarea>
+                                </div>
+                                <div class="flex justify-end pt-5 border-t border-[#E2E8F0]">
+                                    <button type="submit" :disabled="smsForm.processing" class="px-6 py-2.5 bg-[#10B981] text-white rounded-lg text-[14px] font-semibold hover:bg-[#059669] shadow-sm transition-all">
+                                        {{ smsForm.processing ? 'Yuborilmoqda...' : 'Yuborish' }}
+                                    </button>
+                                </div>
+                            </form>
+                        </AccordionItem>
+
                     </div>
 
                 </div>
@@ -618,3 +684,39 @@ const saveRolePermissions = () => {
         </div>
     </AdminLayout>
 </template>
+
+<style>
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+/* Hide scrollbar for tabs */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+</style>

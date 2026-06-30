@@ -340,11 +340,11 @@ const hasUnsavedChanges = computed(() => {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Nomi</label>
-                                        <input v-model="form.company_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Tizim Nomi</label>
-                                        <input v-model="form.app_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.app_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="col-span-full">
                                         <LogoUploader v-model="form.logo" label="Logotipni yuklang" />
@@ -378,7 +378,7 @@ const hasUnsavedChanges = computed(() => {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Tizim Tili</label>
-                                        <select v-model="form.system_language" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                        <select v-model="form.system_language" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
                                             <option value="uz">O'zbekcha</option>
                                             <option value="ru">Русский</option>
                                             <option value="en">English</option>
@@ -386,27 +386,27 @@ const hasUnsavedChanges = computed(() => {
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Vaqt Mintaqasi (Timezone)</label>
-                                        <select v-model="form.timezone" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                        <select v-model="form.timezone" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
                                             <option value="Asia/Tashkent">Asia/Tashkent (+05:00)</option>
                                         </select>
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Sanalar Formati</label>
-                                        <select v-model="form.date_format" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                        <select v-model="form.date_format" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
                                             <option value="DD.MM.YYYY">DD.MM.YYYY (Masalan: 31.12.2023)</option>
                                             <option value="YYYY-MM-DD">YYYY-MM-DD (Masalan: 2023-12-31)</option>
                                         </select>
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Pul Birligi</label>
-                                        <select v-model="form.default_currency" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                        <select v-model="form.default_currency" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
                                             <option value="UZS">UZS (So'm)</option>
                                             <option value="USD">USD (Dollar)</option>
                                         </select>
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Aniqlik Darajasi (Decimal Places)</label>
-                                        <select v-model="form.decimal_places" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
+                                        <select v-model="form.decimal_places" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white">
                                             <option value="0">0 (1 000)</option>
                                             <option value="2">2 (1 000.00)</option>
                                         </select>
@@ -429,35 +429,35 @@ const hasUnsavedChanges = computed(() => {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="flex flex-col md:col-span-2">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Kompaniya Nomini (Yuridik)</label>
-                                        <input v-model="form.company_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Telefon Raqami</label>
-                                        <input v-model="form.company_phone" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Elektron Pochta</label>
-                                        <input v-model="form.company_email" type="email" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_email" type="email" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col md:col-span-2">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Manzili</label>
-                                        <input v-model="form.company_address" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_address" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Nomi</label>
-                                        <input v-model="form.company_bank_name" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_bank_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Hisob Raqami</label>
-                                        <input v-model="form.company_bank_account" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_bank_account" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">INN</label>
-                                        <input v-model="form.company_inn" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_inn" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">MFO</label>
-                                        <input v-model="form.company_mfo" type="text" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
+                                        <input v-model="form.company_mfo" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
                                 </div>
                                 <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
@@ -586,7 +586,7 @@ const hasUnsavedChanges = computed(() => {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Rolni Tanlang</label>
-                                    <select v-model="selectedRoleIdForPermissions" @change="loadRolePermissions" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] bg-white outline-none">
+                                    <select v-model="selectedRoleIdForPermissions" @change="loadRolePermissions" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] bg-white outline-none">
                                         <option value="">-- Rol tanlang --</option>
                                         <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
                                     </select>
@@ -622,7 +622,7 @@ const hasUnsavedChanges = computed(() => {
                             <form @submit.prevent="saveSource" class="flex flex-wrap gap-4 mb-8 items-end">
                                 <div class="flex-1 min-w-[280px]">
                                     <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Manba Nomi</label>
-                                    <input v-model="sourceForm.name" type="text" placeholder="Masalan: Instagram Reklama" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]">
+                                    <input v-model="sourceForm.name" type="text" placeholder="Masalan: Instagram Reklama" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]">
                                 </div>
                                 <button type="submit" :disabled="sourceForm.processing" class="px-6 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 h-[40px]">
                                     {{ isEditingSource ? 'Yangilash' : 'Qo\'shish' }}
@@ -660,7 +660,7 @@ const hasUnsavedChanges = computed(() => {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="flex flex-col">
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2 block">Shablon Tanlash</label>
-                                        <select v-model="activeTemplate" @change="handleTemplateChange" class="w-full h-[40px] px-3 border border-[#E2E8F0] rounded-lg text-[14px] outline-none bg-white">
+                                        <select v-model="activeTemplate" @change="handleTemplateChange" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none bg-white">
                                             <option value="">Shablon tanlang...</option>
                                             <option v-for="t in smsTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
                                         </select>

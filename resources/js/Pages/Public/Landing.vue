@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
@@ -10,24 +10,115 @@ defineProps({
 });
 
 const showDemo = ref(false);
+
+// Warp Speed Starfield Animation Logic
+const canvasRef = ref(null);
+let animationFrameId = null;
+
+onMounted(() => {
+    const canvas = canvasRef.value;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    
+    const stars = [];
+    const numStars = 800; // 1000 flying stars roughly
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    for (let i = 0; i < numStars; i++) {
+        stars.push({
+            x: Math.random() * width - centerX,
+            y: Math.random() * height - centerY,
+            z: Math.random() * width,
+            pz: Math.random() * width
+        });
+    }
+    
+    let speed = 2.5;
+
+    function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, width, height);
+        
+        const cx = width / 2;
+        const cy = height / 2;
+        
+        for (let i = 0; i < numStars; i++) {
+            const star = stars[i];
+            
+            star.z -= speed;
+            if (star.z <= 0) {
+                star.x = Math.random() * width - cx;
+                star.y = Math.random() * height - cy;
+                star.z = width;
+                star.pz = width;
+            }
+            
+            const sx = star.x / star.z * width + cx;
+            const sy = star.y / star.z * width + cy;
+            
+            const px = star.x / star.pz * width + cx;
+            const py = star.y / star.pz * width + cy;
+            
+            star.pz = star.z;
+            
+            const radius = (1 - star.z / width) * 2.5;
+            
+            // Randomly color some stars for cyber feel
+            if (i % 10 === 0) ctx.fillStyle = '#8b5cf6'; // purple
+            else if (i % 15 === 0) ctx.fillStyle = '#3b82f6'; // blue
+            else ctx.fillStyle = '#ffffff'; // white
+            
+            ctx.beginPath();
+            ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Star trails
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = radius;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+        }
+        
+        animationFrameId = requestAnimationFrame(draw);
+    }
+    
+    draw();
+    
+    const handleResize = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    onBeforeUnmount(() => {
+        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('resize', handleResize);
+    });
+});
 </script>
 
 <template>
     <Head title="SBE - Sales & Build ERP" />
-    <div class="min-h-screen bg-[#050505] text-white relative overflow-hidden font-sans">
-        <!-- Space Background / Stars -->
-        <div class="stars-bg absolute inset-0 z-0"></div>
-        <div class="twinkling absolute inset-0 z-0 opacity-40"></div>
+    <div class="min-h-screen bg-black text-white relative overflow-hidden font-sans">
+        
+        <!-- Warp Speed Starfield Canvas (Base Layer) -->
+        <canvas ref="canvasRef" class="absolute inset-0 z-0 pointer-events-none"></canvas>
+        
+        <!-- Radial Gradient Overlay (For Readability) -->
+        <div class="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-black/40 to-black/80 pointer-events-none"></div>
 
-        <!-- Glassmorphism Orbs -->
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/30 blur-[120px] pointer-events-none z-0"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-orange-600/30 blur-[120px] pointer-events-none z-0"></div>
-        <div class="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-blue-600/30 blur-[120px] pointer-events-none z-0"></div>
-
-        <!-- Content Wrapper -->
+        <!-- Content Wrapper (Strictly above stars) -->
         <div class="relative z-10">
-            <!-- Navbar -->
-            <nav class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto backdrop-blur-md bg-white/[0.02] border-b border-white/5 rounded-b-3xl mb-8 shadow-lg">
+            <!-- Glassmorphism Navbar -->
+            <nav class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto backdrop-blur-md bg-white/5 border-b border-white/10 rounded-b-3xl mb-8 shadow-lg sticky top-0 z-50">
                 <div class="flex items-center gap-3">
                     <img src="/sbe-logo.png" alt="SBE Logo" class="h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=SBE&background=1e1e1e&color=fff&rounded=true'" />
                     <span class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-purple-600 drop-shadow-sm tracking-tight">SBE</span>
@@ -40,22 +131,28 @@ const showDemo = ref(false);
             </nav>
 
             <!-- Hero Section -->
-            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center">
-                <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-md">
-                    <span class="text-sm font-medium text-blue-300 tracking-wide uppercase">Yangi Avlod ERP Tizimi</span>
+            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center relative z-20">
+                <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                    <span class="text-sm font-medium text-purple-300 tracking-wide uppercase">Yangi Avlod ERP Tizimi</span>
                 </div>
-                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8 drop-shadow-lg">
+                
+                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8" style="text-shadow: 0 4px 20px rgba(0,0,0,0.8);">
                     SBE – Qurilish va Savdo Kompaniyalari Uchun <br/>
-                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-purple-500 to-blue-500 animate-gradient-x">Yagona Boshqaruv Ekosistemasi</span>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500" style="text-shadow: none;">Yagona Boshqaruv Ekosistemasi</span>
                 </h1>
-                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mb-12 leading-relaxed drop-shadow-md">
+                
+                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mb-12 leading-relaxed font-medium" style="text-shadow: 0 2px 10px rgba(0,0,0,0.9);">
                     Moliya, CRM, Qurilish ob'ektlari va Kadrlar bo'limini bitta oynadan boshqaring. Ma'lumotlaringiz xavfsizligi va biznesingizning to'liq nazorati sizning qo'lingizda.
                 </p>
+                
                 <div class="flex flex-col sm:flex-row gap-6 w-full justify-center px-4">
-                    <Link :href="route('login')" class="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all font-bold text-lg shadow-[0_0_30px_rgba(79,70,229,0.5)] hover:shadow-[0_0_40px_rgba(79,70,229,0.7)] hover:-translate-y-1 transform duration-300">
+                    <!-- Glowing Primary Cyber-Button -->
+                    <Link :href="route('login')" class="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg shadow-[0_0_30px_rgba(124,58,253,0.5)] hover:shadow-[0_0_40px_rgba(124,58,253,0.8)] hover:scale-105 transition-all transform duration-300">
                         Tizim bilan tanishish
                     </Link>
-                    <button @click="showDemo = true" class="group px-8 py-4 rounded-full bg-black/40 backdrop-blur-md border border-purple-500/50 hover:bg-purple-500/10 transition-all font-bold text-lg text-purple-300 hover:text-purple-200 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:-translate-y-1 transform duration-300 flex items-center justify-center gap-2">
+                    
+                    <!-- Secondary Glass Button -->
+                    <button @click="showDemo = true" class="group px-8 py-4 rounded-full bg-white/5 backdrop-blur-md border border-white/20 hover:bg-purple-900/30 transition-all font-bold text-lg text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.1)] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:-translate-y-1 transform duration-300 flex items-center justify-center gap-2">
                         <span class="relative flex h-3 w-3">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
@@ -68,46 +165,46 @@ const showDemo = ref(false);
             <!-- Features Section -->
             <section class="max-w-7xl mx-auto px-6 py-24 relative z-10">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden">
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
                         <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="relative z-10">
                             <div class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">💡</div>
                             <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Aklli CRM va Shartnomalar</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Mijozlar bazasini (Lead) boshqarish, shartnomalarni avtomatlashtirilgan PDF formatida generatsiya qilish, SMS xabarnomalar va to'lov grafigini (shaxmatka) real vaqt rejimida kuzatish.</p>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Mijozlar bazasini (Lead) boshqarish, shartnomalarni avtomatlashtirilgan PDF formatida generatsiya qilish, SMS xabarnomalar va to'lov grafigini (shaxmatka) real vaqt rejimida kuzatish.</p>
                         </div>
                     </div>
                     
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden">
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
                         <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="relative z-10">
                             <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]">💰</div>
                             <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Moliya va Kassa Nazorati</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ko'p valyutali hisob-kitoblar, daromad va xarajatlarni toifalar bo'yicha tahlil qilish, investorlar o'rtasida foyda (divident) taqsimotini avtomatik hisoblash va tasdiqlash tizimi (Multi-sig).</p>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ko'p valyutali hisob-kitoblar, daromad va xarajatlarni toifalar bo'yicha tahlil qilish, investorlar o'rtasida foyda (divident) taqsimotini avtomatik hisoblash va tasdiqlash tizimi (Multi-sig).</p>
                         </div>
                     </div>
 
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-purple-500/30 transition-all duration-500 group relative overflow-hidden">
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-purple-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
                         <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="relative z-10">
                             <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">🏗️</div>
                             <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Qurilish va Omborxona</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ob'ektlardagi qurilish jarayonlarini bosqichma-bosqich nazorat qilish, ombordagi materiallar (kirim-chiqim) hisobi, ta'minotchilar bilan hisob-kitoblar va texnikalar ijarasi monitoringi.</p>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ob'ektlardagi qurilish jarayonlarini bosqichma-bosqich nazorat qilish, ombordagi materiallar (kirim-chiqim) hisobi, ta'minotchilar bilan hisob-kitoblar va texnikalar ijarasi monitoringi.</p>
                         </div>
                     </div>
 
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-pink-500/30 transition-all duration-500 group relative overflow-hidden">
+                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-pink-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
                         <div class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="relative z-10">
                             <div class="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.2)]">👥</div>
                             <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">HR, Oyliklar va Face ID</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Ishchilarni yuzni tanish texnologiyasi (Face ID) orqali davomat qilish, brigadalar ishi, KPI va oylik maoshlarni avtomatlashtirilgan hisob-kitobi.</p>
+                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ishchilarni yuzni tanish texnologiyasi (Face ID) orqali davomat qilish, brigadalar ishi, KPI va oylik maoshlarni avtomatlashtirilgan hisob-kitobi.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Partners Section -->
-            <section class="max-w-7xl mx-auto px-6 py-24 text-center">
+            <section class="max-w-7xl mx-auto px-6 py-24 text-center relative z-10">
                 <h2 class="text-3xl md:text-4xl font-extrabold mb-14 drop-shadow-lg">
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">Xalqaro va Mahalliy Qurilish Gigantlari Bizni Tanlaydi</span>
                 </h2>
@@ -129,7 +226,7 @@ const showDemo = ref(false);
             </section>
 
             <!-- Footer -->
-            <footer class="mt-12 border-t border-white/10 pt-16 pb-8 glass-card bg-black/40">
+            <footer class="mt-12 border-t border-white/10 pt-16 pb-8 glass-card bg-black/40 relative z-10">
                 <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                     <div class="col-span-1 md:col-span-2">
                         <div class="flex items-center gap-3 mb-6">
@@ -332,8 +429,6 @@ const showDemo = ref(false);
 <style scoped>
 .glass-card {
     background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
 }
 
 @keyframes fadeInUp {
@@ -350,21 +445,6 @@ const showDemo = ref(false);
     animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Gradient Text Animation */
-@keyframes gradient-x {
-    0%, 100% {
-        background-size: 200% 200%;
-        background-position: left center;
-    }
-    50% {
-        background-size: 200% 200%;
-        background-position: right center;
-    }
-}
-.animate-gradient-x {
-    animation: gradient-x 5s ease infinite;
-}
-
 /* Custom Scrollbar for Demo */
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
@@ -378,21 +458,5 @@ const showDemo = ref(false);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
-}
-
-/* Stars Background Effect */
-.stars-bg {
-    background: #050505 url('https://raw.githubusercontent.com/danielstuart14/CSS_FRACTAL_GALAXY/master/stars.png') repeat top center;
-    z-index: 0;
-}
-.twinkling {
-    background: transparent url('https://raw.githubusercontent.com/danielstuart14/CSS_FRACTAL_GALAXY/master/twinkling.png') repeat top center;
-    z-index: 1;
-    animation: move-twink-back 150s linear infinite;
-}
-
-@keyframes move-twink-back {
-    from {background-position: 0 0;}
-    to {background-position: -10000px 5000px;}
 }
 </style>

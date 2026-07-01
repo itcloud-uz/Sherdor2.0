@@ -162,7 +162,7 @@ class FacilityController extends Controller
                 $isObjectOnly = $request->boolean('is_object_only');
 
                 if ($isObjectOnly) {
-                    Building::create([
+                    $building = Building::create([
                         'name' => $validated['name'],
                         'city' => $validated['city'] ?? null,
                         'district' => $validated['district'] ?? null,
@@ -250,7 +250,9 @@ class FacilityController extends Controller
                 }
             }
 
-            return redirect()->route('admin.facility')->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
+            return redirect()->route('facility', ['object' => $building ? $building->name : $validated['name']])->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Building store failed: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -348,7 +350,7 @@ class FacilityController extends Controller
                     'street' => $validated['street'] ?? null,
                     'photo_path' => $photoPath,
                 ]);
-                return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
+                return redirect()->route('facility', ['object' => $building->name])->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
             }
 
             $building->update([
@@ -392,7 +394,7 @@ class FacilityController extends Controller
                 $this->generateFloorsAndUnits($building, $request->input('floors_data'));
             }
 
-            return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari yangilandi!');
+            return redirect()->route('facility', ['object' => $building->name])->with('message', 'Obyekt ma\'lumotlari yangilandi!');
         } catch (\Exception $e) {
             Log::error('Building update failed: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -967,7 +969,7 @@ class FacilityController extends Controller
     {
         $building = Building::findOrFail($id);
         $building->delete();
-        return redirect()->route('admin.facility')->with('message', 'Bino o\'chirildi!');
+        return redirect()->route('facility')->with('message', 'Bino o\'chirildi!');
     }
 
     public function destroyObject($id)
@@ -982,7 +984,7 @@ class FacilityController extends Controller
             }
         });
 
-        return redirect()->route('admin.facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
+        return redirect()->route('facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
     }
 
     public function storeUnit(Request $request)

@@ -24,8 +24,12 @@
         <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-6 md:p-8">
                 <form @submit.prevent="submitBuilding" class="space-y-8">
-                    <div v-if="buildingForm.errors.error" class="p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium mb-6">
-                        {{ buildingForm.errors.error }}
+                    <div v-if="Object.keys(buildingForm.errors).length > 0" class="p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium mb-6">
+                        <ul class="list-disc pl-5">
+                            <li v-for="(error, key) in buildingForm.errors" :key="key">
+                                {{ error }}
+                            </li>
+                        </ul>
                     </div>
                     
                     <!-- 1. TAHRIRLANAYOTGAN/QO'SHILAYOTGAN NAYSA OBJECT CONTAINER BO'LSA (total_floors === 0) -->

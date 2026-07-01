@@ -76,7 +76,7 @@ class HrController extends Controller
     public function qurilishIshHaqi()
     {
         $buildings = Building::with('floors.units')->get();
-        $brigades = \App\Models\Brigade::with('workers')->get();
+        $brigades = \App\Models\Brigade::with(['workers', 'transactions'])->get();
         
         return Inertia::render('Admin/HR/QurilishIshHaqi', [
             'buildings' => $buildings,

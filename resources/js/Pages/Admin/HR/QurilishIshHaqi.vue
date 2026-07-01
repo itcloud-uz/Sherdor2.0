@@ -423,7 +423,10 @@ const handleDragEnd = () => {
                             >
                                 <div class="cursor-pointer" @click="selectedBrigade = brigade">
                                     <span class="font-medium truncate block pr-12">{{ brigade.name }}</span>
-                                    <span class="text-xs text-gray-500">{{ brigade.foreman_name }}</span>
+                                    <span class="text-xs text-gray-500 flex justify-between mt-0.5">
+                                        <span>{{ brigade.foreman_name }}</span>
+                                        <span :class="brigade.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">{{ formatMoney(brigade.balance) }}</span>
+                                    </span>
                                 </div>
                                 <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
                                     <button @click.stop="editBrigade(brigade)" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-md transition" title="Tahrirlash">
@@ -451,9 +454,35 @@ const handleDragEnd = () => {
                                     <h2 class="text-xl font-bold text-gray-800">{{ selectedBrigade.name }}</h2>
                                     <p class="text-sm text-gray-500 mt-1">Brigadir: <span class="font-semibold text-gray-700">{{ selectedBrigade.foreman_name }}</span></p>
                                 </div>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Moliya Qoldig'i</span>
+                                    <span class="text-xl font-bold" :class="selectedBrigade.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                                        {{ formatMoney(selectedBrigade.balance) }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Tabs -->
+                            <div class="border-b border-gray-200">
+                                <nav class="flex -mb-px px-6 space-x-6" aria-label="Tabs">
+                                    <button 
+                                        @click="brigadeTab = 'xizmatlar'"
+                                        :class="[brigadeTab === 'xizmatlar' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']"
+                                    >
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                        Xizmatlar (Excel)
+                                    </button>
+                                    <button 
+                                        @click="brigadeTab = 'tranzaksiyalar'"
+                                        :class="[brigadeTab === 'tranzaksiyalar' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']"
+                                    >
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Moliya Tranzaksiyalari
+                                    </button>
+                                </nav>
                             </div>
                             <!-- XIZMATLAR TAB -->
-                            <div class="p-6">
+                            <div v-if="brigadeTab === 'xizmatlar'" class="p-6">
                                 <!-- Statistics Cards -->
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col">
@@ -562,6 +591,43 @@ const handleDragEnd = () => {
                                                     <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded-lg border border-red-200 bg-white transition shadow-sm" title="O'chirish">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                     </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TRANZAKSIYALAR TAB -->
+                            <div v-else-if="brigadeTab === 'tranzaksiyalar'" class="p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-bold text-gray-800">Moliya Bo'limidan O'tkazmalar</h3>
+                                </div>
+                                <div v-if="!selectedBrigade.transactions || selectedBrigade.transactions.length === 0" class="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
+                                    <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <p class="text-gray-500">Moliya bo'limidan ushbu jamoaga hech qanday tranzaksiya amalga oshirilmagan.</p>
+                                </div>
+                                <div v-else class="overflow-x-auto border border-gray-200 rounded-lg">
+                                    <table class="w-full text-sm text-left text-gray-600">
+                                        <thead class="bg-gray-50 text-gray-700 font-semibold border-b">
+                                            <tr>
+                                                <th class="px-4 py-3">Sana</th>
+                                                <th class="px-4 py-3">Turi</th>
+                                                <th class="px-4 py-3">Izoh</th>
+                                                <th class="px-4 py-3 text-right">Summa</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr v-for="txn in selectedBrigade.transactions" :key="txn.id" class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 whitespace-nowrap">{{ new Date(txn.date || txn.created_at).toLocaleDateString('uz-UZ') }}</td>
+                                                <td class="px-4 py-3">
+                                                    <span :class="txn.type === 'payment' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'" class="px-2 py-1 text-xs font-medium rounded-full">
+                                                        {{ txn.type === 'payment' ? 'To\'lov (Chiqim)' : (txn.type === 'payment_received' ? 'Kirim' : txn.type) }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3">{{ txn.description || '-' }}</td>
+                                                <td class="px-4 py-3 text-right font-bold" :class="txn.type === 'payment' ? 'text-red-600' : 'text-green-600'">
+                                                    {{ txn.type === 'payment' ? '-' : '+' }}{{ formatMoney(txn.amount) }}
                                                 </td>
                                             </tr>
                                         </tbody>

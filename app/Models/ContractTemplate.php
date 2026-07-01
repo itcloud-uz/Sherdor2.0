@@ -223,6 +223,27 @@ class ContractTemplate extends Model
             'KORXONA_MFO' => $korxonaMfo,
             'KORXONA_INN' => $korxonaInn,
             'KORXONA_TELEFON' => $korxonaTelefon,
+
+            // Zamon Sifat Servis placeholders mappings:
+            'ZAMON_BUYURTMACHI_FISH' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : '_______',
+            'ZAMON_BUYURTMACHI_PROPISKA' => $client ? ($client->address ?? '_______') : '_______',
+            'ZAMON_PASPORT_SERIYA' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_series ?? '')), 0, 2) : '_______',
+            'ZAMON_PASPORT_RAQAM' => $client ? preg_replace('/[^0-9]/', '', $client->passport_series ?? '') : '_______',
+            'ZAMON_PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            'ZAMON_PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            'ZAMON_PODEZD' => $unit ? ($unit->podyezd ?: ($unit->podez ? $unit->podez->number : '_______')) : '_______',
+            'ZAMON_XONADON' => $unit ? $unit->unit_number : '_______',
+            'ZAMON_QAVAT' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'),
+            'ZAMON_XONALAR' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'),
+            'ZAMON_MAYDON' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______',
+            'ZAMON_KV_METR_NARXI' => number_format($contract->price_per_sqm, 0, ',', ' '),
+            'ZAMON_KV_METR_NARXI_SOZ' => self::numberToWords($contract->price_per_sqm),
+            'ZAMON_UMUMIY_NARX' => number_format($totalAmount, 0, ',', ' '),
+            'ZAMON_UMUMIY_NARX_SOZ' => $totalAmountWords,
+            'ZAMON_BOSHLANGICH_TOLOV' => number_format($downPayment, 0, ',', ' '),
+            'ZAMON_BOSHLANGICH_TOLOV_SOZ' => $downPaymentWords,
+            'ZAMON_BOSHLANGICH_FOIZ' => $downPaymentPercent,
+            'ZAMON_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
         ];
 
         $selectedVariants = $contract->selected_variants ?? [];

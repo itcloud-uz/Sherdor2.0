@@ -219,6 +219,38 @@
                                     + Yangi o'zgaruvchi
                                 </button>
                             </div>
+
+                            <!-- Grouped Variables Helper -->
+                            <div class="mt-3 p-3 bg-white rounded-lg border border-gray-200 shadow-inner relative">
+                                <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-gray-100">
+                                    <span class="text-[10px] font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1">
+                                        📋 O'zgaruvchilar Ma'lumotnomasi
+                                    </span>
+                                    <div class="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                                        <button type="button" @click="activeHelperGroup = 'zamon'" :class="activeHelperGroup === 'zamon' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2 py-0.5 rounded-md text-[9px] font-bold transition-all">
+                                            Zamon Sifat Servis
+                                        </button>
+                                        <button type="button" @click="activeHelperGroup = 'sherdor'" :class="activeHelperGroup === 'sherdor' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2 py-0.5 rounded-md text-[9px] font-bold transition-all">
+                                            Eski (Sher-Dor)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-1.5 max-h-[14vh] overflow-y-auto custom-scrollbar pr-1">
+                                    <div v-for="item in helperVariables" :key="item.key" @click="copyPlaceholder(item.key)" class="p-1.5 bg-slate-50 hover:bg-blue-50 border border-slate-150 hover:border-blue-300 rounded cursor-pointer transition-all flex flex-col group relative">
+                                        <span class="font-mono text-[9px] font-bold text-blue-600 flex justify-between items-center">
+                                            <span>&lbrace;&lbrace; {{ item.key }} &rbrace;&rbrace;</span>
+                                            <span class="text-[8px] text-gray-400 group-hover:text-blue-500 font-sans">Nusxa 📋</span>
+                                        </span>
+                                        <span class="text-[8px] text-gray-500 mt-0.5 leading-tight">{{ item.desc }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Floating Toast for copy confirmation -->
+                                <div v-if="toastMsg" class="absolute bottom-2 right-2 bg-slate-900 text-white text-[9px] font-mono font-bold px-2 py-1 rounded shadow-md animate-in fade-in zoom-in duration-200">
+                                    {{ toastMsg }}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -234,74 +266,111 @@
 
                 <!-- STEP 3: Clause Variant Groups -->
                 <div v-show="step === 3" class="space-y-4">
-                    <div class="border border-gray-200 rounded-xl bg-slate-50 p-4">
-                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
-                            <div>
-                                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 O'zgaruvchan bandlar (Shartnoma variantlari)</h4>
-                                <p class="text-[9px] text-gray-500 font-mono mt-0.5">Masalan: to'lov shartlari (Naqt, Grafik, Ipoteka) kabi bandlarni qo'shing</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button type="button" @click="addVariantGroup" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-gray-900 border border-gray-300 text-[10px] font-bold rounded font-mono">
-                                    + Yangi band guruhi
-                                </button>
-                                <button type="button" @click="loadStandardPaymentVariants" class="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold rounded font-mono">
-                                    ⚡ Standart to'lov shartlarini yuklash (Naqd, Grafik, Ipoteka)
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Variant Groups List -->
-                        <div class="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
-                            <div v-for="(g, gIdx) in wizardForm.variant_groups" :key="gIdx" class="bg-white border border-gray-200 rounded-lg p-4 relative space-y-3">
-                                <!-- Remove Group Button -->
-                                <button type="button" @click="removeVariantGroup(gIdx)" class="absolute right-3 top-3 text-red-500 hover:text-red-700 font-bold text-sm">&times;</button>
-                                
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Band nomi *</label>
-                                        <input v-model="g.label" type="text" class="w-full bg-slate-50 border border-gray-300 text-gray-900 rounded p-1.5 text-xs font-semibold" placeholder="Masalan: To'lov shartlari" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Matndagi Anchor (Jinja2 tag) *</label>
-                                        <input v-model="g.anchor" type="text" class="w-full bg-slate-50 border border-gray-300 text-blue-600 rounded p-1.5 text-xs font-mono font-bold" placeholder="Masalan: TO_LOV_SHARTI" required>
-                                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left 2 Columns: Variant Groups List -->
+                        <div class="lg:col-span-2 border border-gray-200 rounded-xl bg-slate-50 p-4 flex flex-col h-[65vh]">
+                            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 O'zgaruvchan bandlar (Shartnoma variantlari)</h4>
+                                    <p class="text-[9px] text-gray-500 font-mono mt-0.5">Masalan: to'lov shartlari (Naqt, Grafik, Ipoteka) kabi bandlarni qo'shing</p>
                                 </div>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" @click="addVariantGroup" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-gray-900 border border-gray-300 text-[10px] font-bold rounded font-mono">
+                                        + Yangi band guruhi
+                                    </button>
+                                    <button type="button" @click="loadStandardPaymentVariants" class="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold rounded font-mono">
+                                        ⚡ Standart to'lov shartlarini yuklash (Naqd, Grafik, Ipoteka)
+                                    </button>
+                                </div>
+                            </div>
 
-                                <!-- Variants of this group -->
-                                <div class="border-t border-gray-100 pt-2 space-y-2">
-                                    <div class="flex justify-between items-center">
-                                        <h5 class="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Variantlar:</h5>
-                                        <button type="button" @click="addVariant(gIdx)" class="text-[9px] text-blue-600 hover:text-blue-800 font-bold font-mono">+ Variant qo'shish</button>
+                            <!-- Scrollable Variant Groups List -->
+                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                                <div v-for="(g, gIdx) in wizardForm.variant_groups" :key="gIdx" class="bg-white border border-gray-200 rounded-lg p-4 relative space-y-3">
+                                    <!-- Remove Group Button -->
+                                    <button type="button" @click="removeVariantGroup(gIdx)" class="absolute right-3 top-3 text-red-500 hover:text-red-700 font-bold text-sm">&times;</button>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Band nomi *</label>
+                                            <input v-model="g.label" type="text" class="w-full bg-slate-50 border border-gray-300 text-gray-900 rounded p-1.5 text-xs font-semibold" placeholder="Masalan: To'lov shartlari" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-mono text-gray-500 mb-0.5 uppercase">Matndagi Anchor (Jinja2 tag) *</label>
+                                            <input v-model="g.anchor" type="text" class="w-full bg-slate-50 border border-gray-300 text-blue-600 rounded p-1.5 text-xs font-mono font-bold" placeholder="Masalan: TO_LOV_SHARTI" required>
+                                        </div>
                                     </div>
 
-                                    <div class="space-y-3">
-                                        <div v-for="(v, vIdx) in g.variants" :key="vIdx" class="bg-slate-50 border border-gray-150 rounded p-3 relative space-y-2">
-                                            <button type="button" @click="removeVariant(gIdx, vIdx)" class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-xs">&times;</button>
-                                            
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant nomi (Sarlavha)</label>
-                                                    <input v-model="v.label" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px]" placeholder="Masalan: Grafik bo'yicha" required>
+                                    <!-- Variants of this group -->
+                                    <div class="border-t border-gray-100 pt-2 space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <h5 class="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Variantlar:</h5>
+                                            <button type="button" @click="addVariant(gIdx)" class="text-[9px] text-blue-600 hover:text-blue-800 font-bold font-mono">+ Variant qo'shish</button>
+                                        </div>
+
+                                        <div class="space-y-3">
+                                            <div v-for="(v, vIdx) in g.variants" :key="vIdx" class="bg-slate-50 border border-gray-150 rounded p-3 relative space-y-2">
+                                                <button type="button" @click="removeVariant(gIdx, vIdx)" class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-xs">&times;</button>
+                                                
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant nomi (Sarlavha)</label>
+                                                        <input v-model="v.label" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px]" placeholder="Masalan: Grafik bo'yicha" required>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant kodi (Key) *</label>
+                                                        <input v-model="v.key" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: GRAFIK" required>
+                                                    </div>
                                                 </div>
                                                 <div>
-                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant kodi (Key) *</label>
-                                                    <input v-model="v.key" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: GRAFIK" required>
+                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant matni (Original Word'dagi band matni, sub-o'zgaruvchilar ishlatsa bo'ladi)</label>
+                                                    <textarea v-model="v.content" @input="onVariantContentInput(v)" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1.5 text-[10px] h-12 font-mono" placeholder="Masalan: 3.1-bandda ko'rsatilgan summaning {{ BOSHLANGICH_FOIZ }}% to'lanadi..." required></textarea>
                                                 </div>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant matni (Original Word'dagi band matni, sub-o'zgaruvchilar ishlatsa bo'ladi)</label>
-                                                <textarea v-model="v.content" @input="onVariantContentInput(v)" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1.5 text-[10px] h-12 font-mono" placeholder="Masalan: 3.1-bandda ko'rsatilgan summaning {{ BOSHLANGICH_FOIZ }}% to'lanadi..." required></textarea>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant o'zgaruvchilari (Vergul bilan ajrating)</label>
-                                                <input v-model="v.placeholdersString" @input="v.placeholders = v.placeholdersString.split(',').map(s => s.trim()).filter(Boolean)" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: BOSHLANGICH_FOIZ, MUDDAT_OY">
+                                                <div>
+                                                    <label class="block text-[8px] font-mono text-gray-400 mb-0.5 uppercase">Variant o'zgaruvchilari (Vergul bilan ajrating)</label>
+                                                    <input v-model="v.placeholdersString" @input="v.placeholders = v.placeholdersString.split(',').map(s => s.trim()).filter(Boolean)" type="text" class="w-full bg-white border border-gray-300 text-gray-900 rounded p-1 text-[10px] font-mono" placeholder="Masalan: BOSHLANGICH_FOIZ, MUDDAT_OY">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <div v-if="wizardForm.variant_groups.length === 0" class="p-8 text-center text-xs text-gray-400 font-mono bg-white rounded border border-gray-200">
+                                    Hali o'zgaruvchan bandlar qo'shilmadi (Ixtiyoriy)
+                                </div>
                             </div>
-                            <div v-if="wizardForm.variant_groups.length === 0" class="p-8 text-center text-xs text-gray-400 font-mono bg-white rounded border border-gray-200">
-                                Hali o'zgaruvchan bandlar qo'shilmadi (Ixtiyoriy)
+                        </div>
+
+                        <!-- Right Column: Variables Helper Reference -->
+                        <div class="lg:col-span-1 border border-gray-200 rounded-xl bg-slate-100 p-4 flex flex-col h-[65vh] overflow-hidden relative">
+                            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                                    📋 O'zgaruvchilar ro'yxati
+                                </h4>
+                                <div class="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                                    <button type="button" @click="activeHelperGroup = 'zamon'" :class="activeHelperGroup === 'zamon' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2 py-1 rounded-md text-[9px] font-bold transition-all">
+                                        Zamon Sifat
+                                    </button>
+                                    <button type="button" @click="activeHelperGroup = 'sherdor'" :class="activeHelperGroup === 'sherdor' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2 py-1 rounded-md text-[9px] font-bold transition-all">
+                                        Sher-Dor
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p class="text-[9px] text-gray-500 font-mono mb-2">Variant matnida ishlatish uchun o'zgaruvchini tanlang va nusxalab oling:</p>
+
+                            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 bg-white rounded-lg border border-gray-200 p-2">
+                                <div v-for="item in helperVariables" :key="item.key" @click="copyPlaceholder(item.key)" class="p-2 bg-slate-50 hover:bg-blue-50 border border-slate-150 hover:border-blue-300 rounded cursor-pointer transition-all flex flex-col group relative">
+                                    <span class="font-mono text-[9px] font-bold text-blue-600 flex justify-between items-center">
+                                        <span>&lbrace;&lbrace; {{ item.key }} &rbrace;&rbrace;</span>
+                                        <span class="text-[8px] text-gray-400 group-hover:text-blue-500 font-sans">Nusxa 📋</span>
+                                    </span>
+                                    <span class="text-[8px] text-gray-500 mt-1 leading-normal">{{ item.desc }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Floating Toast inside Helper -->
+                            <div v-if="toastMsg" class="absolute bottom-4 left-4 right-4 bg-slate-900 text-white text-xs font-mono font-bold px-3 py-2 rounded-lg text-center shadow-lg animate-in fade-in zoom-in duration-200">
+                                {{ toastMsg }}
                             </div>
                         </div>
                     </div>
@@ -321,7 +390,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import axios from 'axios';
@@ -340,6 +409,78 @@ const docxInput = ref(null);
 const selectedFileName = ref('');
 const previewHtml = ref('');
 const detectedPlaceholders = ref([]);
+
+const activeHelperGroup = ref('zamon');
+const toastMsg = ref('');
+
+const zamonVariables = [
+    { key: 'ZAMON_BUYURTMACHI_FISH', desc: 'Buyurtmachi To\'liq F.I.Sh (Ariza/Propiska egasi)' },
+    { key: 'ZAMON_BUYURTMACHI_PROPISKA', desc: 'Buyurtmachining Doimiy yashash manzili' },
+    { key: 'ZAMON_PASPORT_SERIYA', desc: 'Buyurtmachi Pasport Seriyasi (e.g. AD)' },
+    { key: 'ZAMON_PASPORT_RAQAM', desc: 'Buyurtmachi Pasport Raqami (e.g. 1234567)' },
+    { key: 'ZAMON_PASPORT_JOYI', desc: 'Pasport Berilgan Joy/Organ' },
+    { key: 'ZAMON_PASPORT_SANA', desc: 'Pasport Berilgan Sana' },
+    { key: 'ZAMON_PODEZD', desc: 'Bino Podezd/Yo\'lak Raqami' },
+    { key: 'ZAMON_XONADON', desc: 'Sotilayotgan Xonadon Raqami' },
+    { key: 'ZAMON_QAVAT', desc: 'Xonadon Joylashgan Qavat' },
+    { key: 'ZAMON_XONALAR', desc: 'Xonadondagi Xonalar Soni' },
+    { key: 'ZAMON_MAYDON', desc: 'Xonadon Umumiy Maydoni (Kvadrat metr)' },
+    { key: 'ZAMON_KV_METR_NARXI', desc: 'Xonadonning 1 kv.m Narxi' },
+    { key: 'ZAMON_KV_METR_NARXI_SOZ', desc: '1 kv.m Narxi so\'z bilan' },
+    { key: 'ZAMON_UMUMIY_NARX', desc: 'Xonadonning Umumiy Narxi' },
+    { key: 'ZAMON_UMUMIY_NARX_SOZ', desc: 'Umumiy Narxi so\'z bilan' },
+    { key: 'ZAMON_BOSHLANGICH_TOLOV', desc: 'Boshlang\'ich (Oldindan) To\'lov Summasi' },
+    { key: 'ZAMON_BOSHLANGICH_TOLOV_SOZ', desc: 'Boshlang\'ich To\'lov so\'z bilan' },
+    { key: 'ZAMON_BOSHLANGICH_FOIZ', desc: 'Boshlang\'ich To\'lov Foiz nisbati' },
+    { key: 'ZAMON_TELEFON', desc: 'Buyurtmachi Telefon Raqamlari' },
+];
+
+const sherdorVariables = [
+    { key: 'MIJOZ_FISH', desc: 'Mijoz To\'liq F.I.Sh' },
+    { key: 'MIJOZ_FISH_QISQA', desc: 'Mijoz F.I.Sh qisqa (A.Mamanov)' },
+    { key: 'PASPORT_SERIYA', desc: 'Pasport Seriya va Raqam' },
+    { key: 'PASPORT_SANA', desc: 'Pasport Berilgan Sana' },
+    { key: 'PASPORT_JOYI', desc: 'Pasport Bergan Organ' },
+    { key: 'MIJOZ_MANZILI', desc: 'Mijoz Ro\'yxatdan o\'tgan manzili' },
+    { key: 'MIJOZ_JSHSHIR', desc: 'Mijoz JSHSHIR (PINFL)' },
+    { key: 'MIJOZ_TELEFON', desc: 'Mijoz Telefon Raqamlari' },
+    { key: 'BLOK', desc: 'Blok raqami/nomi' },
+    { key: 'QAVAT', desc: 'Qavat' },
+    { key: 'XONA_RAQAMI', desc: 'Xonadon/No-turar do\'kon raqami' },
+    { key: 'XONALAR_SONI', desc: 'Xonalar soni' },
+    { key: 'MAYDON', desc: 'Obyekt Maydoni' },
+    { key: 'KV_METR_NARXI', desc: '1 kv.m Narxi' },
+    { key: 'UMUMIY_NARX', desc: 'Obyekt Umumiy Narxi' },
+    { key: 'UMUMIY_NARX_SOZ_BILAN', desc: 'Umumiy Narx so\'z bilan' },
+    { key: 'BOSHLANGICH_TOLOV', desc: 'Boshlang\'ich To\'lov summasi' },
+    { key: 'BOSHLANGICH_TOLOV_SOZ_BILAN', desc: 'Boshlang\'ich To\'lov so\'z bilan' },
+    { key: 'BOSHLANGICH_TOLOV_FOIZ', desc: 'Boshlang\'ich To\'lov foizi' },
+    { key: 'MUDDAT_OY', desc: 'To\'lov Muddati (oylar)' },
+    { key: 'MUDDAT_OY_SOZ_BILAN', desc: 'To\'lov muddati so\'z bilan' },
+    { key: 'TOLOV_MUDDAT_KUN', desc: 'Dastlabki To\'lov muddati (kunlar)' },
+    { key: 'DIREKTOR', desc: 'Kompaniya direktori' },
+    { key: 'KORXONA_NOMI', desc: 'Kompaniya nomi' },
+    { key: 'KORXONA_MANZILI', desc: 'Kompaniya manzili' },
+    { key: 'KORXONA_BANK_ACCOUNT', desc: 'Bank hisob raqami' },
+    { key: 'KORXONA_BANK', desc: 'Bank nomi' },
+    { key: 'KORXONA_MFO', desc: 'MFO kodi' },
+    { key: 'KORXONA_INN', desc: 'INN raqami' },
+    { key: 'KORXONA_TELEFON', desc: 'Kompaniya telefoni' }
+];
+
+const helperVariables = computed(() => {
+    return activeHelperGroup.value === 'zamon' ? zamonVariables : sherdorVariables;
+});
+
+function copyPlaceholder(key) {
+    navigator.clipboard.writeText('{{ ' + key + ' }}');
+    toastMsg.value = '{{ ' + key + ' }} nusxalandi!';
+    setTimeout(() => {
+        if (toastMsg.value.includes(key)) {
+            toastMsg.value = '';
+        }
+    }, 2000);
+}
 
 const wizardForm = ref({
     name: '',

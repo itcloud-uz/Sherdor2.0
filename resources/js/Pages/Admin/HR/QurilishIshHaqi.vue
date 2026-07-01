@@ -14,10 +14,42 @@ const props = defineProps({
     }
 });
 
-const BUILDINGS = computed(() => props.buildings.map(b => b.name) || []);
-const UNITS = ['kub', 'mt', 'dona', 'kv.m'];
-const BLOCKS = ['1', '2', '3', '4', '5'];
-const FLOORS = ['-2', '-1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+const uniqueBuildings = computed(() => {
+    const unique = [];
+    const map = new Map();
+    for (const item of props.buildings) {
+        if (!map.has(item.name)) {
+            map.set(item.name, true);
+            unique.push(item);
+        }
+    }
+    return unique;
+});
+
+const BUILDINGS = computed(() => uniqueBuildings.value.map(b => b.name));
+
+const currentBuilding = computed(() => {
+    return uniqueBuildings.value.find(b => b.name === serviceForm.value.building) || null;
+});
+
+const BLOCKS = computed(() => {
+    if (!currentBuilding.value || !currentBuilding.value.blocks_count) return ['1', '2', '3', '4', '5'];
+    return Array.from({ length: currentBuilding.value.blocks_count }, (_, i) => String(i + 1));
+});
+
+const FLOORS = computed(() => {
+    if (!currentBuilding.value || !currentBuilding.value.total_floors) return ['-2', '-1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    const total = currentBuilding.value.total_floors;
+    const basements = currentBuilding.value.basement_floors || 0;
+    
+    let arr = [];
+    for(let i = -basements; i <= total; i++) {
+        arr.push(String(i));
+    }
+    return arr;
+});
+
+const UNITS = ['kub', 'mt', 'dona', 'kv.m', 'soat', 'reys'];
 
 const selectedBrigade = ref(null);
 const brigadeTab = ref('xizmatlar'); // 'ishchilar', 'xizmatlar'

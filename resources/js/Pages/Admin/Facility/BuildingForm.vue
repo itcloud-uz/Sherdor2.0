@@ -10,7 +10,7 @@
                     </h2>
                     <p class="text-sm text-slate-500 mt-1">Obyekt va blok ma'lumotlarini kiritish va tahrirlash</p>
                 </div>
-                <Link :href="route('facility')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-sm rounded-xl transition-all shadow-sm">
+                <Link :href="route('admin.facility')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-sm rounded-xl transition-all shadow-sm">
                     Orqaga Qaytish
                 </Link>
             </div>
@@ -158,7 +158,7 @@
 
                     <!-- SUBMIT BUTTONS -->
                     <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-                        <Link :href="route('facility')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
+                        <Link :href="route('admin.facility')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
                             Bekor Qilish
                         </Link>
                         <button type="submit" :disabled="buildingForm.processing" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2">
@@ -282,10 +282,10 @@ function submitBuilding() {
     if (props.isEditing) {
         buildingForm.transform((data) => ({
             ...data,
-            _method: 'put'
-        })).post(route('facility.buildings.update', props.building.id));
+            _method: 'put',
+        })).post(route('admin.facility.buildings.update', props.building.id));
     } else {
-        buildingForm.post(route('facility.buildings.store'));
+        buildingForm.post(route('admin.facility.buildings.store'));
     }
 }
 </script>

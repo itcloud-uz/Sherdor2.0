@@ -33,8 +33,8 @@ const currentBuilding = computed(() => {
 });
 
 const BLOCKS = computed(() => {
-    if (!currentBuilding.value || !currentBuilding.value.blocks_count) return ['1', '2', '3', '4', '5'];
-    return Array.from({ length: currentBuilding.value.blocks_count }, (_, i) => String(i + 1));
+    const count = Math.max(4, currentBuilding.value?.blocks_count || 1);
+    return Array.from({ length: count }, (_, i) => String(i + 1));
 });
 
 const FLOORS = computed(() => {
@@ -173,19 +173,24 @@ watch(rows, (newVal) => {
 
 // Auto-calculate form values
 watch(serviceForm, (val) => {
-    val.measure1 = parseFloat(val.measure1) || 0;
-    val.measure2 = parseFloat(val.measure2) || 0;
-    val.quantity = parseFloat(val.quantity) || 0;
-    val.price = parseFloat(val.price) || 0;
-    val.paymentAmount = parseFloat(val.paymentAmount) || 0;
+    const m1 = parseFloat(val.measure1) || 0;
+    const m2 = parseFloat(val.measure2) || 0;
+    const q = parseFloat(val.quantity) || 0;
+    const p = parseFloat(val.price) || 0;
+    const pay = parseFloat(val.paymentAmount) || 0;
 
-    let m1 = val.measure1;
-    let m2 = val.measure2;
-    val.totalMeasure = (m1 && m2) ? (m1 * m2) : (m1 || m2);
+    // G * H = I
+    val.totalMeasure = Number((m1 * m2).toFixed(4));
 
-    val.total = val.totalMeasure * val.quantity;
-    val.calculatedSum = val.total * val.price;
-    val.balance = val.calculatedSum - val.paymentAmount;
+    // I * J = K (J defaults to 1 if 0/empty)
+    const activeQty = q > 0 ? q : 1;
+    val.total = Number((val.totalMeasure * activeQty).toFixed(4));
+
+    // K * L = M
+    val.calculatedSum = Number((val.total * p).toFixed(2));
+
+    // M - O = P
+    val.balance = Number((val.calculatedSum - pay).toFixed(2));
 }, { deep: true });
 
 const stats = computed(() => {
@@ -353,83 +358,72 @@ const handleDragEnd = () => {
                                     </button>
                                 </div>
 
-                                <!-- Clean Table Container -->
-                                <div class="overflow-x-auto border border-gray-200 rounded-lg">
-                                    <table class="w-full text-sm text-left text-gray-500">
-                                        <thead class="text-[10px] text-gray-700 uppercase bg-gray-50">
+                                <!-- Beautiful Excel-Style Grid Table Container -->
+                                <div class="overflow-x-auto border border-gray-300 rounded-xl shadow-sm bg-white">
+                                    <table class="w-full text-xs text-left text-gray-600 border-collapse">
+                                        <thead class="bg-gray-100/80 border-b border-gray-300 text-gray-700 font-bold uppercase text-[10px] tracking-wider select-none sticky top-0">
                                             <tr>
-                                                <th class="px-2 py-2 w-8"></th>
-                                                <th class="px-2 py-2">№</th>
-                                                <th class="px-2 py-2">Xizmat nomi</th>
-                                                <th class="px-2 py-2">Obyekt/Blok/Qavat</th>
-                                                <th class="px-2 py-2">O'lchov & Jami</th>
-                                                <th class="px-2 py-2">Narx (UZS)</th>
-                                                <th class="px-2 py-2">Hisoblangan</th>
-                                                <th class="px-2 py-2">To'lov & Sana</th>
-                                                <th class="px-2 py-2">Qoldiq</th>
-                                                <th class="px-2 py-2 text-center">Amallar</th>
+                                                <th class="border border-gray-200 px-2 py-3 w-8 text-center bg-gray-100"></th>
+                                                <th class="border border-gray-200 px-3 py-3 w-12 text-center bg-gray-100">№</th>
+                                                <th class="border border-gray-200 px-4 py-3 min-w-[200px]">Xizmat nomi</th>
+                                                <th class="border border-gray-200 px-4 py-3 min-w-[120px]">Qurilish obyekti</th>
+                                                <th class="border border-gray-200 px-2 py-3 w-16 text-center">Blok</th>
+                                                <th class="border border-gray-200 px-2 py-3 w-16 text-center">Qavat</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">O'lchov birligi</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 1 (G)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 2 (H)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami o'lchami (I)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">Shundan necha dona (J)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami (K)</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right">Narxi (L)</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-36 text-right bg-indigo-50/50 text-indigo-900 font-extrabold">Hisoblangan so'mmasi (M)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-28 text-center">To'lov sanasi (N)</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right text-green-700">To'lov so'mmasi (O)</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right bg-red-50/30 text-red-700 font-bold">Qoldiq (P)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-28 text-center bg-gray-100">Amallar</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody class="divide-y divide-gray-200">
                                             <tr v-if="rows.length === 0">
-                                                <td colspan="10" class="px-6 py-8 text-center text-gray-400 text-xs">
-                                                    Ushbu jamoa uchun xizmatlar mavjud emas.
+                                                <td colspan="18" class="px-6 py-12 text-center text-gray-400 text-sm bg-gray-50/50">
+                                                    Ushbu jamoa uchun xizmatlar mavjud emas. Excel jadvalini yaratish uchun "+ Yangi Xizmat" tugmasini bosing.
                                                 </td>
                                             </tr>
                                             <tr 
                                                 v-for="(row, index) in rows" 
                                                 :key="row.id"
-                                                class="border-b hover:bg-gray-50 transition-colors"
+                                                class="hover:bg-indigo-50/20 transition-colors"
                                                 :class="draggedIdx === index ? 'opacity-50 bg-gray-100' : ''"
                                                 draggable="true"
                                                 @dragstart="handleDragStart($event, index)"
                                                 @dragover="handleDragOver($event, index)"
                                                 @dragend="handleDragEnd"
                                             >
-                                                <td class="px-2 py-2 text-gray-400 cursor-move">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
+                                                <td class="border border-gray-200 px-2 py-2 text-center text-gray-400 cursor-move hover:text-indigo-600 bg-gray-50/50">
+                                                    <svg class="w-3.5 h-3.5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
                                                 </td>
-                                                <td class="px-2 py-3 font-medium text-gray-900 text-xs">{{ index + 1 }}</td>
-                                                
-                                                <td class="px-2 py-3 font-medium text-gray-800 text-xs">{{ row.name || '-' }}</td>
-
-                                                <td class="px-2 py-3 text-xs">
-                                                    <div class="flex flex-col">
-                                                        <span class="text-gray-800">{{ row.building || '-' }}</span>
-                                                        <span class="text-[10px] text-gray-400">B: {{ row.block || '-' }}, Q: {{ row.floor || '-' }}</span>
-                                                    </div>
-                                                </td>
-
-                                                <td class="px-2 py-3 text-xs">
-                                                    <div class="flex flex-col">
-                                                        <span class="font-semibold text-gray-700">{{ row.totalMeasure }} {{ row.unit }} x {{ row.quantity }}</span>
-                                                        <span class="text-[10px] text-gray-400">Jami dona: {{ row.total }}</span>
-                                                    </div>
-                                                </td>
-
-                                                <td class="px-2 py-3 text-gray-900 font-medium text-xs">{{ new Intl.NumberFormat('uz-UZ').format(row.price) }}</td>
-
-                                                <td class="px-2 py-3 font-bold text-blue-600 bg-blue-50/30 text-xs rounded">
-                                                    {{ new Intl.NumberFormat('uz-UZ').format(row.calculatedSum) }}
-                                                </td>
-
-                                                <td class="px-2 py-3 text-xs">
-                                                    <div class="flex flex-col">
-                                                        <span class="text-green-600 font-medium">{{ new Intl.NumberFormat('uz-UZ').format(row.paymentAmount) }}</span>
-                                                        <span class="text-[10px] text-gray-400">{{ row.paymentDate || '-' }}</span>
-                                                    </div>
-                                                </td>
-
-                                                <td class="px-2 py-3 font-bold text-red-600 bg-red-50/30 text-xs rounded">
-                                                    {{ new Intl.NumberFormat('uz-UZ').format(row.balance) }}
-                                                </td>
-
-                                                <td class="px-2 py-3 text-center space-x-2">
-                                                    <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 p-1.5 rounded transition" title="Tahrirlash">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500 bg-gray-50/50">{{ index + 1 }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 font-bold text-gray-800">{{ row.name || '-' }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 font-medium text-gray-600">{{ row.building || '-' }}</td>
+                                                <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.block || '-' }}</td>
+                                                <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.floor || '-' }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.unit || '-' }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure1 }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure2 }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.totalMeasure }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-medium text-gray-800">{{ row.quantity }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-gray-900">{{ new Intl.NumberFormat('uz-UZ').format(row.price || 0) }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-indigo-800 bg-indigo-50/30">{{ new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0) }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.paymentDate || '-' }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0) }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-red-700 bg-red-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.balance || 0) }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center space-x-1.5 bg-gray-50/30">
+                                                    <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 p-1.5 rounded-lg border border-indigo-200 bg-white transition shadow-sm" title="Tahrirlash">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                     </button>
-                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 bg-red-50 p-1.5 rounded transition" title="O'chirish">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded-lg border border-red-200 bg-white transition shadow-sm" title="O'chirish">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -540,44 +534,65 @@ const handleDragEnd = () => {
                                 </select>
                             </div>
                             <div class="col-span-2 sm:col-span-1">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shundan necha dona</label>
-                                <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5 bg-blue-50" />
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shundan necha dona (J)</label>
+                                <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5 bg-blue-50/50" />
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lcham 1</label>
-                                <input v-model.number="serviceForm.measure1" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 1 (G)</label>
+                                <input v-model.number="serviceForm.measure1" type="number" min="0" step="any" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lcham 2</label>
-                                <input v-model.number="serviceForm.measure2" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 2 (H)</label>
+                                <input v-model.number="serviceForm.measure2" type="number" min="0" step="any" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
                             </div>
                         </div>
                         
-                        <div class="flex justify-between items-center bg-gray-100 p-4 rounded-xl border">
-                            <span class="text-base font-semibold text-gray-600">Jami O'lcham & Dona:</span>
-                            <span class="text-2xl font-bold text-gray-900">{{ serviceForm.totalMeasure }} x {{ serviceForm.quantity }} = {{ serviceForm.total }}</span>
+                        <div class="flex flex-col gap-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="flex justify-between items-center text-sm font-medium text-gray-600">
+                                <span>Jami o'lchami (I = G * H):</span>
+                                <span class="font-bold text-gray-800">{{ serviceForm.totalMeasure }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-medium text-gray-600 border-t pt-2 mt-1">
+                                <span>Jami (K = I * J):</span>
+                                <span class="text-xl font-extrabold text-indigo-900">{{ serviceForm.total }}</span>
+                            </div>
                         </div>
                     </div>
 
                     <!-- 3. Moliya & Hisob-kitob -->
                     <div class="space-y-6 md:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Ish Narxi (Hisoblash)</h4>
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Moliya & Hisob-kitob</h4>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Birlik Narxi (UZS)</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Narxi (L)</label>
                                 <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-semibold text-blue-700 mb-2">Jami Hisoblangan Summa</label>
-                                <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 text-lg font-black text-blue-800 flex items-center justify-end h-[52px] shadow-inner">
+                                <label class="block text-sm font-semibold text-indigo-900 mb-2">Hisoblangan so'mmasi (M = K * L)</label>
+                                <div class="w-full bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-lg font-black text-indigo-800 flex items-center justify-end h-[52px] shadow-inner">
                                     {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }} so'm
                                 </div>
                             </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-green-700 mb-2">To'lov so'mmasi (O)</label>
+                                <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-green-500 focus:ring-green-500" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">To'lov sanasi (N)</label>
+                                <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center bg-red-50 p-4 rounded-xl border border-red-100 mt-4">
+                            <span class="text-base font-semibold text-red-700">Qoldiq (P = M - O):</span>
+                            <span class="text-2xl font-black text-red-800">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }} so'm</span>
                         </div>
                     </div>
 

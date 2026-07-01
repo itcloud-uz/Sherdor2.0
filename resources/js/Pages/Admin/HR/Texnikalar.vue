@@ -3,6 +3,10 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 const props = defineProps({
     machineries: {
         type: Array,
@@ -14,10 +18,10 @@ const props = defineProps({
     }
 });
 
-const selectedMachinery = ref(null);
+const selectedOwner = ref(null);
 const expandedOwners = ref({}); // { ownerId: boolean }
 
-const machineriesData = ref({}); // { machineryId: [rows] }
+const ownerData = ref({}); // { ownerId: [rows] }
 const rows = ref([]); // current selected rows
 const draggedIdx = ref(null);
 
@@ -149,6 +153,7 @@ const isWorkModalOpen = ref(false);
 const editingWorkId = ref(null);
 const defaultWorkForm = {
     id: null,
+    machinery_id: '',
     date: '',
     serviceName: '',
     quantity: 1,
@@ -162,38 +167,39 @@ const defaultWorkForm = {
 const workForm = ref({ ...defaultWorkForm });
 
 onMounted(() => {
-    const localData = localStorage.getItem('texnikalar_ishlar');
+    const localData = localStorage.getItem('texnikalar_ishlar_owner');
     if (localData) {
         try {
-            machineriesData.value = JSON.parse(localData);
+            ownerData.value = JSON.parse(localData);
         } catch (e) {
             console.error(e);
         }
     }
     
-    // Auto expand the first owner if available
+    // Auto expand and select the first owner if available
     if (props.owners && props.owners.length > 0) {
         expandedOwners.value[props.owners[0].id] = true;
+        selectedOwner.value = props.owners[0];
     }
 });
 
-// Update current rows when a machinery is selected
-watch(selectedMachinery, (newMachinery) => {
-    if (newMachinery) {
-        if (!machineriesData.value[newMachinery.id]) {
-            machineriesData.value[newMachinery.id] = [];
+// Update current rows when an owner is selected
+watch(selectedOwner, (newOwner) => {
+    if (newOwner) {
+        if (!ownerData.value[newOwner.id]) {
+            ownerData.value[newOwner.id] = [];
         }
-        rows.value = machineriesData.value[newMachinery.id];
+        rows.value = ownerData.value[newOwner.id];
     } else {
         rows.value = [];
     }
 });
 
-// Watch rows to update machineriesData and LocalStorage
+// Watch rows to update ownerData and LocalStorage
 watch(rows, (newVal) => {
-    if (selectedMachinery.value) {
-        machineriesData.value[selectedMachinery.value.id] = newVal;
-        localStorage.setItem('texnikalar_ishlar', JSON.stringify(machineriesData.value));
+    if (selectedOwner.value) {
+        ownerData.value[selectedOwner.value.id] = newVal;
+        localStorage.setItem('texnikalar_ishlar_owner', JSON.stringify(ownerData.value));
     }
 }, { deep: true });
 
@@ -226,9 +232,12 @@ const formatMoney = (val) => {
 };
 
 const openAddWorkModal = () => {
-    if (!selectedMachinery.value) return;
+    if (!selectedOwner.value) return;
     const today = new Date().toISOString().slice(0, 10);
     workForm.value = { ...defaultWorkForm, id: Date.now().toString(), date: today };
+    if (selectedOwner.value.machineries && selectedOwner.value.machineries.length > 0) {
+        workForm.value.machinery_id = selectedOwner.value.machineries[0].id;
+    }
     editingWorkId.value = null;
     isWorkModalOpen.value = true;
 };
@@ -276,8 +285,81 @@ const handleDragEnd = () => {
     draggedIdx.value = null;
 };
 
-const toggleOwner = (ownerId) => {
-    expandedOwners.value[ownerId] = !expandedOwners.value[ownerId];
+const toggleOwner = (owner) => {
+    expandedOwners.value[owner.id] = !expandedOwners.value[owner.id];
+    selectedOwner.value = owner;
+};
+
+const exportToPDF = () => {
+    if (!selectedOwner.value) return;
+    const doc = new jsPDF();
+    doc.text(`${selectedOwner.value.name} - Bajarilgan Ishlar Hisoboti`, 14, 15);
+    
+    const tableData = rows.value.map((row, index) => [
+        index + 1,
+        row.date,
+        selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
+        row.serviceName,
+        row.quantity,
+        formatMoney(row.price),
+        formatMoney(row.totalPrice),
+        formatMoney(row.paid),
+        formatMoney(row.fuel),
+        formatMoney(row.balance),
+        row.comment
+    ]);
+
+    doc.autoTable({
+        startY: 25,
+        head: [['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox']],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [253, 224, 71], textColor: [0, 0, 0] }
+    });
+
+    doc.save(`${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+};
+
+const exportToExcel = () => {
+    if (!selectedOwner.value) return;
+    
+    const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox'];
+    
+    const data = rows.value.map((row, index) => [
+        index + 1,
+        row.date,
+        selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
+        row.serviceName,
+        row.quantity,
+        row.price,
+        row.totalPrice,
+        row.paid,
+        row.fuel,
+        row.balance,
+        row.comment
+    ]);
+    
+    data.push([
+        '', '', '', 'JAMI:', '', '', 
+        stats.value.totalPrice, 
+        stats.value.totalPaid, 
+        stats.value.totalFuel, 
+        stats.value.totalBalance, 
+        ''
+    ]);
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    
+    // Add some styling widths
+    ws['!cols'] = [
+        {wch: 5}, {wch: 12}, {wch: 15}, {wch: 20}, {wch: 10}, 
+        {wch: 12}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 20}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+    XLSX.writeFile(wb, `${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
 };
 </script>
 
@@ -317,8 +399,9 @@ const toggleOwner = (ownerId) => {
                         <div v-else class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
                             <div v-for="owner in props.owners" :key="owner.id" class="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
                                 <div 
-                                    @click="toggleOwner(owner.id)" 
-                                    class="group relative px-4 py-3 bg-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+                                    @click="toggleOwner(owner)" 
+                                    class="group relative px-4 py-3 flex justify-between items-center cursor-pointer transition border-b border-transparent"
+                                    :class="selectedOwner?.id === owner.id ? 'bg-orange-50 border-orange-200' : 'bg-white hover:bg-gray-50'"
                                 >
                                     <div>
                                         <h3 class="font-bold text-gray-800 pr-12">{{ owner.name }}</h3>
@@ -345,10 +428,9 @@ const toggleOwner = (ownerId) => {
                                     <div 
                                         v-for="machinery in owner.machineries" 
                                         :key="machinery.id"
-                                        class="group relative w-full text-left px-3 py-2 rounded-lg border transition-colors flex justify-between items-center"
-                                        :class="selectedMachinery?.id === machinery.id ? 'bg-orange-100 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-gray-200 hover:bg-orange-50 text-gray-700'"
+                                        class="group relative w-full text-left px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 flex justify-between items-center"
                                     >
-                                        <div class="overflow-hidden pr-2 cursor-pointer w-full" @click="selectedMachinery = machinery">
+                                        <div class="overflow-hidden pr-2 w-full">
                                             <span class="font-semibold text-sm truncate block pr-12">{{ machinery.name }}</span>
                                             <span class="text-[10px] text-gray-500">{{ machinery.driver_name || 'Haydovchisiz' }}</span>
                                         </div>

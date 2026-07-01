@@ -3,6 +3,10 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 const props = defineProps({
     buildings: {
         type: Array,
@@ -238,6 +242,87 @@ const deleteRow = (id) => {
     }
 };
 
+const exportToPDF = () => {
+    if (!selectedBrigade.value) return;
+    const doc = new jsPDF('landscape');
+    doc.text(`${selectedBrigade.value.name} - Bajarilgan Xizmatlar Hisoboti`, 14, 15);
+    
+    const tableData = rows.value.map((row, index) => [
+        index + 1,
+        row.name || '-',
+        row.building || '-',
+        row.block || '-',
+        row.floor || '-',
+        row.unit || '-',
+        row.measure1,
+        row.measure2,
+        row.totalMeasure,
+        row.quantity,
+        row.total,
+        new Intl.NumberFormat('uz-UZ').format(row.price || 0),
+        new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0),
+        row.paymentDate || '-',
+        new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0),
+        new Intl.NumberFormat('uz-UZ').format(row.balance || 0)
+    ]);
+
+    doc.autoTable({
+        startY: 25,
+        head: [['№', 'Xizmat', 'Obyekt', 'Blok', 'Qavat', 'Birlik', 'O\'lchami 1', 'O\'lchami 2', 'Jami O\'lchami', 'Dona', 'Jami', 'Narxi', 'Hisoblangan', 'Sana', 'To\'landi', 'Qoldiq']],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] }
+    });
+
+    doc.save(`${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+};
+
+const exportToExcel = () => {
+    if (!selectedBrigade.value) return;
+    
+    const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi', 'To\'lov sanasi', 'To\'langan', 'Qoldiq'];
+    
+    const data = rows.value.map((row, index) => [
+        index + 1,
+        row.name || '-',
+        row.building || '-',
+        row.block || '-',
+        row.floor || '-',
+        row.unit || '-',
+        row.measure1,
+        row.measure2,
+        row.totalMeasure,
+        row.quantity,
+        row.total,
+        row.price || 0,
+        row.calculatedSum || 0,
+        row.paymentDate || '-',
+        row.paymentAmount || 0,
+        row.balance || 0
+    ]);
+    
+    data.push([
+        '', '', '', '', '', '', '', '', '', '', 'JAMI:', '', 
+        stats.value.totalCalculatedSum, 
+        '', 
+        stats.value.totalPaid, 
+        stats.value.totalBalance
+    ]);
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    
+    ws['!cols'] = [
+        {wch: 5}, {wch: 25}, {wch: 20}, {wch: 8}, {wch: 8}, {wch: 15}, 
+        {wch: 10}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, 
+        {wch: 15}, {wch: 18}, {wch: 12}, {wch: 15}, {wch: 15}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Xizmatlar");
+    XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+};
+
 const handleDragStart = (e, index) => {
     draggedIdx.value = index;
     e.dataTransfer.effectAllowed = 'move';
@@ -348,7 +433,17 @@ const handleDragEnd = () => {
                                 </div>
 
                                 <!-- Action Bar -->
-                                <div class="flex justify-end mb-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex gap-2">
+                                        <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            PDF Yuklab Olish
+                                        </button>
+                                        <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            Excel Yuklab Olish
+                                        </button>
+                                    </div>
                                     <button
                                         @click="openAddServiceModal"
                                         class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"

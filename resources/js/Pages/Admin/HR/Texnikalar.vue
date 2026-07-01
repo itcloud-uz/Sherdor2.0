@@ -450,29 +450,39 @@ const exportToExcel = () => {
 
                     <!-- Right Panel: Machinery Details & Work Log -->
                     <div class="lg:col-span-3 h-[calc(100vh-140px)] flex flex-col">
-                        <div v-if="!selectedMachinery" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center flex-1 text-center text-gray-500">
+                        <div v-if="!selectedOwner" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center flex-1 text-center text-gray-500">
                             <svg class="w-20 h-20 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg>
-                            <span class="text-lg">Chap tomondagi ro'yxatdan birorta texnikani tanlang.</span>
+                            <span class="text-lg">Chap tomondagi ro'yxatdan birorta texnika egasini tanlang.</span>
                         </div>
 
                         <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden">
-                            <!-- Machinery Header -->
+                            <!-- Owner Header -->
                             <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
                                 <div>
-                                    <h2 class="text-xl font-bold text-gray-900">{{ selectedMachinery.name }}</h2>
-                                    <p class="text-sm text-gray-700 mt-1">Egasi (Sohibkari): <span class="font-semibold">{{ props.owners.find(o => o.id === selectedMachinery.machine_owner_id)?.name || 'Noma\'lum' }}</span></p>
+                                    <h2 class="text-xl font-bold text-gray-900">Sohibkar: {{ selectedOwner.name }}</h2>
+                                    <p class="text-sm text-gray-700 mt-1">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Tel yo\'q' }}</span></p>
                                 </div>
                                 <div class="flex gap-2">
                                     <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm text-center">
-                                        <div class="text-[10px] text-gray-500 uppercase font-bold">Haydovchi</div>
-                                        <div class="text-sm font-semibold text-gray-800">{{ selectedMachinery.driver_name || '-' }}</div>
+                                        <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Texnikalar</div>
+                                        <div class="text-sm font-semibold text-gray-800">{{ selectedOwner.machineries?.length || 0 }} ta</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="p-6 flex flex-col flex-1 overflow-hidden">
                                 <!-- Action Bar -->
-                                <div class="flex justify-end mb-4 flex-shrink-0">
+                                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                                    <div class="flex gap-2">
+                                        <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            PDF Yuklab Olish
+                                        </button>
+                                        <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            Excel Yuklab Olish
+                                        </button>
+                                    </div>
                                     <button
                                         @click="openAddWorkModal"
                                         class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium flex items-center shadow-sm text-sm"
@@ -490,6 +500,7 @@ const exportToExcel = () => {
                                             <tr>
                                                 <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center w-8 font-bold">№</th>
                                                 <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Sana</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Texnika</th>
                                                 <th colspan="4" class="border border-gray-400 bg-gray-200 px-2 py-1 text-center font-bold">BAJARILGAN ISHLAR</th>
                                                 <th colspan="2" class="border border-gray-400 bg-blue-200 px-2 py-1 text-center font-bold">To'landi</th>
                                                 <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Qoldiq</th>
@@ -508,8 +519,8 @@ const exportToExcel = () => {
                                         </thead>
                                         <tbody class="bg-white">
                                             <tr v-if="rows.length === 0">
-                                                <td colspan="11" class="border border-gray-300 px-6 py-12 text-center text-gray-500 text-sm">
-                                                    Ushbu texnika uchun bajarilgan ishlar kiritilmagan.
+                                                <td colspan="12" class="border border-gray-300 px-6 py-12 text-center text-gray-500 text-sm">
+                                                    Ushbu sohibkar uchun bajarilgan ishlar kiritilmagan.
                                                 </td>
                                             </tr>
                                             <tr 
@@ -586,9 +597,20 @@ const exportToExcel = () => {
                     <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                         <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Ish haqida ma'lumotlar</h4>
                         
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Sana <span class="text-red-500">*</span></label>
-                            <input v-model="workForm.date" type="date" class="w-full border-gray-300 rounded-lg text-base p-2.5 focus:border-indigo-500 focus:ring-indigo-500" required />
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Sana <span class="text-red-500">*</span></label>
+                                <input v-model="workForm.date" type="date" class="w-full border-gray-300 rounded-lg text-base p-2.5 focus:border-indigo-500 focus:ring-indigo-500" required />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Texnika (Haydovchi) <span class="text-red-500">*</span></label>
+                                <select v-model="workForm.machinery_id" class="w-full border-gray-300 rounded-lg text-base p-2.5 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                    <option value="" disabled>-- Texnikani tanlang --</option>
+                                    <option v-for="machinery in selectedOwner?.machineries || []" :key="machinery.id" :value="machinery.id">
+                                        {{ machinery.name }} ({{ machinery.driver_name || 'Haydovchisiz' }})
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <div>
@@ -624,7 +646,7 @@ const exportToExcel = () => {
                 <button @click="isWorkModalOpen = false" class="px-8 py-3 text-base font-bold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
                     Bekor qilish
                 </button>
-                <button @click="saveWork" :disabled="!workForm.date || !workForm.serviceName" class="px-8 py-3 text-base font-bold text-white bg-orange-600 border border-transparent rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors shadow-md">
+                <button @click="saveWork" :disabled="!workForm.date || !workForm.serviceName || !workForm.machinery_id" class="px-8 py-3 text-base font-bold text-white bg-orange-600 border border-transparent rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors shadow-md">
                     Bajarilgan Ishni Saqlash
                 </button>
             </div>

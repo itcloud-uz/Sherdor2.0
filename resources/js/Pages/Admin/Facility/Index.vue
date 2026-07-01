@@ -1237,8 +1237,11 @@ function openAddBlock(objName) {
 
 function getObjectContainerId(objName) {
     const list = groupedObjects.value[objName] || [];
-    const container = list.find(b => b.total_floors === 0);
-    return container ? container.id : (list[0] ? list[0].id : 0);
+    let container = list.find(b => b.total_floors === 0);
+    if (!container && list.length > 0) {
+        container = list[0];
+    }
+    return container ? container.id : null;
 }
 
 const searchFilters = ref({
@@ -3235,9 +3238,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <div class="p-4 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                             <span class="text-xs font-semibold text-blue-600 group-hover:underline">Boshqarish →</span>
                             <div class="flex items-center gap-2">
-                                <button @click.stop="openEditObjectContainer(blocks)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
+                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(objName))" @click.stop class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all inline-block">
                                     Tahrirlash
-                                </button>
+                                </Link>
                                 <button @click.stop="deleteObject(blocks, objName)" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
                                     O'chirish
                                 </button>

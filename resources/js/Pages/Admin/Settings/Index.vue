@@ -7,6 +7,7 @@ import AccordionItem from '@/Components/AccordionItem.vue';
 import ToggleSwitch from '@/Components/ToggleSwitch.vue';
 import ColorPickerInput from '@/Components/ColorPickerInput.vue';
 import LogoUploader from '@/Components/LogoUploader.vue';
+import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
     settings: Object,

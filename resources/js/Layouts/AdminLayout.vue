@@ -967,7 +967,7 @@ const formattedDate = computed(() => {
             </header>
 
             <!-- Page Content -->
-            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50" scroll-region>
                 <slot />
             </div>
         </main>

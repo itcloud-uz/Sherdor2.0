@@ -1750,8 +1750,8 @@ const clientDetailLoading = ref(false);
 const detailedClientData = ref(null);
 const savedScrollPosition = ref(0);
 
-function selectClientForDetail(client) {
-    if (!selectedClientForDetail.value) {
+function selectClientForDetail(client, saveScroll = false) {
+    if (saveScroll) {
         const scrollContainer = document.querySelector('[scroll-region]');
         if (scrollContainer) {
             const currentScroll = scrollContainer.scrollTop;
@@ -2680,7 +2680,7 @@ const calculatedSchedules = computed(() => {
 
 function openScheduleModal(contract) {
     if (contract.client) {
-        selectClientForDetail(contract.client);
+        selectClientForDetail(contract.client, true);
     } else {
         selectedContract.value = JSON.parse(JSON.stringify(contract));
         showModal.value = true;
@@ -4385,7 +4385,7 @@ const ledgerReportData = computed(() => {
                                             </svg>
                                         </button>
                                         <!-- View -->
-                                        <button @click="selectClientForDetail(client)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
+                                        <button @click="selectClientForDetail(client, true)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
                                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -5815,7 +5815,7 @@ const ledgerReportData = computed(() => {
                                             📱
                                         </button>
                                         <!-- View details -->
-                                        <button @click="selectClientForDetail(group.client)" class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-all shadow-sm" title="Mijoz haqida">
+                                        <button @click="selectClientForDetail(group.client, true)" class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-all shadow-sm" title="Mijoz haqida">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

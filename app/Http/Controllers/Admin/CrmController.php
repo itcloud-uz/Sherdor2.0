@@ -201,7 +201,7 @@ class CrmController extends Controller
 
     public function storeClient(\Illuminate\Http\Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'middle_name' => 'nullable|string',
@@ -216,15 +216,22 @@ class CrmController extends Controller
             'region' => 'nullable|string',
             'district' => 'nullable|string',
             'phone_2' => 'nullable|string',
-            'birth_date' => 'nullable|date',
             'gender' => 'nullable|string',
             'source' => 'nullable|string',
             'contract_language' => 'nullable|string',
             'contract_id' => 'nullable|string',
-            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'profile_photo' => 'nullable|file|mimes:jpeg,png,jpg|max:2048'
-        ]);
+            'passport_photo' => 'nullable',
+            'profile_photo' => 'nullable'
+        ];
+
+        if ($request->hasFile('passport_photo')) {
+            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+        }
+        if ($request->hasFile('profile_photo')) {
+            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:2048';
+        }
+
+        $validated = $request->validate($rules);
 
         if (array_key_exists('passport_series', $validated)) {
             $validated['passport_number'] = $validated['passport_series'];
@@ -237,11 +244,7 @@ class CrmController extends Controller
             unset($validated['passport_photo']);
         }
 
-        if ($request->hasFile('passport_photo_back')) {
-            $validated['passport_photo_back'] = $request->file('passport_photo_back')->store('passport_photos', 'public');
-        } else {
-            unset($validated['passport_photo_back']);
-        }
+
 
         if ($request->hasFile('profile_photo')) {
             $validated['profile_photo'] = $request->file('profile_photo')->store('profile_photos', 'public');
@@ -270,7 +273,7 @@ class CrmController extends Controller
 
     public function updateClient(\Illuminate\Http\Request $request, \App\Models\Client $client)
     {
-        $validated = $request->validate([
+        $rules = [
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'middle_name' => 'nullable|string',
@@ -285,15 +288,22 @@ class CrmController extends Controller
             'region' => 'nullable|string',
             'district' => 'nullable|string',
             'phone_2' => 'nullable|string',
-            'birth_date' => 'nullable|date',
             'gender' => 'nullable|string',
             'source' => 'nullable|string',
             'contract_language' => 'nullable|string',
             'contract_id' => 'nullable|string',
-            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'profile_photo' => 'nullable|file|mimes:jpeg,png,jpg|max:2048'
-        ]);
+            'passport_photo' => 'nullable',
+            'profile_photo' => 'nullable'
+        ];
+
+        if ($request->hasFile('passport_photo')) {
+            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+        }
+        if ($request->hasFile('profile_photo')) {
+            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:2048';
+        }
+
+        $validated = $request->validate($rules);
 
         if (array_key_exists('passport_series', $validated)) {
             $validated['passport_number'] = $validated['passport_series'];
@@ -309,14 +319,7 @@ class CrmController extends Controller
             unset($validated['passport_photo']);
         }
 
-        if ($request->hasFile('passport_photo_back')) {
-            if ($client->passport_photo_back && \Illuminate\Support\Facades\Storage::disk('public')->exists($client->passport_photo_back)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($client->passport_photo_back);
-            }
-            $validated['passport_photo_back'] = $request->file('passport_photo_back')->store('passport_photos', 'public');
-        } else {
-            unset($validated['passport_photo_back']);
-        }
+
 
         if ($request->hasFile('profile_photo')) {
             if ($client->profile_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($client->profile_photo)) {

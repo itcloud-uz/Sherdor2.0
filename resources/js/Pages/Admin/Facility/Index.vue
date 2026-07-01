@@ -1792,9 +1792,11 @@ async function onQuickPassportPhotoChange(e) {
     if (!file) return;
     quickClientForm.value.passport_photo = file;
     
-    const croppedFace = await detectAndCropFace(file);
-    if (croppedFace) {
-        quickClientForm.value.profile_photo = croppedFace;
+    if (file.type && file.type.startsWith('image/')) {
+        const croppedFace = await detectAndCropFace(file);
+        if (croppedFace) {
+            quickClientForm.value.profile_photo = croppedFace;
+        }
     }
 }
 
@@ -5715,50 +5717,32 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                         </div>
 
-                        <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-end mt-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Old tomon)</label>
-                                <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                    <template v-if="!quickClientForm.passport_photo">
-                                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Old tomon)</span>
-                                    </template>
-                                    <template v-else>
-                                        <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="quickClientForm.passport_photo.name">{{ quickClientForm.passport_photo.name }}</span>
-                                    </template>
-                                    <input type="file" class="hidden" @change="onQuickPassportPhotoChange">
-                                </label>
-                                <!-- Face Preview -->
-                                <div v-if="quickClientForm.profile_photo" class="mt-2 flex items-center gap-2">
-                                    <div class="w-10 h-10 rounded-full overflow-hidden border border-[#f2a900] shrink-0">
-                                        <img :src="getProfilePreviewUrl(quickClientForm.profile_photo)" class="w-full h-full object-cover" />
-                                    </div>
-                                    <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
+                        <!-- Row 5: Pasport fayli -->
+                        <div class="mt-4">
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Pasport fayli (Rasm yoki PDF)</label>
+                            <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
+                                <template v-if="!quickClientForm.passport_photo">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
+                                </template>
+                                <template v-else>
+                                    <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="typeof quickClientForm.passport_photo === 'string' ? quickClientForm.passport_photo : quickClientForm.passport_photo.name">
+                                        {{ typeof quickClientForm.passport_photo === 'string' ? 'Mavjud pasport fayli' : quickClientForm.passport_photo.name }}
+                                    </span>
+                                </template>
+                                <input type="file" class="hidden" accept="image/*,application/pdf" @change="onQuickPassportPhotoChange">
+                            </label>
+                            <!-- Face Preview -->
+                            <div v-if="quickClientForm.profile_photo" class="mt-2 flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-full overflow-hidden border border-[#f2a900] shrink-0">
+                                    <img :src="getProfilePreviewUrl(quickClientForm.profile_photo)" class="w-full h-full object-cover" />
                                 </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Orqa tomon)</label>
-                                <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                    <template v-if="!quickClientForm.passport_photo_back">
-                                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Orqa tomon)</span>
-                                    </template>
-                                    <template v-else>
-                                        <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="quickClientForm.passport_photo_back.name">{{ quickClientForm.passport_photo_back.name }}</span>
-                                    </template>
-                                    <input type="file" class="hidden" @change="e => { quickClientForm.passport_photo_back = e.target.files[0] }">
-                                </label>
+                                <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
                             </div>
                         </div>
                     </div>

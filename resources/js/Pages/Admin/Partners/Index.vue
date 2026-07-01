@@ -1,7 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
@@ -15,6 +15,20 @@ const props = defineProps({
 });
 
 const activeTab = ref('partners'); // 'partners' or 'assets'
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab')) {
+        activeTab.value = urlParams.get('tab');
+    }
+});
+
+watch(() => window.location.search, (search) => {
+    const urlParams = new URLSearchParams(search);
+    if (urlParams.get('tab')) {
+        activeTab.value = urlParams.get('tab');
+    }
+});
 
 const isProcessing = ref(false);
 
@@ -389,97 +403,120 @@ function formatDate(dateString) {
 
             <!-- Dashboard Stats -->
             <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="border border-gray-200 rounded-xl p-6">
-                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Kompaniyaning jami qiymati</p>
-                    <p class="text-3xl font-display font-bold text-gray-900">{{ formatCurrency(companyNetWorth) }} <span class="text-sm">so'm</span></p>
+                <div class="relative overflow-hidden bg-white/60 backdrop-blur-xl border border-gray-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-blue-100/50 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-medium text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Kompaniyaning jami qiymati
+                        </p>
+                        <p class="text-4xl font-display font-bold text-slate-800 tracking-tight">{{ formatCurrency(companyNetWorth) }} <span class="text-sm font-medium text-slate-400">UZS</span></p>
+                    </div>
                 </div>
-                <div class="border border-emerald-200 rounded-xl p-6 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
-                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Kompaniyaning Sof Foydasi (Net Profit)</p>
-                    <p class="text-3xl font-display font-bold text-emerald-600">{{ formatCurrency(netProfit) }} <span class="text-sm">so'm</span></p>
+                
+                <div class="relative overflow-hidden bg-emerald-50/30 backdrop-blur-xl border border-emerald-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-200/40 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-medium text-emerald-600/80 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Sof Foyda (Net Profit)
+                        </p>
+                        <p class="text-4xl font-display font-bold text-emerald-700 tracking-tight">{{ formatCurrency(netProfit) }} <span class="text-sm font-medium text-emerald-500/70">UZS</span></p>
+                    </div>
                 </div>
-                <div class="border border-red-200 rounded-xl p-6 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
-                    <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Ta'sischilardagi jami hisobdorlik (Qarz)</p>
-                    <p class="text-3xl font-display font-bold text-red-600">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-sm">so'm</span></p>
+                
+                <div class="relative overflow-hidden bg-rose-50/30 backdrop-blur-xl border border-rose-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-rose-200/40 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-medium text-rose-600/80 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            Jami Hisobdorlik (Qarz)
+                        </p>
+                        <p class="text-4xl font-display font-bold text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-sm font-medium text-rose-500/70">UZS</span></p>
+                    </div>
                 </div>
             </div>
 
             <!-- Partners View -->
-            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-[fadeIn_0.3s_ease-out]">
-                <div v-for="partner in partners" :key="partner.id" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 hover:border-blue-200 transition-all group rounded-2xl relative">
-                    <!-- ... existing partner card content ... -->
-                    <div class="absolute top-4 right-4 text-right flex flex-col items-end gap-2">
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button @click="openEditPartnerModal(partner)" class="text-blue-600 hover:text-gray-900" title="Tahrirlash">
+            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-[fadeIn_0.4s_ease-out]">
+                <div v-for="partner in partners" :key="partner.id" class="relative overflow-hidden bg-white border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 group rounded-2xl p-6">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-50/50 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-500"></div>
+                    
+                    <div class="absolute top-4 right-4 text-right flex flex-col items-end gap-2 z-10">
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
+                            <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Tahrirlash">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </button>
-                            <button @click="deletePartner(partner.id)" class="text-red-600 hover:text-gray-900" title="O'chirish">
+                            <button @click="deletePartner(partner.id)" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="O'chirish">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-mono text-gray-500 uppercase mb-1">Ulush</p>
-                            <p class="text-xl font-display font-bold text-blue-600">{{ Number(partner.investment_share_percentage) }}%</p>
+                        <div class="mt-2">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ulush</p>
+                            <p class="text-2xl font-display font-black text-blue-600 tracking-tight">{{ Number(partner.investment_share_percentage) }}%</p>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-12 h-12 rounded-full bg-gray-500/50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold font-display text-lg group-hover:shadow-sm transition-all">
+                    <div class="flex items-center gap-4 mb-6 z-10 relative">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold font-display text-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
                             {{ partner.user?.name.charAt(0) || 'P' }}
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 leading-none">{{ partner.user?.name || $t('unknown') }}</h3>
-                            <p class="text-[10px] text-gray-500 font-mono mt-1">{{ partner.user?.email }}</p>
+                            <h3 class="text-lg font-bold text-slate-800 leading-tight mb-1">{{ partner.user?.name || $t('unknown') }}</h3>
+                            <p class="text-xs text-slate-500">{{ partner.user?.email }}</p>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 pt-5 border-t border-slate-100">
                         <div>
-                            <span class="block text-[10px] font-mono text-gray-500 uppercase">Jami Sarmoya</span>
-                            <span class="text-sm font-mono text-gray-900">{{ formatCurrency(partner.total_invested) }}</span>
+                            <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
+                            <span class="text-[15px] font-medium text-slate-800">{{ formatCurrency(partner.total_invested) }}</span>
                         </div>
                         <div class="text-right">
-                            <span class="block text-[10px] font-mono text-red-600 uppercase">Bo'ynidagi qarz</span>
-                            <span class="text-sm font-mono text-red-600 font-bold">{{ formatCurrency(partner.accountable_balance) }}</span>
+                            <span class="block text-[10px] font-semibold text-rose-400 uppercase tracking-wider mb-1">Bo'ynidagi Qarz</span>
+                            <span class="text-[15px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">{{ formatCurrency(partner.accountable_balance) }}</span>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-2 mb-4">
-                        <div class="p-2 bg-blue-50 border border-blue-200 rounded text-center cursor-pointer hover:bg-blue-50 transition-colors" @click="openAnalytics(partner)">
-                            <span class="block text-[9px] font-mono text-gray-500 uppercase">Kassa Tushumi</span>
-                            <span class="text-xs font-bold text-blue-600">{{ formatCurrency(partner.kassa_tushumi) }}</span>
+                    <div class="grid grid-cols-3 gap-2 mb-5">
+                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all group/stat" @click="openAnalytics(partner)">
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kassa Tushumi</span>
+                            <span class="text-[13px] font-bold text-slate-700 group-hover/stat:text-blue-600 transition-colors">{{ formatCurrency(partner.kassa_tushumi) }}</span>
                         </div>
-                        <div class="p-2 bg-red-50 border border-red-200 rounded text-center cursor-pointer hover:bg-red-50 transition-colors" @click="openAnalytics(partner)">
-                            <span class="block text-[9px] font-mono text-gray-500 uppercase">Kassa Chiqimi</span>
-                            <span class="text-xs font-bold text-red-600">{{ formatCurrency(partner.kassa_chiqimi) }}</span>
+                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm hover:border-rose-200 transition-all group/stat" @click="openAnalytics(partner)">
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kassa Chiqimi</span>
+                            <span class="text-[13px] font-bold text-slate-700 group-hover/stat:text-rose-600 transition-colors">{{ formatCurrency(partner.kassa_chiqimi) }}</span>
                         </div>
-                        <div class="p-2 border border-gray-300 rounded text-center cursor-pointer hover:bg-gray-100 transition-colors" @click="openAnalytics(partner)">
-                            <span class="block text-[9px] font-mono text-gray-500 uppercase">Balans</span>
-                            <span class="text-xs font-bold text-gray-900">{{ formatCurrency(partner.accountable_balance) }}</span>
+                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm transition-all">
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Balans</span>
+                            <span class="text-[13px] font-bold text-slate-800">{{ formatCurrency(partner.accountable_balance) }}</span>
                         </div>
                     </div>
                     
-                    <div class="mb-6 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                        <span class="block text-[10px] font-mono text-gray-500 uppercase">Soffoydadan Olinishi Mumkin (Taxminiy)</span>
-                        <span class="text-lg font-display font-bold text-emerald-600">{{ formatCurrency((netProfit * Number(partner.investment_share_percentage)) / 100) }} UZS</span>
+                    <div class="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/50 rounded-xl text-center">
+                        <span class="block text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider mb-1.5">Soffoydadan Olinishi Mumkin (Taxminiy)</span>
+                        <span class="text-xl font-display font-black text-emerald-600">{{ formatCurrency((netProfit * Number(partner.investment_share_percentage)) / 100) }} UZS</span>
                     </div>
 
-                    <div class="flex gap-2">
-                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2 bg-blue-50 border border-blue-200 text-blue-600 rounded text-[10px] font-bold font-mono uppercase hover:bg-blue-600 hover:text-black transition-all">
+                    <div class="flex gap-3">
+                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 transition-all active:scale-95">
                             Pul So'rash
                         </button>
-                        <button @click="openExpenseModal(partner)" class="flex-1 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded text-[10px] font-bold font-mono uppercase hover:bg-emerald-600 hover:text-black transition-all">
+                        <button @click="openExpenseModal(partner)" class="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95">
                             Chek Yuklash
                         </button>
-                        <button @click="openAnalytics(partner)" class="flex-1 py-2 border border-gray-300 text-gray-900 rounded text-[10px] font-bold font-mono uppercase hover:bg-white hover:text-black transition-all">
+                        <button @click="openAnalytics(partner)" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
                             Hisobot
                         </button>
                     </div>
                 </div>
 
-                <div v-if="partners.length === 0" class="col-span-full text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-500 font-mono text-sm">
-                    Tizimda ta'sischilar yo'q.
+                <div v-if="partners.length === 0" class="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-3xl">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                        <span class="text-2xl">🤝</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Ta'sischilar yo'q</h3>
+                    <p class="text-sm text-slate-500">Tizimga hali hech qanday ta'sischi qo'shilmagan.</p>
                 </div>
             </div>
 

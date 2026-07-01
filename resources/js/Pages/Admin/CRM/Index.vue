@@ -413,9 +413,11 @@ async function onPassportPhotoChange(e) {
     if (!file) return;
     clientForm.value.passport_photo = file;
     
-    const croppedFace = await detectAndCropFace(file);
-    if (croppedFace) {
-        clientForm.value.profile_photo = croppedFace;
+    if (file.type && file.type.startsWith('image/')) {
+        const croppedFace = await detectAndCropFace(file);
+        if (croppedFace) {
+            clientForm.value.profile_photo = croppedFace;
+        }
     }
 }
 
@@ -4548,13 +4550,7 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
-                                        <span class="text-gray-400 shrink-0">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        </span>
-                                        <span class="w-28 text-gray-400 font-medium">Tug'ilgan sanasi:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
-                                    </div>
+
 
                                     <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
@@ -4598,19 +4594,13 @@ const ledgerReportData = computed(() => {
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
-                                        <span class="w-28 text-gray-400 font-medium">Pasport rasmlari:</span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport fayli:</span>
                                         <div class="flex gap-2">
                                             <div v-if="detailedClientData.passport_photo" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
-                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Old:</span>
                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
                                                 <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
                                             </div>
-                                            <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
-                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Orqa:</span>
-                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
-                                                <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
-                                            </div>
-                                            <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400 italic">Yuklanmagan</span>
+                                            <span v-else class="text-gray-400 italic">Yuklanmagan</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4935,13 +4925,7 @@ const ledgerReportData = computed(() => {
                                         <strong class="text-gray-900 font-mono text-xs">{{ detailedClientData.pinfl || '—' }}</strong>
                                     </div>
 
-                                    <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
-                                        <span class="text-gray-400 shrink-0">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        </span>
-                                        <span class="w-28 text-gray-400 font-medium">Tug'ilgan sanasi:</span>
-                                        <strong class="text-gray-900 font-mono text-xs">{{ getDummyBirthDate(detailedClientData) }}</strong>
-                                    </div>
+
 
                                     <div class="flex items-center gap-3 py-2 border-b border-gray-50 text-xs text-gray-700">
                                         <span class="text-gray-400 shrink-0">
@@ -4985,19 +4969,13 @@ const ledgerReportData = computed(() => {
                                         <span class="text-gray-400 shrink-0">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </span>
-                                        <span class="w-28 text-gray-400 font-medium">Pasport rasmlari:</span>
+                                        <span class="w-28 text-gray-400 font-medium">Pasport fayli:</span>
                                         <div class="flex gap-2">
                                             <div v-if="detailedClientData.passport_photo" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
-                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Old:</span>
                                                 <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
                                                 <a :href="'/storage/' + detailedClientData.passport_photo" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
                                             </div>
-                                            <div v-if="detailedClientData.passport_photo_back" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg">
-                                                <span class="text-[9px] text-gray-400 font-bold font-mono">Orqa:</span>
-                                                <button type="button" @click="openPassportPreview('/storage/' + detailedClientData.passport_photo_back)" class="text-amber-500 hover:underline font-bold text-[10px]">Ko'rish</button>
-                                                <a :href="'/storage/' + detailedClientData.passport_photo_back" download class="text-emerald-600 hover:underline font-bold text-[10px]">Yuklash</a>
-                                            </div>
-                                            <span v-if="!detailedClientData.passport_photo && !detailedClientData.passport_photo_back" class="text-gray-400 italic">Yuklanmagan</span>
+                                            <span v-else class="text-gray-400 italic">Yuklanmagan</span>
                                         </div>
                                     </div>
                                 </div>
@@ -6940,24 +6918,26 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Row 5: Passport rasmi (Old tomon, orqa tomon) va Shartnoma tili (if editing) -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+                    <!-- Row 5: Pasport fayli va Shartnoma tili (if editing) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Old tomon)</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Pasport fayli (Rasm yoki PDF)</label>
                             <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
                                 <template v-if="!clientForm.passport_photo">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                     </svg>
-                                    <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Old tomon)</span>
+                                    <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
                                 </template>
                                 <template v-else>
                                     <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
-                                    <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientForm.passport_photo.name">{{ clientForm.passport_photo.name }}</span>
+                                    <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="typeof clientForm.passport_photo === 'string' ? clientForm.passport_photo : clientForm.passport_photo.name">
+                                        {{ typeof clientForm.passport_photo === 'string' ? 'Mavjud pasport fayli' : clientForm.passport_photo.name }}
+                                    </span>
                                 </template>
-                                <input type="file" class="hidden" @change="onPassportPhotoChange">
+                                <input type="file" class="hidden" accept="image/*,application/pdf" @change="onPassportPhotoChange">
                             </label>
                             <!-- Face Preview -->
                             <div v-if="clientForm.profile_photo" class="mt-2 flex items-center gap-2">
@@ -6966,24 +6946,6 @@ const ledgerReportData = computed(() => {
                                 </div>
                                 <span class="text-[9px] text-gray-500 font-semibold leading-tight">Yuzingiz aniqlandi va profil rasmi yaratildi!</span>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2">Passport rasmi (Orqa tomon)</label>
-                            <label class="w-full h-24 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-2xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                <template v-if="!clientForm.passport_photo_back">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang (Orqa tomon)</span>
-                                </template>
-                                <template v-else>
-                                    <svg class="w-6 h-6 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="clientForm.passport_photo_back.name">{{ clientForm.passport_photo_back.name }}</span>
-                                </template>
-                                <input type="file" class="hidden" @change="e => { clientForm.passport_photo_back = e.target.files[0] }">
-                            </label>
                         </div>
                         <div v-if="isEditingClient">
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Shartnoma tili</label>
@@ -8153,14 +8115,12 @@ const ledgerReportData = computed(() => {
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">B</th>
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">C</th>
                                     <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">D</th>
-                                    <th class="border-r border-gray-200 px-3 py-1 bg-[#f1f3f4] text-[10px]">E</th>
-                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">F</th>
+                                    <th class="px-3 py-1 bg-[#f1f3f4] text-[10px]">E</th>
                                 </tr>
                                 <!-- Column header names (Row 1) -->
                                 <tr class="border-b border-gray-300 text-center font-bold text-gray-700 bg-gray-50/50">
                                     <td class="border-r border-gray-200 py-1.5 bg-[#f1f3f4] text-gray-400 font-medium text-center">1</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 text-left font-bold text-gray-900">Ф.И.О.</td>
-                                    <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Тугилган сана</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Telefon</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">ЖШШИР</td>
                                     <td class="border-r border-gray-200 px-3 py-1.5 font-bold text-gray-900">Паспорт</td>
@@ -8221,10 +8181,7 @@ const ledgerReportData = computed(() => {
                                     <td class="border-r border-gray-200 px-3 py-1 font-sans text-left font-medium text-gray-900">
                                         {{ client.last_name }} {{ client.first_name }} {{ client.middle_name || '' }}
                                     </td>
-                                    <!-- Tug'ilgan sana -->
-                                    <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-600">
-                                        {{ getDummyBirthDate(client) }}
-                                    </td>
+
                                     <!-- Telefon -->
                                     <td class="border-r border-gray-200 px-3 py-1 text-center text-gray-900">
                                         {{ client.phone ? client.phone.replace('+998', '') : '—' }}

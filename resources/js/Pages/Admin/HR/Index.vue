@@ -1573,10 +1573,7 @@ const exportSalesStatsToExcel = () => {
                                 <span class="text-gray-500 font-medium">Jinsi</span>
                                 <span class="font-bold text-gray-900 capitalize">{{ selectedEmployee.gender }}</span>
                             </div>
-                            <div class="p-4 flex justify-between items-center">
-                                <span class="text-gray-500 font-medium">Tug'ilgan sanasi</span>
-                                <span class="font-bold text-gray-900">{{ formatDate(selectedEmployee.birth_date) }}</span>
-                            </div>
+
                             <div class="p-4 flex justify-between items-center">
                                 <span class="text-gray-500 font-medium">A'zolik sanasi</span>
                                 <span class="font-bold text-gray-900">{{ formatDate(selectedEmployee.employment_date) }}</span>
@@ -1634,24 +1631,22 @@ const exportSalesStatsToExcel = () => {
                             </div>
 
                             <div class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 p-2 relative">
-                                <img 
-                                    v-if="selectedEmployee.passport_front" 
-                                    :src="selectedEmployee.passport_front" 
-                                    class="w-full h-full object-cover rounded-xl"
-                                />
+                                <template v-if="selectedEmployee.passport_front">
+                                    <template v-if="selectedEmployee.passport_front.includes('.pdf') || selectedEmployee.passport_front.startsWith('data:application/pdf')">
+                                        <span class="text-red-500 text-3xl mb-1">📕</span>
+                                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider text-center">Pasport PDF</span>
+                                        <a :href="selectedEmployee.passport_front" target="_blank" class="text-xs text-blue-500 hover:underline mt-2 font-bold">Ko'rish</a>
+                                    </template>
+                                    <img 
+                                        v-else
+                                        :src="selectedEmployee.passport_front" 
+                                        class="w-full h-full object-cover rounded-xl"
+                                    />
+                                </template>
                                 <template v-else>
                                     <span class="text-gray-400 text-lg mb-1">📄</span>
-                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Passport (oldi)</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Pasport fayli</span>
                                 </template>
-                            </div>
-                        </div>
-
-                        <div v-if="selectedEmployee.passport_back" class="grid grid-cols-1">
-                            <div class="border border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center bg-gray-50/50 p-2 relative">
-                                <img 
-                                    :src="selectedEmployee.passport_back" 
-                                    class="w-full h-full object-cover rounded-xl"
-                                />
                             </div>
                         </div>
                         
@@ -1862,28 +1857,16 @@ const exportSalesStatsToExcel = () => {
                         </div>
                     </div>
 
-                    <!-- Tug'ilgan sana, Qo'shilgan sana -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
-                                Tug'ilgan sana
-                            </label>
-                            <input 
-                                v-model="employeeForm.birth_date" 
-                                type="date" 
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white text-gray-600"
-                            />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
-                                Qo'shilgan sana
-                            </label>
-                            <input 
-                                v-model="employeeForm.employment_date" 
-                                type="date" 
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white text-gray-600"
-                            />
-                        </div>
+                    <!-- Qo'shilgan sana -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">
+                            Qo'shilgan sana
+                        </label>
+                        <input 
+                            v-model="employeeForm.employment_date" 
+                            type="date" 
+                            class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 bg-white text-gray-600"
+                        />
                     </div>
 
                     <!-- Telefon raqami, Jinsi -->
@@ -2009,42 +1992,29 @@ const exportSalesStatsToExcel = () => {
                         </div>
                     </div>
 
-                    <!-- Passport photo uploads (front / back) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-2">Passport rasmi (oldi)</label>
-                            <div 
-                                @click="$refs.passportFrontInput.click()" 
-                                class="border border-dashed border-gray-200 rounded-2xl h-28 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative overflow-hidden group p-2"
-                            >
-                                <img v-if="employeeForm.passport_front" :src="employeeForm.passport_front" class="w-full h-full object-contain rounded-xl" />
-                                <div v-else class="text-center">
-                                    <span class="text-gray-400 text-2xl block mb-1">+</span>
-                                    <span class="text-xs text-gray-500 font-bold">Yuklash</span>
+                    <!-- Passport photo upload -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-2">Pasport fayli (Rasm yoki PDF)</label>
+                        <div 
+                            @click="$refs.passportFrontInput.click()" 
+                            class="border border-dashed border-gray-200 rounded-2xl h-28 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative overflow-hidden group p-2"
+                        >
+                            <template v-if="employeeForm.passport_front">
+                                <div v-if="employeeForm.passport_front.includes('.pdf') || employeeForm.passport_front.startsWith('data:application/pdf')" class="text-center">
+                                    <span class="text-red-500 text-3xl block mb-1">📕</span>
+                                    <span class="text-xs text-gray-700 font-bold">Pasport PDF yuklandi</span>
                                 </div>
-                                <div v-if="employeeForm.passport_front" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
-                                    Rasmni almashtirish
-                                </div>
+                                <img v-else :src="employeeForm.passport_front" class="w-full h-full object-contain rounded-xl" />
+                            </template>
+                            <div v-else class="text-center">
+                                <span class="text-gray-400 text-2xl block mb-1">+</span>
+                                <span class="text-xs text-gray-500 font-bold">Faylni tanlang</span>
                             </div>
-                            <input ref="passportFrontInput" type="file" class="hidden" accept="image/*" @change="uploadPassportFile($event, 'passport_front')" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-2">Passport rasmi (orqasi)</label>
-                            <div 
-                                @click="$refs.passportBackInput.click()" 
-                                class="border border-dashed border-gray-200 rounded-2xl h-28 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative overflow-hidden group p-2"
-                            >
-                                <img v-if="employeeForm.passport_back" :src="employeeForm.passport_back" class="w-full h-full object-contain rounded-xl" />
-                                <div v-else class="text-center">
-                                    <span class="text-gray-400 text-2xl block mb-1">+</span>
-                                    <span class="text-xs text-gray-500 font-bold">Yuklash</span>
-                                </div>
-                                <div v-if="employeeForm.passport_back" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
-                                    Rasmni almashtirish
-                                </div>
+                            <div v-if="employeeForm.passport_front" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                Faylni almashtirish
                             </div>
-                            <input ref="passportBackInput" type="file" class="hidden" accept="image/*" @change="uploadPassportFile($event, 'passport_back')" />
                         </div>
+                        <input ref="passportFrontInput" type="file" class="hidden" accept="image/*,application/pdf" @change="uploadPassportFile($event, 'passport_front')" />
                     </div>
 
                     <!-- Holat -->

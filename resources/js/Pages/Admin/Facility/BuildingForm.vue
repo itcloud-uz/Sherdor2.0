@@ -190,6 +190,7 @@ const props = defineProps({
     isEditing: Boolean,
     building: Object, // If editing
     objectContainer: Object, // If adding block to object
+    isObjectOverride: Boolean,
 });
 
 const renderError = ref(null);
@@ -200,6 +201,9 @@ onErrorCaptured((err, instance, info) => {
 });
 
 const isObjectOnly = computed(() => {
+    if (props.isObjectOverride) {
+        return true;
+    }
     if (props.isEditing && props.building) {
         return props.building.total_floors === 0;
     }

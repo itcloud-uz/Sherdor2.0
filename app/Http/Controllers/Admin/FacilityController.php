@@ -69,12 +69,15 @@ class FacilityController extends Controller
         ]);
     }
 
-    public function editBuilding($id)
+    public function editBuilding(Request $request, $id)
     {
         $building = Building::with(['floors.units', 'podezes'])->findOrFail($id);
+        $isObjectOverride = $building->total_floors == 0 || $request->query('type') === 'object';
+
         return Inertia::render('Admin/Facility/BuildingForm', [
             'isEditing' => true,
             'building' => $building,
+            'isObjectOverride' => $isObjectOverride,
         ]);
     }
 
@@ -283,6 +286,7 @@ class FacilityController extends Controller
                 'photo' => 'nullable|file|max:102400',
                 'model_3d' => 'nullable|file|max:1024000',
                 'basement_floors' => 'nullable|integer|min:0',
+                'is_object_only' => 'nullable|boolean',
                 'floors_data' => 'nullable|array',
                 'floors_data.*.floor_number' => 'required|integer',
                 'floors_data.*.shops_count' => 'required|integer|min:0',
@@ -331,6 +335,18 @@ class FacilityController extends Controller
 
             $oldName = $building->name;
 
+            if ($request->boolean('is_object_only')) {
+                Building::where('name', $oldName)->update([
+                    'name' => $validated['name'],
+                    'city' => $validated['city'] ?? null,
+                    'district' => $validated['district'] ?? null,
+                    'mahalla' => $validated['mahalla'] ?? null,
+                    'street' => $validated['street'] ?? null,
+                    'photo_path' => $photoPath,
+                ]);
+                return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
+            }
+
             $building->update([
                 'name' => $validated['name'],
                 'city' => $validated['city'] ?? null,
@@ -342,7 +358,7 @@ class FacilityController extends Controller
                 'length_m' => $validated['length_m'] ?? null,
                 'width_m' => $validated['width_m'] ?? null,
                 'height_m' => $validated['height_m'] ?? null,
-                'total_floors' => $validated['total_floors'],
+                'total_floors' => $validated['total_floors'] ?? 1,
                 'blocks_count' => $validated['blocks_count'] ?? 1,
                 'entrances_count' => $validated['entrances_count'] ?? 1,
                 'total_apartments' => $validated['total_apartments'] ?? 0,

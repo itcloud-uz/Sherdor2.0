@@ -3238,7 +3238,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <div class="p-4 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                             <span class="text-xs font-semibold text-blue-600 group-hover:underline">Boshqarish →</span>
                             <div class="flex items-center gap-2">
-                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(objName))" @click.stop class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all inline-block">
+                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(objName)) + '?type=object'" @click.stop class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all inline-block">
                                     Tahrirlash
                                 </Link>
                                 <button @click.stop="deleteObject(blocks, objName)" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
@@ -3547,7 +3547,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
                                     📁 Modellar yuklash
                                 </button>
-                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject)) + '?type=object'" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
                                 </Link>
                                 <Link :href="route('admin.facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">

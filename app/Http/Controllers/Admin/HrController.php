@@ -73,6 +73,14 @@ class HrController extends Controller
         ]);
     }
 
+    public function qurilishIshHaqi()
+    {
+        $buildings = Building::with('floors.units')->get();
+        return Inertia::render('Admin/HR/QurilishIshHaqi', [
+            'buildings' => $buildings
+        ]);
+    }
+
     public function storeUser(Request $request)
     {
         $validated = $request->validate([

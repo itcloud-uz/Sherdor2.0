@@ -202,6 +202,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/approvals/{approval}/reject', [\App\Http\Controllers\Admin\ApprovalController::class, 'reject'])->name('approvals.reject');
 
     Route::get('/hr', [\App\Http\Controllers\Admin\HrController::class, 'index'])->name('hr');
+    Route::get('/hr/qurilish-ish-haqi', [\App\Http\Controllers\Admin\HrController::class, 'qurilishIshHaqi'])->name('hr.qurilish_ish_haqi');
     
     // Brigades & Machine Owners
     Route::post('/hr/brigades', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigade'])->name('hr.brigade.store');

@@ -429,7 +429,7 @@ function onRegionChange() {
 function onDistrictChange() {
     clientForm.value.address = '';
 }
-const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' });
+const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' });
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
 
@@ -597,7 +597,7 @@ function openEditLeadModal(lead) {
 function openCreateLeadModal() {
     isEditingLead.value = false;
     editingLeadId.value = null;
-    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' };
+    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' };
     showCreateLeadModal.value = true;
 }
 
@@ -619,7 +619,7 @@ function submitNewLead() {
         axios.post(route('api.leads.store'), newLeadForm.value)
             .then(() => {
                 showCreateLeadModal.value = false;
-                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, email: '', social_url: '' };
+                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' };
                 router.reload({ preserveScroll: true });
             })
             .catch(error => {
@@ -8029,50 +8029,76 @@ const ledgerReportData = computed(() => {
         </div>
 
         <!-- INLINE SUBPAGE: CREATE LEAD -->
-        <div v-if="showCreateLeadModal" class="bg-white p-8 rounded-3xl w-full max-w-2xl mx-auto shadow-md border border-gray-150 transition-all font-sans my-4">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-1.5 h-6 bg-[#f2a900] rounded-full"></span>
-                    {{ isEditingLead ? 'Lidni Tahrirlash' : 'Yangi Lid Qo\'shish' }}
-                </h2>
-                <button type="button" @click="showCreateLeadModal = false" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Orqaga
-                </button>
-            </div>
-            <div>
+        <div v-if="showCreateLeadModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showCreateLeadModal = false">
+            <div class="bg-white rounded-2xl w-full max-w-[450px] shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white">
+                    <h2 class="text-[17px] font-bold text-gray-900">
+                        {{ isEditingLead ? 'Lidni tahrirlash' : 'Yangi lid qo\'shish' }}
+                    </h2>
+                    <button type="button" @click="showCreateLeadModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6 bg-white">
                     <form @submit.prevent="submitNewLead" class="space-y-4">
+                        <!-- Ism va familiya -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('first_last_name') }}</label>
-                            <input v-model="newLeadForm.full_name" required type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: Azizbek">
+                            <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Ism va familiya</label>
+                            <input v-model="newLeadForm.full_name" required type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Alisher Karimov">
                         </div>
+                        
+                        <!-- Telefon raqami -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">{{ $t('phone_number') }}</label>
-                            <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="+998 90 123 45 67">
+                            <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Telefon raqami</label>
+                            <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="+998 99 894 20 00">
                         </div>
+
+                        <!-- Manba -->
                         <div>
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">E-pochta (Ixtiyoriy)</label>
-                            <input v-model="newLeadForm.email" type="email" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: example@mail.com">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Ijtimoiy tarmoq havolasi (Ixtiyoriy)</label>
-                            <input v-model="newLeadForm.social_url" type="text" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all" placeholder="Masalan: https://t.me/username">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Manba</label>
-                            <select v-model="newLeadForm.source" class="w-full border border-gray-200 rounded-xl p-3 text-gray-900 font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-neon-cyan transition-all">
+                            <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Manba</label>
+                            <select v-model="newLeadForm.source" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
                                 <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
-                                <option value="manual">Qo'lda kiritilgan</option>
+                                <option value="manual">Tanish-bilish</option>
                             </select>
                         </div>
-                        <button type="submit" :disabled="isProcessing" class="w-full mt-4 bg-blue-50 border border-blue-500 text-blue-600 py-3 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-blue-600 hover:text-black transition-all disabled:opacity-50">
-                            {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}
-                        </button>
+
+                        <!-- Byudjet & Valyuta -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-2">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Byudjet</label>
+                                <input v-model="newLeadForm.budget" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="100,000,000">
+                            </div>
+                            <div class="col-span-1">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Valyuta</label>
+                                <select v-model="newLeadForm.currency" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none uppercase">
+                                    <option value="uzs">uzs</option>
+                                    <option value="usd">usd</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Izoh -->
+                        <div>
+                            <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Izoh</label>
+                            <textarea v-model="newLeadForm.comment" rows="2" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="boshlangich tolov qilmoqchi"></textarea>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="flex flex-col gap-2 pt-2">
+                            <button type="submit" :disabled="isProcessing" class="w-full bg-[#f2a900] text-white py-2.5 rounded-lg text-[15px] font-semibold hover:bg-[#e09c00] transition-all disabled:opacity-50 border border-[#f2a900]">
+                                {{ isProcessing ? 'Saqlanmoqda...' : 'Saqlash' }}
+                            </button>
+                            <button type="button" @click="showCreateLeadModal = false" class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg text-[15px] font-medium hover:bg-gray-50 transition-all">
+                                Bekor qilish
+                            </button>
+                        </div>
                     </form>
                 </div>
+            </div>
         </div>
 
         <!-- MODAL: QUICK SMS -->

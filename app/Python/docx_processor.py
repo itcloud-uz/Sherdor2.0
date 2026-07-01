@@ -427,23 +427,29 @@ def auto_replace_room_specification_table(doc):
                 header_row_idx = r_idx
                 break
                 
-        if is_spec_table and header_row_idx != -1 and header_row_idx + 1 < len(table.rows):
-            data_row = table.rows[header_row_idx + 1]
+        if is_spec_table and header_row_idx != -1:
             header_cells = table.rows[header_row_idx].cells
-            for col_idx, cell in enumerate(data_row.cells):
-                header_txt = header_cells[col_idx].text.lower()
-                if "блок" in header_txt or "blok" in header_txt:
-                    cell.text = "{{ BLOK }}"
-                elif "қават" in header_txt or "qavat" in header_txt:
-                    cell.text = "{{ QAVAT }}"
-                elif "хона" in header_txt or "xona" in header_txt:
-                    cell.text = "{{ XONALAR_SONI }}"
-                elif "майдон" in header_txt or "maydon" in header_txt:
-                    cell.text = "{{ MAYDON }}"
-                elif "1 kv" in header_txt or "1кв" in header_txt or "1 кв" in header_txt:
-                    cell.text = "{{ KV_METR_NARXI }}"
-                elif "умумий нарх" in header_txt or "umumiy narx" in header_txt or "umumiy summa" in header_txt or "умумий сумма" in header_txt:
-                    cell.text = "{{ UMUMIY_NARX }}"
+            for r_idx in range(header_row_idx + 1, len(table.rows)):
+                data_row = table.rows[r_idx]
+                row_text_combined = "".join([c.text.strip() for c in data_row.cells])
+                if not row_text_combined:
+                    continue
+                for col_idx, cell in enumerate(data_row.cells):
+                    if col_idx >= len(header_cells):
+                        continue
+                    header_txt = header_cells[col_idx].text.lower()
+                    if "блок" in header_txt or "blok" in header_txt:
+                        cell.text = "{{ BLOK }}"
+                    elif "қават" in header_txt or "qavat" in header_txt:
+                        cell.text = "{{ QAVAT }}"
+                    elif "хона" in header_txt or "xona" in header_txt:
+                        cell.text = "{{ XONALAR_SONI }}"
+                    elif "майдон" in header_txt or "maydon" in header_txt:
+                        cell.text = "{{ MAYDON }}"
+                    elif "1 kv" in header_txt or "1кв" in header_txt or "1 кв" in header_txt:
+                        cell.text = "{{ KV_METR_NARXI }}"
+                    elif "умумий нарх" in header_txt or "umumiy narx" in header_txt or "umumiy summa" in header_txt or "умумий сумма" in header_txt:
+                        cell.text = "{{ UMUMIY_NARX }}"
 
 def apply_replacements(docx_path, replacements, output_path):
     """
@@ -456,24 +462,94 @@ def apply_replacements(docx_path, replacements, output_path):
     
     # 1. Add company-specific and document-specific custom replacements (fallbacks)
     custom = {
+        # Client FISH
         "Mamanov Abdulla Xursanmurotovich": "MIJOZ_FISH",
         "A. Mamanov": "MIJOZ_FISH_QISQA",
         "A.Mamanov": "MIJOZ_FISH_QISQA",
+        
+        # Client PINFL
         "32601823990061": "MIJOZ_JSHSHIR",
+        
+        # Client Passport
         "AD №9160055": "PASPORT_SERIYA",
         "AD № 9160055": "PASPORT_SERIYA",
         "AD№9160055": "PASPORT_SERIYA",
+        "AD 9160055": "PASPORT_SERIYA",
         "26/10/2024": "PASPORT_SANA",
         "Samarqand viloyati Urgut tumani I.I.B": "PASPORT_JOYI",
+        "Samarqand viloyati Urgut tumani I.I.B tomonidan berilgan": "PASPORT_JOYI",
+        
+        # Client Address
         "Samarqand viloyati, Urgut tuman Yuqori Tegana Do`stlik maxallasida, ro`yxatda turuvchi": "MIJOZ_MANZILI",
-        "Samarqand viloyati, Urgut tumani Yuqori Tegana maxalla": "MIJOZ_MANZILI",
+        "Samarqand viloyati, Urgut tuman Yuqori Tegana Do`stlik maxallasida": "MIJOZ_MANZILI",
+        "Samarqand viloyati Urgut tumani Yuqori Tegana mahalla": "MIJOZ_MANZILI",
+        
+        # Client Phone
+        "(94) 633-04-00, (93) 114-82-72": "MIJOZ_TELEFON",
         "(94) 633-04-00": "MIJOZ_TELEFON",
         "(93) 114-82-72": "MIJOZ_TELEFON",
+        
+        # Residential Contract specific
         "4B/9": "SHARTNOMA_RAQAMI",
         "285 840 000": "UMUMIY_NARX",
+        "285\u00a0840\u00a0000": "UMUMIY_NARX",
+        "285.840.000": "UMUMIY_NARX",
         "ikki yuz sakson besh million sakkiz yuz qirq ming": "UMUMIY_NARX_SOZ_BILAN",
+        "57 168 000,00": "BOSHLANGICH_TOLOV",
         "57 168 000": "BOSHLANGICH_TOLOV",
-        "ellik yetti million bir yuz oltmish sakkiz ming": "BOSHLANGICH_TOLOV_SOZ_BILAN"
+        "57\u00a0168\u00a0000,00": "BOSHLANGICH_TOLOV",
+        "57\u00a0168\u00a0000": "BOSHLANGICH_TOLOV",
+        "57.168.000,00": "BOSHLANGICH_TOLOV",
+        "57.168.000": "BOSHLANGICH_TOLOV",
+        "57168000": "BOSHLANGICH_TOLOV",
+        "57 168 000,00 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "{{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
+        "57 168 000 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "{{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
+        "ellik yetti million bir yuz oltmish sakkiz ming": "BOSHLANGICH_TOLOV_SOZ_BILAN",
+        "36 (o'ttiz olti) oy": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy",
+        "36 (o`ttiz olti) oy": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy",
+        "36 (o'ttiz olti)": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }})",
+        "36 (o`ttiz olti)": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }})",
+        "36": "MUDDAT_OY",
+        "o'ttiz olti": "MUDDAT_OY_SOZ_BILAN",
+        "o`ttiz olti": "MUDDAT_OY_SOZ_BILAN",
+        "kamida 20%, 57 168 000,00 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%, {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
+        "kamida 20%": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%",
+        
+        # Commercial Contract specific
+        "1B/1P": "SHARTNOMA_RAQAMI",
+        "190 000 000": "UMUMIY_NARX",
+        "190\u00a0000\u00a0000": "UMUMIY_NARX",
+        "190.000.000": "UMUMIY_NARX",
+        "Bir yuz to`qson million": "UMUMIY_NARX_SOZ_BILAN",
+        "bir yuz to`qson million": "UMUMIY_NARX_SOZ_BILAN",
+        "3 998 316": "KV_METR_NARXI",
+        "3\u00a0998\u00a0316": "KV_METR_NARXI",
+        "3.998.316": "KV_METR_NARXI",
+        "kamida 100% , 190 000 000 (Bir yuz to`qson million) so`m": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%, {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
+        "kamida 100%": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%",
+        
+        # General company settings
+        "«SHER-DOR» xususiy korxonasi": "KORXONA_NOMI",
+        "«SHER-DOR» Xususiy korxonasi": "KORXONA_NOMI",
+        "«Sher-Dor» Xususiy korxonasi": "KORXONA_NOMI",
+        "Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy": "KORXONA_MANZILI",
+        "2020 8000 6005 5796 1001": "KORXONA_BANK_ACCOUNT",
+        "20208000600557961001": "KORXONA_BANK_ACCOUNT",
+        "ATB “Agrobank” Urgut tuman filiali": "KORXONA_BANK",
+        "ATB “Agrobank” Urgut tuman filiali,": "KORXONA_BANK",
+        "00300": "KORXONA_MFO",
+        "202 162 496": "KORXONA_INN",
+        "202162496": "KORXONA_INN",
+        "J.Raxmonov": "DIREKTOR",
+        "J. Raxmonov": "DIREKTOR",
+        "(97) 708-44-44, (93) 573-29-29": "KORXONA_TELEFON",
+        "(97) 708-44-44": "KORXONA_TELEFON",
+        "(93) 573-29-29": "KORXONA_TELEFON",
+        
+        # Location / combined description placeholders
+        "Urgut shahar Do`stlik mahallasi Navoiy ko`chasi №83-uy manzilida joylashgan yangidan qurilayotgan ko`p qavatli xonadonlarning 4-(to`rtinchi) blok 4-(to`rtinchi) qavati, 9-(to`qqizinchi) xonadonsi": "OBYEKT_TAFSILOTI",
+        "Urgut shahar Do`stlik mahallasi Navoiy ko`chasi №83-uy manzilida joylashgan yangidan qurilayotgan ko`p qavatli xonadonlarning 4-(to`rtinchi) blok 4-(to`rtinchi) qavati, 9-(to`qqizinchi) xonadoni": "OBYEKT_TAFSILOTI",
+        "Urgut shahar Do`stlik mahallasi Navoiy ko`chasi №83-uy manzilida joylashgan yangidan qurilayotgan savdo do`konlarning 1-(birinchi) blok -1-(podvol) qavati, 1-( birinchi) savdo do`koni": "OBYEKT_TAFSILOTI"
     }
     for k, v in custom.items():
         if k not in replacements:

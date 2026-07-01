@@ -1754,7 +1754,9 @@ function selectClientForDetail(client) {
     if (!selectedClientForDetail.value) {
         const scrollContainer = document.querySelector('[scroll-region]');
         if (scrollContainer) {
-            savedScrollPosition.value = scrollContainer.scrollTop;
+            const currentScroll = scrollContainer.scrollTop;
+            savedScrollPosition.value = currentScroll;
+            sessionStorage.setItem('crm_clients_scroll', currentScroll);
         }
     }
 
@@ -1793,10 +1795,24 @@ function closeClientDetail() {
         previousTabBeforeDetail.value = null;
     }
     
+    const storedScroll = sessionStorage.getItem('crm_clients_scroll');
+    const targetScroll = storedScroll ? parseInt(storedScroll, 10) : savedScrollPosition.value;
+    
     nextTick(() => {
         const scrollContainer = document.querySelector('[scroll-region]');
         if (scrollContainer) {
-            scrollContainer.scrollTop = savedScrollPosition.value;
+            scrollContainer.scrollTop = targetScroll;
+            
+            // Re-apply scroll position after small delays to ensure layout calculations are complete
+            setTimeout(() => {
+                scrollContainer.scrollTop = targetScroll;
+            }, 30);
+            setTimeout(() => {
+                scrollContainer.scrollTop = targetScroll;
+            }, 100);
+            setTimeout(() => {
+                scrollContainer.scrollTop = targetScroll;
+            }, 250);
         }
     });
 }

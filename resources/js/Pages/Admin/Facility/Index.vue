@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, onErrorCaptured } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, router, Link, usePage } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
@@ -18,6 +18,12 @@ const props = defineProps({
 });
 
 const page = usePage();
+
+const renderError = ref(null);
+onErrorCaptured((err, instance, info) => {
+    renderError.value = { err: err.toString(), info, stack: err.stack };
+    return false; // prevent propagation
+});
 
 // Save unique object names to localStorage
 watch(() => props.buildings, (newBuildings) => {
@@ -3059,6 +3065,13 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 </script>
 
 <template>
+    <div v-if="renderError" class="p-8 bg-red-100 text-red-900 min-h-screen">
+        <h1 class="text-3xl font-bold mb-4">Vue Render Error</h1>
+        <p class="font-mono text-sm mb-2"><strong>Error:</strong> {{ renderError.err }}</p>
+        <p class="font-mono text-sm mb-2"><strong>Info:</strong> {{ renderError.info }}</p>
+        <pre class="bg-black text-green-400 p-4 rounded overflow-auto text-xs">{{ renderError.stack }}</pre>
+    </div>
+    <div v-else>
     <Head :title="$t('facility_command_center') || 'Facility Command Center'" />
     <AdminLayout>
         <div v-if="!showUnifiedSellModal">
@@ -3531,7 +3544,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
                                     📁 Modellar yuklash
                                 </button>
-                                <Link :href="route('facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                <Link :href="route('facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
                                 </Link>
                                 <Link :href="route('facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
@@ -5781,6 +5794,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </div>
 
     </AdminLayout>
+    </div>
 </template>
 
 <style scoped>

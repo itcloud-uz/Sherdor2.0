@@ -3688,9 +3688,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <button @click="openEditBuilding(false)" class="flex-1 py-2 border border-gray-200 text-gray-700 bg-white text-xs font-sans rounded-xl hover:bg-gray-50 transition-all font-bold text-center">
+                                <Link :href="route('admin.facility.buildings.edit', selectedBuilding.id)" class="flex-1 py-2 border border-gray-200 text-gray-700 bg-white text-xs font-sans rounded-xl hover:bg-gray-50 transition-all font-bold text-center inline-block">
                                     ✏️ Tahrirlash
-                                </button>
+                                </Link>
                                 <button v-if="isAdmin" @click="deleteBuilding" class="py-2 px-3 bg-red-50 text-red-600 border border-red-200 text-xs font-sans rounded-xl hover:bg-red-600 hover:text-white transition-all font-bold">
                                     🗑️ O'chirish
                                 </button>

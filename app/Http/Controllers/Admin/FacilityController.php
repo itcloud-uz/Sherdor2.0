@@ -1404,8 +1404,8 @@ class FacilityController extends Controller
         foreach ($desiredFloorNumbers as $fNum) {
             $isCommercialFloor = ($fNum < 0 || $fNum === 1);
             $isResidentialFloor = ($fNum >= 2);
-            $targetCommercial = $isCommercialFloor ? (int) $podez->commercial_per_floor : 0;
-            $targetResidential = $isResidentialFloor ? (int) $podez->apartments_per_floor : 0;
+            $targetCommercial = $isCommercialFloor ? ((int) $podez->commercial_per_floor ?: (int) $building->shops_per_floor) : 0;
+            $targetResidential = $isResidentialFloor ? ((int) $podez->apartments_per_floor ?: (int) $building->apartments_per_floor) : 0;
 
             if (!$existingFloors->has($fNum)) {
                 $floor = Floor::create([

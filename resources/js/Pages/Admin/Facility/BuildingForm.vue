@@ -248,10 +248,18 @@ const buildingForm = useForm({
         number: p.podez_number,
         floors: p.total_floors,
         type: p.podez_type || 'Staircase',
-        apartments_per_floor: p.apartments_per_floor || 0,
-        commercial_per_floor: p.commercial_per_floor || 0,
+        apartments_per_floor: p.apartments_per_floor > 0 ? p.apartments_per_floor : (props.building?.apartments_per_floor || 0),
+        commercial_per_floor: p.commercial_per_floor > 0 ? p.commercial_per_floor : (props.building?.shops_per_floor || 0),
     })) || [
-        { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase', apartments_per_floor: 0, commercial_per_floor: 0 }
+        { 
+            id: 'temp_' + Date.now(), 
+            name: 'P-1', 
+            number: 1, 
+            floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5), 
+            type: 'Staircase', 
+            apartments_per_floor: props.building?.apartments_per_floor || (props.objectContainer ? props.objectContainer.apartments_per_floor : 0), 
+            commercial_per_floor: props.building?.shops_per_floor || (props.objectContainer ? props.objectContainer.shops_per_floor : 0) 
+        }
     ]
 });
 
@@ -268,10 +276,10 @@ function addPodezToForm() {
         id: 'temp_' + Date.now() + '_' + Math.random(),
         name: 'P-' + nextNum,
         number: nextNum,
-        floors: 5,
+        floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5),
         type: 'Staircase',
-        apartments_per_floor: 0,
-        commercial_per_floor: 0,
+        apartments_per_floor: props.building?.apartments_per_floor || (props.objectContainer ? props.objectContainer.apartments_per_floor : 0),
+        commercial_per_floor: props.building?.shops_per_floor || (props.objectContainer ? props.objectContainer.shops_per_floor : 0),
     });
 }
 

@@ -202,16 +202,31 @@ watch(serviceForm, (val) => {
 }, { deep: true });
 
 const stats = computed(() => {
-    return rows.value.reduce(
+    const acc = rows.value.reduce(
         (acc, row) => {
             acc.totalServices += 1;
             acc.totalCalculatedSum += row.calculatedSum || 0;
             acc.totalPaid += row.paymentAmount || 0;
-            acc.totalBalance += row.balance || 0;
             return acc;
         },
         { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalBalance: 0 }
     );
+
+    let financePaid = 0;
+    if (selectedBrigade.value && selectedBrigade.value.transactions) {
+        selectedBrigade.value.transactions.forEach(txn => {
+            if (txn.type === 'payment') {
+                financePaid += parseFloat(txn.amount);
+            } else if (txn.type === 'payment_received') {
+                financePaid -= parseFloat(txn.amount);
+            }
+        });
+    }
+
+    acc.totalPaid += financePaid;
+    acc.totalBalance = acc.totalCalculatedSum - acc.totalPaid;
+
+    return acc;
 });
 
 

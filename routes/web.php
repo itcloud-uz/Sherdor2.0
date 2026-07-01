@@ -203,6 +203,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
 
     Route::get('/hr', [\App\Http\Controllers\Admin\HrController::class, 'index'])->name('hr');
     Route::get('/hr/qurilish-ish-haqi', [\App\Http\Controllers\Admin\HrController::class, 'qurilishIshHaqi'])->name('hr.qurilish_ish_haqi');
+    Route::get('/hr/texnikalar', [\App\Http\Controllers\Admin\HrController::class, 'texnikalar'])->name('hr.texnikalar');
     
     // Brigades & Machine Owners
     Route::post('/hr/brigades', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigade'])->name('hr.brigade.store');

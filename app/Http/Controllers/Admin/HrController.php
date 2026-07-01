@@ -77,11 +77,17 @@ class HrController extends Controller
     {
         $buildings = Building::with('floors.units')->get();
         $brigades = \App\Models\Brigade::with('workers')->get();
-        $machineries = \App\Models\Machinery::with('owner')->get();
         
         return Inertia::render('Admin/HR/QurilishIshHaqi', [
             'buildings' => $buildings,
-            'brigades' => $brigades,
+            'brigades' => $brigades
+        ]);
+    }
+
+    public function texnikalar()
+    {
+        $machineries = \App\Models\Machinery::with('owner')->get();
+        return Inertia::render('Admin/HR/Texnikalar', [
             'machineries' => $machineries
         ]);
     }

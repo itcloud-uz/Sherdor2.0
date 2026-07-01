@@ -87,86 +87,89 @@
                     </div>
 
                     <!-- 2. TAHRIRLANAYOTGAN/QO'SHILAYOTGAN NAYSA BLOK BO'LSA -->
-                    <div v-else class="space-y-6">
-                        <div class="border-b border-slate-100 pb-4">
-                            <h3 class="text-lg font-bold text-slate-800">Blok Ma'lumotlari</h3>
-                        </div>
+                    <div v-else class="space-y-8">
+                        <div class="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
+                            <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                Umumiy Ma'lumotlar
+                            </h3>
 
-                        <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">Blok Nomi <span class="text-red-500">*</span></label>
-                                <input v-model="buildingForm.block_name" type="text" class="w-full bg-transparent border-b-2 border-gray-200 focus:border-blue-600 text-gray-900 text-base py-2 px-0 outline-none transition-all placeholder-gray-300 focus:ring-0" placeholder="Masalan: A Blok" required>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Blok Nomi <span class="text-red-500">*</span></label>
+                                    <input v-model="buildingForm.block_name" type="text" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder-slate-300" placeholder="Masalan: A Blok" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Korpus Nomi</label>
+                                    <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder-slate-300" placeholder="Masalan: 3-Korpus">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Yer to'la qavatlari (-1, -2)</label>
+                                    <input v-model.number="buildingForm.basement_floors" type="number" min="0" max="5" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder-slate-300" placeholder="0">
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">Korpus Nomi</label>
-                                <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-transparent border-b-2 border-gray-200 focus:border-blue-600 text-gray-900 text-base py-2 px-0 outline-none transition-all placeholder-gray-300 focus:ring-0" placeholder="Masalan: 3-Korpus">
-                            </div>
-                        </div>
 
-                        <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
-                        <div class="pt-8">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-widest">Podezlar (Yo'laklar)</h3>
-                                <button type="button" @click="addPodezToForm" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-full transition-all shadow-sm">
-                                    + Podez Qo'shish
-                                </button>
-                            </div>
-                            
-                            <div class="space-y-4">
-                                <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all relative group">
-                                    <div class="flex justify-between items-center mb-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-sm">{{ idx + 1 }}</div>
-                                            <span class="text-sm font-bold text-gray-800">Podez</span>
-                                        </div>
-                                        <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="text-red-500 hover:text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
-                                            O'chirish
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest">Podez Nomi</label>
-                                            <input v-model="podez.name" type="text" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest">Podez Raqami</label>
-                                            <input v-model.number="podez.number" type="number" min="1" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest">Qavatlar Soni</label>
-                                            <input v-model.number="podez.floors" type="number" min="1" max="100" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest">Podez Turi</label>
-                                            <select v-model="podez.type" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none cursor-pointer focus:border-blue-600 focus:ring-0">
-                                                <option value="Staircase">Zina (Staircase)</option>
-                                                <option value="Elevator">Lift (Elevator)</option>
-                                                <option value="Corridor">Koridor (Corridor)</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="Umumiy xonadonlar soni">Umumiy Xonadonlar</label>
-                                            <input v-model.number="podez.total_apartments" type="number" min="0" max="5000" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="Umumiy do'konlar soni">Umumiy Do'konlar</label>
-                                            <input v-model.number="podez.total_commercial" type="number" min="0" max="5000" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
-                                        </div>
-                                    </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">2D Chizma (Layout)</label>
+                                    <input type="file" @change="handleFileChange('blueprint', $event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">3D Model (PNG, JPG, PDF)</label>
+                                    <input type="file" @change="handleFileChange('model_3d', $event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ROW 5: 2D CHIZMA & 3D MODEL (PNG, JPG, PDF) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">2D Chizma (Layout)</label>
-                                <input type="file" @change="handleFileChange('blueprint', $event)" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                        <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-4 px-1">
+                                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
+                                    Podezlar (Yo'laklar)
+                                </h3>
+                                <button type="button" @click="addPodezToForm" class="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-[13px] font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                                    <span>+ Qo'shish</span>
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">3D Model (PNG, JPG, PDF)</label>
-                                <input type="file" @change="handleFileChange('model_3d', $event)" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                            
+                            <div class="space-y-3">
+                                <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all relative group">
+                                    <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="absolute top-4 right-4 text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="O'chirish">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                    
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Nomi</label>
+                                            <input v-model="podez.name" type="text" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Raqami</label>
+                                            <input v-model.number="podez.number" type="number" min="1" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Qavatlar Soni</label>
+                                            <input v-model.number="podez.floors" type="number" min="1" max="100" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Turi</label>
+                                            <select v-model="podez.type" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer appearance-none">
+                                                <option value="Staircase">Zina</option>
+                                                <option value="Elevator">Lift</option>
+                                                <option value="Corridor">Koridor</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Xonadonlar</label>
+                                            <input v-model.number="podez.total_apartments" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Do'konlar</label>
+                                            <input v-model.number="podez.total_commercial" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

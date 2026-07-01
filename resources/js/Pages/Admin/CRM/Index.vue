@@ -746,6 +746,8 @@ function saveClient() {
             _method: 'PUT',
             ...clientForm.value
         }, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 showCreateClientModal.value = false;
                 isProcessing.value = false;
@@ -817,7 +819,9 @@ function saveClient() {
 
 function deleteClient(id) {
     if (confirm(t('confirm_delete_client'))) {
-        router.delete(route('admin.crm.clients.delete', id));
+        router.delete(route('admin.crm.clients.delete', id), {
+            preserveScroll: true
+        });
     }
 }
 

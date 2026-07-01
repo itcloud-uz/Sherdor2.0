@@ -225,10 +225,10 @@ class CrmController extends Controller
         ];
 
         if ($request->hasFile('passport_photo')) {
-            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:20480';
         }
         if ($request->hasFile('profile_photo')) {
-            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:2048';
+            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:20480';
         }
 
         $validated = $request->validate($rules);
@@ -297,10 +297,10 @@ class CrmController extends Controller
         ];
 
         if ($request->hasFile('passport_photo')) {
-            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+            $rules['passport_photo'] = 'file|mimes:jpeg,png,jpg,pdf|max:20480';
         }
         if ($request->hasFile('profile_photo')) {
-            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:2048';
+            $rules['profile_photo'] = 'file|mimes:jpeg,png,jpg|max:20480';
         }
 
         $validated = $request->validate($rules);

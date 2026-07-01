@@ -186,24 +186,62 @@ const sendBroadcastSms = () => {
 
 const isEditingUser = ref(false);
 const editingUserId = ref(null);
+const showUserModal = ref(false);
 const userForm = useForm({ name: '', last_name: '', middle_name: '', username: '', phone: '', password: '', role: 'Worker', building_id: '', warehouse_id: '', all_objects: false });
+
 const submitUserForm = () => {
     if (isEditingUser.value) {
-        userForm.put(route('admin.settings.users.update', editingUserId.value), { onSuccess: () => { resetUserForm(); triggerToast('Yangilandi ✓'); } });
+        userForm.put(route('admin.settings.users.update', editingUserId.value), { 
+            onSuccess: () => { 
+                resetUserForm(); 
+                triggerToast('Yangilandi ✓'); 
+            } 
+        });
     } else {
-        userForm.post(route('admin.settings.users.store'), { onSuccess: () => { resetUserForm(); triggerToast('Qo\'shildi ✓'); } });
+        userForm.post(route('admin.settings.users.store'), { 
+            onSuccess: () => { 
+                resetUserForm(); 
+                triggerToast('Qo\'shildi ✓'); 
+            } 
+        });
     }
 };
+
 const editUser = (usr) => {
-    isEditingUser.value = true; editingUserId.value = usr.id; userForm.name = usr.name; userForm.last_name = usr.last_name || '';
-    userForm.middle_name = usr.middle_name || ''; userForm.username = usr.username || ''; userForm.phone = usr.phone || '';
-    userForm.password = ''; userForm.role = usr.roles?.length ? usr.roles[0].name : 'Worker';
-    userForm.building_id = usr.building_id || ''; userForm.warehouse_id = usr.warehouse_id || ''; userForm.all_objects = !usr.building_id && !usr.warehouse_id;
+    isEditingUser.value = true; 
+    editingUserId.value = usr.id; 
+    userForm.name = usr.name; 
+    userForm.last_name = usr.last_name || '';
+    userForm.middle_name = usr.middle_name || ''; 
+    userForm.username = usr.username || ''; 
+    userForm.phone = usr.phone || '';
+    userForm.password = ''; 
+    userForm.role = usr.roles?.length ? usr.roles[0].name : 'Worker';
+    userForm.building_id = usr.building_id || ''; 
+    userForm.warehouse_id = usr.warehouse_id || ''; 
+    userForm.all_objects = !usr.building_id && !usr.warehouse_id;
+    showUserModal.value = true;
 };
+
 const deleteUser = (id) => {
-    if (confirm('O\'chirishni tasdiqlaysizmi?')) { userForm.delete(route('admin.settings.users.destroy', id), { onSuccess: () => triggerToast('O\'chirildi ✓') }); }
+    if (confirm('O\'chirishni tasdiqlaysizmi?')) { 
+        userForm.delete(route('admin.settings.users.destroy', id), { 
+            onSuccess: () => triggerToast('O\'chirildi ✓') 
+        }); 
+    }
 };
-const resetUserForm = () => { userForm.reset(); isEditingUser.value = false; editingUserId.value = null; };
+
+const resetUserForm = () => { 
+    userForm.reset(); 
+    isEditingUser.value = false; 
+    editingUserId.value = null; 
+    showUserModal.value = false;
+};
+
+const openAddUserModal = () => {
+    resetUserForm();
+    showUserModal.value = true;
+};
 
 const selectedRoleIdForPermissions = ref('');
 const rolePermissionsForm = useForm({ role_id: '', permissions: [] });
@@ -556,7 +594,7 @@ const hasUnsavedChanges = computed(() => {
                         <AccordionItem title="👥 XODIMLAR BOSHQARUVI" :isOpen="openAccordions.users" @toggle="toggleAccordion('users')">
                             <div class="mb-4 flex justify-between items-end">
                                 <p class="text-[13px] text-[#64748B]">Foydalanuvchilarni boshqarish va ularni rollarga biriktirish.</p>
-                                <button class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-colors">+ Xodim Qo'shish</button>
+                                <button @click="openAddUserModal" class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-colors">+ Xodim Qo'shish</button>
                             </div>
                             <div class="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
                                 <table class="w-full text-left border-collapse">
@@ -565,6 +603,7 @@ const hasUnsavedChanges = computed(() => {
                                             <th class="p-4 text-[13px] font-medium text-[#64748B]">Ism</th>
                                             <th class="p-4 text-[13px] font-medium text-[#64748B]">Login</th>
                                             <th class="p-4 text-[13px] font-medium text-[#64748B]">Rol</th>
+                                            <th class="p-4 text-[13px] font-medium text-[#64748B] text-center">Amallar</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -573,6 +612,16 @@ const hasUnsavedChanges = computed(() => {
                                             <td class="p-4 text-[14px] text-[#64748B]">{{ usr.username }}</td>
                                             <td class="p-4 text-[14px] text-[#64748B]">
                                                 <span class="px-2 py-1 bg-slate-100 rounded text-xs font-medium">{{ usr.roles?.length ? usr.roles[0].name : '-' }}</span>
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                <div class="flex justify-center gap-3">
+                                                    <button @click="editUser(usr)" class="text-blue-600 hover:text-blue-800 text-[13px] font-semibold flex items-center gap-1">
+                                                        ✏️ Tahrirlash
+                                                    </button>
+                                                    <button @click="deleteUser(usr.id)" class="text-red-600 hover:text-red-800 text-[13px] font-semibold flex items-center gap-1">
+                                                        🗑️ O'chirish
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>

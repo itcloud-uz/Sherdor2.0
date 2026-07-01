@@ -24,6 +24,9 @@
         <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-6 md:p-8">
                 <form @submit.prevent="submitBuilding" class="space-y-8">
+                    <div v-if="buildingForm.errors.error" class="p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium mb-6">
+                        {{ buildingForm.errors.error }}
+                    </div>
                     
                     <!-- 1. TAHRIRLANAYOTGAN/QO'SHILAYOTGAN NAYSA OBJECT CONTAINER BO'LSA (total_floors === 0) -->
                     <div v-if="isObjectOnly" class="space-y-6">
@@ -166,12 +169,12 @@
 
                     <!-- SUBMIT BUTTONS -->
                     <div class="flex items-center justify-end gap-4 pt-10 border-t border-gray-100 mt-10">
-                        <Link :href="route('admin.facility')" class="px-6 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+                        <Link :href="route('admin.facility')" class="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">
                             Bekor Qilish
                         </Link>
-                        <button type="submit" :disabled="buildingForm.processing" class="px-8 py-3 bg-gray-900 hover:bg-black text-white font-semibold text-sm rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                        <button type="submit" :disabled="buildingForm.processing" class="px-6 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-full hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-w-[120px]">
                             <svg v-if="buildingForm.processing" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <span v-else>Saqlash</span>
+                            <span>{{ buildingForm.processing ? 'Saqlanmoqda...' : 'Saqlash' }}</span>
                         </button>
                     </div>
 

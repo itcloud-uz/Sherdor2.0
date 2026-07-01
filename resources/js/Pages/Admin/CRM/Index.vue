@@ -226,7 +226,7 @@ function openCommentsModal() {
 function submitClientComment() {
     if (!newCommentText.value.trim()) return;
     isSavingComment.value = true;
-    axios.post(route('admin.crm.clients.comments.store', detailedClientData.value.id), {
+    axios.post(route('admin.crm.clients.comments.store', detailedClientData.value.id), { preserveScroll: true, preserveState: true,
         comment: newCommentText.value
     })
     .then(response => {
@@ -264,7 +264,7 @@ function editScheduleNote(schedule) {
 function saveScheduleNote() {
     if (!editingScheduleNote.value) return;
     isSavingScheduleNote.value = true;
-    axios.put(route('admin.crm.schedules.notes.update', editingScheduleNote.value.id), {
+    axios.put(route('admin.crm.schedules.notes.update', editingScheduleNote.value.id), { preserveScroll: true, preserveState: true,
         notes: newScheduleNoteText.value
     })
     .then(response => {
@@ -449,7 +449,7 @@ function editSchedule(schedule) {
 
 function saveSchedulePayment(schedule) {
     isProcessing.value = true;
-    router.post(route('admin.crm.schedules.pay', schedule.id), {
+    router.post(route('admin.crm.schedules.pay', schedule.id), { preserveScroll: true, preserveState: true,
         paid_amount: editingPaidAmount.value,
         payment_method: editingPaymentMethod.value,
         actual_payment_date: editingActualPaymentDate.value
@@ -513,7 +513,7 @@ const forceActivateContract = async (accountId = null, paymentMethod = null) => 
     
     isProcessing.value = true;
     try {
-        await axios.post(route('admin.contracts.force_activate', selectedContract.value.id), {
+        await axios.post(route('admin.contracts.force_activate', selectedContract.value.id), { preserveScroll: true, preserveState: true,
             account_id: accountId,
             payment_method: paymentMethod
         });
@@ -551,7 +551,7 @@ const confirmForceActivate = async () => {
 
 function recalculatePenalty() {
     isProcessing.value = true;
-    router.post(route('admin.crm.contracts.recalculate_penalty', selectedContract.value.id), {
+    router.post(route('admin.crm.contracts.recalculate_penalty', selectedContract.value.id), { preserveScroll: true, preserveState: true,
         daily_penalty_rate: selectedContract.value.daily_penalty_rate
     }, {
         onSuccess: (page) => {
@@ -770,7 +770,7 @@ function saveClient() {
             }
         }
         
-        axios.post(route('admin.crm.clients.store'), formData, {
+        axios.post(route('admin.crm.clients.store'), formData, { preserveScroll: true, preserveState: true,
             headers: {
                 'Content-Type': 'multipart/form-data',
                 'Accept': 'application/json'
@@ -1531,7 +1531,7 @@ watch(() => props.crmSettings, (newSettings) => {
 }, { immediate: true });
 
 function saveCrmSettings() {
-    router.post(route('admin.crm.settings.save'), settingsForm.value, {
+    router.post(route('admin.crm.settings.save'), settingsForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             alert('Sozlamalar muvaffaqiyatli saqlandi!');
         }
@@ -1566,7 +1566,7 @@ watch(activeTab, (newTab) => {
         const currentTab = url.searchParams.get('tab');
         if (currentTab === null || currentTab !== newTab) {
             url.searchParams.set('tab', newTab);
-            window.history.replaceState({ ...window.history.state }, '', url.pathname + url.search);
+            router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: true, replace: true });
         }
     } catch (e) {
         console.error('URL replace error in CRM activeTab watcher', e);
@@ -2325,7 +2325,7 @@ function rejectLead(lead) {
 
 function saveCallPanelClientInfo() {
     isProcessing.value = true;
-    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), {
+    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), { preserveScroll: true, preserveState: true,
         first_name: clientInfoForm.value.first_name,
         last_name: clientInfoForm.value.last_name,
         middle_name: clientInfoForm.value.middle_name,
@@ -2356,7 +2356,7 @@ function saveCallPanelClientInfo() {
 
 function saveCallPanelHouseInfo() {
     isProcessing.value = true;
-    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), {
+    axios.put(route('admin.crm.leads.update', selectedLeadForDetail.value.id), { preserveScroll: true, preserveState: true,
         full_name: selectedLeadForDetail.value.full_name,
         phone: selectedLeadForDetail.value.phone,
         email: selectedLeadForDetail.value.email,
@@ -2522,7 +2522,7 @@ function submitRefundSchedule() {
     }
 
     isProcessing.value = true;
-    router.post(route('admin.contracts.refund_schedules.store', selectedContract.value.id), {
+    router.post(route('admin.contracts.refund_schedules.store', selectedContract.value.id), { preserveScroll: true, preserveState: true,
         installments: refundInstallments.value
     }, {
         onSuccess: () => {
@@ -2752,7 +2752,7 @@ function uploadSignature(event) {
     const formData = new FormData();
     formData.append('signed_document', file);
 
-    axios.post(`/admin/contracts/${selectedContract.value.id}/upload-signature`, formData, {
+    axios.post(`/admin/contracts/${selectedContract.value.id}/upload-signature`, formData, { preserveScroll: true, preserveState: true,
         headers: { 'Content-Type': 'multipart/form-data' }
     }).then(response => {
         uploadStatus.value = response.data.status === 'passed' ? 'success' : 'error';
@@ -2816,7 +2816,7 @@ function updateLeadStatusAPI(lead, status, reason = null) {
 
 function initiateLeadCall(lead) {
     // Initiate background telephony call via Asterisk
-    axios.post('/telephony/call', {
+    axios.post('/telephony/call', { preserveScroll: true, preserveState: true,
         lead_id: lead.id,
         phone_number: lead.phone
     }).catch(error => {
@@ -2899,7 +2899,7 @@ function handleFileUpload(event) {
     formData.append('audio', file);
     formData.append('name', file.name);
 
-    axios.post(route('admin.telephony.audios.upload'), formData, {
+    axios.post(route('admin.telephony.audios.upload'), formData, { preserveScroll: true, preserveState: true,
         headers: { 'Content-Type': 'multipart/form-data' }
     })
     .then(() => {
@@ -2924,7 +2924,7 @@ function makeCall() {
     if (!dialerPhone.value) return;
     isCalling.value = true;
     
-    axios.post('/telephony/call', { phone_number: dialerPhone.value })
+    axios.post('/telephony/call', { preserveScroll: true, preserveState: true, phone_number: dialerPhone.value })
         .then(() => {
             alert("Qo'ng'iroq muvaffaqiyatli amalga oshirildi!");
             fetchTelephonyLogs();
@@ -2961,7 +2961,7 @@ function startAutoDialer() {
         formData.append('excel_file', excelFile.value);
     }
 
-    axios.post(route('admin.telephony.campaigns.store'), formData, {
+    axios.post(route('admin.telephony.campaigns.store'), formData, { preserveScroll: true, preserveState: true,
         headers: { 'Content-Type': 'multipart/form-data' }
     })
     .then(() => {
@@ -3095,7 +3095,7 @@ const promoRuleForm = useForm({
 });
 
 function submitEskizSettings() {
-    eskizSettingsForm.post(route('admin.ai_agents.settings'), {
+    eskizSettingsForm.post(route('admin.ai_agents.settings'), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showEskizSettingsModal.value = false;
             alert('Eskiz.uz sozlamalari muvaffaqiyatli saqlandi!');
@@ -3104,7 +3104,7 @@ function submitEskizSettings() {
 }
 
 function submitTestSms() {
-    testSmsForm.post(route('admin.ai_agents.test_sms'), {
+    testSmsForm.post(route('admin.ai_agents.test_sms'), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showTestSmsModal.value = false;
             testSmsForm.reset('phone');
@@ -3128,14 +3128,14 @@ function editTemplate(t) {
 
 function deleteTemplate(id) {
     if (confirm("Rostdan ham ushbu shablonni o'chirmoqchimisiz?")) {
-        router.delete(route('admin.ai_agents.template.delete', id), {
+        router.delete(route('admin.ai_agents.template.delete', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => alert('Shablon o\'chirildi.')
         });
     }
 }
 
 function submitTemplate() {
-    templateForm.post(route('admin.ai_agents.template.save'), {
+    templateForm.post(route('admin.ai_agents.template.save'), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showTemplateModal.value = false;
             templateForm.reset();
@@ -3183,14 +3183,14 @@ function editRule(r) {
 
 function deleteRule(id) {
     if (confirm("Rostdan ham ushbu qoidani o'chirmoqchimisiz?")) {
-        router.delete(route('admin.ai_agents.rule.delete', id), {
+        router.delete(route('admin.ai_agents.rule.delete', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => alert('Qoida o\'chirildi.')
         });
     }
 }
 
 function submitRule() {
-    ruleForm.post(route('admin.ai_agents.rule.save'), {
+    ruleForm.post(route('admin.ai_agents.rule.save'), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showRuleModal.value = false;
             ruleForm.reset();
@@ -3206,7 +3206,7 @@ function openPromoModal() {
 }
 
 function submitPromoRule() {
-    promoRuleForm.post(route('admin.ai_agents.rule.save'), {
+    promoRuleForm.post(route('admin.ai_agents.rule.save'), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showPromoModal.value = false;
             promoRuleForm.reset();
@@ -3384,7 +3384,7 @@ watch(() => transactionForm.value.counterparty_id, (newCpId) => {
 
 function submitQuickTransaction() {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.store'), transactionForm.value, {
+    router.post(route('admin.finance.transactions.store'), transactionForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             isProcessing.value = false;
             showQuickTransactionModal.value = false;
@@ -3406,7 +3406,7 @@ function openEditTransactionModal(txn) {
 
 function submitEditTransaction() {
     isProcessing.value = true;
-    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, {
+    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             isProcessing.value = false;
             showEditTransactionModal.value = false;
@@ -3420,7 +3420,7 @@ function submitEditTransaction() {
 function deleteTransaction(id) {
     if (confirm("Ushbu tranzaksiyani o'chirishni xohlaysizmi?")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.transactions.destroy', id), {
+        router.delete(route('admin.finance.transactions.destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => {
                 isProcessing.value = false;
             },
@@ -3460,7 +3460,7 @@ function openEditCounterpartyModal(c) {
 
 function submitCounterparty() {
     isProcessing.value = true;
-    router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, {
+    router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             isProcessing.value = false;
             showCounterpartyModal.value = false;
@@ -3474,7 +3474,7 @@ function submitCounterparty() {
 function deleteCounterparty(id) {
     if (confirm("Ushbu kontragentni o'chirishni tasdiqlaysizmi?")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.counterparties.destroy', id), {
+        router.delete(route('admin.finance.counterparties.destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => {
                 isProcessing.value = false;
             },

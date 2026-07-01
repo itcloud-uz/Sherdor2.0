@@ -81,7 +81,7 @@ function bulkRestoreDeletedTransactions() {
     if (selectedDeletedTransactions.value.length === 0) return;
     if (confirm(`Haqiqatan ham tanlangan ${selectedDeletedTransactions.value.length} ta tranzaksiyani ortga qaytarmoqchimisiz?`)) {
         isProcessing.value = true;
-        router.post(route('admin.finance.transactions.bulk_restore'), {
+        router.post(route('admin.finance.transactions.bulk_restore'), { preserveScroll: true, preserveState: true,
             ids: selectedDeletedTransactions.value
         }, {
             onSuccess: () => {
@@ -97,7 +97,7 @@ function bulkForceDeleteTransactions() {
     if (selectedDeletedTransactions.value.length === 0) return;
     if (confirm(`Haqiqatan ham tanlangan ${selectedDeletedTransactions.value.length} ta tranzaksiyani butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!`)) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.transactions.bulk_force_destroy'), {
+        router.delete(route('admin.finance.transactions.bulk_force_destroy'), { preserveScroll: true, preserveState: true,
             data: {
                 ids: selectedDeletedTransactions.value
             },
@@ -651,7 +651,7 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
             } else {
                 url.searchParams.delete('sub');
             }
-            window.history.replaceState({ ...window.history.state }, '', url.pathname + url.search);
+            router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: true, replace: true });
         }
     } catch (e) {
         console.error('URL replace error in activeTab watcher', e);
@@ -925,7 +925,7 @@ function openEditTransactionModal(txn) {
 
 function submitEditTransaction() {
     isProcessing.value = true;
-    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, {
+    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             isProcessing.value = false;
             showEditTransactionModal.value = false;
@@ -937,7 +937,7 @@ function submitEditTransaction() {
 function deleteTransaction(id) {
     if (confirm("Haqiqatan ham bu tranzaksiyani o'chirmoqchimisiz? (Tasdiqlangan bo'lsa, balansga ta'sir qiladi)")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.transactions.destroy', id), {
+        router.delete(route('admin.finance.transactions.destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -947,7 +947,7 @@ function deleteTransaction(id) {
 function restoreTransaction(id) {
     if (confirm("Ushbu tranzaksiyani ortga qaytarmoqchimisiz (dastlabki holatiga)? Balanslar qaytadan hisoblanadi.")) {
         isProcessing.value = true;
-        router.post(route('admin.finance.transactions.restore', id), {}, {
+        router.post(route('admin.finance.transactions.restore', id), {}, { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -957,7 +957,7 @@ function restoreTransaction(id) {
 function forceDeleteTransaction(id) {
     if (confirm("Haqiqatan ham bu tranzaksiyani butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.transactions.force_destroy', id), {
+        router.delete(route('admin.finance.transactions.force_destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -1348,12 +1348,12 @@ function openEditRegisterModal(reg) {
 function submitRegister() {
     isProcessing.value = true;
     if (isEditRegister.value) {
-        router.put(route('admin.finance.registers.update', registerForm.value.id), registerForm.value, {
+        router.put(route('admin.finance.registers.update', registerForm.value.id), registerForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showRegisterModal.value = false; },
             onError: () => isProcessing.value = false
         });
     } else {
-        router.post(route('admin.finance.registers.store'), registerForm.value, {
+        router.post(route('admin.finance.registers.store'), registerForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showRegisterModal.value = false; },
             onError: () => isProcessing.value = false
         });
@@ -1422,12 +1422,12 @@ function openEditCounterpartyModal(c) {
 function submitCounterparty() {
     isProcessing.value = true;
     if (isEditCounterparty.value) {
-        router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, {
+        router.put(route('admin.finance.counterparties.update', counterpartyForm.value.id), counterpartyForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showCounterpartyModal.value = false; },
             onError: () => isProcessing.value = false
         });
     } else {
-        router.post(route('admin.finance.counterparties.store'), counterpartyForm.value, {
+        router.post(route('admin.finance.counterparties.store'), counterpartyForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showCounterpartyModal.value = false; },
             onError: () => isProcessing.value = false
         });
@@ -1443,7 +1443,7 @@ function deleteCounterparty(id) {
 function restoreCounterparty(id) {
     if (confirm("Ushbu kontragentni savatchadan qayta tiklamoqchimisiz?")) {
         isProcessing.value = true;
-        router.post(route('admin.finance.counterparties.restore', id), {}, {
+        router.post(route('admin.finance.counterparties.restore', id), {}, { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -1453,7 +1453,7 @@ function restoreCounterparty(id) {
 function forceDeleteCounterparty(id) {
     if (confirm("Haqiqatan ham bu kontragentni butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.counterparties.force_destroy', id), {
+        router.delete(route('admin.finance.counterparties.force_destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -1515,7 +1515,7 @@ function bulkDestroyActions() {
     if (selectedActions.value.length === 0) return;
     if (confirm(`Haqiqatan ham tanlangan ${selectedActions.value.length} ta harakatlar jurnali yozuvini butunlay o'chirib tashlamoqchimisiz?`)) {
         isProcessing.value = true;
-        router.post(route('admin.finance.actions.bulk_destroy'), {
+        router.post(route('admin.finance.actions.bulk_destroy'), { preserveScroll: true, preserveState: true,
             ids: selectedActions.value
         }, {
             onSuccess: () => {
@@ -1602,12 +1602,12 @@ function openEditInvoiceModal(inv) {
 function submitInvoice() {
     isProcessing.value = true;
     if (isEditInvoice.value) {
-        router.put(route('admin.finance.invoices.update', invoiceForm.value.id), invoiceForm.value, {
+        router.put(route('admin.finance.invoices.update', invoiceForm.value.id), invoiceForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showInvoiceModal.value = false; },
             onError: () => isProcessing.value = false
         });
     } else {
-        router.post(route('admin.finance.invoices.store'), invoiceForm.value, {
+        router.post(route('admin.finance.invoices.store'), invoiceForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showInvoiceModal.value = false; },
             onError: () => isProcessing.value = false
         });
@@ -2030,7 +2030,7 @@ function submitTransaction() {
         form.value.target_id = form.value.client_id;
     }
 
-    router.post(route('admin.finance.transactions.store'), form.value, {
+    router.post(route('admin.finance.transactions.store'), form.value, { preserveScroll: true, preserveState: true,
         forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
@@ -2062,7 +2062,7 @@ function submitTransaction() {
 
 function submitTransfer() {
     isProcessing.value = true;
-    router.post(route('admin.finance.internal_transfer'), transferForm.value, {
+    router.post(route('admin.finance.internal_transfer'), transferForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             isProcessing.value = false;
             showQuickTransferModal.value = false;
@@ -2200,7 +2200,7 @@ function approve(id) {
 
 function submitApprove() {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.approve', selectedApproveTxn.value.id), {
+    router.post(route('admin.finance.transactions.approve', selectedApproveTxn.value.id), { preserveScroll: true, preserveState: true,
         account_id: approveForm.value.account_id
     }, {
         onSuccess: () => {
@@ -2213,7 +2213,7 @@ function submitApprove() {
 
 function submitContractApprove() {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.approve', selectedContractTxn.value.id), {
+    router.post(route('admin.finance.transactions.approve', selectedContractTxn.value.id), { preserveScroll: true, preserveState: true,
         applied_amount: contractApproveForm.value.applied_amount,
         refund_amount: contractApproveForm.value.refund_amount,
         account_id: contractApproveForm.value.account_id
@@ -2236,7 +2236,7 @@ function getRegisterBuildingName(accountId) {
 
 function reject(id) {
     isProcessing.value = true;
-    router.post(route('admin.finance.transactions.reject', id), {}, {
+    router.post(route('admin.finance.transactions.reject', id), {}, { preserveScroll: true, preserveState: true,
         onSuccess: () => isProcessing.value = false,
         onError: () => isProcessing.value = false
     });
@@ -2286,12 +2286,12 @@ function openEditLiability(liability) {
 function submitLiability() {
     isProcessing.value = true;
     if (isEditMode.value) {
-        router.put(route('admin.finance.liabilities.update', editingLiabilityId.value), liabilityForm.value, {
+        router.put(route('admin.finance.liabilities.update', editingLiabilityId.value), liabilityForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showLiabilityModal.value = false; },
             onError: () => isProcessing.value = false
         });
     } else {
-        router.post(route('admin.finance.liabilities.store'), liabilityForm.value, {
+        router.post(route('admin.finance.liabilities.store'), liabilityForm.value, { preserveScroll: true, preserveState: true,
             onSuccess: () => { isProcessing.value = false; showLiabilityModal.value = false; },
             onError: () => isProcessing.value = false
         });
@@ -2372,7 +2372,7 @@ function downloadScheduleExcel() {
 function deleteLiability(id) {
     if (confirm("Rostdan ham ushbu qarzni o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.")) {
         isProcessing.value = true;
-        router.delete(route('admin.finance.liabilities.destroy', id), {
+        router.delete(route('admin.finance.liabilities.destroy', id), { preserveScroll: true, preserveState: true,
             onSuccess: () => isProcessing.value = false,
             onError: () => isProcessing.value = false
         });
@@ -2392,7 +2392,7 @@ function openPaymentModal(liability) {
 
 function submitPayment() {
     isProcessing.value = true;
-    router.post(route('admin.finance.liabilities.payments.store', selectedLiability.value.id), paymentForm.value, {
+    router.post(route('admin.finance.liabilities.payments.store', selectedLiability.value.id), paymentForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => { isProcessing.value = false; showPaymentModal.value = false; },
         onError: () => isProcessing.value = false
     });
@@ -2411,7 +2411,7 @@ function openSupplierPaymentModal(supplier) {
 
 function submitSupplierPayment() {
     isProcessing.value = true;
-    router.post(route('admin.finance.suppliers.pay'), supplierPaymentForm.value, {
+    router.post(route('admin.finance.suppliers.pay'), supplierPaymentForm.value, { preserveScroll: true, preserveState: true,
         onSuccess: () => { isProcessing.value = false; showSupplierPaymentModal.value = false; },
         onError: () => isProcessing.value = false
     });
@@ -2431,7 +2431,7 @@ function openEditSupplierModal(supplier) {
 
 function submitEditSupplier() {
     isProcessing.value = true;
-    editSupplierForm.put(route('admin.warehouse.suppliers.update', editSupplierForm.id), {
+    editSupplierForm.put(route('admin.warehouse.suppliers.update', editSupplierForm.id), { preserveScroll: true, preserveState: true,
         onSuccess: () => { isProcessing.value = false; showEditSupplierModal.value = false; },
         onError: () => isProcessing.value = false
     });
@@ -2559,11 +2559,11 @@ function openEditCategoryModal(category) {
 
 function submitCategory() {
     if (isEditCategory.value) {
-        categoryForm.put(route('admin.finance.categories.update', categoryForm.id), {
+        categoryForm.put(route('admin.finance.categories.update', categoryForm.id), { preserveScroll: true, preserveState: true,
             onSuccess: () => { showCategoryModal.value = false; categoryForm.reset(); }
         });
     } else {
-        categoryForm.post(route('admin.finance.categories.store'), {
+        categoryForm.post(route('admin.finance.categories.store'), { preserveScroll: true, preserveState: true,
             onSuccess: () => { showCategoryModal.value = false; categoryForm.reset(); }
         });
     }

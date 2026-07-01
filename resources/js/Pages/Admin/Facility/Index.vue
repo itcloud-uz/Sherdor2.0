@@ -1024,7 +1024,7 @@ const filteredReportData = computed(() => {
 });
 
 function fetchReportWithDates() {
-    router.get(route('admin.facility'), {
+    router.get(route('admin.facility'), { preserveScroll: true, preserveState: true,
         view: 'report',
         start_month: startMonth.value,
         end_month: endMonth.value
@@ -1866,7 +1866,7 @@ function submitUnifiedSell() {
         }
     });
 
-    axios.post(route('admin.crm.clients.store'), formData, {
+    axios.post(route('admin.crm.clients.store'), formData, { preserveScroll: true, preserveState: true,
         headers: {
             'Content-Type': 'multipart/form-data'
         }
@@ -1898,7 +1898,7 @@ function submitUnifiedSell() {
                 };
 
                 // Submit contract using Inertia router so that page reloads and state resets cleanly!
-                router.post(route('admin.contracts.store'), finalContractData, {
+                router.post(route('admin.contracts.store'), finalContractData, { preserveScroll: true, preserveState: true,
                     onSuccess: () => {
                         showUnifiedSellModal.value = false;
                         isProcessingUnified.value = false;
@@ -2034,7 +2034,7 @@ function submitUploadModels() {
     uploadModelsForm.transform((data) => ({
         ...data,
         _method: 'put'
-    })).post(route('admin.facility.buildings.update', uploadModelsForm.building_id), {
+    })).post(route('admin.facility.buildings.update', uploadModelsForm.building_id), { preserveScroll: true, preserveState: true,
         onSuccess: () => {
             showUploadModelsModal.value = false;
             uploadModelsForm.reset();

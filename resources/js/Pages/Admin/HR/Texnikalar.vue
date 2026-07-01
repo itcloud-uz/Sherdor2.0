@@ -350,9 +350,8 @@ const toggleOwner = (ownerId) => {
                                     >
                                         <div class="overflow-hidden pr-2 cursor-pointer w-full" @click="selectedMachinery = machinery">
                                             <span class="font-semibold text-sm truncate block pr-12">{{ machinery.name }}</span>
-                                            <span class="text-[10px] text-gray-500">{{ machinery.license_plate }} • {{ machinery.driver_name || 'Haydovchisiz' }}</span>
+                                            <span class="text-[10px] text-gray-500">{{ machinery.driver_name || 'Haydovchisiz' }}</span>
                                         </div>
-                                        <span class="text-[9px] uppercase font-bold px-2 py-1 bg-white rounded border flex-shrink-0 text-gray-600 shadow-sm group-hover:hidden">{{ machinery.machinery_type || 'Texnika' }}</span>
                                         <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
                                             <button @click.stop="editMachinery(machinery)" class="p-1 text-blue-500 hover:bg-blue-100 rounded transition" title="Tahrirlash">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -362,9 +361,6 @@ const toggleOwner = (ownerId) => {
                                             </button>
                                         </div>
                                     </div>
-                                    <button @click="openAddMachineryModal(owner.id)" class="w-full text-center py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-dashed border-blue-300 rounded-lg transition-colors">
-                                        + Yangi texnika qo'shish
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -381,17 +377,13 @@ const toggleOwner = (ownerId) => {
                             <!-- Machinery Header -->
                             <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
                                 <div>
-                                    <h2 class="text-xl font-bold text-gray-900">{{ selectedMachinery.name }} ({{ selectedMachinery.license_plate }})</h2>
+                                    <h2 class="text-xl font-bold text-gray-900">{{ selectedMachinery.name }}</h2>
                                     <p class="text-sm text-gray-700 mt-1">Egasi (Sohibkari): <span class="font-semibold">{{ props.owners.find(o => o.id === selectedMachinery.machine_owner_id)?.name || 'Noma\'lum' }}</span></p>
                                 </div>
                                 <div class="flex gap-2">
                                     <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm text-center">
                                         <div class="text-[10px] text-gray-500 uppercase font-bold">Haydovchi</div>
                                         <div class="text-sm font-semibold text-gray-800">{{ selectedMachinery.driver_name || '-' }}</div>
-                                    </div>
-                                    <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm text-center">
-                                        <div class="text-[10px] text-gray-500 uppercase font-bold">To'lov Turi</div>
-                                        <div class="text-sm font-semibold text-gray-800">{{ selectedMachinery.payment_type || '-' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -597,27 +589,9 @@ const toggleOwner = (ownerId) => {
                         <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Nomi *</label>
                         <input v-model="newMachineryForm.name" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: Kamaz, Ekskavator" required />
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Davlat Raqami</label>
-                            <input v-model="newMachineryForm.license_plate" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="01 A 123 AA" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Turi</label>
-                            <input v-model="newMachineryForm.machinery_type" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Yuk mashinasi" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Haydovchi ismi</label>
-                            <input v-model="newMachineryForm.driver_name" type="text" class="w-full border-gray-300 rounded-lg text-sm" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">To'lov Turi</label>
-                            <select v-model="newMachineryForm.payment_type" class="w-full border-gray-300 rounded-lg text-sm">
-                                <option value="Naqd">Naqd</option>
-                                <option value="Karta">Karta</option>
-                                <option value="Pul o'tkazma">Pul o'tkazma</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Haydovchi ismi</label>
+                        <input v-model="newMachineryForm.driver_name" type="text" class="w-full border-gray-300 rounded-lg text-sm" />
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="isAddMachineryModalOpen = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Bekor qilish</button>

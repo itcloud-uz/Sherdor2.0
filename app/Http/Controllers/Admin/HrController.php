@@ -75,8 +75,23 @@ class HrController extends Controller
 
     public function qurilishIshHaqi()
     {
-        $buildings = Building::with('floors.units')->get();
-        $brigades = \App\Models\Brigade::with(['workers', 'transactions'])->get();
+        $buildings = Building::select('id', 'name')->with([
+            'floors' => function($q) {
+                $q->select('id', 'building_id', 'level');
+            },
+            'floors.units' => function($q) {
+                $q->select('id', 'floor_id', 'number');
+            }
+        ])->get();
+        
+        $brigades = \App\Models\Brigade::select('id', 'name', 'foreman_name', 'foreman_phone')->with([
+            'workers' => function($q) {
+                $q->select('id', 'brigade_id', 'name', 'phone');
+            }, 
+            'transactions' => function($q) {
+                $q->select('id', 'target_id', 'target_type', 'type', 'amount', 'transaction_date', 'created_at', 'notes', 'description');
+            }
+        ])->get();
         
         return Inertia::render('Admin/HR/QurilishIshHaqi', [
             'buildings' => $buildings,
@@ -86,8 +101,15 @@ class HrController extends Controller
 
     public function texnikalar()
     {
-        $machineries = \App\Models\Machinery::with('owner')->get();
-        $owners = \App\Models\MachineOwner::with(['machineries', 'transactions'])->get();
+        $machineries = \App\Models\Machinery::select('id', 'name', 'type', 'machine_owner_id', 'driver_name', 'driver_phone', 'status')->get();
+        $owners = \App\Models\MachineOwner::select('id', 'name', 'phone', 'passport', 'status')->with([
+            'machineries' => function($q) {
+                $q->select('id', 'machine_owner_id', 'name', 'driver_name', 'driver_phone');
+            }, 
+            'transactions' => function($q) {
+                $q->select('id', 'target_id', 'target_type', 'type', 'amount', 'transaction_date', 'created_at', 'notes', 'description');
+            }
+        ])->get();
         return Inertia::render('Admin/HR/Texnikalar', [
             'machineries' => $machineries,
             'owners' => $owners

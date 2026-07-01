@@ -225,6 +225,13 @@ const stats = computed(() => {
         },
         { totalPrice: 0, totalPaid: 0, totalFuel: 0, totalBalance: 0 }
     );
+    let financePaid = 0;
+    if (selectedOwner.value && selectedOwner.value.transactions) {
+        financePaid = selectedOwner.value.transactions.reduce((s, t) => s + (parseFloat(t.amount)||0), 0);
+    }
+    res.totalPaid += financePaid;
+    res.totalBalance = res.totalPrice - res.totalPaid - res.totalFuel;
+    return res;
 });
 
 const formatMoney = (val) => {

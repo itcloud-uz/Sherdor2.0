@@ -487,6 +487,17 @@ const formattedDate = computed(() => {
                                 <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Harakatlar
                             </Link>
+
+                            <!-- Kategoriyalar -->
+                            <Link
+                                :href="route('admin.finance', { tab: 14 })"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isFinanceSubTabActive(14)
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                            >
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
+                                Kategoriyalar
+                            </Link>
                         </div>
                     </div>
 

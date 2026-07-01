@@ -9,5 +9,9 @@ class TransactionCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'type'];
+    protected $fillable = ['name', 'type', 'target_type', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 }

@@ -42,6 +42,7 @@ const props = defineProps({
     machineries: Array,
     buildings: Array,
     categories: Array,
+    allCategories: Array,
     clients: Array,
     partners: Array,
     fixedAssets: Array,
@@ -1687,23 +1688,29 @@ const selectedCategoryName = computed(() => {
     return cat ? cat.name.toLowerCase() : '';
 });
 
-const requiresBrigade = computed(() => selectedCategoryName.value.includes('brigada') || selectedCategoryName.value.includes('yollanma'));
-const requiresMachineOwner = computed(() => selectedCategoryName.value.includes('texnika') || selectedCategoryName.value.includes('arendator'));
-const requiresWorker = computed(() => selectedCategoryName.value.includes('oylik') || selectedCategoryName.value.includes('avans') || selectedCategoryName.value.includes('ishchi'));
+const selectedCategory = computed(() => {
+    if (!props.categories) return null;
+    return props.categories.find(c => c.id === form.value.category_id) || null;
+});
+
+const requiresBrigade = computed(() => selectedCategory.value?.target_type === 'brigade');
+const requiresMachineOwner = computed(() => selectedCategory.value?.target_type === 'machine_owner');
+const requiresWorker = computed(() => selectedCategory.value?.target_type === 'worker');
 const isGuardSelected = computed(() => {
     if (!form.value.worker_id) return false;
     const w = props.workers?.find(x => x.id === form.value.worker_id);
     return w && w.role === 'guard';
 });
-const requiresMachinery = computed(() => selectedCategoryName.value.includes('texnika'));
-const requiresSupplier = computed(() => selectedCategoryName.value.includes('ta\'minotchi') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
-const requiresBuilding = computed(() => selectedCategoryName.value.includes('obyekt') || selectedCategoryName.value.includes('qurilish material') || selectedCategoryName.value.includes('material'));
-const requiresClient = computed(() => {
-    const name = selectedCategoryName.value.toLowerCase();
-    return name.includes('mijoz') || name.includes('client') || name.includes("boshlang'ich to'lov") || name.includes("boshlang'ich to’lov") || clientPaymentType.value === 'initial';
+const requiresMachinery = computed(() => selectedCategory.value?.target_type === 'machine_owner');
+const requiresSupplier = computed(() => selectedCategory.value?.target_type === 'supplier');
+const requiresBuilding = computed(() => {
+    return selectedCategory.value?.target_type === 'supplier' || selectedCategoryName.value.includes('obyekt');
 });
-const requiresPartner = computed(() => selectedCategoryName.value.includes('ta\'sischi') || selectedCategoryName.value.includes('hamkor') || selectedCategoryName.value.includes('partner') || selectedCategoryName.value.includes('sarmoya') || selectedCategoryName.value.includes('investitsiya'));
-const requiresFixedAsset = computed(() => selectedCategoryName.value.includes('asosiy vosita'));
+const requiresClient = computed(() => {
+    return selectedCategory.value?.target_type === 'client' || clientPaymentType.value === 'initial';
+});
+const requiresPartner = computed(() => selectedCategory.value?.target_type === 'partner');
+const requiresFixedAsset = computed(() => selectedCategory.value?.target_type === 'fixed_asset');
 
 const uniqueBuildingNames = computed(() => {
     if (!props.buildings) return [];
@@ -2522,6 +2529,52 @@ function getCounterpartyStatus(c) {
         return { text: c.is_active ? 'Faol' : 'Faol emas', class: c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400' };
     }
 }
+
+// Categories Management (Tab 14)
+const showCategoryModal = ref(false);
+const isEditCategory = ref(false);
+const categoryForm = useForm({
+    id: null,
+    name: '',
+    type: 'income',
+    target_type: '',
+    is_active: true
+});
+
+function openAddCategoryModal() {
+    isEditCategory.value = false;
+    categoryForm.reset();
+    showCategoryModal.value = true;
+}
+
+function openEditCategoryModal(category) {
+    isEditCategory.value = true;
+    categoryForm.id = category.id;
+    categoryForm.name = category.name;
+    categoryForm.type = category.type;
+    categoryForm.target_type = category.target_type || '';
+    categoryForm.is_active = category.is_active !== undefined ? category.is_active : true;
+    showCategoryModal.value = true;
+}
+
+function submitCategory() {
+    if (isEditCategory.value) {
+        categoryForm.put(route('admin.finance.categories.update', categoryForm.id), {
+            onSuccess: () => { showCategoryModal.value = false; categoryForm.reset(); }
+        });
+    } else {
+        categoryForm.post(route('admin.finance.categories.store'), {
+            onSuccess: () => { showCategoryModal.value = false; categoryForm.reset(); }
+        });
+    }
+}
+
+function deleteCategory(id) {
+    if (confirm("Kategoriyani o'chirishni yoki passiv holatga o'tkazishni tasdiqlaysizmi?")) {
+        router.delete(route('admin.finance.categories.destroy', id));
+    }
+}
+
 </script>
 
 <template>
@@ -4723,9 +4776,139 @@ function getCounterpartyStatus(c) {
                     </div>
                 </div>
             </div>
+
+            <!-- TAB 14: Kategoriyalar -->
+            <div v-if="activeTab === 14" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+                <!-- Title -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold font-display text-gray-900">Kategoriyalar</h2>
+                        <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tranzaksiyalar uchun kategoriyalar va ularning modullarga bog'lanishi</p>
+                    </div>
+                    <button @click="openAddCategoryModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-sm transition-all flex items-center gap-2">
+                        ➕ Kategoriya Qo'shish
+                    </button>
+                </div>
+
+                <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
+                    <div class="overflow-x-auto border border-gray-150 rounded-xl">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 w-12">№</th>
+                                    <th class="p-4">Nomi</th>
+                                    <th class="p-4">Turi (Kirim/Chiqim)</th>
+                                    <th class="p-4">Bog'lanish (Modul)</th>
+                                    <th class="p-4">Holati</th>
+                                    <th class="p-4 text-center">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(cat, idx) in props.allCategories" :key="cat.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
+                                    <td class="p-4 font-bold text-gray-900">{{ cat.name }}</td>
+                                    <td class="p-4 font-bold">
+                                        <span v-if="cat.type === 'income'" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Kirim</span>
+                                        <span v-else-if="cat.type === 'expense'" class="text-red-600 bg-red-50 px-2 py-1 rounded">Chiqim</span>
+                                        <span v-else class="text-blue-600 bg-blue-50 px-2 py-1 rounded">Kirim va Chiqim</span>
+                                    </td>
+                                    <td class="p-4 text-gray-600">
+                                        {{ cat.target_type === 'client' ? 'Xaridor (Mijoz)' :
+                                           cat.target_type === 'supplier' ? 'Ta\'minotchi' :
+                                           cat.target_type === 'worker' ? 'Xodim (Oylik/Avans)' :
+                                           cat.target_type === 'partner' ? 'Ta\'sischi / Hamkor' :
+                                           cat.target_type === 'brigade' ? 'Brigada' :
+                                           cat.target_type === 'machine_owner' ? 'Texnika Egasi' :
+                                           cat.target_type === 'fixed_asset' ? 'Asosiy Vosita' :
+                                           'Umumiy (Bog\'lanmagan)' }}
+                                    </td>
+                                    <td class="p-4">
+                                        <span v-if="cat.is_active" class="px-2 py-1 rounded text-xs font-bold bg-green-50 text-green-700">Faol</span>
+                                        <span v-else class="px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-500">Passiv</span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button @click="openEditCategoryModal(cat)" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                ✏️
+                                            </button>
+                                            <button @click="deleteCategory(cat.id)" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!props.allCategories?.length">
+                                    <td colspan="6" class="p-8 text-center text-gray-400">Kategoriyalar mavjud emas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- MODALS & PORTALS -->
+
+        <!-- CATEGORY ADD/EDIT MODAL -->
+        <Modal :show="showCategoryModal" @close="showCategoryModal = false" maxWidth="md">
+            <div class="p-6">
+                <button @click="showCategoryModal = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">✕</button>
+                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider font-display">
+                    {{ isEditCategory ? 'Kategoriyani Tahrirlash' : 'Yangi Kategoriya Qo\'shish' }}
+                </h3>
+                
+                <form @submit.prevent="submitCategory" class="space-y-4 font-mono text-sm">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-1">Nomi <span class="text-red-500">*</span></label>
+                        <input v-model="categoryForm.name" type="text" class="w-full bg-white border border-gray-300 rounded-lg p-2.5" required>
+                        <div v-if="categoryForm.errors.name" class="text-red-500 text-xs mt-1">{{ categoryForm.errors.name }}</div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-1">Turi <span class="text-red-500">*</span></label>
+                        <select v-model="categoryForm.type" class="w-full bg-white border border-gray-300 rounded-lg p-2.5" required>
+                            <option value="income">Faqat Kirim</option>
+                            <option value="expense">Faqat Chiqim</option>
+                            <option value="both">Kirim va Chiqim</option>
+                        </select>
+                        <div v-if="categoryForm.errors.type" class="text-red-500 text-xs mt-1">{{ categoryForm.errors.type }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-1">Modulga bog'lanish (Ixtiyoriy)</label>
+                        <select v-model="categoryForm.target_type" class="w-full bg-white border border-gray-300 rounded-lg p-2.5">
+                            <option value="">Umumiy (Bog'lanmagan)</option>
+                            <option value="client">Xaridor (Mijozlar)</option>
+                            <option value="supplier">Ta'minotchi (Ombor/Ta'minot)</option>
+                            <option value="worker">Xodim (Oylik/Avans)</option>
+                            <option value="partner">Ta'sischi (Hamkorlar/Investitsiya)</option>
+                            <option value="brigade">Brigada (Pudratchilar)</option>
+                            <option value="machine_owner">Texnika Egasi (Arenda)</option>
+                            <option value="fixed_asset">Asosiy Vosita (Invertar)</option>
+                        </select>
+                        <div v-if="categoryForm.errors.target_type" class="text-red-500 text-xs mt-1">{{ categoryForm.errors.target_type }}</div>
+                        <p class="text-[10px] text-gray-500 mt-1 leading-tight">Ushbu kategoriya orqali tranzaksiya amalga oshirilganda, ko'rsatilgan moduldan (masalan: Xodimlar) tanlash so'raladi.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <label class="block text-gray-700 font-bold">Holati:</label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" v-model="categoryForm.is_active" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span>Faol</span>
+                        </label>
+                    </div>
+
+                    <div class="pt-4 flex gap-3">
+                        <button type="button" @click="showCategoryModal = false" class="w-1/3 py-3 border border-gray-300 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition-colors">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" :disabled="categoryForm.processing" class="w-2/3 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition-colors disabled:opacity-50">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
         <!-- RECEIPT VIEW MODAL -->
         <Modal :show="showReceiptModal && receiptData !== null" @close="showReceiptModal = false" maxWidth="md">

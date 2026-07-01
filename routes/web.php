@@ -141,6 +141,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         // Supplier Payments from Finance
         Route::post('/suppliers/pay', [\App\Http\Controllers\Admin\FinanceController::class, 'paySupplier'])->name('suppliers.pay');
         Route::post('/categories', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCategory'])->name('categories.store');
+        Route::put('/categories/{id}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateCategory'])->name('categories.update');
+        Route::delete('/categories/{id}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyCategory'])->name('categories.destroy');
         Route::post('/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('liabilities.store');
         Route::post('/internal-transfer', [\App\Http\Controllers\Admin\FinanceController::class, 'internalTransfer'])->name('internal_transfer');
 

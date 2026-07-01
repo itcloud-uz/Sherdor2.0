@@ -65,7 +65,8 @@ class FinanceController extends Controller
 
         $tab = (int)request('tab', 0);
         
-        $categories = TransactionCategory::all();
+        $categories = TransactionCategory::where('is_active', true)->get();
+        $allCategories = TransactionCategory::all();
         $registers = CashRegister::with('building')->get();
         $workers = Worker::latest()->get();
         $suppliers = Supplier::latest()->get();
@@ -139,6 +140,7 @@ class FinanceController extends Controller
             'pendingIncomes' => $pendingIncomes,
             'pendingExpenses' => $pendingExpenses,
             'categories' => $categories,
+            'allCategories' => $allCategories,
             'contracts' => $contracts,
             'financialLiabilities' => $financialLiabilities,
             'suppliers' => $suppliers,
@@ -1674,12 +1676,55 @@ class FinanceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|unique:transaction_categories,name',
-            'type' => 'required|in:income,expense,both'
+            'type' => 'required|in:income,expense,both',
+            'target_type' => 'nullable|string|in:client,supplier,worker,partner,brigade,machine_owner,fixed_asset',
+            'is_active' => 'boolean'
         ]);
 
-        TransactionCategory::create($validated);
+        TransactionCategory::create([
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'target_type' => $validated['target_type'] ?? null,
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
 
         return redirect()->back()->with('message', 'Kategoriya muvaffaqiyatli qo\'shildi.');
+    }
+
+    public function updateCategory(Request $request, $id)
+    {
+        $category = TransactionCategory::findOrFail($id);
+        
+        $validated = $request->validate([
+            'name' => 'required|string|unique:transaction_categories,name,' . $id,
+            'type' => 'required|in:income,expense,both',
+            'target_type' => 'nullable|string|in:client,supplier,worker,partner,brigade,machine_owner,fixed_asset',
+            'is_active' => 'boolean'
+        ]);
+
+        $category->update([
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'target_type' => $validated['target_type'] ?? null,
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
+
+        return redirect()->back()->with('message', 'Kategoriya muvaffaqiyatli yangilandi.');
+    }
+
+    public function destroyCategory($id)
+    {
+        $category = TransactionCategory::findOrFail($id);
+        
+        $hasTransactions = \App\Models\Transaction::where('category_id', $category->id)->exists();
+        
+        if ($hasTransactions) {
+            $category->update(['is_active' => false]);
+            return redirect()->back()->with('message', 'Kategoriyaga tegishli tranzaksiyalar mavjud bo\'lganligi uchun u faqat passiv holatga o\'tkazildi.');
+        } else {
+            $category->delete();
+            return redirect()->back()->with('message', 'Kategoriya o\'chirildi.');
+        }
     }
 
     public function storeLiability(Request $request)

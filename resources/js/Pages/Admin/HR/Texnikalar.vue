@@ -618,6 +618,36 @@ const exportToExcel = () => {
                                         </tfoot>
                                     </table>
                                 </div>
+                                
+                                <!-- Finance Transactions -->
+                                <div v-show="activeTab === 'finance'" class="overflow-auto border border-gray-300 rounded-lg flex-1 custom-scrollbar">
+                                    <table class="w-full text-sm text-left text-gray-900 border-collapse">
+                                        <thead class="sticky top-0 z-10 shadow-sm bg-gray-100">
+                                            <tr>
+                                                <th class="border border-gray-200 px-4 py-3 text-center w-12 font-semibold text-gray-600">№</th>
+                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Sana</th>
+                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Turi</th>
+                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Tavsif</th>
+                                                <th class="border border-gray-200 px-4 py-3 text-right font-semibold text-gray-600">So'mma</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200 bg-white">
+                                            <tr v-if="!selectedOwner?.transactions || selectedOwner.transactions.length === 0">
+                                                <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">
+                                                    Moliya bo'limidan kiritilgan to'lovlar mavjud emas.
+                                                </td>
+                                            </tr>
+                                            <tr v-else v-for="(tx, index) in selectedOwner.transactions" :key="tx.id" class="hover:bg-gray-50 transition-colors">
+                                                <td class="border border-gray-200 px-4 py-2.5 text-center text-gray-500">{{ index + 1 }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-gray-800">{{ tx.date || tx.created_at?.substring(0, 10) }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5"><span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full uppercase tracking-wider whitespace-nowrap">{{ tx.type === 'payment' || tx.type === 'expense' ? 'TO\'LOV' : tx.type }}</span></td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-gray-700">{{ tx.description || tx.notes || 'To\'lov' }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">+{{ formatMoney(tx.amount) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
                             </div>
                         </div>
                     </div>

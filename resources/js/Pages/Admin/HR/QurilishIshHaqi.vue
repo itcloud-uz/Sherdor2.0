@@ -288,12 +288,12 @@ const exportToPDF = () => {
         new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0),
         row.paymentDate || '-',
         new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0),
-        new Intl.NumberFormat('uz-UZ').format(row.balance || 0)
+        new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0)
     ]);
 
     autoTable(doc, {
         startY: 25,
-        head: [['№', 'Xizmat', 'Obyekt', 'Blok', 'Qavat', 'Birlik', 'O\'lchami 1', 'O\'lchami 2', 'Jami O\'lchami', 'Dona', 'Jami', 'Narxi', 'Hisoblangan', 'Sana', 'To\'landi', 'Qoldiq']],
+        head: [['№', 'Xizmat', 'Obyekt', 'Blok', 'Qavat', 'Birlik', 'O\'lchami 1', 'O\'lchami 2', 'Jami O\'lchami', 'Dona', 'Jami', 'Narxi', 'Hisoblangan']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 7 },
@@ -315,7 +315,7 @@ const exportToExcel = () => {
     }
     
     try {
-        const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi', 'To\'lov sanasi', 'To\'langan', 'Qoldiq'];
+        const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi'];
     
     const data = rows.value.map((row, index) => [
         index + 1,
@@ -330,18 +330,12 @@ const exportToExcel = () => {
         row.quantity,
         row.total,
         row.price || 0,
-        row.calculatedSum || 0,
-        row.paymentDate || '-',
-        row.paymentAmount || 0,
-        row.balance || 0
+        row.calculatedSum || 0
     ]);
     
     data.push([
         '', '', '', '', '', '', '', '', '', '', 'JAMI:', '', 
-        stats.value.totalCalculatedSum, 
-        '', 
-        stats.value.totalPaid, 
-        stats.value.totalBalance
+        stats.value.totalCalculatedSum
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -368,7 +362,7 @@ const exportToExcel = () => {
     ws['!cols'] = [
         {wch: 5}, {wch: 25}, {wch: 20}, {wch: 8}, {wch: 8}, {wch: 15}, 
         {wch: 10}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, 
-        {wch: 15}, {wch: 18}, {wch: 12}, {wch: 15}, {wch: 15}
+        {wch: 15}, {wch: 18}
     ];
 
         const wb = XLSX.utils.book_new();
@@ -499,7 +493,7 @@ const handleDragEnd = () => {
                             <!-- XIZMATLAR TAB -->
                             <div v-if="brigadeTab === 'xizmatlar'" class="p-6">
                                 <!-- Statistics Cards -->
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col">
                                         <span class="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Xizmatlar</span>
                                         <span class="text-xl font-bold text-gray-800 mt-1">{{ stats.totalServices }} ta</span>
@@ -507,14 +501,6 @@ const handleDragEnd = () => {
                                     <div class="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex flex-col">
                                         <span class="text-[11px] text-blue-500 uppercase tracking-wider font-semibold">Hisoblangan</span>
                                         <span class="text-xl font-bold text-blue-700 mt-1">{{ formatMoney(stats.totalCalculatedSum) }}</span>
-                                    </div>
-                                    <div class="bg-green-50/50 p-3 rounded-lg border border-green-100 flex flex-col">
-                                        <span class="text-[11px] text-green-600 uppercase tracking-wider font-semibold">To'langan</span>
-                                        <span class="text-xl font-bold text-green-700 mt-1">{{ formatMoney(stats.totalPaid) }}</span>
-                                    </div>
-                                    <div class="bg-red-50/50 p-3 rounded-lg border border-red-100 flex flex-col">
-                                        <span class="text-[11px] text-red-500 uppercase tracking-wider font-semibold">Qoldiq</span>
-                                        <span class="text-xl font-bold text-red-600 mt-1">{{ formatMoney(stats.totalBalance) }}</span>
                                     </div>
                                 </div>
 
@@ -551,16 +537,13 @@ const handleDragEnd = () => {
                                                 <th class="border border-gray-200 px-2 py-3 w-16 text-center">Blok</th>
                                                 <th class="border border-gray-200 px-2 py-3 w-16 text-center">Qavat</th>
                                                 <th class="border border-gray-200 px-3 py-3 w-24 text-center">O'lchov birligi</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 1 (G)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 2 (H)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami o'lchami (I)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">Shundan necha dona (J)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami (K)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right">Narxi (L)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-36 text-right bg-indigo-50/50 text-indigo-900 font-extrabold">Hisoblangan so'mmasi (M)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-28 text-center">To'lov sanasi (N)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right text-green-700">To'lov so'mmasi (O)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right bg-red-50/30 text-red-700 font-bold">Qoldiq (P)</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 1</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 2</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami o'lchami</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">Dona</th>
+                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right">Narxi</th>
+                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right text-indigo-700">Hisoblangan</th>
                                                 <th class="border border-gray-200 px-3 py-3 w-28 text-center bg-gray-100">Amallar</th>
                                             </tr>
                                         </thead>
@@ -596,9 +579,6 @@ const handleDragEnd = () => {
                                                 <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total }}</td>
                                                 <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-gray-900">{{ new Intl.NumberFormat('uz-UZ').format(row.price || 0) }}</td>
                                                 <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-indigo-800 bg-indigo-50/30">{{ new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0) }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.paymentDate || '-' }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0) }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-red-700 bg-red-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.balance || 0) }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-center space-x-1.5 bg-gray-50/30">
                                                     <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 p-1.5 rounded-lg border border-indigo-200 bg-white transition shadow-sm" title="Tahrirlash">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -752,29 +732,29 @@ const handleDragEnd = () => {
                                 </select>
                             </div>
                             <div class="col-span-2 sm:col-span-1">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shundan necha dona (J)</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shundan necha dona</label>
                                 <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5 bg-blue-50/50" />
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 1 (G)</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 1</label>
                                 <input v-model.number="serviceForm.measure1" type="number" min="0" step="any" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 2 (H)</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchami 2</label>
                                 <input v-model.number="serviceForm.measure2" type="number" min="0" step="any" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
                             </div>
                         </div>
                         
                         <div class="flex flex-col gap-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <div class="flex justify-between items-center text-sm font-medium text-gray-600">
-                                <span>Jami o'lchami (I = G * H):</span>
+                                <span>Jami o'lchami:</span>
                                 <span class="font-bold text-gray-800">{{ serviceForm.totalMeasure }}</span>
                             </div>
                             <div class="flex justify-between items-center text-sm font-medium text-gray-600 border-t pt-2 mt-1">
-                                <span>Jami (K = I * J):</span>
+                                <span>Jami:</span>
                                 <span class="text-xl font-extrabold text-indigo-900">{{ serviceForm.total }}</span>
                             </div>
                         </div>
@@ -786,31 +766,16 @@ const handleDragEnd = () => {
                         
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Narxi (L)</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Narxi</label>
                                 <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-semibold text-indigo-900 mb-2">Hisoblangan so'mmasi (M = K * L)</label>
+                                <label class="block text-sm font-semibold text-indigo-900 mb-2">Hisoblangan so'mmasi</label>
                                 <div class="w-full bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-lg font-black text-indigo-800 flex items-center justify-end h-[52px] shadow-inner">
                                     {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }} so'm
                                 </div>
                             </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-green-700 mb-2">To'lov so'mmasi (O)</label>
-                                <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-green-500 focus:ring-green-500" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">To'lov sanasi (N)</label>
-                                <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-center bg-red-50 p-4 rounded-xl border border-red-100 mt-4">
-                            <span class="text-base font-semibold text-red-700">Qoldiq (P = M - O):</span>
-                            <span class="text-2xl font-black text-red-800">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }} so'm</span>
                         </div>
                     </div>
 

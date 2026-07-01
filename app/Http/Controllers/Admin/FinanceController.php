@@ -326,6 +326,26 @@ class FinanceController extends Controller
             if ($field && empty($validated[$field])) {
                 $validated[$field] = $validated['target_id'];
             }
+            
+            if (empty($validated['counterparty_id'])) {
+                $customableType = null;
+                switch ($validated['target_type']) {
+                    case 'supplier': $customableType = \App\Models\Supplier::class; break;
+                    case 'machine_owner': $customableType = \App\Models\MachineOwner::class; break;
+                    case 'brigade': $customableType = \App\Models\Brigade::class; break;
+                    case 'partner': $customableType = \App\Models\Partner::class; break;
+                    case 'client': $customableType = \App\Models\Client::class; break;
+                    case 'worker': $customableType = \App\Models\Worker::class; break;
+                }
+                if ($customableType) {
+                    $cp = \App\Models\Counterparty::where('customable_type', $customableType)
+                        ->where('customable_id', $validated['target_id'])
+                        ->first();
+                    if ($cp) {
+                        $validated['counterparty_id'] = $cp->id;
+                    }
+                }
+            }
         }
 
         $overpaid = 0;

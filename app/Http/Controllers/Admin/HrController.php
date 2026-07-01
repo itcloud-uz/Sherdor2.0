@@ -87,7 +87,7 @@ class HrController extends Controller
     public function texnikalar()
     {
         $machineries = \App\Models\Machinery::with('owner')->get();
-        $owners = \App\Models\MachineOwner::with('machineries')->get();
+        $owners = \App\Models\MachineOwner::with(['machineries', 'transactions'])->get();
         return Inertia::render('Admin/HR/Texnikalar', [
             'machineries' => $machineries,
             'owners' => $owners

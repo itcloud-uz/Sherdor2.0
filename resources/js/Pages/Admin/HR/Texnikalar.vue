@@ -215,7 +215,7 @@ watch(workForm, (val) => {
 }, { deep: true });
 
 const stats = computed(() => {
-    return rows.value.reduce(
+    const res = rows.value.reduce(
         (acc, row) => {
             acc.totalPrice += row.totalPrice || 0;
             acc.totalPaid += row.paid || 0;
@@ -508,9 +508,9 @@ const exportToExcel = () => {
                                 </div>
                             </div>
 
-                            <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                            <div class="px-6 py-2 border-b border-gray-200 bg-gray-50 flex gap-2"> <button @click="activeTab = 'works'" :class="activeTab === 'works' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'" class="px-4 py-2 rounded-md text-sm font-medium transition-all"> Bajarilgan Ishlar (Xizmatlar) </button> <button @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'" class="px-4 py-2 rounded-md text-sm font-medium transition-all"> Moliya Tranzaksiyalari (To'lovlar) </button> </div> <div class="p-6 flex flex-col flex-1 overflow-hidden">
                                 <!-- Action Bar -->
-                                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                                <div v-show="activeTab === 'works'" class="flex justify-between items-center mb-4 flex-shrink-0">
                                     <div class="flex gap-2">
                                         <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
                                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -531,7 +531,7 @@ const exportToExcel = () => {
                                 </div>
 
                                 <!-- Table Container -->
-                                <div class="overflow-auto border border-yellow-400 flex-1 custom-scrollbar">
+                                <div v-show="activeTab === 'works'" class="overflow-auto border border-yellow-400 flex-1 custom-scrollbar">
                                     <table class="w-full text-sm text-left text-gray-900 border-collapse min-w-[800px]">
                                         <thead class="sticky top-0 z-10 shadow-sm">
                                             <!-- Top Header -->

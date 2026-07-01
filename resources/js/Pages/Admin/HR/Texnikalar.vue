@@ -23,6 +23,7 @@ const draggedIdx = ref(null);
 
 // Owner Modal state
 const isAddOwnerModalOpen = ref(false);
+const editingOwnerId = ref(null);
 const newOwnerForm = ref({
     name: '',
     phone: '',
@@ -30,13 +31,44 @@ const newOwnerForm = ref({
 });
 const isSubmittingOwner = ref(false);
 
+const openAddOwnerModal = () => {
+    editingOwnerId.value = null;
+    newOwnerForm.value = { name: '', phone: '', balance: 0 };
+    isAddOwnerModalOpen.value = true;
+};
+
+const editOwner = (owner) => {
+    editingOwnerId.value = owner.id;
+    newOwnerForm.value = { 
+        name: owner.name, 
+        phone: owner.phone, 
+        balance: owner.balance 
+    };
+    isAddOwnerModalOpen.value = true;
+};
+
+const deleteOwner = (id) => {
+    if (confirm("Egasi va unga tegishli barcha texnikalar o'chib ketadi. Rostdan ham o'chirasizmi?")) {
+        router.delete(route('admin.hr.machine_owner.destroy', id), {
+            preserveScroll: true
+        });
+    }
+};
+
 const submitOwner = () => {
     isSubmittingOwner.value = true;
-    router.post(route('admin.hr.machine_owner.store'), newOwnerForm.value, {
+    const url = editingOwnerId.value 
+        ? route('admin.hr.machine_owner.update', editingOwnerId.value) 
+        : route('admin.hr.machine_owner.store');
+    
+    const method = editingOwnerId.value ? 'put' : 'post';
+
+    router[method](url, newOwnerForm.value, {
         preserveScroll: true,
         onSuccess: () => {
             isAddOwnerModalOpen.value = false;
             newOwnerForm.value = { name: '', phone: '', balance: 0 };
+            editingOwnerId.value = null;
         },
         onFinish: () => {
             isSubmittingOwner.value = false;
@@ -46,6 +78,7 @@ const submitOwner = () => {
 
 // Machinery Modal state
 const isAddMachineryModalOpen = ref(false);
+const editingMachineryId = ref(null);
 const newMachineryForm = ref({
     name: '',
     machine_owner_id: '',
@@ -57,6 +90,7 @@ const newMachineryForm = ref({
 const isSubmittingMachinery = ref(false);
 
 const openAddMachineryModal = (ownerId = '') => {
+    editingMachineryId.value = null;
     newMachineryForm.value = {
         name: '',
         machine_owner_id: ownerId,
@@ -68,12 +102,41 @@ const openAddMachineryModal = (ownerId = '') => {
     isAddMachineryModalOpen.value = true;
 };
 
+const editMachinery = (machinery) => {
+    editingMachineryId.value = machinery.id;
+    newMachineryForm.value = {
+        name: machinery.name,
+        machine_owner_id: machinery.machine_owner_id,
+        license_plate: machinery.license_plate,
+        machinery_type: machinery.machinery_type,
+        driver_name: machinery.driver_name,
+        payment_type: machinery.payment_type || 'Naqd'
+    };
+    isAddMachineryModalOpen.value = true;
+};
+
+const deleteMachinery = (id) => {
+    if (confirm("Ushbu texnikani rostdan ham o'chirasizmi?")) {
+        router.delete(route('admin.hr.machinery.destroy', id), {
+            preserveScroll: true
+        });
+    }
+};
+
 const submitMachinery = () => {
     isSubmittingMachinery.value = true;
-    router.post(route('admin.hr.machinery.store'), newMachineryForm.value, {
+    const url = editingMachineryId.value 
+        ? route('admin.hr.machinery.update', editingMachineryId.value) 
+        : route('admin.hr.machinery.store');
+    
+    // As per route list, hr.machinery.update is POST but typically requires PUT method override.
+    // However in route list it shows `POST admin/hr/machinery/{machinery} .. admin.hr.machinery.update`
+    // Wait, let's just use POST since the route list says POST
+    router.post(url, newMachineryForm.value, {
         preserveScroll: true,
         onSuccess: () => {
             isAddMachineryModalOpen.value = false;
+            editingMachineryId.value = null;
         },
         onFinish: () => {
             isSubmittingMachinery.value = false;
@@ -237,7 +300,7 @@ const toggleOwner = (ownerId) => {
                         <div class="flex flex-col gap-3 mb-4 border-b pb-4">
                             <h2 class="text-md font-semibold text-gray-800">Texnika Egalari (Sohibkarlar)</h2>
                             <div class="flex gap-2">
-                                <button @click="isAddOwnerModalOpen = true" class="flex-1 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-blue-200">
+                                <button @click="openAddOwnerModal" class="flex-1 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-blue-200">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     Egasi Qo'shish
                                 </button>
@@ -255,15 +318,23 @@ const toggleOwner = (ownerId) => {
                             <div v-for="owner in props.owners" :key="owner.id" class="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
                                 <div 
                                     @click="toggleOwner(owner.id)" 
-                                    class="px-4 py-3 bg-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+                                    class="group relative px-4 py-3 bg-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
                                 >
                                     <div>
-                                        <h3 class="font-bold text-gray-800">{{ owner.name }}</h3>
+                                        <h3 class="font-bold text-gray-800 pr-12">{{ owner.name }}</h3>
                                         <p class="text-xs text-gray-500">{{ owner.phone || 'Tel yo\'q' }}</p>
                                     </div>
-                                    <div class="flex items-center text-gray-400">
+                                    <div class="flex items-center text-gray-400 group-hover:opacity-0 transition-opacity">
                                         <span class="text-xs mr-2 font-medium bg-gray-100 px-2 py-1 rounded-full">{{ owner.machineries?.length || 0 }} texnika</span>
                                         <svg class="w-5 h-5 transition-transform" :class="expandedOwners[owner.id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="absolute right-2 top-3 hidden group-hover:flex space-x-1">
+                                        <button @click.stop="editOwner(owner)" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-md transition" title="Tahrirlash">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </button>
+                                        <button @click.stop="deleteOwner(owner.id)" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition" title="O'chirish">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -271,19 +342,26 @@ const toggleOwner = (ownerId) => {
                                     <div v-if="!owner.machineries || owner.machineries.length === 0" class="text-xs text-center text-gray-500 py-2">
                                         Ushbu egasining texnikalari yo'q
                                     </div>
-                                    <button 
+                                    <div 
                                         v-for="machinery in owner.machineries" 
                                         :key="machinery.id"
-                                        @click="selectedMachinery = machinery"
-                                        class="w-full text-left px-3 py-2 rounded-lg border transition-colors flex justify-between items-center"
+                                        class="group relative w-full text-left px-3 py-2 rounded-lg border transition-colors flex justify-between items-center"
                                         :class="selectedMachinery?.id === machinery.id ? 'bg-orange-100 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-gray-200 hover:bg-orange-50 text-gray-700'"
                                     >
-                                        <div class="overflow-hidden pr-2">
-                                            <span class="font-semibold text-sm truncate block">{{ machinery.name }}</span>
+                                        <div class="overflow-hidden pr-2 cursor-pointer w-full" @click="selectedMachinery = machinery">
+                                            <span class="font-semibold text-sm truncate block pr-12">{{ machinery.name }}</span>
                                             <span class="text-[10px] text-gray-500">{{ machinery.license_plate }} • {{ machinery.driver_name || 'Haydovchisiz' }}</span>
                                         </div>
-                                        <span class="text-[9px] uppercase font-bold px-2 py-1 bg-white rounded border flex-shrink-0 text-gray-600 shadow-sm">{{ machinery.machinery_type || 'Texnika' }}</span>
-                                    </button>
+                                        <span class="text-[9px] uppercase font-bold px-2 py-1 bg-white rounded border flex-shrink-0 text-gray-600 shadow-sm group-hover:hidden">{{ machinery.machinery_type || 'Texnika' }}</span>
+                                        <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
+                                            <button @click.stop="editMachinery(machinery)" class="p-1 text-blue-500 hover:bg-blue-100 rounded transition" title="Tahrirlash">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </button>
+                                            <button @click.stop="deleteMachinery(machinery.id)" class="p-1 text-red-500 hover:bg-red-100 rounded transition" title="O'chirish">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                     <button @click="openAddMachineryModal(owner.id)" class="w-full text-center py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-dashed border-blue-300 rounded-lg transition-colors">
                                         + Yangi texnika qo'shish
                                     </button>
@@ -508,7 +586,7 @@ const toggleOwner = (ownerId) => {
         <div v-if="isAddOwnerModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                 <div class="px-6 py-4 border-b bg-gray-50">
-                    <h3 class="text-lg font-semibold text-gray-900">Yangi Texnika Egasi (Sohibkar) qo'shish</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">{{ editingOwnerId ? 'Texnika Egasini tahrirlash' : 'Yangi Texnika Egasi (Sohibkar) qo\'shish' }}</h3>
                 </div>
                 <form @submit.prevent="submitOwner" class="p-6 space-y-4">
                     <div>
@@ -531,7 +609,7 @@ const toggleOwner = (ownerId) => {
         <div v-if="isAddMachineryModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
                 <div class="px-6 py-4 border-b bg-gray-50">
-                    <h3 class="text-lg font-semibold text-gray-900">Yangi Texnika qo'shish</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">{{ editingMachineryId ? 'Texnikani tahrirlash' : 'Yangi Texnika qo\'shish' }}</h3>
                 </div>
                 <form @submit.prevent="submitMachinery" class="p-6 space-y-4">
                     <div>

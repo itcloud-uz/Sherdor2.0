@@ -60,6 +60,7 @@ const draggedIdx = ref(null);
 
 // Brigade Modal state
 const isAddBrigadeModalOpen = ref(false);
+const editingBrigadeId = ref(null);
 const newBrigadeForm = ref({
     name: '',
     foreman_name: '',
@@ -67,13 +68,44 @@ const newBrigadeForm = ref({
 });
 const isSubmitting = ref(false);
 
+const openAddBrigadeModal = () => {
+    editingBrigadeId.value = null;
+    newBrigadeForm.value = { name: '', foreman_name: '', phone: '' };
+    isAddBrigadeModalOpen.value = true;
+};
+
+const editBrigade = (brigade) => {
+    editingBrigadeId.value = brigade.id;
+    newBrigadeForm.value = { 
+        name: brigade.name, 
+        foreman_name: brigade.foreman_name, 
+        phone: brigade.phone 
+    };
+    isAddBrigadeModalOpen.value = true;
+};
+
+const deleteBrigade = (id) => {
+    if (confirm("Jamoani rostdan ham o'chirasizmi?")) {
+        router.delete(route('admin.hr.brigade.destroy', id), {
+            preserveScroll: true
+        });
+    }
+};
+
 const submitBrigade = () => {
     isSubmitting.value = true;
-    router.post(route('admin.hr.brigade.store'), newBrigadeForm.value, {
+    const url = editingBrigadeId.value 
+        ? route('admin.hr.brigade.update', editingBrigadeId.value) 
+        : route('admin.hr.brigade.store');
+    
+    const method = editingBrigadeId.value ? 'put' : 'post';
+
+    router[method](url, newBrigadeForm.value, {
         preserveScroll: true,
         onSuccess: () => {
             isAddBrigadeModalOpen.value = false;
             newBrigadeForm.value = { name: '', foreman_name: '', phone: '' };
+            editingBrigadeId.value = null;
         },
         onFinish: () => {
             isSubmitting.value = false;
@@ -240,7 +272,7 @@ const handleDragEnd = () => {
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-md font-semibold text-gray-800">Jamoalar ro'yxati</h2>
                             <button 
-                                @click="isAddBrigadeModalOpen = true"
+                                @click="openAddBrigadeModal"
                                 class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded font-medium transition"
                             >
                                 + Qo'shish
@@ -251,16 +283,25 @@ const handleDragEnd = () => {
                             Jamoalar topilmadi.
                         </div>
                         <div class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                            <button 
+                            <div 
                                 v-for="brigade in props.brigades" 
                                 :key="brigade.id"
-                                @click="selectedBrigade = brigade"
-                                class="w-full text-left px-4 py-3 rounded-lg border transition-colors flex justify-between items-center"
+                                class="group relative w-full text-left px-4 py-3 rounded-lg border transition-colors"
                                 :class="selectedBrigade?.id === brigade.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'"
                             >
-                                <span class="font-medium truncate">{{ brigade.name }}</span>
-                                <span class="text-xs px-2 py-1 bg-white rounded-full border shadow-sm flex-shrink-0">{{ brigade.workers?.length || 0 }} ishchi</span>
-                            </button>
+                                <div class="cursor-pointer" @click="selectedBrigade = brigade">
+                                    <span class="font-medium truncate block pr-12">{{ brigade.name }}</span>
+                                    <span class="text-xs text-gray-500">{{ brigade.foreman_name }}</span>
+                                </div>
+                                <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
+                                    <button @click.stop="editBrigade(brigade)" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-md transition" title="Tahrirlash">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </button>
+                                    <button @click.stop="deleteBrigade(brigade.id)" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition" title="O'chirish">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -451,7 +492,7 @@ const handleDragEnd = () => {
         <div v-if="isAddBrigadeModalOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[60] p-4">
             <div class="bg-white rounded-xl shadow-lg max-w-md w-full overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 class="text-lg font-bold text-gray-800">Yangi Jamoa qo'shish</h3>
+                    <h3 class="text-lg font-bold text-gray-800">{{ editingBrigadeId ? 'Jamoani tahrirlash' : 'Yangi Jamoa qo\'shish' }}</h3>
                     <button @click="isAddBrigadeModalOpen = false" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>

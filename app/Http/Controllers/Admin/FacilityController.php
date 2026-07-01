@@ -120,6 +120,8 @@ class FacilityController extends Controller
                 'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
                 'podezes.*.apartments_per_floor' => 'nullable|integer|min:0',
                 'podezes.*.commercial_per_floor' => 'nullable|integer|min:0',
+                'podezes.*.total_apartments' => 'nullable|integer|min:0',
+                'podezes.*.total_commercial' => 'nullable|integer|min:0',
             ]);
 
             if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {
@@ -299,6 +301,8 @@ class FacilityController extends Controller
                 'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
                 'podezes.*.apartments_per_floor' => 'nullable|integer|min:0',
                 'podezes.*.commercial_per_floor' => 'nullable|integer|min:0',
+                'podezes.*.total_apartments' => 'nullable|integer|min:0',
+                'podezes.*.total_commercial' => 'nullable|integer|min:0',
             ]);
 
             if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {

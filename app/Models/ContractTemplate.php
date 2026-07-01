@@ -277,6 +277,13 @@ class ContractTemplate extends Model
                         $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
                         $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = self::numberToWords($calcDownPayment);
                     }
+
+                    if (isset($subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'])) {
+                        $foiz = (float)$subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'];
+                        $calcDownPayment = round($totalAmount * ($foiz / 100));
+                        $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                        $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = self::numberToWords($calcDownPayment);
+                    }
                     
                     if (isset($subPlaceholdersData['MUDDAT_OY'])) {
                         $m = (int)$subPlaceholdersData['MUDDAT_OY'];

@@ -657,40 +657,65 @@ function loadStandardPaymentVariants() {
         return;
     }
     
-    wizardForm.value.variant_groups.push({
-        label: "To'lov shartlari",
-        anchor: "TOLOV_SHARTLARI",
-        variants: [
-            {
-                label: "Naqd to'lov",
-                key: "NAQD",
-                content: "1. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi mablag‘ «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida to‘lanadi.",
-                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN",
-                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN"]
-            },
-            {
-                label: "Grafik asosida",
-                key: "GRAFIK",
-                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy ichida ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lanadi.",
-                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
-                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
-            },
-            {
-                label: "Ipoteka asosida",
-                key: "IPOTEKA",
-                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng har oyning 10-sanasiga qadar oyiga {{ OYLIK_TOLOV }} ({{ OYLIK_TOLOV_SOZ_BILAN }}) so‘mdan yoki ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lab boriladi va kadastr hujjati tayyor bo‘lgandan so‘ng o‘zaro hisob-kitob qilinib qoldiq summa ipoteka krediti asosida to‘lanadi.",
-                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
-                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
-            },
-            {
-                label: "Bo'lib to'lash",
-                key: "INSTALLMENT",
-                content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy davomida bo‘lib to‘lash shartlari asosida to‘lanadi.",
-                placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
-                placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
-            }
-        ]
-    });
+    if (activeHelperGroup.value === 'zamon') {
+        // Zamon Sifat Servis standard payment conditions
+        wizardForm.value.variant_groups.push({
+            label: "To'lov shartlari",
+            anchor: "TOLOV_SHARTLARI",
+            variants: [
+                {
+                    label: "Naqd to'lov (Zamon)",
+                    key: "NAQD",
+                    content: "2.1. «Буюртмачи» курилаётган хонадон нархининг {{ ZAMON_BOSHLANGICH_TOLOV }} ({{ ZAMON_BOSHLANGICH_TOLOV_SOZ }}) сум, умумий сумманинг {{ ZAMON_BOSHLANGICH_FOIZ }}% қийматини олдиндан тўлайди. Хонадон учун тўловлар Қонун ҳужжатларига зид бўлмаган ҳар қандай шаклда (накд пул, хисоб ракамига пул кучириш, пластик карточка оркали, курилиш материаллари бериш оркали) амалга оширилиши мумкин.",
+                    placeholdersString: "ZAMON_BOSHLANGICH_FOIZ",
+                    placeholders: ["ZAMON_BOSHLANGICH_FOIZ"]
+                },
+                {
+                    label: "Grafik asosida (Zamon)",
+                    key: "GRAFIK",
+                    content: "2.1. «Буюртмачи» курилаётган хонадон нархининг {{ ZAMON_BOSHLANGICH_TOLOV }} ({{ ZAMON_BOSHLANGICH_TOLOV_SOZ }}) сум, умумий сумманинг {{ ZAMON_BOSHLANGICH_FOIZ }}% қийматини олдиндан тўлайди. Қолган қисмини 1-илова (график) бўйича белгиланган вақт ичида ҳар ойлик тўловни тегишли ойнинг 25-санасигача тўлаб боради.",
+                    placeholdersString: "ZAMON_BOSHLANGICH_FOIZ",
+                    placeholders: ["ZAMON_BOSHLANGICH_FOIZ"]
+                }
+            ]
+        });
+    } else {
+        // Sher-Dor standard payment conditions
+        wizardForm.value.variant_groups.push({
+            label: "To'lov shartlari",
+            anchor: "TOLOV_SHARTLARI",
+            variants: [
+                {
+                    label: "Naqd to'lov",
+                    key: "NAQD",
+                    content: "1. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi mablag‘ «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida to‘lanadi.",
+                    placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN",
+                    placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN"]
+                },
+                {
+                    label: "Grafik asosida",
+                    key: "GRAFIK",
+                    content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy ichida ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lanadi.",
+                    placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                    placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+                },
+                {
+                    label: "Ipoteka asosida",
+                    key: "IPOTEKA",
+                    content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng har oyning 10-sanasiga qadar oyiga {{ OYLIK_TOLOV }} ({{ OYLIK_TOLOV_SOZ_BILAN }}) so‘mdan yoki ushbu shartnomaning 2-ilovasiga asosan to‘lov grafigi asosida to‘lab boriladi va kadastr hujjati tayyor bo‘lgandan so‘ng o‘zaro hisob-kitob qilinib qoldiq summa ipoteka krediti asosida to‘lanadi.",
+                    placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                    placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+                },
+                {
+                    label: "Bo'lib to'lash",
+                    key: "INSTALLMENT",
+                    content: "2. 3.1-bandda ko‘rsatilgan shartnoma summasining kamida {{ BOSHLANGICH_FOIZ }}% , {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so‘m miqdoridagi boshlang‘ich mablag‘ni «XARIDOR» tomonidan shartnoma imzolangan kundan boshlab {{ TOLOV_MUDDAT_KUN }} bank ish kuni ichida, qolgan summa boshlang‘ich to‘lov to‘langandan so‘ng {{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy davomida bo‘lib to‘lash shartlari asosida to‘lanadi.",
+                    placeholdersString: "BOSHLANGICH_FOIZ, TOLOV_MUDDAT_KUN, MUDDAT_OY",
+                    placeholders: ["BOSHLANGICH_FOIZ", "TOLOV_MUDDAT_KUN", "MUDDAT_OY"]
+                }
+            ]
+        });
+    }
 }
 
 function onVariantContentInput(v) {
@@ -703,7 +728,10 @@ function onVariantContentInput(v) {
     }
     
     // Filter out auto-calculated placeholders
-    const autoCalculated = ['BOSHLANGICH_TOLOV', 'BOSHLANGICH_TOLOV_SOZ_BILAN', 'MUDDAT_OY_SOZ_BILAN', 'OYLIK_TOLOV', 'OYLIK_TOLOV_SOZ_BILAN'];
+    const autoCalculated = [
+        'BOSHLANGICH_TOLOV', 'BOSHLANGICH_TOLOV_SOZ_BILAN', 'MUDDAT_OY_SOZ_BILAN', 'OYLIK_TOLOV', 'OYLIK_TOLOV_SOZ_BILAN',
+        'ZAMON_BOSHLANGICH_TOLOV', 'ZAMON_BOSHLANGICH_TOLOV_SOZ'
+    ];
     const uniquePlaceholders = [...new Set(matches)].filter(p => !autoCalculated.includes(p));
     
     v.placeholders = uniquePlaceholders;

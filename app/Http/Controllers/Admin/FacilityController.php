@@ -348,7 +348,7 @@ class FacilityController extends Controller
                     'street' => $validated['street'] ?? null,
                     'photo_path' => $photoPath,
                 ]);
-                return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
+                return redirect()->route('facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
             }
 
             $building->update([
@@ -967,7 +967,7 @@ class FacilityController extends Controller
     {
         $building = Building::findOrFail($id);
         $building->delete();
-        return redirect()->route('admin.facility')->with('message', 'Bino o\'chirildi!');
+        return redirect()->route('facility')->with('message', 'Bino o\'chirildi!');
     }
 
     public function destroyObject($id)
@@ -982,7 +982,7 @@ class FacilityController extends Controller
             }
         });
 
-        return redirect()->route('admin.facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
+        return redirect()->route('facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
     }
 
     public function storeUnit(Request $request)
@@ -1391,7 +1391,10 @@ class FacilityController extends Controller
         $building = $podez->building;
 
         $existingFloors = $podez->floors()->get()->keyBy('floor_number');
-        $desiredFloorNumbers = range(1, $totalFloors);
+        $basementFloors = (int) ($building->basement_floors ?? 0);
+        $desiredFloorNumbers = [];
+        for ($b = -$basementFloors; $b <= -1; $b++) { $desiredFloorNumbers[] = $b; }
+        for ($a = 1; $a <= $totalFloors; $a++) { $desiredFloorNumbers[] = $a; }
 
         foreach ($existingFloors as $floorNum => $floor) {
             if (!in_array($floorNum, $desiredFloorNumbers)) {
@@ -1406,7 +1409,6 @@ class FacilityController extends Controller
         }
 
         // Distribution Logic
-        $basementFloors = (int) ($building->basement_floors ?? 0);
         $totalApts = (int) $podez->total_apartments;
         $totalComm = (int) $podez->total_commercial;
 

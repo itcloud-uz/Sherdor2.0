@@ -15,6 +15,8 @@ class Podez extends Model
         'podez_type',
         'total_floors',
         'status',
+        'total_apartments',
+        'total_commercial',
     ];
 
     public function building()

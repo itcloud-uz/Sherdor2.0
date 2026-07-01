@@ -4,7 +4,7 @@ import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import VueApexCharts from 'vue3-apexcharts';
 import { Head, router, usePage, useForm } from '@inertiajs/vue3';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { regionsData } from '@/locations.js';
@@ -1748,8 +1748,16 @@ function getDummyBirthDate(client) {
 const selectedClientForDetail = ref(null);
 const clientDetailLoading = ref(false);
 const detailedClientData = ref(null);
+const savedScrollPosition = ref(0);
 
 function selectClientForDetail(client) {
+    if (!selectedClientForDetail.value) {
+        const scrollContainer = document.querySelector('[scroll-region]');
+        if (scrollContainer) {
+            savedScrollPosition.value = scrollContainer.scrollTop;
+        }
+    }
+
     if (activeTab.value !== 'clients' && !['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(activeTab.value)) {
         previousTabBeforeDetail.value = activeTab.value;
     }
@@ -1784,6 +1792,13 @@ function closeClientDetail() {
         activeTab.value = previousTabBeforeDetail.value;
         previousTabBeforeDetail.value = null;
     }
+    
+    nextTick(() => {
+        const scrollContainer = document.querySelector('[scroll-region]');
+        if (scrollContainer) {
+            scrollContainer.scrollTop = savedScrollPosition.value;
+        }
+    });
 }
 
 function getUzFormattedDate() {

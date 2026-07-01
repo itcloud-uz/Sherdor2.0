@@ -1314,15 +1314,31 @@ function submitRegister() {
 
 function deleteRegister(id) {
     if (confirm("Ushbu kassani o'chirishni tasdiqlaysizmi?")) {
-        router.delete(route('admin.finance.registers.destroy', id));
+        router.delete(route('admin.finance.registers.destroy', id), {
+            preserveScroll: true,
+            onError: (errors) => {
+                if (errors.error) {
+                    alert(errors.error);
+                }
+            }
+        });
     }
 }
 
 function handleDeleteFromModal() {
     if (registerForm.value.id) {
         if (confirm("Ushbu kassani o'chirishni tasdiqlaysizmi?")) {
-            showRegisterModal.value = false;
-            router.delete(route('admin.finance.registers.destroy', registerForm.value.id));
+            router.delete(route('admin.finance.registers.destroy', registerForm.value.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    showRegisterModal.value = false;
+                },
+                onError: (errors) => {
+                    if (errors.error) {
+                        alert(errors.error);
+                    }
+                }
+            });
         }
     }
 }

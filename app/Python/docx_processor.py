@@ -568,8 +568,11 @@ def apply_replacements(docx_path, replacements, output_path):
     
     success_count = 0
     for old_text, placeholder in sorted_replacements:
-        # Wrap placeholder in Jinja2 style
-        tag = f"{{{{ {placeholder} }}}}"
+        # Wrap placeholder in Jinja2 style if it doesn't already contain Jinja braces
+        if "{{" in placeholder:
+            tag = placeholder
+        else:
+            tag = f"{{{{ {placeholder} }}}}"
         if replace_text_in_document(doc, old_text, tag):
             success_count += 1
             

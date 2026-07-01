@@ -1226,24 +1226,13 @@ function toggleObject(objName) {
 }
 
 function openAddBlock(objName) {
-    showAddBuildingModal.value = true;
-    isEditingBuilding.value = false;
-    isAddingBlock.value = true;
-    setTimeout(() => {
-        buildingForm.reset();
-        buildingForm.name = objName;
-        buildingForm.podezes = [
-            { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase' }
-        ];
-        // Find the first building in this group to copy its location details
-        const existing = props.buildings.find(b => b.name === objName);
-        if (existing) {
-            buildingForm.city = existing.city || '';
-            buildingForm.district = existing.district || '';
-            buildingForm.mahalla = existing.mahalla || '';
-            buildingForm.street = existing.street || '';
-        }
-    }, 100);
+    // Legacy function, replaced by Link
+}
+
+function getObjectContainerId(objName) {
+    const list = groupedObjects.value[objName] || [];
+    const container = list.find(b => b.total_floors === 0);
+    return container ? container.id : (list[0] ? list[0].id : 0);
 }
 
 const searchFilters = ref({
@@ -3542,10 +3531,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
                                     📁 Modellar yuklash
                                 </button>
-                                <Link :href="route('facility.buildings.edit', (groupedObjects[currentObject]?.find(b => b.total_floors === 0) || groupedObjects[currentObject]?.[0])?.id || 0)" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                <Link :href="route('facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
                                 </Link>
-                                <Link :href="route('facility.buildings.create', { object_id: (groupedObjects[currentObject]?.find(b => b.total_floors === 0) || groupedObjects[currentObject]?.[0])?.id })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
+                                <Link :href="route('facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
                                     + Yangi Blok
                                 </Link>
                             </div>

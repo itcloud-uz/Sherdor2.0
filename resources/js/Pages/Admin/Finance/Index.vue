@@ -62,6 +62,53 @@ const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
+const selectedDeletedTransactions = ref([]);
+
+const isAllDeletedTransactionsSelected = computed(() => {
+    return props.deletedTransactions && props.deletedTransactions.length > 0 && selectedDeletedTransactions.value.length === props.deletedTransactions.length;
+});
+
+function toggleAllDeletedTransactions() {
+    if (isAllDeletedTransactionsSelected.value) {
+        selectedDeletedTransactions.value = [];
+    } else {
+        selectedDeletedTransactions.value = props.deletedTransactions.map(t => t.id);
+    }
+}
+
+function bulkRestoreDeletedTransactions() {
+    if (selectedDeletedTransactions.value.length === 0) return;
+    if (confirm(`Haqiqatan ham tanlangan ${selectedDeletedTransactions.value.length} ta tranzaksiyani ortga qaytarmoqchimisiz?`)) {
+        isProcessing.value = true;
+        router.post(route('admin.finance.transactions.bulk_restore'), {
+            ids: selectedDeletedTransactions.value
+        }, {
+            onSuccess: () => {
+                isProcessing.value = false;
+                selectedDeletedTransactions.value = [];
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function bulkForceDeleteTransactions() {
+    if (selectedDeletedTransactions.value.length === 0) return;
+    if (confirm(`Haqiqatan ham tanlangan ${selectedDeletedTransactions.value.length} ta tranzaksiyani butunlay o'chirib tashlamoqchimisiz? Uni qaytarib bo'lmaydi!`)) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.transactions.bulk_force_destroy'), {
+            data: {
+                ids: selectedDeletedTransactions.value
+            },
+            onSuccess: () => {
+                isProcessing.value = false;
+                selectedDeletedTransactions.value = [];
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
 // Client search states
 const clientSearchQuery = ref('');
 const clientPaymentType = ref('monthly');
@@ -4561,11 +4608,27 @@ function getCounterpartyStatus(c) {
 
                 <!-- Part 2: Deleted Transactions (Savatcha) Table -->
                 <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 font-display text-red-600">O'chirilgan Tranzaksiyalar (Savatcha)</h3>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3 class="text-lg font-bold text-gray-900 font-display text-red-600">O'chirilgan Tranzaksiyalar (Savatcha)</h3>
+                        <div v-if="selectedDeletedTransactions.length > 0" class="flex flex-wrap items-center gap-2 animate-fade-in">
+                            <span class="text-xs font-semibold text-gray-500 font-mono bg-gray-100 px-3 py-1.5 rounded-xl">
+                                {{ selectedDeletedTransactions.length }} ta tanlandi
+                            </span>
+                            <button @click="bulkRestoreDeletedTransactions" class="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-600 hover:text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                🔄 Tanlanganlarni tiklash
+                            </button>
+                            <button @click="bulkForceDeleteTransactions" class="px-3 py-1.5 bg-red-50 border border-red-200 text-red-600 hover:bg-red-650 hover:text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                🗑️ Tanlanganlarni butunlay o'chirish
+                            </button>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto border border-gray-150 rounded-xl">
                         <table class="w-full text-left text-sm font-mono">
                             <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                                 <tr>
+                                    <th class="p-4 w-12 text-center">
+                                        <input type="checkbox" :checked="isAllDeletedTransactionsSelected" @change="toggleAllDeletedTransactions" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                    </th>
                                     <th class="p-4 w-12">№</th>
                                     <th class="p-4">Ism / Kontragent</th>
                                     <th class="p-4 text-right">Summa</th>
@@ -4576,7 +4639,10 @@ function getCounterpartyStatus(c) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="(t, idx) in props.deletedTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="(t, idx) in props.deletedTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors" :class="{'bg-blue-50/30': selectedDeletedTransactions.includes(t.id)}">
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" :value="t.id" v-model="selectedDeletedTransactions" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                    </td>
                                     <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
                                     <td class="p-4 font-bold text-gray-900">
                                         {{ t.counterparty?.name || '-' }}
@@ -4603,7 +4669,7 @@ function getCounterpartyStatus(c) {
                                     </td>
                                 </tr>
                                 <tr v-if="!props.deletedTransactions?.length">
-                                    <td colspan="7" class="p-8 text-center text-gray-400">Savatcha bo'sh. O'chirilgan tranzaksiyalar mavjud emas.</td>
+                                    <td colspan="8" class="p-8 text-center text-gray-400">Savatcha bo'sh. O'chirilgan tranzaksiyalar mavjud emas.</td>
                                 </tr>
                             </tbody>
                         </table>

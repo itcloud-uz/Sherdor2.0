@@ -1896,6 +1896,210 @@ class FinanceController extends Controller
         return redirect()->back()->with('message', 'Valyuta kurslari muvaffaqiyatli yangilandi.');
     }
 
+    public function bulkRestore(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer'
+        ]);
+
+        $ids = $validated['ids'];
+        $count = 0;
+
+        foreach ($ids as $id) {
+            $transaction = Transaction::onlyTrashed()->find($id);
+            if ($transaction) {
+                DB::transaction(function () use ($transaction) {
+                    $transaction->restore();
+
+                    // 1. Account / Cash Register Balance Update
+                    $register = CashRegister::find($transaction->account_id);
+                    if ($register) {
+                        if ($transaction->type === 'income') {
+                            $register->increment('balance', $transaction->amount);
+                        } else {
+                            $register->decrement('balance', $transaction->amount);
+                        }
+                    }
+
+                    if ($transaction->type === 'income') {
+                        \App\Models\CompanyBalance::addIncome($transaction->amount, $register && stripos($register->name, 'kredit') !== false ? 'credit' : 'main');
+                    } else {
+                        \App\Models\CompanyBalance::addExpense($transaction->amount, $register && stripos($register->name, 'kredit') !== false ? 'credit' : 'main');
+                    }
+
+                    // 2. Counterparty Balance Update
+                    $counterparty = Counterparty::find($transaction->counterparty_id);
+                    if ($counterparty) {
+                        $convAmount = $transaction->converted_amount ?? $transaction->amount;
+                        if ($transaction->type === 'income') {
+                            if ($counterparty->type === 'client') {
+                                $counterparty->increment('balance', $convAmount);
+                            } else {
+                                $counterparty->decrement('balance', $convAmount);
+                            }
+                        } else {
+                            if ($counterparty->type === 'client') {
+                                $counterparty->decrement('balance', $convAmount);
+                            } else {
+                                $counterparty->increment('balance', $convAmount);
+                            }
+                        }
+                    }
+
+                    // 3. Invoice status updates
+                    if ($transaction->invoice_id) {
+                        $invoice = Invoice::find($transaction->invoice_id);
+                        if ($invoice) {
+                            $paidVal = ($invoice->currency === 'UZS' && $transaction->currency !== 'UZS') 
+                                ? ($transaction->converted_amount ?? $transaction->amount) 
+                                : $transaction->amount;
+                            $invoice->increment('paid_amount', $paidVal);
+                            
+                            if ($invoice->paid_amount >= $invoice->amount) {
+                                $invoice->update(['status' => 'paid']);
+                            } elseif ($invoice->paid_amount > 0) {
+                                $invoice->update(['status' => 'partially_paid']);
+                            }
+                        }
+                    }
+
+                    // 4. Partner Special Balances
+                    if ($transaction->partner_id) {
+                        $accountPartner = Partner::find($transaction->partner_id);
+                        if ($accountPartner) {
+                            if ($transaction->type === 'income') {
+                                $accountPartner->increment('accountable_balance', $transaction->amount);
+                            } else {
+                                $accountPartner->decrement('accountable_balance', $transaction->amount);
+                            }
+                        }
+                    }
+
+                    // 5. CRM Contract Payment Schedules (Only if NOT Boshlang'ich to'lov)
+                    $isInitialPayment = false;
+                    if ($transaction->category_id) {
+                        $cat = $transaction->category ?? \App\Models\TransactionCategory::find($transaction->category_id);
+                        if ($cat) {
+                            $catName = strtolower($cat->name);
+                            if (str_contains($catName, "boshlang'ich") || str_contains($catName, "initial")) {
+                                $isInitialPayment = true;
+                            }
+                        }
+                    }
+
+                    if ($transaction->contract_id && $transaction->type === 'income' && !$isInitialPayment) {
+                        $appliedAmount = $transaction->converted_amount ?? $transaction->amount;
+                        $remainingAmount = $appliedAmount;
+
+                        if ($transaction->payment_schedule_id) {
+                            $specificSchedule = PaymentSchedule::find($transaction->payment_schedule_id);
+                            if ($specificSchedule && $specificSchedule->contract_id == $transaction->contract_id && $specificSchedule->status !== 'paid') {
+                                $needed = $specificSchedule->expected_amount - $specificSchedule->paid_amount;
+                                if ($needed > 0) {
+                                    if ($remainingAmount >= $needed) {
+                                        $specificSchedule->paid_amount += $needed;
+                                        $specificSchedule->status = 'paid';
+                                        $specificSchedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                        $specificSchedule->payment_method = $transaction->payment_method;
+                                        $specificSchedule->original_payment_amount = $transaction->amount;
+                                        $specificSchedule->save();
+                                        $remainingAmount -= $needed;
+                                    } else {
+                                        $specificSchedule->paid_amount += $remainingAmount;
+                                        $specificSchedule->status = 'partial';
+                                        $specificSchedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                        $specificSchedule->payment_method = $transaction->payment_method;
+                                        $specificSchedule->original_payment_amount = $transaction->amount;
+                                        $specificSchedule->save();
+                                        $remainingAmount = 0;
+                                    }
+                                }
+                            }
+                        }
+
+                        if ($remainingAmount > 0) {
+                            $schedules = PaymentSchedule::where('contract_id', $transaction->contract_id)
+                                ->where('status', '!=', 'paid')
+                                ->orderBy('due_date', 'asc')
+                                ->get();
+                                
+                            $isFirst = !$transaction->payment_schedule_id;
+                            foreach ($schedules as $schedule) {
+                                  if ($remainingAmount <= 0) break;
+                                  
+                                  $needed = $schedule->expected_amount - $schedule->paid_amount;
+                                  if ($needed <= 0) continue;
+                                  
+                                  if ($remainingAmount >= $needed) {
+                                      $schedule->paid_amount += $needed;
+                                      $schedule->status = 'paid';
+                                      $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                      $schedule->payment_method = $transaction->payment_method;
+                                      if ($isFirst) {
+                                          $schedule->original_payment_amount = $transaction->amount;
+                                          $isFirst = false;
+                                      }
+                                      $remainingAmount -= $needed;
+                                  } else {
+                                      $schedule->paid_amount += $remainingAmount;
+                                      $schedule->status = 'partial';
+                                      $schedule->actual_payment_date = $transaction->transaction_date ?? now();
+                                      $schedule->payment_method = $transaction->payment_method;
+                                      if ($isFirst) {
+                                          $schedule->original_payment_amount = $transaction->amount;
+                                          $isFirst = false;
+                                      }
+                                      $remainingAmount = 0;
+                                  }
+                                  
+                                  $schedule->save();
+                            }
+                        }
+                    }
+                });
+                $count++;
+            }
+        }
+
+        return redirect()->back()->with('message', $count . ' tranzaksiyalar muvaffaqiyatli qayta tiklandi.');
+    }
+
+    public function bulkForceDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer'
+        ]);
+
+        $ids = $validated['ids'];
+        $count = 0;
+
+        foreach ($ids as $id) {
+            $transaction = Transaction::onlyTrashed()->find($id);
+            if ($transaction) {
+                DB::transaction(function () use ($transaction) {
+                    // Log permanent delete action
+                    \App\Models\FinanceAction::create([
+                        'user_id' => auth()->id(),
+                        'action' => 'permanent_delete',
+                        'transaction_id' => $transaction->id,
+                        'transaction_type' => $transaction->type,
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency ?? 'UZS',
+                        'notes' => "Tranzaksiya butunlay o'chirildi (tizimdan ham o'chdi): #" . $transaction->id,
+                        'details' => $transaction->toArray(),
+                    ]);
+
+                    $transaction->forceDelete();
+                });
+                $count++;
+            }
+        }
+
+        return redirect()->back()->with('message', $count . ' tranzaksiyalar tizimdan butunlay o\'chirildi.');
+    }
+
     public function restore(Request $request, $id)
     {
         $transaction = Transaction::onlyTrashed()->findOrFail($id);

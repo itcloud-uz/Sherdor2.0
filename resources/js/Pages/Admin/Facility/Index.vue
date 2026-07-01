@@ -772,8 +772,8 @@ onMounted(() => {
         const url = new URL(window.location.href);
         const viewParam = url.searchParams.get('view');
         
-        // If the URL specifies a view parameter, respect the URL and skip restoring/defaulting
-        if (viewParam !== null) {
+        // Only skip restoring if the view is specifically 'report' or 'objects' (layout not shown)
+        if (viewParam === 'report' || viewParam === 'objects') {
             return;
         }
 
@@ -786,10 +786,13 @@ onMounted(() => {
             currentObject.value = savedObject;
         }
         
+        // Try to read building_id from URL query first, fallback to savedBuildingId
+        const urlBuildingId = url.searchParams.get('building_id');
+        const activeBuildingId = urlBuildingId ? Number(urlBuildingId) : (savedBuildingId ? Number(savedBuildingId) : null);
+
         if (props.buildings && Array.isArray(props.buildings) && props.buildings.length > 0) {
-            if (savedBuildingId) {
-                const bId = Number(savedBuildingId);
-                const foundB = props.buildings.find(b => b.id === bId);
+            if (activeBuildingId) {
+                const foundB = props.buildings.find(b => b.id === activeBuildingId);
                 if (foundB) {
                     selectedBuilding.value = foundB;
                     
@@ -803,7 +806,10 @@ onMounted(() => {
                                 const uId = Number(savedUnitId);
                                 const foundU = foundF.units.find(u => u.id === uId);
                                 if (foundU && typeof selectUnit === 'function') {
-                                    selectUnit(foundU);
+                                    // Use nextTick / timeout to allow DOM layout before select
+                                    setTimeout(() => {
+                                        selectUnit(foundU);
+                                    }, 100);
                                 }
                             }
                         }
@@ -812,7 +818,7 @@ onMounted(() => {
             }
         }
     } catch (e) {
-        console.error("Error restoring facility state from localStorage:", e);
+        console.error("Error restoring facility state on mount:", e);
     }
 });
 

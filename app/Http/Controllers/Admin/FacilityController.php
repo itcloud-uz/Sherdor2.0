@@ -35,7 +35,7 @@ class FacilityController extends Controller
             $endDate = \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()->toDateTimeString();
         }
 
-        $reportData = $this->getReportData($startDate, $endDate);
+        $reportData = $this->getReportData($buildings, $startDate, $endDate);
 
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,
@@ -1085,9 +1085,14 @@ class FacilityController extends Controller
         return redirect()->back()->with('message', 'Xonadon/Do\'kon o\'chirildi!');
     }
 
-    private function getReportData($startDate = null, $endDate = null)
+    private function getReportData($buildings = null, $startDate = null, $endDate = null)
     {
-        $buildings = Building::with(['floors.units'])->get();
+        if (is_string($buildings) || is_null($buildings)) {
+            // Backwards compatibility if called with $startDate as first parameter
+            $endDate = $startDate;
+            $startDate = $buildings;
+            $buildings = Building::with(['floors.units'])->get();
+        }
         $grouped = $buildings->groupBy('name');
         
         $report = [];

@@ -525,7 +525,7 @@ HTML;
             [
                 'type' => 'residential',
                 'description' => 'Ko\'p qavatli uy-joy hissadordagi qurilish shartnomasi (Yaratilgan uy-joy shablonlari uchun).',
-                'content' => $housingContent
+                'preview_html' => $housingContent
             ]
         );
 
@@ -534,7 +534,7 @@ HTML;
             [
                 'type' => 'commercial',
                 'description' => 'Savdo do\'koni qurilish hissadorlik shartnomasi.',
-                'content' => $shopContent
+                'preview_html' => $shopContent
             ]
         );
     }

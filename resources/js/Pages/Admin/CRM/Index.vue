@@ -795,6 +795,8 @@ function saveClient() {
                 contractForm.value.notes = notesArr.join(' • ');
                 
                 router.post(route('admin.contracts.store'), contractForm.value, {
+                    preserveScroll: true,
+                    preserveState: true,
                     onSuccess: () => {
                         showCreateClientModal.value = false;
                         isProcessing.value = false;
@@ -973,7 +975,10 @@ function editContract(contract) {
 
 function deleteContract(id) {
     if (confirm(t('confirm_delete_contract'))) {
-        router.delete(route('admin.contracts.destroy', id));
+        router.delete(route('admin.contracts.destroy', id), {
+            preserveScroll: true,
+            preserveState: true
+        });
     }
 }
 
@@ -989,6 +994,8 @@ function createContract() {
     
     if (isEditingContract.value) {
         router.put(route('admin.contracts.update', currentContractId.value), contractForm.value, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 showCreateContractModal.value = false;
                 isProcessing.value = false;
@@ -999,6 +1006,8 @@ function createContract() {
         });
     } else {
         router.post(route('admin.contracts.store'), contractForm.value, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 showCreateContractModal.value = false;
                 contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };

@@ -46,186 +46,187 @@ class ContractController extends Controller
             $validated['term_months'] = 1;
         }
 
-        $contract = new \App\Models\Contract([
-            'client_id' => $validated['buyer_type'] === 'client' ? $validated['client_id'] : null,
-            'partner_id' => $validated['buyer_type'] === 'partner' ? $validated['partner_id'] : null,
-            'unit_id' => $validated['unit_id'],
-            'contract_type' => $validated['contract_type'],
-            'price_per_sqm' => $validated['price_per_sqm'],
-            'total_amount' => $validated['total_amount'],
-            'down_payment' => $validated['down_payment'] ?? 0,
-            'is_down_payment_split' => $request->boolean('is_down_payment_split'),
-            'down_payment_split_months' => $validated['down_payment_split_months'] ?? 1,
-            'term_months' => $validated['term_months'] ?? 1,
-            'payment_type' => $paymentType,
-            'contract_number' => $validated['contract_number'] ?? null,
-            'floor' => $validated['floor'] ?? null,
-            'rooms' => $validated['rooms'] ?? null,
-            'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
-            'contract_template_id' => $validated['contract_template_id'] ?? null,
-            'selected_variants' => $validated['selected_variants'] ?? null,
-            'custom_monthly_amount' => $validated['custom_monthly_amount'] ?? null,
-            'status' => 'draft'
-        ]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $request, $paymentType) {
+            $contract = new \App\Models\Contract([
+                'client_id' => $validated['buyer_type'] === 'client' ? $validated['client_id'] : null,
+                'partner_id' => $validated['buyer_type'] === 'partner' ? $validated['partner_id'] : null,
+                'unit_id' => $validated['unit_id'],
+                'contract_type' => $validated['contract_type'],
+                'price_per_sqm' => $validated['price_per_sqm'],
+                'total_amount' => $validated['total_amount'],
+                'down_payment' => $validated['down_payment'] ?? 0,
+                'is_down_payment_split' => $request->boolean('is_down_payment_split'),
+                'down_payment_split_months' => $validated['down_payment_split_months'] ?? 1,
+                'term_months' => $validated['term_months'] ?? 1,
+                'payment_type' => $paymentType,
+                'contract_number' => $validated['contract_number'] ?? null,
+                'floor' => $validated['floor'] ?? null,
+                'rooms' => $validated['rooms'] ?? null,
+                'user_id' => $validated['user_id'] ?? auth()->id() ?? null,
+                'contract_template_id' => $validated['contract_template_id'] ?? null,
+                'selected_variants' => $validated['selected_variants'] ?? null,
+                'custom_monthly_amount' => $validated['custom_monthly_amount'] ?? null,
+                'status' => 'draft'
+            ]);
 
-        if ($validated['buyer_type'] === 'employee') {
-            $user = \App\Models\User::find($validated['employee_id']);
-            if ($user) {
-                // Split user name into first name and last name
-                $parts = explode(' ', $user->name);
-                $lastName = $parts[0] ?? 'Xodim';
-                $firstName = $parts[1] ?? ($parts[0] ? '' : 'Xodim');
-                $client = \App\Models\Client::firstOrCreate(
-                    ['phone' => $user->phone ?? ('user_' . $user->id)],
-                    [
-                        'first_name' => $firstName ?: $user->name,
-                        'last_name' => $lastName,
-                        'middle_name' => '',
-                    ]
-                );
-                $contract->client_id = $client->id;
+            if ($validated['buyer_type'] === 'employee') {
+                $user = \App\Models\User::find($validated['employee_id']);
+                if ($user) {
+                    // Split user name into first name and last name
+                    $parts = explode(' ', $user->name);
+                    $lastName = $parts[0] ?? 'Xodim';
+                    $firstName = $parts[1] ?? ($parts[0] ? '' : 'Xodim');
+                    $client = \App\Models\Client::firstOrCreate(
+                        ['phone' => $user->phone ?? ('user_' . $user->id)],
+                        [
+                            'first_name' => $firstName ?: $user->name,
+                            'last_name' => $lastName,
+                            'middle_name' => '',
+                        ]
+                    );
+                    $contract->client_id = $client->id;
+                }
             }
-        }
-        
-        
-        if (!empty($validated['created_at'])) {
-            $contract->created_at = $validated['created_at'];
-            $contract->updated_at = $validated['created_at'];
-            $contract->timestamps = false; // Disable timestamps for this specific insert
-        }
-        $contract->save();
-        $contract->timestamps = true;
-
-        $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateTimeString() : now()->toDateTimeString();
-
-        // If it's a partner, create automatic transaction reducing their accountable balance
-        if ($validated['buyer_type'] === 'partner') {
-            $partner = \App\Models\Partner::find($validated['partner_id']);
-            if ($partner) {
-                // Ta'sischi ulushidan chiqim
-                $partnerCategory = \App\Models\TransactionCategory::firstOrCreate(
-                    ['name' => 'Ta\'sischi Xaridi (Chiqim)'],
-                    ['type' => 'expense', 'description' => 'Ta\'sischi o\'z ulushidan ob\'yekt xarid qildi']
-                );
-                
-                \App\Models\Transaction::create([
-                    'type' => 'expense',
-                    'amount' => $validated['total_amount'],
-                    'account_type' => 'main',
-                    'contract_id' => $contract->id,
-                    'category_id' => $partnerCategory->id,
-                    'status' => 'approved', // automatic approval for partner buy? Let's make it approved
-                    'transaction_date' => $baseDate,
-                    'created_at' => $baseDate,
-                    'updated_at' => $baseDate,
-                    'notes' => 'Ta\'sischi ob\'yekt xaridi: Unit ID ' . $validated['unit_id'],
-                    'created_by' => auth()->id() ?? 1,
-                    'target_type' => 'partner',
-                    'target_id' => $partner->id
-                ]);
-
-                // Also record Income to the company
-                $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                    ['name' => 'Ta\'sischi Xaridi (Kirim)'],
-                    ['type' => 'income', 'description' => 'Ta\'sischi ob\'yekt xarididan tushum']
-                );
-                
-                \App\Models\Transaction::create([
-                    'type' => 'income',
-                    'amount' => $validated['total_amount'],
-                    'account_type' => 'main',
-                    'contract_id' => $contract->id,
-                    'category_id' => $incomeCategory->id,
-                    'status' => 'approved',
-                    'transaction_date' => $baseDate,
-                    'created_at' => $baseDate,
-                    'updated_at' => $baseDate,
-                    'notes' => 'Ta\'sischi ob\'yekt xaridi (Kompaniya hisobiga): Unit ID ' . $validated['unit_id'],
-                    'created_by' => auth()->id() ?? 1,
-                ]);
-
-                // Reduce partner balance
-                $partner->accountable_balance -= $validated['total_amount'];
-                $partner->save();
+            
+            if (!empty($validated['created_at'])) {
+                $contract->created_at = $validated['created_at'];
+                $contract->updated_at = $validated['created_at'];
+                $contract->timestamps = false; // Disable timestamps for this specific insert
             }
-        } else {
-            $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
-                             ? $validated['actual_paid_amount'] 
-                             : ($request->boolean('is_down_payment_split') ? 0 : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0));
+            $contract->save();
+            $contract->timestamps = true;
 
-            if ($paymentAmount > 0) {
-                $paymentMethod = $validated['payment_method'] ?? 'bank';
-                
-                // Determine account_id
-                $accountId = $validated['account_id'] ?? null;
-                if (!$accountId) {
-                    $regType = $paymentMethod === 'bank' ? 'bank' : 'cash';
-                    $reg = \App\Models\CashRegister::where('type', $regType)->where('is_active', true)->first();
-                    if ($reg) {
-                        $accountId = $reg->id;
+            $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateTimeString() : now()->toDateTimeString();
+
+            // If it's a partner, create automatic transaction reducing their accountable balance
+            if ($validated['buyer_type'] === 'partner') {
+                $partner = \App\Models\Partner::find($validated['partner_id']);
+                if ($partner) {
+                    // Ta'sischi ulushidan chiqim
+                    $partnerCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Ta\'sischi Xaridi (Chiqim)'],
+                        ['type' => 'expense', 'description' => 'Ta\'sischi o\'z ulushidan ob\'yekt xarid qildi']
+                    );
+                    
+                    \App\Models\Transaction::create([
+                        'type' => 'expense',
+                        'amount' => $validated['total_amount'],
+                        'account_type' => 'main',
+                        'contract_id' => $contract->id,
+                        'category_id' => $partnerCategory->id,
+                        'status' => 'approved', // automatic approval for partner buy? Let's make it approved
+                        'transaction_date' => $baseDate,
+                        'created_at' => $baseDate,
+                        'updated_at' => $baseDate,
+                        'notes' => 'Ta\'sischi ob\'yekt xaridi: Unit ID ' . $validated['unit_id'],
+                        'created_by' => auth()->id() ?? 1,
+                        'target_type' => 'partner',
+                        'target_id' => $partner->id
+                    ]);
+
+                    // Also record Income to the company
+                    $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Ta\'sischi Xaridi (Kirim)'],
+                        ['type' => 'income', 'description' => 'Ta\'sischi ob\'yekt xarididan tushum']
+                    );
+                    
+                    \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $validated['total_amount'],
+                        'account_type' => 'main',
+                        'contract_id' => $contract->id,
+                        'category_id' => $incomeCategory->id,
+                        'status' => 'approved',
+                        'transaction_date' => $baseDate,
+                        'created_at' => $baseDate,
+                        'updated_at' => $baseDate,
+                        'notes' => 'Ta\'sischi ob\'yekt xaridi (Kompaniya hisobiga): Unit ID ' . $validated['unit_id'],
+                        'created_by' => auth()->id() ?? 1,
+                    ]);
+
+                    // Reduce partner balance
+                    $partner->accountable_balance -= $validated['total_amount'];
+                    $partner->save();
+                }
+            } else {
+                $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
+                                 ? $validated['actual_paid_amount'] 
+                                 : ($request->boolean('is_down_payment_split') ? 0 : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0));
+
+                if ($paymentAmount > 0) {
+                    $paymentMethod = $validated['payment_method'] ?? 'bank';
+                    
+                    // Determine account_id
+                    $accountId = $validated['account_id'] ?? null;
+                    if (!$accountId) {
+                        $regType = $paymentMethod === 'bank' ? 'bank' : 'cash';
+                        $reg = \App\Models\CashRegister::where('type', $regType)->where('is_active', true)->first();
+                        if ($reg) {
+                            $accountId = $reg->id;
+                        }
                     }
-                }
 
-                // Create a pending transaction for Action Center to approve
-                $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                    ['name' => 'Mijoz To\'lovi (Shartnoma)'],
-                    ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
-                );
+                    // Create a pending transaction for Action Center to approve
+                    $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+                        ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+                    );
 
-                $counterpartyId = null;
-                if ($contract->client_id) {
-                    $counterpartyId = \App\Models\Counterparty::where([
-                        'customable_type' => 'App\Models\Client',
-                        'customable_id' => $contract->client_id,
-                    ])->value('id');
-                }
-                $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
+                    $counterpartyId = null;
+                    if ($contract->client_id) {
+                        $counterpartyId = \App\Models\Counterparty::where([
+                            'customable_type' => 'App\Models\Client',
+                            'customable_id' => $contract->client_id,
+                        ])->value('id');
+                    }
+                    $buildingId = $contract->unit ? ($contract->unit->floor ? $contract->unit->floor->building_id : null) : null;
 
-                $firstDownPaymentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
-                    ->where('payment_type', 'down_payment')
-                    ->where('status', '!=', 'paid')
-                    ->orderBy('due_date', 'asc')
-                    ->first();
-                $scheduleId = $firstDownPaymentSchedule ? $firstDownPaymentSchedule->id : null;
-                if (!$scheduleId) {
-                    $firstInstallmentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
-                        ->where('payment_type', 'installment')
+                    $firstDownPaymentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                        ->where('payment_type', 'down_payment')
                         ->where('status', '!=', 'paid')
                         ->orderBy('due_date', 'asc')
                         ->first();
-                    if ($firstInstallmentSchedule) {
-                        $scheduleId = $firstInstallmentSchedule->id;
+                    $scheduleId = $firstDownPaymentSchedule ? $firstDownPaymentSchedule->id : null;
+                    if (!$scheduleId) {
+                        $firstInstallmentSchedule = \App\Models\PaymentSchedule::where('contract_id', $contract->id)
+                            ->where('payment_type', 'installment')
+                            ->where('status', '!=', 'paid')
+                            ->orderBy('due_date', 'asc')
+                            ->first();
+                        if ($firstInstallmentSchedule) {
+                            $scheduleId = $firstInstallmentSchedule->id;
+                        }
                     }
+
+                    \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $paymentAmount,
+                        'account_type' => $paymentMethod,
+                        'account_id' => $accountId,
+                        'contract_id' => $contract->id,
+                        'client_id' => $contract->client_id,
+                        'counterparty_id' => $counterpartyId,
+                        'building_id' => $buildingId,
+                        'category_id' => $incomeCategory->id,
+                        'payment_schedule_id' => $scheduleId,
+                        'status' => 'pending',
+                        'transaction_date' => $baseDate,
+                        'created_at' => $baseDate,
+                        'updated_at' => $baseDate,
+                        'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
+                        'created_by' => auth()->id() ?? 1,
+                    ]);
                 }
-
-                $transaction = \App\Models\Transaction::create([
-                    'type' => 'income',
-                    'amount' => $paymentAmount,
-                    'account_type' => $paymentMethod,
-                    'account_id' => $accountId,
-                    'contract_id' => $contract->id,
-                    'client_id' => $contract->client_id,
-                    'counterparty_id' => $counterpartyId,
-                    'building_id' => $buildingId,
-                    'category_id' => $incomeCategory->id,
-                    'payment_schedule_id' => $scheduleId,
-                    'status' => 'pending',
-                    'transaction_date' => $baseDate,
-                    'created_at' => $baseDate,
-                    'updated_at' => $baseDate,
-                    'notes' => 'Shartnoma yaratish paytidagi to\'lov (' . $paymentMethod . ')',
-                    'created_by' => auth()->id() ?? 1,
-                ]);
             }
-        }
 
-        // Also mark unit as reserved
-        $unit = \App\Models\Unit::find($validated['unit_id']);
-        if ($unit) {
-            $unit->update(['status' => 'reserved']);
-        }
+            // Also mark unit as reserved
+            $unit = \App\Models\Unit::find($validated['unit_id']);
+            if ($unit) {
+                $unit->update(['status' => 'reserved']);
+            }
 
-        return redirect()->back()->with('message', 'Contract created successfully. Agar to\'lov kiritilgan bo\'lsa, Tasdiqlar bo\'limiga tushdi.');
+            return redirect()->back()->with('message', 'Contract created successfully. Agar to\'lov kiritilgan bo\'lsa, Tasdiqlar bo\'limiga tushdi.');
+        });
     }
 
     public function update(\Illuminate\Http\Request $request, \App\Models\Contract $contract)

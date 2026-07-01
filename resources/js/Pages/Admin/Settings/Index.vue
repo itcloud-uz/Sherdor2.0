@@ -481,22 +481,6 @@ const hasUnsavedChanges = computed(() => {
                                         <label class="text-[13px] font-medium text-[#64748B] mb-2">Manzili</label>
                                         <input v-model="form.company_address" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
                                     </div>
-                                    <div class="flex flex-col">
-                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Nomi</label>
-                                        <input v-model="form.company_bank_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">Bank Hisob Raqami</label>
-                                        <input v-model="form.company_bank_account" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">INN</label>
-                                        <input v-model="form.company_inn" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <label class="text-[13px] font-medium text-[#64748B] mb-2">MFO</label>
-                                        <input v-model="form.company_mfo" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/10 transition-all outline-none bg-white placeholder-[#94A3B8]" />
-                                    </div>
                                 </div>
                                 <div class="mt-6 flex justify-end gap-3 pt-5 border-t border-[#E2E8F0]">
                                     <button type="button" @click="form.reset()" class="px-6 py-2.5 bg-white text-[#64748B] border border-[#E2E8F0] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] transition-colors">Tiklash</button>
@@ -731,6 +715,89 @@ const hasUnsavedChanges = computed(() => {
 
                 </div>
             </div>
+            <!-- Add/Edit Employee Modal -->
+            <Modal :show="showUserModal" @close="resetUserForm">
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-[#1E293B] mb-4">
+                        {{ isEditingUser ? 'Xodim ma\'lumotlarini tahrirlash' : 'Yangi xodim qo\'shish' }}
+                    </h3>
+                    <form @submit.prevent="submitUserForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Ism</label>
+                                <input v-model="userForm.name" type="text" required class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.name" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.name }}</span>
+                            </div>
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Familiya</label>
+                                <input v-model="userForm.last_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.last_name" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.last_name }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Otasining ismi</label>
+                                <input v-model="userForm.middle_name" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.middle_name" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.middle_name }}</span>
+                            </div>
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Telefon</label>
+                                <input v-model="userForm.phone" type="text" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.phone" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.phone }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Login (Foydalanuvchi nomi)</label>
+                                <input v-model="userForm.username" type="text" required class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.username" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.username }}</span>
+                            </div>
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Parol {{ isEditingUser ? '(agar o\'zgaradigan bo\'lsa)' : '' }}</label>
+                                <input v-model="userForm.password" type="password" :required="!isEditingUser" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB]" />
+                                <span v-if="userForm.errors.password" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.password }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Rol</label>
+                                <select v-model="userForm.role" required class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB] bg-white">
+                                    <option v-for="r in props.roles" :key="r.id" :value="r.name">{{ r.name }}</option>
+                                </select>
+                                <span v-if="userForm.errors.role" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.role }}</span>
+                            </div>
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Bino / Obyekt</label>
+                                <select v-model="userForm.building_id" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB] bg-white">
+                                    <option value="">-- Tanlang (Ixtiyoriy) --</option>
+                                    <option v-for="b in props.buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                </select>
+                                <span v-if="userForm.errors.building_id" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.building_id }}</span>
+                            </div>
+                            <div>
+                                <label class="text-[13px] font-medium text-[#64748B] mb-1 block">Ombor</label>
+                                <select v-model="userForm.warehouse_id" class="w-full px-3 py-2 min-h-[40px] border border-[#E2E8F0] rounded-lg text-[14px] outline-none focus:border-[#2563EB] bg-white">
+                                    <option value="">-- Tanlang (Ixtiyoriy) --</option>
+                                    <option v-for="w in props.warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
+                                </select>
+                                <span v-if="userForm.errors.warehouse_id" class="text-xs text-red-600 mt-1 block">{{ userForm.errors.warehouse_id }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+                            <button type="button" @click="resetUserForm" class="px-5 py-2.5 bg-white border border-[#E2E8F0] text-[#64748B] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] transition-all">
+                                Bekor qilish
+                            </button>
+                            <button type="submit" :disabled="userForm.processing" class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-all">
+                                Saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </div>
     </AdminLayout>
 </template>

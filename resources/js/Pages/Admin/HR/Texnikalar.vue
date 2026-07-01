@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
 
@@ -292,8 +292,14 @@ const toggleOwner = (owner) => {
 
 const exportToPDF = () => {
     if (!selectedOwner.value) return;
-    const doc = new jsPDF();
-    doc.text(`${selectedOwner.value.name} - Bajarilgan Ishlar Hisoboti`, 14, 15);
+    if (rows.value.length === 0) {
+        alert("Yuklab olish uchun ma'lumot yo'q!");
+        return;
+    }
+    
+    try {
+        const doc = new jsPDF();
+        doc.text(`${selectedOwner.value.name} - Bajarilgan Ishlar Hisoboti`, 14, 15);
     
     const tableData = rows.value.map((row, index) => [
         index + 1,
@@ -318,13 +324,22 @@ const exportToPDF = () => {
         headStyles: { fillColor: [253, 224, 71], textColor: [0, 0, 0] }
     });
 
-    doc.save(`${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+        doc.save(`${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+    } catch (error) {
+        console.error("PDF yaratishda xatolik:", error);
+        alert("PDF yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
+    }
 };
 
 const exportToExcel = () => {
     if (!selectedOwner.value) return;
+    if (rows.value.length === 0) {
+        alert("Yuklab olish uchun ma'lumot yo'q!");
+        return;
+    }
     
-    const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox'];
+    try {
+        const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox'];
     
     const data = rows.value.map((row, index) => [
         index + 1,
@@ -376,9 +391,13 @@ const exportToExcel = () => {
         {wch: 12}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 20}
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
-    XLSX.writeFile(wb, `${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+        XLSX.writeFile(wb, `${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+    } catch (error) {
+        console.error("Excel yaratishda xatolik:", error);
+        alert("Excel yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
+    }
 };
 </script>
 

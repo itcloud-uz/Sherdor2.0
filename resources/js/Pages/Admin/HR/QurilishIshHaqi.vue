@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
 
@@ -248,8 +248,14 @@ const deleteRow = (id) => {
 
 const exportToPDF = () => {
     if (!selectedBrigade.value) return;
-    const doc = new jsPDF('landscape');
-    doc.text(`${selectedBrigade.value.name} - Bajarilgan Xizmatlar Hisoboti`, 14, 15);
+    if (rows.value.length === 0) {
+        alert("Yuklab olish uchun xizmatlar mavjud emas!");
+        return;
+    }
+
+    try {
+        const doc = new jsPDF('landscape');
+        doc.text(`${selectedBrigade.value.name} - Bajarilgan Xizmatlar Hisoboti`, 14, 15);
     
     const tableData = rows.value.map((row, index) => [
         index + 1,
@@ -279,13 +285,22 @@ const exportToPDF = () => {
         headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] }
     });
 
-    doc.save(`${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+        doc.save(`${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
+    } catch (error) {
+        console.error("PDF yaratishda xatolik:", error);
+        alert("PDF yaratishda xatolik yuz berdi.");
+    }
 };
 
 const exportToExcel = () => {
     if (!selectedBrigade.value) return;
+    if (rows.value.length === 0) {
+        alert("Yuklab olish uchun xizmatlar mavjud emas!");
+        return;
+    }
     
-    const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi', 'To\'lov sanasi', 'To\'langan', 'Qoldiq'];
+    try {
+        const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi', 'To\'lov sanasi', 'To\'langan', 'Qoldiq'];
     
     const data = rows.value.map((row, index) => [
         index + 1,
@@ -341,9 +356,13 @@ const exportToExcel = () => {
         {wch: 15}, {wch: 18}, {wch: 12}, {wch: 15}, {wch: 15}
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Xizmatlar");
-    XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Xizmatlar");
+        XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+    } catch (error) {
+        console.error("Excel yaratishda xatolik:", error);
+        alert("Excel yaratishda xatolik yuz berdi.");
+    }
 };
 
 const handleDragStart = (e, index) => {

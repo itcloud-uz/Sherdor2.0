@@ -2091,10 +2091,12 @@ function openEditBuilding(isObject = false) {
         number: p.podez_number,
         floors: p.total_floors,
         type: p.podez_type || 'Staircase',
+        apartments_per_floor: p.apartments_per_floor || 0,
+        commercial_per_floor: p.commercial_per_floor || 0,
     }));
     if (buildingForm.podezes.length === 0) {
         buildingForm.podezes = [
-            { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase' }
+            { id: 'temp_' + Date.now(), name: 'P-1', number: 1, floors: 5, type: 'Staircase', apartments_per_floor: 0, commercial_per_floor: 0 }
         ];
     }
     showAddBuildingModal.value = true;
@@ -2107,7 +2109,9 @@ function addPodezToForm() {
         name: 'P-' + nextNum,
         number: nextNum,
         floors: 5,
-        type: 'Staircase'
+        type: 'Staircase',
+        apartments_per_floor: 0,
+        commercial_per_floor: 0,
     });
 }
 
@@ -4889,7 +4893,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             🗑️ O'chirish
                                         </button>
                                     </div>
-                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                                         <div>
                                             <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Nomi</label>
                                             <input v-model="podez.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
@@ -4909,6 +4913,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <option value="Elevator">Elevator</option>
                                                 <option value="Corridor">Corridor</option>
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Xonadonlar / Qavat</label>
+                                            <input v-model.number="podez.apartments_per_floor" type="number" min="0" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" placeholder="1 qavatdagi xonadonlar">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Do'konlar / Qavat</label>
+                                            <input v-model.number="podez.commercial_per_floor" type="number" min="0" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" placeholder="1 qavatdagi do'konlar">
                                         </div>
                                     </div>
                                 </div>

@@ -90,6 +90,8 @@ class FacilityController extends Controller
                 'podezes.*.number' => 'required|integer|min:1',
                 'podezes.*.floors' => 'required|integer|min:1|max:50',
                 'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
+                'podezes.*.apartments_per_floor' => 'nullable|integer|min:0',
+                'podezes.*.commercial_per_floor' => 'nullable|integer|min:0',
             ]);
 
             if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {
@@ -266,6 +268,8 @@ class FacilityController extends Controller
                 'podezes.*.number' => 'required|integer|min:1',
                 'podezes.*.floors' => 'required|integer|min:1|max:50',
                 'podezes.*.type' => 'required|string|in:Staircase,Elevator,Corridor',
+                'podezes.*.apartments_per_floor' => 'nullable|integer|min:0',
+                'podezes.*.commercial_per_floor' => 'nullable|integer|min:0',
             ]);
 
             if ($request->has('podezes') && is_array($request->input('podezes')) && count($request->input('podezes')) > 0) {
@@ -1298,6 +1302,8 @@ class FacilityController extends Controller
                     'podez_number' => (int) $podezItem['number'],
                     'podez_type' => $podezItem['type'] ?? 'Staircase',
                     'total_floors' => (int) $podezItem['floors'],
+                    'apartments_per_floor' => (int) ($podezItem['apartments_per_floor'] ?? 0),
+                    'commercial_per_floor' => (int) ($podezItem['commercial_per_floor'] ?? 0),
                 ];
 
                 if ($id && !$isTemp && $existingPodezes->has($id)) {
@@ -1355,14 +1361,103 @@ class FacilityController extends Controller
         }
 
         foreach ($desiredFloorNumbers as $fNum) {
+            $isCommercialFloor = ($fNum < 0 || $fNum === 1);
+            $isResidentialFloor = ($fNum >= 2);
+            $targetCommercial = $isCommercialFloor ? (int) $podez->commercial_per_floor : 0;
+            $targetResidential = $isResidentialFloor ? (int) $podez->apartments_per_floor : 0;
+
             if (!$existingFloors->has($fNum)) {
-                Floor::create([
+                $floor = Floor::create([
                     'building_id' => $building->id,
                     'podez_id' => $podez->id,
                     'floor_number' => $fNum,
-                    'total_units' => 0,
-                    'total_commercial_units' => 0,
+                    'total_units' => $targetResidential,
+                    'total_commercial_units' => $targetCommercial,
                 ]);
+
+                $this->createUnitsForFloorPodez($floor, 'residential', $targetResidential, $podez);
+                $this->createUnitsForFloorPodez($floor, 'commercial', $targetCommercial, $podez);
+            } else {
+                $existingFloor = $existingFloors->get($fNum);
+                $this->syncFloorUnitsPodez($existingFloor, $targetResidential, $targetCommercial, $podez);
+            }
+        }
+    }
+
+    private function createUnitsForFloorPodez(Floor $floor, string $type, int $count, Podez $podez): void
+    {
+        if ($count <= 0) return;
+        $f = $floor->floor_number;
+
+        for ($i = 1; $i <= $count; $i++) {
+            $unitNumber = $this->generateUnitNumber($f, $i, $type);
+            // Optionally prepend podez number or logic
+            Unit::create([
+                'floor_id' => $floor->id,
+                'unit_number' => $unitNumber,
+                'type' => $type,
+                'area_sqm' => 0,
+                'price' => 0,
+                'status' => 'available',
+                'podyezd' => $podez->podez_number,
+                'podez_id' => $podez->id,
+            ]);
+        }
+    }
+
+    private function syncFloorUnitsPodez(Floor $floor, int $targetResidential, int $targetCommercial, Podez $podez): void
+    {
+        $floor->update([
+            'total_units' => $targetResidential,
+            'total_commercial_units' => $targetCommercial,
+        ]);
+
+        $this->syncUnitsByTypePodez($floor, 'residential', $targetResidential, $podez);
+        $this->syncUnitsByTypePodez($floor, 'commercial', $targetCommercial, $podez);
+    }
+
+    private function syncUnitsByTypePodez(Floor $floor, string $type, int $target, Podez $podez): void
+    {
+        $counts = $floor->units()->where('type', $type)
+            ->selectRaw("COUNT(*) as total, SUM(CASE WHEN status != 'available' THEN 1 ELSE 0 END) as non_available")
+            ->first();
+        $currentTotal = (int) $counts->total;
+        $nonAvailableCount = (int) $counts->non_available;
+
+        if ($currentTotal < $target) {
+            $toAdd = $target - $currentTotal;
+            $startIndex = $currentTotal + 1;
+            $f = $floor->floor_number;
+
+            for ($i = $startIndex; $i < $startIndex + $toAdd; $i++) {
+                $unitNumber = $this->generateUnitNumber($f, $i, $type);
+                Unit::create([
+                    'floor_id' => $floor->id,
+                    'unit_number' => $unitNumber,
+                    'type' => $type,
+                    'area_sqm' => 0,
+                    'price' => 0,
+                    'status' => 'available',
+                    'podyezd' => $podez->podez_number,
+                    'podez_id' => $podez->id,
+                ]);
+            }
+        } elseif ($currentTotal > $target) {
+            if ($nonAvailableCount > $target) {
+                // Cannot remove units below the number of non-available units
+                // Just remove available units until we hit the number of non-available units
+                $toRemove = $currentTotal - $nonAvailableCount;
+            } else {
+                $toRemove = $currentTotal - $target;
+            }
+
+            if ($toRemove > 0) {
+                $excessIds = $floor->units()->where('type', $type)
+                    ->where('status', 'available')
+                    ->orderBy('id', 'desc')
+                    ->limit($toRemove)
+                    ->pluck('id');
+                Unit::whereIn('id', $excessIds)->delete();
             }
         }
     }

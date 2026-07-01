@@ -250,7 +250,7 @@ class FacilityController extends Controller
                 }
             }
 
-            return redirect()->route('facility')->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
+            return redirect()->route('admin.facility')->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
         } catch (\Exception $e) {
             Log::error('Building store failed: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -348,7 +348,7 @@ class FacilityController extends Controller
                     'street' => $validated['street'] ?? null,
                     'photo_path' => $photoPath,
                 ]);
-                return redirect()->route('facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
+                return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
             }
 
             $building->update([
@@ -392,7 +392,7 @@ class FacilityController extends Controller
                 $this->generateFloorsAndUnits($building, $request->input('floors_data'));
             }
 
-            return redirect()->route('facility')->with('message', 'Obyekt ma\'lumotlari yangilandi!');
+            return redirect()->route('admin.facility')->with('message', 'Obyekt ma\'lumotlari yangilandi!');
         } catch (\Exception $e) {
             Log::error('Building update failed: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -967,7 +967,7 @@ class FacilityController extends Controller
     {
         $building = Building::findOrFail($id);
         $building->delete();
-        return redirect()->route('facility')->with('message', 'Bino o\'chirildi!');
+        return redirect()->route('admin.facility')->with('message', 'Bino o\'chirildi!');
     }
 
     public function destroyObject($id)
@@ -982,7 +982,7 @@ class FacilityController extends Controller
             }
         });
 
-        return redirect()->route('facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
+        return redirect()->route('admin.facility')->with('message', 'Obyekt to\'liq o\'chirildi!');
     }
 
     public function storeUnit(Request $request)

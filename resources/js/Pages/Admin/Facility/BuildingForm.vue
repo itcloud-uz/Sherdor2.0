@@ -1,7 +1,10 @@
 <template>
-    <Head :title="pageTitle" />
-
-    <AdminLayout>
+    <div v-if="renderError" class="p-10 bg-red-50 text-red-700 h-screen w-screen overflow-auto">
+        <h1 class="text-2xl font-bold mb-4">Frontend Error in BuildingForm.vue</h1>
+        <pre class="whitespace-pre-wrap">{{ renderError.stack || renderError.message || renderError }}</pre>
+    </div>
+    <Head :title="pageTitle" v-if="!renderError" />
+    <AdminLayout v-if="!renderError">
         <template #header>
             <div class="flex items-center justify-between mb-6">
                 <div>
@@ -175,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onErrorCaptured } from 'vue';
 import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -183,6 +186,13 @@ const props = defineProps({
     isEditing: Boolean,
     building: Object, // If editing
     objectContainer: Object, // If adding block to object
+});
+
+const renderError = ref(null);
+onErrorCaptured((err, instance, info) => {
+    console.error('Error captured in BuildingForm:', err, info);
+    renderError.value = err;
+    return false;
 });
 
 const isObjectOnly = computed(() => {

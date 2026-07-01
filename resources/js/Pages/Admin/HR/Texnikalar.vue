@@ -418,7 +418,7 @@ const exportToExcel = () => {
                     <!-- Left Sidebar: Owners and Machineries -->
                     <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col h-[calc(100vh-140px)]">
                         <div class="flex flex-col gap-3 mb-4 border-b pb-4">
-                            <h2 class="text-md font-semibold text-gray-800">Texnika Egalari (Sohibkarlar)</h2>
+                            <h2 class="text-md font-semibold text-gray-800">Texnika Egalari (Texnik ta'minotchilar)</h2>
                             <div class="flex gap-2">
                                 <button @click="openAddOwnerModal" class="flex-1 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-blue-200">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -497,7 +497,7 @@ const exportToExcel = () => {
                             <!-- Owner Header -->
                             <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
                                 <div>
-                                    <h2 class="text-xl font-bold text-gray-900">Sohibkar: {{ selectedOwner.name }}</h2>
+                                    <h2 class="text-xl font-bold text-gray-900">Texnik ta'minotchi: {{ selectedOwner.name }}</h2>
                                     <p class="text-sm text-gray-700 mt-1">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Tel yo\'q' }}</span></p>
                                 </div>
                                 <div class="flex gap-2">
@@ -558,7 +558,7 @@ const exportToExcel = () => {
                                         <tbody class="bg-white">
                                             <tr v-if="rows.length === 0">
                                                 <td colspan="12" class="border border-gray-300 px-6 py-12 text-center text-gray-500 text-sm">
-                                                    Ushbu sohibkar uchun bajarilgan ishlar kiritilmagan.
+                                                    Ushbu texnik ta'minotchi uchun bajarilgan ishlar kiritilmagan.
                                                 </td>
                                             </tr>
                                             <tr 
@@ -694,7 +694,7 @@ const exportToExcel = () => {
         <div v-if="isAddOwnerModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                 <div class="px-6 py-4 border-b bg-gray-50">
-                    <h3 class="text-lg font-semibold text-gray-900">{{ editingOwnerId ? 'Texnika Egasini tahrirlash' : 'Yangi Texnika Egasi (Sohibkar) qo\'shish' }}</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">{{ editingOwnerId ? 'Texnika Egasini tahrirlash' : 'Yangi Texnika Egasi (Texnik ta\'minotchi) qo\'shish' }}</h3>
                 </div>
                 <form @submit.prevent="submitOwner" class="p-6 space-y-4">
                     <div>
@@ -721,7 +721,7 @@ const exportToExcel = () => {
                 </div>
                 <form @submit.prevent="submitMachinery" class="p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Egasi (Sohibkar) *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Egasi (Texnik ta'minotchi) *</label>
                         <select v-model="newMachineryForm.machine_owner_id" class="w-full border-gray-300 rounded-lg text-sm" required>
                             <option value="">Egasi tanlang</option>
                             <option v-for="owner in props.owners" :key="owner.id" :value="owner.id">{{ owner.name }}</option>

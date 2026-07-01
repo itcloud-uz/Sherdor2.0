@@ -161,12 +161,12 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Xonadonlar</label>
-                                            <input v-model.number="podez.total_apartments" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider" title="1 qavatdagi xonadonlar soni">Qavatda Xonadon</label>
+                                            <input v-model.number="podez.apartments_per_floor" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Do'konlar</label>
-                                            <input v-model.number="podez.total_commercial" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider" title="1 qavatdagi do'konlar soni">Qavatda Do'kon</label>
+                                            <input v-model.number="podez.commercial_per_floor" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
                                         </div>
                                     </div>
                                 </div>
@@ -258,8 +258,8 @@ const buildingForm = useForm({
         number: p.podez_number,
         floors: p.total_floors,
         type: p.podez_type || 'Staircase',
-        apartments_per_floor: p.apartments_per_floor,
-        commercial_per_floor: p.commercial_per_floor,
+        apartments_per_floor: p.apartments_per_floor || (p.total_apartments > 0 && p.total_floors > 0 ? Math.floor(p.total_apartments / p.total_floors) : 0),
+        commercial_per_floor: p.commercial_per_floor || (p.total_commercial > 0 ? Math.floor(p.total_commercial / ((props.building?.basement_floors || 0) + 1)) : 0),
         total_apartments: p.total_apartments > 0 ? p.total_apartments : 0,
         total_commercial: p.total_commercial > 0 ? p.total_commercial : 0,
     })) || [
@@ -269,6 +269,8 @@ const buildingForm = useForm({
             number: 1, 
             floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5), 
             type: 'Staircase', 
+            apartments_per_floor: 0,
+            commercial_per_floor: 0,
             total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0), 
             total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0) 
         }
@@ -290,6 +292,8 @@ function addPodezToForm() {
         number: nextNum,
         floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5),
         type: 'Staircase',
+        apartments_per_floor: 0,
+        commercial_per_floor: 0,
         total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0),
         total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0),
     });
@@ -317,13 +321,28 @@ function removePodezFromForm(podezId) {
 }
 
 function submitBuilding() {
+    const transformData = (data) => {
+        const transformed = { ...data };
+        transformed.podezes = transformed.podezes.map(p => {
+            const apts = p.apartments_per_floor ? p.apartments_per_floor * p.floors : p.total_apartments;
+            const commFloors = (parseInt(buildingForm.basement_floors) || 0) + 1;
+            const comms = p.commercial_per_floor ? p.commercial_per_floor * commFloors : p.total_commercial;
+            return {
+                ...p,
+                total_apartments: apts,
+                total_commercial: comms
+            };
+        });
+        return transformed;
+    };
+
     if (props.isEditing) {
         buildingForm.transform((data) => ({
-            ...data,
+            ...transformData(data),
             _method: 'put',
         })).post(route('admin.facility.buildings.update', props.building.id));
     } else {
-        buildingForm.post(route('admin.facility.buildings.store'));
+        buildingForm.transform(transformData).post(route('admin.facility.buildings.store'));
     }
 }
 </script>

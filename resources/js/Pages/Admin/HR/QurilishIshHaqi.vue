@@ -186,9 +186,13 @@ watch(serviceForm, (val) => {
     // G * H = I
     val.totalMeasure = Number((m1 * m2).toFixed(4));
 
-    // I * J = K (J defaults to 1 if 0/empty)
+    // If I > 0, K = I * J (J defaults to 1). Otherwise K = J.
     const activeQty = q > 0 ? q : 1;
-    val.total = Number((val.totalMeasure * activeQty).toFixed(4));
+    if (val.totalMeasure > 0) {
+        val.total = Number((val.totalMeasure * activeQty).toFixed(4));
+    } else {
+        val.total = Number(q.toFixed(4));
+    }
 
     // K * L = M
     val.calculatedSum = Number((val.total * p).toFixed(2));

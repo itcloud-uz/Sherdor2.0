@@ -77,10 +77,10 @@ class HrController extends Controller
     {
         $buildings = Building::select('id', 'name')->with([
             'floors' => function($q) {
-                $q->select('id', 'building_id', 'level');
+                $q->select('id', 'building_id', 'floor_number');
             },
             'floors.units' => function($q) {
-                $q->select('id', 'floor_id', 'number');
+                $q->select('id', 'floor_id', 'unit_number');
             }
         ])->get();
         

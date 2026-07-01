@@ -319,53 +319,9 @@ const handleDragEnd = () => {
                                     <h2 class="text-xl font-bold text-gray-800">{{ selectedBrigade.name }}</h2>
                                     <p class="text-sm text-gray-500 mt-1">Brigadir: <span class="font-semibold text-gray-700">{{ selectedBrigade.foreman_name }}</span></p>
                                 </div>
-                                <div class="flex bg-gray-100 rounded-lg p-1 border border-gray-200">
-                                    <button 
-                                        @click="brigadeTab = 'ishchilar'" 
-                                        :class="brigadeTab === 'ishchilar' ? 'bg-white text-gray-800 shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                                        class="px-4 py-1.5 rounded-md text-sm transition-all"
-                                    >
-                                        Ishchilar
-                                    </button>
-                                    <button 
-                                        @click="brigadeTab = 'xizmatlar'" 
-                                        :class="brigadeTab === 'xizmatlar' ? 'bg-white text-gray-800 shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                                        class="px-4 py-1.5 rounded-md text-sm transition-all"
-                                    >
-                                        Xizmatlar jadvali
-                                    </button>
-                                </div>
                             </div>
-
-                            <!-- ISHCHILAR TAB -->
-                            <div v-if="brigadeTab === 'ishchilar'" class="p-6">
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm text-left text-gray-500">
-                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-3">№</th>
-                                                <th class="px-4 py-3">F.I.SH.</th>
-                                                <th class="px-4 py-3">Kasbi (Roli)</th>
-                                                <th class="px-4 py-3">Telefon</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="!selectedBrigade.workers || selectedBrigade.workers.length === 0">
-                                                <td colspan="4" class="px-6 py-10 text-center text-gray-400">Bu jamoada ishchilar yo'q. Ishchilarni Xodimlar bo'limidan qo'shishingiz mumkin.</td>
-                                            </tr>
-                                            <tr v-for="(worker, idx) in selectedBrigade.workers" :key="worker.id" class="border-b hover:bg-gray-50">
-                                                <td class="px-4 py-3">{{ idx + 1 }}</td>
-                                                <td class="px-4 py-3 font-medium text-gray-900">{{ worker.name }}</td>
-                                                <td class="px-4 py-3">{{ worker.role }}</td>
-                                                <td class="px-4 py-3">{{ worker.phone || '-' }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
                             <!-- XIZMATLAR TAB -->
-                            <div v-if="brigadeTab === 'xizmatlar'" class="p-6">
+                            <div class="p-6">
                                 <!-- Statistics Cards -->
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col">

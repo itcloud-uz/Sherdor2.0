@@ -3112,7 +3112,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             <div v-if="currentObject === null && currentView === 'objects'" class="space-y-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-900">Mavjud Obyektlar</h2>
-                    <Link :href="route('facility.buildings.create')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all inline-block">
+                    <Link :href="route('admin.facility.buildings.create')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all inline-block">
                         + Yangi Obyekt
                     </Link>
                 </div>
@@ -3377,7 +3377,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                             <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
-                            <Link :href="route('facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
+                            <Link :href="route('admin.facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
                                 Tahrirlash
                             </Link>
                         </div>
@@ -3544,10 +3544,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
                                     📁 Modellar yuklash
                                 </button>
-                                <Link :href="route('facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject))" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
                                 </Link>
-                                <Link :href="route('facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
+                                <Link :href="route('admin.facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
                                     + Yangi Blok
                                 </Link>
                             </div>
@@ -3646,7 +3646,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                             <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                                 <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
-                                <Link :href="route('facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
+                                <Link :href="route('admin.facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
                                     Tahrirlash
                                 </Link>
                             </div>

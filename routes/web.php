@@ -92,6 +92,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/crm/contract-templates/{template}', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'destroy'])->name('contract-templates.destroy');
     Route::get('/facility/report/export', [\App\Http\Controllers\Admin\FacilityController::class, 'exportReport'])->name('facility.report.export');
     Route::get('/facility', [\App\Http\Controllers\Admin\FacilityController::class, 'index'])->name('facility');
+    Route::get('/facility/buildings/create', [\App\Http\Controllers\Admin\FacilityController::class, 'createBuilding'])->name('facility.buildings.create');
+    Route::get('/facility/buildings/{building}/edit', [\App\Http\Controllers\Admin\FacilityController::class, 'editBuilding'])->name('facility.buildings.edit');
     Route::post('/facility/buildings', [\App\Http\Controllers\Admin\FacilityController::class, 'storeBuilding'])->name('facility.buildings.store');
     Route::put('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateBuilding'])->name('facility.buildings.update');
     Route::delete('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyBuilding'])->name('facility.buildings.destroy');

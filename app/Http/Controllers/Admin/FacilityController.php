@@ -53,6 +53,31 @@ class FacilityController extends Controller
         ]);
     }
 
+    public function createBuilding(Request $request)
+    {
+        $objectContainer = null;
+        if ($request->has('object_id')) {
+            $objectContainer = Building::where('id', $request->input('object_id'))
+                ->where('total_floors', 0)
+                ->with('podezes')
+                ->first();
+        }
+
+        return Inertia::render('Admin/Facility/BuildingForm', [
+            'isEditing' => false,
+            'objectContainer' => $objectContainer,
+        ]);
+    }
+
+    public function editBuilding($id)
+    {
+        $building = Building::with(['floors.units', 'podezes'])->findOrFail($id);
+        return Inertia::render('Admin/Facility/BuildingForm', [
+            'isEditing' => true,
+            'building' => $building,
+        ]);
+    }
+
     public function storeBuilding(Request $request)
     {
         try {
@@ -220,7 +245,7 @@ class FacilityController extends Controller
                 }
             }
 
-            return redirect()->back()->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
+            return redirect()->route('facility')->with('message', 'Obyekt muvaffaqiyatli qo\'shildi!');
         } catch (\Exception $e) {
             Log::error('Building store failed: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -347,7 +372,7 @@ class FacilityController extends Controller
                 $this->generateFloorsAndUnits($building, $request->input('floors_data'));
             }
 
-            return redirect()->back()->with('message', 'Obyekt ma\'lumotlari yangilandi!');
+            return redirect()->route('facility')->with('message', 'Obyekt ma\'lumotlari yangilandi!');
         } catch (\Exception $e) {
             Log::error('Building update failed: ' . $e->getMessage(), [
                 'exception' => $e,

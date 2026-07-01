@@ -3110,9 +3110,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             <div v-if="currentObject === null && currentView === 'objects'" class="space-y-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-900">Mavjud Obyektlar</h2>
-                    <button @click="showAddBuildingModal = true; isEditingBuilding = false; isAddingBlock = false; buildingForm.reset();" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all">
+                    <Link :href="route('facility.buildings.create')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all inline-block">
                         + Yangi Obyekt
-                    </button>
+                    </Link>
                 </div>
 
                 <!-- Qidiruv va Filtrlar paneli -->
@@ -3375,9 +3375,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                             <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
-                            <button @click.stop="currentObject = building.name; selectedBuilding = building; openEditBuilding();" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all">
+                            <Link :href="route('facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
                                 Tahrirlash
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -3542,12 +3542,12 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
                                     📁 Modellar yuklash
                                 </button>
-                                <button @click="openEditObjectContainer(groupedObjects[currentObject])" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
+                                <Link :href="route('facility.buildings.edit', (groupedObjects[currentObject]?.find(b => b.total_floors === 0) || groupedObjects[currentObject]?.[0])?.id || 0)" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
-                                </button>
-                                <button @click="openAddBlock(currentObject)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                                </Link>
+                                <Link :href="route('facility.buildings.create', { object_id: (groupedObjects[currentObject]?.find(b => b.total_floors === 0) || groupedObjects[currentObject]?.[0])?.id })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
                                     + Yangi Blok
-                                </button>
+                                </Link>
                             </div>
                         </div>
                         <div>
@@ -3644,9 +3644,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
                             <div class="p-3 flex justify-between items-center bg-gray-50 border-t border-gray-100">
                                 <span class="text-xs text-gray-500 font-medium">Qavatlar: {{ building.total_floors }}</span>
-                                <button @click.stop="selectedBuilding = building; openEditBuilding();" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all">
+                                <Link :href="route('facility.buildings.edit', building.id)" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded shadow-sm transition-all inline-block">
                                     Tahrirlash
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -4795,288 +4795,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </Modal>
 
         <!-- Add/Edit Building Modal -->
-        <Modal :show="showAddBuildingModal" @close="showAddBuildingModal = false; isEditingBuilding = false" class="facility-modal-override">
-            <div class="p-5 w-[600px] max-w-[95vw] overflow-y-auto max-h-[90vh] custom-scrollbar bg-white text-slate-800 rounded-xl">
-                <!-- Header with Title & Close Icon -->
-                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                    <div class="flex items-center gap-2">
-                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
-                        <h2 class="text-sm font-bold text-slate-800 font-sans uppercase tracking-wider">
-                            {{ modalTitle }}
-                        </h2>
-                    </div>
-                    <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
-                        ✕
-                    </button>
-                </div>
-                
-                <form @submit.prevent="submitBuilding" class="space-y-4">
-                    
-                    <!-- YANGI OBYEKT QO'SHISH FORM -->
-                    <div v-if="!isAddingBlock && !isEditingBuilding" class="space-y-4">
-                        <!-- FOTO -->
-                        <div>
-                            <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">FOTO</label>
-                            <input type="file" @change="handleFileChange(buildingForm, 'photo', $event, 100)" accept="image/*" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                        </div>
 
-                        <!-- OBYEKT NOMI -->
-                        <div>
-                            <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">OBYEKT NOMI</label>
-                            <input v-model="buildingForm.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
-                        </div>
-
-                        <!-- Location Fields -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">VILOYAT</label>
-                                <input v-model="buildingForm.district" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">TUMAN/SHAHAR</label>
-                                <input v-model="buildingForm.city" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">MAHALLA</label>
-                                <input v-model="buildingForm.mahalla" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">KO'CHA</label>
-                                <input v-model="buildingForm.street" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                            </div>
-                        </div>
-
-                        <!-- Files Section -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">2D CHIZMA</label>
-                                <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 250)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">3D Model (png, jpg, pdf)</label>
-                                <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 1000)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- YANGI BLOK QO'SHISH FORM -->
-                    <div v-else-if="isAddingBlock && !isEditingBuilding" class="space-y-4">
-                        <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">BLOK NOMI</label>
-                                <input v-model="buildingForm.block_name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: A Blok" required>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">KORPUS NOMI</label>
-                                <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: 3-Korpus">
-                            </div>
-                        </div>
-
-                        <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
-                        <div class="border-t border-slate-100 pt-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Podezlar (Podez - Staircase/Entrance)</span>
-                                <button type="button" @click="addPodezToForm" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-sans font-bold uppercase rounded-lg transition-all flex items-center gap-1 shadow-sm">
-                                    + Podez Qo'shish
-                                </button>
-                            </div>
-                            
-                            <div class="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                                <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Podez #{{ idx + 1 }}</span>
-                                        <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
-                                            🗑️ O'chirish
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Nomi</label>
-                                            <input v-model="podez.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Raqami</label>
-                                            <input v-model.number="podez.number" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Qavatlar Soni</label>
-                                            <input v-model.number="podez.floors" type="number" min="1" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Turi</label>
-                                            <select v-model="podez.type" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none cursor-pointer">
-                                                <option value="Staircase">Staircase</option>
-                                                <option value="Elevator">Elevator</option>
-                                                <option value="Corridor">Corridor</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Xonadonlar / Qavat</label>
-                                            <input v-model.number="podez.apartments_per_floor" type="number" min="0" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" placeholder="1 qavatdagi xonadonlar">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Do'konlar / Qavat</label>
-                                            <input v-model.number="podez.commercial_per_floor" type="number" min="0" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" placeholder="1 qavatdagi do'konlar">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ROW 5: 2D CHIZMA & 3D MODEL (PNG, JPG, PDF) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">2D CHIZMA</label>
-                                <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 250)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">3D MODEL (PNG, JPG, PDF)</label>
-                                <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 1000)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BINONI TAHRIRLASH FORM -->
-                    <div v-if="isEditingBuilding && selectedBuilding" class="space-y-4">
-                        
-                        <!-- 1. TAHRIRLANAYOTGAN NAYSA OBJECT CONTAINER BO'LSA (total_floors === 0) -->
-                        <div v-if="selectedBuilding.total_floors === 0 || isEditingObject" class="space-y-4">
-                            <!-- Obyekt Nomi & Foto -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Obyekt Nomi</label>
-                                    <input v-model="buildingForm.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Foto</label>
-                                    <input type="file" @change="handleFileChange(buildingForm, 'photo', $event, 100)" accept="image/*" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                                </div>
-                            </div>
-
-                            <!-- Location Fields -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Viloyat</label>
-                                    <input v-model="buildingForm.district" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Tuman/Shahar</label>
-                                    <input v-model="buildingForm.city" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Mahalla</label>
-                                    <input v-model="buildingForm.mahalla" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Ko'cha</label>
-                                    <input v-model="buildingForm.street" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all">
-                                </div>
-                            </div>
-
-                            <!-- Files Section -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">2D Chizma</label>
-                                    <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 250)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">3D Model (png, jpg, pdf)</label>
-                                    <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 1000)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 2. TAHRIRLANAYOTGAN NAYSA BLOK BO'LSA (total_floors > 0) -->
-                        <div v-else-if="!isEditingObject" class="space-y-4">
-                            <!-- ROW 1: BLOK NOMI & KORPUS NOMI -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Blok Nomi</label>
-                                    <input v-model="buildingForm.block_name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: A Blok" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">Korpus Nomi</label>
-                                    <input v-model="buildingForm.corpus_name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-all" placeholder="Masalan: 3-Korpus">
-                                </div>
-                            </div>
-
-                            <!-- PODEZLAR (PODEZ - STAIRCASE/ENTRANCE) -->
-                            <div class="border-t border-slate-100 pt-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Podezlar (Podez - Staircase/Entrance)</span>
-                                    <button type="button" @click="addPodezToForm" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-sans font-bold uppercase rounded-lg transition-all flex items-center gap-1 shadow-sm">
-                                        + Podez Qo'shish
-                                    </button>
-                                </div>
-                                
-                                <div class="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                                    <div v-for="(podez, idx) in buildingForm.podezes" :key="podez.id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative">
-                                        <div class="flex justify-between items-center mb-2">
-                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Podez #{{ idx + 1 }}</span>
-                                            <button v-if="buildingForm.podezes.length > 1" type="button" @click="removePodezFromForm(podez.id)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
-                                                🗑️ O'chirish
-                                            </button>
-                                        </div>
-                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                            <div>
-                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Nomi</label>
-                                                <input v-model="podez.name" type="text" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Raqami</label>
-                                                <input v-model.number="podez.number" type="number" min="1" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Qavatlar Soni</label>
-                                                <input v-model.number="podez.floors" type="number" min="1" max="50" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none" required>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Podez Turi</label>
-                                                <select v-model="podez.type" class="w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-lg block p-2 outline-none cursor-pointer">
-                                                    <option value="Staircase">Staircase</option>
-                                                    <option value="Elevator">Elevator</option>
-                                                    <option value="Corridor">Corridor</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- ROW 5: 2D CHIZMA & 3D MODEL (PNG, JPG, PDF) -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">2D Chizma</label>
-                                    <input type="file" @change="handleFileChange(buildingForm, 'blueprint', $event, 250)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-sans font-bold text-slate-500 mb-1 uppercase tracking-wider">3D Model (png, jpg, pdf)</label>
-                                    <input type="file" @change="handleFileChange(buildingForm, 'model_3d', $event, 1000)" class="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer transition-all">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end items-center gap-3 mt-6">
-                        <button type="button" @click="showAddBuildingModal = false; isEditingBuilding = false" class="px-4 py-2 text-xs font-semibold rounded-lg border btn-cancel">
-                            Bekor Qilish
-                        </button>
-                        <button type="submit" :disabled="buildingForm.processing" class="px-5 py-2.5 text-white font-bold text-xs rounded-lg shadow-md btn-save disabled:opacity-50">
-                            {{ submitButtonLabel }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
-
-        <!-- Upload Models Modal -->
         <Modal :show="showUploadModelsModal" @close="showUploadModelsModal = false">
             <div class="p-6 w-[500px] max-w-[95vw]">
                 <h2 class="text-xl font-bold text-gray-900 mb-6">2D Chizma va 3D Model Yuklash</h2>

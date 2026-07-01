@@ -147,7 +147,10 @@ watch(serviceForm, (val) => {
     val.price = parseFloat(val.price) || 0;
     val.paymentAmount = parseFloat(val.paymentAmount) || 0;
 
-    val.totalMeasure = val.measure1 + val.measure2;
+    let m1 = val.measure1;
+    let m2 = val.measure2;
+    val.totalMeasure = (m1 && m2) ? (m1 * m2) : (m1 || m2);
+
     val.total = val.totalMeasure * val.quantity;
     val.calculatedSum = val.total * val.price;
     val.balance = val.calculatedSum - val.paymentAmount;
@@ -482,134 +485,132 @@ const handleDragEnd = () => {
         </div>
 
         <!-- Service Form Modal -->
-        <div v-if="isServiceModalOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[60] p-4">
-            <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 class="text-lg font-bold text-gray-800">{{ editingServiceId ? 'Xizmatni tahrirlash' : 'Yangi xizmat kiritish' }}</h3>
-                    <button @click="isServiceModalOpen = false" class="text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 border">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div v-if="isServiceModalOpen" class="fixed inset-0 bg-white z-[60] flex flex-col h-screen w-screen overflow-hidden">
+            <div class="px-8 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50 shadow-sm">
+                <h3 class="text-2xl font-bold text-gray-800">{{ editingServiceId ? 'Xizmatni tahrirlash' : 'Yangi xizmat kiritish' }}</h3>
+                <button @click="isServiceModalOpen = false" class="text-gray-500 hover:text-red-600 bg-white rounded-full p-2 border hover:bg-red-50 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
+                <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    
+                    <!-- 1. Asosiy ma'lumotlar -->
+                    <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Asosiy ma'lumotlar</h4>
                         
-                        <!-- 1. Asosiy ma'lumotlar -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-700 border-b pb-1">Asosiy ma'lumotlar</h4>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Xizmat nomi <span class="text-red-500">*</span></label>
+                            <input v-model="serviceForm.name" type="text" class="w-full border-gray-300 rounded-lg text-base p-2.5" placeholder="Masalan: Beton katlavat 2 blok" />
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Obyekt</label>
+                                <select v-model="serviceForm.building" class="w-full border-gray-300 rounded-lg text-base p-2.5">
+                                    <option value="">Tanlang</option>
+                                    <option v-for="b in BUILDINGS" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Blok</label>
+                                <select v-model="serviceForm.block" class="w-full border-gray-300 rounded-lg text-base p-2.5">
+                                    <option value="">-</option>
+                                    <option v-for="b in BLOCKS" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Qavat</label>
+                                <select v-model="serviceForm.floor" class="w-full border-gray-300 rounded-lg text-base p-2.5">
+                                    <option value="">-</option>
+                                    <option v-for="b in FLOORS" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. O'lchovlar -->
+                    <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">O'lchov & Miqdor</h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lchov birligi</label>
+                                <select v-model="serviceForm.unit" class="w-full border-gray-300 rounded-lg text-base p-2.5">
+                                    <option value="">-</option>
+                                    <option v-for="b in UNITS" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shundan necha dona</label>
+                                <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5 bg-blue-50" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lcham 1</label>
+                                <input v-model.number="serviceForm.measure1" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">O'lcham 2</label>
+                                <input v-model.number="serviceForm.measure2" type="number" min="0" class="w-full border-gray-300 rounded-lg text-base p-2.5" />
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-gray-100 p-4 rounded-xl border">
+                            <span class="text-base font-semibold text-gray-600">Jami O'lcham & Dona:</span>
+                            <span class="text-2xl font-bold text-gray-900">{{ serviceForm.totalMeasure }} x {{ serviceForm.quantity }} = {{ serviceForm.total }}</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Moliya & Hisob-kitob -->
+                    <div class="space-y-6 md:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Moliya (Hisob-kitoblar)</h4>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Birlik Narxi (UZS)</label>
+                                <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium" />
+                            </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Xizmat nomi <span class="text-red-500">*</span></label>
-                                <input v-model="serviceForm.name" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: Beton katlavat 2 blok" />
+                                <label class="block text-sm font-semibold text-blue-700 mb-2">Hisoblangan Summa</label>
+                                <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 text-lg font-bold text-blue-800 flex items-center justify-end h-[52px]">
+                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }}
+                                </div>
                             </div>
 
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Obyekt</label>
-                                    <select v-model="serviceForm.building" class="w-full border-gray-300 rounded-lg text-sm">
-                                        <option value="">Tanlang</option>
-                                        <option v-for="b in BUILDINGS" :key="b" :value="b">{{ b }}</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Blok</label>
-                                    <select v-model="serviceForm.block" class="w-full border-gray-300 rounded-lg text-sm">
-                                        <option value="">-</option>
-                                        <option v-for="b in BLOCKS" :key="b" :value="b">{{ b }}</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Qavat</label>
-                                    <select v-model="serviceForm.floor" class="w-full border-gray-300 rounded-lg text-sm">
-                                        <option value="">-</option>
-                                        <option v-for="b in FLOORS" :key="b" :value="b">{{ b }}</option>
-                                    </select>
-                                </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">To'lov sanasi</label>
+                                <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-base p-3" />
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-green-700 mb-2">To'langan summa</label>
+                                <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-lg p-3 text-green-900 font-bold" />
                             </div>
                         </div>
 
-                        <!-- 2. O'lchovlar -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-700 border-b pb-1">O'lchov & Miqdor</h4>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="col-span-2 sm:col-span-1">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">O'lchov birligi</label>
-                                    <select v-model="serviceForm.unit" class="w-full border-gray-300 rounded-lg text-sm">
-                                        <option value="">-</option>
-                                        <option v-for="b in UNITS" :key="b" :value="b">{{ b }}</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-2 sm:col-span-1">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Shundan necha dona</label>
-                                    <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm bg-blue-50" />
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">O'lcham 1</label>
-                                    <input v-model.number="serviceForm.measure1" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">O'lcham 2</label>
-                                    <input v-model.number="serviceForm.measure2" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-between items-center bg-gray-100 p-3 rounded-lg border">
-                                <span class="text-sm font-medium text-gray-600">Jami O'lcham & Dona:</span>
-                                <span class="text-lg font-bold text-gray-800">{{ serviceForm.totalMeasure }} x {{ serviceForm.quantity }} = {{ serviceForm.total }}</span>
+                        <div class="flex justify-end mt-4">
+                            <div class="bg-red-50 border border-red-200 px-8 py-4 rounded-xl flex gap-6 items-center shadow-inner">
+                                <span class="text-lg font-bold text-red-600">Qoldiq:</span>
+                                <span class="text-4xl font-black text-red-700">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }} so'm</span>
                             </div>
                         </div>
-
-                        <!-- 3. Moliya & Hisob-kitob -->
-                        <div class="space-y-4 md:col-span-2">
-                            <h4 class="font-semibold text-gray-700 border-b pb-1">Moliya (Hisob-kitoblar)</h4>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Birlik Narxi (UZS)</label>
-                                    <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-blue-700 mb-1">Hisoblangan Summa</label>
-                                    <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm font-bold text-blue-800 flex items-center justify-end h-[38px]">
-                                        {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">To'lov sanasi</label>
-                                    <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-green-700 mb-1">To'langan summa</label>
-                                    <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-sm text-green-900 font-semibold" />
-                                </div>
-                            </div>
-
-                            <div class="flex justify-end mt-2">
-                                <div class="bg-red-50 border border-red-200 px-6 py-3 rounded-lg flex gap-4 items-center shadow-inner">
-                                    <span class="text-sm font-medium text-red-600">Qoldiq:</span>
-                                    <span class="text-2xl font-bold text-red-700">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }} so'm</span>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
-                </div>
 
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                    <button @click="isServiceModalOpen = false" class="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Bekor qilish
-                    </button>
-                    <button @click="saveService" :disabled="!serviceForm.name" class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                        Saqlash
-                    </button>
                 </div>
+            </div>
+
+            <div class="px-8 py-5 bg-white border-t border-gray-200 flex justify-end gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button @click="isServiceModalOpen = false" class="px-8 py-3 text-base font-bold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                    Bekor qilish
+                </button>
+                <button @click="saveService" :disabled="!serviceForm.name" class="px-8 py-3 text-base font-bold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-md">
+                    Xizmatni Saqlash
+                </button>
             </div>
         </div>
 

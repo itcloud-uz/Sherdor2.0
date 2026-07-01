@@ -310,8 +310,20 @@ class FinanceController extends Controller
             }
         }
 
-        if (empty($validated['client_id']) && !empty($validated['target_type']) && $validated['target_type'] === 'client' && !empty($validated['target_id'])) {
-            $validated['client_id'] = $validated['target_id'];
+        $targetFieldMap = [
+            'client' => 'client_id',
+            'supplier' => 'supplier_id',
+            'worker' => 'worker_id',
+            'partner' => 'partner_id',
+            'brigade' => 'brigade_id',
+            'machine_owner' => 'machine_owner_id',
+        ];
+
+        if (!empty($validated['target_type']) && !empty($validated['target_id'])) {
+            $field = $targetFieldMap[$validated['target_type']] ?? null;
+            if ($field && empty($validated[$field])) {
+                $validated[$field] = $validated['target_id'];
+            }
         }
 
         $overpaid = 0;

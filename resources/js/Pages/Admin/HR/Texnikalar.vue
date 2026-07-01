@@ -506,7 +506,7 @@ const toggleOwner = (ownerId) => {
             </div>
             
             <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
-                <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                <div class="max-w-3xl mx-auto space-y-6">
                     
                     <!-- 1. Bajarilgan Ish -->
                     <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -532,43 +532,17 @@ const toggleOwner = (ownerId) => {
                                 <input v-model.number="workForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                         </div>
-                        
-                        <div class="flex justify-between items-center bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-inner mt-4">
-                            <span class="text-base font-bold text-gray-700 uppercase">Jami narxi:</span>
-                            <span class="text-3xl font-black text-gray-900">{{ formatMoney(workForm.totalPrice) }} so'm</span>
-                        </div>
-                    </div>
-
-                    <!-- 2. To'lov va Qoldiq -->
-                    <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col h-full">
-                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Moliya (To'lovlar va Qoldiq)</h4>
-                        
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-semibold text-green-700 mb-2">To'landi (Avans / Naqd)</label>
-                                <input v-model.number="workForm.paid" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-lg p-3 text-green-900 font-bold focus:border-green-500 focus:ring-green-500" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-blue-700 mb-2">Salarka olib berdik</label>
-                                <input v-model.number="workForm.fuel" type="number" min="0" class="w-full border-blue-300 bg-blue-50 rounded-lg text-lg p-3 text-blue-900 font-bold focus:border-blue-500 focus:ring-blue-500" />
-                            </div>
-                        </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Izox (Agar mavjud bo'lsa)</label>
                             <textarea v-model="workForm.comment" rows="3" class="w-full border-gray-300 rounded-lg text-base p-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Qo'shimcha ma'lumotlar yoki izohlarni yozing..."></textarea>
                         </div>
                         
-                        <div class="mt-auto pt-6">
-                            <div class="bg-red-50 border border-red-200 px-8 py-5 rounded-xl flex justify-between items-center shadow-inner">
-                                <span class="text-lg font-bold text-red-600 uppercase">Qoldiq:</span>
-                                <span class="text-4xl font-black" :class="workForm.balance > 0 ? 'text-gray-900' : 'text-red-700'">
-                                    {{ workForm.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(workForm.balance)) }} so'm
-                                </span>
-                            </div>
+                        <div class="flex justify-between items-center bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-inner mt-4">
+                            <span class="text-base font-bold text-gray-700 uppercase">Jami narxi:</span>
+                            <span class="text-3xl font-black text-gray-900">{{ formatMoney(workForm.totalPrice) }} so'm</span>
                         </div>
                     </div>
-
                 </div>
             </div>
 

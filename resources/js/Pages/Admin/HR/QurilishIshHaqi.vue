@@ -608,36 +608,19 @@ const handleDragEnd = () => {
 
                     <!-- 3. Moliya & Hisob-kitob -->
                     <div class="space-y-6 md:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Moliya (Hisob-kitoblar)</h4>
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Ish Narxi (Hisoblash)</h4>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Birlik Narxi (UZS)</label>
-                                <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium" />
+                                <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-semibold text-blue-700 mb-2">Hisoblangan Summa</label>
-                                <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 text-lg font-bold text-blue-800 flex items-center justify-end h-[52px]">
-                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }}
+                                <label class="block text-sm font-semibold text-blue-700 mb-2">Jami Hisoblangan Summa</label>
+                                <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 text-lg font-black text-blue-800 flex items-center justify-end h-[52px] shadow-inner">
+                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }} so'm
                                 </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">To'lov sanasi</label>
-                                <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-base p-3" />
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-semibold text-green-700 mb-2">To'langan summa</label>
-                                <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-lg p-3 text-green-900 font-bold" />
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end mt-4">
-                            <div class="bg-red-50 border border-red-200 px-8 py-4 rounded-xl flex gap-6 items-center shadow-inner">
-                                <span class="text-lg font-bold text-red-600">Qoldiq:</span>
-                                <span class="text-4xl font-black text-red-700">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }} so'm</span>
                             </div>
                         </div>
                     </div>

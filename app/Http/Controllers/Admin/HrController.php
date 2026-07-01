@@ -84,12 +84,12 @@ class HrController extends Controller
             }
         ])->get();
         
-        $brigades = \App\Models\Brigade::select('id', 'name', 'foreman_name', 'foreman_phone')->with([
+        $brigades = \App\Models\Brigade::select('id', 'name', 'foreman_name', 'phone', 'balance')->with([
             'workers' => function($q) {
                 $q->select('id', 'brigade_id', 'name', 'phone');
             }, 
             'transactions' => function($q) {
-                $q->select('id', 'target_id', 'target_type', 'type', 'amount', 'transaction_date', 'created_at', 'notes', 'description');
+                $q->select('id', 'brigade_id', 'type', 'amount', 'date', 'created_at', 'description');
             }
         ])->get();
         
@@ -101,13 +101,13 @@ class HrController extends Controller
 
     public function texnikalar()
     {
-        $machineries = \App\Models\Machinery::select('id', 'name', 'type', 'machine_owner_id', 'driver_name', 'driver_phone', 'status')->get();
-        $owners = \App\Models\MachineOwner::select('id', 'name', 'phone', 'passport', 'status')->with([
+        $machineries = \App\Models\Machinery::select('id', 'name', 'machinery_type', 'machine_owner_id', 'driver_name', 'created_at', 'updated_at')->get();
+        $owners = \App\Models\MachineOwner::select('id', 'name', 'phone', 'balance', 'created_at', 'updated_at')->with([
             'machineries' => function($q) {
-                $q->select('id', 'machine_owner_id', 'name', 'driver_name', 'driver_phone');
+                $q->select('id', 'machine_owner_id', 'name', 'driver_name');
             }, 
             'transactions' => function($q) {
-                $q->select('id', 'target_id', 'target_type', 'type', 'amount', 'transaction_date', 'created_at', 'notes', 'description');
+                $q->select('id', 'machine_owner_id', 'type', 'amount', 'date', 'created_at', 'description');
             }
         ])->get();
         return Inertia::render('Admin/HR/Texnikalar', [

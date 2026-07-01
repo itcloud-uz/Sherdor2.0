@@ -1343,8 +1343,8 @@ class FacilityController extends Controller
                     'podez_number' => (int) $podezItem['number'],
                     'podez_type' => $podezItem['type'] ?? 'Staircase',
                     'total_floors' => (int) $podezItem['floors'],
-                    'apartments_per_floor' => (int) ($podezItem['apartments_per_floor'] ?? 0),
-                    'commercial_per_floor' => (int) ($podezItem['commercial_per_floor'] ?? 0),
+                    'total_apartments' => (int) ($podezItem['total_apartments'] ?? 0),
+                    'total_commercial' => (int) ($podezItem['total_commercial'] ?? 0),
                 ];
 
                 if ($id && !$isTemp && $existingPodezes->has($id)) {
@@ -1401,11 +1401,42 @@ class FacilityController extends Controller
             }
         }
 
+        // Distribution Logic
+        $basementFloors = (int) ($building->basement_floors ?? 0);
+        $totalApts = (int) $podez->total_apartments;
+        $totalComm = (int) $podez->total_commercial;
+
+        $commercialFloors = [];
+        for ($b = -$basementFloors; $b <= -1; $b++) { $commercialFloors[] = $b; }
+        $commercialFloors[] = 1;
+        $commercialFloorCount = count($commercialFloors);
+
+        $residentialFloors = [];
+        for ($a = 2; $a <= $totalFloors; $a++) { $residentialFloors[] = $a; }
+        $residentialFloorCount = count($residentialFloors);
+
+        $shopsPerFloor = [];
+        $baseShops = $commercialFloorCount > 0 ? (int)floor($totalComm / $commercialFloorCount) : 0;
+        foreach ($commercialFloors as $f) { $shopsPerFloor[$f] = $baseShops; }
+        $remShops = $commercialFloorCount > 0 ? $totalComm % $commercialFloorCount : 0;
+        $commercialFloorsRev = array_reverse($commercialFloors);
+        for ($i = 0; $i < $remShops; $i++) { $shopsPerFloor[$commercialFloorsRev[$i]]++; }
+
+        $aptsPerFloor = [];
+        // Is it evenly divisible across ALL above-ground floors?
+        if ($totalFloors > 0 && $totalApts > 0 && $totalApts % $totalFloors == 0) {
+            $baseApts = (int)($totalApts / $totalFloors);
+            for ($a = 1; $a <= $totalFloors; $a++) { $aptsPerFloor[$a] = $baseApts; }
+        } else {
+            $baseApts = $residentialFloorCount > 0 ? (int)floor($totalApts / $residentialFloorCount) : $totalApts;
+            foreach ($residentialFloors as $f) { $aptsPerFloor[$f] = $baseApts; }
+            $remApts = $residentialFloorCount > 0 ? $totalApts % $residentialFloorCount : 0;
+            $aptsPerFloor[1] = $remApts;
+        }
+
         foreach ($desiredFloorNumbers as $fNum) {
-            $isCommercialFloor = ($fNum < 0 || $fNum === 1);
-            $isResidentialFloor = ($fNum >= 2);
-            $targetCommercial = $isCommercialFloor ? ((int) $podez->commercial_per_floor ?: (int) $building->shops_per_floor) : 0;
-            $targetResidential = $isResidentialFloor ? ((int) $podez->apartments_per_floor ?: (int) $building->apartments_per_floor) : 0;
+            $targetCommercial = $shopsPerFloor[$fNum] ?? 0;
+            $targetResidential = $aptsPerFloor[$fNum] ?? 0;
 
             if (!$existingFloors->has($fNum)) {
                 $floor = Floor::create([

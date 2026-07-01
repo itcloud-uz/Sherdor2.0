@@ -139,12 +139,12 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="1 qavatdagi xonadonlar soni">Xonadon / Qavat</label>
-                                            <input v-model.number="podez.apartments_per_floor" type="number" min="0" max="50" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
+                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="Umumiy xonadonlar soni">Umumiy Xonadonlar</label>
+                                            <input v-model.number="podez.total_apartments" type="number" min="0" max="5000" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="1 qavatdagi do'konlar soni">Do'kon / Qavat</label>
-                                            <input v-model.number="podez.commercial_per_floor" type="number" min="0" max="50" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
+                                            <label class="block text-[10px] font-semibold text-gray-400 mb-1 uppercase tracking-widest" title="Umumiy do'konlar soni">Umumiy Do'konlar</label>
+                                            <input v-model.number="podez.total_commercial" type="number" min="0" max="5000" class="w-full bg-transparent border-b border-gray-200 text-gray-800 text-sm py-1.5 px-0 outline-none focus:border-blue-600 focus:ring-0" placeholder="0">
                                         </div>
                                     </div>
                                 </div>
@@ -248,8 +248,10 @@ const buildingForm = useForm({
         number: p.podez_number,
         floors: p.total_floors,
         type: p.podez_type || 'Staircase',
-        apartments_per_floor: p.apartments_per_floor > 0 ? p.apartments_per_floor : (props.building?.apartments_per_floor || 0),
-        commercial_per_floor: p.commercial_per_floor > 0 ? p.commercial_per_floor : (props.building?.shops_per_floor || 0),
+        apartments_per_floor: p.apartments_per_floor,
+        commercial_per_floor: p.commercial_per_floor,
+        total_apartments: p.total_apartments > 0 ? p.total_apartments : 0,
+        total_commercial: p.total_commercial > 0 ? p.total_commercial : 0,
     })) || [
         { 
             id: 'temp_' + Date.now(), 
@@ -257,8 +259,8 @@ const buildingForm = useForm({
             number: 1, 
             floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5), 
             type: 'Staircase', 
-            apartments_per_floor: props.building?.apartments_per_floor || (props.objectContainer ? props.objectContainer.apartments_per_floor : 0), 
-            commercial_per_floor: props.building?.shops_per_floor || (props.objectContainer ? props.objectContainer.shops_per_floor : 0) 
+            total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0), 
+            total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0) 
         }
     ]
 });
@@ -278,8 +280,8 @@ function addPodezToForm() {
         number: nextNum,
         floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5),
         type: 'Staircase',
-        apartments_per_floor: props.building?.apartments_per_floor || (props.objectContainer ? props.objectContainer.apartments_per_floor : 0),
-        commercial_per_floor: props.building?.shops_per_floor || (props.objectContainer ? props.objectContainer.shops_per_floor : 0),
+        total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0),
+        total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0),
     });
 }
 

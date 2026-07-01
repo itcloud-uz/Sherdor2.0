@@ -4,8 +4,8 @@ import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx-js-style';
 
 const props = defineProps({
     machineries: {
@@ -309,7 +309,7 @@ const exportToPDF = () => {
         row.comment
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 25,
         head: [['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox']],
         body: tableData,
@@ -350,6 +350,25 @@ const exportToExcel = () => {
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                border: {
+                    top: {style: 'thin', color: {rgb: "000000"}},
+                    bottom: {style: 'thin', color: {rgb: "000000"}},
+                    left: {style: 'thin', color: {rgb: "000000"}},
+                    right: {style: 'thin', color: {rgb: "000000"}}
+                },
+                font: {
+                    bold: R === 0 || R === range.e.r
+                }
+            };
+        }
+    }
     
     // Add some styling widths
     ws['!cols'] = [

@@ -4,8 +4,8 @@ import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx-js-style';
 
 const props = defineProps({
     buildings: {
@@ -270,7 +270,7 @@ const exportToPDF = () => {
         new Intl.NumberFormat('uz-UZ').format(row.balance || 0)
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 25,
         head: [['№', 'Xizmat', 'Obyekt', 'Blok', 'Qavat', 'Birlik', 'O\'lchami 1', 'O\'lchami 2', 'Jami O\'lchami', 'Dona', 'Jami', 'Narxi', 'Hisoblangan', 'Sana', 'To\'landi', 'Qoldiq']],
         body: tableData,
@@ -315,6 +315,25 @@ const exportToExcel = () => {
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                border: {
+                    top: {style: 'thin', color: {rgb: "000000"}},
+                    bottom: {style: 'thin', color: {rgb: "000000"}},
+                    left: {style: 'thin', color: {rgb: "000000"}},
+                    right: {style: 'thin', color: {rgb: "000000"}}
+                },
+                font: {
+                    bold: R === 0 || R === range.e.r
+                }
+            };
+        }
+    }
     
     ws['!cols'] = [
         {wch: 5}, {wch: 25}, {wch: 20}, {wch: 8}, {wch: 8}, {wch: 15}, 

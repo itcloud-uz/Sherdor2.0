@@ -213,6 +213,7 @@ class ContractTemplate extends Model
             'BOSHLANGICH_TOLOV_FOIZ' => $downPaymentPercent,
             'MUDDAT_OY' => $termMonths,
             'MUDDAT_OY_SOZ_BILAN' => $termMonthsWords,
+            'TOLOV_MUDDAT_KUN' => ($contract->payment_limit_days ?? 6) . ' (' . self::numberToWords($contract->payment_limit_days ?? 6) . ') bank',
             'MIJOZ_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
             'DIREKTOR' => $korxonaDirector,
             'KORXONA_NOMI' => $korxonaNomi,

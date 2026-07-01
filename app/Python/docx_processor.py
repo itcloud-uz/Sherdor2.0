@@ -365,8 +365,7 @@ def replace_text_in_document(doc, old_text, new_text):
     def normalize_paragraph(p):
         for run in p.runs:
             if run.text:
-                run.text = run.text.replace('\xa0', ' ').replace('\t', ' ')
-                run.text = re.sub(r' +', ' ', run.text)
+                run.text = run.text.replace('\xa0', ' ')
 
     for p in doc.paragraphs:
         normalize_paragraph(p)
@@ -411,6 +410,21 @@ def replace_text_in_document(doc, old_text, new_text):
                                     modified = True
     return modified
 
+def set_cell_text_preserving_format(cell, new_text):
+    if not cell.paragraphs:
+        cell.add_paragraph(new_text)
+        return
+    p = cell.paragraphs[0]
+    if p.runs:
+        first_run = p.runs[0]
+        first_run.text = new_text
+        for run in p.runs[1:]:
+            run.text = ""
+        for extra_p in cell.paragraphs[1:]:
+            extra_p.text = ""
+    else:
+        p.text = new_text
+
 def auto_replace_room_specification_table(doc):
     for table in doc.tables:
         is_spec_table = False
@@ -439,17 +453,17 @@ def auto_replace_room_specification_table(doc):
                         continue
                     header_txt = header_cells[col_idx].text.lower()
                     if "блок" in header_txt or "blok" in header_txt:
-                        cell.text = "{{ BLOK }}"
+                        set_cell_text_preserving_format(cell, "{{ BLOK }}")
                     elif "қават" in header_txt or "qavat" in header_txt:
-                        cell.text = "{{ QAVAT }}"
-                    elif "хона" in header_txt or "xona" in header_txt:
-                        cell.text = "{{ XONALAR_SONI }}"
+                        set_cell_text_preserving_format(cell, "{{ QAVAT }}")
+                    elif "хоna" in header_txt or "xona" in header_txt or "хона" in header_txt:
+                        set_cell_text_preserving_format(cell, "{{ XONALAR_SONI }}")
                     elif "майдон" in header_txt or "maydon" in header_txt:
-                        cell.text = "{{ MAYDON }}"
+                        set_cell_text_preserving_format(cell, "{{ MAYDON }}")
                     elif "1 kv" in header_txt or "1кв" in header_txt or "1 кв" in header_txt:
-                        cell.text = "{{ KV_METR_NARXI }}"
+                        set_cell_text_preserving_format(cell, "{{ KV_METR_NARXI }}")
                     elif "умумий нарх" in header_txt or "umumiy narx" in header_txt or "umumiy summa" in header_txt or "умумий сумма" in header_txt:
-                        cell.text = "{{ UMUMIY_NARX }}"
+                        set_cell_text_preserving_format(cell, "{{ UMUMIY_NARX }}")
 
 def apply_replacements(docx_path, replacements, output_path):
     """

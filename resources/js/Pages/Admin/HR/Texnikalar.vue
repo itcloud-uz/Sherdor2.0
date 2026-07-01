@@ -1,22 +1,87 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
     machineries: {
         type: Array,
         default: () => []
+    },
+    owners: {
+        type: Array,
+        default: () => []
     }
 });
 
 const selectedMachinery = ref(null);
+const expandedOwners = ref({}); // { ownerId: boolean }
 
 const machineriesData = ref({}); // { machineryId: [rows] }
 const rows = ref([]); // current selected rows
 const draggedIdx = ref(null);
 
-// Modal state
+// Owner Modal state
+const isAddOwnerModalOpen = ref(false);
+const newOwnerForm = ref({
+    name: '',
+    phone: '',
+    balance: 0
+});
+const isSubmittingOwner = ref(false);
+
+const submitOwner = () => {
+    isSubmittingOwner.value = true;
+    router.post(route('admin.hr.machine_owner.store'), newOwnerForm.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isAddOwnerModalOpen.value = false;
+            newOwnerForm.value = { name: '', phone: '', balance: 0 };
+        },
+        onFinish: () => {
+            isSubmittingOwner.value = false;
+        }
+    });
+};
+
+// Machinery Modal state
+const isAddMachineryModalOpen = ref(false);
+const newMachineryForm = ref({
+    name: '',
+    machine_owner_id: '',
+    license_plate: '',
+    machinery_type: '',
+    driver_name: '',
+    payment_type: 'Naqd'
+});
+const isSubmittingMachinery = ref(false);
+
+const openAddMachineryModal = (ownerId = '') => {
+    newMachineryForm.value = {
+        name: '',
+        machine_owner_id: ownerId,
+        license_plate: '',
+        machinery_type: '',
+        driver_name: '',
+        payment_type: 'Naqd'
+    };
+    isAddMachineryModalOpen.value = true;
+};
+
+const submitMachinery = () => {
+    isSubmittingMachinery.value = true;
+    router.post(route('admin.hr.machinery.store'), newMachineryForm.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isAddMachineryModalOpen.value = false;
+        },
+        onFinish: () => {
+            isSubmittingMachinery.value = false;
+        }
+    });
+};
+
+// Work Modal state
 const isWorkModalOpen = ref(false);
 const editingWorkId = ref(null);
 const defaultWorkForm = {
@@ -41,6 +106,11 @@ onMounted(() => {
         } catch (e) {
             console.error(e);
         }
+    }
+    
+    // Auto expand the first owner if available
+    if (props.owners && props.owners.length > 0) {
+        expandedOwners.value[props.owners[0].id] = true;
     }
 });
 
@@ -72,7 +142,6 @@ watch(workForm, (val) => {
     val.fuel = parseFloat(val.fuel) || 0;
 
     val.totalPrice = val.quantity * val.price;
-    // Balance calculation: Jami narxi - To'landi - Salarka = Qoldiq
     val.balance = val.totalPrice - val.paid - val.fuel;
 }, { deep: true });
 
@@ -143,6 +212,10 @@ const handleDragOver = (e, index) => {
 const handleDragEnd = () => {
     draggedIdx.value = null;
 };
+
+const toggleOwner = (ownerId) => {
+    expandedOwners.value[ownerId] = !expandedOwners.value[ownerId];
+};
 </script>
 
 <template>
@@ -153,51 +226,85 @@ const handleDragEnd = () => {
             <div class="max-w-screen-2xl mx-auto">
                 
                 <!-- Main Header -->
-                <div class="mb-6">
+                <div class="mb-6 flex justify-between items-center">
                     <h1 class="text-2xl font-bold text-gray-800">TEXNIKALAR HISOBI</h1>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     
-                    <!-- Left Sidebar: List of Machineries -->
-                    <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-md font-semibold text-gray-800">Texnikalar ro'yxati</h2>
+                    <!-- Left Sidebar: Owners and Machineries -->
+                    <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col h-[calc(100vh-140px)]">
+                        <div class="flex flex-col gap-3 mb-4 border-b pb-4">
+                            <h2 class="text-md font-semibold text-gray-800">Texnika Egalari (Sohibkarlar)</h2>
+                            <div class="flex gap-2">
+                                <button @click="isAddOwnerModalOpen = true" class="flex-1 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-blue-200">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Egasi Qo'shish
+                                </button>
+                                <button @click="openAddMachineryModal('')" class="flex-1 px-3 py-2 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-orange-200">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Texnika Qo'shish
+                                </button>
+                            </div>
                         </div>
 
-                        <div v-if="props.machineries.length === 0" class="text-gray-500 text-sm text-center py-4">
-                            Texnikalar topilmadi.
+                        <div v-if="props.owners.length === 0" class="text-gray-500 text-sm text-center py-4 flex-1">
+                            Texnika egalari topilmadi.
                         </div>
-                        <div class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                            <button 
-                                v-for="machinery in props.machineries" 
-                                :key="machinery.id"
-                                @click="selectedMachinery = machinery"
-                                class="w-full text-left px-4 py-3 rounded-lg border transition-colors flex justify-between items-center"
-                                :class="selectedMachinery?.id === machinery.id ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'"
-                            >
-                                <div>
-                                    <span class="font-medium truncate block">{{ machinery.name }}</span>
-                                    <span class="text-xs text-gray-500">{{ machinery.license_plate }}</span>
+                        <div v-else class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                            <div v-for="owner in props.owners" :key="owner.id" class="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
+                                <div 
+                                    @click="toggleOwner(owner.id)" 
+                                    class="px-4 py-3 bg-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+                                >
+                                    <div>
+                                        <h3 class="font-bold text-gray-800">{{ owner.name }}</h3>
+                                        <p class="text-xs text-gray-500">{{ owner.phone || 'Tel yo\'q' }}</p>
+                                    </div>
+                                    <div class="flex items-center text-gray-400">
+                                        <span class="text-xs mr-2 font-medium bg-gray-100 px-2 py-1 rounded-full">{{ owner.machineries?.length || 0 }} texnika</span>
+                                        <svg class="w-5 h-5 transition-transform" :class="expandedOwners[owner.id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
                                 </div>
-                                <span class="text-[10px] uppercase font-semibold px-2 py-1 bg-white rounded-full border shadow-sm flex-shrink-0 text-gray-500">{{ machinery.machinery_type || 'Texnika' }}</span>
-                            </button>
+                                
+                                <div v-show="expandedOwners[owner.id]" class="p-2 border-t border-gray-200 bg-gray-50 space-y-2">
+                                    <div v-if="!owner.machineries || owner.machineries.length === 0" class="text-xs text-center text-gray-500 py-2">
+                                        Ushbu egasining texnikalari yo'q
+                                    </div>
+                                    <button 
+                                        v-for="machinery in owner.machineries" 
+                                        :key="machinery.id"
+                                        @click="selectedMachinery = machinery"
+                                        class="w-full text-left px-3 py-2 rounded-lg border transition-colors flex justify-between items-center"
+                                        :class="selectedMachinery?.id === machinery.id ? 'bg-orange-100 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-gray-200 hover:bg-orange-50 text-gray-700'"
+                                    >
+                                        <div class="overflow-hidden pr-2">
+                                            <span class="font-semibold text-sm truncate block">{{ machinery.name }}</span>
+                                            <span class="text-[10px] text-gray-500">{{ machinery.license_plate }} • {{ machinery.driver_name || 'Haydovchisiz' }}</span>
+                                        </div>
+                                        <span class="text-[9px] uppercase font-bold px-2 py-1 bg-white rounded border flex-shrink-0 text-gray-600 shadow-sm">{{ machinery.machinery_type || 'Texnika' }}</span>
+                                    </button>
+                                    <button @click="openAddMachineryModal(owner.id)" class="w-full text-center py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-dashed border-blue-300 rounded-lg transition-colors">
+                                        + Yangi texnika qo'shish
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Right Panel: Machinery Details & Work Log -->
-                    <div class="lg:col-span-3">
-                        <div v-if="!selectedMachinery" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center h-full text-center text-gray-500">
-                            <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg>
-                            <span>Chap tomondagi ro'yxatdan birorta texnikani tanlang.</span>
+                    <div class="lg:col-span-3 h-[calc(100vh-140px)] flex flex-col">
+                        <div v-if="!selectedMachinery" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center flex-1 text-center text-gray-500">
+                            <svg class="w-20 h-20 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg>
+                            <span class="text-lg">Chap tomondagi ro'yxatdan birorta texnikani tanlang.</span>
                         </div>
 
-                        <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden">
                             <!-- Machinery Header -->
-                            <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
                                 <div>
                                     <h2 class="text-xl font-bold text-gray-900">{{ selectedMachinery.name }} ({{ selectedMachinery.license_plate }})</h2>
-                                    <p class="text-sm text-gray-700 mt-1">Egasi (Sohibkari): <span class="font-semibold">{{ selectedMachinery.owner?.name || 'Kiritilmagan' }}</span></p>
+                                    <p class="text-sm text-gray-700 mt-1">Egasi (Sohibkari): <span class="font-semibold">{{ props.owners.find(o => o.id === selectedMachinery.machine_owner_id)?.name || 'Noma\'lum' }}</span></p>
                                 </div>
                                 <div class="flex gap-2">
                                     <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm text-center">
@@ -211,9 +318,9 @@ const handleDragEnd = () => {
                                 </div>
                             </div>
 
-                            <div class="p-6">
+                            <div class="p-6 flex flex-col flex-1 overflow-hidden">
                                 <!-- Action Bar -->
-                                <div class="flex justify-end mb-4">
+                                <div class="flex justify-end mb-4 flex-shrink-0">
                                     <button
                                         @click="openAddWorkModal"
                                         class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium flex items-center shadow-sm text-sm"
@@ -224,33 +331,33 @@ const handleDragEnd = () => {
                                 </div>
 
                                 <!-- Table Container -->
-                                <div class="overflow-x-auto border border-yellow-400">
-                                    <table class="w-full text-sm text-left text-gray-900 border-collapse">
-                                        <thead>
+                                <div class="overflow-auto border border-yellow-400 flex-1 custom-scrollbar">
+                                    <table class="w-full text-sm text-left text-gray-900 border-collapse min-w-[800px]">
+                                        <thead class="sticky top-0 z-10 shadow-sm">
                                             <!-- Top Header -->
                                             <tr>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center w-8">№</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Sana</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center w-8 font-bold">№</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Sana</th>
                                                 <th colspan="4" class="border border-gray-400 bg-gray-200 px-2 py-1 text-center font-bold">BAJARILGAN ISHLAR</th>
                                                 <th colspan="2" class="border border-gray-400 bg-blue-200 px-2 py-1 text-center font-bold">To'landi</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Qoldiq</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Izox</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-gray-100 px-2 py-2 text-center w-16">Amallar</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Qoldiq</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Izox</th>
+                                                <th rowspan="2" class="border border-gray-400 bg-gray-100 px-2 py-2 text-center w-16 font-bold">Amallar</th>
                                             </tr>
                                             <!-- Sub Header -->
                                             <tr>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Xizmat nomi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Soni (soat, reysi)</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Narxi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Jami narxi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">To'landi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center">Salarka olib berdik</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Xizmat nomi</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Soni (soat, reysi)</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Narxi</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Jami narxi</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">To'landi</th>
+                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Salarka olib berdik</th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white">
                                             <tr v-if="rows.length === 0">
-                                                <td colspan="11" class="border border-gray-300 px-6 py-8 text-center text-gray-500 text-xs">
-                                                    Ushbu texnika uchun bajarilgan ishlar mavjud emas.
+                                                <td colspan="11" class="border border-gray-300 px-6 py-12 text-center text-gray-500 text-sm">
+                                                    Ushbu texnika uchun bajarilgan ishlar kiritilmagan.
                                                 </td>
                                             </tr>
                                             <tr 
@@ -270,8 +377,8 @@ const handleDragEnd = () => {
                                                 <td class="border border-gray-400 px-2 py-1 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
                                                 <td class="border border-gray-400 px-2 py-1 text-right font-medium whitespace-nowrap">{{ formatMoney(row.totalPrice) }}</td>
                                                 
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-green-700 whitespace-nowrap">{{ row.paid ? formatMoney(row.paid) : '' }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-blue-700 whitespace-nowrap">{{ row.fuel ? formatMoney(row.fuel) : '' }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-right text-green-700 whitespace-nowrap font-medium">{{ row.paid ? formatMoney(row.paid) : '' }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-right text-blue-700 whitespace-nowrap font-medium">{{ row.fuel ? formatMoney(row.fuel) : '' }}</td>
                                                 
                                                 <td class="border border-gray-400 px-2 py-1 text-right font-bold whitespace-nowrap" :class="row.balance > 0 ? 'text-gray-900' : 'text-red-600'">
                                                     {{ row.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(row.balance)) }}
@@ -279,26 +386,26 @@ const handleDragEnd = () => {
                                                 <td class="border border-gray-400 px-2 py-1 text-xs text-gray-600 max-w-[150px] truncate" :title="row.comment">{{ row.comment }}</td>
                                                 
                                                 <td class="border border-gray-400 px-1 py-1 text-center space-x-1">
-                                                    <button @click="openEditWorkModal(row)" class="text-blue-600 hover:text-blue-800 p-0.5 rounded transition" title="Tahrirlash">
+                                                    <button @click="openEditWorkModal(row)" class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition" title="Tahrirlash">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                     </button>
-                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 p-0.5 rounded transition" title="O'chirish">
+                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition" title="O'chirish">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                     </button>
                                                 </td>
                                             </tr>
                                         </tbody>
                                         <!-- Footer / Totals -->
-                                        <tfoot>
+                                        <tfoot class="sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
                                             <tr class="bg-gray-50 font-bold text-gray-900">
-                                                <td colspan="5" class="border border-gray-400 px-2 py-2 text-center uppercase tracking-wider">Jami</td>
-                                                <td class="border border-gray-400 px-2 py-2 text-right whitespace-nowrap">{{ formatMoney(stats.totalPrice) }}</td>
-                                                <td class="border border-gray-400 px-2 py-2 text-right text-green-700 whitespace-nowrap">{{ formatMoney(stats.totalPaid) }}</td>
-                                                <td class="border border-gray-400 px-2 py-2 text-right text-blue-700 whitespace-nowrap">{{ formatMoney(stats.totalFuel) }}</td>
-                                                <td class="border border-gray-400 px-2 py-2 text-right whitespace-nowrap" :class="stats.totalBalance > 0 ? 'text-gray-900' : 'text-red-600'">
+                                                <td colspan="5" class="border border-gray-400 px-2 py-3 text-center uppercase tracking-wider">Jami</td>
+                                                <td class="border border-gray-400 px-2 py-3 text-right whitespace-nowrap text-base">{{ formatMoney(stats.totalPrice) }}</td>
+                                                <td class="border border-gray-400 px-2 py-3 text-right text-green-700 whitespace-nowrap text-base">{{ formatMoney(stats.totalPaid) }}</td>
+                                                <td class="border border-gray-400 px-2 py-3 text-right text-blue-700 whitespace-nowrap text-base">{{ formatMoney(stats.totalFuel) }}</td>
+                                                <td class="border border-gray-400 px-2 py-3 text-right whitespace-nowrap text-base" :class="stats.totalBalance > 0 ? 'text-gray-900' : 'text-red-600'">
                                                     {{ stats.totalBalance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(stats.totalBalance)) }}
                                                 </td>
-                                                <td colspan="2" class="border border-gray-400 px-2 py-2"></td>
+                                                <td colspan="2" class="border border-gray-400 px-2 py-3 bg-gray-100"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -311,91 +418,160 @@ const handleDragEnd = () => {
             </div>
         </div>
 
-        <!-- Add/Edit Work Modal -->
-        <div v-if="isWorkModalOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[60] p-4">
-            <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 class="text-lg font-bold text-gray-800">{{ editingWorkId ? 'Ishni tahrirlash' : 'Bajarilgan ish qo\'shish' }}</h3>
-                    <button @click="isWorkModalOpen = false" class="text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 border">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <!-- FULL-SCREEN WORK MODAL -->
+        <div v-if="isWorkModalOpen" class="fixed inset-0 bg-white z-[60] flex flex-col h-screen w-screen overflow-hidden">
+            <div class="px-8 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50 shadow-sm">
+                <h3 class="text-2xl font-bold text-gray-800">{{ editingWorkId ? 'Bajarilgan ishni tahrirlash' : 'Yangi bajarilgan ish kiritish' }}</h3>
+                <button @click="isWorkModalOpen = false" class="text-gray-500 hover:text-red-600 bg-white rounded-full p-2 border hover:bg-red-50 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
+                <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    
+                    <!-- 1. Bajarilgan Ish -->
+                    <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Ish haqida ma'lumotlar</h4>
                         
-                        <!-- 1. Bajarilgan Ish -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-700 border-b pb-1">Ish haqida</h4>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Sana <span class="text-red-500">*</span></label>
-                                <input v-model="workForm.date" type="date" class="w-full border-gray-300 rounded-lg text-sm" required />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Xizmat nomi <span class="text-red-500">*</span></label>
-                                <input v-model="workForm.serviceName" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: Shebenka qumli, Ankelbens" required />
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Soni (soat, reys) <span class="text-red-500">*</span></label>
-                                    <input v-model.number="workForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Narxi (UZS) <span class="text-red-500">*</span></label>
-                                    <input v-model.number="workForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-sm" />
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-between items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                                <span class="text-sm font-medium text-gray-700">Jami narxi:</span>
-                                <span class="text-lg font-bold text-gray-900">{{ formatMoney(workForm.totalPrice) }} so'm</span>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Sana <span class="text-red-500">*</span></label>
+                            <input v-model="workForm.date" type="date" class="w-full border-gray-300 rounded-lg text-base p-2.5 focus:border-indigo-500 focus:ring-indigo-500" required />
                         </div>
 
-                        <!-- 2. To'lov va Qoldiq -->
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-700 border-b pb-1">Moliya</h4>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-green-700 mb-1">To'landi (Avans/To'lov)</label>
-                                    <input v-model.number="workForm.paid" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-sm text-green-900" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-blue-700 mb-1">Salarka olib berdik</label>
-                                    <input v-model.number="workForm.fuel" type="number" min="0" class="w-full border-blue-300 bg-blue-50 rounded-lg text-sm text-blue-900" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Izox</label>
-                                <textarea v-model="workForm.comment" rows="2" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Qo'shimcha ma'lumotlar..."></textarea>
-                            </div>
-                            
-                            <div class="flex justify-end mt-4">
-                                <div class="w-full bg-red-50 border border-red-200 px-4 py-3 rounded-lg flex justify-between items-center shadow-inner">
-                                    <span class="text-sm font-medium text-red-600">Qoldiq:</span>
-                                    <span class="text-xl font-bold" :class="workForm.balance > 0 ? 'text-gray-900' : 'text-red-700'">
-                                        {{ workForm.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(workForm.balance)) }} so'm
-                                    </span>
-                                </div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Xizmat nomi <span class="text-red-500">*</span></label>
+                            <input v-model="workForm.serviceName" type="text" class="w-full border-gray-300 rounded-lg text-base p-2.5 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Masalan: Shebenka qumli, Ankelbens" required />
                         </div>
 
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Soni (soat, reys) <span class="text-red-500">*</span></label>
+                                <input v-model.number="workForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 bg-blue-50 focus:border-blue-500 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Narxi (UZS) <span class="text-red-500">*</span></label>
+                                <input v-model.number="workForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-inner mt-4">
+                            <span class="text-base font-bold text-gray-700 uppercase">Jami narxi:</span>
+                            <span class="text-3xl font-black text-gray-900">{{ formatMoney(workForm.totalPrice) }} so'm</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                    <button @click="isWorkModalOpen = false" class="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Bekor qilish
-                    </button>
-                    <button @click="saveWork" :disabled="!workForm.date || !workForm.serviceName" class="px-5 py-2 text-sm font-medium text-white bg-orange-500 border border-transparent rounded-lg hover:bg-orange-600 disabled:opacity-50">
-                        Saqlash
-                    </button>
+                    <!-- 2. To'lov va Qoldiq -->
+                    <div class="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col h-full">
+                        <h4 class="text-lg font-bold text-indigo-900 border-b pb-3">Moliya (To'lovlar va Qoldiq)</h4>
+                        
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-green-700 mb-2">To'landi (Avans / Naqd)</label>
+                                <input v-model.number="workForm.paid" type="number" min="0" class="w-full border-green-300 bg-green-50 rounded-lg text-lg p-3 text-green-900 font-bold focus:border-green-500 focus:ring-green-500" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-blue-700 mb-2">Salarka olib berdik</label>
+                                <input v-model.number="workForm.fuel" type="number" min="0" class="w-full border-blue-300 bg-blue-50 rounded-lg text-lg p-3 text-blue-900 font-bold focus:border-blue-500 focus:ring-blue-500" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Izox (Agar mavjud bo'lsa)</label>
+                            <textarea v-model="workForm.comment" rows="3" class="w-full border-gray-300 rounded-lg text-base p-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Qo'shimcha ma'lumotlar yoki izohlarni yozing..."></textarea>
+                        </div>
+                        
+                        <div class="mt-auto pt-6">
+                            <div class="bg-red-50 border border-red-200 px-8 py-5 rounded-xl flex justify-between items-center shadow-inner">
+                                <span class="text-lg font-bold text-red-600 uppercase">Qoldiq:</span>
+                                <span class="text-4xl font-black" :class="workForm.balance > 0 ? 'text-gray-900' : 'text-red-700'">
+                                    {{ workForm.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(workForm.balance)) }} so'm
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+            </div>
+
+            <div class="px-8 py-5 bg-white border-t border-gray-200 flex justify-end gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button @click="isWorkModalOpen = false" class="px-8 py-3 text-base font-bold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                    Bekor qilish
+                </button>
+                <button @click="saveWork" :disabled="!workForm.date || !workForm.serviceName" class="px-8 py-3 text-base font-bold text-white bg-orange-600 border border-transparent rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors shadow-md">
+                    Bajarilgan Ishni Saqlash
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Owner Modal -->
+        <div v-if="isAddOwnerModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <h3 class="text-lg font-semibold text-gray-900">Yangi Texnika Egasi (Sohibkar) qo'shish</h3>
+                </div>
+                <form @submit.prevent="submitOwner" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ismi/Kompaniya nomi *</label>
+                        <input v-model="newOwnerForm.name" type="text" class="w-full border-gray-300 rounded-lg text-sm" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telefon raqami</label>
+                        <input v-model="newOwnerForm.phone" type="text" class="w-full border-gray-300 rounded-lg text-sm" />
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="isAddOwnerModalOpen = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Bekor qilish</button>
+                        <button type="submit" :disabled="isSubmittingOwner" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Machinery Modal -->
+        <div v-if="isAddMachineryModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <h3 class="text-lg font-semibold text-gray-900">Yangi Texnika qo'shish</h3>
+                </div>
+                <form @submit.prevent="submitMachinery" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Egasi (Sohibkar) *</label>
+                        <select v-model="newMachineryForm.machine_owner_id" class="w-full border-gray-300 rounded-lg text-sm" required>
+                            <option value="">Egasi tanlang</option>
+                            <option v-for="owner in props.owners" :key="owner.id" :value="owner.id">{{ owner.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Nomi *</label>
+                        <input v-model="newMachineryForm.name" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: Kamaz, Ekskavator" required />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Davlat Raqami</label>
+                            <input v-model="newMachineryForm.license_plate" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="01 A 123 AA" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Texnika Turi</label>
+                            <input v-model="newMachineryForm.machinery_type" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Yuk mashinasi" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Haydovchi ismi</label>
+                            <input v-model="newMachineryForm.driver_name" type="text" class="w-full border-gray-300 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">To'lov Turi</label>
+                            <select v-model="newMachineryForm.payment_type" class="w-full border-gray-300 rounded-lg text-sm">
+                                <option value="Naqd">Naqd</option>
+                                <option value="Karta">Karta</option>
+                                <option value="Pul o'tkazma">Pul o'tkazma</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" @click="isAddMachineryModalOpen = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Bekor qilish</button>
+                        <button type="submit" :disabled="isSubmittingMachinery" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50">Saqlash</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -405,6 +581,7 @@ const handleDragEnd = () => {
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
     background: #f1f1f1; 

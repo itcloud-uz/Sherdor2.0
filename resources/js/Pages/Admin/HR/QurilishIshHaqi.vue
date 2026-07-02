@@ -725,12 +725,12 @@ const handleDragEnd = () => {
                                         <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
                                         <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
                                         
-                                        <td class="px-4 py-3 text-center space-x-1 whitespace-nowrap">
-                                            <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        <td class="px-4 py-3 text-center space-x-2 whitespace-nowrap">
+                                            <button @click="openEditServiceModal(row)" class="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded hover:bg-indigo-100 transition shadow-sm" title="Tahrirlash">
+                                                Tahrirlash
                                             </button>
-                                            <button @click="deleteRow(row.id)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition" title="O'chirish">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            <button @click="deleteRow(row.id)" class="px-3 py-1 bg-red-50 text-red-600 text-xs font-semibold rounded hover:bg-red-100 transition shadow-sm" title="O'chirish">
+                                                O'chirish
                                             </button>
                                         </td>
                                     </tr>
@@ -905,11 +905,15 @@ const handleDragEnd = () => {
 
                         <hr class="md:col-span-12 border-gray-100" />
 
-                        <!-- Col 3: Sana -->
+                        <!-- Col 3: Sana va Izoh -->
                         <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Xizmat sanasi</label>
                                 <input v-model="serviceForm.work_date" type="date" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:ring-indigo-500 focus:border-indigo-500" />
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Izoh (ixtiyoriy)</label>
+                                <input v-model="serviceForm.note" type="text" placeholder="Xizmat haqida qisqacha izoh..." class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
                             </div>
                         </div>
 

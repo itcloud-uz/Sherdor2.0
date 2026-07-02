@@ -1772,6 +1772,7 @@ class HrController extends Controller
             'price' => 'nullable|numeric',
             'calculated_sum' => 'required|numeric',
             'work_date' => 'nullable|date',
+            'note' => 'nullable|string',
         ]);
 
         $validated['brigade_id'] = $brigade->id;
@@ -1796,6 +1797,7 @@ class HrController extends Controller
             'price' => 'nullable|numeric',
             'calculated_sum' => 'required|numeric',
             'work_date' => 'nullable|date',
+            'note' => 'nullable|string',
         ]);
 
         $work->update($validated);

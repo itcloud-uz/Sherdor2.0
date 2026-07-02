@@ -18,9 +18,6 @@ class MachineWorkController extends Controller
             'quantity' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'total_price' => 'required|numeric|min:0',
-            'paid' => 'required|numeric|min:0',
-            'fuel' => 'required|numeric|min:0',
-            'balance' => 'required|numeric',
             'note' => 'nullable|string',
         ]);
 
@@ -38,9 +35,6 @@ class MachineWorkController extends Controller
             'quantity' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'total_price' => 'required|numeric|min:0',
-            'paid' => 'required|numeric|min:0',
-            'fuel' => 'required|numeric|min:0',
-            'balance' => 'required|numeric',
             'note' => 'nullable|string',
         ]);
 

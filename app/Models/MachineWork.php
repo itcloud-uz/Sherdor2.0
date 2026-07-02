@@ -16,9 +16,6 @@ class MachineWork extends Model
         'quantity' => 'decimal:2',
         'price' => 'decimal:2',
         'total_price' => 'decimal:2',
-        'paid' => 'decimal:2',
-        'fuel' => 'decimal:2',
-        'balance' => 'decimal:2',
     ];
 
     public function owner()

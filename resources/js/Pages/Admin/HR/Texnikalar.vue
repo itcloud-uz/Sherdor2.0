@@ -158,13 +158,49 @@ const defaultWorkForm = {
     quantity: 1,
     price: 0,
     totalPrice: 0,
-    paid: 0,
-    fuel: 0,
-    balance: 0,
     note: ''
 };
 const workForm = ref({ ...defaultWorkForm });
 const isSubmittingWork = ref(false);
+
+// Transaction Modal state
+const isTransactionModalOpen = ref(false);
+const isSubmittingTransaction = ref(false);
+const transactionForm = ref({
+    type: 'payment',
+    amount: 0,
+    description: '',
+    date: new Date().toISOString().slice(0, 10),
+    payment_method: 'cash',
+    account_type: 'main'
+});
+
+const openTransactionModal = () => {
+    if (!selectedOwner.value) return;
+    transactionForm.value = {
+        type: 'payment',
+        amount: 0,
+        description: '',
+        date: new Date().toISOString().slice(0, 10),
+        payment_method: 'cash',
+        account_type: 'main'
+    };
+    isTransactionModalOpen.value = true;
+};
+
+const submitTransaction = () => {
+    if (!selectedOwner.value) return;
+    isSubmittingTransaction.value = true;
+    router.post(route('admin.hr.owner.transaction.store', selectedOwner.value.id), transactionForm.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isTransactionModalOpen.value = false;
+        },
+        onFinish: () => {
+            isSubmittingTransaction.value = false;
+        }
+    });
+};
 
 onMounted(() => {
     // Auto expand and select the first owner if available
@@ -197,34 +233,23 @@ watch(() => props.owners, (newOwners) => {
 watch(workForm, (val) => {
     val.quantity = parseFloat(val.quantity) || 0;
     val.price = parseFloat(val.price) || 0;
-    val.paid = parseFloat(val.paid) || 0;
-    val.fuel = parseFloat(val.fuel) || 0;
-
     val.totalPrice = val.quantity * val.price;
-    val.balance = val.totalPrice - val.paid - val.fuel;
 }, { deep: true });
 
 const stats = computed(() => {
     const res = rows.value.reduce(
         (acc, row) => {
             acc.totalPrice += parseFloat(row.total_price) || 0;
-            acc.totalPaid += parseFloat(row.paid) || 0;
-            acc.totalFuel += parseFloat(row.fuel) || 0;
-            acc.totalBalance += parseFloat(row.balance) || 0;
-            return acc;
-            acc.totalPaid += row.paid || 0;
-            acc.totalFuel += row.fuel || 0;
-            acc.totalBalance += row.balance || 0;
             return acc;
         },
-        { totalPrice: 0, totalPaid: 0, totalFuel: 0, totalBalance: 0 }
+        { totalPrice: 0, totalPaid: 0, totalBalance: 0 }
     );
     let financePaid = 0;
     if (selectedOwner.value && selectedOwner.value.transactions) {
         financePaid = selectedOwner.value.transactions.reduce((s, t) => s + (parseFloat(t.amount)||0), 0);
     }
-    res.totalPaid += financePaid;
-    res.totalBalance = res.totalPrice - res.totalPaid - res.totalFuel;
+    res.totalPaid = financePaid;
+    res.totalBalance = res.totalPrice - res.totalPaid;
     return res;
 });
 
@@ -264,9 +289,6 @@ const saveWork = () => {
         quantity: workForm.value.quantity,
         price: workForm.value.price,
         total_price: workForm.value.totalPrice,
-        paid: workForm.value.paid,
-        fuel: workForm.value.fuel,
-        balance: workForm.value.balance,
         note: workForm.value.note
     };
 
@@ -344,15 +366,12 @@ const exportToPDF = () => {
         row.quantity,
         formatMoney(row.price),
         formatMoney(row.total_price),
-        formatMoney(row.paid),
-        formatMoney(row.fuel),
-        formatMoney(row.balance),
         row.note
     ]);
 
     autoTable(doc, {
         startY: 25,
-        head: [['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox']],
+        head: [['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'Izox']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 8 },
@@ -374,7 +393,7 @@ const exportToExcel = () => {
     }
     
     try {
-        const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salarka', 'Qoldiq', 'Izox'];
+        const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'Izox'];
     
     const data = rows.value.map((row, index) => [
         index + 1,
@@ -384,18 +403,12 @@ const exportToExcel = () => {
         row.quantity,
         row.price,
         row.total_price,
-        row.paid,
-        row.fuel,
-        row.balance,
         row.note
     ]);
     
     data.push([
         '', '', '', 'JAMI:', '', '', 
         stats.value.totalPrice, 
-        stats.value.totalPaid, 
-        stats.value.totalFuel, 
-        stats.value.totalBalance, 
         ''
     ]);
     
@@ -423,7 +436,7 @@ const exportToExcel = () => {
     // Add some styling widths
     ws['!cols'] = [
         {wch: 5}, {wch: 12}, {wch: 15}, {wch: 20}, {wch: 10}, 
-        {wch: 12}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 20}
+        {wch: 12}, {wch: 15}, {wch: 20}
     ];
 
         const wb = XLSX.utils.book_new();
@@ -558,91 +571,80 @@ const exportToExcel = () => {
                                     </div>
                                     <button
                                         @click="openAddWorkModal"
-                                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium flex items-center shadow-sm text-sm"
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"
                                     >
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                         Bajarilgan Ish Qo'shish
                                     </button>
                                 </div>
+                                <div v-show="activeTab === 'finance'" class="flex justify-between items-center mb-4 flex-shrink-0">
+                                    <div class="text-sm text-gray-500">Moliya markazidan kiritilgan barcha tranzaksiyalar (to'lovlar, xarajatlar)</div>
+                                    <button
+                                        @click="openTransactionModal"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center shadow-sm text-sm"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                        To'lov Qo'shish
+                                    </button>
+                                </div>
 
                                 <!-- Table Container -->
-                                <div v-show="activeTab === 'works'" class="overflow-auto border border-yellow-400 flex-1 custom-scrollbar">
-                                    <table class="w-full text-sm text-left text-gray-900 border-collapse min-w-[800px]">
-                                        <thead class="sticky top-0 z-10 shadow-sm">
-                                            <!-- Top Header -->
+                                <div v-show="activeTab === 'works'" class="overflow-auto rounded-lg border border-gray-200 flex-1 custom-scrollbar">
+                                    <table class="w-full text-sm text-left text-gray-700 min-w-[800px]">
+                                        <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600 uppercase text-xs font-semibold shadow-sm">
                                             <tr>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center w-8 font-bold">№</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Sana</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Texnika</th>
-                                                <th colspan="4" class="border border-gray-400 bg-gray-200 px-2 py-1 text-center font-bold">BAJARILGAN ISHLAR</th>
-                                                <th colspan="2" class="border border-gray-400 bg-blue-200 px-2 py-1 text-center font-bold">To'landi</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Qoldiq</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Izox</th>
-                                                <th rowspan="2" class="border border-gray-400 bg-gray-100 px-2 py-2 text-center w-16 font-bold">Amallar</th>
-                                            </tr>
-                                            <!-- Sub Header -->
-                                            <tr>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Xizmat nomi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Soni (soat, reysi)</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Narxi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Jami narxi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">To'landi</th>
-                                                <th class="border border-gray-400 bg-yellow-300 px-2 py-2 text-center font-bold">Salarka olib berdik</th>
+                                                <th class="px-4 py-3 text-center w-12 rounded-tl-lg">№</th>
+                                                <th class="px-4 py-3">Sana</th>
+                                                <th class="px-4 py-3">Texnika</th>
+                                                <th class="px-4 py-3">Xizmat nomi</th>
+                                                <th class="px-4 py-3 text-center">Soni</th>
+                                                <th class="px-4 py-3 text-right">Narxi</th>
+                                                <th class="px-4 py-3 text-right">Jami narxi</th>
+                                                <th class="px-4 py-3">Izox</th>
+                                                <th class="px-4 py-3 text-center w-16 rounded-tr-lg">Amallar</th>
                                             </tr>
                                         </thead>
-                                        <tbody class="bg-white">
+                                        <tbody class="divide-y divide-gray-100 bg-white">
                                             <tr v-if="rows.length === 0">
-                                                <td colspan="12" class="border border-gray-300 px-6 py-12 text-center text-gray-500 text-sm">
+                                                <td colspan="9" class="px-6 py-12 text-center text-gray-400 text-sm">
                                                     Ushbu texnik ta'minotchi uchun bajarilgan ishlar kiritilmagan.
                                                 </td>
                                             </tr>
                                             <tr 
                                                 v-for="(row, index) in rows" 
                                                 :key="row.id"
-                                                class="hover:bg-yellow-50 transition-colors"
+                                                class="hover:bg-blue-50/50 transition-colors"
                                                 :class="draggedIdx === index ? 'opacity-50 bg-gray-100' : ''"
                                                 draggable="true"
                                                 @dragstart="handleDragStart($event, index)"
                                                 @dragover="handleDragOver($event, index)"
                                                 @dragend="handleDragEnd"
                                             >
-                                                <td class="border border-gray-400 px-2 py-1 text-center font-bold">{{ index + 1 }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-center whitespace-nowrap">{{ row.date }}</td>
-                                                <td class="border border-gray-400 px-2 py-1">{{ row.machinery?.name || '-' }}</td>
-                                                <td class="border border-gray-400 px-2 py-1">{{ row.service_name }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-center">{{ parseFloat(row.quantity) }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right font-medium whitespace-nowrap">{{ formatMoney(row.total_price) }}</td>
+                                                <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
+                                                <td class="px-4 py-3 font-medium text-gray-800">{{ row.machinery?.name || '-' }}</td>
+                                                <td class="px-4 py-3 text-gray-700">{{ row.service_name }}</td>
+                                                <td class="px-4 py-3 text-center font-medium">{{ parseFloat(row.quantity) }}</td>
+                                                <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
+                                                <td class="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">{{ formatMoney(row.total_price) }}</td>
+                                                <td class="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
                                                 
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-green-700 whitespace-nowrap font-medium">{{ parseFloat(row.paid) > 0 ? formatMoney(row.paid) : '' }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-blue-700 whitespace-nowrap font-medium">{{ parseFloat(row.fuel) > 0 ? formatMoney(row.fuel) : '' }}</td>
-                                                
-                                                <td class="border border-gray-400 px-2 py-1 text-right font-bold whitespace-nowrap" :class="row.balance > 0 ? 'text-gray-900' : 'text-red-600'">
-                                                    {{ row.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(row.balance)) }}
-                                                </td>
-                                                <td class="border border-gray-400 px-2 py-1 text-xs text-gray-600 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
-                                                
-                                                <td class="border border-gray-400 px-1 py-1 text-center space-x-1">
-                                                    <button @click="openEditWorkModal(row)" class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition" title="Tahrirlash">
+                                                <td class="px-2 py-3 text-center space-x-1 whitespace-nowrap">
+                                                    <button @click="openEditWorkModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                     </button>
-                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition" title="O'chirish">
+                                                    <button @click="deleteRow(row.id)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition" title="O'chirish">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                     </button>
                                                 </td>
                                             </tr>
                                         </tbody>
                                         <!-- Footer / Totals -->
-                                        <tfoot class="sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
-                                            <tr class="bg-gray-50 font-bold text-gray-900">
-                                                <td colspan="5" class="border border-gray-400 px-2 py-3 text-center uppercase tracking-wider">Jami</td>
-                                                <td class="border border-gray-400 px-2 py-3 text-right whitespace-nowrap text-base">{{ formatMoney(stats.totalPrice) }}</td>
-                                                <td class="border border-gray-400 px-2 py-3 text-right text-green-700 whitespace-nowrap text-base">{{ formatMoney(stats.totalPaid) }}</td>
-                                                <td class="border border-gray-400 px-2 py-3 text-right text-blue-700 whitespace-nowrap text-base">{{ formatMoney(stats.totalFuel) }}</td>
-                                                <td class="border border-gray-400 px-2 py-3 text-right whitespace-nowrap text-base" :class="stats.totalBalance > 0 ? 'text-gray-900' : 'text-red-600'">
-                                                    {{ stats.totalBalance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(stats.totalBalance)) }}
-                                                </td>
-                                                <td colspan="2" class="border border-gray-400 px-2 py-3 bg-gray-100"></td>
+                                        <tfoot class="sticky bottom-0 z-10 bg-gray-50 border-t border-gray-200">
+                                            <tr class="font-bold text-gray-900">
+                                                <td colspan="6" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
+                                                <td class="px-4 py-4 text-right whitespace-nowrap text-base text-indigo-700">{{ formatMoney(stats.totalPrice) }}</td>
+                                                <td colspan="2" class="px-4 py-4"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -753,6 +755,56 @@ const exportToExcel = () => {
                 <button @click="saveWork" :disabled="!workForm.date || !workForm.serviceName || !workForm.machinery_id" class="px-8 py-3 text-base font-bold text-white bg-orange-600 border border-transparent rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors shadow-md">
                     Bajarilgan Ishni Saqlash
                 </button>
+            </div>
+        </div>
+
+        <!-- Transaction Modal -->
+        <div v-if="isTransactionModalOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Moliya bo'limiga to'lov/xarajat qo'shish</h3>
+                    <button @click="isTransactionModalOpen = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form @submit.prevent="submitTransaction" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sana *</label>
+                            <input v-model="transactionForm.date" type="date" class="w-full border-gray-300 rounded-lg text-sm" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tranzaksiya turi *</label>
+                            <select v-model="transactionForm.type" class="w-full border-gray-300 rounded-lg text-sm" required>
+                                <option value="payment">To'lov / Xarajat</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">So'mma (UZS) *</label>
+                        <input v-model.number="transactionForm.amount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 bg-blue-50 focus:border-blue-500 focus:ring-blue-500" required />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To'lov turi</label>
+                        <select v-model="transactionForm.payment_method" class="w-full border-gray-300 rounded-lg text-sm">
+                            <option value="cash">Naqd</option>
+                            <option value="card">Karta (Terminal)</option>
+                            <option value="bank_transfer">Pul o'tkazish (Perekisleniye)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tavsif (Masalan: Avans, Salarka, Yo'l kira)</label>
+                        <textarea v-model="transactionForm.description" rows="2" class="w-full border-gray-300 rounded-lg text-sm" placeholder="To'lov maqsadi haqida..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                        <button type="button" @click="isTransactionModalOpen = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">Bekor qilish</button>
+                        <button type="submit" :disabled="isSubmittingTransaction" class="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition shadow-sm disabled:opacity-50">Saqlash</button>
+                    </div>
+                </form>
             </div>
         </div>
 

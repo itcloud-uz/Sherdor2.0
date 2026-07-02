@@ -7,6 +7,10 @@ import axios from 'axios';
 const props = defineProps({
     branding: Object,
     promoSettings: Object,
+    availableUnits: {
+        type: Array,
+        default: () => []
+    }
 });
 
 const uzbekistanRegions = [
@@ -125,7 +129,7 @@ const submitLead = async () => {
                                     v-model="form.full_name" 
                                     required 
                                     placeholder="Masalan: Azizbek"
-                                    class="w-full bg-white border border-gray-200 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                    class="w-full bg-[#1e293b] border border-gray-600 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
                                 >
                             </div>
 
@@ -136,7 +140,7 @@ const submitLead = async () => {
                                     v-model="form.phone" 
                                     required 
                                     placeholder="+998 90 123 45 67"
-                                    class="w-full bg-white border border-gray-200 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                    class="w-full bg-[#1e293b] border border-gray-600 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
                                 >
                             </div>
 
@@ -184,6 +188,57 @@ const submitLead = async () => {
                 </div>
             </div>
             
+            <!-- AVAILABLE UNITS LISTING -->
+            <div v-if="availableUnits && availableUnits.length > 0" class="w-full mt-16 glass-panel p-6 md:p-10 rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-neon-magenta/20 blur-[80px] rounded-full pointer-events-none"></div>
+                
+                <div class="text-center mb-10 relative z-10">
+                    <h2 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-magenta mb-2 tracking-wide">
+                        Sotuvdagi Xonadonlar (Mavjud variantlar)
+                    </h2>
+                    <p class="text-text-muted font-light text-sm">O'zingizga ma'qul bo'lgan xonadonni tanlang va xarid qiling!</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                    <div v-for="unit in availableUnits" :key="unit.id" class="bg-black/40 border border-white/10 rounded-2xl p-5 hover:border-neon-cyan/50 hover:shadow-[0_0_20px_rgba(0,240,255,0.2)] transition-all group backdrop-blur-md">
+                        <div class="flex justify-between items-start mb-4 border-b border-white/10 pb-4">
+                            <div>
+                                <span class="px-2.5 py-1 bg-neon-green/20 text-neon-green text-[10px] font-mono font-bold uppercase tracking-widest rounded-full mb-2 inline-block">Sotuvda</span>
+                                <h3 class="text-lg font-bold text-white font-display flex items-center gap-2">
+                                    <span class="text-neon-cyan">🏢</span> {{ unit.building_name }}
+                                </h3>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] font-mono text-text-muted uppercase tracking-widest">Narxi</div>
+                                <div class="text-neon-magenta font-bold font-mono">{{ new Intl.NumberFormat('uz-UZ').format(unit.price) }} UZS</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Qavat</div>
+                                <div class="text-sm font-semibold text-white">{{ unit.floor_level }}-qavat</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Xonadon №</div>
+                                <div class="text-sm font-semibold text-white">№{{ unit.unit_number }}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Xonalar soni</div>
+                                <div class="text-sm font-semibold text-white">{{ unit.rooms }} xona</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1">Maydoni</div>
+                                <div class="text-sm font-semibold text-white">{{ unit.area }} m²</div>
+                            </div>
+                        </div>
+                        
+                        <button @click="form.comment = `Sizdagi ${unit.building_name} binosi, ${unit.floor_level}-qavat, №${unit.unit_number} xonadon (${unit.rooms} xona, ${unit.area} m²) ga qiziqyapman.`" class="mt-5 w-full py-2.5 rounded-xl border border-white/20 text-white font-mono text-xs tracking-widest uppercase hover:bg-white hover:text-black transition-colors">
+                            Qiziqish bildirish
+                        </button>
+                    </div>
+                </div>
+            </div>
             <p class="mt-8 text-[10px] font-mono text-white/30 tracking-widest uppercase">
                 &copy; {{ new Date().getFullYear() }} {{ $page.props.branding?.app_name || 'Sher-Dor ERP System' }}
             </p>

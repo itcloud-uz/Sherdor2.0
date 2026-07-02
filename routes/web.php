@@ -23,13 +23,37 @@ Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicR
 // Public Lead Form (Landing Page)
 Route::get('/promo/offers', function () {
     $settings = \App\Models\SystemSetting::first();
+    
+    $availableUnits = \App\Models\Unit::with(['floor.building'])
+        ->where('status', 'available')
+        ->where('type', 'residential')
+        ->orderBy('id', 'desc')
+        ->limit(20) // Show up to 20 available units to not overwhelm the page
+        ->get()
+        ->map(function ($unit) {
+            return [
+                'id' => $unit->id,
+                'building_name' => $unit->floor->building->name ?? 'Noma\'lum bino',
+                'floor_level' => $unit->floor->level ?? '?',
+                'unit_number' => $unit->unit_number,
+                'rooms' => $unit->rooms_count,
+                'area' => $unit->area_sqm,
+                'price' => $unit->price,
+            ];
+        });
+
     return Inertia::render('Public/LeadForm', [
         'promoSettings' => $settings ? [
             'promo_title' => $settings->promo_title,
             'promo_subtitle' => $settings->promo_subtitle,
             'promo_description' => $settings->promo_description,
             'promo_image' => $settings->promo_image,
+            'promo_form_title' => $settings->promo_form_title,
+            'promo_form_subtitle' => $settings->promo_form_subtitle,
+            'promo_button_text' => $settings->promo_button_text,
+            'promo_success_message' => $settings->promo_success_message,
         ] : null,
+        'availableUnits' => $availableUnits,
     ]);
 })->name('promo.offers');
 

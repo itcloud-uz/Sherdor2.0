@@ -287,23 +287,16 @@ const processedRows = computed(() => {
         
         if (row.transactions && row.transactions.length > 0) {
             row.transactions.forEach(t => {
-                const amount = parseFloat(t.amount) || 0;
-                const desc = (t.description || '').toLowerCase();
-                if (desc.includes('ovqat') || desc.includes('boshqa') || desc.includes('oziq')) {
-                    ovqat_amount += amount;
-                } else {
-                    paid_amount += amount;
-                }
+                paid_amount += parseFloat(t.amount) || 0;
             });
         }
         
         const total = parseFloat(row.calculated_sum) || 0;
-        const qoldiq = total - (paid_amount + ovqat_amount);
+        const qoldiq = total - paid_amount;
         
         return {
             ...row,
             paid_amount,
-            ovqat_amount,
             qoldiq
         };
     });
@@ -315,11 +308,10 @@ const stats = computed(() => {
             acc.totalServices += 1;
             acc.totalCalculatedSum += parseFloat(row.calculated_sum) || 0;
             acc.totalPaid += parseFloat(row.paid_amount) || 0;
-            acc.totalOvqat += parseFloat(row.ovqat_amount) || 0;
             acc.totalBalance += parseFloat(row.qoldiq) || 0;
             return acc;
         },
-        { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalOvqat: 0, totalBalance: 0 }
+        { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalBalance: 0 }
     );
     return acc;
 });
@@ -355,7 +347,6 @@ const brigadesWithStats = computed(() => {
             ...brigade,
             totalWorksPrice: worksPrice,
             totalPaid: paid,
-            totalOvqat: ovqat,
             calculatedBalance: balance
         };
     });
@@ -375,13 +366,7 @@ const globalStats = computed(() => {
         
         if (brigade.transactions && brigade.transactions.length > 0) {
             brigade.transactions.forEach(t => {
-                const amount = parseFloat(t.amount) || 0;
-                const desc = (t.description || '').toLowerCase();
-                if (desc.includes('ovqat') || desc.includes('boshqa') || desc.includes('oziq')) {
-                    ovqat += amount;
-                } else {
-                    paid += amount;
-                }
+                paid += parseFloat(t.amount) || 0;
             });
         }
         
@@ -394,11 +379,10 @@ const globalStats = computed(() => {
 
         totalWorksPrice += worksPrice;
         totalPaid += paid;
-        totalOvqat += ovqat;
-        totalBalance += (worksPrice - (paid + ovqat));
+        totalBalance += (worksPrice - paid);
     });
 
-    return { totalWorksPrice, totalPaid, totalOvqat, totalBalance };
+    return { totalWorksPrice, totalPaid, totalBalance };
 });
 
 
@@ -417,27 +401,26 @@ const exportToPDF = () => {
         index + 1,
         row.work_date || row.date || '-',
         row.work_name || row.name || '-',
+        UNITS.find(u => u.value === row.unit)?.label || row.unit || '-',
         row.quantity,
         new Intl.NumberFormat('uz-UZ').format(row.price || 0),
         new Intl.NumberFormat('uz-UZ').format(row.calculated_sum || 0),
         new Intl.NumberFormat('uz-UZ').format(row.paid_amount || 0),
-        new Intl.NumberFormat('uz-UZ').format(row.ovqat_amount || 0),
         new Intl.NumberFormat('uz-UZ').format(row.qoldiq || 0),
         row.note || ''
     ]);
 
     tableData.push([
-        '', 'JAMI', '', '', '',
+        '', 'JAMI', '', '', '', '',
         new Intl.NumberFormat('uz-UZ').format(stats.value.totalCalculatedSum),
         new Intl.NumberFormat('uz-UZ').format(stats.value.totalPaid),
-        new Intl.NumberFormat('uz-UZ').format(stats.value.totalOvqat),
         new Intl.NumberFormat('uz-UZ').format(stats.value.totalBalance),
         ''
     ]);
 
     autoTable(doc, {
         startY: 25,
-        head: [['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Oziq-ovqat/Boshqa', 'Qoldiq', 'Izoh']],
+        head: [['№', 'Sana', 'Xizmat nomi', 'O\'lchov birligi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Qoldiq', 'Izoh']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 8 },
@@ -464,26 +447,25 @@ const exportToExcel = () => {
     }
     
     try {
-        const headers = ['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Oziq-ovqat/Boshqa', 'Qoldiq', 'Izoh'];
+        const headers = ['№', 'Sana', 'Xizmat nomi', 'O\'lchov birligi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Qoldiq', 'Izoh'];
     
     const data = processedRows.value.map((row, index) => [
         index + 1,
         row.work_date || row.date || '-',
         row.work_name || row.name || '-',
+        UNITS.find(u => u.value === row.unit)?.label || row.unit || '-',
         row.quantity,
         row.price || 0,
         row.calculated_sum || 0,
         row.paid_amount || 0,
-        row.ovqat_amount || 0,
         row.qoldiq || 0,
         row.note || ''
     ]);
     
     data.push([
-        '', 'JAMI:', '', '', '', 
+        '', 'JAMI:', '', '', '', '',
         stats.value.totalCalculatedSum, 
         stats.value.totalPaid, 
-        stats.value.totalOvqat, 
         stats.value.totalBalance,
         ''
     ]);
@@ -510,8 +492,8 @@ const exportToExcel = () => {
     }
     
     ws['!cols'] = [
-        {wch: 5}, {wch: 12}, {wch: 25}, {wch: 10}, {wch: 15}, 
-        {wch: 18}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 20}
+        {wch: 5}, {wch: 12}, {wch: 25}, {wch: 15}, {wch: 10}, {wch: 15}, 
+        {wch: 18}, {wch: 15}, {wch: 15}, {wch: 20}
     ];
 
         const wb = XLSX.utils.book_new();
@@ -693,11 +675,11 @@ const handleDragEnd = () => {
                                         <th class="px-4 py-4 text-center w-12 rounded-tl-lg">№</th>
                                         <th class="px-4 py-4 whitespace-nowrap">Sana</th>
                                         <th class="px-4 py-4 whitespace-nowrap">Xizmat nomi</th>
+                                        <th class="px-4 py-4 text-center whitespace-nowrap">O'lchov birligi</th>
                                         <th class="px-4 py-4 text-center whitespace-nowrap">Soni</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap">Narxi</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap">Jami narxi</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap">To'landi</th>
-                                        <th class="px-4 py-4 text-right whitespace-nowrap">Oziq-ovqat/Boshqa</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap">Qoldiq</th>
                                         <th class="px-4 py-4 whitespace-nowrap">Izoh</th>
                                         <th class="px-4 py-4 text-center w-16 rounded-tr-lg whitespace-nowrap sticky right-0 bg-gray-100 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-20">Amallar</th>
@@ -717,11 +699,11 @@ const handleDragEnd = () => {
                                         <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
                                         <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.work_date || row.date }}</td>
                                         <td class="px-4 py-3 text-gray-700 font-semibold">{{ row.work_name || row.name }}</td>
+                                        <td class="px-4 py-3 text-center text-gray-600 font-medium">{{ UNITS.find(u => u.value === row.unit)?.label.split(' ')[0] || row.unit || '-' }}</td>
                                         <td class="px-4 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
                                         <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
                                         <td class="px-4 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-indigo-50/20">{{ formatMoney(row.calculated_sum) }}</td>
                                         <td class="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/30">{{ formatMoney(row.paid_amount) }}</td>
-                                        <td class="px-4 py-3 text-right font-bold text-orange-600 whitespace-nowrap bg-orange-50/30">{{ formatMoney(row.ovqat_amount) }}</td>
                                         <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
                                         <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
                                         
@@ -737,10 +719,9 @@ const handleDragEnd = () => {
                                 </tbody>
                                 <tfoot class="sticky bottom-0 z-10 border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                                     <tr class="font-black text-gray-900 bg-gray-100">
-                                        <td colspan="5" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
+                                        <td colspan="6" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap">{{ formatMoney(stats.totalCalculatedSum) }}</td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
-                                        <td class="px-4 py-4 text-right whitespace-nowrap text-orange-600">{{ formatMoney(stats.totalOvqat) }}</td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
                                         <td class="px-4 py-4 bg-gray-100"></td>
                                         <td class="px-4 py-4 bg-gray-100 sticky right-0 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-10"></td>

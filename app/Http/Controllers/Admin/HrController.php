@@ -1783,6 +1783,9 @@ class HrController extends Controller
         $validated['brigade_id'] = $brigade->id;
         $work = \App\Models\BrigadeWork::create($validated);
 
+        // Update brigade balance
+        $brigade->increment('balance', $work->calculated_sum);
+
         return response()->json($work);
     }
 
@@ -1805,13 +1808,20 @@ class HrController extends Controller
             'note' => 'nullable|string',
         ]);
 
+        $oldSum = $work->calculated_sum;
         $work->update($validated);
+
+        $diff = $work->calculated_sum - $oldSum;
+        if ($diff != 0) {
+            $work->brigade->increment('balance', $diff);
+        }
 
         return response()->json($work);
     }
 
     public function deleteBrigadeWork(\App\Models\BrigadeWork $work)
     {
+        $work->brigade->decrement('balance', $work->calculated_sum);
         $work->delete();
         return response()->json(['success' => true]);
     }

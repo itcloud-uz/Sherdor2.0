@@ -1165,7 +1165,7 @@ const fetchUnpaidWorks = async (type, id) => {
     
     isFetchingWorks.value = true;
     try {
-        const response = await fetch(`/admin/hr/works/${type}/${id}`);
+        const response = await fetch(`/admin/hr/target/${type}/${id}/unpaid-works`);
         if (response.ok) {
             unpaidWorks.value = await response.json();
         }

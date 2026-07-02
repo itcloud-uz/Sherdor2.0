@@ -303,6 +303,46 @@ const stats = computed(() => {
     return res;
 });
 
+const globalStats = computed(() => {
+    let totalWorksPrice = 0;
+    let totalPaid = 0;
+    let totalSalyarka = 0;
+    let totalBalance = 0;
+
+    if (!props.owners) return { totalWorksPrice, totalPaid, totalSalyarka, totalBalance };
+
+    props.owners.forEach(owner => {
+        let paid = 0;
+        let salyarka = 0;
+        
+        if (owner.transactions && owner.transactions.length > 0) {
+            owner.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('salyarka') || desc.includes('solyarka') || desc.includes('so\'lyarka')) {
+                    salyarka += amount;
+                } else {
+                    paid += amount;
+                }
+            });
+        }
+        
+        let worksPrice = 0;
+        if (owner.works && owner.works.length > 0) {
+            owner.works.forEach(w => {
+                worksPrice += parseFloat(w.total_price) || 0;
+            });
+        }
+
+        totalWorksPrice += worksPrice;
+        totalPaid += paid;
+        totalSalyarka += salyarka;
+        totalBalance += (worksPrice - (paid + salyarka));
+    });
+
+    return { totalWorksPrice, totalPaid, totalSalyarka, totalBalance };
+});
+
 const formatMoney = (val) => {
     return new Intl.NumberFormat('uz-UZ').format(val || 0);
 };
@@ -528,38 +568,66 @@ const exportToExcel = () => {
             <div class="max-w-screen-2xl mx-auto">
                 
                 <!-- Main Header -->
-                <div class="mb-6 flex justify-between items-center">
+                <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <h1 class="text-2xl font-bold text-gray-800">TEXNIKALAR HISOBI</h1>
+                    <div v-if="!selectedOwner" class="flex gap-2">
+                        <button @click="openAddOwnerModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition font-medium flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Texnika Egasi Qo'shish
+                        </button>
+                    </div>
                 </div>
 
-                <div v-if="!selectedOwner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-if="props.owners.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
-                        Texnika egalari topilmadi.
-                    </div>
-                    <div 
-                        v-for="owner in props.owners" 
-                        :key="owner.id" 
-                        @click="selectedOwner = owner"
-                        class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between"
-                    >
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold text-gray-900 line-clamp-2">{{ owner.name }}</h3>
-                                <div class="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">
-                                    {{ owner.machineries?.length || 0 }} texnika
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                {{ owner.phone || 'Tel yo\'q' }}
-                            </p>
+                <div v-if="!selectedOwner">
+                    <!-- Global Statistics Dashboard -->
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Jami Bajarilgan Ishlar</h3>
+                            <p class="text-2xl font-black text-gray-900 mt-2">{{ formatMoney(globalStats.totalWorksPrice) }} <span class="text-sm text-gray-500 font-normal">UZS</span></p>
                         </div>
-                        <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-500">Holat:</span>
-                                <span :class="owner.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold">
-                                    {{ formatMoney(owner.balance) }} UZS
-                                </span>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 border-b-4 border-b-green-500">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Jami To'langan (Xarajat)</h3>
+                            <p class="text-2xl font-black text-green-600 mt-2">{{ formatMoney(globalStats.totalPaid) }} <span class="text-sm text-green-600/70 font-normal">UZS</span></p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 border-b-4 border-b-orange-500">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Salyarka Olib Berilgan</h3>
+                            <p class="text-2xl font-black text-orange-500 mt-2">{{ formatMoney(globalStats.totalSalyarka) }} <span class="text-sm text-orange-500/70 font-normal">UZS</span></p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5" :class="globalStats.totalBalance >= 0 ? 'border-b-4 border-b-green-500' : 'border-b-4 border-b-red-500'">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Umumiy Qoldiq</h3>
+                            <p class="text-2xl font-black mt-2" :class="globalStats.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(globalStats.totalBalance) }} <span class="text-sm font-normal opacity-70">UZS</span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div v-if="props.owners.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+                            Texnika egalari topilmadi.
+                        </div>
+                        <div 
+                            v-for="owner in props.owners" 
+                            :key="owner.id" 
+                            @click="selectedOwner = owner"
+                            class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+                        >
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">{{ owner.name }}</h3>
+                                    <div class="bg-gray-100 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                                        {{ owner.machineries?.length || 0 }} texnika
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    {{ owner.phone || 'Tel yo\'q' }}
+                                </p>
+                            </div>
+                            <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Holat:</span>
+                                    <span :class="owner.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold text-base bg-gray-50 px-2 py-1 rounded-md">
+                                        {{ formatMoney(owner.balance) }} UZS
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -579,6 +647,10 @@ const exportToExcel = () => {
                             </div>
                         </div>
                         <div class="flex gap-2">
+                            <button @click="openAddMachineryModal(selectedOwner.id)" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg shadow-sm hover:bg-orange-200 transition font-medium flex items-center text-sm border border-orange-200 mr-2">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Texnika Qo'shish
+                            </button>
                             <div class="bg-white rounded-lg px-4 py-2 border border-amber-200 shadow-sm text-center">
                                 <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Texnikalar</div>
                                 <div class="text-sm font-semibold text-gray-800">{{ selectedOwner.machineries?.length || 0 }} ta</div>
@@ -613,21 +685,21 @@ const exportToExcel = () => {
                         </div>
 
                         <!-- Table Container -->
-                        <div class="overflow-auto rounded-lg border border-gray-200 flex-1 custom-scrollbar">
-                            <table class="w-full text-sm text-left text-gray-700 min-w-[1000px]">
-                                <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600 uppercase text-[11px] font-bold shadow-sm">
+                        <div class="overflow-auto rounded-xl border border-gray-200 flex-1 custom-scrollbar shadow-sm">
+                            <table class="w-full text-sm text-left text-gray-700 min-w-[1200px]">
+                                <thead class="sticky top-0 z-10 bg-gray-100 text-gray-600 uppercase text-[11px] font-bold shadow-sm">
                                     <tr>
-                                        <th class="px-3 py-3 text-center w-12 rounded-tl-lg">№</th>
-                                        <th class="px-3 py-3">Sana</th>
-                                        <th class="px-3 py-3">Xizmat nomi</th>
-                                        <th class="px-3 py-3 text-center">Soni (soat, reys)</th>
-                                        <th class="px-3 py-3 text-right">Narxi</th>
-                                        <th class="px-3 py-3 text-right">Jami narxi</th>
-                                        <th class="px-3 py-3 text-right">To'landi</th>
-                                        <th class="px-3 py-3 text-right">Salyarka olib berdik</th>
-                                        <th class="px-3 py-3 text-right">Qoldiq</th>
-                                        <th class="px-3 py-3">Izoh</th>
-                                        <th class="px-3 py-3 text-center w-16 rounded-tr-lg">Amallar</th>
+                                        <th class="px-4 py-4 text-center w-12 rounded-tl-lg">№</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Sana</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Xizmat nomi</th>
+                                        <th class="px-4 py-4 text-center whitespace-nowrap">Soni (soat, reys)</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Narxi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Jami narxi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">To'landi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Salyarka olib berdik</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Qoldiq</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Izoh</th>
+                                        <th class="px-4 py-4 text-center w-16 rounded-tr-lg whitespace-nowrap">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 bg-white">
@@ -641,18 +713,18 @@ const exportToExcel = () => {
                                         :key="row.id"
                                         class="hover:bg-blue-50/50 transition-colors"
                                     >
-                                        <td class="px-3 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
-                                        <td class="px-3 py-3 text-gray-700 font-semibold">{{ row.service_name }}</td>
-                                        <td class="px-3 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
-                                        <td class="px-3 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
-                                        <td class="px-3 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-blue-50/30">{{ formatMoney(row.total_price) }}</td>
-                                        <td class="px-3 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/20">{{ formatMoney(row.paid_amount) }}</td>
-                                        <td class="px-3 py-3 text-right font-bold text-orange-600 whitespace-nowrap bg-orange-50/20">{{ formatMoney(row.salyarka_amount) }}</td>
-                                        <td class="px-3 py-3 text-right font-bold whitespace-nowrap bg-gray-50" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
-                                        <td class="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
+                                        <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
+                                        <td class="px-4 py-3 text-gray-700 font-semibold">{{ row.service_name }}</td>
+                                        <td class="px-4 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
+                                        <td class="px-4 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-blue-50/20">{{ formatMoney(row.total_price) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/30">{{ formatMoney(row.paid_amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-orange-600 whitespace-nowrap bg-orange-50/30">{{ formatMoney(row.salyarka_amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
+                                        <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
                                         
-                                        <td class="px-2 py-3 text-center space-x-1 whitespace-nowrap">
+                                        <td class="px-4 py-3 text-center space-x-1 whitespace-nowrap">
                                             <button @click="openEditWorkModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                             </button>
@@ -662,15 +734,14 @@ const exportToExcel = () => {
                                         </td>
                                     </tr>
                                 </tbody>
-                                <!-- Footer / Totals -->
-                                <tfoot class="sticky bottom-0 z-10 border-t-2 border-gray-300">
+                                <tfoot class="sticky bottom-0 z-10 border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                                     <tr class="font-black text-gray-900 bg-gray-100">
-                                        <td colspan="5" class="px-3 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
-                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base">{{ formatMoney(stats.totalPrice) }}</td>
-                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
-                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-orange-600">{{ formatMoney(stats.totalSalyarka) }}</td>
-                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
-                                        <td colspan="2" class="px-3 py-4"></td>
+                                        <td colspan="5" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap">{{ formatMoney(stats.totalPrice) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-orange-600">{{ formatMoney(stats.totalSalyarka) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
+                                        <td colspan="2" class="px-4 py-4 bg-gray-100"></td>
                                     </tr>
                                 </tfoot>
                             </table>

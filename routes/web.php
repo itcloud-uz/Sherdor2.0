@@ -34,7 +34,7 @@ Route::get('/promo/offers', function () {
             return [
                 'id' => $unit->id,
                 'building_name' => $unit->floor->building->name ?? 'Noma\'lum bino',
-                'floor_level' => $unit->floor->level ?? '?',
+                'floor_level' => $unit->floor->floor_number ?? '?',
                 'unit_number' => $unit->unit_number,
                 'rooms' => $unit->rooms_count,
                 'area' => $unit->area_sqm,

@@ -55,6 +55,9 @@ class DeveloperSettingsController extends Controller
                 'promo_subtitle' => $systemSettings->promo_subtitle,
                 'promo_description' => $systemSettings->promo_description,
                 'promo_image' => $systemSettings->promo_image,
+                'telegram_lead_bot_token' => $systemSettings->telegram_lead_bot_token,
+                'telegram_lead_chat_id' => $systemSettings->telegram_lead_chat_id,
+                'fb_pixel_id' => $systemSettings->fb_pixel_id,
             ] : null,
         ]);
     }
@@ -223,7 +226,7 @@ class DeveloperSettingsController extends Controller
         return back()->with('success', 'Promo Sayt va Forma sozlamalari muvaffaqiyatli saqlandi!');
     }
     
-    public function updateTelegramLeadSettings(Request $request)
+    public function updateIntegrationSettings(Request $request)
     {
         if (!Session::get('developer_unlocked', false)) {
             abort(403);
@@ -232,13 +235,15 @@ class DeveloperSettingsController extends Controller
         $validated = $request->validate([
             'telegram_lead_bot_token' => 'nullable|string|max:255',
             'telegram_lead_chat_id' => 'nullable|string|max:255',
+            'fb_pixel_id' => 'nullable|string|max:255',
         ]);
 
         $settings = SystemSetting::first() ?? new SystemSetting();
         $settings->telegram_lead_bot_token = $validated['telegram_lead_bot_token'];
         $settings->telegram_lead_chat_id = $validated['telegram_lead_chat_id'];
+        $settings->fb_pixel_id = $validated['fb_pixel_id'];
         $settings->save();
 
-        return back()->with('success', 'Telegram Lid sozlamalari saqlandi!');
+        return back()->with('success', 'Integratsiyalar muvaffaqiyatli saqlandi!');
     }
 }

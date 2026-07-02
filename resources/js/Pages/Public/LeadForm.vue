@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import GalaxyBackground from '@/Components/GalaxyBackground.vue';
 import axios from 'axios';
 
@@ -40,6 +40,11 @@ const submitLead = async () => {
     try {
         const response = await axios.post(route('api.leads.store'), form.value);
         successMessage.value = props.promoSettings?.promo_success_message || response.data.message;
+        
+        if (props.promoSettings?.fb_pixel_id && window.fbq) {
+            window.fbq('track', 'Lead');
+        }
+        
         form.value.full_name = '';
         form.value.phone = '';
         form.value.region = '';
@@ -55,6 +60,22 @@ const submitLead = async () => {
         isSubmitting.value = false;
     }
 };
+
+onMounted(() => {
+    if (props.promoSettings?.fb_pixel_id) {
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        
+        fbq('init', props.promoSettings.fb_pixel_id);
+        fbq('track', 'PageView');
+    }
+});
 </script>
 
 <template>

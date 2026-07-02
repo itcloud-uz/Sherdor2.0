@@ -39,9 +39,10 @@ const promoForm = useForm({
     promo_success_message: props.promoSettings?.promo_success_message || '',
     promo_image: null,
 });
-const telegramLeadForm = useForm({
+const integrationForm = useForm({
     telegram_lead_bot_token: props.promoSettings?.telegram_lead_bot_token || '',
     telegram_lead_chat_id: props.promoSettings?.telegram_lead_chat_id || '',
+    fb_pixel_id: props.promoSettings?.fb_pixel_id || '',
 });
 const promoImagePreview = ref(props.promoSettings?.promo_image ? '/storage/' + props.promoSettings.promo_image : null);
 
@@ -115,9 +116,9 @@ function updatePromoSettings() {
     });
 }
 
-function updateTelegramLeadSettings() {
+function updateIntegrationSettings() {
     isProcessing.value = true;
-    telegramLeadForm.post(route('admin.developer.telegram_leads.update'), {
+    integrationForm.post(route('admin.developer.integrations.update'), {
         preserveScroll: true,
         onFinish: () => isProcessing.value = false
     });
@@ -494,43 +495,50 @@ function lockSettings() {
                     </form>
                 </div>
 
-                <!-- TELEGRAM LEADS BLOCK -->
+                <!-- EXTERNAL INTEGRATIONS BLOCK -->
                 <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 md:p-8 relative overflow-hidden mt-8 group">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[100px] pointer-events-none"></div>
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <h2 class="text-xl font-display font-bold text-gray-900 flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center border border-cyan-100">
-                                <span class="text-cyan-600 drop-shadow-sm">📨</span>
+                                <span class="text-cyan-600 drop-shadow-sm">🔗</span>
                             </div>
-                            Telegram API (Lidlar)
+                            Tashqi Integratsiyalar (Facebook & Telegram)
                         </h2>
-                        <span class="px-4 py-1.5 bg-cyan-50 text-cyan-600 border border-cyan-200 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full shadow-sm shrink-0">Bot Integration</span>
+                        <span class="px-4 py-1.5 bg-cyan-50 text-cyan-600 border border-cyan-200 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full shadow-sm shrink-0">Integrations</span>
                     </div>
 
-                    <p class="text-sm font-mono text-gray-500 mb-6 leading-relaxed max-w-3xl">Yangi lid kelganda ushbu Telegram bot orqali bildirishnoma yuboriladi.</p>
+                    <p class="text-sm font-mono text-gray-500 mb-6 leading-relaxed max-w-3xl">Marketing (Targeting) natijalarini kuzatish uchun Facebook Pixel ID va yangi lidlar haqida Telegram orqali xabar olish uchun Bot ma'lumotlarini kiriting.</p>
 
-                    <form @submit.prevent="updateTelegramLeadSettings" class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <form @submit.prevent="updateIntegrationSettings" class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <span class="text-cyan-600">🤖</span> Bot Token
+                                    <span class="text-blue-600">📊</span> Facebook Pixel ID
                                 </label>
-                                <input v-model="telegramLeadForm.telegram_lead_bot_token" type="text" class="bg-white border border-gray-200 rounded-xl p-3 w-full font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                                <input v-model="integrationForm.fb_pixel_id" type="text" class="bg-white border border-gray-200 rounded-xl p-3 w-full font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary" placeholder="Masalan: 123456789012345">
                             </div>
                             
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <span class="text-cyan-600">💬</span> Chat ID
+                                    <span class="text-cyan-600">🤖</span> Telegram Bot Token
                                 </label>
-                                <input v-model="telegramLeadForm.telegram_lead_chat_id" type="text" class="bg-white border border-gray-200 rounded-xl p-3 w-full font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary" placeholder="-1001234567890 yoki 123456789">
+                                <input v-model="integrationForm.telegram_lead_bot_token" type="text" class="bg-white border border-gray-200 rounded-xl p-3 w-full font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[10px] font-mono text-gray-500 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <span class="text-cyan-600">💬</span> Telegram Chat ID
+                                </label>
+                                <input v-model="integrationForm.telegram_lead_chat_id" type="text" class="bg-white border border-gray-200 rounded-xl p-3 w-full font-mono text-sm focus:border-neon-primary focus:ring-1 focus:ring-neon-primary" placeholder="-1001234567890 yoki 123456789">
                             </div>
                         </div>
 
                         <div class="flex justify-end mt-6 pt-6 border-t border-gray-200">
                             <button type="submit" :disabled="isProcessing" class="px-8 py-3 bg-cyan-50 text-cyan-700 border border-cyan-200 text-xs font-bold font-mono uppercase tracking-widest rounded-xl hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-50 flex items-center gap-3 shadow-sm">
                                 <span v-if="isProcessing" class="animate-spin">🔄</span>
-                                💾 Telegram API ni Saqlash
+                                💾 Integratsiyalarni Saqlash
                             </button>
                         </div>
                     </form>

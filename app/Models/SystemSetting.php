@@ -46,6 +46,7 @@ class SystemSetting extends Model
         'openai_api_key',
         'vapi_api_key',
         'vapi_assistant_id',
-        'ai_auto_call'
+        'ai_auto_call',
+        'fb_pixel_id'
     ];
 }

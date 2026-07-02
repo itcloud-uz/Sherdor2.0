@@ -779,7 +779,7 @@ const exportToExcel = () => {
                                         <th class="px-4 py-4 text-right whitespace-nowrap">Salyarka olib berdik</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap">Qoldiq</th>
                                         <th class="px-4 py-4 whitespace-nowrap">Izoh</th>
-                                        <th class="px-4 py-4 text-center w-16 rounded-tr-lg whitespace-nowrap">Amallar</th>
+                                        <th class="px-4 py-4 text-center w-16 rounded-tr-lg whitespace-nowrap sticky right-0 bg-gray-100 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-20">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 bg-white">
@@ -804,7 +804,7 @@ const exportToExcel = () => {
                                         <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
                                         <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
                                         
-                                        <td class="px-4 py-3 text-center space-x-2 whitespace-nowrap">
+                                        <td class="px-4 py-3 text-center space-x-2 whitespace-nowrap sticky right-0 bg-white shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-10">
                                             <button @click="openEditWorkModal(row)" class="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded hover:bg-indigo-100 transition shadow-sm" title="Tahrirlash">
                                                 Tahrirlash
                                             </button>
@@ -821,7 +821,8 @@ const exportToExcel = () => {
                                         <td class="px-4 py-4 text-right whitespace-nowrap text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap text-orange-600">{{ formatMoney(stats.totalSalyarka) }}</td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
-                                        <td colspan="2" class="px-4 py-4 bg-gray-100"></td>
+                                        <td class="px-4 py-4 bg-gray-100"></td>
+                                        <td class="px-4 py-4 bg-gray-100 sticky right-0 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-10"></td>
                                     </tr>
                                 </tfoot>
                             </table>

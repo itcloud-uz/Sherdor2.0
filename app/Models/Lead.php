@@ -22,6 +22,7 @@ class Lead extends Model
         'district',
         'address',
         'assigned_employee_id',
+        'comment',
     ];
 
     public function user()

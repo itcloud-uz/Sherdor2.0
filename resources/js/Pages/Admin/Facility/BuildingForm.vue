@@ -153,6 +153,7 @@
                                             <input v-model.number="podez.floors" type="number" min="1" max="100" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" required>
                                         </div>
                                         <div>
+                                        <div>
                                             <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Turi</label>
                                             <select v-model="podez.type" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer appearance-none">
                                                 <option value="Staircase">Zina</option>
@@ -160,13 +161,33 @@
                                                 <option value="Corridor">Koridor</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider" title="1 qavatdagi xonadonlar soni">Qavatda Xonadon</label>
-                                            <input v-model.number="podez.apartments_per_floor" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                        <div class="col-span-2 flex items-end">
+                                            <button type="button" @click="podez.show_config = !podez.show_config" class="w-full py-2 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-lg hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                                {{ podez.show_config ? 'Sozlamalarni yopish' : 'Qavatlarni sozlash' }}
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider" title="1 qavatdagi do'konlar soni">Qavatda Do'kon</label>
-                                            <input v-model.number="podez.commercial_per_floor" type="number" min="0" max="5000" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="0">
+                                    </div>
+
+                                    <!-- FLOOR CONFIGURATION AREA -->
+                                    <div v-if="podez.show_config" class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                        <h4 class="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">Qavatlardagi uylar va do'konlar soni</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                            <div v-for="fc in podez.floors_config" :key="fc.floor" class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                                                <div class="font-bold text-xs w-20" :class="fc.floor < 0 ? 'text-amber-600' : 'text-slate-700'">
+                                                    {{ fc.floor < 0 ? 'Yer to\'la ' + fc.floor : fc.floor + '-qavat' }}
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <div class="flex flex-col items-center">
+                                                        <span class="text-[9px] text-slate-400 font-bold">UY</span>
+                                                        <input v-model.number="fc.apartments" type="number" min="0" class="w-12 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500">
+                                                    </div>
+                                                    <div class="flex flex-col items-center">
+                                                        <span class="text-[9px] text-slate-400 font-bold">DO'KON</span>
+                                                        <input v-model.number="fc.shops" type="number" min="0" class="w-12 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -192,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onErrorCaptured } from 'vue';
+import { ref, computed, onErrorCaptured, watch, onMounted } from 'vue';
 import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -258,8 +279,12 @@ const buildingForm = useForm({
         number: p.podez_number,
         floors: p.total_floors,
         type: p.podez_type || 'Staircase',
-        apartments_per_floor: p.apartments_per_floor || (p.total_apartments > 0 && p.total_floors > 0 ? Math.floor(p.total_apartments / p.total_floors) : 0),
-        commercial_per_floor: p.commercial_per_floor || (p.total_commercial > 0 ? Math.floor(p.total_commercial / ((props.building?.basement_floors || 0) + 1)) : 0),
+        show_config: false,
+        floors_config: p.floors ? p.floors.map(f => ({
+            floor: f.floor_number,
+            apartments: f.total_units,
+            shops: f.total_commercial_units
+        })).sort((a, b) => b.floor - a.floor) : [],
         total_apartments: p.total_apartments > 0 ? p.total_apartments : 0,
         total_commercial: p.total_commercial > 0 ? p.total_commercial : 0,
     })) || [
@@ -269,13 +294,54 @@ const buildingForm = useForm({
             number: 1, 
             floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5), 
             type: 'Staircase', 
-            apartments_per_floor: 0,
-            commercial_per_floor: 0,
-            total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0), 
-            total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0) 
+            show_config: true,
+            floors_config: [],
+            total_apartments: 0, 
+            total_commercial: 0 
         }
     ]
 });
+
+function syncFloorsConfig(podez, buildingFloors, basementFloors) {
+    if (!podez.floors_config) {
+        podez.floors_config = [];
+    }
+    
+    let desired = [];
+    for (let f = buildingFloors; f >= 1; f--) desired.push(f);
+    for (let b = -1; b >= -basementFloors; b--) desired.push(b);
+    
+    podez.floors_config = podez.floors_config.filter(c => desired.includes(c.floor));
+    
+    desired.forEach(fNum => {
+        if (!podez.floors_config.find(c => c.floor === fNum)) {
+            podez.floors_config.push({
+                floor: fNum,
+                apartments: fNum > 0 ? 4 : 0,
+                shops: (fNum === 1 || fNum < 0) ? 2 : 0
+            });
+        }
+    });
+    
+    podez.floors_config.sort((a, b) => b.floor - a.floor);
+}
+
+// Ensure configs are synced initially
+onMounted(() => {
+    buildingForm.podezes.forEach(p => {
+        syncFloorsConfig(p, p.floors, parseInt(buildingForm.basement_floors) || 0);
+    });
+});
+
+watch(
+    () => [buildingForm.basement_floors, buildingForm.podezes.map(p => p.floors)],
+    ([bf, pFloors], [oldBf, oldPFloors]) => {
+        buildingForm.podezes.forEach((podez, idx) => {
+            syncFloorsConfig(podez, podez.floors, parseInt(bf) || 0);
+        });
+    },
+    { deep: true }
+);
 
 function handleFileChange(field, event) {
     const file = event.target.files[0];
@@ -292,11 +358,14 @@ function addPodezToForm() {
         number: nextNum,
         floors: props.building?.total_floors || (props.objectContainer ? props.objectContainer.total_floors : 5),
         type: 'Staircase',
-        apartments_per_floor: 0,
-        commercial_per_floor: 0,
-        total_apartments: props.building?.total_apartments || (props.objectContainer ? props.objectContainer.total_apartments : 0),
-        total_commercial: props.building?.total_shops || (props.objectContainer ? props.objectContainer.total_shops : 0),
+        show_config: true,
+        floors_config: [],
+        total_apartments: 0,
+        total_commercial: 0,
     });
+    
+    const newPodez = buildingForm.podezes[buildingForm.podezes.length - 1];
+    syncFloorsConfig(newPodez, newPodez.floors, parseInt(buildingForm.basement_floors) || 0);
 }
 
 function removePodezFromForm(podezId) {
@@ -324,13 +393,19 @@ function submitBuilding() {
     const transformData = (data) => {
         const transformed = { ...data };
         transformed.podezes = transformed.podezes.map(p => {
-            const apts = p.apartments_per_floor ? p.apartments_per_floor * p.floors : p.total_apartments;
-            const commFloors = (parseInt(buildingForm.basement_floors) || 0) + 1;
-            const comms = p.commercial_per_floor ? p.commercial_per_floor * commFloors : p.total_commercial;
+            let totalApts = 0;
+            let totalComms = 0;
+            if (p.floors_config) {
+                p.floors_config.forEach(f => {
+                    totalApts += parseInt(f.apartments) || 0;
+                    totalComms += parseInt(f.shops) || 0;
+                });
+            }
+            
             return {
                 ...p,
-                total_apartments: apts,
-                total_commercial: comms
+                total_apartments: totalApts,
+                total_commercial: totalComms
             };
         });
         return transformed;

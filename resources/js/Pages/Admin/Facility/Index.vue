@@ -2397,11 +2397,24 @@ function printCalculatorDetails() {
                     margin-bottom: 5mm;
                 }
                 
-                .qr-code {
-                    width: 40mm;
-                    height: 40mm;
+                .qr-blueprint-row {
+                    display: flex;
+                    justify-content: flex-start;
+                    align-items: center;
+                    gap: 20px;
                     margin-bottom: 10mm;
-                    align-self: center;
+                }
+                
+                .qr-code {
+                    width: 35mm;
+                    height: 35mm;
+                }
+                
+                .blueprint-image {
+                    height: 45mm;
+                    width: auto;
+                    max-width: 50%;
+                    object-fit: contain;
                 }
 
                 /* Text Styles */
@@ -2627,7 +2640,10 @@ function printCalculatorDetails() {
                 <div class="left-col">
                     <img src="${selectedUnitDisplayImage.value}" alt="Unit Layout" class="unit-image" />
                     
-                    <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
+                    <div class="qr-blueprint-row">
+                        <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
+                        <img src="${selectedUnitBlueprint.value}" alt="2D Blueprint" class="blueprint-image" />
+                    </div>
                     
                     <div class="section-title dark">YAKUNIY SHARTNOMA QIYMATI</div>
                     <ul class="bullet-list">

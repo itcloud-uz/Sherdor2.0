@@ -240,10 +240,15 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/hr/brigades/{brigade}/transactions', [\App\Http\Controllers\Admin\HrController::class, 'getBrigadeLedger'])->name('hr.brigade.transactions');
     Route::post('/hr/brigades/{brigade}/transaction', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigadeTransaction'])->name('hr.brigade.transaction.store');
     Route::get('/hr/brigades/{brigade}/export-ledger', [\App\Http\Controllers\Admin\HrController::class, 'exportBrigadeLedger'])->name('hr.brigade.ledger.export');
-    
+    Route::get('/hr/brigades/{brigade}/works', [\App\Http\Controllers\Admin\HrController::class, 'getBrigadeWorks'])->name('hr.brigade.works.index');
+    Route::post('/hr/brigades/{brigade}/works', [\App\Http\Controllers\Admin\HrController::class, 'storeBrigadeWork'])->name('hr.brigade.works.store');
+    Route::put('/hr/brigades/works/{work}', [\App\Http\Controllers\Admin\HrController::class, 'updateBrigadeWork'])->name('hr.brigade.works.update');
+    Route::delete('/hr/brigades/works/{work}', [\App\Http\Controllers\Admin\HrController::class, 'deleteBrigadeWork'])->name('hr.brigade.works.destroy');
+
     Route::post('/hr/machine-owners', [\App\Http\Controllers\Admin\HrController::class, 'storeMachineOwner'])->name('hr.machine_owner.store');
     Route::put('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'updateMachineOwner'])->name('hr.machine_owner.update');
     Route::delete('/hr/machine-owners/{machine_owner}', [\App\Http\Controllers\Admin\HrController::class, 'deleteMachineOwner'])->name('hr.machine_owner.destroy');
+    Route::get('/hr/target/{type}/{id}/unpaid-works', [\App\Http\Controllers\Admin\HrController::class, 'getUnpaidWorks'])->name('hr.target.unpaid_works');
     
     // Machine Works
     Route::post('/hr/machine-works', [\App\Http\Controllers\Admin\HR\MachineWorkController::class, 'store'])->name('hr.machine_works.store');

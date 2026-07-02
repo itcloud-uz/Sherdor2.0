@@ -15,6 +15,8 @@ class MachineOwnerTransaction extends Model
         'amount',
         'description',
         'date',
+        'linked_work_type',
+        'linked_work_id',
     ];
 
     public function machineOwner()

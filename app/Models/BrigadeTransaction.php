@@ -11,7 +11,9 @@ class BrigadeTransaction extends Model
         'type',
         'amount',
         'description',
-        'date'
+        'date',
+        'linked_work_type',
+        'linked_work_id'
     ];
 
     protected $casts = [

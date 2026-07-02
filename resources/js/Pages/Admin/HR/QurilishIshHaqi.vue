@@ -145,35 +145,28 @@ const formatMoney = (val) => {
 };
 
 onMounted(() => {
-    const localData = localStorage.getItem('qurilish_ish_haqi_xizmatlar');
-    if (localData) {
-        try {
-            servicesData.value = JSON.parse(localData);
-        } catch (e) {
-            console.error(e);
-        }
-    }
+    // Legacy localstorage removed. Works are fetched via API.
 });
 
 // Update current rows when a brigade is selected
+const fetchBrigadeWorks = async (brigadeId) => {
+    try {
+        const res = await fetch(`/admin/hr/brigades/${brigadeId}/works`);
+        if (res.ok) {
+            rows.value = await res.json();
+        }
+    } catch (e) {
+        console.error('Failed to fetch brigade works', e);
+    }
+};
+
 watch(selectedBrigade, (newBrigade) => {
     if (newBrigade) {
-        if (!servicesData.value[newBrigade.id]) {
-            servicesData.value[newBrigade.id] = [];
-        }
-        rows.value = servicesData.value[newBrigade.id];
+        fetchBrigadeWorks(newBrigade.id);
     } else {
         rows.value = [];
     }
 });
-
-// Watch rows to update servicesData and LocalStorage
-watch(rows, (newVal) => {
-    if (selectedBrigade.value) {
-        servicesData.value[selectedBrigade.value.id] = newVal;
-        localStorage.setItem('qurilish_ish_haqi_xizmatlar', JSON.stringify(servicesData.value));
-    }
-}, { deep: true });
 
 // Auto-calculate form values
 watch(serviceForm, (val) => {
@@ -181,83 +174,186 @@ watch(serviceForm, (val) => {
     const m2 = parseFloat(val.measure2) || 0;
     const q = parseFloat(val.quantity) || 0;
     const p = parseFloat(val.price) || 0;
-    const pay = parseFloat(val.paymentAmount) || 0;
+    const pay = parseFloat(val.paid_amount) || parseFloat(val.paymentAmount) || 0;
 
     // G * H = I
-    val.totalMeasure = Number((m1 * m2).toFixed(4));
+    val.total_measure = Number((m1 * m2).toFixed(4));
 
     // If I > 0, K = I * J (J defaults to 1). Otherwise K = J.
     const activeQty = q > 0 ? q : 1;
-    if (val.totalMeasure > 0) {
-        val.total = Number((val.totalMeasure * activeQty).toFixed(4));
+    if (val.total_measure > 0) {
+        val.total = Number((val.total_measure * activeQty).toFixed(4));
     } else {
         val.total = Number(q.toFixed(4));
     }
 
     // K * L = M
-    val.calculatedSum = Number((val.total * p).toFixed(2));
+    val.calculated_sum = Number((val.total * p).toFixed(2));
 
     // M - O = P
-    val.balance = Number((val.calculatedSum - pay).toFixed(2));
+    val.balance = Number((val.calculated_sum - pay).toFixed(2));
 }, { deep: true });
 
 const stats = computed(() => {
     const acc = rows.value.reduce(
         (acc, row) => {
             acc.totalServices += 1;
-            acc.totalCalculatedSum += row.calculatedSum || 0;
-            acc.totalPaid += row.paymentAmount || 0;
+            acc.totalCalculatedSum += parseFloat(row.calculated_sum || 0);
+            acc.totalPaid += parseFloat(row.paid_amount || 0);
             return acc;
         },
         { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalBalance: 0 }
     );
 
-    let financePaid = 0;
-    if (selectedBrigade.value && selectedBrigade.value.transactions) {
-        selectedBrigade.value.transactions.forEach(txn => {
-            if (txn.type === 'payment') {
-                financePaid += parseFloat(txn.amount);
-            } else if (txn.type === 'payment_received') {
-                financePaid -= parseFloat(txn.amount);
-            }
-        });
-    }
-
-    acc.totalPaid += financePaid;
     acc.totalBalance = acc.totalCalculatedSum - acc.totalPaid;
-
     return acc;
 });
 
 
+const isTransactionModalOpen = ref(false);
+const isSubmittingTransaction = ref(false);
+const transactionForm = ref({
+    type: 'payment',
+    amount: 0,
+    description: '',
+    date: new Date().toISOString().slice(0, 10),
+    payment_method: 'cash',
+    account_type: 'main',
+    linked_work_type: '',
+    linked_work_id: ''
+});
+
+const openTransactionModal = (work = null) => {
+    if (!selectedBrigade.value) return;
+    
+    // Switch to finance tab if we are paying
+    if (brigadeTab.value !== 'tranzaksiyalar') {
+        brigadeTab.value = 'tranzaksiyalar';
+    }
+
+    let amount = 0;
+    let desc = '';
+    let linkedType = '';
+    let linkedId = '';
+
+    if (work) {
+        amount = work.balance || (work.calculated_sum - (work.paid_amount || 0));
+        desc = `${work.work_name || work.name} ishi/xizmati uchun to'lov`;
+        linkedType = 'App\\Models\\BrigadeWork';
+        linkedId = work.id;
+    }
+
+    transactionForm.value = {
+        type: 'payment',
+        amount: amount > 0 ? amount : 0,
+        description: desc,
+        date: new Date().toISOString().slice(0, 10),
+        payment_method: 'cash',
+        account_type: 'main',
+        linked_work_type: linkedType,
+        linked_work_id: linkedId
+    };
+    isTransactionModalOpen.value = true;
+};
+
+const submitTransaction = () => {
+    if (!selectedBrigade.value) return;
+    isSubmittingTransaction.value = true;
+    router.post(route('admin.hr.brigade.transaction.store', selectedBrigade.value.id), transactionForm.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isTransactionModalOpen.value = false;
+        },
+        onFinish: () => {
+            isSubmittingTransaction.value = false;
+        }
+    });
+};
+
 const openAddServiceModal = () => {
     if (!selectedBrigade.value) return;
-    serviceForm.value = { ...defaultServiceForm, id: Date.now().toString() };
+    serviceForm.value = { ...defaultServiceForm, id: null };
     editingServiceId.value = null;
     isServiceModalOpen.value = true;
 };
 
 const openEditServiceModal = (row) => {
-    serviceForm.value = { ...row };
+    serviceForm.value = { 
+        ...row,
+        measure1: row.measure1 || 0,
+        measure2: row.measure2 || 0,
+        total_measure: row.total_measure || 0,
+        quantity: row.quantity || 1,
+        total: row.total || 0,
+        price: row.price || 0,
+        calculated_sum: row.calculated_sum || 0,
+    };
     editingServiceId.value = row.id;
     isServiceModalOpen.value = true;
 };
 
-const saveService = () => {
-    if (editingServiceId.value) {
-        const index = rows.value.findIndex(r => r.id === editingServiceId.value);
-        if (index > -1) {
-            rows.value[index] = { ...serviceForm.value };
+const saveService = async () => {
+    if (!selectedBrigade.value) return;
+    
+    // Map fields for backend
+    const payload = {
+        work_name: serviceForm.value.work_name || serviceForm.value.name,
+        building: serviceForm.value.building,
+        block: serviceForm.value.block,
+        floor: serviceForm.value.floor,
+        unit: serviceForm.value.unit,
+        measure1: serviceForm.value.measure1,
+        measure2: serviceForm.value.measure2,
+        total_measure: serviceForm.value.total_measure || serviceForm.value.totalMeasure,
+        quantity: serviceForm.value.quantity,
+        total: serviceForm.value.total,
+        price: serviceForm.value.price,
+        calculated_sum: serviceForm.value.calculated_sum || serviceForm.value.calculatedSum,
+        work_date: serviceForm.value.work_date || serviceForm.value.paymentDate || new Date().toLocaleString('sv').slice(0, 10),
+    };
+
+    try {
+        if (editingServiceId.value) {
+            await fetch(`/admin/hr/brigades/works/${editingServiceId.value}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            await fetch(`/admin/hr/brigades/${selectedBrigade.value.id}/works`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(payload)
+            });
         }
-    } else {
-        rows.value.push({ ...serviceForm.value });
+        
+        isServiceModalOpen.value = false;
+        fetchBrigadeWorks(selectedBrigade.value.id);
+    } catch (e) {
+        console.error(e);
+        alert('Xatolik yuz berdi');
     }
-    isServiceModalOpen.value = false;
 };
 
-const deleteRow = (id) => {
+const deleteRow = async (id) => {
     if (confirm("Rostdan ham o'chirasizmi?")) {
-        rows.value = rows.value.filter(r => r.id !== id);
+        try {
+            await fetch(`/admin/hr/brigades/works/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            fetchBrigadeWorks(selectedBrigade.value.id);
+        } catch (e) {
+            console.error(e);
+        }
     }
 };
 
@@ -584,23 +680,26 @@ const handleDragEnd = () => {
                                                     <svg class="w-3.5 h-3.5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
                                                 </td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500 bg-gray-50/50">{{ index + 1 }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 font-bold text-gray-800">{{ row.name || '-' }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 font-bold text-gray-800">{{ row.work_name || row.name || '-' }}</td>
                                                 <td class="border border-gray-200 px-4 py-2.5 font-medium text-gray-600">{{ row.building || '-' }}</td>
                                                 <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.block || '-' }}</td>
                                                 <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.floor || '-' }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.unit || '-' }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure1 }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure2 }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.totalMeasure }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total_measure }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-center font-medium text-gray-800">{{ row.quantity }}</td>
                                                 <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total }}</td>
                                                 <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-gray-900">{{ new Intl.NumberFormat('uz-UZ').format(row.price || 0) }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-indigo-800 bg-indigo-50/30">{{ new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0) }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.paymentDate || '-' }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0) }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-indigo-800 bg-indigo-50/30">{{ new Intl.NumberFormat('uz-UZ').format(row.calculated_sum || 0) }}</td>
+                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.work_date || row.paymentDate || '-' }}</td>
+                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.paid_amount || row.paymentAmount || 0) }}</td>
                                                 <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-red-700 bg-red-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.balance || 0) }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center space-x-1.5 bg-gray-50/30">
-                                                    <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 p-1.5 rounded-lg border border-indigo-200 bg-white transition shadow-sm" title="Tahrirlash">
+                                                <td class="border border-gray-200 px-3 py-3 text-center w-28 bg-gray-50 flex gap-2 justify-center">
+                                                    <button @click="openTransactionModal(row)" class="text-green-600 hover:text-green-900 bg-white p-1.5 border border-gray-200 rounded-md hover:bg-green-50 shadow-sm transition" title="To'lov qilish">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    </button>
+                                                    <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-900 bg-white p-1.5 border border-gray-200 rounded-md hover:bg-indigo-50 shadow-sm transition" title="Tahrirlash">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                     </button>
                                                     <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded-lg border border-red-200 bg-white transition shadow-sm" title="O'chirish">
@@ -617,6 +716,13 @@ const handleDragEnd = () => {
                             <div v-else-if="brigadeTab === 'tranzaksiyalar'" class="p-6">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-bold text-gray-800">Moliya Bo'limidan O'tkazmalar</h3>
+                                    <button
+                                        @click="openTransactionModal()"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center shadow-sm text-sm"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                        To'lov Qo'shish
+                                    </button>
                                 </div>
                                 <div v-if="!selectedBrigade.transactions || selectedBrigade.transactions.length === 0" class="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
                                     <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -711,7 +817,7 @@ const handleDragEnd = () => {
                         
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Xizmat nomi <span class="text-red-500">*</span></label>
-                            <input v-model="serviceForm.name" type="text" class="w-full border-gray-300 rounded-lg text-base p-2.5" placeholder="Masalan: Beton katlavat 2 blok" />
+                            <input v-model="serviceForm.work_name" type="text" class="w-full border-gray-300 rounded-lg text-base p-2.5" placeholder="Masalan: Beton katlavat 2 blok" />
                         </div>
 
                         <div class="grid grid-cols-3 gap-4">
@@ -771,7 +877,7 @@ const handleDragEnd = () => {
                         <div class="flex flex-col gap-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <div class="flex justify-between items-center text-sm font-medium text-gray-600">
                                 <span>Jami o'lchami (I = G * H):</span>
-                                <span class="font-bold text-gray-800">{{ serviceForm.totalMeasure }}</span>
+                                <span class="font-bold text-gray-800">{{ serviceForm.total_measure }}</span>
                             </div>
                             <div class="flex justify-between items-center text-sm font-medium text-gray-600 border-t pt-2 mt-1">
                                 <span>Jami (K = I * J):</span>
@@ -793,18 +899,18 @@ const handleDragEnd = () => {
                             <div>
                                 <label class="block text-sm font-semibold text-indigo-900 mb-2">Hisoblangan so'mmasi (M = K * L)</label>
                                 <div class="w-full bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-lg font-black text-indigo-800 flex items-center justify-end h-[52px] shadow-inner">
-                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculatedSum) }} so'm
+                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculated_sum) }} so'm
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-semibold text-green-700 mb-2">To'lov so'mmasi (O)</label>
-                                <input v-model.number="serviceForm.paymentAmount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-green-500 focus:ring-green-500" />
+                                <input v-model.number="serviceForm.paid_amount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-green-500 focus:ring-green-500" />
                             </div>
 
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">To'lov sanasi (N)</label>
-                                <input v-model="serviceForm.paymentDate" type="date" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+                                <input v-model="serviceForm.work_date" type="date" class="w-full border-gray-300 rounded-lg text-lg p-3 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
                             </div>
                         </div>
 
@@ -821,9 +927,64 @@ const handleDragEnd = () => {
                 <button @click="isServiceModalOpen = false" class="px-8 py-3 text-base font-bold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
                     Bekor qilish
                 </button>
-                <button @click="saveService" :disabled="!serviceForm.name" class="px-8 py-3 text-base font-bold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-md">
+                <button @click="saveService" :disabled="!serviceForm.work_name" class="px-8 py-3 text-base font-bold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-md">
                     Xizmatni Saqlash
                 </button>
+            </div>
+        </div>
+
+        <!-- Transaction Modal -->
+        <div v-if="isTransactionModalOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Moliya bo'limiga to'lov/xarajat qo'shish</h3>
+                    <button @click="isTransactionModalOpen = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form @submit.prevent="submitTransaction" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sana *</label>
+                            <input v-model="transactionForm.date" type="date" class="w-full border-gray-300 rounded-lg text-sm" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tranzaksiya turi *</label>
+                            <select v-model="transactionForm.type" class="w-full border-gray-300 rounded-lg text-sm" required>
+                                <option value="payment">To'lov / Xarajat</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div v-if="transactionForm.linked_work_id" class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-800 flex items-start gap-2">
+                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Ushbu to'lov tanlangan ish/xizmat uchun qilinmoqda. Narxi avtomatik tarzda shu ishning qoldig'idan ayiriladi.</span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">So'mma (UZS) *</label>
+                        <input v-model.number="transactionForm.amount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 bg-blue-50 focus:border-blue-500 focus:ring-blue-500" required />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To'lov turi</label>
+                        <select v-model="transactionForm.payment_method" class="w-full border-gray-300 rounded-lg text-sm">
+                            <option value="cash">Naqd</option>
+                            <option value="card">Karta (Terminal)</option>
+                            <option value="bank_transfer">Pul o'tkazish (Perekisleniye)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tavsif (Masalan: Avans, yo'l kira)</label>
+                        <textarea v-model="transactionForm.description" rows="2" class="w-full border-gray-300 rounded-lg text-sm" placeholder="To'lov maqsadi haqida..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                        <button type="button" @click="isTransactionModalOpen = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">Bekor qilish</button>
+                        <button type="submit" :disabled="isSubmittingTransaction" class="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition shadow-sm disabled:opacity-50">Saqlash</button>
+                    </div>
+                </form>
             </div>
         </div>
 

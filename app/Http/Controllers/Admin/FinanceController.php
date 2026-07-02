@@ -233,6 +233,8 @@ class FinanceController extends Controller
             'target_id' => 'nullable|integer',
             'exchange_rate' => 'nullable|numeric|min:0',
             'converted_amount' => 'nullable|numeric|min:0',
+            'linked_work_type' => 'nullable|string',
+            'linked_work_id' => 'nullable|integer',
         ]);
 
         foreach ($validated as $key => $value) {
@@ -600,6 +602,8 @@ class FinanceController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                     'finance_transaction_id' => $transaction->id,
+                    'linked_work_type' => $transaction->linked_work_type,
+                    'linked_work_id' => $transaction->linked_work_id,
                 ]);
             }
         }
@@ -645,6 +649,8 @@ class FinanceController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                     'finance_transaction_id' => $transaction->id,
+                    'linked_work_type' => $transaction->linked_work_type,
+                    'linked_work_id' => $transaction->linked_work_id,
                 ]);
             }
         }
@@ -662,6 +668,8 @@ class FinanceController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                     'finance_transaction_id' => $transaction->id,
+                    'linked_work_type' => $transaction->linked_work_type,
+                    'linked_work_id' => $transaction->linked_work_id,
                 ]);
             }
         }

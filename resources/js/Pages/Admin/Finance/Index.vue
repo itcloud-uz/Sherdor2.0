@@ -1078,7 +1078,9 @@ const form = ref({
     source: 'admin_panel',
     exchange_rate: 1.0,
     converted_amount: '',
-    payment_schedule_id: ''
+    payment_schedule_id: '',
+    linked_work_type: '',
+    linked_work_id: ''
 });
 
 const transferForm = ref({
@@ -1133,6 +1135,7 @@ watch(() => form.value.partner_id, (newVal) => {
 });
 
 watch(() => form.value.worker_id, (newVal) => {
+    fetchUnpaidWorks('worker', newVal);
     if (newVal && props.counterparties) {
         const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id == newVal);
         if (c) {
@@ -1148,6 +1151,37 @@ watch(() => form.value.supplier_id, (newVal) => {
             form.value.counterparty_id = c.id;
         }
     }
+});
+
+const unpaidWorks = ref([]);
+const isFetchingWorks = ref(false);
+
+const fetchUnpaidWorks = async (type, id) => {
+    unpaidWorks.value = [];
+    form.value.linked_work_type = '';
+    form.value.linked_work_id = '';
+    
+    if (!id) return;
+    
+    isFetchingWorks.value = true;
+    try {
+        const response = await fetch(`/admin/hr/works/${type}/${id}`);
+        if (response.ok) {
+            unpaidWorks.value = await response.json();
+        }
+    } catch (e) {
+        console.error('Failed to fetch unpaid works', e);
+    } finally {
+        isFetchingWorks.value = false;
+    }
+};
+
+watch(() => form.value.brigade_id, (newVal) => {
+    fetchUnpaidWorks('brigade', newVal);
+});
+
+watch(() => form.value.machine_owner_id, (newVal) => {
+    fetchUnpaidWorks('machine_owner', newVal);
 });
 
 watch(() => form.value.client_id, (newVal) => {
@@ -5788,6 +5822,41 @@ function deleteCategory(id) {
                                     {{ o.name }}
                                 </option>
                             </select>
+                        </div>
+
+                        <!-- Unpaid Works List -->
+                        <div v-if="(requiresWorker && form.worker_id) || (requiresBrigade && form.brigade_id) || (requiresMachineOwner && form.machine_owner_id)" class="md:col-span-2 border border-indigo-100 p-4 rounded-xl bg-indigo-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                To'lanmagan ishlar (majburiy emas)
+                            </label>
+                            <div v-if="isFetchingWorks" class="text-xs text-slate-400 py-2">
+                                Ishlar yuklanmoqda...
+                            </div>
+                            <div v-else-if="unpaidWorks.length === 0" class="text-xs text-slate-400 py-2">
+                                To'lanmagan ishlar topilmadi.
+                            </div>
+                            <div v-else class="max-h-36 overflow-y-auto space-y-1">
+                                <div v-for="w in unpaidWorks" :key="w.id"
+                                     @click="form.linked_work_id = w.id; form.linked_work_type = requiresWorker ? 'App\\Models\\WorkLog' : (requiresBrigade ? 'App\\Models\\BrigadeWork' : 'App\\Models\\MachineWork'); form.amount = w.balance;"
+                                     class="flex justify-between items-center p-2 rounded-lg text-[11px] cursor-pointer transition-all border group"
+                                     :class="form.linked_work_id === w.id ? 'border-indigo-500 bg-indigo-50/60 font-bold shadow-sm' : 'border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/50'">
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-slate-600 font-medium">
+                                            {{ w.description || w.work_name || 'Bajarilgan ish' }} (Sana: {{ w.date || w.work_date || '?' }})
+                                        </span>
+                                        <span class="text-[9px] text-slate-400">
+                                            Jami: {{ formatMoney(w.calculated_cost || w.calculated_sum || w.total_price || 0, 'so\'m') }} 
+                                            | To'langan: {{ formatMoney(w.paid_amount || 0, 'so\'m') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                            Qarzdorlik: {{ formatMoney(w.balance, 'so\'m') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-1">💡 Tanlangan ishning narxi avtomatik tarzda summa maydoniga qo'yiladi.</p>
                         </div>
 
                         <!-- Row 5: Izohlar & Summa -->

@@ -173,18 +173,40 @@ const transactionForm = ref({
     description: '',
     date: new Date().toISOString().slice(0, 10),
     payment_method: 'cash',
-    account_type: 'main'
+    account_type: 'main',
+    linked_work_type: '',
+    linked_work_id: ''
 });
 
-const openTransactionModal = () => {
+const openTransactionModal = (work = null) => {
     if (!selectedOwner.value) return;
+    
+    // Switch to finance tab if we are paying
+    if (activeTab.value !== 'finance') {
+        activeTab.value = 'finance';
+    }
+
+    let amount = 0;
+    let desc = '';
+    let linkedType = '';
+    let linkedId = '';
+
+    if (work) {
+        amount = work.total_price || 0;
+        desc = `${work.service_name} xizmati uchun to'lov`;
+        linkedType = 'App\\Models\\MachineWork';
+        linkedId = work.id;
+    }
+
     transactionForm.value = {
         type: 'payment',
-        amount: 0,
-        description: '',
+        amount: amount,
+        description: desc,
         date: new Date().toISOString().slice(0, 10),
         payment_method: 'cash',
-        account_type: 'main'
+        account_type: 'main',
+        linked_work_type: linkedType,
+        linked_work_id: linkedId
     };
     isTransactionModalOpen.value = true;
 };
@@ -631,6 +653,9 @@ const exportToExcel = () => {
                                                 <td class="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
                                                 
                                                 <td class="px-2 py-3 text-center space-x-1 whitespace-nowrap">
+                                                    <button @click="openTransactionModal(row)" class="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 transition border border-transparent hover:border-green-200" title="To'lov qilish">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    </button>
                                                     <button @click="openEditWorkModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                     </button>
@@ -780,6 +805,11 @@ const exportToExcel = () => {
                                 <option value="payment">To'lov / Xarajat</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div v-if="transactionForm.linked_work_id" class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-800 flex items-start gap-2">
+                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Ushbu to'lov tanlangan ish/xizmat uchun qilinmoqda. Narxi avtomatik tarzda shu ishning qoldig'idan ayiriladi.</span>
                     </div>
                     
                     <div>

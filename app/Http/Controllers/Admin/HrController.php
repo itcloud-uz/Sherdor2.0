@@ -470,6 +470,8 @@ class HrController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'account_type' => 'nullable|string|in:main,bank,credit,partner',
             'payment_method' => 'nullable|string|in:cash,card,bank_transfer',
+            'linked_work_type' => 'nullable|string',
+            'linked_work_id' => 'nullable|integer',
         ]);
 
         if (empty($validated['date'])) {
@@ -491,7 +493,9 @@ class HrController extends Controller
                     'type' => 'payment',
                     'amount' => $amount,
                     'description' => $validated['description'] ?? 'To\'lov',
-                    'date' => $validated['date']
+                    'date' => $validated['date'],
+                    'linked_work_type' => $validated['linked_work_type'] ?? null,
+                    'linked_work_id' => $validated['linked_work_id'] ?? null,
                 ]);
                 $ledgerTxId = $ledgerTx->id;
                 $ledgerTableName = 'machine_owner_transactions';
@@ -513,6 +517,8 @@ class HrController extends Controller
                     'created_by' => auth()->id(),
                     'target_type' => 'machine_owner',
                     'target_id' => $owner->id,
+                    'linked_work_type' => $validated['linked_work_type'] ?? null,
+                    'linked_work_id' => $validated['linked_work_id'] ?? null,
                 ]);
                 if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
 
@@ -544,6 +550,8 @@ class HrController extends Controller
                         'created_by' => auth()->id(),
                         'target_type' => 'machine_owner',
                         'target_id' => $owner->id,
+                        'linked_work_type' => $validated['linked_work_type'] ?? null,
+                        'linked_work_id' => $validated['linked_work_id'] ?? null,
                     ]);
                 if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
                 }
@@ -1437,6 +1445,8 @@ class HrController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'account_type' => 'nullable|string|in:main,bank,credit,partner',
             'payment_method' => 'nullable|string|in:cash,card,bank_transfer',
+            'linked_work_type' => 'nullable|string',
+            'linked_work_id' => 'nullable|integer',
         ]);
 
         $amount = (float) $validated['amount'];
@@ -1453,7 +1463,9 @@ class HrController extends Controller
                     'type' => 'payment',
                     'amount' => $amount,
                     'description' => $validated['description'] ?? 'To\'lov',
-                    'date' => $validated['date']
+                    'date' => $validated['date'],
+                    'linked_work_type' => $validated['linked_work_type'] ?? null,
+                    'linked_work_id' => $validated['linked_work_id'] ?? null
                 ]);
                 $ledgerTxId = $ledgerTx->id;
                 $ledgerTableName = 'brigade_transactions';
@@ -1475,6 +1487,8 @@ class HrController extends Controller
                     'created_by' => auth()->id(),
                     'target_type' => 'brigade',
                     'target_id' => $brigade->id,
+                    'linked_work_type' => $validated['linked_work_type'] ?? null,
+                    'linked_work_id' => $validated['linked_work_id'] ?? null,
                 ]);
                 if (isset($ledgerTxId) && isset($ledgerTableName)) { \Illuminate\Support\Facades\DB::table($ledgerTableName)->where('id', $ledgerTxId)->update(['finance_transaction_id' => $financeTx->id]); unset($ledgerTxId); unset($ledgerTableName); }
 
@@ -1725,5 +1739,117 @@ class HrController extends Controller
         \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decodedData);
         
         return '/storage/' . $fileName;
+    }
+
+    public function getBrigadeWorks(\App\Models\Brigade $brigade)
+    {
+        $works = \App\Models\BrigadeWork::where('brigade_id', $brigade->id)->orderBy('work_date', 'desc')->get();
+        // Add paid amount logic
+        $works = $works->map(function($w) {
+            $paid = \App\Models\BrigadeTransaction::where('linked_work_type', \App\Models\BrigadeWork::class)
+                        ->where('linked_work_id', $w->id)
+                        ->sum('amount');
+            $w->paid_amount = (float)$paid;
+            $w->balance = (float)($w->calculated_sum - $paid);
+            return $w;
+        });
+        return response()->json($works);
+    }
+
+    public function storeBrigadeWork(\Illuminate\Http\Request $request, \App\Models\Brigade $brigade)
+    {
+        $validated = $request->validate([
+            'work_name' => 'required|string',
+            'building' => 'nullable|string',
+            'block' => 'nullable|string',
+            'floor' => 'nullable|string',
+            'unit' => 'nullable|string',
+            'measure1' => 'nullable|numeric',
+            'measure2' => 'nullable|numeric',
+            'total_measure' => 'nullable|numeric',
+            'quantity' => 'nullable|numeric',
+            'total' => 'nullable|numeric',
+            'price' => 'nullable|numeric',
+            'calculated_sum' => 'required|numeric',
+            'work_date' => 'nullable|date',
+        ]);
+
+        $validated['brigade_id'] = $brigade->id;
+        $work = \App\Models\BrigadeWork::create($validated);
+
+        return response()->json($work);
+    }
+
+    public function updateBrigadeWork(\Illuminate\Http\Request $request, \App\Models\BrigadeWork $work)
+    {
+        $validated = $request->validate([
+            'work_name' => 'required|string',
+            'building' => 'nullable|string',
+            'block' => 'nullable|string',
+            'floor' => 'nullable|string',
+            'unit' => 'nullable|string',
+            'measure1' => 'nullable|numeric',
+            'measure2' => 'nullable|numeric',
+            'total_measure' => 'nullable|numeric',
+            'quantity' => 'nullable|numeric',
+            'total' => 'nullable|numeric',
+            'price' => 'nullable|numeric',
+            'calculated_sum' => 'required|numeric',
+            'work_date' => 'nullable|date',
+        ]);
+
+        $work->update($validated);
+
+        return response()->json($work);
+    }
+
+    public function deleteBrigadeWork(\App\Models\BrigadeWork $work)
+    {
+        $work->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function getUnpaidWorks($type, $id)
+    {
+        try {
+            $works = collect();
+
+            if ($type === 'machine_owner') {
+                $works = \App\Models\MachineWork::where('machine_owner_id', $id)->get();
+                $works = $works->map(function($w) {
+                    $paid = \App\Models\MachineOwnerTransaction::where('linked_work_type', \App\Models\MachineWork::class)
+                                ->where('linked_work_id', $w->id)
+                                ->sum('amount');
+                    $w->paid_amount = (float)$paid;
+                    $w->balance = (float)($w->total_price - $paid);
+                    return $w;
+                })->filter(fn($w) => $w->balance > 0)->values();
+            } elseif ($type === 'brigade') {
+                $works = \App\Models\BrigadeWork::where('brigade_id', $id)->get();
+                $works = $works->map(function($w) {
+                    $paid = \App\Models\BrigadeTransaction::where('linked_work_type', \App\Models\BrigadeWork::class)
+                                ->where('linked_work_id', $w->id)
+                                ->sum('amount');
+                    $w->paid_amount = (float)$paid;
+                    $w->balance = (float)($w->calculated_sum - $paid);
+                    return $w;
+                })->filter(fn($w) => $w->balance > 0)->values();
+            } elseif ($type === 'worker') {
+                $works = \App\Models\WorkLog::where('worker_id', $id)->get();
+                $works = $works->map(function($w) {
+                    $paid = \App\Models\WorkerTransaction::where('linked_work_type', \App\Models\WorkLog::class)
+                                ->where('linked_work_id', $w->id)
+                                ->sum('amount');
+                    $w->paid_amount = (float)$paid;
+                    $w->balance = (float)($w->calculated_cost - $paid);
+                    return $w;
+                })->filter(fn($w) => $w->balance > 0)->values();
+            }
+
+            return response()->json($works);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('getUnpaidWorks error: ' . $e->getMessage());
+            return response()->json(['error' => 'Server error'], 500);
+        }
     }
 }

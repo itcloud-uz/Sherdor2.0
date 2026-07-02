@@ -14,7 +14,9 @@ class WorkerTransaction extends Model
         'amount',
         'description',
         'work_category',
-        'date'
+        'date',
+        'linked_work_type',
+        'linked_work_id'
     ];
 
     protected $casts = [

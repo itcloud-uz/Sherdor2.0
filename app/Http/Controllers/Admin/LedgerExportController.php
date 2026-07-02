@@ -193,6 +193,7 @@ class LedgerExportController extends Controller
             '<html><head><meta charset="utf-8"></head><body onload="alert(\'Ushbu shartnoma uchun Word (.docx) shabloni mavjud emas.\'); window.close();"></body></html>', 
             404
         );
+    }
 
     public function previewLedger(Contract $contract, Request $request)
     {

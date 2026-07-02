@@ -23,7 +23,7 @@ const expandedOwners = ref({}); // { ownerId: boolean }
 
 const rows = ref([]); // current selected rows
 const draggedIdx = ref(null);
-const activeTab = ref('works');
+const activeTab = ref('works'); // works, machineries, finance
 
 // Owner Modal state
 const isAddOwnerModalOpen = ref(false);
@@ -178,7 +178,7 @@ const transactionForm = ref({
     linked_work_id: ''
 });
 
-const openTransactionModal = (work = null) => {
+const openTransactionModal = (work = null, type = 'payment') => {
     if (!selectedOwner.value) return;
     
     // Switch to finance tab if we are paying
@@ -196,6 +196,8 @@ const openTransactionModal = (work = null) => {
         desc = `${work.service_name} xizmati uchun to'lov`;
         linkedType = 'App\\Models\\MachineWork';
         linkedId = work.id;
+    } else if (type === 'salyarka') {
+        desc = 'Salyarka';
     }
 
     transactionForm.value = {
@@ -696,33 +698,36 @@ const exportToExcel = () => {
                 <!-- Detail View -->
                 <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden min-h-[calc(100vh-160px)]">
                     <!-- Owner Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 bg-amber-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
                         <div class="flex items-center gap-4">
                             <button @click="selectedOwner = null" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 text-gray-600 transition" title="Orqaga">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                             </button>
                             <div>
-                                <h2 class="text-xl font-bold text-gray-900">Texnik ta'minotchi: {{ selectedOwner.name }}</h2>
-                                <p class="text-sm text-gray-700 mt-0.5">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Tel yo\'q' }}</span></p>
+                                <h2 class="text-xl font-bold text-gray-900">{{ selectedOwner.name }}</h2>
+                                <p class="text-sm text-gray-700 mt-0.5">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Kiritilmagan' }}</span></p>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button @click="openAddMachineryModal(selectedOwner.id)" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg shadow-sm hover:bg-orange-200 transition font-medium flex items-center text-sm border border-orange-200 mr-2">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                Texnika Qo'shish
-                            </button>
-                            <div class="bg-white rounded-lg px-4 py-2 border border-amber-200 shadow-sm text-center">
-                                <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Texnikalar</div>
-                                <div class="text-sm font-semibold text-gray-800">{{ selectedOwner.machineries?.length || 0 }} ta</div>
+                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Xizmatlar</div>
+                                <div class="text-sm font-semibold text-gray-800">{{ stats.totalServices || 0 }} ta</div>
                             </div>
-                            <div class="bg-white rounded-lg px-4 py-2 border border-amber-200 shadow-sm text-center">
+                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
                                 <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
                                 <div class="text-sm font-bold" :class="selectedOwner.balance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(selectedOwner.balance) }} UZS</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                    <!-- Tabs -->
+                    <div class="px-6 border-b border-gray-200 bg-white pt-3 flex gap-6 flex-shrink-0">
+                        <button @click="activeTab = 'works'" :class="activeTab === 'works' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'" class="pb-3 font-medium text-sm transition-colors">Bajarilgan Ishlar</button>
+                        <button @click="activeTab = 'machineries'" :class="activeTab === 'machineries' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'" class="pb-3 font-medium text-sm transition-colors">Texnikalar Ro'yxati</button>
+                        <button @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'" class="pb-3 font-medium text-sm transition-colors">Moliya (Tranzaksiyalar)</button>
+                    </div>
+
+                    <div v-if="activeTab === 'works'" class="p-6 flex flex-col flex-1 overflow-hidden">
                         <!-- Action Bar -->
                         <div class="flex justify-between items-center mb-4 flex-shrink-0">
                             <div class="flex gap-2">
@@ -807,7 +812,86 @@ const exportToExcel = () => {
                             </table>
                         </div>
                     </div>
-                </div>
+                    
+                    <!-- Machineries Tab -->
+                    <div v-else-if="activeTab === 'machineries'" class="p-6 flex flex-col flex-1 overflow-hidden bg-gray-50/50">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">Ushbu ta'minotchiga tegishli texnikalar</h3>
+                            <button @click="openAddMachineryModal(selectedOwner.id)" class="px-4 py-2 bg-orange-500 text-white rounded-lg shadow-sm hover:bg-orange-600 transition font-medium flex items-center text-sm">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Yangi Texnika Qo'shish
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div v-if="!selectedOwner.machineries || selectedOwner.machineries.length === 0" class="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+                                Ushbu egasiga tegishli texnikalar kiritilmagan.
+                            </div>
+                            <div v-for="machinery in selectedOwner.machineries" :key="machinery.id" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 text-lg">{{ machinery.name }}</h4>
+                                        <p class="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                            {{ machinery.driver_name || 'Haydovchi belgilanmagan' }}
+                                        </p>
+                                    </div>
+                                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                                    <button @click="deleteMachinery(machinery.id)" class="text-sm font-medium text-red-600 hover:text-red-800 transition">Texnikani O'chirish</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Finance Tab -->
+                    <div v-else-if="activeTab === 'finance'" class="p-6 flex flex-col flex-1 overflow-hidden bg-gray-50/50">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">Moliya va Tranzaksiyalar</h3>
+                            <div class="flex gap-2">
+                                <button @click="openTransactionModal(null, 'payment')" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 transition font-medium flex items-center text-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    To'lov Qilish
+                                </button>
+                                <button @click="openTransactionModal(null, 'salyarka')" class="px-4 py-2 bg-orange-600 text-white rounded-lg shadow-sm hover:bg-orange-700 transition font-medium flex items-center text-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                    Salyarka Berish
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-auto rounded-xl border border-gray-200 bg-white flex-1 custom-scrollbar shadow-sm">
+                            <table class="w-full text-sm text-left text-gray-700 min-w-[800px]">
+                                <thead class="sticky top-0 bg-gray-100 text-gray-600 uppercase text-[11px] font-bold shadow-sm z-10">
+                                    <tr>
+                                        <th class="px-4 py-4 text-center w-12 rounded-tl-lg">№</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Sana</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Tavsif (Izoh)</th>
+                                        <th class="px-4 py-4 text-center whitespace-nowrap">Turi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap rounded-tr-lg">Summa (UZS)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-if="!selectedOwner.transactions || selectedOwner.transactions.length === 0">
+                                        <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">Hali hech qanday to'lov qilinmagan.</td>
+                                    </tr>
+                                    <tr v-for="(txn, index) in selectedOwner.transactions" :key="txn.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-4 py-3 text-center text-gray-500">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 text-gray-600">{{ new Date(txn.created_at || txn.date).toLocaleString('ru-RU') }}</td>
+                                        <td class="px-4 py-3 text-gray-900 font-medium">{{ txn.description || 'Izohsiz to\'lov' }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <span v-if="txn.description && (txn.description.toLowerCase().includes('salyarka') || txn.description.toLowerCase().includes('solyarka'))" class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Salyarka</span>
+                                            <span v-else-if="txn.type === 'payment'" class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">To'lov qilindi</span>
+                                            <span v-else class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Kirim</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ formatMoney(txn.amount) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
             </div>
         </div>

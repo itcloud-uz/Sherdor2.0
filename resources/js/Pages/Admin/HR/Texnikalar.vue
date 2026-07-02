@@ -243,11 +243,8 @@ const submitTransaction = () => {
 };
 
 onMounted(() => {
-    // Auto expand and select the first owner if available
-    if (props.owners && props.owners.length > 0) {
-        expandedOwners.value[props.owners[0].id] = true;
-        selectedOwner.value = props.owners[0];
-    }
+    // We intentionally do not auto-select the first owner
+    // so the user can see the grid of all owners on page load.
 });
 
 // Update current rows when an owner is selected

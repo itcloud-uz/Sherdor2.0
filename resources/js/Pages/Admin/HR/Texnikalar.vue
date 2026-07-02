@@ -303,6 +303,43 @@ const stats = computed(() => {
     return res;
 });
 
+const ownersWithStats = computed(() => {
+    if (!props.owners) return [];
+    return props.owners.map(owner => {
+        let paid = 0;
+        let salyarka = 0;
+        
+        if (owner.transactions && owner.transactions.length > 0) {
+            owner.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('salyarka') || desc.includes('solyarka') || desc.includes('so\'lyarka')) {
+                    salyarka += amount;
+                } else {
+                    paid += amount;
+                }
+            });
+        }
+        
+        let worksPrice = 0;
+        if (owner.works && owner.works.length > 0) {
+            owner.works.forEach(w => {
+                worksPrice += parseFloat(w.total_price) || 0;
+            });
+        }
+
+        const balance = worksPrice - (paid + salyarka);
+
+        return {
+            ...owner,
+            totalWorksPrice: worksPrice,
+            totalPaid: paid,
+            totalSalyarka: salyarka,
+            calculatedBalance: balance
+        };
+    });
+});
+
 const globalStats = computed(() => {
     let totalWorksPrice = 0;
     let totalPaid = 0;
@@ -600,11 +637,11 @@ const exportToExcel = () => {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <div v-if="props.owners.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div v-if="ownersWithStats.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
                             Texnika egalari topilmadi.
                         </div>
                         <div 
-                            v-for="owner in props.owners" 
+                            v-for="owner in ownersWithStats" 
                             :key="owner.id" 
                             @click="selectedOwner = owner"
                             class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
@@ -623,11 +660,34 @@ const exportToExcel = () => {
                             </div>
                             <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
                                 <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-500">Holat:</span>
-                                    <span :class="owner.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold text-base bg-gray-50 px-2 py-1 rounded-md">
-                                        {{ formatMoney(owner.balance) }} UZS
+                                    <span class="text-gray-500">Qarzdorlik (Kompaniya):</span>
+                                    <span class="font-bold text-red-600">
+                                        {{ owner.calculatedBalance > 0 ? formatMoney(owner.calculatedBalance) : 0 }} UZS
                                     </span>
                                 </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">To'langan summa:</span>
+                                    <span class="font-bold text-green-600">
+                                        {{ formatMoney(owner.totalPaid) }} UZS
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Balans (Jami ishlar):</span>
+                                    <span class="font-bold text-gray-800">
+                                        {{ formatMoney(owner.totalWorksPrice) }} UZS
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Qarzdorlik (Texnika):</span>
+                                    <span class="font-bold text-orange-600">
+                                        {{ owner.calculatedBalance < 0 ? formatMoney(Math.abs(owner.calculatedBalance)) : 0 }} UZS
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Edit/Delete Actions -->
+                            <div class="mt-4 flex gap-2 pt-3 border-t border-gray-100">
+                                <button @click.stop="editOwner(owner)" class="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition text-sm font-medium">Tahrirlash</button>
+                                <button @click.stop="deleteOwner(owner.id)" class="flex-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition text-sm font-medium">O'chirish</button>
                             </div>
                         </div>
                     </div>

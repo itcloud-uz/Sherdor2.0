@@ -239,6 +239,43 @@ const stats = computed(() => {
     return acc;
 });
 
+const brigadesWithStats = computed(() => {
+    if (!props.brigades) return [];
+    return props.brigades.map(brigade => {
+        let paid = 0;
+        let ovqat = 0;
+        
+        if (brigade.transactions && brigade.transactions.length > 0) {
+            brigade.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('ovqat') || desc.includes('boshqa') || desc.includes('oziq')) {
+                    ovqat += amount;
+                } else {
+                    paid += amount;
+                }
+            });
+        }
+        
+        let worksPrice = 0;
+        if (brigade.works && brigade.works.length > 0) {
+            brigade.works.forEach(w => {
+                worksPrice += parseFloat(w.calculated_sum) || 0;
+            });
+        }
+
+        const balance = worksPrice - (paid + ovqat);
+
+        return {
+            ...brigade,
+            totalWorksPrice: worksPrice,
+            totalPaid: paid,
+            totalOvqat: ovqat,
+            calculatedBalance: balance
+        };
+    });
+});
+
 const globalStats = computed(() => {
     let totalWorksPrice = 0;
     let totalPaid = 0;
@@ -460,11 +497,11 @@ const handleDragEnd = () => {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <div v-if="props.brigades.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div v-if="brigadesWithStats.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
                             Jamoalar topilmadi.
                         </div>
                         <div 
-                            v-for="brigade in props.brigades" 
+                            v-for="brigade in brigadesWithStats" 
                             :key="brigade.id" 
                             @click="selectedBrigade = brigade"
                             class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
@@ -472,27 +509,45 @@ const handleDragEnd = () => {
                             <div>
                                 <div class="flex justify-between items-start mb-2">
                                     <h3 class="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">{{ brigade.name }}</h3>
-                                    <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button @click.stop="editBrigade(brigade)" class="p-1 text-blue-500 hover:bg-blue-50 rounded" title="Tahrirlash">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </button>
-                                        <button @click.stop="deleteBrigade(brigade.id)" class="p-1 text-red-500 hover:bg-red-50 rounded" title="O'chirish">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
+                                    <div class="bg-gray-100 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                                        {{ brigade.workers?.length || 0 }} a'zo
                                     </div>
                                 </div>
                                 <p class="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                    {{ brigade.foreman_name || 'Ism kiritilmagan' }}
+                                    Brigadir: <span class="font-medium text-gray-700">{{ brigade.foreman_name || 'Kiritilmagan' }}</span>
                                 </p>
                             </div>
                             <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
                                 <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-500">Holat:</span>
-                                    <span :class="brigade.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold text-base bg-gray-50 px-2 py-1 rounded-md">
-                                        {{ formatMoney(brigade.balance) }} UZS
+                                    <span class="text-gray-500">Qarzdorlik (Kompaniya):</span>
+                                    <span class="font-bold text-red-600">
+                                        {{ brigade.calculatedBalance > 0 ? formatMoney(brigade.calculatedBalance) : 0 }} UZS
                                     </span>
                                 </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">To'langan summa:</span>
+                                    <span class="font-bold text-green-600">
+                                        {{ formatMoney(brigade.totalPaid) }} UZS
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Balans (Jami ishlar):</span>
+                                    <span class="font-bold text-gray-800">
+                                        {{ formatMoney(brigade.totalWorksPrice) }} UZS
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Qarzdorlik (Jamoa):</span>
+                                    <span class="font-bold text-orange-600">
+                                        {{ brigade.calculatedBalance < 0 ? formatMoney(Math.abs(brigade.calculatedBalance)) : 0 }} UZS
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Edit/Delete Actions -->
+                            <div class="mt-4 flex gap-2 pt-3 border-t border-gray-100">
+                                <button @click.stop="editBrigade(brigade)" class="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition text-sm font-medium">Tahrirlash</button>
+                                <button @click.stop="deleteBrigade(brigade.id)" class="flex-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition text-sm font-medium">O'chirish</button>
                             </div>
                         </div>
                     </div>

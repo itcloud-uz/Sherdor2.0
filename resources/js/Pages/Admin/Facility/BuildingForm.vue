@@ -153,7 +153,6 @@
                                             <input v-model.number="podez.floors" type="number" min="1" max="100" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors" required>
                                         </div>
                                         <div>
-                                        <div>
                                             <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Turi</label>
                                             <select v-model="podez.type" class="w-full bg-slate-50 border-0 rounded-lg px-3 py-2 text-slate-800 text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer appearance-none">
                                                 <option value="Staircase">Zina</option>

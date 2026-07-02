@@ -144,6 +144,80 @@ const formatMoney = (val) => {
     return new Intl.NumberFormat('uz-UZ').format(val || 0) + " so'm";
 };
 
+const openAddServiceModal = () => {
+    editingServiceId.value = null;
+    serviceForm.value = { ...defaultServiceForm, work_date: new Date().toISOString().split('T')[0] };
+    isServiceModalOpen.value = true;
+};
+
+const openEditServiceModal = (row) => {
+    editingServiceId.value = row.id;
+    serviceForm.value = {
+        id: row.id,
+        date: row.work_date || row.date,
+        name: row.work_name || row.name,
+        building: row.building || '',
+        block: row.block || '',
+        floor: row.floor || '',
+        measure1: row.measure1 || 1,
+        measure2: row.measure2 || 1,
+        quantity: row.quantity || 1,
+        price: row.price || 0,
+        note: row.note || '',
+        paymentAmount: 0,
+        paymentType: 'naqd'
+    };
+    isServiceModalOpen.value = true;
+};
+
+const deleteRow = async (id) => {
+    if(!confirm("Haqiqatan ham ushbu xizmatni o'chirmoqchimisiz?")) return;
+    try {
+        const res = await fetch(`/admin/hr/brigades/works/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+        });
+        if(res.ok) {
+            fetchBrigadeWorks(selectedBrigade.value.id);
+        }
+    } catch(e) {
+        console.error(e);
+    }
+};
+
+const saveService = async () => {
+    isSubmitting.value = true;
+    try {
+        const url = editingServiceId.value 
+            ? `/admin/hr/brigades/works/${editingServiceId.value}`
+            : `/admin/hr/brigades/${selectedBrigade.value.id}/works`;
+        const method = editingServiceId.value ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content 
+            },
+            body: JSON.stringify({
+                ...serviceForm.value,
+                date: serviceForm.value.work_date || serviceForm.value.date,
+                name: serviceForm.value.work_name || serviceForm.value.name
+            })
+        });
+        if(res.ok) {
+            isServiceModalOpen.value = false;
+            fetchBrigadeWorks(selectedBrigade.value.id);
+        } else {
+            console.error('Error saving service');
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
 onMounted(() => {
     // Legacy localstorage removed. Works are fetched via API.
 });

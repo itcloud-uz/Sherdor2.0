@@ -471,6 +471,14 @@ class CrmController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'phone_2' => 'nullable|string|max:20',
+            'passport_series' => 'nullable|string|max:255',
+            'gender' => 'nullable|string|in:Erkak,Ayol',
+            'birth_date' => 'nullable|date',
+            'region' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:1000',
+            'assigned_employee_id' => 'nullable|exists:users,id',
             'email' => 'nullable|string|email|max:255',
             'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
@@ -479,13 +487,22 @@ class CrmController extends Controller
 
         $lead->full_name = $validated['full_name'];
         $lead->phone = $validated['phone'];
-        $lead->email = $validated['email'] ?? null;
-        $lead->social_url = $validated['social_url'] ?? null;
-        $lead->source = $validated['source'] ?? 'manual';
-        $lead->user_id = $validated['user_id'] ?? null;
+        $lead->phone_2 = $validated['phone_2'] ?? null;
+        $lead->passport_series = $validated['passport_series'] ?? null;
+        $lead->gender = $validated['gender'] ?? null;
+        $lead->birth_date = $validated['birth_date'] ?? null;
+        $lead->region = $validated['region'] ?? null;
+        $lead->district = $validated['district'] ?? null;
+        $lead->address = $validated['address'] ?? null;
+        $lead->assigned_employee_id = $validated['assigned_employee_id'] ?? null;
+        if (isset($validated['email'])) $lead->email = $validated['email'];
+        if (isset($validated['social_url'])) $lead->social_url = $validated['social_url'];
+        if (isset($validated['source'])) $lead->source = $validated['source'];
+        if (isset($validated['user_id'])) $lead->user_id = $validated['user_id'];
+        
         $lead->save();
 
-        return redirect()->back()->with('message', 'Lid ma\'lumotlari yangilandi.');
+        return redirect()->back()->with('message', 'Lid yangilandi.');
     }
 
     public function destroyLead(Lead $lead)

@@ -14,6 +14,14 @@ class Lead extends Model
         'source',
         'status',
         'user_id',
+        'phone_2',
+        'passport_series',
+        'gender',
+        'birth_date',
+        'region',
+        'district',
+        'address',
+        'assigned_employee_id',
     ];
 
     public function user()

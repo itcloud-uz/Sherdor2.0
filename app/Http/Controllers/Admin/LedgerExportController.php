@@ -138,7 +138,10 @@ class LedgerExportController extends Controller
                 
                 return $pdf->download("contract_{$contract->id}.pdf");
             } catch (\Exception $e) {
-                return back()->withErrors(['message' => 'PDF generatsiya qilishda xatolik: ' . $e->getMessage()]);
+                return response(
+                    '<html><head><meta charset="utf-8"></head><body onload="alert(\'PDF generatsiya qilishda xatolik: ' . addslashes($e->getMessage()) . '\'); window.close();"></body></html>', 
+                    500
+                );
             }
         } elseif ($template) {
             $content = $template->compile($contract);
@@ -179,12 +182,17 @@ class LedgerExportController extends Controller
 
                 return response()->download($absoluteDocxPath, "contract_{$contract->id}.docx")->deleteFileAfterSend(true);
             } catch (\Exception $e) {
-                return back()->withErrors(['message' => 'DOCX shablonini generatsiya qilishda xatolik: ' . $e->getMessage()]);
+                return response(
+                    '<html><head><meta charset="utf-8"></head><body onload="alert(\'DOCX shablonini generatsiya qilishda xatolik: ' . addslashes($e->getMessage()) . '\'); window.close();"></body></html>', 
+                    500
+                );
             }
         }
 
-        return back()->withErrors(['message' => 'Ushbu shartnoma uchun DOCX shabloni mavjud emas.']);
-    }
+        return response(
+            '<html><head><meta charset="utf-8"></head><body onload="alert(\'Ushbu shartnoma uchun Word (.docx) shabloni mavjud emas.\'); window.close();"></body></html>', 
+            404
+        );
 
     public function previewLedger(Contract $contract, Request $request)
     {

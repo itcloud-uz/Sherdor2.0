@@ -2326,6 +2326,8 @@ function printCalculatorDetails() {
     const logoSrc = page.props.branding?.logo_path ? `/storage/${page.props.branding.logo_path}` : '';
     const buildingPhoto = building?.photo_path ? `/storage/${building.photo_path}` : '/modern_apartment_render.png';
     const showDiscountBadge = (Number(calcDiscount.value) || 0) > 0;
+    const discountPercentage = calcPrice.value > 0 ? Math.round((calcDiscount.value / calcPrice.value) * 100) : 0;
+    const monthlyPayment = (calcTermMonths.value && calcTermMonths.value > 0) ? (calculatedRemainingBalance.value / calcTermMonths.value) : 0;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -2533,8 +2535,8 @@ function printCalculatorDetails() {
                     position: relative;
                     padding-left: 14px;
                     margin-bottom: 8px;
-                    font-size: 12px;
-                    font-weight: 700;
+                    font-size: 13px;
+                    font-weight: 800;
                     color: #000;
                     line-height: 1.4;
                 }
@@ -2553,8 +2555,8 @@ function printCalculatorDetails() {
                     top: 148.5mm;
                     left: 105mm;
                     transform: translate(-50%, -50%);
-                    width: 120px;
-                    height: 120px;
+                    width: 140px;
+                    height: 140px;
                     z-index: 20;
                 }
 
@@ -2564,8 +2566,8 @@ function printCalculatorDetails() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: #333;
-                    border-radius: 4px;
+                    background: #f53b3b;
+                    border-radius: 6px;
                 }
 
                 .badge-point.p1 { transform: rotate(0deg); }
@@ -2575,14 +2577,15 @@ function printCalculatorDetails() {
 
                 .badge-inner {
                     position: absolute;
-                    top: 6%;
-                    left: 6%;
-                    width: 88%;
-                    height: 88%;
-                    background: #333;
+                    top: 5%;
+                    left: 5%;
+                    width: 90%;
+                    height: 90%;
+                    background: #f53b3b;
                     border-radius: 50%;
-                    border: 1.5px dashed #ffffff;
+                    border: 2px dashed #ffffff;
                     display: flex;
+                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     z-index: 5;
@@ -2591,11 +2594,21 @@ function printCalculatorDetails() {
                 .badge-text {
                     font-family: 'Montserrat', sans-serif;
                     color: #ffffff;
-                    font-size: 12px;
+                    font-size: 13px;
                     font-weight: 900;
                     letter-spacing: 0.5px;
-                    transform: rotate(-10deg);
+                    transform: rotate(-5deg);
                     text-transform: uppercase;
+                }
+                
+                .badge-percent {
+                    font-family: 'Montserrat', sans-serif;
+                    color: #ffde59;
+                    font-size: 28px;
+                    font-weight: 900;
+                    transform: rotate(-5deg);
+                    line-height: 1;
+                    text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
                 }
 
                 /* Contact Styles */
@@ -2658,8 +2671,13 @@ function printCalculatorDetails() {
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .clip-top-left-bg, .clip-bottom-right-bg, .phone-icon-circle, .badge-point, .badge-inner {
+                    .clip-top-left-bg, .clip-bottom-right-bg, .phone-icon-circle {
                         background: #333 !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .badge-point, .badge-inner {
+                        background: #f53b3b !important;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
@@ -2704,14 +2722,10 @@ function printCalculatorDetails() {
 
                     <div class="section-title">To'lov shartlari</div>
                     <ul class="bullet-list">
-                        <li class="bullet-item">Boshlang'ich ${unit.type === 'commercial' ? "do'kon" : "uy"} narxi</li>
-                        <li class="bullet-item-val">${formatSoM(calcPrice.value)}</li>
                         <li class="bullet-item">Kvadrat metr narxi</li>
                         <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
-                        <li class="bullet-item">Chegirma (kv.m uchun)</li>
-                        <li class="bullet-item-val">${formatSoM(calcDiscountPerSqm.value)}</li>
                         <li class="bullet-item">Jami chegirma summasi</li>
-                        <li class="bullet-item-val">${formatSoM(calcDiscount.value)}</li>
+                        <li class="bullet-item-val" style="color: #f53b3b;">${formatSoM(calcDiscount.value)}</li>
                     </ul>
                 </div>
 
@@ -2723,6 +2737,7 @@ function printCalculatorDetails() {
                     <div class="badge-point p3"></div>
                     <div class="badge-point p4"></div>
                     <div class="badge-inner">
+                        <div class="badge-percent">${discountPercentage}%</div>
                         <div class="badge-text">CHEGIRMA</div>
                     </div>
                 </div>
@@ -2732,13 +2747,13 @@ function printCalculatorDetails() {
                 <div class="bottom-left-content">
                     <div class="section-title">Yakuniy shartnoma qiymati</div>
                     <ul class="bullet-list" style="margin-bottom: 25px;">
-                        <li class="bullet-item-val" style="font-size: 14px; margin-bottom: 6px; color: #000;">${formatSoM(calculatedTotalAmount.value)}</li>
-                        <li class="bullet-item">Boshlang'ich to'lov summasi</li>
-                        <li class="bullet-item-val">${formatSoM(calcDownPayment.value)} (${calcDownPaymentPercent.value}%)</li>
+                        <li class="bullet-item">Boshlang'ich to'lov (${calcDownPaymentPercent.value}%)</li>
                         <li class="bullet-item">Muddatli to'lovga qoldiq summa</li>
                         <li class="bullet-item-val">${formatSoM(calculatedRemainingBalance.value)}</li>
                         <li class="bullet-item">Bo'lib to'lash muddati</li>
                         <li class="bullet-item-val">${calcTermMonths.value || 12} oy</li>
+                        <li class="bullet-item" style="margin-top: 10px; color: #000; font-weight: bold;">OYLIK TO'LOV:</li>
+                        <li class="bullet-item-val" style="font-size: 20px; color: #1d4ed8;">${formatSoM(monthlyPayment)} / oy</li>
                     </ul>
 
                     <div class="contact-title">BOG'LANISH UCHUN</div>

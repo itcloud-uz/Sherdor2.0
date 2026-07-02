@@ -523,7 +523,7 @@ const handleDragEnd = () => {
                         </div>
                     </div>
 
-                    <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                    <div v-if="brigadeTab === 'xizmatlar'" class="p-6 flex flex-col flex-1 overflow-hidden">
                         <!-- Action Bar -->
                         <div class="flex justify-between items-center mb-4 flex-shrink-0">
                             <div class="flex gap-2">
@@ -648,8 +648,6 @@ const handleDragEnd = () => {
                     </div>
                 </div>
 
-            </div>
-        </div>
 
         <!-- Add Brigade Modal -->
         <div v-if="isAddBrigadeModalOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[60] p-4">

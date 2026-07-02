@@ -852,7 +852,7 @@ const handleDragEnd = () => {
 
                         <hr class="md:col-span-12 border-gray-100" />
 
-                        <!-- Col 2: O'lchov -->
+                        <!-- Col 2: O'lchov & Narx -->
                         <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-6 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchov birligi</label>
@@ -861,51 +861,44 @@ const handleDragEnd = () => {
                                     <option v-for="b in UNITS" :key="b" :value="b">{{ b }}</option>
                                 </select>
                             </div>
+                            
+                            <template v-if="['kub', 'kv.m'].includes(serviceForm.unit)">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchami 1</label>
+                                    <input v-model.number="serviceForm.measure1" type="number" min="0" step="any" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchami 2</label>
+                                    <input v-model.number="serviceForm.measure2" type="number" min="0" step="any" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                                </div>
+                            </template>
+
                             <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchami 1 (G)</label>
-                                <input v-model.number="serviceForm.measure1" type="number" min="0" step="any" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchami 2 (H)</label>
-                                <input v-model.number="serviceForm.measure2" type="number" min="0" step="any" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Necha dona (J)</label>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Miqdor</label>
                                 <input v-model.number="serviceForm.quantity" type="number" min="0" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
                             </div>
-                            <div class="col-span-2 flex flex-col justify-center bg-gray-50 rounded-md px-3 border border-gray-100 h-[38px] mt-5">
-                                <div class="flex justify-between text-xs text-gray-600 mb-0.5"><span>Oraliq (I):</span> <span class="font-bold">{{ serviceForm.total_measure }}</span></div>
-                                <div class="flex justify-between text-xs font-bold text-indigo-700"><span>Jami (K):</span> <span>{{ serviceForm.total }}</span></div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Narxi</label>
+                                <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+                            </div>
+
+                            <!-- Umuniy hisob-kitob -->
+                            <div class="col-span-1 md:col-span-2 lg:col-span-1 flex flex-col justify-center bg-indigo-50 rounded-md px-3 py-1 border border-indigo-100">
+                                <label class="block text-[10px] font-bold text-indigo-900 mb-0.5 uppercase tracking-wider">Umumiy Summa</label>
+                                <div class="text-sm font-black text-indigo-700 truncate">
+                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculated_sum) }}
+                                </div>
                             </div>
                         </div>
 
                         <hr class="md:col-span-12 border-gray-100" />
 
-                        <!-- Col 3: Moliya -->
-                        <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <!-- Col 3: Sana -->
+                        <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Narxi (L)</label>
-                                <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-indigo-900 mb-1">Hisob (M)</label>
-                                <div class="w-full bg-indigo-50 border border-indigo-200 rounded-md px-2 py-2 text-sm font-bold text-indigo-800 text-right truncate">
-                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.calculated_sum) }}
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-green-700 mb-1">To'lov (O)</label>
-                                <input v-model.number="serviceForm.paid_amount" type="number" min="0" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:border-green-500 focus:ring-green-500" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">To'lov sanasi</label>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Xizmat sanasi</label>
                                 <input v-model="serviceForm.work_date" type="date" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:ring-indigo-500 focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-red-700 mb-1">Qoldiq (P)</label>
-                                <div class="w-full bg-red-50 border border-red-200 rounded-md px-2 py-2 text-sm font-bold text-red-800 text-right truncate">
-                                    {{ new Intl.NumberFormat('uz-UZ').format(serviceForm.balance) }}
-                                </div>
                             </div>
                         </div>
 

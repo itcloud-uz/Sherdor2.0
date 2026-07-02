@@ -90,6 +90,9 @@ class HrController extends Controller
             }, 
             'transactions' => function($q) {
                 $q->select('id', 'brigade_id', 'type', 'amount', 'date', 'created_at', 'description');
+            },
+            'works' => function($q) {
+                $q->select('id', 'brigade_id', 'calculated_sum');
             }
         ])->get();
         
@@ -1743,12 +1746,14 @@ class HrController extends Controller
 
     public function getBrigadeWorks(\App\Models\Brigade $brigade)
     {
-        $works = \App\Models\BrigadeWork::where('brigade_id', $brigade->id)->orderBy('work_date', 'desc')->get();
-        // Add paid amount logic
+        $works = \App\Models\BrigadeWork::where('brigade_id', $brigade->id)
+            ->with('transactions')
+            ->orderBy('work_date', 'desc')
+            ->get();
+            
+        // Add paid amount logic for legacy fallback if needed, but Vue uses the relation
         $works = $works->map(function($w) {
-            $paid = \App\Models\BrigadeTransaction::where('linked_work_type', \App\Models\BrigadeWork::class)
-                        ->where('linked_work_id', $w->id)
-                        ->sum('amount');
+            $paid = collect($w->transactions)->sum('amount');
             $w->paid_amount = (float)$paid;
             $w->balance = (float)($w->calculated_sum - $paid);
             return $w;

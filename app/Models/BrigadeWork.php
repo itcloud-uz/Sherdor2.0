@@ -17,4 +17,9 @@ class BrigadeWork extends Model
     {
         return $this->belongsTo(Brigade::class);
     }
+
+    public function transactions()
+    {
+        return $this->hasMany(BrigadeTransaction::class, 'linked_work_id')->where('linked_work_type', self::class);
+    }
 }

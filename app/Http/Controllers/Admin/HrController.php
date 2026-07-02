@@ -107,7 +107,7 @@ class HrController extends Controller
                 $q->select('id', 'machine_owner_id', 'name', 'driver_name');
             }, 
             'works' => function($q) {
-                $q->orderBy('date', 'asc');
+                $q->with('transactions')->orderBy('date', 'asc');
             },
             'transactions' => function($q) {
                 $q->select('id', 'machine_owner_id', 'type', 'amount', 'date', 'created_at', 'description');

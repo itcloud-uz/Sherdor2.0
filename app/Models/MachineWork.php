@@ -27,4 +27,9 @@ class MachineWork extends Model
     {
         return $this->belongsTo(Machinery::class);
     }
+
+    public function transactions()
+    {
+        return $this->morphMany(MachineOwnerTransaction::class, 'linked_work');
+    }
 }

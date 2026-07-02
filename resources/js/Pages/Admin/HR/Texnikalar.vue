@@ -259,20 +259,47 @@ watch(workForm, (val) => {
     val.totalPrice = val.quantity * val.price;
 }, { deep: true });
 
+const processedRows = computed(() => {
+    if (!selectedOwner.value) return [];
+    return rows.value.map(row => {
+        let salyarka_amount = 0;
+        let paid_amount = 0;
+        
+        if (row.transactions && row.transactions.length > 0) {
+            row.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('salyarka') || desc.includes('solyarka') || desc.includes('so\'lyarka')) {
+                    salyarka_amount += amount;
+                } else {
+                    paid_amount += amount;
+                }
+            });
+        }
+        
+        const total = parseFloat(row.total_price) || 0;
+        const qoldiq = total - (paid_amount + salyarka_amount);
+        
+        return {
+            ...row,
+            paid_amount,
+            salyarka_amount,
+            qoldiq
+        };
+    });
+});
+
 const stats = computed(() => {
-    const res = rows.value.reduce(
+    const res = processedRows.value.reduce(
         (acc, row) => {
             acc.totalPrice += parseFloat(row.total_price) || 0;
+            acc.totalPaid += parseFloat(row.paid_amount) || 0;
+            acc.totalSalyarka += parseFloat(row.salyarka_amount) || 0;
+            acc.totalBalance += parseFloat(row.qoldiq) || 0;
             return acc;
         },
-        { totalPrice: 0, totalPaid: 0, totalBalance: 0 }
+        { totalPrice: 0, totalPaid: 0, totalSalyarka: 0, totalBalance: 0 }
     );
-    let financePaid = 0;
-    if (selectedOwner.value && selectedOwner.value.transactions) {
-        financePaid = selectedOwner.value.transactions.reduce((s, t) => s + (parseFloat(t.amount)||0), 0);
-    }
-    res.totalPaid = financePaid;
-    res.totalBalance = res.totalPrice - res.totalPaid;
     return res;
 });
 
@@ -381,24 +408,40 @@ const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text(`${selectedOwner.value.name} - Bajarilgan Ishlar Hisoboti`, 14, 15);
     
-    const tableData = rows.value.map((row, index) => [
+    const tableData = processedRows.value.map((row, index) => [
         index + 1,
         row.date,
-        selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
         row.service_name,
         row.quantity,
         formatMoney(row.price),
         formatMoney(row.total_price),
+        formatMoney(row.paid_amount),
+        formatMoney(row.salyarka_amount),
+        formatMoney(row.qoldiq),
         row.note
+    ]);
+
+    tableData.push([
+        '', 'JAMI', '', '', '',
+        formatMoney(stats.value.totalPrice),
+        formatMoney(stats.value.totalPaid),
+        formatMoney(stats.value.totalSalyarka),
+        formatMoney(stats.value.totalBalance),
+        ''
     ]);
 
     autoTable(doc, {
         startY: 25,
-        head: [['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'Izox']],
+        head: [['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salyarka olib berdik', 'Qoldiq', 'Izox']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 8 },
-        headStyles: { fillColor: [253, 224, 71], textColor: [0, 0, 0] }
+        headStyles: { fillColor: [253, 224, 71], textColor: [0, 0, 0] },
+        willDrawCell: function(data) {
+            if (data.row.index === tableData.length - 1) {
+                doc.setFont(undefined, 'bold');
+            }
+        }
     });
 
         doc.save(`${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
@@ -416,22 +459,27 @@ const exportToExcel = () => {
     }
     
     try {
-        const headers = ['№', 'Sana', 'Texnika', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'Izox'];
+        const headers = ['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Salyarka olib berdik', 'Qoldiq', 'Izox'];
     
-    const data = rows.value.map((row, index) => [
+    const data = processedRows.value.map((row, index) => [
         index + 1,
         row.date,
-        selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
         row.service_name,
         row.quantity,
         row.price,
         row.total_price,
+        row.paid_amount,
+        row.salyarka_amount,
+        row.qoldiq,
         row.note
     ]);
     
     data.push([
-        '', '', '', 'JAMI:', '', '', 
+        '', 'JAMI:', '', '', '', 
         stats.value.totalPrice, 
+        stats.value.totalPaid,
+        stats.value.totalSalyarka,
+        stats.value.totalBalance,
         ''
     ]);
     
@@ -484,228 +532,148 @@ const exportToExcel = () => {
                     <h1 class="text-2xl font-bold text-gray-800">TEXNIKALAR HISOBI</h1>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    
-                    <!-- Left Sidebar: Owners and Machineries -->
-                    <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col h-[calc(100vh-140px)]">
-                        <div class="flex flex-col gap-3 mb-4 border-b pb-4">
-                            <h2 class="text-md font-semibold text-gray-800">Texnika Egalari (Texnik ta'minotchilar)</h2>
-                            <div class="flex gap-2">
-                                <button @click="openAddOwnerModal" class="flex-1 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-blue-200">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                    Egasi Qo'shish
-                                </button>
-                                <button @click="openAddMachineryModal('')" class="flex-1 px-3 py-2 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-sm font-medium transition flex items-center justify-center border border-orange-200">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                    Texnika Qo'shish
-                                </button>
+                <div v-if="!selectedOwner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div v-if="props.owners.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+                        Texnika egalari topilmadi.
+                    </div>
+                    <div 
+                        v-for="owner in props.owners" 
+                        :key="owner.id" 
+                        @click="selectedOwner = owner"
+                        class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between"
+                    >
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-lg font-bold text-gray-900 line-clamp-2">{{ owner.name }}</h3>
+                                <div class="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">
+                                    {{ owner.machineries?.length || 0 }} texnika
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                {{ owner.phone || 'Tel yo\'q' }}
+                            </p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-500">Holat:</span>
+                                <span :class="owner.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold">
+                                    {{ formatMoney(owner.balance) }} UZS
+                                </span>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div v-if="props.owners.length === 0" class="text-gray-500 text-sm text-center py-4 flex-1">
-                            Texnika egalari topilmadi.
+                <!-- Detail View -->
+                <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden min-h-[calc(100vh-160px)]">
+                    <!-- Owner Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 bg-amber-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <button @click="selectedOwner = null" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 text-gray-600 transition" title="Orqaga">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Texnik ta'minotchi: {{ selectedOwner.name }}</h2>
+                                <p class="text-sm text-gray-700 mt-0.5">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Tel yo\'q' }}</span></p>
+                            </div>
                         </div>
-                        <div v-else class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                            <div v-for="owner in props.owners" :key="owner.id" class="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
-                                <div 
-                                    @click="toggleOwner(owner)" 
-                                    class="group relative px-4 py-3 flex justify-between items-center cursor-pointer transition border-b border-transparent"
-                                    :class="selectedOwner?.id === owner.id ? 'bg-orange-50 border-orange-200' : 'bg-white hover:bg-gray-50'"
-                                >
-                                    <div>
-                                        <h3 class="font-bold text-gray-800 pr-12">{{ owner.name }}</h3>
-                                        <p class="text-xs text-gray-500">{{ owner.phone || 'Tel yo\'q' }}</p>
-                                    </div>
-                                    <div class="flex items-center text-gray-400 group-hover:opacity-0 transition-opacity">
-                                        <span class="text-xs mr-2 font-medium bg-gray-100 px-2 py-1 rounded-full">{{ owner.machineries?.length || 0 }} texnika</span>
-                                        <svg class="w-5 h-5 transition-transform" :class="expandedOwners[owner.id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                    <div class="absolute right-2 top-3 hidden group-hover:flex space-x-1">
-                                        <button @click.stop="editOwner(owner)" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-md transition" title="Tahrirlash">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </button>
-                                        <button @click.stop="deleteOwner(owner.id)" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition" title="O'chirish">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div v-show="expandedOwners[owner.id]" class="p-2 border-t border-gray-200 bg-gray-50 space-y-2">
-                                    <div v-if="!owner.machineries || owner.machineries.length === 0" class="text-xs text-center text-gray-500 py-2">
-                                        Ushbu egasining texnikalari yo'q
-                                    </div>
-                                    <div 
-                                        v-for="machinery in owner.machineries" 
-                                        :key="machinery.id"
-                                        class="group relative w-full text-left px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 flex justify-between items-center"
-                                    >
-                                        <div class="overflow-hidden pr-2 w-full">
-                                            <span class="font-semibold text-sm truncate block pr-12">{{ machinery.name }}</span>
-                                            <span class="text-[10px] text-gray-500">{{ machinery.driver_name || 'Haydovchisiz' }}</span>
-                                        </div>
-                                        <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
-                                            <button @click.stop="editMachinery(machinery)" class="p-1 text-blue-500 hover:bg-blue-100 rounded transition" title="Tahrirlash">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                            </button>
-                                            <button @click.stop="deleteMachinery(machinery.id)" class="p-1 text-red-500 hover:bg-red-100 rounded transition" title="O'chirish">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="flex gap-2">
+                            <div class="bg-white rounded-lg px-4 py-2 border border-amber-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Texnikalar</div>
+                                <div class="text-sm font-semibold text-gray-800">{{ selectedOwner.machineries?.length || 0 }} ta</div>
+                            </div>
+                            <div class="bg-white rounded-lg px-4 py-2 border border-amber-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
+                                <div class="text-sm font-bold" :class="selectedOwner.balance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(selectedOwner.balance) }} UZS</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Panel: Machinery Details & Work Log -->
-                    <div class="lg:col-span-3 h-[calc(100vh-140px)] flex flex-col">
-                        <div v-if="!selectedOwner" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center flex-1 text-center text-gray-500">
-                            <svg class="w-20 h-20 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg>
-                            <span class="text-lg">Chap tomondagi ro'yxatdan birorta texnika egasini tanlang.</span>
+                    <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                        <!-- Action Bar -->
+                        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                            <div class="flex gap-2">
+                                <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    PDF Yuklab Olish
+                                </button>
+                                <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Excel Yuklab Olish
+                                </button>
+                            </div>
+                            <button
+                                @click="openAddWorkModal"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                Bajarilgan Ish Qo'shish
+                            </button>
                         </div>
 
-                        <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden">
-                            <!-- Owner Header -->
-                            <div class="px-6 py-4 border-b border-gray-200 bg-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
-                                <div>
-                                    <h2 class="text-xl font-bold text-gray-900">Texnik ta'minotchi: {{ selectedOwner.name }}</h2>
-                                    <p class="text-sm text-gray-700 mt-1">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Tel yo\'q' }}</span></p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm text-center">
-                                        <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Texnikalar</div>
-                                        <div class="text-sm font-semibold text-gray-800">{{ selectedOwner.machineries?.length || 0 }} ta</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="px-6 py-2 border-b border-gray-200 bg-gray-50 flex gap-2"> <button @click="activeTab = 'works'" :class="activeTab === 'works' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'" class="px-4 py-2 rounded-md text-sm font-medium transition-all"> Bajarilgan Ishlar (Xizmatlar) </button> <button @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'" class="px-4 py-2 rounded-md text-sm font-medium transition-all"> Moliya Tranzaksiyalari (To'lovlar) </button> </div> <div class="p-6 flex flex-col flex-1 overflow-hidden">
-                                <!-- Action Bar -->
-                                <div v-show="activeTab === 'works'" class="flex justify-between items-center mb-4 flex-shrink-0">
-                                    <div class="flex gap-2">
-                                        <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
-                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            PDF Yuklab Olish
-                                        </button>
-                                        <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
-                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            Excel Yuklab Olish
-                                        </button>
-                                    </div>
-                                    <button
-                                        @click="openAddWorkModal"
-                                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"
+                        <!-- Table Container -->
+                        <div class="overflow-auto rounded-lg border border-gray-200 flex-1 custom-scrollbar">
+                            <table class="w-full text-sm text-left text-gray-700 min-w-[1000px]">
+                                <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600 uppercase text-[11px] font-bold shadow-sm">
+                                    <tr>
+                                        <th class="px-3 py-3 text-center w-12 rounded-tl-lg">№</th>
+                                        <th class="px-3 py-3">Sana</th>
+                                        <th class="px-3 py-3">Xizmat nomi</th>
+                                        <th class="px-3 py-3 text-center">Soni (soat, reys)</th>
+                                        <th class="px-3 py-3 text-right">Narxi</th>
+                                        <th class="px-3 py-3 text-right">Jami narxi</th>
+                                        <th class="px-3 py-3 text-right">To'landi</th>
+                                        <th class="px-3 py-3 text-right">Salyarka olib berdik</th>
+                                        <th class="px-3 py-3 text-right">Qoldiq</th>
+                                        <th class="px-3 py-3">Izoh</th>
+                                        <th class="px-3 py-3 text-center w-16 rounded-tr-lg">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-if="processedRows.length === 0">
+                                        <td colspan="11" class="px-6 py-12 text-center text-gray-400 text-sm">
+                                            Ushbu texnik ta'minotchi uchun bajarilgan ishlar kiritilmagan.
+                                        </td>
+                                    </tr>
+                                    <tr 
+                                        v-for="(row, index) in processedRows" 
+                                        :key="row.id"
+                                        class="hover:bg-blue-50/50 transition-colors"
                                     >
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        Bajarilgan Ish Qo'shish
-                                    </button>
-                                </div>
-                                <div v-show="activeTab === 'finance'" class="flex justify-between items-center mb-4 flex-shrink-0">
-                                    <div class="text-sm text-gray-500">Moliya markazidan kiritilgan barcha tranzaksiyalar (to'lovlar, xarajatlar)</div>
-                                    <button
-                                        @click="openTransactionModal"
-                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center shadow-sm text-sm"
-                                    >
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        To'lov Qo'shish
-                                    </button>
-                                </div>
-
-                                <!-- Table Container -->
-                                <div v-show="activeTab === 'works'" class="overflow-auto rounded-lg border border-gray-200 flex-1 custom-scrollbar">
-                                    <table class="w-full text-sm text-left text-gray-700 min-w-[800px]">
-                                        <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600 uppercase text-xs font-semibold shadow-sm">
-                                            <tr>
-                                                <th class="px-4 py-3 text-center w-12 rounded-tl-lg">№</th>
-                                                <th class="px-4 py-3">Sana</th>
-                                                <th class="px-4 py-3">Texnika</th>
-                                                <th class="px-4 py-3">Xizmat nomi</th>
-                                                <th class="px-4 py-3 text-center">Soni</th>
-                                                <th class="px-4 py-3 text-right">Narxi</th>
-                                                <th class="px-4 py-3 text-right">Jami narxi</th>
-                                                <th class="px-4 py-3">Izox</th>
-                                                <th class="px-4 py-3 text-center w-16 rounded-tr-lg">Amallar</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-100 bg-white">
-                                            <tr v-if="rows.length === 0">
-                                                <td colspan="9" class="px-6 py-12 text-center text-gray-400 text-sm">
-                                                    Ushbu texnik ta'minotchi uchun bajarilgan ishlar kiritilmagan.
-                                                </td>
-                                            </tr>
-                                            <tr 
-                                                v-for="(row, index) in rows" 
-                                                :key="row.id"
-                                                class="hover:bg-blue-50/50 transition-colors"
-                                                :class="draggedIdx === index ? 'opacity-50 bg-gray-100' : ''"
-                                                draggable="true"
-                                                @dragstart="handleDragStart($event, index)"
-                                                @dragover="handleDragOver($event, index)"
-                                                @dragend="handleDragEnd"
-                                            >
-                                                <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
-                                                <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
-                                                <td class="px-4 py-3 font-medium text-gray-800">{{ row.machinery?.name || '-' }}</td>
-                                                <td class="px-4 py-3 text-gray-700">{{ row.service_name }}</td>
-                                                <td class="px-4 py-3 text-center font-medium">{{ parseFloat(row.quantity) }}</td>
-                                                <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
-                                                <td class="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">{{ formatMoney(row.total_price) }}</td>
-                                                <td class="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
-                                                
-                                                <td class="px-2 py-3 text-center space-x-1 whitespace-nowrap">
-                                                    <button @click="openTransactionModal(row)" class="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 transition border border-transparent hover:border-green-200" title="To'lov qilish">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                    </button>
-                                                    <button @click="openEditWorkModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                    </button>
-                                                    <button @click="deleteRow(row.id)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition" title="O'chirish">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                        <!-- Footer / Totals -->
-                                        <tfoot class="sticky bottom-0 z-10 bg-gray-50 border-t border-gray-200">
-                                            <tr class="font-bold text-gray-900">
-                                                <td colspan="6" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
-                                                <td class="px-4 py-4 text-right whitespace-nowrap text-base text-indigo-700">{{ formatMoney(stats.totalPrice) }}</td>
-                                                <td colspan="2" class="px-4 py-4"></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                                
-                                <!-- Finance Transactions -->
-                                <div v-show="activeTab === 'finance'" class="overflow-auto border border-gray-300 rounded-lg flex-1 custom-scrollbar">
-                                    <table class="w-full text-sm text-left text-gray-900 border-collapse">
-                                        <thead class="sticky top-0 z-10 shadow-sm bg-gray-100">
-                                            <tr>
-                                                <th class="border border-gray-200 px-4 py-3 text-center w-12 font-semibold text-gray-600">№</th>
-                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Sana</th>
-                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Turi</th>
-                                                <th class="border border-gray-200 px-4 py-3 font-semibold text-gray-600">Tavsif</th>
-                                                <th class="border border-gray-200 px-4 py-3 text-right font-semibold text-gray-600">So'mma</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-200 bg-white">
-                                            <tr v-if="!selectedOwner?.transactions || selectedOwner.transactions.length === 0">
-                                                <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">
-                                                    Moliya bo'limidan kiritilgan to'lovlar mavjud emas.
-                                                </td>
-                                            </tr>
-                                            <tr v-else v-for="(tx, index) in selectedOwner.transactions" :key="tx.id" class="hover:bg-gray-50 transition-colors">
-                                                <td class="border border-gray-200 px-4 py-2.5 text-center text-gray-500">{{ index + 1 }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-gray-800">{{ tx.date || tx.created_at?.substring(0, 10) }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5"><span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full uppercase tracking-wider whitespace-nowrap">{{ tx.type === 'payment' || tx.type === 'expense' ? 'TO\'LOV' : tx.type }}</span></td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-gray-700">{{ tx.description || tx.notes || 'To\'lov' }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">+{{ formatMoney(tx.amount) }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                            </div>
+                                        <td class="px-3 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
+                                        <td class="px-3 py-3 text-gray-700 font-semibold">{{ row.service_name }}</td>
+                                        <td class="px-3 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
+                                        <td class="px-3 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
+                                        <td class="px-3 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-blue-50/30">{{ formatMoney(row.total_price) }}</td>
+                                        <td class="px-3 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/20">{{ formatMoney(row.paid_amount) }}</td>
+                                        <td class="px-3 py-3 text-right font-bold text-orange-600 whitespace-nowrap bg-orange-50/20">{{ formatMoney(row.salyarka_amount) }}</td>
+                                        <td class="px-3 py-3 text-right font-bold whitespace-nowrap bg-gray-50" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
+                                        <td class="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
+                                        
+                                        <td class="px-2 py-3 text-center space-x-1 whitespace-nowrap">
+                                            <button @click="openEditWorkModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </button>
+                                            <button @click="deleteRow(row.id)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition" title="O'chirish">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <!-- Footer / Totals -->
+                                <tfoot class="sticky bottom-0 z-10 border-t-2 border-gray-300">
+                                    <tr class="font-black text-gray-900 bg-gray-100">
+                                        <td colspan="5" class="px-3 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
+                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base">{{ formatMoney(stats.totalPrice) }}</td>
+                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
+                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-orange-600">{{ formatMoney(stats.totalSalyarka) }}</td>
+                                        <td class="px-3 py-4 text-right whitespace-nowrap text-base text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
+                                        <td colspan="2" class="px-3 py-4"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
                 </div>

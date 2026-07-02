@@ -23,4 +23,9 @@ class MachineOwnerTransaction extends Model
     {
         return $this->belongsTo(MachineOwner::class);
     }
+
+    public function linked_work()
+    {
+        return $this->morphTo(__FUNCTION__, 'linked_work_type', 'linked_work_id');
+    }
 }

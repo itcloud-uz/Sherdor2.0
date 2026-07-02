@@ -67,8 +67,9 @@ const submitLead = async () => {
 
         <main class="relative z-10 w-full max-w-6xl px-6 py-12 flex flex-col items-center">
             
-            <div v-if="$page.props.branding?.logo_path" class="w-24 md:w-32 mb-8">
-                <img :src="'/storage/' + $page.props.branding.logo_path" alt="Logo" class="w-full h-auto drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">
+            <div v-if="$page.props.branding?.logo_path" class="w-24 h-24 md:w-28 md:h-28 mb-8 rounded-full overflow-hidden border-2 border-neon-cyan/30 shadow-[0_0_30px_rgba(0,240,255,0.4)] flex items-center justify-center bg-black relative">
+                <div class="absolute inset-0 rounded-full shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] z-10 pointer-events-none"></div>
+                <img :src="'/storage/' + $page.props.branding.logo_path" alt="Logo" class="w-full h-full object-cover relative z-0">
             </div>
             <div v-else class="w-16 h-16 mb-8 rounded-2xl bg-gradient-to-br from-neon-cyan to-neon-blue flex items-center justify-center shadow-[0_0_30px_rgba(0,240,255,0.5)]">
                 <span class="font-display font-bold text-3xl text-black">{{ ($page.props.branding?.app_name || 'S').charAt(0).toUpperCase() }}</span>

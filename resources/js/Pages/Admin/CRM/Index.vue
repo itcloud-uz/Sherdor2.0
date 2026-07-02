@@ -4814,9 +4814,6 @@ const ledgerReportData = computed(() => {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 Kutilmoqda
                                             </span>
-                                            <button @click="recalculatePenalty" :disabled="isProcessing" class="w-7 h-7 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:text-[#f2a900] hover:border-[#f2a900] transition-colors" title="Penya qayta hisoblash">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" /></svg>
-                                            </button>
                                         </div>
                                     </div>
 

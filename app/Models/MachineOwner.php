@@ -32,6 +32,11 @@ class MachineOwner extends Model
         return $this->hasMany(Machinery::class);
     }
 
+    public function works()
+    {
+        return $this->hasMany(MachineWork::class, 'machine_owner_id');
+    }
+
     public function transactions()
     {
         return $this->hasMany(MachineOwnerTransaction::class);

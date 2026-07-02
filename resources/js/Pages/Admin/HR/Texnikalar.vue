@@ -21,7 +21,6 @@ const props = defineProps({
 const selectedOwner = ref(null);
 const expandedOwners = ref({}); // { ownerId: boolean }
 
-const ownerData = ref({}); // { ownerId: [rows] }
 const rows = ref([]); // current selected rows
 const draggedIdx = ref(null);
 
@@ -162,20 +161,12 @@ const defaultWorkForm = {
     paid: 0,
     fuel: 0,
     balance: 0,
-    comment: ''
+    note: ''
 };
 const workForm = ref({ ...defaultWorkForm });
+const isSubmittingWork = ref(false);
 
 onMounted(() => {
-    const localData = localStorage.getItem('texnikalar_ishlar_owner');
-    if (localData) {
-        try {
-            ownerData.value = JSON.parse(localData);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    
     // Auto expand and select the first owner if available
     if (props.owners && props.owners.length > 0) {
         expandedOwners.value[props.owners[0].id] = true;
@@ -186,20 +177,19 @@ onMounted(() => {
 // Update current rows when an owner is selected
 watch(selectedOwner, (newOwner) => {
     if (newOwner) {
-        if (!ownerData.value[newOwner.id]) {
-            ownerData.value[newOwner.id] = [];
-        }
-        rows.value = ownerData.value[newOwner.id];
+        rows.value = newOwner.works || [];
     } else {
         rows.value = [];
     }
 });
 
-// Watch rows to update ownerData and LocalStorage
-watch(rows, (newVal) => {
+watch(() => props.owners, (newOwners) => {
     if (selectedOwner.value) {
-        ownerData.value[selectedOwner.value.id] = newVal;
-        localStorage.setItem('texnikalar_ishlar_owner', JSON.stringify(ownerData.value));
+        const updatedOwner = newOwners.find(o => o.id === selectedOwner.value.id);
+        if (updatedOwner) {
+            selectedOwner.value = updatedOwner;
+            rows.value = updatedOwner.works || [];
+        }
     }
 }, { deep: true });
 
@@ -217,7 +207,11 @@ watch(workForm, (val) => {
 const stats = computed(() => {
     const res = rows.value.reduce(
         (acc, row) => {
-            acc.totalPrice += row.totalPrice || 0;
+            acc.totalPrice += parseFloat(row.total_price) || 0;
+            acc.totalPaid += parseFloat(row.paid) || 0;
+            acc.totalFuel += parseFloat(row.fuel) || 0;
+            acc.totalBalance += parseFloat(row.balance) || 0;
+            return acc;
             acc.totalPaid += row.paid || 0;
             acc.totalFuel += row.fuel || 0;
             acc.totalBalance += row.balance || 0;
@@ -250,26 +244,60 @@ const openAddWorkModal = () => {
 };
 
 const openEditWorkModal = (row) => {
-    workForm.value = { ...row };
+    workForm.value = { 
+        ...row,
+        serviceName: row.service_name,
+        totalPrice: row.total_price
+    };
     editingWorkId.value = row.id;
     isWorkModalOpen.value = true;
 };
 
 const saveWork = () => {
+    isSubmittingWork.value = true;
+    
+    const payload = {
+        machine_owner_id: selectedOwner.value.id,
+        machinery_id: workForm.value.machinery_id,
+        date: workForm.value.date,
+        service_name: workForm.value.serviceName,
+        quantity: workForm.value.quantity,
+        price: workForm.value.price,
+        total_price: workForm.value.totalPrice,
+        paid: workForm.value.paid,
+        fuel: workForm.value.fuel,
+        balance: workForm.value.balance,
+        note: workForm.value.note
+    };
+
     if (editingWorkId.value) {
-        const index = rows.value.findIndex(r => r.id === editingWorkId.value);
-        if (index > -1) {
-            rows.value[index] = { ...workForm.value };
-        }
+        router.put(route('admin.hr.machine_works.update', editingWorkId.value), payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isWorkModalOpen.value = false;
+            },
+            onFinish: () => {
+                isSubmittingWork.value = false;
+            }
+        });
     } else {
-        rows.value.push({ ...workForm.value });
+        router.post(route('admin.hr.machine_works.store'), payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isWorkModalOpen.value = false;
+            },
+            onFinish: () => {
+                isSubmittingWork.value = false;
+            }
+        });
     }
-    isWorkModalOpen.value = false;
 };
 
 const deleteRow = (id) => {
     if (confirm("Rostdan ham o'chirasizmi?")) {
-        rows.value = rows.value.filter(r => r.id !== id);
+        router.delete(route('admin.hr.machine_works.destroy', id), {
+            preserveScroll: true
+        });
     }
 };
 
@@ -312,14 +340,14 @@ const exportToPDF = () => {
         index + 1,
         row.date,
         selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
-        row.serviceName,
+        row.service_name,
         row.quantity,
         formatMoney(row.price),
-        formatMoney(row.totalPrice),
+        formatMoney(row.total_price),
         formatMoney(row.paid),
         formatMoney(row.fuel),
         formatMoney(row.balance),
-        row.comment
+        row.note
     ]);
 
     autoTable(doc, {
@@ -352,14 +380,14 @@ const exportToExcel = () => {
         index + 1,
         row.date,
         selectedOwner.value.machineries?.find(m => m.id === row.machinery_id)?.name || '-',
-        row.serviceName,
+        row.service_name,
         row.quantity,
         row.price,
-        row.totalPrice,
+        row.total_price,
         row.paid,
         row.fuel,
         row.balance,
-        row.comment
+        row.note
     ]);
     
     data.push([
@@ -580,18 +608,19 @@ const exportToExcel = () => {
                                             >
                                                 <td class="border border-gray-400 px-2 py-1 text-center font-bold">{{ index + 1 }}</td>
                                                 <td class="border border-gray-400 px-2 py-1 text-center whitespace-nowrap">{{ row.date }}</td>
-                                                <td class="border border-gray-400 px-2 py-1">{{ row.serviceName }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-center">{{ row.quantity }}</td>
+                                                <td class="border border-gray-400 px-2 py-1">{{ row.machinery?.name || '-' }}</td>
+                                                <td class="border border-gray-400 px-2 py-1">{{ row.service_name }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-center">{{ parseFloat(row.quantity) }}</td>
                                                 <td class="border border-gray-400 px-2 py-1 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right font-medium whitespace-nowrap">{{ formatMoney(row.totalPrice) }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-right font-medium whitespace-nowrap">{{ formatMoney(row.total_price) }}</td>
                                                 
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-green-700 whitespace-nowrap font-medium">{{ row.paid ? formatMoney(row.paid) : '' }}</td>
-                                                <td class="border border-gray-400 px-2 py-1 text-right text-blue-700 whitespace-nowrap font-medium">{{ row.fuel ? formatMoney(row.fuel) : '' }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-right text-green-700 whitespace-nowrap font-medium">{{ parseFloat(row.paid) > 0 ? formatMoney(row.paid) : '' }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-right text-blue-700 whitespace-nowrap font-medium">{{ parseFloat(row.fuel) > 0 ? formatMoney(row.fuel) : '' }}</td>
                                                 
                                                 <td class="border border-gray-400 px-2 py-1 text-right font-bold whitespace-nowrap" :class="row.balance > 0 ? 'text-gray-900' : 'text-red-600'">
                                                     {{ row.balance < 0 ? '-' : '' }} {{ formatMoney(Math.abs(row.balance)) }}
                                                 </td>
-                                                <td class="border border-gray-400 px-2 py-1 text-xs text-gray-600 max-w-[150px] truncate" :title="row.comment">{{ row.comment }}</td>
+                                                <td class="border border-gray-400 px-2 py-1 text-xs text-gray-600 max-w-[150px] truncate" :title="row.note">{{ row.note }}</td>
                                                 
                                                 <td class="border border-gray-400 px-1 py-1 text-center space-x-1">
                                                     <button @click="openEditWorkModal(row)" class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition" title="Tahrirlash">
@@ -706,7 +735,7 @@ const exportToExcel = () => {
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Izox (Agar mavjud bo'lsa)</label>
-                            <textarea v-model="workForm.comment" rows="3" class="w-full border-gray-300 rounded-lg text-base p-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Qo'shimcha ma'lumotlar yoki izohlarni yozing..."></textarea>
+                            <textarea v-model="workForm.note" rows="3" class="w-full border-gray-300 rounded-lg text-base p-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Qo'shimcha ma'lumotlar yoki izohlarni yozing..."></textarea>
                         </div>
                         
                         <div class="flex justify-between items-center bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-inner mt-4">

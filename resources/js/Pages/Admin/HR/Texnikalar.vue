@@ -23,6 +23,7 @@ const expandedOwners = ref({}); // { ownerId: boolean }
 
 const rows = ref([]); // current selected rows
 const draggedIdx = ref(null);
+const activeTab = ref('works');
 
 // Owner Modal state
 const isAddOwnerModalOpen = ref(false);

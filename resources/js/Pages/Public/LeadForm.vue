@@ -114,10 +114,6 @@ const submitLead = async () => {
                                             <span class="text-neon-cyan">🏢</span> {{ unit.building_name }}
                                         </h3>
                                     </div>
-                                    <div class="text-right">
-                                        <div class="text-[9px] md:text-[10px] font-mono text-text-muted uppercase tracking-widest">Narxi</div>
-                                        <div class="text-neon-magenta font-bold font-mono text-sm md:text-base">{{ new Intl.NumberFormat('uz-UZ').format(unit.price) }} UZS</div>
-                                    </div>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-3 md:gap-4 mb-4 flex-1">

@@ -2328,6 +2328,10 @@ function printCalculatorDetails() {
     const showDiscountBadge = (Number(calcDiscount.value) || 0) > 0;
     const discountPercentage = calcPrice.value > 0 ? Math.round((calcDiscount.value / calcPrice.value) * 100) : 0;
     const monthlyPayment = (calcTermMonths.value && calcTermMonths.value > 0) ? (calculatedRemainingBalance.value / calcTermMonths.value) : 0;
+    
+    const currentDomain = window.location.origin;
+    const qrUrl = encodeURIComponent(currentDomain + '/promo/offers');
+    const qrImageSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + qrUrl;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -2365,161 +2369,88 @@ function printCalculatorDetails() {
                 .print-container {
                     width: 210mm;
                     height: 297mm;
-                    position: relative;
+                    padding: 15mm 20mm;
                     background: #fff;
-                    overflow: hidden;
-                }
-
-                /* Diagonal crop containers */
-                .clip-top-left-bg {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 130mm;
-                    height: 130mm;
-                    background: #333;
-                    clip-path: polygon(0 0, 100% 0, 68% 100%, 0 100%);
-                    z-index: 1;
-                }
-
-                .clip-top-left-img {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 128mm;
-                    height: 128mm;
-                    background: #fff;
-                    clip-path: polygon(0 0, 100% 0, 68% 100%, 0 100%);
-                    z-index: 2;
-                    overflow: hidden;
-                }
-
-                .clip-top-left-img img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                }
-
-                .clip-bottom-right-bg {
-                    position: absolute;
-                    bottom: 0;
-                    right: 0;
-                    width: 130mm;
-                    height: 130mm;
-                    background: #333;
-                    clip-path: polygon(32% 0, 100% 0, 100% 100%, 0 100%);
-                    z-index: 1;
-                }
-
-                .clip-bottom-right-img {
-                    position: absolute;
-                    bottom: 0;
-                    right: 0;
-                    width: 128mm;
-                    height: 128mm;
-                    background: #fff;
-                    clip-path: polygon(32% 0, 100% 0, 100% 100%, 0 100%);
-                    z-index: 2;
-                    overflow: hidden;
-                }
-
-                .clip-bottom-right-img img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                }
-
-                /* Logo placement */
-                .logo-container {
-                    position: absolute;
-                    top: 15mm;
-                    left: 12mm;
-                    z-index: 10;
-                    background: rgba(255, 255, 255, 0.9);
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-                }
-
-                .logo-fallback {
                     display: flex;
-                    align-items: center;
-                    gap: 6px;
+                    gap: 15mm;
+                }
+                
+                .left-col {
+                    width: 45%;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .right-col {
+                    width: 55%;
+                    display: flex;
+                    flex-direction: column;
+                    position: relative;
                 }
 
-                .logo-fallback-icon {
-                    width: 20px;
-                    height: 20px;
-                    color: #333;
+                /* Left Col Elements */
+                .unit-image {
+                    width: 100%;
+                    height: auto;
+                    max-height: 100mm;
+                    object-fit: contain;
+                    margin-bottom: 5mm;
                 }
-
-                .logo-fallback-text {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 11px;
-                    font-weight: 800;
-                    color: #333;
-                    letter-spacing: 0.5px;
-                }
-
-                /* Text Quadrants */
-                .top-right-content {
-                    position: absolute;
-                    top: 15mm;
-                    right: 12mm;
-                    width: 85mm;
-                    z-index: 10;
-                }
-
-                .bottom-left-content {
-                    position: absolute;
-                    bottom: 15mm;
-                    left: 12mm;
-                    width: 85mm;
-                    z-index: 10;
+                
+                .qr-code {
+                    width: 40mm;
+                    height: 40mm;
+                    margin-bottom: 10mm;
+                    align-self: center;
                 }
 
                 /* Text Styles */
                 .title-xona {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 56px;
+                    font-size: 40px;
                     font-weight: 800;
-                    color: #333;
+                    color: #888;
                     text-align: right;
                     line-height: 0.9;
-                    margin-bottom: 25px;
+                    margin-bottom: 15mm;
                     text-transform: uppercase;
                 }
 
                 .title-xona span {
-                    font-size: 78px;
-                    color: #000;
+                    font-size: 80px;
+                    color: #333;
                     font-weight: 900;
                 }
 
                 .section-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 15px;
+                    font-size: 16px;
                     font-weight: 800;
-                    color: #000;
-                    border-bottom: 1.5px solid #333;
-                    padding-bottom: 4px;
-                    margin-bottom: 12px;
+                    color: #1e3a8a;
+                    border-bottom: 2px solid #cbd5e1;
+                    padding-bottom: 6px;
+                    margin-bottom: 15px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
+                }
+                
+                .section-title.dark {
+                    color: #334155;
                 }
 
                 .bullet-list {
                     list-style: none;
                     padding: 0;
                     margin: 0;
+                    margin-bottom: 10mm;
                 }
 
                 .bullet-item {
                     position: relative;
                     padding-left: 14px;
-                    margin-bottom: 2px;
-                    font-size: 11.5px;
-                    color: #333;
+                    margin-bottom: 6px;
+                    font-size: 13px;
+                    color: #475569;
                     line-height: 1.4;
                 }
 
@@ -2527,36 +2458,90 @@ function printCalculatorDetails() {
                     content: '•';
                     position: absolute;
                     left: 0;
-                    color: #333;
+                    color: #475569;
                     font-weight: bold;
                 }
 
                 .bullet-item-val {
                     position: relative;
                     padding-left: 14px;
-                    margin-bottom: 8px;
-                    font-size: 13px;
+                    margin-bottom: 12px;
+                    font-size: 14px;
                     font-weight: 800;
-                    color: #000;
+                    color: #0f172a;
                     line-height: 1.4;
+                }
+
+                .bullet-item-val.red-val {
+                    color: #dc2626;
+                }
+                
+                .bullet-item-val.blue-val {
+                    color: #2563eb;
+                    font-size: 18px;
                 }
 
                 .bullet-item-val::before {
                     content: '•';
                     position: absolute;
                     left: 0;
-                    color: #333;
-                    font-weight: bold;
+                    color: transparent;
+                }
+
+                /* Contact Styles */
+                .contact-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: #000;
+                    margin-bottom: 15px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .phone-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .phone-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .phone-icon-circle {
+                    width: 28px;
+                    height: 28px;
+                    background: #475569;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                }
+
+                .phone-icon-svg {
+                    width: 14px;
+                    height: 14px;
+                    fill: currentColor;
+                }
+
+                .phone-number {
+                    font-family: 'Inter', sans-serif;
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #334155;
                 }
 
                 /* Starburst Badge */
                 .discount-badge-container {
                     position: absolute;
-                    top: 148.5mm;
-                    left: 105mm;
-                    transform: translate(-50%, -50%);
-                    width: 140px;
-                    height: 140px;
+                    bottom: 20mm;
+                    right: 0mm;
+                    width: 130px;
+                    height: 130px;
                     z-index: 20;
                 }
 
@@ -2566,8 +2551,8 @@ function printCalculatorDetails() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: #f53b3b;
-                    border-radius: 6px;
+                    background: #ef4444;
+                    border-radius: 8px;
                 }
 
                 .badge-point.p1 { transform: rotate(0deg); }
@@ -2581,9 +2566,9 @@ function printCalculatorDetails() {
                     left: 5%;
                     width: 90%;
                     height: 90%;
-                    background: #f53b3b;
+                    background: #ef4444;
                     border-radius: 50%;
-                    border: 2px dashed #ffffff;
+                    border: 2px dashed rgba(255,255,255,0.5);
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -2597,66 +2582,17 @@ function printCalculatorDetails() {
                     font-size: 13px;
                     font-weight: 900;
                     letter-spacing: 0.5px;
-                    transform: rotate(-5deg);
                     text-transform: uppercase;
                 }
                 
                 .badge-percent {
                     font-family: 'Montserrat', sans-serif;
-                    color: #ffde59;
-                    font-size: 28px;
+                    color: #fde047;
+                    font-size: 32px;
                     font-weight: 900;
-                    transform: rotate(-5deg);
                     line-height: 1;
-                    text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-                }
-
-                /* Contact Styles */
-                .contact-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 14px;
-                    font-weight: 800;
-                    color: #000;
-                    margin-top: 20px;
-                    margin-bottom: 12px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .phone-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .phone-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .phone-icon-circle {
-                    width: 26px;
-                    height: 26px;
-                    background: #333;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #fff;
-                }
-
-                .phone-icon-svg {
-                    width: 12px;
-                    height: 12px;
-                    fill: currentColor;
-                }
-
-                .phone-number {
-                    font-family: 'Inter', sans-serif;
-                    font-size: 13px;
-                    font-weight: 700;
-                    color: #000;
+                    text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+                    margin-bottom: 2px;
                 }
 
                 @media print {
@@ -2671,13 +2607,13 @@ function printCalculatorDetails() {
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .clip-top-left-bg, .clip-bottom-right-bg, .phone-icon-circle {
-                        background: #333 !important;
+                    .phone-icon-circle {
+                        background: #475569 !important;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
                     .badge-point, .badge-inner {
-                        background: #f53b3b !important;
+                        background: #ef4444 !important;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
@@ -2686,74 +2622,22 @@ function printCalculatorDetails() {
         </head>
         <body>
             <div class="print-container">
-                <!-- Top Left Image (Diagonal) -->
-                <div class="clip-top-left-bg"></div>
-                <div class="clip-top-left-img">
-                    <img src="${buildingPhoto}" alt="Building Cover" />
-                </div>
-
-                <!-- Logo -->
-                <div class="logo-container">
-                    ${logoSrc ? `
-                        <img src="${logoSrc}" style="max-height: 40px; max-width: 120px; object-fit: contain;" alt="Logo" />
-                    ` : `
-                        <div class="logo-fallback">
-                            <svg class="logo-fallback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
-                            <span class="logo-fallback-text">TIJORAT TAKLIFI</span>
-                        </div>
-                    `}
-                </div>
-
-                <!-- Top Right Content -->
-                <div class="top-right-content">
-                    <div class="title-xona"><span>${unit.rooms_count || 1}</span> XONA</div>
+                
+                <!-- LEFT COLUMN -->
+                <div class="left-col">
+                    <img src="${selectedUnitDisplayImage.value}" alt="Unit Layout" class="unit-image" />
                     
-                    <div class="section-title">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} ma'lumotlari</div>
-                    <ul class="bullet-list" style="margin-bottom: 25px;">
-                        <li class="bullet-item">Blok / Korpus: <strong>${cleanedBlockName}</strong></li>
-                        <li class="bullet-item">Qavat: <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
-                        <li class="bullet-item">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami: <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
-                        <li class="bullet-item">Umumiy maydoni: <strong>${unit.area_sqm} kv.m</strong></li>
-                        <li class="bullet-item">Xonalar soni: <strong>${unit.rooms_count || 1} xonali</strong></li>
-                    </ul>
-
-                    <div class="section-title">To'lov shartlari</div>
+                    <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
+                    
+                    <div class="section-title dark">YAKUNIY SHARTNOMA QIYMATI</div>
                     <ul class="bullet-list">
-                        <li class="bullet-item">Kvadrat metr narxi</li>
-                        <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
-                        <li class="bullet-item">Jami chegirma summasi</li>
-                        <li class="bullet-item-val" style="color: #f53b3b;">${formatSoM(calcDiscount.value)}</li>
-                    </ul>
-                </div>
-
-                <!-- Starburst Badge -->
-                ${showDiscountBadge ? `
-                <div class="discount-badge-container">
-                    <div class="badge-point p1"></div>
-                    <div class="badge-point p2"></div>
-                    <div class="badge-point p3"></div>
-                    <div class="badge-point p4"></div>
-                    <div class="badge-inner">
-                        <div class="badge-percent">${discountPercentage}%</div>
-                        <div class="badge-text">CHEGIRMA</div>
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- Bottom Left Content -->
-                <div class="bottom-left-content">
-                    <div class="section-title">Yakuniy shartnoma qiymati</div>
-                    <ul class="bullet-list" style="margin-bottom: 25px;">
                         <li class="bullet-item">Boshlang'ich to'lov (${calcDownPaymentPercent.value}%)</li>
                         <li class="bullet-item">Muddatli to'lovga qoldiq summa</li>
                         <li class="bullet-item-val">${formatSoM(calculatedRemainingBalance.value)}</li>
                         <li class="bullet-item">Bo'lib to'lash muddati</li>
                         <li class="bullet-item-val">${calcTermMonths.value || 12} oy</li>
-                        <li class="bullet-item" style="margin-top: 10px; color: #000; font-weight: bold;">OYLIK TO'LOV:</li>
-                        <li class="bullet-item-val" style="font-size: 20px; color: #1d4ed8;">${formatSoM(monthlyPayment)} / oy</li>
+                        <li class="bullet-item" style="margin-top: 15px; color: #1e3a8a; font-weight: 800; text-transform: uppercase;">OYLIK TO'LOV:</li>
+                        <li class="bullet-item-val blue-val">${formatSoM(monthlyPayment)} / oy</li>
                     </ul>
 
                     <div class="contact-title">BOG'LANISH UCHUN</div>
@@ -2785,11 +2669,42 @@ function printCalculatorDetails() {
                     </div>
                 </div>
 
-                <!-- Bottom Right Image (Diagonal) -->
-                <div class="clip-bottom-right-bg"></div>
-                <div class="clip-bottom-right-img">
-                    <img src="${selectedUnitDisplayImage.value}" alt="Unit 3D Layout" />
+                <!-- RIGHT COLUMN -->
+                <div class="right-col">
+                    <div class="title-xona"><span>${unit.rooms_count || 1}</span> XONA</div>
+                    
+                    <div class="section-title dark">XONADON MA'LUMOTLARI</div>
+                    <ul class="bullet-list">
+                        <li class="bullet-item">Blok / Korpus: <strong>${cleanedBlockName}</strong></li>
+                        <li class="bullet-item">Qavat: <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
+                        <li class="bullet-item">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami: <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
+                        <li class="bullet-item">Umumiy maydoni: <strong>${unit.area_sqm} kv.m</strong></li>
+                        <li class="bullet-item">Xonalar soni: <strong>${unit.rooms_count || 1} xonali</strong></li>
+                    </ul>
+
+                    <div class="section-title dark">TO'LOV SHARTLARI</div>
+                    <ul class="bullet-list">
+                        <li class="bullet-item">Kvadrat metr narxi</li>
+                        <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
+                        <li class="bullet-item">Jami chegirma summasi</li>
+                        <li class="bullet-item-val red-val">${formatSoM(calcDiscount.value)}</li>
+                    </ul>
+
+                    <!-- Starburst Badge -->
+                    ${showDiscountBadge ? `
+                    <div class="discount-badge-container">
+                        <div class="badge-point p1"></div>
+                        <div class="badge-point p2"></div>
+                        <div class="badge-point p3"></div>
+                        <div class="badge-point p4"></div>
+                        <div class="badge-inner">
+                            <div class="badge-percent">${discountPercentage}%</div>
+                            <div class="badge-text">CHEGIRMA</div>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
+            </div>       </div>
             </div>
 
             <script>

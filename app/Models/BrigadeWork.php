@@ -9,7 +9,8 @@ class BrigadeWork extends Model
     protected $fillable = [
         'brigade_id', 'floor_info', 'room_info', 'service_name', 'unit',
         'measure1', 'measure2', 'total_measure', 'quantity', 'total',
-        'price', 'calculated_sum', 'date', 'note'
+        'price', 'calculated_sum', 'date', 'note',
+        'work_name', 'building', 'block', 'floor', 'work_date'
     ];
 
     public function brigade()

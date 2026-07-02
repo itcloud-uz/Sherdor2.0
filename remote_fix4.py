@@ -15,8 +15,11 @@ try:
     ssh.connect(hostname, port, username, password, timeout=10)
     
     commands = [
-        "cd /var/www/sellerarp && git pull",
-        "cd /var/www/sellerarp && echo 'clone2026' | sudo -S npm run build"
+        "echo 'clone2026' | sudo -S chown -R haus:www-data /var/www/sellerarp",
+        "echo 'clone2026' | sudo -S chmod -R 775 /var/www/sellerarp/storage",
+        "echo 'clone2026' | sudo -S chmod -R 775 /var/www/sellerarp/bootstrap/cache",
+        "echo 'clone2026' | sudo -S chmod -R 775 /var/www/sellerarp/public/build",
+        "echo 'clone2026' | sudo -S chmod +x /var/www/sellerarp/update.sh"
     ]
     
     for cmd in commands:

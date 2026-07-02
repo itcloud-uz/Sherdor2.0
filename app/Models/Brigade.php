@@ -36,4 +36,9 @@ class Brigade extends Model
     {
         return $this->hasMany(BrigadeTransaction::class);
     }
+
+    public function works()
+    {
+        return $this->hasMany(BrigadeWork::class);
+    }
 }

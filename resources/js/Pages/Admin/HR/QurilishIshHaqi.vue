@@ -159,8 +159,9 @@ const openEditServiceModal = (row) => {
         building: row.building || '',
         block: row.block || '',
         floor: row.floor || '',
-        measure1: row.measure1 || 1,
-        measure2: row.measure2 || 1,
+        unit: row.unit || '',
+        measure1: row.measure1 || 0,
+        measure2: row.measure2 || 0,
         quantity: row.quantity || 1,
         price: row.price || 0,
         note: row.note || '',
@@ -244,8 +245,9 @@ watch(selectedBrigade, (newBrigade) => {
 
 // Auto-calculate form values
 watch(serviceForm, (val) => {
-    const m1 = parseFloat(val.measure1) || 0;
-    const m2 = parseFloat(val.measure2) || 0;
+    const isDimensional = ['kub', 'kv.m'].includes(val.unit);
+    const m1 = isDimensional ? (parseFloat(val.measure1) || 0) : 0;
+    const m2 = isDimensional ? (parseFloat(val.measure2) || 0) : 0;
     const q = parseFloat(val.quantity) || 0;
     const p = parseFloat(val.price) || 0;
     const pay = parseFloat(val.paid_amount) || parseFloat(val.paymentAmount) || 0;
@@ -255,7 +257,7 @@ watch(serviceForm, (val) => {
 
     // If I > 0, K = I * J (J defaults to 1). Otherwise K = J.
     const activeQty = q > 0 ? q : 1;
-    if (val.total_measure > 0) {
+    if (val.total_measure > 0 && isDimensional) {
         val.total = Number((val.total_measure * activeQty).toFixed(4));
     } else {
         val.total = Number(q.toFixed(4));

@@ -24,6 +24,7 @@ class LeadController extends Controller
             'region' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:1000',
+            'comment' => 'nullable|string|max:2000',
             'assigned_employee_id' => 'nullable|exists:users,id',
             'email' => 'nullable|string|email|max:255',
             'social_url' => 'nullable|string|max:1000',
@@ -49,6 +50,7 @@ class LeadController extends Controller
                 'region' => $validated['region'] ?? null,
                 'district' => $validated['district'] ?? null,
                 'address' => $validated['address'] ?? null,
+                'comment' => $validated['comment'] ?? null,
                 'assigned_employee_id' => $validated['assigned_employee_id'] ?? null,
                 'email' => $validated['email'] ?? null,
                 'social_url' => $validated['social_url'] ?? null,
@@ -57,8 +59,37 @@ class LeadController extends Controller
                 'user_id' => $validated['user_id'] ?? null,
             ]);
 
+            // Send Telegram Notification
+            $settings = \App\Models\SystemSetting::first();
+            if ($settings && $settings->telegram_lead_bot_token && $settings->telegram_lead_chat_id) {
+                $token = $settings->telegram_lead_bot_token;
+                $chatId = $settings->telegram_lead_chat_id;
+                
+                $message = "🔔 *YANGI LID* (Manba: {$source})\n\n";
+                $message .= "👤 *FIO:* {$lead->full_name}\n";
+                $message .= "📞 *Tel:* {$lead->phone}\n";
+                
+                if ($lead->region) $message .= "📍 *Viloyat:* {$lead->region}\n";
+                if ($lead->district) $message .= "🏢 *Tuman:* {$lead->district}\n";
+                if ($lead->comment) $message .= "💬 *Izoh:* {$lead->comment}\n";
+                
+                $message .= "\n_CRM tizimiga avtomatik qo'shildi._";
+                
+                try {
+                    \Illuminate\Support\Facades\Http::withoutVerifying()->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                        'chat_id' => $chatId,
+                        'text' => $message,
+                        'parse_mode' => 'Markdown'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Telegram lead notification error: ' . $e->getMessage());
+                }
+            }
+
+            $successMsg = $settings->promo_success_message ?? 'Rahmat! Menejerimiz tez orada aloqaga chiqadi';
+
             return response()->json([
-                'message' => 'Rahmat! Menejerimiz tez orada aloqaga chiqadi',
+                'message' => $successMsg,
                 'lead' => $lead
             ], 201);
             

@@ -9,9 +9,19 @@ const props = defineProps({
     promoSettings: Object,
 });
 
+const uzbekistanRegions = [
+    'Toshkent shahri', 'Toshkent viloyati', 'Andijon viloyati', 'Buxoro viloyati',
+    'Farg\'ona viloyati', 'Jizzax viloyati', 'Xorazm viloyati', 'Namangan viloyati',
+    'Navoiy viloyati', 'Qashqadaryo viloyati', 'Qoraqalpog\'iston Respublikasi',
+    'Samarqand viloyati', 'Sirdaryo viloyati', 'Surxondaryo viloyati'
+];
+
 const form = ref({
     full_name: '',
     phone: '',
+    region: '',
+    district: '',
+    comment: '',
     source: 'landing_page',
 });
 
@@ -25,9 +35,12 @@ const submitLead = async () => {
     
     try {
         const response = await axios.post(route('api.leads.store'), form.value);
-        successMessage.value = response.data.message;
+        successMessage.value = props.promoSettings?.promo_success_message || response.data.message;
         form.value.full_name = '';
         form.value.phone = '';
+        form.value.region = '';
+        form.value.district = '';
+        form.value.comment = '';
     } catch (error) {
         if (error.response?.data?.errors) {
             errorMessage.value = Object.values(error.response.data.errors).flat().join('\n');
@@ -94,9 +107,9 @@ const submitLead = async () => {
                     <div v-else class="relative z-10">
                         <div class="text-center mb-8">
                             <h2 class="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-white mb-2 tracking-wide">
-                                {{ promoSettings?.promo_title ? 'Ro\'yxatdan O\'tish' : 'Maxsus Taklif!' }}
+                                {{ promoSettings?.promo_form_title || (promoSettings?.promo_title ? 'Ro\'yxatdan O\'tish' : 'Maxsus Taklif!') }}
                             </h2>
-                            <p class="text-text-muted text-sm font-light">Telefon raqamingizni qoldiring va bepul konsultatsiyaga ega bo'ling.</p>
+                            <p class="text-text-muted text-sm font-light">{{ promoSettings?.promo_form_subtitle || 'Telefon raqamingizni qoldiring va bepul konsultatsiyaga ega bo\'ling.' }}</p>
                         </div>
 
                         <form @submit.prevent="submitLead" class="space-y-5">
@@ -127,13 +140,44 @@ const submitLead = async () => {
                                 >
                             </div>
 
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Viloyat</label>
+                                <select 
+                                    v-model="form.region" 
+                                    class="w-full bg-[#1e293b] border border-gray-600 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                >
+                                    <option value="" disabled>Viloyatni tanlang</option>
+                                    <option v-for="region in uzbekistanRegions" :key="region" :value="region">{{ region }}</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Tuman / Shahar</label>
+                                <input 
+                                    type="text" 
+                                    v-model="form.district" 
+                                    placeholder="Masalan: Yunusobod"
+                                    class="w-full bg-[#1e293b] border border-gray-600 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-mono text-text-muted uppercase tracking-widest mb-1.5 ml-1">Qo'shimcha Izoh</label>
+                                <textarea 
+                                    v-model="form.comment" 
+                                    rows="2"
+                                    placeholder="Xarid maqsadi yoki boshqa ma'lumotlar..."
+                                    class="w-full bg-[#1e293b] border border-gray-600 rounded-xl p-4 text-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all shadow-inner resize-none"
+                                ></textarea>
+                            </div>
+
                             <button 
                                 type="submit" 
                                 :disabled="isSubmitting" 
                                 class="w-full mt-4 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan py-4 rounded-xl font-display font-bold tracking-widest uppercase hover:bg-neon-cyan hover:text-black hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <span v-if="isSubmitting" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                                {{ isSubmitting ? 'Yuborilmoqda...' : 'Yuborish' }}
+                                {{ isSubmitting ? 'Yuborilmoqda...' : (promoSettings?.promo_button_text || 'Yuborish') }}
                             </button>
                         </form>
                     </div>

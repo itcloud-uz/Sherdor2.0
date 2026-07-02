@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/developer/keys/{id}', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'revokeKey'])->name('developer.keys.destroy');
     Route::post('/developer/sip', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateSipSettings'])->name('developer.sip.update');
     Route::post('/developer/promo', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updatePromoSettings'])->name('developer.promo.update');
+    Route::post('/developer/telegram-leads', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateTelegramLeadSettings'])->name('developer.telegram_leads.update');
     Route::put('/developer/users/{id}/chat-id', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateUserChatId'])->name('developer.users.update_chat_id');
 
     Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');

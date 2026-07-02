@@ -196,12 +196,22 @@ class DeveloperSettingsController extends Controller
             'promo_subtitle' => 'nullable|string|max:255',
             'promo_description' => 'nullable|string',
             'promo_image' => 'nullable|image|max:5120', // Max 5MB
+            
+            'promo_form_title' => 'nullable|string|max:255',
+            'promo_form_subtitle' => 'nullable|string|max:255',
+            'promo_button_text' => 'nullable|string|max:255',
+            'promo_success_message' => 'nullable|string',
         ]);
 
         $settings = SystemSetting::first() ?? new SystemSetting();
         $settings->promo_title = $validated['promo_title'];
         $settings->promo_subtitle = $validated['promo_subtitle'];
         $settings->promo_description = $validated['promo_description'];
+        
+        $settings->promo_form_title = $validated['promo_form_title'];
+        $settings->promo_form_subtitle = $validated['promo_form_subtitle'];
+        $settings->promo_button_text = $validated['promo_button_text'];
+        $settings->promo_success_message = $validated['promo_success_message'];
         
         if ($request->hasFile('promo_image')) {
             $path = $request->file('promo_image')->store('promo', 'public');
@@ -210,6 +220,25 @@ class DeveloperSettingsController extends Controller
         
         $settings->save();
 
-        return back()->with('success', 'Promo Sayt sozlamalari muvaffaqiyatli saqlandi!');
+        return back()->with('success', 'Promo Sayt va Forma sozlamalari muvaffaqiyatli saqlandi!');
+    }
+    
+    public function updateTelegramLeadSettings(Request $request)
+    {
+        if (!Session::get('developer_unlocked', false)) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'telegram_lead_bot_token' => 'nullable|string|max:255',
+            'telegram_lead_chat_id' => 'nullable|string|max:255',
+        ]);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
+        $settings->telegram_lead_bot_token = $validated['telegram_lead_bot_token'];
+        $settings->telegram_lead_chat_id = $validated['telegram_lead_chat_id'];
+        $settings->save();
+
+        return back()->with('success', 'Telegram Lid sozlamalari saqlandi!');
     }
 }

@@ -7712,6 +7712,12 @@ const ledgerReportData = computed(() => {
                                         <span v-else class="text-xs text-gray-500">—</span>
                                     </div>
                                 </div>
+                                <div class="sm:col-span-2">
+                                    <p class="text-[10px] font-mono text-gray-400 uppercase">Qo'shimcha Izoh:</p>
+                                    <div class="mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs text-gray-700 whitespace-pre-line leading-relaxed">
+                                        {{ selectedLeadForDetail.comment || '—' }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

@@ -53,7 +53,16 @@ const FLOORS = computed(() => {
     return arr;
 });
 
-const UNITS = ['kub', 'mt', 'dona', 'kv.m', 'soat', 'reys'];
+const UNITS = [
+    { label: 'Metr (mt)', value: 'mt' },
+    { label: 'Kub, kuba metr (kub)', value: 'kub' },
+    { label: 'Dona (dona)', value: 'dona' },
+    { label: 'Kilogram (kg)', value: 'kg' },
+    { label: 'Tonna (ton)', value: 'ton' },
+    { label: 'Kvadrat metr (kv.mt)', value: 'kv.mt' },
+    { label: 'Soat (soat)', value: 'soat' },
+    { label: 'Reys (reys)', value: 'reys' }
+];
 
 const selectedBrigade = ref(null);
 const brigadeTab = ref('xizmatlar'); // 'ishchilar', 'xizmatlar'
@@ -245,7 +254,7 @@ watch(selectedBrigade, (newBrigade) => {
 
 // Auto-calculate form values
 watch(serviceForm, (val) => {
-    const isDimensional = ['kub', 'kv.m'].includes(val.unit);
+    const isDimensional = ['kub', 'kv.m', 'kv.mt'].includes(val.unit);
     const m1 = isDimensional ? (parseFloat(val.measure1) || 0) : 0;
     const m2 = isDimensional ? (parseFloat(val.measure2) || 0) : 0;
     const q = parseFloat(val.quantity) || 0;
@@ -860,11 +869,11 @@ const handleDragEnd = () => {
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchov birligi</label>
                                 <select v-model="serviceForm.unit" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="">-</option>
-                                    <option v-for="b in UNITS" :key="b" :value="b">{{ b }}</option>
+                                    <option v-for="u in UNITS" :key="u.value" :value="u.value">{{ u.label }}</option>
                                 </select>
                             </div>
                             
-                            <template v-if="['kub', 'kv.m'].includes(serviceForm.unit)">
+                            <template v-if="['kub', 'kv.m', 'kv.mt'].includes(serviceForm.unit)">
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 mb-1">O'lchami 1</label>
                                     <input v-model.number="serviceForm.measure1" type="number" min="0" step="any" class="w-full border-gray-300 rounded-md text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />

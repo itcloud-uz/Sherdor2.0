@@ -194,172 +194,95 @@ watch(serviceForm, (val) => {
     val.balance = Number((val.calculated_sum - pay).toFixed(2));
 }, { deep: true });
 
-const stats = computed(() => {
-    const acc = rows.value.reduce(
-        (acc, row) => {
-            acc.totalServices += 1;
-            acc.totalCalculatedSum += parseFloat(row.calculated_sum || 0);
-            acc.totalPaid += parseFloat(row.paid_amount || 0);
-            return acc;
-        },
-        { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalBalance: 0 }
-    );
-
-    acc.totalBalance = acc.totalCalculatedSum - acc.totalPaid;
-    return acc;
-});
-
-
-const isTransactionModalOpen = ref(false);
-const isSubmittingTransaction = ref(false);
-const transactionForm = ref({
-    type: 'payment',
-    amount: 0,
-    description: '',
-    date: new Date().toISOString().slice(0, 10),
-    payment_method: 'cash',
-    account_type: 'main',
-    linked_work_type: '',
-    linked_work_id: ''
-});
-
-const openTransactionModal = (work = null) => {
-    if (!selectedBrigade.value) return;
-    
-    // Switch to finance tab if we are paying
-    if (brigadeTab.value !== 'tranzaksiyalar') {
-        brigadeTab.value = 'tranzaksiyalar';
-    }
-
-    let amount = 0;
-    let desc = '';
-    let linkedType = '';
-    let linkedId = '';
-
-    if (work) {
-        amount = work.balance || (work.calculated_sum - (work.paid_amount || 0));
-        desc = `${work.work_name || work.name} ishi/xizmati uchun to'lov`;
-        linkedType = 'App\\Models\\BrigadeWork';
-        linkedId = work.id;
-    }
-
-    transactionForm.value = {
-        type: 'payment',
-        amount: amount > 0 ? amount : 0,
-        description: desc,
-        date: new Date().toISOString().slice(0, 10),
-        payment_method: 'cash',
-        account_type: 'main',
-        linked_work_type: linkedType,
-        linked_work_id: linkedId
-    };
-    isTransactionModalOpen.value = true;
-};
-
-const submitTransaction = () => {
-    if (!selectedBrigade.value) return;
-    isSubmittingTransaction.value = true;
-    router.post(route('admin.hr.brigade.transaction.store', selectedBrigade.value.id), transactionForm.value, {
-        preserveScroll: true,
-        onSuccess: () => {
-            isTransactionModalOpen.value = false;
-        },
-        onFinish: () => {
-            isSubmittingTransaction.value = false;
-        }
-    });
-};
-
-const openAddServiceModal = () => {
-    if (!selectedBrigade.value) return;
-    serviceForm.value = { ...defaultServiceForm, id: null };
-    editingServiceId.value = null;
-    isServiceModalOpen.value = true;
-};
-
-const openEditServiceModal = (row) => {
-    serviceForm.value = { 
-        ...row,
-        measure1: row.measure1 || 0,
-        measure2: row.measure2 || 0,
-        total_measure: row.total_measure || 0,
-        quantity: row.quantity || 1,
-        total: row.total || 0,
-        price: row.price || 0,
-        calculated_sum: row.calculated_sum || 0,
-    };
-    editingServiceId.value = row.id;
-    isServiceModalOpen.value = true;
-};
-
-const saveService = async () => {
-    if (!selectedBrigade.value) return;
-    
-    // Map fields for backend
-    const payload = {
-        work_name: serviceForm.value.work_name || serviceForm.value.name,
-        building: serviceForm.value.building,
-        block: serviceForm.value.block,
-        floor: serviceForm.value.floor,
-        unit: serviceForm.value.unit,
-        measure1: serviceForm.value.measure1,
-        measure2: serviceForm.value.measure2,
-        total_measure: serviceForm.value.total_measure || serviceForm.value.totalMeasure,
-        quantity: serviceForm.value.quantity,
-        total: serviceForm.value.total,
-        price: serviceForm.value.price,
-        calculated_sum: serviceForm.value.calculated_sum || serviceForm.value.calculatedSum,
-        work_date: serviceForm.value.work_date || serviceForm.value.paymentDate || new Date().toLocaleString('sv').slice(0, 10),
-    };
-
-    try {
-        if (editingServiceId.value) {
-            await fetch(`/admin/hr/brigades/works/${editingServiceId.value}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            await fetch(`/admin/hr/brigades/${selectedBrigade.value.id}/works`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify(payload)
+const processedRows = computed(() => {
+    if (!selectedBrigade.value) return [];
+    return rows.value.map(row => {
+        let ovqat_amount = 0;
+        let paid_amount = 0;
+        
+        if (row.transactions && row.transactions.length > 0) {
+            row.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('ovqat') || desc.includes('boshqa') || desc.includes('oziq')) {
+                    ovqat_amount += amount;
+                } else {
+                    paid_amount += amount;
+                }
             });
         }
         
-        isServiceModalOpen.value = false;
-        fetchBrigadeWorks(selectedBrigade.value.id);
-    } catch (e) {
-        console.error(e);
-        alert('Xatolik yuz berdi');
-    }
-};
+        const total = parseFloat(row.calculated_sum) || 0;
+        const qoldiq = total - (paid_amount + ovqat_amount);
+        
+        return {
+            ...row,
+            paid_amount,
+            ovqat_amount,
+            qoldiq
+        };
+    });
+});
 
-const deleteRow = async (id) => {
-    if (confirm("Rostdan ham o'chirasizmi?")) {
-        try {
-            await fetch(`/admin/hr/brigades/works/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+const stats = computed(() => {
+    const acc = processedRows.value.reduce(
+        (acc, row) => {
+            acc.totalServices += 1;
+            acc.totalCalculatedSum += parseFloat(row.calculated_sum) || 0;
+            acc.totalPaid += parseFloat(row.paid_amount) || 0;
+            acc.totalOvqat += parseFloat(row.ovqat_amount) || 0;
+            acc.totalBalance += parseFloat(row.qoldiq) || 0;
+            return acc;
+        },
+        { totalServices: 0, totalCalculatedSum: 0, totalPaid: 0, totalOvqat: 0, totalBalance: 0 }
+    );
+    return acc;
+});
+
+const globalStats = computed(() => {
+    let totalWorksPrice = 0;
+    let totalPaid = 0;
+    let totalOvqat = 0;
+    let totalBalance = 0;
+
+    if (!props.brigades) return { totalWorksPrice, totalPaid, totalOvqat, totalBalance };
+
+    props.brigades.forEach(brigade => {
+        let paid = 0;
+        let ovqat = 0;
+        
+        if (brigade.transactions && brigade.transactions.length > 0) {
+            brigade.transactions.forEach(t => {
+                const amount = parseFloat(t.amount) || 0;
+                const desc = (t.description || '').toLowerCase();
+                if (desc.includes('ovqat') || desc.includes('boshqa') || desc.includes('oziq')) {
+                    ovqat += amount;
+                } else {
+                    paid += amount;
                 }
             });
-            fetchBrigadeWorks(selectedBrigade.value.id);
-        } catch (e) {
-            console.error(e);
         }
-    }
-};
+        
+        let worksPrice = 0;
+        if (brigade.works && brigade.works.length > 0) {
+            brigade.works.forEach(w => {
+                worksPrice += parseFloat(w.calculated_sum) || 0;
+            });
+        }
+
+        totalWorksPrice += worksPrice;
+        totalPaid += paid;
+        totalOvqat += ovqat;
+        totalBalance += (worksPrice - (paid + ovqat));
+    });
+
+    return { totalWorksPrice, totalPaid, totalOvqat, totalBalance };
+});
+
 
 const exportToPDF = () => {
     if (!selectedBrigade.value) return;
-    if (rows.value.length === 0) {
+    if (processedRows.value.length === 0) {
         alert("Yuklab olish uchun xizmatlar mavjud emas!");
         return;
     }
@@ -368,32 +291,40 @@ const exportToPDF = () => {
         const doc = new jsPDF('landscape');
         doc.text(`${selectedBrigade.value.name} - Bajarilgan Xizmatlar Hisoboti`, 14, 15);
     
-    const tableData = rows.value.map((row, index) => [
+    const tableData = processedRows.value.map((row, index) => [
         index + 1,
-        row.name || '-',
-        row.building || '-',
-        row.block || '-',
-        row.floor || '-',
-        row.unit || '-',
-        row.measure1,
-        row.measure2,
-        row.totalMeasure,
+        row.work_date || row.date || '-',
+        row.work_name || row.name || '-',
         row.quantity,
-        row.total,
         new Intl.NumberFormat('uz-UZ').format(row.price || 0),
-        new Intl.NumberFormat('uz-UZ').format(row.calculatedSum || 0),
-        row.paymentDate || '-',
-        new Intl.NumberFormat('uz-UZ').format(row.paymentAmount || 0),
-        new Intl.NumberFormat('uz-UZ').format(row.balance || 0)
+        new Intl.NumberFormat('uz-UZ').format(row.calculated_sum || 0),
+        new Intl.NumberFormat('uz-UZ').format(row.paid_amount || 0),
+        new Intl.NumberFormat('uz-UZ').format(row.ovqat_amount || 0),
+        new Intl.NumberFormat('uz-UZ').format(row.qoldiq || 0),
+        row.note || ''
+    ]);
+
+    tableData.push([
+        '', 'JAMI', '', '', '',
+        new Intl.NumberFormat('uz-UZ').format(stats.value.totalCalculatedSum),
+        new Intl.NumberFormat('uz-UZ').format(stats.value.totalPaid),
+        new Intl.NumberFormat('uz-UZ').format(stats.value.totalOvqat),
+        new Intl.NumberFormat('uz-UZ').format(stats.value.totalBalance),
+        ''
     ]);
 
     autoTable(doc, {
         startY: 25,
-        head: [['№', 'Xizmat', 'Obyekt', 'Blok', 'Qavat', 'Birlik', 'O\'lchami 1', 'O\'lchami 2', 'Jami O\'lchami', 'Dona', 'Jami', 'Narxi', 'Hisoblangan', 'Sana', 'To\'landi', 'Qoldiq']],
+        head: [['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Oziq-ovqat/Boshqa', 'Qoldiq', 'Izoh']],
         body: tableData,
         theme: 'grid',
-        styles: { fontSize: 7 },
-        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] }
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
+        willDrawCell: function(data) {
+            if (data.row.index === tableData.length - 1) {
+                doc.setFont(undefined, 'bold');
+            }
+        }
     });
 
         doc.save(`${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.pdf`);
@@ -405,39 +336,34 @@ const exportToPDF = () => {
 
 const exportToExcel = () => {
     if (!selectedBrigade.value) return;
-    if (rows.value.length === 0) {
+    if (processedRows.value.length === 0) {
         alert("Yuklab olish uchun xizmatlar mavjud emas!");
         return;
     }
     
     try {
-        const headers = ['№', 'Xizmat nomi', 'Qurilish obyekti', 'Blok', 'Qavat', 'O\'lchov birligi', 'O\'lchami 1', 'O\'lchami 2', 'Jami o\'lchami', 'Soni (dona)', 'Jami', 'Narxi', 'Hisoblangan so\'mmasi', 'To\'lov sanasi', 'To\'langan', 'Qoldiq'];
+        const headers = ['№', 'Sana', 'Xizmat nomi', 'Soni', 'Narxi', 'Jami narxi', 'To\'landi', 'Oziq-ovqat/Boshqa', 'Qoldiq', 'Izoh'];
     
-    const data = rows.value.map((row, index) => [
+    const data = processedRows.value.map((row, index) => [
         index + 1,
-        row.name || '-',
-        row.building || '-',
-        row.block || '-',
-        row.floor || '-',
-        row.unit || '-',
-        row.measure1,
-        row.measure2,
-        row.totalMeasure,
+        row.work_date || row.date || '-',
+        row.work_name || row.name || '-',
         row.quantity,
-        row.total,
         row.price || 0,
-        row.calculatedSum || 0,
-        row.paymentDate || '-',
-        row.paymentAmount || 0,
-        row.balance || 0
+        row.calculated_sum || 0,
+        row.paid_amount || 0,
+        row.ovqat_amount || 0,
+        row.qoldiq || 0,
+        row.note || ''
     ]);
     
     data.push([
-        '', '', '', '', '', '', '', '', '', '', 'JAMI:', '', 
+        '', 'JAMI:', '', '', '', 
         stats.value.totalCalculatedSum, 
-        '', 
         stats.value.totalPaid, 
-        stats.value.totalBalance
+        stats.value.totalOvqat, 
+        stats.value.totalBalance,
+        ''
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -462,9 +388,8 @@ const exportToExcel = () => {
     }
     
     ws['!cols'] = [
-        {wch: 5}, {wch: 25}, {wch: 20}, {wch: 8}, {wch: 8}, {wch: 15}, 
-        {wch: 10}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, 
-        {wch: 15}, {wch: 18}, {wch: 12}, {wch: 15}, {wch: 15}
+        {wch: 5}, {wch: 12}, {wch: 25}, {wch: 10}, {wch: 15}, 
+        {wch: 18}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 20}
     ];
 
         const wb = XLSX.utils.book_new();
@@ -497,232 +422,196 @@ const handleDragEnd = () => {
 </script>
 
 <template>
-    <AdminLayout>
+<AdminLayout>
         <Head title="Qurilish Ish Haqi" />
 
         <div class="p-6 bg-gray-50 min-h-screen">
             <div class="max-w-screen-2xl mx-auto">
-                
-                <!-- Main Header -->
-                <div class="mb-6">
+                             <!-- Main Header -->
+                <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <h1 class="text-2xl font-bold text-gray-800">QURILISH ISH HAQI</h1>
+                    <div v-if="!selectedBrigade" class="flex gap-2">
+                        <button @click="openAddBrigadeModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition font-medium flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Jamoa Qo'shish
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    
-                    <!-- Left Sidebar: List of Brigades -->
-                    <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-md font-semibold text-gray-800">Jamoalar ro'yxati</h2>
-                            <button 
-                                @click="openAddBrigadeModal"
-                                class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded font-medium transition"
-                            >
-                                + Qo'shish
-                            </button>
+                <div v-if="!selectedBrigade">
+                    <!-- Global Statistics Dashboard -->
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Jami Bajarilgan Ishlar</h3>
+                            <p class="text-2xl font-black text-gray-900 mt-2">{{ formatMoney(globalStats.totalWorksPrice) }} <span class="text-sm text-gray-500 font-normal">UZS</span></p>
                         </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 border-b-4 border-b-green-500">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Jami To'langan</h3>
+                            <p class="text-2xl font-black text-green-600 mt-2">{{ formatMoney(globalStats.totalPaid) }} <span class="text-sm text-green-600/70 font-normal">UZS</span></p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 border-b-4 border-b-orange-500">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Oziq-ovqat/Boshqa</h3>
+                            <p class="text-2xl font-black text-orange-500 mt-2">{{ formatMoney(globalStats.totalOvqat) }} <span class="text-sm text-orange-500/70 font-normal">UZS</span></p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5" :class="globalStats.totalBalance >= 0 ? 'border-b-4 border-b-green-500' : 'border-b-4 border-b-red-500'">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Umumiy Qoldiq</h3>
+                            <p class="text-2xl font-black mt-2" :class="globalStats.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(globalStats.totalBalance) }} <span class="text-sm font-normal opacity-70">UZS</span></p>
+                        </div>
+                    </div>
 
-                        <div v-if="props.brigades.length === 0" class="text-gray-500 text-sm text-center py-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div v-if="props.brigades.length === 0" class="col-span-full text-center py-12 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
                             Jamoalar topilmadi.
                         </div>
-                        <div class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                            <div 
-                                v-for="brigade in props.brigades" 
-                                :key="brigade.id"
-                                class="group relative w-full text-left px-4 py-3 rounded-lg border transition-colors"
-                                :class="selectedBrigade?.id === brigade.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'"
-                            >
-                                <div class="cursor-pointer" @click="selectedBrigade = brigade">
-                                    <span class="font-medium truncate block pr-12">{{ brigade.name }}</span>
-                                    <span class="text-xs text-gray-500 flex justify-between mt-0.5">
-                                        <span>{{ brigade.foreman_name }}</span>
-                                        <span :class="brigade.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">{{ formatMoney(brigade.balance) }}</span>
-                                    </span>
+                        <div 
+                            v-for="brigade in props.brigades" 
+                            :key="brigade.id" 
+                            @click="selectedBrigade = brigade"
+                            class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
+                        >
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">{{ brigade.name }}</h3>
+                                    <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button @click.stop="editBrigade(brigade)" class="p-1 text-blue-500 hover:bg-blue-50 rounded" title="Tahrirlash">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </button>
+                                        <button @click.stop="deleteBrigade(brigade.id)" class="p-1 text-red-500 hover:bg-red-50 rounded" title="O'chirish">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="absolute right-2 top-2 hidden group-hover:flex space-x-1">
-                                    <button @click.stop="editBrigade(brigade)" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-md transition" title="Tahrirlash">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                    </button>
-                                    <button @click.stop="deleteBrigade(brigade.id)" class="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition" title="O'chirish">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
+                                <p class="text-sm text-gray-500 mb-4 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    {{ brigade.foreman_name || 'Ism kiritilmagan' }}
+                                </p>
+                            </div>
+                            <div class="pt-4 border-t border-gray-100 mt-2 space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">Holat:</span>
+                                    <span :class="brigade.balance >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold text-base bg-gray-50 px-2 py-1 rounded-md">
+                                        {{ formatMoney(brigade.balance) }} UZS
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Right Panel: Brigade Details -->
-                    <div class="lg:col-span-3">
-                        <div v-if="!selectedBrigade" class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center justify-center h-full text-center text-gray-500">
-                            <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            <span>Chap tomondagi ro'yxatdan birorta jamoani tanlang.</span>
+                <!-- Detail View -->
+                <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 overflow-hidden min-h-[calc(100vh-160px)]">
+                    <!-- Brigade Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <button @click="selectedBrigade = null" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 text-gray-600 transition" title="Orqaga">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">{{ selectedBrigade.name }}</h2>
+                                <p class="text-sm text-gray-700 mt-0.5">Brigadir: <span class="font-semibold">{{ selectedBrigade.foreman_name || 'Kiritilmagan' }}</span></p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Xizmatlar</div>
+                                <div class="text-sm font-semibold text-gray-800">{{ stats.totalServices || 0 }} ta</div>
+                            </div>
+                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
+                                <div class="text-sm font-bold" :class="selectedBrigade.balance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(selectedBrigade.balance) }} UZS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                        <!-- Action Bar -->
+                        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                            <div class="flex gap-2">
+                                <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    PDF Yuklab Olish
+                                </button>
+                                <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Excel Yuklab Olish
+                                </button>
+                            </div>
+                            <button
+                                @click="openAddServiceModal"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                Yangi Xizmat
+                            </button>
                         </div>
 
-                        <div v-else class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <!-- Brigade Header -->
-                            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <h2 class="text-xl font-bold text-gray-800">{{ selectedBrigade.name }}</h2>
-                                    <p class="text-sm text-gray-500 mt-1">Brigadir: <span class="font-semibold text-gray-700">{{ selectedBrigade.foreman_name }}</span></p>
-                                </div>
-                                <div class="flex flex-col items-end">
-                                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Moliya Qoldig'i</span>
-                                    <span class="text-xl font-bold" :class="selectedBrigade.balance >= 0 ? 'text-green-600' : 'text-red-600'">
-                                        {{ formatMoney(selectedBrigade.balance) }}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <!-- Tabs -->
-                            <div class="border-b border-gray-200">
-                                <nav class="flex -mb-px px-6 space-x-6" aria-label="Tabs">
-                                    <button 
-                                        @click="brigadeTab = 'xizmatlar'"
-                                        :class="[brigadeTab === 'xizmatlar' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']"
+                        <!-- Table Container -->
+                        <div class="overflow-auto rounded-xl border border-gray-200 flex-1 custom-scrollbar shadow-sm">
+                            <table class="w-full text-sm text-left text-gray-700 min-w-[1200px]">
+                                <thead class="sticky top-0 z-10 bg-gray-100 text-gray-600 uppercase text-[11px] font-bold shadow-sm">
+                                    <tr>
+                                        <th class="px-4 py-4 text-center w-12 rounded-tl-lg">№</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Sana</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Xizmat nomi</th>
+                                        <th class="px-4 py-4 text-center whitespace-nowrap">Soni</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Narxi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Jami narxi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">To'landi</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Oziq-ovqat/Boshqa</th>
+                                        <th class="px-4 py-4 text-right whitespace-nowrap">Qoldiq</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Izoh</th>
+                                        <th class="px-4 py-4 text-center w-16 rounded-tr-lg whitespace-nowrap">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-if="processedRows.length === 0">
+                                        <td colspan="11" class="px-6 py-12 text-center text-gray-400 text-sm">
+                                            Ushbu jamoa uchun xizmatlar mavjud emas. Excel jadvalini yaratish uchun "+ Yangi Xizmat" tugmasini bosing.
+                                        </td>
+                                    </tr>
+                                    <tr 
+                                        v-for="(row, index) in processedRows" 
+                                        :key="row.id"
+                                        class="hover:bg-indigo-50/50 transition-colors"
                                     >
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                        Xizmatlar (Excel)
-                                    </button>
-                                    <button 
-                                        @click="brigadeTab = 'tranzaksiyalar'"
-                                        :class="[brigadeTab === 'tranzaksiyalar' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']"
-                                    >
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        Moliya Tranzaksiyalari
-                                    </button>
-                                </nav>
-                            </div>
-                            <!-- XIZMATLAR TAB -->
-                            <div v-if="brigadeTab === 'xizmatlar'" class="p-6">
-                                <!-- Statistics Cards -->
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col">
-                                        <span class="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Xizmatlar</span>
-                                        <span class="text-xl font-bold text-gray-800 mt-1">{{ stats.totalServices }} ta</span>
-                                    </div>
-                                    <div class="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex flex-col">
-                                        <span class="text-[11px] text-blue-500 uppercase tracking-wider font-semibold">Hisoblangan</span>
-                                        <span class="text-xl font-bold text-blue-700 mt-1">{{ formatMoney(stats.totalCalculatedSum) }}</span>
-                                    </div>
-                                    <div class="bg-green-50/50 p-3 rounded-lg border border-green-100 flex flex-col">
-                                        <span class="text-[11px] text-green-600 uppercase tracking-wider font-semibold">To'langan</span>
-                                        <span class="text-xl font-bold text-green-700 mt-1">{{ formatMoney(stats.totalPaid) }}</span>
-                                    </div>
-                                    <div class="bg-red-50/50 p-3 rounded-lg border border-red-100 flex flex-col">
-                                        <span class="text-[11px] text-red-500 uppercase tracking-wider font-semibold">Qoldiq</span>
-                                        <span class="text-xl font-bold text-red-600 mt-1">{{ formatMoney(stats.totalBalance) }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Action Bar -->
-                                <div class="flex justify-between items-center mb-4">
-                                    <div class="flex gap-2">
-                                        <button @click="exportToPDF" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center text-sm font-medium shadow-sm">
-                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            PDF Yuklab Olish
-                                        </button>
-                                        <button @click="exportToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
-                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            Excel Yuklab Olish
-                                        </button>
-                                    </div>
-                                    <button
-                                        @click="openAddServiceModal"
-                                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center shadow-sm text-sm"
-                                    >
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        Yangi Xizmat
-                                    </button>
-                                </div>
-
-                                <!-- Beautiful Excel-Style Grid Table Container -->
-                                <div class="overflow-x-auto border border-gray-300 rounded-xl shadow-sm bg-white">
-                                    <table class="w-full text-xs text-left text-gray-600 border-collapse">
-                                        <thead class="bg-gray-100/80 border-b border-gray-300 text-gray-700 font-bold uppercase text-[10px] tracking-wider select-none sticky top-0">
-                                            <tr>
-                                                <th class="border border-gray-200 px-2 py-3 w-8 text-center bg-gray-100"></th>
-                                                <th class="border border-gray-200 px-3 py-3 w-12 text-center bg-gray-100">№</th>
-                                                <th class="border border-gray-200 px-4 py-3 min-w-[200px]">Xizmat nomi</th>
-                                                <th class="border border-gray-200 px-4 py-3 min-w-[120px]">Qurilish obyekti</th>
-                                                <th class="border border-gray-200 px-2 py-3 w-16 text-center">Blok</th>
-                                                <th class="border border-gray-200 px-2 py-3 w-16 text-center">Qavat</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">O'lchov birligi</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 1 (G)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-20 text-right">O'lchami 2 (H)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami o'lchami (I)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-center">Shundan necha dona (J)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-24 text-right bg-blue-50/50">Jami (K)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right">Narxi (L)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-36 text-right bg-indigo-50/50 text-indigo-900 font-extrabold">Hisoblangan so'mmasi (M)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-28 text-center">To'lov sanasi (N)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right text-green-700">To'lov so'mmasi (O)</th>
-                                                <th class="border border-gray-200 px-4 py-3 w-32 text-right bg-red-50/30 text-red-700 font-bold">Qoldiq (P)</th>
-                                                <th class="border border-gray-200 px-3 py-3 w-28 text-center bg-gray-100">Amallar</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-200">
-                                            <tr v-if="rows.length === 0">
-                                                <td colspan="18" class="px-6 py-12 text-center text-gray-400 text-sm bg-gray-50/50">
-                                                    Ushbu jamoa uchun xizmatlar mavjud emas. Excel jadvalini yaratish uchun "+ Yangi Xizmat" tugmasini bosing.
-                                                </td>
-                                            </tr>
-                                            <tr 
-                                                v-for="(row, index) in rows" 
-                                                :key="row.id"
-                                                class="hover:bg-indigo-50/20 transition-colors"
-                                                :class="draggedIdx === index ? 'opacity-50 bg-gray-100' : ''"
-                                                draggable="true"
-                                                @dragstart="handleDragStart($event, index)"
-                                                @dragover="handleDragOver($event, index)"
-                                                @dragend="handleDragEnd"
-                                            >
-                                                <td class="border border-gray-200 px-2 py-2 text-center text-gray-400 cursor-move hover:text-indigo-600 bg-gray-50/50">
-                                                    <svg class="w-3.5 h-3.5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
-                                                </td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500 bg-gray-50/50">{{ index + 1 }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 font-bold text-gray-800">{{ row.work_name || row.name || '-' }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 font-medium text-gray-600">{{ row.building || '-' }}</td>
-                                                <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.block || '-' }}</td>
-                                                <td class="border border-gray-200 px-2 py-2.5 text-center font-semibold text-gray-700 bg-gray-50/30">{{ row.floor || '-' }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.unit || '-' }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure1 }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-medium text-gray-800">{{ row.measure2 }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total_measure }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-medium text-gray-800">{{ row.quantity }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-right font-bold text-indigo-700 bg-blue-50/20">{{ row.total }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-gray-900">{{ new Intl.NumberFormat('uz-UZ').format(row.price || 0) }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-indigo-800 bg-indigo-50/30">{{ new Intl.NumberFormat('uz-UZ').format(row.calculated_sum || 0) }}</td>
-                                                <td class="border border-gray-200 px-3 py-2.5 text-center font-semibold text-gray-500">{{ row.work_date || row.paymentDate || '-' }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-bold text-green-700 bg-green-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.paid_amount || row.paymentAmount || 0) }}</td>
-                                                <td class="border border-gray-200 px-4 py-2.5 text-right font-black text-red-700 bg-red-50/20">{{ new Intl.NumberFormat('uz-UZ').format(row.balance || 0) }}</td>
-                                                <td class="border border-gray-200 px-3 py-3 text-center w-28 bg-gray-50 flex gap-2 justify-center">
-                                                    <button @click="openTransactionModal(row)" class="text-green-600 hover:text-green-900 bg-white p-1.5 border border-gray-200 rounded-md hover:bg-green-50 shadow-sm transition" title="To'lov qilish">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                    </button>
-                                                    <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-900 bg-white p-1.5 border border-gray-200 rounded-md hover:bg-indigo-50 shadow-sm transition" title="Tahrirlash">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                    </button>
-                                                    <button @click="deleteRow(row.id)" class="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded-lg border border-red-200 bg-white transition shadow-sm" title="O'chirish">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
+                                        <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.work_date || row.date }}</td>
+                                        <td class="px-4 py-3 text-gray-700 font-semibold">{{ row.work_name || row.name }}</td>
+                                        <td class="px-4 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
+                                        <td class="px-4 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-indigo-50/20">{{ formatMoney(row.calculated_sum) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/30">{{ formatMoney(row.paid_amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-orange-600 whitespace-nowrap bg-orange-50/30">{{ formatMoney(row.ovqat_amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
+                                        <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
+                                        
+                                        <td class="px-4 py-3 text-center space-x-1 whitespace-nowrap">
+                                            <button @click="openEditServiceModal(row)" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 transition" title="Tahrirlash">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </button>
+                                            <button @click="deleteRow(row.id)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition" title="O'chirish">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="sticky bottom-0 z-10 border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                                    <tr class="font-black text-gray-900 bg-gray-100">
+                                        <td colspan="5" class="px-4 py-4 text-right uppercase tracking-wider text-sm">Jami</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap">{{ formatMoney(stats.totalCalculatedSum) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-green-700">{{ formatMoney(stats.totalPaid) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-orange-600">{{ formatMoney(stats.totalOvqat) }}</td>
+                                        <td class="px-4 py-4 text-right whitespace-nowrap text-red-600">{{ formatMoney(stats.totalBalance) }}</td>
+                                        <td colspan="2" class="px-4 py-4 bg-gray-100"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                             <!-- TRANZAKSIYALAR TAB -->
                             <div v-else-if="brigadeTab === 'tranzaksiyalar'" class="p-6">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-bold text-gray-800">Moliya Bo'limidan O'tkazmalar</h3>
-                                    <button
-                                        @click="openTransactionModal()"
-                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center shadow-sm text-sm"
-                                    >
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        To'lov Qo'shish
-                                    </button>
                                 </div>
                                 <div v-if="!selectedBrigade.transactions || selectedBrigade.transactions.length === 0" class="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
                                     <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

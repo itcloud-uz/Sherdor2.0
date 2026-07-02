@@ -1777,8 +1777,8 @@ const handleBuildingNameChange = () => {
     form.value.counterparty_id = '';
     clientSearchQuery.value = '';
     
-    // Auto-select if there is only 1 block
-    if (availableBlocks.value.length === 1) {
+    // Auto-select the first block since selecting the object name is enough
+    if (availableBlocks.value.length > 0) {
         selectedBlockId.value = availableBlocks.value[0].id;
         handleBlockIdChange();
     }
@@ -5577,17 +5577,6 @@ function deleteCategory(id) {
                             </select>
                         </div>
 
-                        <div v-if="selectedBuildingName">
-                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                * Blok / Korpus
-                            </label>
-                            <select v-model="selectedBlockId" @change="handleBlockIdChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" :required="availableBlocks.length > 0">
-                                <option value="" disabled>Blok tanlang</option>
-                                <option v-for="b in availableBlocks" :key="b.id" :value="b.id">
-                                    {{ b.name }}
-                                </option>
-                            </select>
-                        </div>
 
                         <!-- Row 2: Hisobni tanlash -->
                         <div class="md:col-span-2 space-y-3">

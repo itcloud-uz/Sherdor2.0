@@ -149,9 +149,21 @@ class ContractController extends Controller
                     $partner->save();
                 }
             } else {
-                $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
-                                 ? $validated['actual_paid_amount'] 
-                                 : ($request->boolean('is_down_payment_split') ? 0 : (!empty($validated['down_payment']) ? $validated['down_payment'] : 0));
+                $initialDown = $request->input('initialDownPaymentPaid', 0);
+                $initialInst = $request->input('initialInstallmentPaid', 0);
+                $paymentAmount = 0;
+
+                if (($validated['payment_type'] ?? 'installment') === 'full') {
+                    $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
+                                     ? $validated['actual_paid_amount'] 
+                                     : $validated['total_amount'];
+                } else {
+                    $paymentAmount = $initialDown + $initialInst;
+                    
+                    if ($paymentAmount <= 0 && !$request->boolean('is_down_payment_split') && !empty($validated['down_payment'])) {
+                        $paymentAmount = $validated['down_payment'];
+                    }
+                }
 
                 if ($paymentAmount > 0) {
                     $paymentMethod = $validated['payment_method'] ?? 'bank';

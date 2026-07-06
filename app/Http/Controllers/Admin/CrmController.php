@@ -69,7 +69,7 @@ class CrmController extends Controller
 
         // 3. Clients tabs
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
-            $clients = \App\Models\Client::with('contracts.unit.floor.building')->orderBy('id', 'asc')->limit(500)->get();
+            $clients = \App\Models\Client::with(['contracts.unit.floor.building', 'contracts.paymentSchedules'])->orderBy('id', 'asc')->limit(500)->get();
             $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         } else {

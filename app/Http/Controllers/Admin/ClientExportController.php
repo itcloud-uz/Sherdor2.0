@@ -11,7 +11,7 @@ class ClientExportController extends Controller
 {
     public function exportExcel(Request $request)
     {
-        $clients = Client::doesntHave('contracts')->latest()->get();
+        $clients = Client::with('contracts.unit.floor.building')->latest()->get();
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -27,9 +27,17 @@ class ClientExportController extends Controller
             // Add BOM to fix UTF-8 in Excel
             fputs($file, "\xEF\xBB\xBF");
 
-            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Ro\'yxatga olingan sana'], ';');
+            fputcsv($file, ['ID', 'Familiya', 'Ism', 'Sharif', 'Telefon', 'Pasport', 'PINFL', 'Shartnomalar soni', 'Shartnomalar ro\'yxati', 'Ro\'yxatga olingan sana'], ';');
 
             foreach ($clients as $client) {
+                $contractsList = $client->contracts->map(function($c) {
+                    $buildingName = $c->unit?->floor?->building?->name ?? '';
+                    $unitNumber = $c->unit?->unit_number ?? '';
+                    $area = $c->unit?->area_sqm ?? '';
+                    $status = $c->status === 'active' || $c->status === 'approved' ? 'Faol' : ($c->status === 'cancelled' || $c->status === 'canceled' ? 'Bekor qilingan' : $c->status);
+                    return "#{$c->contract_number} ({$buildingName}, {$unitNumber}-uy, {$area} m², {$status})";
+                })->join(', ');
+
                 fputcsv($file, [
                     $client->id,
                     $client->last_name,
@@ -38,6 +46,8 @@ class ClientExportController extends Controller
                     $client->phone ? '="' . $client->phone . '"' : '',
                     $client->passport_number ?? $client->passport_series,
                     $client->pinfl ? '="' . $client->pinfl . '"' : '',
+                    $client->contracts->count(),
+                    $contractsList,
                     $client->created_at->format('Y-m-d H:i')
                 ], ';');
             }
@@ -50,7 +60,7 @@ class ClientExportController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $clients = Client::with('contracts.unit')->latest()->get();
+        $clients = Client::with('contracts.unit.floor.building')->latest()->get();
 
         $html = '<!DOCTYPE html>
         <html>
@@ -84,7 +94,9 @@ class ClientExportController extends Controller
 
         foreach ($clients as $client) {
             $contractsList = $client->contracts->map(function($c) {
-                return $c->contract_number . " (" . ($c->unit ? 'U:' . $c->unit->unit_number : '') . ")";
+                $bName = $c->unit?->floor?->building?->name ?? '';
+                $uNum = $c->unit?->unit_number ?? '';
+                return $c->contract_number . " (" . $bName . ", " . ($c->unit ? $uNum . '-uy' : '') . ")";
             })->join('<br>');
 
             $html .= '<tr>

@@ -1,32 +1,17 @@
 import paramiko
-import sys
-import codecs
 
-sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-
-hostname = '100.69.189.125'
-port = 22
-username = 'haus'
-password = 'clone2026'
-
-try:
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname, port, username, password, timeout=10)
-    
-    commands = [
-        "pm2 list",
-        "echo 'clone2026' | sudo -S supervisorctl status",
-        "ls -la /var/www/sellerarp",
-        "cd /var/www/sellerarp && ./update.sh"
-    ]
-    
-    for cmd in commands:
-        print(f"Executing: {cmd}")
-        stdin, stdout, stderr = ssh.exec_command(cmd)
-        print("STDOUT:", stdout.read().decode('utf-8', errors='ignore'))
-        print("STDERR:", stderr.read().decode('utf-8', errors='ignore'))
+def check_services(hostname, username, password):
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname, port=22, username=username, password=password, timeout=10)
         
-    ssh.close()
-except Exception as e:
-    print(f"Error: {e}")
+        stdin, stdout, stderr = ssh.exec_command('systemctl list-units --type=service | grep -E "bot|sellerarp|sherdor"')
+        print(f'--- {hostname} ---')
+        print(stdout.read().decode('utf-8'))
+        ssh.close()
+    except Exception as e:
+        print(f'Error on {hostname}: {e}')
+
+check_services('100.69.189.125', 'haus', 'clone2026')
+check_services('100.70.240.43', 'itcloud', 'clone1997')

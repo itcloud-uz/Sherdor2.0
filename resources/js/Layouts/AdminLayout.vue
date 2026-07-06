@@ -617,14 +617,7 @@ const formattedDate = computed(() => {
                                 👥 Mijozlar
                             </Link>
 
-                            <!-- Shartnomalar -->
-                            <Link
-                                :href="route('admin.crm', { tab: 'contracts' })"
-                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
-                                :class="isClientsTabActive('contracts') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
-                            >
-                                📄 Shartnomalar
-                            </Link>
+
 
                             <!-- Shartnoma shablonlari -->
                             <Link

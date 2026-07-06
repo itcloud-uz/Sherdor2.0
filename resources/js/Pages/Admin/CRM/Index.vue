@@ -287,8 +287,8 @@ function saveScheduleNote() {
             editingScheduleNote.value.notes = response.data.schedule.notes;
             
             // Sync with detailedClientData payment schedules list
-            if (detailedClientData.value && detailedClientData.value.contracts && detailedClientData.value.contracts[0]) {
-                const found = detailedClientData.value.contracts[0].payment_schedules.find(s => s.id === editingScheduleNote.value.id);
+            if (selectedContract.value) {
+                const found = selectedContract.value.payment_schedules.find(s => s.id === editingScheduleNote.value.id);
                 if (found) {
                     found.notes = response.data.schedule.notes;
                 }
@@ -1626,6 +1626,7 @@ const leadsSourceFilter = ref('');
 const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
 const selectedStatusFilter = ref('');
+const clientContractFilter = ref('all'); // 'all', 'with_contract', 'without_contract'
 const selectedManagerFilter = ref('');
 const showExtraFilters = ref(false);
 
@@ -1807,7 +1808,7 @@ const clientDetailLoading = ref(false);
 const detailedClientData = ref(null);
 const savedScrollPosition = ref(0);
 
-function selectClientForDetail(client, saveScroll = false) {
+function selectClientForDetail(client, saveScroll = false, targetContract = null) {
     if (saveScroll) {
         const scrollContainer = document.querySelector('[scroll-region]');
         if (scrollContainer) {
@@ -1830,7 +1831,12 @@ function selectClientForDetail(client, saveScroll = false) {
             if (response.data.status === 'success') {
                 detailedClientData.value = response.data.client;
                 if (detailedClientData.value && detailedClientData.value.contracts && detailedClientData.value.contracts.length > 0) {
-                    selectedContract.value = detailedClientData.value.contracts[0];
+                    if (targetContract) {
+                        const found = detailedClientData.value.contracts.find(c => c.id === targetContract.id);
+                        selectedContract.value = found || detailedClientData.value.contracts[0];
+                    } else {
+                        selectedContract.value = detailedClientData.value.contracts[0];
+                    }
                 } else {
                     selectedContract.value = null;
                 }
@@ -2083,8 +2089,12 @@ const availableManagers = computed(() => {
 const filteredClients = computed(() => {
     let result = props.clients || [];
     
-    // Only show clients who don't have contracts
-    result = result.filter(c => !c.contracts || c.contracts.length === 0);
+    // Filter by clientContractFilter
+    if (clientContractFilter.value === 'with_contract') {
+        result = result.filter(c => c.contracts && c.contracts.length > 0);
+    } else if (clientContractFilter.value === 'without_contract') {
+        result = result.filter(c => !c.contracts || c.contracts.length === 0);
+    }
     
     // Apply tab filter
     if (activeTab.value === 'clients_new') {
@@ -2092,9 +2102,9 @@ const filteredClients = computed(() => {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         result = result.filter(c => !c.is_blacklisted && (new Date(c.created_at) >= thirtyDaysAgo));
     } else if (activeTab.value === 'clients_active') {
-        result = [];
+        result = result.filter(c => !c.is_blacklisted && c.contracts && c.contracts.some(contract => contract.status === 'active' || contract.status === 'approved'));
     } else if (activeTab.value === 'clients_debtors') {
-        result = [];
+        result = result.filter(c => !c.is_blacklisted && c.contracts && c.contracts.some(contract => contract.payment_schedules && contract.payment_schedules.some(s => s.status === 'overdue')));
     } else if (activeTab.value === 'clients_blacklist') {
         result = result.filter(c => c.is_blacklisted);
     } else {
@@ -2737,7 +2747,7 @@ const calculatedSchedules = computed(() => {
 
 function openScheduleModal(contract) {
     if (contract.client) {
-        selectClientForDetail(contract.client, true);
+        selectClientForDetail(contract.client, true, contract);
     } else {
         selectedContract.value = JSON.parse(JSON.stringify(contract));
         showModal.value = true;
@@ -4328,6 +4338,18 @@ const ledgerReportData = computed(() => {
                             </span>
                         </div>
 
+                        <!-- Contract Presence Filter Dropdown -->
+                        <div class="relative">
+                            <select v-model="clientContractFilter" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                                <option value="all">Barcha mijozlar</option>
+                                <option value="with_contract">Shartnoma qilinganlar</option>
+                                <option value="without_contract">Shartnoma qilinmaganlar</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
                         <!-- Filtr Button to toggle advanced filters -->
                         <button 
                             @click="showExtraFilters = !showExtraFilters" 
@@ -4390,6 +4412,7 @@ const ledgerReportData = computed(() => {
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
                                 <th class="p-4 w-12 text-center">ID</th>
                                 <th class="p-4">Ism</th>
+                                <th class="p-4 text-center">Shartnomalar</th>
                                 <th class="p-4">Yaratilgan</th>
                                 <th class="p-4">Holat</th>
                                 <th class="p-4 text-right">Amallar</th>
@@ -4422,13 +4445,25 @@ const ledgerReportData = computed(() => {
                                     </div>
                                 </td>
                                 
+                                <!-- Shartnomalar -->
+                                <td class="p-4 text-center">
+                                    <span v-if="client.contracts && client.contracts.length > 0" class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 shadow-sm uppercase tracking-wide">
+                                        {{ client.contracts.length }} ta uy
+                                    </span>
+                                    <span v-else class="text-gray-400 font-medium">—</span>
+                                </td>
+                                
                                 <!-- Yaratilgan -->
                                 <td class="p-4 text-gray-600 font-medium">{{ formatDate(client.created_at) }}</td>
                                 
                                 <!-- Holat -->
                                 <td class="p-4">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ecfdf5] text-[#047857] border border-[#d1fae5] shadow-sm uppercase tracking-wide">
-                                        {{ getClientLatestContract(client) ? (getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Tasdiqlangan') : 'Tasdiqlangan' }}
+                                    <span v-if="getClientLatestContract(client)" class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm uppercase tracking-wide border"
+                                          :class="getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'bg-[#ecfdf5] text-[#047857] border-[#d1fae5]' : 'bg-[#fffbeb] text-[#d97706] border-[#fef3c7]'">
+                                        {{ getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
+                                    </span>
+                                    <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] shadow-sm uppercase tracking-wide">
+                                        Shartnomasiz
                                     </span>
                                 </td>
                                 
@@ -4500,18 +4535,18 @@ const ledgerReportData = computed(() => {
                                 <span class="inline-flex items-center bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold font-sans uppercase">
                                     Mijoz
                                 </span>
-                                <template v-if="detailedClientData && detailedClientData.contracts && detailedClientData.contracts.length > 0">
+                                <template v-if="selectedContract">
                                     <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                        Shartnoma #{{ detailedClientData.contracts[0].contract_number }}
+                                        Shartnoma #{{ selectedContract.contract_number }}
                                     </span>
-                                    <span v-if="detailedClientData.contracts[0].unit?.podyezd" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                                    <span v-if="selectedContract.unit?.podyezd" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                        {{ detailedClientData.contracts[0].unit.podyezd }}-podezd
+                                        {{ selectedContract.unit.podyezd }}-podezd
                                     </span>
-                                    <span v-if="detailedClientData.contracts[0].unit?.unit_number" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                                    <span v-if="selectedContract.unit?.unit_number" class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                                        {{ detailedClientData.contracts[0].unit.unit_number }}-uy
+                                        {{ selectedContract.unit.unit_number }}-uy
                                     </span>
                                 </template>
                             </div>
@@ -4547,9 +4582,25 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Detailed Client View Content -->
-                <div v-else-if="detailedClientData" class="space-y-6">
+                <div v-else-if="detailedClientData" class="space-y-6 text-left">
+                    <!-- Client Contracts List Tabs (If has multiple contracts) -->
+                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 1" class="bg-amber-50/40 border border-amber-100 rounded-3xl p-5 text-left">
+                        <label class="block text-[10px] font-extrabold uppercase text-amber-800 tracking-wider mb-2.5">Mijozning shartnomalari:</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button 
+                                v-for="contract in detailedClientData.contracts" 
+                                :key="contract.id"
+                                @click="selectedContract = contract"
+                                class="px-4 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm border"
+                                :class="selectedContract && selectedContract.id === contract.id ? 'bg-[#f2a900] border-[#f2a900] text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
+                            >
+                                📄 Shartnoma #{{ contract.contract_number }} ({{ contract.unit?.floor?.building?.name || 'Bino' }}, {{ contract.unit?.unit_number }}-uy)
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Card 0: Financial Cards Row (Image 2 style) -->
-                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div v-if="selectedContract" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <!-- Card 1: Uy narxi -->
                         <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
                             <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
@@ -4561,7 +4612,7 @@ const ledgerReportData = computed(() => {
                                 </span>
                             </div>
                             <div class="text-lg font-bold text-emerald-600 font-sans tracking-tight">
-                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                                {{ Number(getContractFinancials(selectedContract).total).toLocaleString('en-US') }} so'm
                             </div>
                         </div>
 
@@ -4571,7 +4622,7 @@ const ledgerReportData = computed(() => {
                                 <span>Chegirma</span>
                             </div>
                             <div class="text-lg font-bold text-amber-500 font-sans tracking-tight">
-                                {{ Number(detailedClientData.contracts[0]?.discount || 0).toLocaleString('en-US') }} so'm
+                                {{ Number(selectedContract?.discount || 0).toLocaleString('en-US') }} so'm
                             </div>
                         </div>
 
@@ -4579,13 +4630,13 @@ const ledgerReportData = computed(() => {
                         <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
                             <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
                                 <span>To'langan</span>
-                                <span class="text-xs font-bold text-gray-700 font-mono">{{ getContractFinancials(detailedClientData.contracts[0]).percent }}%</span>
+                                <span class="text-xs font-bold text-gray-700 font-mono">{{ getContractFinancials(selectedContract).percent }}%</span>
                             </div>
                             <div class="text-lg font-bold text-amber-500 font-sans tracking-tight">
-                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm
+                                {{ Number(getContractFinancials(selectedContract).paid).toLocaleString('en-US') }} so'm
                             </div>
                             <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
-                                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="`width: ${getContractFinancials(detailedClientData.contracts[0]).percent}%`"></div>
+                                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="`width: ${getContractFinancials(selectedContract).percent}%`"></div>
                             </div>
                         </div>
 
@@ -4593,20 +4644,20 @@ const ledgerReportData = computed(() => {
                         <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between min-h-[90px]">
                             <div class="flex justify-between items-center text-xs font-semibold text-gray-500 mb-1">
                                 <span>Qarz yoki Qolgan</span>
-                                <span class="text-red-500 bg-red-50 w-5 h-5 rounded-full flex items-center justify-center" v-if="getContractFinancials(detailedClientData.contracts[0]).debt > 0">
+                                <span class="text-red-500 bg-red-50 w-5 h-5 rounded-full flex items-center justify-center" v-if="getContractFinancials(selectedContract).debt > 0">
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 </span>
                             </div>
                             <div class="text-lg font-bold text-red-600 font-sans tracking-tight">
-                                {{ Number(getContractFinancials(detailedClientData.contracts[0]).debt).toLocaleString('en-US') }} so'm
+                                {{ Number(getContractFinancials(selectedContract).debt).toLocaleString('en-US') }} so'm
                             </div>
                         </div>
                     </div>
                     <!-- Card 1: Uy haqida ma'lumot -->
                     <!-- CASE 1: Client has contract -->
-                    <div v-if="detailedClientData.contracts && detailedClientData.contracts.length > 0 && detailedClientData.contracts[0]?.unit">
+                    <div v-if="selectedContract && selectedContract.unit">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Card 1: Mijoz ma'lumotlari -->
                             <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-left">
@@ -4711,20 +4762,20 @@ const ledgerReportData = computed(() => {
                                         <!-- Images -->
                                         <div class="flex gap-2.5">
                                             <!-- Blueprint Thumbnail -->
-                                            <div @click="previewUnitBlueprint(detailedClientData.contracts[0]?.unit)" 
+                                            <div @click="previewUnitBlueprint(selectedContract?.unit)" 
                                                  class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
-                                                <img :src="detailedClientData.contracts[0]?.unit?.blueprint_path ? '/storage/' + detailedClientData.contracts[0]?.unit?.blueprint_path : 
-                                                           (detailedClientData.contracts[0]?.unit?.floor?.blueprint_path ? '/storage/' + detailedClientData.contracts[0]?.unit?.floor?.blueprint_path : '/modern_apartment_render.png')" 
+                                                <img :src="selectedContract?.unit?.blueprint_path ? '/storage/' + selectedContract?.unit?.blueprint_path : 
+                                                           (selectedContract?.unit?.floor?.blueprint_path ? '/storage/' + selectedContract?.unit?.floor?.blueprint_path : '/modern_apartment_render.png')" 
                                                      class="w-full h-full object-cover" alt="2D Layout" />
                                                 <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                 </div>
                                             </div>
                                             <!-- 3D Render Thumbnail -->
-                                            <div v-if="detailedClientData.contracts[0]?.unit?.model_3d_path"
-                                                 @click="openPassportPreview('/storage/' + detailedClientData.contracts[0]?.unit?.model_3d_path)" 
+                                            <div v-if="selectedContract?.unit?.model_3d_path"
+                                                 @click="openPassportPreview('/storage/' + selectedContract?.unit?.model_3d_path)" 
                                                  class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
-                                                <img :src="'/storage/' + detailedClientData.contracts[0]?.unit?.model_3d_path" 
+                                                <img :src="'/storage/' + selectedContract?.unit?.model_3d_path" 
                                                      class="w-full h-full object-cover" alt="3D Render" />
                                                 <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -4732,7 +4783,7 @@ const ledgerReportData = computed(() => {
                                             </div>
                                             <!-- Fallback 3D Render Thumbnail -->
                                             <div v-else
-                                                 @click="previewUnitBlueprint(detailedClientData.contracts[0]?.unit)"
+                                                 @click="previewUnitBlueprint(selectedContract?.unit)"
                                                  class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-gray-150 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 shadow-sm relative group">
                                                 <img src="/modern_apartment_render.png" 
                                                      class="w-full h-full object-cover" alt="3D Render Fallback" />
@@ -4745,17 +4796,17 @@ const ledgerReportData = computed(() => {
                                         <!-- Building Info -->
                                         <div class="flex-1 text-left">
                                             <h2 class="text-base sm:text-lg font-bold text-gray-950 font-sans tracking-tight">
-                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
+                                                {{ selectedContract?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
                                             </h2>
                                             <div class="flex items-center gap-4 mt-2">
                                                 <div>
-                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "DO'KON" : "XONADON" }}</span>
-                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.unit_number }}-{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }}</strong>
+                                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">{{ selectedContract?.unit?.type === 'commercial' ? "DO'KON" : "XONADON" }}</span>
+                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ selectedContract?.unit?.unit_number }}-{{ selectedContract?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }}</strong>
                                                 </div>
                                                 <div class="h-8 w-px bg-gray-150"></div>
                                                 <div>
                                                     <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">MAYDONI</span>
-                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ detailedClientData.contracts[0]?.unit?.area_sqm }} m²</strong>
+                                                    <strong class="text-gray-900 text-xs font-bold font-mono block mt-0.5">{{ selectedContract?.unit?.area_sqm }} m²</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -4766,31 +4817,31 @@ const ledgerReportData = computed(() => {
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
                                             <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Bino</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ detailedClientData.contracts[0]?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
+                                                {{ selectedContract?.unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
                                             <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Podezd</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ detailedClientData.contracts[0]?.unit?.podyezd ? detailedClientData.contracts[0].unit.podyezd + '-padezd' : '1-padezd' }}
+                                                {{ selectedContract?.unit?.podyezd ? selectedContract.unit.podyezd + '-padezd' : '1-padezd' }}
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
                                             <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Qavat</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ detailedClientData.contracts[0]?.unit?.floor?.floor_number || '1' }}-Qavat
+                                                {{ selectedContract?.unit?.floor?.floor_number || '1' }}-Qavat
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm">
                                             <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Xonalar soni</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ detailedClientData.contracts[0]?.unit?.rooms || '1' }}
+                                                {{ selectedContract?.unit?.rooms || '1' }}
                                             </strong>
                                         </div>
                                         <div class="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-left shadow-sm col-span-2">
-                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">{{ detailedClientData.contracts[0]?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} holati</span>
+                                            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">{{ selectedContract?.unit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} holati</span>
                                             <strong class="text-sm font-bold text-gray-900 block mt-1">
-                                                {{ getContractRepairType(detailedClientData.contracts[0]) }}
+                                                {{ getContractRepairType(selectedContract) }}
                                             </strong>
                                         </div>
                                     </div>
@@ -4820,40 +4871,40 @@ const ledgerReportData = computed(() => {
                                     <div class="space-y-2.5 text-xs text-gray-700">
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">Tasdiqlangan:</span>
-                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.approver?.name || '—' }}</strong>
+                                            <strong class="text-gray-900">{{ selectedContract?.transactions?.[0]?.approver?.name || '—' }}</strong>
                                         </div>
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">Sotuv menejeri:</span>
-                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.transactions[0]?.creator?.name || '—' }}</strong>
+                                            <strong class="text-gray-900">{{ selectedContract?.transactions?.[0]?.creator?.name || '—' }}</strong>
                                         </div>
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">Holat:</span> 
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" 
-                                                  :class="detailedClientData.contracts[0]?.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
-                                                {{ detailedClientData.contracts[0]?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
+                                                  :class="selectedContract?.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                                                {{ selectedContract?.status === 'active' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
                                             </span>
                                         </div>
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">To'lov turi:</span>
-                                            <strong class="text-gray-900">{{ detailedClientData.contracts[0]?.payment_type === 'full' ? 'Bir martalik umumiy to\'lov' : 'Bo\'lib to\'lash' }}</strong>
+                                            <strong class="text-gray-900">{{ selectedContract?.payment_type === 'full' ? 'Bir martalik umumiy to\'lov' : 'Bo\'lib to\'lash' }}</strong>
                                         </div>
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">Muddati:</span>
                                             <strong class="text-gray-900 font-mono">
-                                                <span v-if="detailedClientData.contracts[0]?.payment_type === 'full'">Bir martalik</span>
-                                                <span v-else>{{ detailedClientData.contracts[0]?.term_months || '—' }} oy</span>
+                                                <span v-if="selectedContract?.payment_type === 'full'">Bir martalik</span>
+                                                <span v-else>{{ selectedContract?.term_months || '—' }} oy</span>
                                             </strong>
                                         </div>
                                         <div class="flex justify-between py-1 border-b border-gray-50">
                                             <span class="text-gray-400 font-medium">Kadastr:</span>
                                             <strong class="text-gray-900">yo'q</strong>
                                         </div>
-                                        <div v-if="detailedClientData.contracts[0]?.down_payment > 0" class="py-1 border-b border-gray-50 flex justify-between">
+                                        <div v-if="selectedContract?.down_payment > 0" class="py-1 border-b border-gray-50 flex justify-between">
                                             <span class="text-gray-400 font-medium">Boshlang'ich to'lov:</span>
                                             <strong class="text-gray-900 font-mono text-right">
-                                                {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).total).toLocaleString('en-US') }} so'm
+                                                {{ Number(getContractDownPaymentStats(selectedContract).total).toLocaleString('en-US') }} so'm
                                                 <span class="text-[10px] text-gray-500 font-normal block">
-                                                    (To'landi: {{ Number(getContractDownPaymentStats(detailedClientData.contracts[0]).paid).toLocaleString('en-US') }} so'm)
+                                                    (To'landi: {{ Number(getContractDownPaymentStats(selectedContract).paid).toLocaleString('en-US') }} so'm)
                                                 </span>
                                             </strong>
                                         </div>
@@ -4908,11 +4959,11 @@ const ledgerReportData = computed(() => {
                                 </div>
 
                                 <div class="flex items-center gap-3 mt-5">
-                                    <button @click="openDocumentPreview('contract', detailedClientData.contracts[0])" class="flex-1 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                    <button @click="openDocumentPreview('contract', selectedContract)" class="flex-1 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                         Shartnoma
                                     </button>
-                                    <button @click="openDocumentPreview('grafik', detailedClientData.contracts[0])" class="flex-1 py-2.5 bg-white border border-[#f2a900] hover:bg-amber-50/50 text-[#f2a900] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+                                    <button @click="openDocumentPreview('grafik', selectedContract)" class="flex-1 py-2.5 bg-white border border-[#f2a900] hover:bg-amber-50/50 text-[#f2a900] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg>
                                         Grafik
                                     </button>
@@ -5116,7 +5167,7 @@ const ledgerReportData = computed(() => {
                                 <button @click="openPaymentHistoryModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
                                     To'lov tarixi
                                 </button>
-                                <button @click="openExportFormatModal(detailedClientData.contracts[0].id)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                <button @click="openExportFormatModal(selectedContract.id)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
@@ -5141,7 +5192,7 @@ const ledgerReportData = computed(() => {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 font-mono text-xs">
-                                    <tr v-for="(schedule, index) in getContractPaymentRows(detailedClientData.contracts[0])" :key="schedule.id" class="hover:bg-slate-50/50 transition-colors">
+                                    <tr v-for="(schedule, index) in getContractPaymentRows(selectedContract)" :key="schedule.id" class="hover:bg-slate-50/50 transition-colors">
                                         <td class="p-3 text-center text-gray-500">{{ index + 1 }}</td>
                                         <td class="p-3 text-center text-gray-700">{{ formatDateOnly(schedule.date) }}</td>
                                         <td class="p-3 text-right font-bold text-gray-900">{{ Number(schedule.expected_amount || 0).toLocaleString('en-US') }}</td>
@@ -5160,7 +5211,7 @@ const ledgerReportData = computed(() => {
                                             </span>
                                         </td>
                                     </tr>
-                                    <tr v-if="getContractPaymentRows(detailedClientData.contracts[0]).length === 0">
+                                    <tr v-if="getContractPaymentRows(selectedContract).length === 0">
                                         <td colspan="8" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
                                     </tr>
                                 </tbody>
@@ -9058,7 +9109,7 @@ const ledgerReportData = computed(() => {
 
                     <!-- List of all schedules with notes -->
                     <div v-else class="space-y-3">
-                        <div v-for="(s, idx) in detailedClientData?.contracts[0]?.payment_schedules" :key="s.id" class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center gap-4 hover:border-gray-200 transition-colors">
+                        <div v-for="(s, idx) in selectedContract?.payment_schedules" :key="s.id" class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center gap-4 hover:border-gray-200 transition-colors">
                             <div class="flex-1 space-y-1">
                                 <div class="flex items-center gap-2 text-[10px] text-gray-400 font-semibold uppercase">
                                     <span>{{ idx + 1 }}-To'lov</span>
@@ -9102,7 +9153,7 @@ const ledgerReportData = computed(() => {
 
                 <!-- Table Content -->
                 <div class="flex-1 overflow-auto p-6 bg-slate-50">
-                    <div v-if="detailedClientData?.contracts[0]?.transactions && detailedClientData.contracts[0].transactions.length > 0" class="overflow-x-auto border border-gray-150 rounded-2xl bg-white shadow-sm">
+                    <div v-if="selectedContract?.transactions && selectedContract.transactions.length > 0" class="overflow-x-auto border border-gray-150 rounded-2xl bg-white shadow-sm">
                         <table class="w-full border-collapse text-left text-xs whitespace-nowrap">
                             <thead>
                                 <tr class="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
@@ -9116,7 +9167,7 @@ const ledgerReportData = computed(() => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 font-mono text-xs">
-                                <tr v-for="t in detailedClientData.contracts[0].transactions" :key="t.id" class="hover:bg-slate-50 transition-colors">
+                                <tr v-for="t in selectedContract.transactions" :key="t.id" class="hover:bg-slate-50 transition-colors">
                                     <td class="p-3 text-center text-gray-500">#{{ t.id }}</td>
                                     <td class="p-3 text-center text-gray-700">
                                         {{ t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : new Date(t.created_at).toLocaleDateString() }}

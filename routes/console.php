@@ -14,7 +14,7 @@ Schedule::command('sms:promo')->hourly();
 Schedule::command('sms:send-scheduled')->everyMinute();
 
 // Zaxiralash (Backup) jadvali - Ertalabki vaqt
-Schedule::command('backup:clean')->dailyAt('07:00');
-Schedule::command('backup:run --only-db')->dailyAt('07:30');
-Schedule::command('backup:send')->dailyAt('07:35');
+Schedule::command('backup:clean')->dailyAt('07:45');
+Schedule::command('backup:run --only-db')->dailyAt('07:55');
+Schedule::command('backup:send')->dailyAt('08:00');
 Schedule::command('telephony:run-campaigns')->everyMinute();

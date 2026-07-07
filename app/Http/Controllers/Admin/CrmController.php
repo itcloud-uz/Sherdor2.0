@@ -196,6 +196,9 @@ class CrmController extends Controller
             'categories' => \App\Models\TransactionCategory::all(),
             'buildings' => \App\Models\Building::latest()->get(),
             'contractTemplates' => \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get(),
+        ])->toResponse(request())->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
         ]);
     }
 

@@ -43,8 +43,8 @@ onUnmounted(() => {
         :class="isVisible ? 'bg-slate-900/10 backdrop-blur-[1px]' : 'bg-transparent opacity-0 pointer-events-none'"
     >
         <div
-            class="bg-white/95 backdrop-blur-md border border-emerald-500/20 shadow-2xl rounded-3xl p-6 w-64 flex flex-col items-center justify-center text-center transform transition-all duration-300 pointer-events-auto"
-            :class="isVisible ? 'scale-100 opacity-100' : 'scale-90 opacity-0'"
+            class="bg-white/95 backdrop-blur-md border border-emerald-500/20 shadow-2xl rounded-3xl p-6 w-64 flex flex-col items-center justify-center text-center transform transition-all duration-300"
+            :class="isVisible ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-90 opacity-0 pointer-events-none'"
         >
             <div class="w-20 h-20 flex items-center justify-center relative mb-4">
                 <svg class="w-16 h-16 text-emerald-500 mx-auto" viewBox="0 0 52 52">

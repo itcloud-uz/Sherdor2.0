@@ -4406,15 +4406,16 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
                     <table class="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                         <thead>
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
-                                <th class="p-4 w-12 text-center">ID</th>
+                                <th class="p-4 w-36 text-center">Shartnoma raqami</th>
                                 <th class="p-4">Ism</th>
-                                <th class="p-4 text-center">Shartnomalar</th>
-                                <th class="p-4">Yaratilgan</th>
-                                <th class="p-4">Holat</th>
+                                <th class="p-4">Bino</th>
+                                <th class="p-4">Blok</th>
+                                <th class="p-4">Xonadon</th>
+                                <th class="p-4">Qavat</th>
+                                <th class="p-4">Uy narxi</th>
                                 <th class="p-4 text-right">Amallar</th>
                             </tr>
                         </thead>
@@ -4424,8 +4425,18 @@ const ledgerReportData = computed(() => {
                                 :key="client.id" 
                                 class="hover:bg-gray-50/50 transition-colors"
                             >
-                                <!-- ID -->
-                                <td class="p-4 text-center font-medium text-gray-600">{{ client.id }}</td>
+                                <!-- Shartnoma raqami -->
+                                <td class="p-4 text-center font-bold text-gray-900 font-mono">
+                                    <template v-if="client.contracts && client.contracts.length > 0">
+                                        {{ client.contracts[0].contract_number || client.contracts[0].id }}
+                                        <span v-if="client.contracts.length > 1" class="text-[9px] text-blue-600 bg-blue-50 px-1 py-0.5 rounded font-sans ml-1">
+                                            +{{ client.contracts.length - 1 }}
+                                        </span>
+                                    </template>
+                                    <template v-else>
+                                        <span class="text-gray-400 font-medium">—</span>
+                                    </template>
+                                </td>
                                 
                                 <!-- Ism -->
                                 <td class="p-4">
@@ -4445,26 +4456,44 @@ const ledgerReportData = computed(() => {
                                     </div>
                                 </td>
                                 
-                                <!-- Shartnomalar -->
-                                <td class="p-4 text-center">
-                                    <span v-if="client.contracts && client.contracts.length > 0" class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 shadow-sm uppercase tracking-wide">
-                                        {{ client.contracts.length }} ta uy
+                                <!-- Bino -->
+                                <td class="p-4">
+                                    <span v-if="client.contracts && client.contracts.length > 0" class="text-emerald-600 font-semibold">
+                                        {{ client.contracts[0].unit?.floor?.building?.name || (($page.props.branding?.app_name || 'SHER-DOR') + ' TJM') }}
                                     </span>
-                                    <span v-else class="text-gray-400 font-medium">—</span>
+                                    <span v-else class="text-gray-400">—</span>
                                 </td>
                                 
-                                <!-- Yaratilgan -->
-                                <td class="p-4 text-gray-600 font-medium">{{ formatDate(client.created_at) }}</td>
-                                
-                                <!-- Holat -->
+                                <!-- Blok -->
                                 <td class="p-4">
-                                    <span v-if="getClientLatestContract(client)" class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm uppercase tracking-wide border"
-                                          :class="getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'bg-[#ecfdf5] text-[#047857] border-[#d1fae5]' : 'bg-[#fffbeb] text-[#d97706] border-[#fef3c7]'">
-                                        {{ getClientLatestContract(client).status === 'active' || getClientLatestContract(client).status === 'approved' ? 'Tasdiqlangan' : 'Kutilmoqda' }}
+                                    <span v-if="client.contracts && client.contracts.length > 0" class="text-emerald-600 font-semibold">
+                                        {{ client.contracts[0].unit?.floor?.building?.block_name || client.contracts[0].unit?.floor?.building?.corpus_name || '—' }}
                                     </span>
-                                    <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] shadow-sm uppercase tracking-wide">
-                                        Shartnomasiz
+                                    <span v-else class="text-gray-400">—</span>
+                                </td>
+                                
+                                <!-- Xonadon -->
+                                <td class="p-4">
+                                    <span v-if="client.contracts && client.contracts.length > 0 && client.contracts[0].unit" class="text-emerald-600 font-semibold">
+                                        {{ client.contracts[0].unit.unit_number }}-{{ client.contracts[0].unit.type === 'commercial' ? "Do'kon" : "Xonadon" }}
                                     </span>
+                                    <span v-else class="text-gray-400">—</span>
+                                </td>
+                                
+                                <!-- Qavat -->
+                                <td class="p-4">
+                                    <span v-if="client.contracts && client.contracts.length > 0 && client.contracts[0].unit?.floor" class="text-emerald-600 font-semibold">
+                                        {{ client.contracts[0].unit.floor.floor_number }}-Qavat
+                                    </span>
+                                    <span v-else class="text-gray-400">—</span>
+                                </td>
+                                
+                                <!-- Uy narxi -->
+                                <td class="p-4">
+                                    <span v-if="client.contracts && client.contracts.length > 0" class="text-rose-600 font-bold font-mono">
+                                        {{ $currency(client.contracts[0].total_amount) }} {{ client.contracts[0].currency || 'USD' }}
+                                    </span>
+                                    <span v-else class="text-gray-400">—</span>
                                 </td>
                                 
                                 <!-- Amallar -->
@@ -4493,7 +4522,7 @@ const ledgerReportData = computed(() => {
                                 </td>
                             </tr>
                             <tr v-if="filteredClients.length === 0">
-                                <td colspan="10" class="py-20 text-center text-gray-400 font-mono text-sm border-dashed">
+                                <td colspan="8" class="py-20 text-center text-gray-400 font-mono text-sm border-dashed">
                                     {{ $t('no_clients_found') }}
                                 </td>
                             </tr>
@@ -6889,7 +6918,6 @@ const ledgerReportData = computed(() => {
                     </button>
                 </div>
             </div>
-        </div>
         </div>
 
         <!-- INLINE SUBPAGE: CREATE / EDIT CLIENT -->

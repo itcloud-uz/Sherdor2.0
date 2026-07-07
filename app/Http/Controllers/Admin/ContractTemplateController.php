@@ -68,7 +68,7 @@ class ContractTemplateController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|string|in:residential,commercial,custom',
+            'type' => 'required|string|in:residential,commercial,parking,custom',
             'description' => 'nullable|string',
             'file' => [
                 'required',
@@ -172,7 +172,7 @@ class ContractTemplateController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|string|in:residential,commercial,custom',
+            'type' => 'required|string|in:residential,commercial,parking,custom',
             'description' => 'nullable|string',
             'file' => [
                 'nullable',

@@ -7615,6 +7615,10 @@ const ledgerReportData = computed(() => {
                                     <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
                                     <span class="text-xs text-gray-900">{{ $t('commercial_shop') }}</span>
                                 </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" v-model="contractForm.contract_type" value="parking" class="text-blue-600 focus:ring-neon-cyan border-gray-300">
+                                    <span class="text-xs text-gray-900">Avtoturarjoy</span>
+                                </label>
                             </div>
                         </div>
 

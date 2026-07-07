@@ -7,16 +7,19 @@ use Illuminate\Http\Request;
 
 class ContractExportController extends Controller
 {
-    private function getTemplateName($unit)
+    private function getTemplateName($contract)
     {
-        return $unit->type === 'commercial' ? 'contracts.shop_template' : 'contracts.template';
+        if ($contract->contract_type === 'parking') {
+            return 'contracts.parking_template';
+        }
+        return $contract->unit && $contract->unit->type === 'commercial' ? 'contracts.shop_template' : 'contracts.template';
     }
 
     public function exportPdf(\App\Models\Contract $contract)
     {
         $contract->load(['client', 'unit', 'unit.floor', 'paymentSchedules']);
         
-        $template = $this->getTemplateName($contract->unit);
+        $template = $this->getTemplateName($contract);
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($template, [
             'contract' => $contract,
             'client' => $contract->client,
@@ -30,7 +33,7 @@ class ContractExportController extends Controller
     {
         $contract->load(['client', 'unit', 'unit.floor', 'paymentSchedules']);
         
-        $template = $this->getTemplateName($contract->unit);
+        $template = $this->getTemplateName($contract);
         $html = view($template, [
             'contract' => $contract,
             'client' => $contract->client,
@@ -55,7 +58,7 @@ class ContractExportController extends Controller
     {
         $contract->load(['client', 'unit', 'unit.floor', 'paymentSchedules']);
         
-        $template = $this->getTemplateName($contract->unit);
+        $template = $this->getTemplateName($contract);
         
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\ContractExport($contract, $contract->client, $contract->unit, $template), 

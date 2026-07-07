@@ -1318,6 +1318,10 @@ function submitWarehouseRequest() {
                             <input type="radio" v-model="contractForm.contract_type" value="commercial" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
                             <span class="text-xs text-white">Savdo do'koni</span>
                         </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" v-model="contractForm.contract_type" value="parking" class="text-neon-cyan focus:ring-neon-cyan border-gray-300">
+                            <span class="text-xs text-white">Avtoturarjoy</span>
+                        </label>
                     </div>
                 </div>
 

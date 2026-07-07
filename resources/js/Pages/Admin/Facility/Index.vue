@@ -14,6 +14,7 @@ const props = defineProps({
     partners: Array,
     registers: Array,
     reportData: Array,
+    contractTemplates: Array,
     filters: Object
 });
 
@@ -1363,6 +1364,7 @@ const contractForm = ref({
     unit_id: '',
     contract_number: '',
     contract_type: 'residential',
+    contract_template_id: '',
     price_per_sqm: '',
     total_amount: '',
     down_payment: '',
@@ -3950,17 +3952,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
 
                         <!-- Right: Unit Tafsilot / Calculator Panel -->
-                        <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between min-h-[480px]">
+                        <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between h-[calc(100vh-140px)] sticky top-28 overflow-hidden min-h-[480px]">
                             <!-- PANEL 1: Details (Tafsilot) -->
-                            <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Tafsilot</h3>
-                                        <button @click="selectedUnit = null" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
-                                            ✕
-                                        </button>
-                                    </div>
+                            <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between overflow-hidden h-full">
+                                <div class="flex justify-between items-center mb-4 shrink-0">
+                                    <h3 class="text-2xl font-bold font-sans text-gray-800">Tafsilot</h3>
+                                    <button @click="selectedUnit = null" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                        ✕
+                                    </button>
+                                </div>
 
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-6 my-2">
                                     <!-- Blueprint / Layout Image -->
                                     <div class="h-60 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-2xl p-3 mb-6 relative group overflow-hidden">
                                         <img :src="selectedUnitDisplayImage" 
@@ -4017,7 +4019,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
 
                                 <!-- Actions Buttons -->
-                                <div class="flex gap-4 justify-end mt-6">
+                                <div class="flex gap-4 justify-end mt-6 shrink-0 pt-4 border-t border-gray-100 bg-white">
                                     <button @click="activeRightPanel = 'calculator'" class="px-6 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-base shadow-sm transition-all text-center">
                                         Hisoblash
                                     </button>
@@ -4030,89 +4032,92 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                             </div>
                             <!-- PANEL 2: Calculator (Kalkulyator) -->
-                            <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div class="flex items-center gap-3 mb-6">
-                                        <button @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
-                                            ✕
-                                        </button>
-                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Kalkulyator</h3>
+                            <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between overflow-hidden h-full">
+                                <div class="flex items-center gap-3 mb-6 shrink-0">
+                                    <button @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                        ✕
+                                    </button>
+                                    <h3 class="text-2xl font-bold font-sans text-gray-800">Kalkulyator</h3>
+                                </div>
+
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-4 my-2">
+                                    <!-- Xonadon Maydoni -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} maydoni (kv.m)</label>
+                                        <div class="bg-slate-100 border border-slate-200 text-slate-700 rounded-xl px-4 py-3 font-semibold font-sans">
+                                            {{ selectedUnit?.area_sqm || 0 }} kv.m
+                                        </div>
                                     </div>
 
-                                    <div class="space-y-4 font-sans text-sm">
-                                        <!-- Xonadon Maydoni -->
+                                    <!-- Kvadrat Metr Narxi & Uy Narxi -->
+                                    <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Xonadon" }} maydoni (kv.m)</label>
-                                            <div class="bg-slate-100 border border-slate-200 text-slate-700 rounded-xl px-4 py-3 font-semibold font-sans">
-                                                {{ selectedUnit?.area_sqm || 0 }} kv.m
-                                            </div>
-                                        </div>
-
-                                        <!-- Kvadrat Metr Narxi & Uy Narxi -->
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-500 mb-1">1 kv.m narxi</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                    <input type="number" v-model.number="calcPricePerSqm" @input="onPricePerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Uy" }} narxi (Jami)</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                    <input type="number" v-model.number="calcPrice" @input="onPriceInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Boshlang'ich to'lov -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">
-                                                Boshlang'ich to'lov <span v-if="calcDownPaymentPercent > 0" class="text-amber-500 font-bold ml-1">({{ calcDownPaymentPercent }}%)</span>
-                                            </label>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">1 kv.m narxi</label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
-                                            </div>
-                                            <div class="grid grid-cols-5 gap-2 mt-2">
-                                                <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
-                                                    {{ pct }}%
-                                                </button>
+                                                <input type="number" v-model.number="calcPricePerSqm" @input="onPricePerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
                                         </div>
-
-                                        <!-- Bo'lib to'lash muddati (oy) -->
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Uy" }} narxi (Jami)</label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                <input type="number" v-model.number="calcTermMonths" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                                <input type="number" v-model.number="calcPrice" @input="onPriceInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <!-- Chegirmalar -->
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-500 mb-1">Chegirma (1 kv.m uchun)</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                    <input type="number" v-model.number="calcDiscountPerSqm" @input="onDiscountPerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
-                                                </div>
+                                    <!-- Boshlang'ich to'lov -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-500 mb-1">
+                                            Boshlang'ich to'lov <span v-if="calcDownPaymentPercent > 0" class="text-amber-500 font-bold ml-1">({{ calcDownPaymentPercent }}%)</span>
+                                        </label>
+                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                            <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                        </div>
+                                        <div class="grid grid-cols-5 gap-2 mt-2">
+                                            <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
+                                                {{ pct }}%
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bo'lib to'lash muddati (oy) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
+                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                            <input type="number" v-model.number="calcTermMonths" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+                                        </div>
+                                    </div>
+
+                                    <!-- Chegirmalar -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Chegirma (1 kv.m uchun)</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcDiscountPerSqm" @input="onDiscountPerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-500 mb-1">Jami chegirma</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
-                                                    <input type="number" v-model.number="calcDiscount" @input="onDiscountInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
-                                                </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500 mb-1">Jami chegirma</label>
+                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
+                                                <input type="number" v-model.number="calcDiscount" @input="onDiscountInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Calculation Results Card -->
-                                <div class="bg-[#f8fafc] border border-gray-200 rounded-2xl p-6 space-y-4">
-                                    <div>
-                                        <span class="text-gray-500 text-sm font-sans block mb-1">Oylik to'lov</span>
-                                        <span class="text-3xl font-bold text-gray-900 font-sans">{{ formatSoM(calculatedMonthlyPayment) }}</span>
+                                <div class="bg-[#f8fafc] border border-gray-200 rounded-2xl p-4 space-y-3 shrink-0">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <span class="text-gray-500 text-xs font-sans block">Oylik to'lov</span>
+                                            <span class="text-2xl font-bold text-gray-900 font-sans">{{ formatSoM(calculatedMonthlyPayment) }}</span>
+                                        </div>
+                                        <button type="button" @click="printCalculatorDetails" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 font-sans text-xs">
+                                            🖨️ Chop etish
+                                        </button>
                                     </div>
                                     
-                                    <div class="space-y-3 pt-2 text-sm font-sans text-gray-600">
+                                    <div class="space-y-1.5 text-xs font-sans text-gray-600">
                                         <!-- Umumiy summa -->
                                         <div class="flex items-center justify-between">
                                             <span class="whitespace-nowrap">Umumiy summa</span>
@@ -4121,17 +4126,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
                                         
                                         <!-- Chegirma -->
-                                        <div class="flex items-center justify-between">
+                                        <div class="flex items-center justify-between text-emerald-600">
                                             <span class="whitespace-nowrap">Chegirma umumiy</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calcDiscount) }}</span>
+                                            <span class="font-bold whitespace-nowrap">- {{ formatSoM(calcDiscount) }}</span>
                                         </div>
 
                                         <!-- Jami summa -->
-                                        <div class="flex items-center justify-between font-semibold">
-                                            <span class="whitespace-nowrap text-gray-800 font-bold">Jami summa (chegirma bilan)</span>
+                                        <div class="flex items-center justify-between font-semibold text-gray-900">
+                                            <span class="whitespace-nowrap font-bold">Jami summa (chegirma bilan)</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
+                                            <span class="font-bold whitespace-nowrap">{{ formatSoM(calculatedTotalAmount) }}</span>
                                         </div>
 
                                         <!-- Boshlang'ich to'lov -->
@@ -4142,25 +4147,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
 
                                         <!-- Qoldiq summa -->
-                                        <div class="flex items-center justify-between">
+                                        <div class="flex items-center justify-between text-[#e67e22] font-bold">
                                             <span class="whitespace-nowrap">Qoldiq summa</span>
                                             <div class="flex-grow border-b border-dotted border-gray-300 mx-2"></div>
-                                            <span class="text-gray-900 font-bold whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
+                                            <span class="whitespace-nowrap">{{ formatSoM(calculatedRemainingBalance) }}</span>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Print Button -->
-                                    <button type="button" @click="printCalculatorDetails" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-4 font-sans text-sm">
-                                        🖨️ Chop etish (Taqdimot)
-                                    </button>
                                 </div>
                             </div>
 
                             <!-- PANEL 3: Sell (Sotish) -->
-                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="space-y-4 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <!-- Stepper Progress Header -->
-                                    <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
+                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="flex-1 flex flex-col justify-between overflow-hidden h-full">
+                                <!-- Stepper Progress Header -->
+                                <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4 shrink-0">
                                         <div class="flex items-center gap-2">
                                             <button type="button" @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-2xl font-light">
                                                 ✕
@@ -4196,23 +4195,40 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
                                     </div>
 
-                                    <!-- STEP 1: Mijoz ma'lumotlari -->
+                                    <div class="flex-1 overflow-y-auto pr-1 space-y-4 my-2">
+                                        <!-- STEP 1: Mijoz ma'lumotlari -->
                                     <div v-show="sellStep === 1" class="space-y-4 font-sans">
                                         <!-- Shartnoma sanasi & Shartnoma raqami -->
                                         <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma sanasi</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="date" v-model="contractForm.created_at" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma raqami</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="text" v-model="contractForm.contract_number" placeholder="Masalan: SH-001" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
-                                                </div>
-                                            </div>
-                                        </div>
+                                             <div>
+                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma sanasi</label>
+                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                     <input type="date" v-model="contractForm.created_at" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                 </div>
+                                             </div>
+                                             <div>
+                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma raqami</label>
+                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                     <input type="text" v-model="contractForm.contract_number" placeholder="Masalan: SH-001" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                 </div>
+                                             </div>
+                                         </div>
+
+                                         <!-- Shartnoma turi (Contract Template) -->
+                                         <div>
+                                             <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma turi</label>
+                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                 <select v-model="contractForm.contract_template_id" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans cursor-pointer appearance-none pr-8 w-full" required>
+                                                     <option value="">Shartnoma turini tanlang</option>
+                                                     <option v-for="template in contractTemplates" :key="template.id" :value="template.id">
+                                                         {{ template.name }}
+                                                     </option>
+                                                 </select>
+                                                 <span class="absolute right-3 text-gray-400 pointer-events-none">
+                                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                                 </span>
+                                             </div>
+                                         </div>
 
                                         <!-- Buyer Type Selection -->
                                         <div>
@@ -4562,16 +4578,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </form>
 
                             <!-- PANEL 4: Edit Unit (Tahrirlash) -->
-                            <form v-else-if="activeRightPanel === 'edit_unit'" @submit.prevent="submitUnit" class="space-y-4 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div class="flex items-center gap-3 mb-6">
-                                        <button type="button" @click="cancelEditUnit" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
-                                            ✕
-                                        </button>
-                                        <h3 class="text-2xl font-bold font-sans text-gray-800">Tahrirlash</h3>
-                                    </div>
+                            <form v-else-if="activeRightPanel === 'edit_unit'" @submit.prevent="submitUnit" class="flex-1 flex flex-col justify-between overflow-hidden h-full">
+                                <div class="flex items-center gap-3 mb-6 shrink-0">
+                                    <button type="button" @click="cancelEditUnit" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
+                                        ✕
+                                    </button>
+                                    <h3 class="text-2xl font-bold font-sans text-gray-800">Tahrirlash</h3>
+                                </div>
 
-                                    <div class="space-y-4 font-sans">
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-4 my-2">
                                         <!-- Raqami & Turi -->
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
@@ -4698,7 +4713,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
                                 <div class="flex justify-between items-center mt-6">
                                     <div>

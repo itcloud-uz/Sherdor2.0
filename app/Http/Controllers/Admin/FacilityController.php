@@ -44,6 +44,7 @@ class FacilityController extends Controller
             'users' => \App\Models\User::select('id', 'name')->orderBy('name', 'asc')->get(),
             'registers' => \App\Models\CashRegister::where('is_active', true)->get(),
             'reportData' => $reportData,
+            'contractTemplates' => \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get(),
             'filters' => [
                 'start_month' => $request->input('start_month'),
                 'end_month' => $request->input('end_month'),

@@ -184,11 +184,14 @@ const availableDistricts = computed(() => {
 const leadAvailableDistricts = computed(() => {
     let r = newLeadForm.value.region;
     if (!r) return [];
-    r = r.toLowerCase();
+    r = r.trim().toLowerCase();
     let foundRegion = regionsData[r];
     if (!foundRegion) {
         foundRegion = Object.values(regionsData).find(
-            item => item.name.toLowerCase() === r || item.name.toLowerCase().replace(/\s+sh\.?$/, '') === r
+            item => {
+                const name = item.name.trim().toLowerCase();
+                return name === r || name.replace(/\s+sh\.?$/, '') === r || name.replace(/\s+viloyati$/, '') === r;
+            }
         );
     }
     if (!foundRegion) return [];
@@ -461,6 +464,10 @@ async function onPassportPhotoChange(e) {
 function onRegionChange() {
     clientForm.value.district = '';
     clientForm.value.address = '';
+}
+
+function onLeadRegionChange() {
+    newLeadForm.value.district = '';
 }
 
 function onDistrictChange() {
@@ -8329,7 +8336,7 @@ const ledgerReportData = computed(() => {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Viloyat</label>
-                                <select v-model="newLeadForm.region" @change="newLeadForm.district = ''" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                                <select v-model="newLeadForm.region" @change="onLeadRegionChange" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
                                     <option value="">Viloyatni tanlang</option>
                                     <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">{{ regionObj.name }}</option>
                                 </select>

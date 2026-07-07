@@ -23,7 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        URL::forceScheme('https'); // <-- 2. VA SHU QATORNI QO'SHING
+        if (app()->runningInConsole() || !in_array(request()->getHost(), ['127.0.0.1', 'localhost', '::1'])) {
+            URL::forceScheme('https');
+        }
 
         // Self-healing check for currency_rates table
         if (!app()->runningUnitTests() && !\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {

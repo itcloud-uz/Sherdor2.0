@@ -7077,31 +7077,11 @@ const ledgerReportData = computed(() => {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Viloyat</label>
-                            <div class="relative">
-                                <select v-model="clientForm.region" @change="onRegionChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
-                                    <option value="">Tanlang</option>
-                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">
-                                        {{ regionObj.name }}
-                                    </option>
-                                </select>
-                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                </span>
-                            </div>
+                            <input v-model="clientForm.region" type="text" placeholder="Viloyatni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Tuman / Shahar</label>
-                            <div class="relative">
-                                <select v-model="clientForm.district" @change="onDistrictChange" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer pr-10">
-                                    <option value="">Tanlang</option>
-                                    <option v-for="districtObj in availableDistricts" :key="districtObj.id" :value="districtObj.name">
-                                        {{ districtObj.name }}
-                                    </option>
-                                </select>
-                                <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                </span>
-                            </div>
+                            <input v-model="clientForm.district" type="text" placeholder="Tuman / Shaharni kiriting" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-gray-400">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Mahalla, ko'cha nomi</label>
@@ -8340,17 +8320,11 @@ const ledgerReportData = computed(() => {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Viloyat</label>
-                                <select v-model="newLeadForm.region" @change="onLeadRegionChange" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
-                                    <option value="">Viloyatni tanlang</option>
-                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">{{ regionObj.name }}</option>
-                                </select>
+                                <input v-model="newLeadForm.region" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Viloyatni kiriting">
                             </div>
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tuman / Shahar</label>
-                                <select v-model="newLeadForm.district" :disabled="!newLeadForm.region" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none disabled:bg-gray-100 disabled:text-gray-400">
-                                    <option value="">Tuman / Shaharni tanlang</option>
-                                    <option v-for="d in leadAvailableDistricts" :key="d.id" :value="d.name">{{ d.name }}</option>
-                                </select>
+                                <input v-model="newLeadForm.district" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Tuman / Shaharni kiriting">
                             </div>
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Mahalla, ko'cha, uy</label>

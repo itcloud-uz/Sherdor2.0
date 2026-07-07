@@ -173,7 +173,10 @@ const leadAvailableDistricts = computed(() => {
         );
     }
     if (!foundRegion) return [];
-    return Object.entries(foundRegion.districts).map(([key, value]) => value.name);
+    return Object.entries(foundRegion.districts).map(([key, value]) => ({
+        id: key,
+        name: value.name
+    }));
 });
 
 const availableNeighborhoods = computed(() => {
@@ -444,7 +447,23 @@ function onRegionChange() {
 function onDistrictChange() {
     clientForm.value.address = '';
 }
-const newLeadForm = ref({ full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' });
+const newLeadForm = ref({
+    full_name: '',
+    phone: '',
+    phone_2: '',
+    passport_series: '',
+    gender: '',
+    birth_date: '',
+    region: '',
+    district: '',
+    address: '',
+    assigned_employee_id: '',
+    source: 'manual',
+    is_manual: true,
+    budget: '',
+    currency: 'uzs',
+    comment: ''
+});
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
 
@@ -643,7 +662,23 @@ function openDetailedLeadModal() {
 function openCreateLeadModal() {
     isEditingLead.value = false;
     editingLeadId.value = null;
-    newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' };
+    newLeadForm.value = {
+        full_name: '',
+        phone: '',
+        phone_2: '',
+        passport_series: '',
+        gender: '',
+        birth_date: '',
+        region: '',
+        district: '',
+        address: '',
+        assigned_employee_id: '',
+        source: 'manual',
+        is_manual: true,
+        budget: '',
+        currency: 'uzs',
+        comment: ''
+    };
     showCreateLeadModal.value = true;
 }
 
@@ -667,7 +702,23 @@ function submitNewLead() {
             .then(() => {
                 showCreateLeadModal.value = false;
                 showDetailedLeadModal.value = false;
-                newLeadForm.value = { full_name: '', phone: '', source: 'manual', is_manual: true, budget: '', currency: 'uzs', comment: '' };
+                newLeadForm.value = {
+                    full_name: '',
+                    phone: '',
+                    phone_2: '',
+                    passport_series: '',
+                    gender: '',
+                    birth_date: '',
+                    region: '',
+                    district: '',
+                    address: '',
+                    assigned_employee_id: '',
+                    source: 'manual',
+                    is_manual: true,
+                    budget: '',
+                    currency: 'uzs',
+                    comment: ''
+                };
                 router.reload({ preserveScroll: true });
             })
             .catch(error => {
@@ -8260,19 +8311,11 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
                         
-                        <!-- Qator 2: Passport, Gender, Birth Date -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Qator 2: Passport, Birth Date -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport seriyasi</label>
                                 <input v-model="newLeadForm.passport_series" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none uppercase" placeholder="Pasport seriyasi">
-                            </div>
-                            <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Jinsini tanlang</label>
-                                <select v-model="newLeadForm.gender" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
-                                    <option value="">Jinsini tanlang</option>
-                                    <option value="Erkak">Erkak</option>
-                                    <option value="Ayol">Ayol</option>
-                                </select>
                             </div>
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tug'ilgan sanasi</label>
@@ -8284,16 +8327,16 @@ const ledgerReportData = computed(() => {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Viloyat</label>
-                                <select v-model="newLeadForm.region" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                                <select v-model="newLeadForm.region" @change="newLeadForm.district = ''" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
                                     <option value="">Viloyatni tanlang</option>
-                                    <option v-for="r in regionsData" :key="r.name" :value="r.name">{{ r.name }}</option>
+                                    <option v-for="(regionObj, regionKey) in regionsData" :key="regionKey" :value="regionObj.name">{{ regionObj.name }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tuman / Shahar</label>
                                 <select v-model="newLeadForm.district" :disabled="!newLeadForm.region" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none disabled:bg-gray-100 disabled:text-gray-400">
                                     <option value="">Tuman / Shaharni tanlang</option>
-                                    <option v-for="d in leadAvailableDistricts" :key="d" :value="d">{{ d }}</option>
+                                    <option v-for="d in leadAvailableDistricts" :key="d.id" :value="d.name">{{ d.name }}</option>
                                 </select>
                             </div>
                             <div>
@@ -8308,7 +8351,7 @@ const ledgerReportData = computed(() => {
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tashkilot xodimi</label>
                                 <select v-model="newLeadForm.assigned_employee_id" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
                                     <option value="">Xodimni tanlang</option>
-                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.first_name }} {{ user.last_name }}</option>
+                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                                 </select>
                             </div>
                             <div>

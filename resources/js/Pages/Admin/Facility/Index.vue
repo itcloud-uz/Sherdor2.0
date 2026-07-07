@@ -3954,7 +3954,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <!-- Right: Unit Tafsilot / Calculator Panel -->
                         <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between h-[calc(100vh-140px)] sticky top-28 overflow-hidden min-h-[480px]">
                             <!-- PANEL 1: Details (Tafsilot) -->
-                            <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between overflow-hidden h-full">
+                            <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between overflow-hidden">
                                 <div class="flex justify-between items-center mb-4 shrink-0">
                                     <h3 class="text-2xl font-bold font-sans text-gray-800">Tafsilot</h3>
                                     <button @click="selectedUnit = null" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
@@ -4032,7 +4032,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
                             </div>
                             <!-- PANEL 2: Calculator (Kalkulyator) -->
-                            <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between overflow-hidden h-full">
+                            <div v-else-if="activeRightPanel === 'calculator'" class="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
                                 <div class="flex items-center gap-3 mb-6 shrink-0">
                                     <button @click="activeRightPanel = 'details'" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
                                         ✕
@@ -4157,7 +4157,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
 
                             <!-- PANEL 3: Sell (Sotish) -->
-                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="flex-1 flex flex-col justify-between overflow-hidden h-full">
+                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="flex-1 flex flex-col justify-between overflow-hidden">
                                 <!-- Stepper Progress Header -->
                                 <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4 shrink-0">
                                         <div class="flex items-center gap-2">
@@ -4578,7 +4578,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </form>
 
                             <!-- PANEL 4: Edit Unit (Tahrirlash) -->
-                            <form v-else-if="activeRightPanel === 'edit_unit'" @submit.prevent="submitUnit" class="flex-1 flex flex-col justify-between overflow-hidden h-full">
+                            <form v-else-if="activeRightPanel === 'edit_unit'" @submit.prevent="submitUnit" class="flex-1 flex flex-col justify-between overflow-hidden">
                                 <div class="flex items-center gap-3 mb-6 shrink-0">
                                     <button type="button" @click="cancelEditUnit" class="text-gray-400 hover:text-gray-600 transition-colors text-3xl font-light">
                                         ✕

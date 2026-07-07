@@ -4583,7 +4583,6 @@ const ledgerReportData = computed(() => {
                     </table>
                 </div>
             </div>
-            </div>
             
             <!-- If client is selected, show detail view -->
             <div v-else class="space-y-6">
@@ -5310,6 +5309,7 @@ const ledgerReportData = computed(() => {
                     <p class="text-sm text-gray-500 font-medium">Mijozning shartnomalari topilmadi.</p>
                 </div>
             </div>
+        </div>
         </div>
 
 

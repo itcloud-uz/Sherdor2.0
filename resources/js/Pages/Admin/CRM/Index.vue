@@ -122,6 +122,25 @@ onMounted(() => {
 });
 const isEditingClient = ref(false);
 const editingClientId = ref(null);
+
+const newLeadForm = ref({
+    full_name: '',
+    phone: '',
+    phone_2: '',
+    passport_series: '',
+    gender: '',
+    birth_date: '',
+    region: '',
+    district: '',
+    address: '',
+    assigned_employee_id: '',
+    source: 'manual',
+    is_manual: true,
+    budget: '',
+    currency: 'uzs',
+    comment: ''
+});
+
 const clientForm = ref({
     first_name: '',
     last_name: '',
@@ -447,23 +466,6 @@ function onRegionChange() {
 function onDistrictChange() {
     clientForm.value.address = '';
 }
-const newLeadForm = ref({
-    full_name: '',
-    phone: '',
-    phone_2: '',
-    passport_series: '',
-    gender: '',
-    birth_date: '',
-    region: '',
-    district: '',
-    address: '',
-    assigned_employee_id: '',
-    source: 'manual',
-    is_manual: true,
-    budget: '',
-    currency: 'uzs',
-    comment: ''
-});
 const isEditingLead = ref(false);
 const editingLeadId = ref(null);
 

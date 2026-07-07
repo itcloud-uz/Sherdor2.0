@@ -4019,14 +4019,16 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
 
                                 <!-- Actions Buttons -->
-                                <div class="flex gap-2 justify-between mt-6 shrink-0 pt-4 border-t border-gray-100 bg-white">
-                                    <button @click="activeRightPanel = 'calculator'" class="flex-1 px-3 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-xs shadow-sm transition-all text-center whitespace-nowrap">
-                                        Hisoblash
-                                    </button>
-                                    <button v-if="selectedUnit.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="flex-1 px-3 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-xs shadow-sm transition-all text-center whitespace-nowrap">
-                                        Sotish
-                                    </button>
-                                    <button @click="openEditUnit(selectedUnit)" class="flex-1 px-3 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-full text-xs shadow-sm transition-all text-center whitespace-nowrap">
+                                <div class="flex flex-col gap-2 mt-6 shrink-0 pt-4 border-t border-gray-100 bg-white">
+                                    <div class="flex gap-2">
+                                        <button @click="activeRightPanel = 'calculator'" class="flex-1 px-4 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-xl text-xs shadow-sm transition-all text-center whitespace-nowrap">
+                                            Hisoblash
+                                        </button>
+                                        <button v-if="selectedUnit.status !== 'sold'" @click="openSellUnit(selectedUnit)" class="flex-1 px-4 py-2.5 bg-[#f59e0b] hover:bg-amber-600 text-white font-bold font-sans rounded-xl text-xs shadow-sm transition-all text-center whitespace-nowrap">
+                                            Sotish
+                                        </button>
+                                    </div>
+                                    <button @click="openEditUnit(selectedUnit)" class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold font-sans rounded-xl text-xs shadow-sm transition-all text-center whitespace-nowrap">
                                         Tahrirlash
                                     </button>
                                 </div>

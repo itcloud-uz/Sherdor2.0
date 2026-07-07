@@ -39,6 +39,7 @@ onUnmounted(() => {
 
 <template>
     <div
+        v-if="isVisible"
         class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none transition-all duration-300"
         :class="isVisible ? 'bg-slate-900/10 backdrop-blur-[1px]' : 'bg-transparent opacity-0 pointer-events-none'"
     >

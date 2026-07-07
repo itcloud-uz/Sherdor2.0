@@ -3952,7 +3952,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
 
                         <!-- Right: Unit Tafsilot / Calculator Panel -->
-                        <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between h-[calc(100vh-140px)] sticky top-28 overflow-hidden min-h-[480px]">
+                        <div v-if="selectedUnit" class="lg:col-span-1 bg-white border border-gray-200 shadow-sm rounded-2xl p-6 relative flex flex-col justify-between h-[calc(100vh-140px)] sticky top-28 overflow-hidden min-h-[480px] self-start">
                             <!-- PANEL 1: Details (Tafsilot) -->
                             <div v-if="activeRightPanel === 'details'" class="space-y-6 flex-1 flex flex-col justify-between overflow-hidden">
                                 <div class="flex justify-between items-center mb-4 shrink-0">

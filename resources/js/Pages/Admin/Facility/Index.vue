@@ -3962,58 +3962,59 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </button>
                                 </div>
 
-                                <div class="flex-1 overflow-y-auto pr-1 space-y-6 my-2">
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-5 my-2 custom-scrollbar">
                                     <!-- Blueprint / Layout Image -->
-                                    <div class="h-60 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-2xl p-3 mb-6 relative group overflow-hidden">
+                                    <div class="h-40 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-2xl p-2 mb-4 relative group overflow-hidden">
                                         <img :src="selectedUnitDisplayImage" 
-                                             class="h-full max-w-full object-contain cursor-pointer transition-all duration-500 group-hover:scale-102"
+                                             class="h-full max-w-full object-contain cursor-pointer transition-all duration-500 group-hover:scale-105"
                                              @click="openBlueprintFullscreenForUnit" />
                                         
                                         <!-- Magnifying Glass Icon Overlay -->
-                                        <div class="absolute top-3 right-3 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100 dark:border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-sm">
+                                        <div class="absolute top-2 right-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100 dark:border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-sm">
                                             <svg class="w-4 h-4 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                             </svg>
                                         </div>
                                     </div>
 
-                                    <h4 class="text-[#a8a29e] text-xl font-medium mb-6 font-sans">
+                                    <h4 class="text-[#f59e0b] text-lg font-bold mb-4 font-sans border-b border-gray-100 pb-2">
                                         {{ selectedUnit.type === 'commercial' ? "Do'kon haqida ma'lumot" : "Uy haqida ma'lumot" }}
                                     </h4>
-                                    <div class="space-y-4 text-base font-sans text-gray-700">
-                                        <div>
-                                            <span class="text-gray-500">{{ selectedUnit.type === 'commercial' ? "Do'kon raqami:" : "Xonadon:" }}</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ (selectedUnit.type === 'commercial' && /^\d+$/.test(String(selectedUnit.unit_number).trim()) ? 'D-' : '') + selectedUnit.unit_number }}</strong>
+                                    
+                                    <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px] font-sans text-gray-700">
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">{{ selectedUnit.type === 'commercial' ? "Do'kon raqami:" : "Xonadon:" }}</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ (selectedUnit.type === 'commercial' && /^\d+$/.test(String(selectedUnit.unit_number).trim()) ? 'D-' : '') + selectedUnit.unit_number }}</strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Podezd:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.podyezd }}-padezd</strong>
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Podezd:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ selectedUnit.podyezd }}-padezd</strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Qavat:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedFloor?.floor_number }}</strong>
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Qavat:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ selectedFloor?.floor_number }}</strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Tafsilot:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.orientation || '' }}</strong>
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Xonalar soni:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ selectedUnit.rooms_count || 1 }}</strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Xonalar soni:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.rooms_count || 1 }}</strong>
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Maydoni:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ selectedUnit.area_sqm }} m²</strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Maydoni:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ selectedUnit.area_sqm }} m²</strong>
-                                        </div>
-                                        <div>
-                                            <span class="text-gray-500">Balkon:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">
-                                                {{ selectedUnit.has_balcony ? 'Balkon bor' : 'Balkon yo\'q' }}
+                                        <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Balkon:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">
+                                                {{ selectedUnit.has_balcony ? 'Bor' : 'Yo\'q' }}
                                             </strong>
                                         </div>
-                                        <div>
-                                            <span class="text-gray-500">Narx:</span>
-                                            <strong class="text-gray-900 font-bold ml-1">{{ formatSoM(selectedUnit.price) }}</strong>
+                                        <div class="col-span-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                            <span class="text-gray-500 block text-[10px] uppercase mb-0.5">Tafsilot:</span>
+                                            <strong class="text-gray-900 font-bold text-sm">{{ selectedUnit.orientation || 'Kiritilmagan' }}</strong>
+                                        </div>
+                                        <div class="col-span-2 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+                                            <span class="text-emerald-600 block text-[10px] uppercase mb-0.5">Narx:</span>
+                                            <strong class="text-emerald-700 font-bold text-[15px]">{{ formatSoM(selectedUnit.price) }}</strong>
                                         </div>
                                     </div>
                                 </div>

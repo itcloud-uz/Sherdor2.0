@@ -37,16 +37,17 @@ class Client extends Model
 
     public function getPhoneAttribute($value)
     {
-        $value = str_replace(', +998', '', $value ?? '');
+        $value = preg_replace('/[,\\s]*\\+998\\s*$/', '', $value ?? '');
         return trim($value, ', ');
     }
 
     public function getPhone2Attribute($value)
     {
-        if (trim($value) === '+998' || trim($value) === '') {
+        $val = trim($value ?? '');
+        if ($val === '+998' || $val === '') {
             return null;
         }
-        return trim($value);
+        return $val;
     }
 
     public function getPassportSeriesAttribute()

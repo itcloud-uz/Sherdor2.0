@@ -63,6 +63,19 @@ const formatSoM = (val) => {
     return new Intl.NumberFormat('uz-UZ').format(val) + ' UZS';
 };
 
+// Filters
+const searchQuery = ref('');
+const filterStatus = ref('');
+const filterRooms = ref('');
+
+const matchesFilter = (unit) => {
+    if (searchQuery.value && !unit.unit_number.toLowerCase().includes(searchQuery.value.toLowerCase())) return false;
+    if (filterStatus.value && unit.status !== filterStatus.value) return false;
+    if (filterRooms.value && unit.rooms_count != filterRooms.value) return false;
+    return true;
+};
+
+
 // Hover tooltip logic
 const hoveredUnit = ref(null);
 const mouseX = ref(0);
@@ -87,17 +100,16 @@ const onUnitLeave = () => {
         </template>
 
         <div class="h-full flex flex-col gap-6">
-            <!-- Buildings Tabs -->
-            <div class="flex items-center gap-4 border-b border-gray-200 pb-2 overflow-x-auto">
-                <button
-                    v-for="building in buildings"
-                    :key="building.id"
-                    @click="selectBuilding(building.id)"
-                    class="px-4 py-2 font-bold transition-colors whitespace-nowrap"
-                    :class="selectedBuildingId === building.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                >
-                    {{ building.name }}
-                </button>
+            <!-- Buildings Tabs & Filters -->
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <label class="text-sm font-bold text-gray-700 whitespace-nowrap">Bino (Blok) tanlang:</label>
+                    <select v-model="selectedBuildingId" class="border-gray-200 rounded-lg text-sm font-bold text-gray-800 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64">
+                        <option v-for="building in buildings" :key="building.id" :value="building.id">
+                            {{ building.name }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
             <div v-if="selectedBuilding" class="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -187,6 +199,39 @@ const onUnitLeave = () => {
                                 </div>
                             </div>
 
+                            <!-- Filters Area -->
+                            <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="flex-1 min-w-[200px]">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Qidiruv</label>
+                                    <input type="text" v-model="searchQuery" placeholder="Xonadon raqami..." class="w-full border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="w-48">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Holati</label>
+                                    <select v-model="filterStatus" class="w-full border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Barchasi</option>
+                                        <option value="available">Sotuvda</option>
+                                        <option value="sold">Sotilgan</option>
+                                        <option value="booked">Bron qilingan</option>
+                                    </select>
+                                </div>
+                                <div class="w-48">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Xonalar soni</label>
+                                    <select v-model="filterRooms" class="w-full border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Barchasi</option>
+                                        <option value="1">1 xona</option>
+                                        <option value="2">2 xona</option>
+                                        <option value="3">3 xona</option>
+                                        <option value="4">4 xona</option>
+                                        <option value="5">5+ xona</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-end">
+                                    <button @click="searchQuery = ''; filterStatus = ''; filterRooms = ''" class="px-4 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold text-sm rounded-lg transition-colors">
+                                        Tozalash
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="flex-1 overflow-auto bg-gray-50 border border-gray-200 rounded-2xl p-6">
                                 <div v-if="selectedBuilding.floors?.length || selectedBuilding.podezes?.length" class="flex flex-row flex-wrap gap-8 w-full p-1">
                                     <div v-for="p in podyezdsToShow" :key="'podyezd-'+p.id" class="flex flex-col flex-1 min-w-[320px] pb-4">
@@ -204,7 +249,11 @@ const onUnitLeave = () => {
                                                 <div class="flex gap-2 items-center flex-wrap flex-1">
                                                     <div v-for="unit in getUnitsByFloorAndPodyezd(floor, p)" :key="'unit-'+unit.id"
                                                          class="w-12 h-12 flex items-center justify-center cursor-pointer rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1"
-                                                         :class="[getUnitColor(unit), selectedUnit?.id === unit.id ? 'ring-4 ring-blue-500 ring-offset-2 scale-110 z-10' : 'hover:scale-105']"
+                                                         :class="[
+                                                            getUnitColor(unit), 
+                                                            selectedUnit?.id === unit.id ? 'ring-4 ring-blue-500 ring-offset-2 scale-110 z-10' : 'hover:scale-105',
+                                                            !matchesFilter(unit) ? 'opacity-20 grayscale pointer-events-none' : ''
+                                                         ]"
                                                          @mousemove="(e) => onUnitHover(unit, e)"
                                                          @mouseleave="onUnitLeave"
                                                          @click="selectedUnit = unit">

@@ -450,6 +450,11 @@ class CrmController extends Controller
         }
         $lead->save();
 
+        if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
+            $this->convertLeadToClient($lead);
+            return redirect()->back()->with('message', 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi.');
+        }
+
         return redirect()->back()->with('message', 'Status yangilandi.');
     }
 

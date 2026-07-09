@@ -59,6 +59,41 @@ class LeadController extends Controller
                 'user_id' => $validated['user_id'] ?? null,
             ]);
 
+            // Auto-convert to Client if full info is provided
+            if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
+                $names = explode(' ', trim($lead->full_name));
+                $lastName = $names[0] ?? '';
+                $firstName = $names[1] ?? '';
+                $middleName = $names[2] ?? '';
+
+                if (empty($firstName)) {
+                    $firstName = $lastName;
+                    $lastName = '';
+                }
+
+                $client = \App\Models\Client::create([
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'middle_name' => $middleName,
+                    'phone' => $lead->phone,
+                    'phone_2' => $lead->phone_2,
+                    'passport_number' => $lead->passport_series,
+                    'region' => $lead->region,
+                    'district' => $lead->district,
+                    'address' => $lead->address,
+                    'source' => $lead->source,
+                ]);
+
+                $lead->delete();
+
+                // Because frontend expects a success message and we might not need the lead object anymore,
+                // we can just return a success indicating it was auto-converted.
+                return response()->json([
+                    'message' => 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi!',
+                    'client' => $client
+                ], 201);
+            }
+
             // Send Telegram Notification
             $settings = \App\Models\SystemSetting::first();
             if ($settings && $settings->telegram_lead_bot_token && $settings->telegram_lead_chat_id) {

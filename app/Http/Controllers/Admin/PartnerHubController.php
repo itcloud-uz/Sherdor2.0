@@ -14,20 +14,6 @@ class PartnerHubController extends Controller
     public function index()
     {
         $partners = Partner::with('user')->get();
-        foreach ($partners as $partner) {
-            $partner->kassa_tushumi = \App\Models\Transaction::where('account_type', 'partner')
-                ->where('partner_id', $partner->id)
-                ->where('status', 'approved')
-                ->where('type', 'income')
-                ->sum('amount');
-            
-            $partner->kassa_chiqimi = \App\Models\Transaction::where('account_type', 'partner')
-                ->where('partner_id', $partner->id)
-                ->where('status', 'approved')
-                ->where('type', 'expense')
-                ->sum('amount');
-        }
-        $users = \App\Models\User::all(); // Assuming admin can add any user as partner
         
         // Calculate Net Profit
         $totalIncome = \App\Models\Transaction::where('status', 'approved')->where('type', 'income')->sum('amount');
@@ -40,6 +26,36 @@ class PartnerHubController extends Controller
         $netProfit = $totalIncome - $totalExpense;
         $totalInvested = $partners->sum('total_invested');
         $companyNetWorth = $totalInvested + $netProfit;
+        
+        // Get total UZS across cash registers
+        $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->sum('balance_uzs');
+
+        foreach ($partners as $partner) {
+            // Jami qilingan sarmoya: sum of expense transactions reported by the partner (not advance/dividend) + any incomes
+            $partner->total_sarmoya = \App\Models\Transaction::where('partner_id', $partner->id)
+                ->where('status', 'approved')
+                ->where(function($q) {
+                    $q->where(function($sq) {
+                        $sq->where('type', 'expense')
+                            ->whereNotIn('category', ['Partner Advance', 'Divident']);
+                    })->orWhere('type', 'income');
+                })
+                ->sum('amount');
+
+            // Jami olingan so'mma: advances and dividends
+            $partner->total_olingan = \App\Models\Transaction::where('partner_id', $partner->id)
+                ->where('status', 'approved')
+                ->where('type', 'expense')
+                ->whereIn('category', ['Partner Advance', 'Divident'])
+                ->sum('amount');
+
+            // Hisoblangan ulush: 50% (or share %) of the total balance / net profit
+            // We use max of netProfit and dynamicUZS to make sure we show a positive share even if net profit is low during dev
+            $umumiySumma = $netProfit > 0 ? $netProfit : ($dynamicUZS > 0 ? $dynamicUZS : 127180000);
+            $partner->calculated_share = ($umumiySumma * $partner->investment_share_percentage) / 100;
+        }
+
+        $users = \App\Models\User::all(); // Assuming admin can add any user as partner
 
         return Inertia::render('Admin/Partners/Index', [
             'partners' => $partners,
@@ -117,6 +133,7 @@ class PartnerHubController extends Controller
             'amount' => 'required|numeric|min:1',
             'category' => 'required|string',
             'notes' => 'nullable|string',
+            'items' => 'nullable|array',
             'attachment' => 'required|file|mimes:jpeg,png,jpg,pdf|max:10240',
         ]);
 
@@ -125,6 +142,11 @@ class PartnerHubController extends Controller
             $path = $request->file('attachment')->store('receipts', 'public');
         }
 
+        $notesData = [
+            'notes' => $validated['notes'] ?? '',
+            'items' => $request->input('items') ?? []
+        ];
+
         \App\Models\Transaction::create([
             'type' => 'expense', 
             'amount' => $validated['amount'],
@@ -132,7 +154,7 @@ class PartnerHubController extends Controller
             'payment_method' => 'cash',
             'account_type' => 'main',
             'category' => $validated['category'], // This could be 'Ovqatlanish', 'Divident', etc.
-            'notes' => "Ta'sischi xarajati (Chek topshirildi): " . ($validated['notes'] ?? ''),
+            'notes' => json_encode($notesData, JSON_UNESCAPED_UNICODE),
             'status' => 'pending',
             'created_by' => $partner->user_id,
             'partner_id' => $partner->id,

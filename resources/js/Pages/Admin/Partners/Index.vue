@@ -122,13 +122,34 @@ const expenseForm = useForm({
     amount: '',
     category: 'Boshqa xarajatlar',
     notes: '',
+    items: [],
     attachment: null
 });
+
+const expenseItems = ref([
+    { name: '', quantity: 1, price: 0, total: 0 }
+]);
+
+function addItem() {
+    expenseItems.value.push({ name: '', quantity: 1, price: 0, total: 0 });
+}
+
+function removeItem(index) {
+    if (expenseItems.value.length > 1) {
+        expenseItems.value.splice(index, 1);
+    }
+}
+
+function updateItemTotal(item) {
+    item.total = (Number(item.quantity) || 0) * (Number(item.price) || 0);
+    expenseForm.amount = expenseItems.value.reduce((sum, i) => sum + i.total, 0);
+}
 
 function openExpenseModal(partner) {
     selectedPartner.value = partner;
     expenseForm.reset();
     expenseForm.category = 'Boshqa xarajatlar';
+    expenseItems.value = [{ name: '', quantity: 1, price: 0, total: 0 }];
     showExpenseModal.value = true;
 }
 
@@ -138,7 +159,7 @@ function handleFileUpload(event) {
 
 function submitExpense() {
     isProcessing.value = true;
-    // We use forceFormData to support file uploads in Inertia
+    expenseForm.items = expenseItems.value;
     expenseForm.post(route('admin.partners.expense', selectedPartner.value.id), {
         forceFormData: true,
         onSuccess: () => {
@@ -156,6 +177,8 @@ const analyticsLoading = ref(false);
 
 const ledgerDateFrom = ref('');
 const ledgerDateTo = ref('');
+const activeLedgerTab = ref('expenses'); // 'expenses', 'advances', 'analytics'
+const searchQuery = ref('');
 
 async function fetchLedger() {
     if (!selectedPartner.value) return;
@@ -175,12 +198,168 @@ async function fetchLedger() {
     }
 }
 
-async function openAnalytics(partner) {
+async function openAnalytics(partner, defaultTab = 'expenses') {
     selectedPartner.value = partner;
+    activeLedgerTab.value = defaultTab;
+    searchQuery.value = '';
     showAnalyticsModal.value = true;
     ledgerDateFrom.value = '';
     ledgerDateTo.value = '';
     await fetchLedger();
+}
+
+const expandedExpenses = computed(() => {
+    let list = [];
+    let idx = 1;
+    
+    // Filter to get sarmoyalar: expense transactions (excluding advances and dividends) plus any incomes
+    const sarmoyalar = transactions.value.filter(t => {
+        const catName = t.category || '';
+        return t.type === 'income' || (t.type === 'expense' && catName !== 'Partner Advance' && catName !== 'Divident');
+    });
+
+    sarmoyalar.forEach(t => {
+        let parsed = null;
+        try {
+            if (t.notes && (t.notes.startsWith('{') || t.notes.startsWith('['))) {
+                parsed = JSON.parse(t.notes);
+            }
+        } catch (e) {}
+
+        if (parsed && parsed.items && parsed.items.length > 0) {
+            parsed.items.forEach(item => {
+                list.push({
+                    id: t.id,
+                    idx: idx++,
+                    date: t.created_at,
+                    tovar_nomi: item.name || item.tovar_nomi || 'Nomalum',
+                    soni: item.quantity || item.soni || 1,
+                    narxi: item.price || item.narxi || 0,
+                    amount: item.total || item.amount || (item.quantity * item.price) || 0,
+                    notes: parsed.notes || '',
+                    status: t.status,
+                    attachment_path: t.attachment_path
+                });
+            });
+        } else {
+            list.push({
+                id: t.id,
+                idx: idx++,
+                date: t.created_at,
+                tovar_nomi: t.category || 'Sarmoya',
+                soni: 1,
+                narxi: t.amount,
+                amount: t.amount,
+                notes: t.notes || '',
+                status: t.status,
+                attachment_path: t.attachment_path
+            });
+        }
+    });
+
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        list = list.filter(item => 
+            item.tovar_nomi.toLowerCase().includes(query) ||
+            (item.notes && item.notes.toLowerCase().includes(query))
+        );
+    }
+    return list;
+});
+
+const expandedAdvances = computed(() => {
+    let list = [];
+    let idx = 1;
+    
+    // Filter to get olingan pullar: Partner Advance and Divident
+    const advances = transactions.value.filter(t => {
+        const catName = t.category || '';
+        return t.type === 'expense' && (catName === 'Partner Advance' || catName === 'Divident');
+    });
+
+    advances.forEach(t => {
+        let parsed = null;
+        try {
+            if (t.notes && (t.notes.startsWith('{') || t.notes.startsWith('['))) {
+                parsed = JSON.parse(t.notes);
+            }
+        } catch (e) {}
+
+        if (parsed && parsed.items && parsed.items.length > 0) {
+            parsed.items.forEach(item => {
+                list.push({
+                    id: t.id,
+                    idx: idx++,
+                    date: t.created_at,
+                    tovar_nomi: item.name || item.tovar_nomi || 'Mablag\' olish',
+                    soni: item.quantity || item.soni || 1,
+                    narxi: item.price || item.narxi || 0,
+                    amount: item.total || item.amount || (item.quantity * item.price) || 0,
+                    notes: parsed.notes || '',
+                    status: t.status,
+                    attachment_path: t.attachment_path
+                });
+            });
+        } else {
+            list.push({
+                id: t.id,
+                idx: idx++,
+                date: t.created_at,
+                tovar_nomi: t.category === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)',
+                soni: 1,
+                narxi: t.amount,
+                amount: t.amount,
+                notes: t.notes || '',
+                status: t.status,
+                attachment_path: t.attachment_path
+            });
+        }
+    });
+
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        list = list.filter(item => 
+            item.tovar_nomi.toLowerCase().includes(query) ||
+            (item.notes && item.notes.toLowerCase().includes(query))
+        );
+    }
+    return list;
+});
+
+function exportToExcel(type) {
+    const list = type === 'expenses' ? expandedExpenses.value : expandedAdvances.value;
+    if (list.length === 0) return;
+
+    const title = type === 'expenses' 
+        ? `${selectedPartner.value?.user?.name} tomonidan qilingan xarajatlar` 
+        : `${selectedPartner.value?.user?.name} tomonidan olingan pul mablag'lari`;
+
+    const headers = ['No', 'Sana', 'Tovar nomi / Maqsad', 'Soni', 'Narxi (so\'m)', 'Jami so\'mma (so\'m)', 'Izoh', 'Holati'];
+    
+    const rows = list.map(item => [
+        item.idx,
+        formatDate(item.date).split(' ')[0],
+        item.tovar_nomi,
+        item.soni,
+        item.narxi,
+        item.amount,
+        `"${(item.notes || '').replace(/"/g, '""')}"`,
+        item.status === 'approved' ? 'Tasdiqlangan' : item.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan'
+    ]);
+
+    const totalSum = list.reduce((sum, item) => sum + Number(item.amount), 0);
+    rows.push(['', '', 'JAMI', '', '', totalSum, '', '']);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
+        [title, '', headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${title.replace(/\s+/g, '_')}_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function exportLedgerCSV() {
@@ -438,75 +617,65 @@ function formatDate(dateString) {
             </div>
 
             <!-- Partners View -->
-            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-[fadeIn_0.4s_ease-out]">
-                <div v-for="partner in partners" :key="partner.id" class="relative overflow-hidden bg-white border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 group rounded-2xl p-6">
-                    <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-50/50 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-500"></div>
-                    
-                    <div class="absolute top-4 right-4 text-right flex flex-col items-end gap-2 z-10">
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
-                            <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Tahrirlash">
+            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-[fadeIn_0.4s_ease-out]">
+                <div v-for="partner in partners" :key="partner.id" class="bg-white border border-slate-300 shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <!-- Partner Yellow Header -->
+                    <div class="bg-[#fce205] text-slate-900 border-b-2 border-slate-800 font-bold px-6 py-4 text-center uppercase tracking-widest text-base flex justify-between items-center">
+                        <span class="font-display font-black text-lg">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
+                        <div class="flex gap-2">
+                            <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-white/80 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Tahrirlash">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </button>
-                            <button @click="deletePartner(partner.id)" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="O'chirish">
+                            <button @click="deletePartner(partner.id)" class="p-1.5 bg-white/80 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="O'chirish">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                         </div>
-                        <div class="mt-2">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ulush</p>
-                            <p class="text-2xl font-display font-black text-blue-600 tracking-tight">{{ Number(partner.investment_share_percentage) }}%</p>
+                    </div>
+
+                    <!-- Comparison Table Grid matching Image 1 -->
+                    <div class="grid grid-cols-3 border-b border-slate-300 text-center font-sans text-xs">
+                        <!-- Column 1 Header: Sarmoya -->
+                        <div class="bg-[#fbcfe8]/40 border-r border-slate-300 p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
+                            Jami qilingan sarmoya
+                        </div>
+                        <!-- Column 2 Header: Olingan -->
+                        <div class="bg-[#a7f3d0]/30 border-r border-slate-300 p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
+                            Jami olingan so'mma
+                        </div>
+                        <!-- Column 3 Header: Ulush -->
+                        <div class="bg-[#dbeafe] p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
+                            Hisoblangan ulush<br>{{ Number(partner.investment_share_percentage) }}%
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-4 mb-6 z-10 relative">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold font-display text-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-                            {{ partner.user?.name.charAt(0) || 'P' }}
+                    <div class="grid grid-cols-3 text-center font-mono text-sm">
+                        <!-- Column 1 Value: Sarmoya -->
+                        <div @click="openAnalytics(partner, 'expenses')" class="border-r border-slate-300 p-6 font-bold text-slate-900 bg-amber-50/10 hover:bg-amber-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
+                            <span class="text-base font-black text-slate-800">{{ formatCurrency(partner.total_sarmoya) }}</span>
+                            <span class="text-[9px] text-slate-400 mt-1 uppercase font-sans">Ko'rish uchun bosing</span>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-800 leading-tight mb-1">{{ partner.user?.name || $t('unknown') }}</h3>
-                            <p class="text-xs text-slate-500">{{ partner.user?.email }}</p>
+                        <!-- Column 2 Value: Olingan -->
+                        <div @click="openAnalytics(partner, 'advances')" class="border-r border-slate-300 p-6 font-bold text-slate-900 bg-emerald-50/10 hover:bg-emerald-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
+                            <span class="text-base font-black text-slate-800">{{ formatCurrency(partner.total_olingan) }}</span>
+                            <span class="text-[9px] text-slate-400 mt-1 uppercase font-sans">Ko'rish uchun bosing</span>
                         </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 pt-5 border-t border-slate-100">
-                        <div>
-                            <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
-                            <span class="text-[15px] font-medium text-slate-800">{{ formatCurrency(partner.total_invested) }}</span>
+                        <!-- Column 3 Value: Ulush -->
+                        <div @click="openAnalytics(partner, 'analytics')" class="p-6 font-bold text-blue-700 bg-blue-50/10 hover:bg-blue-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
+                            <span class="text-base font-black text-blue-700">{{ formatCurrency(partner.calculated_share) }}</span>
+                            <span class="text-[8px] text-blue-500 mt-1 uppercase font-sans font-semibold">Umumiy balansning {{ Number(partner.investment_share_percentage) }}%</span>
                         </div>
-                        <div class="text-right">
-                            <span class="block text-[10px] font-semibold text-rose-400 uppercase tracking-wider mb-1">Bo'ynidagi Qarz</span>
-                            <span class="text-[15px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">{{ formatCurrency(partner.accountable_balance) }}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 gap-2 mb-5">
-                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all group/stat" @click="openAnalytics(partner)">
-                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kassa Tushumi</span>
-                            <span class="text-[13px] font-bold text-slate-700 group-hover/stat:text-blue-600 transition-colors">{{ formatCurrency(partner.kassa_tushumi) }}</span>
-                        </div>
-                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm hover:border-rose-200 transition-all group/stat" @click="openAnalytics(partner)">
-                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kassa Chiqimi</span>
-                            <span class="text-[13px] font-bold text-slate-700 group-hover/stat:text-rose-600 transition-colors">{{ formatCurrency(partner.kassa_chiqimi) }}</span>
-                        </div>
-                        <div class="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-center cursor-pointer hover:bg-white hover:shadow-sm transition-all">
-                            <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Balans</span>
-                            <span class="text-[13px] font-bold text-slate-800">{{ formatCurrency(partner.accountable_balance) }}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/50 rounded-xl text-center">
-                        <span class="block text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider mb-1.5">Soffoydadan Olinishi Mumkin (Taxminiy)</span>
-                        <span class="text-xl font-display font-black text-emerald-600">{{ formatCurrency((netProfit * Number(partner.investment_share_percentage)) / 100) }} UZS</span>
                     </div>
 
-                    <div class="flex gap-3">
-                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 transition-all active:scale-95">
-                            Pul So'rash
+                    <!-- Footer Action Buttons -->
+                    <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex gap-4">
+                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                            💸 Pul So'rash
                         </button>
-                        <button @click="openExpenseModal(partner)" class="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95">
-                            Chek Yuklash
+                        <button @click="openExpenseModal(partner)" class="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                            📥 Chek Yuklash
                         </button>
-                        <button @click="openAnalytics(partner)" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
-                            Hisobot
+                        <button @click="openAnalytics(partner, 'analytics')" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                            📊 Analitika
                         </button>
                     </div>
                 </div>
@@ -685,18 +854,13 @@ function formatDate(dateString) {
         </Modal>
 
         <!-- Expense Modal -->
-        <Modal :show="showExpenseModal && selectedPartner !== null" @close="showExpenseModal = false" maxWidth="sm">
+        <Modal :show="showExpenseModal && selectedPartner !== null" @close="showExpenseModal = false" maxWidth="2xl">
             <div class="p-6">
                 <button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all shadow-sm z-50" @click="showExpenseModal = false">✖</button>
                 <h2 class="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-gray-200 pb-4 text-emerald-600 mt-2">Xarajatni Qabul Qilish (Chek)</h2>
                 <p class="text-xs font-mono text-gray-500 mb-4">Ushbu chek Moliya markazida tasdiqlangach hisobdorlik balansi qoldig'idan o'chiriladi.</p>
                 
                 <form @submit.prevent="submitExpense" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-gray-500 mb-1">Xarajat Summasi (UZS)</label>
-                        <input v-model="expenseForm.amount" type="number" min="1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg" required>
-                        <p v-if="expenseForm.errors?.amount" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.amount }}</p>
-                    </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Kategoriya</label>
                         <select v-model="expenseForm.category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
@@ -707,15 +871,54 @@ function formatDate(dateString) {
                             <option value="Boshqa xarajatlar">Boshqa xarajatlar</option>
                         </select>
                     </div>
+
+                    <!-- Dynamic Itemized Inputs -->
+                    <div class="border-t border-b border-gray-100 py-4 my-4 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-slate-700 text-xs">Tovar/Xizmatlar ro'yxati</span>
+                            <button type="button" @click="addItem" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded text-[10px] font-bold uppercase transition-all shadow-sm">
+                                + Tovar qo'shish
+                            </button>
+                        </div>
+
+                        <div v-for="(item, index) in expenseItems" :key="index" class="grid grid-cols-12 gap-2 items-center border border-slate-100 p-2.5 rounded-lg bg-slate-50/50">
+                            <div class="col-span-5">
+                                <input v-model="item.name" type="text" placeholder="Tovar nomi (masalan: Shlang)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2" required>
+                            </div>
+                            <div class="col-span-2">
+                                <input v-model="item.quantity" type="number" step="any" min="0.01" placeholder="Soni" @input="updateItemTotal(item)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2 text-center" required>
+                            </div>
+                            <div class="col-span-2">
+                                <input v-model="item.price" type="number" min="0" placeholder="Narxi" @input="updateItemTotal(item)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2 text-right" required>
+                            </div>
+                            <div class="col-span-2 text-right text-[10px] font-bold text-slate-800 font-mono">
+                                {{ formatCurrency(item.total) }}
+                            </div>
+                            <div class="col-span-1 text-center">
+                                <button type="button" @click="removeItem(index)" :disabled="expenseItems.length === 1" class="text-rose-500 hover:text-rose-700 disabled:opacity-30 text-base font-bold">
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-500 mb-1">Jami Xarajat Summasi (UZS)</label>
+                        <input :value="formatCurrency(expenseForm.amount)" type="text" class="bg-slate-100 border border-gray-300 text-slate-800 rounded-md shadow-sm w-full text-lg font-bold font-mono text-right" disabled>
+                        <p v-if="expenseForm.errors?.amount" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.amount }}</p>
+                    </div>
+
                     <div>
                         <label class="block text-gray-500 mb-1">Izoh (Nimaga ishlatildi?)</label>
                         <textarea v-model="expenseForm.notes" rows="2" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" placeholder="Batafsil ma'lumot..."></textarea>
                     </div>
+
                     <div>
                         <label class="block text-gray-500 mb-1">Chek Rasmi (Majburiy)</label>
                         <input type="file" @change="handleFileUpload" accept="image/*,.pdf" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-600 hover:file:bg-emerald-600 hover:file:text-black cursor-pointer" required>
                         <p v-if="expenseForm.errors?.attachment" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.attachment }}</p>
                     </div>
+
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showExpenseModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
                         <button type="submit" :disabled="isProcessing" class="px-4 py-2 bg-emerald-600 text-white rounded uppercase">Tasdiqqa Yuborish</button>
@@ -724,12 +927,12 @@ function formatDate(dateString) {
             </div>
         </Modal>
 
-        <Modal :show="showAnalyticsModal && selectedPartner !== null" @close="showAnalyticsModal = false" maxWidth="6xl">
+        <Modal :show="showAnalyticsModal && selectedPartner !== null" @close="showAnalyticsModal = false" maxWidth="7xl">
             <div class="p-6 flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
                     <div>
-                        <h2 class="text-2xl font-display font-bold uppercase tracking-widest">{{ selectedPartner.user?.name }} — Hisobot va Analitika</h2>
-                        <p class="text-[10px] font-mono text-gray-500 mt-1">Barcha avanslar va xarajatlarning batafsil auditi</p>
+                        <h2 class="text-2xl font-display font-bold uppercase tracking-widest text-slate-800">{{ selectedPartner.user?.name }} — Tafsilotli Hisobot</h2>
+                        <p class="text-[10px] font-mono text-gray-500 mt-1">Barcha sarmoyalar, avanslar va tahliliy hisobotlar</p>
                     </div>
                     <button @click="showAnalyticsModal = false" class="text-gray-900 hover:text-red-600 text-3xl leading-none">&times;</button>
                 </div>
@@ -739,67 +942,150 @@ function formatDate(dateString) {
                 </div>
 
                 <div v-else class="overflow-y-auto custom-scrollbar flex-1">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl">
-                            <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Xarajatlar Toifasi (Donut)</h3>
-                            <div v-if="pieChartSeries.length > 0">
-                                <VueApexCharts type="donut" height="250" :options="pieChartOptions" :series="pieChartSeries"></VueApexCharts>
-                            </div>
-                            <div v-else class="text-center text-xs font-mono text-gray-500 py-10">
-                                Hech qanday xarajat kiritilmagan
-                            </div>
+                    <!-- Mini Table summary matching Image 1 inside the modal -->
+                    <div class="grid grid-cols-3 border border-slate-300 rounded-xl overflow-hidden mb-6 text-center font-sans text-xs">
+                        <div class="border-r border-slate-300">
+                            <div class="bg-[#fbcfe8]/40 p-2 font-bold text-slate-700 uppercase tracking-wider">Jami qilingan sarmoya</div>
+                            <div class="p-3 font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_sarmoya) }} UZS</div>
                         </div>
-
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl lg:col-span-2">
-                            <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Oylik Sarf va Avans Tahlili</h3>
-                            <VueApexCharts type="bar" height="250" :options="barChartOptions" :series="barChartSeries"></VueApexCharts>
+                        <div class="border-r border-slate-300">
+                            <div class="bg-[#a7f3d0]/30 p-2 font-bold text-slate-700 uppercase tracking-wider">Jami olingan so'mma</div>
+                            <div class="p-3 font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_olingan) }} UZS</div>
+                        </div>
+                        <div>
+                            <div class="bg-[#dbeafe] p-2 font-bold text-slate-700 uppercase tracking-wider">Hisoblangan ulush</div>
+                            <div class="p-3 font-mono font-black text-blue-700 text-sm">{{ formatCurrency(selectedPartner.calculated_share) }} UZS</div>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-gray-200 shadow-sm rounded-xl border border-gray-200 rounded-xl overflow-hidden">
-                        <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <h3 class="text-sm font-mono text-gray-900 uppercase tracking-widest">To'liq Tranzaksiyalar Tarixi</h3>
+                    <!-- Tabs to switch between Expenses, Advances, and Charts -->
+                    <div class="flex gap-4 mb-6 border-b border-gray-100 pb-px">
+                        <button 
+                            @click="activeLedgerTab = 'expenses'"
+                            class="pb-3 px-2 text-xs font-mono font-bold tracking-widest transition-all relative"
+                            :class="activeLedgerTab === 'expenses' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                            💰 QILINGAN SARMOYALAR ({{ expandedExpenses.length }})
+                            <div v-if="activeLedgerTab === 'expenses'" class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 shadow-sm"></div>
+                        </button>
+                        <button 
+                            @click="activeLedgerTab = 'advances'"
+                            class="pb-3 px-2 text-xs font-mono font-bold tracking-widest transition-all relative"
+                            :class="activeLedgerTab === 'advances' ? 'text-emerald-600' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                            💸 OLINGAN PULLAR / AVANSLAR ({{ expandedAdvances.length }})
+                            <div v-if="activeLedgerTab === 'advances'" class="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 shadow-sm"></div>
+                        </button>
+                        <button 
+                            @click="activeLedgerTab = 'analytics'"
+                            class="pb-3 px-2 text-xs font-mono font-bold tracking-widest transition-all relative"
+                            :class="activeLedgerTab === 'analytics' ? 'text-amber-500' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                            📊 GRAFIK TAHLIL
+                            <div v-if="activeLedgerTab === 'analytics'" class="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 shadow-sm"></div>
+                        </button>
+                    </div>
+
+                    <!-- LEDGER TABLES -->
+                    <div v-if="activeLedgerTab !== 'analytics'" class="space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                            <div class="flex items-center gap-2 flex-1 max-w-md">
+                                <span class="text-gray-400">🔍</span>
+                                <input 
+                                    v-model="searchQuery" 
+                                    type="text" 
+                                    placeholder="Tovar nomi yoki izoh bo'yicha qidirish..." 
+                                    class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-full py-1.5"
+                                >
+                            </div>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <input type="date" v-model="ledgerDateFrom" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 [color-scheme:dark]">
-                                <span class="text-gray-500">-</span>
-                                <input type="date" v-model="ledgerDateTo" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32 [color-scheme:dark]">
-                                <button @click="fetchLedger" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-black rounded text-xs font-bold uppercase transition-colors">Filtr</button>
-                                <button @click="exportLedgerCSV" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-black rounded text-xs font-bold uppercase transition-colors flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                    Yuklab olish (CSV)
+                                <input type="date" v-model="ledgerDateFrom" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
+                                <span class="text-gray-400 font-bold">-</span>
+                                <input type="date" v-model="ledgerDateTo" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs w-32">
+                                <button @click="fetchLedger" class="px-4 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded text-xs font-mono font-bold uppercase transition-all shadow-sm">Filtr</button>
+                                <button @click="exportToExcel(activeLedgerTab)" class="px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded text-xs font-mono font-bold uppercase transition-all shadow-sm flex items-center gap-1.5">
+                                    📥 Excel Yuklash
                                 </button>
                             </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="block w-full overflow-x-auto whitespace-nowrap w-full text-left font-mono text-xs">
-                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
-                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <th class="p-3">Sana</th>
-                                        <th class="p-3">Tur</th>
-                                        <th class="p-3">Kategoriya</th>
-                                        <th class="p-3 text-right">Summa (so'm)</th>
-                                        <th class="p-3">Izoh</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="t in transactions" :key="t.id" class="border-b border-gray-100 hover: transition-colors bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <td class="p-3 text-gray-500 whitespace-nowrap">{{ formatDate(t.created_at) }}</td>
-                                        <td class="p-3">
-                                            <span :class="t.type === 'income' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'" class="px-2 py-0.5 rounded text-[10px] uppercase font-bold">
-                                                {{ t.type === 'income' ? 'Kirim' : 'Chiqim' }}
-                                            </span>
-                                        </td>
-                                        <td class="p-3 text-gray-900">{{ t.category || '-' }}</td>
-                                        <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
-                                            {{ t.type === 'income' ? '+' : '-' }}{{ formatCurrency(t.amount) }}
-                                        </td>
-                                        <td class="p-3 text-gray-500 max-w-xs truncate" :title="t.notes">{{ t.notes || '-' }}</td>
-                                    </tr>
-                                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors" v-if="transactions.length === 0">
-                                        <td colspan="5" class="p-6 text-center text-gray-500">Ma'lumot topilmadi.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left font-mono text-xs">
+                                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-xs border-b border-slate-200">
+                                        <tr>
+                                            <th class="p-3 border-r border-slate-200 text-center w-12">No</th>
+                                            <th class="p-3 border-r border-slate-200 text-center w-24">Sana</th>
+                                            <th class="p-3 border-r border-slate-200">Tovar nomi / Maqsad</th>
+                                            <th class="p-3 border-r border-slate-200 text-center w-20">Soni</th>
+                                            <th class="p-3 border-r border-slate-200 text-right w-32">Narxi (so'm)</th>
+                                            <th class="p-3 border-r border-slate-200 text-right w-36">Jami so'mma</th>
+                                            <th class="p-3 border-r border-slate-200">Izoh</th>
+                                            <th class="p-3 border-r border-slate-200 text-center w-24">Holati</th>
+                                            <th class="p-3 text-center w-16" v-if="activeLedgerTab === 'expenses'">Chek</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="item in (activeLedgerTab === 'expenses' ? expandedExpenses : expandedAdvances)" :key="item.id + '_' + item.idx" class="hover:bg-slate-50/60 transition-colors">
+                                            <td class="p-3 border-r border-slate-200 text-center text-slate-500 font-bold">{{ item.idx }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-center text-slate-600">{{ formatDate(item.date).split(' ')[0] }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-slate-900 font-sans font-semibold">{{ item.tovar_nomi }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-center font-bold text-slate-800">{{ item.soni }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-right text-slate-600">{{ formatCurrency(item.narxi) }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-right font-black text-slate-900">{{ formatCurrency(item.amount) }} UZS</td>
+                                            <td class="p-3 border-r border-slate-200 text-slate-500 font-sans max-w-xs truncate" :title="item.notes">{{ item.notes || '-' }}</td>
+                                            <td class="p-3 border-r border-slate-200 text-center">
+                                                <span 
+                                                    class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+                                                    :class="{
+                                                        'bg-emerald-50 text-emerald-600 border border-emerald-200': item.status === 'approved',
+                                                        'bg-amber-50 text-amber-600 border border-amber-200': item.status === 'pending',
+                                                        'bg-rose-50 text-rose-600 border border-rose-200': item.status === 'rejected',
+                                                    }"
+                                                >
+                                                    {{ item.status === 'approved' ? 'Tasdiqlangan' : item.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan' }}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-center" v-if="activeLedgerTab === 'expenses'">
+                                                <a v-if="item.attachment_path" :href="'/storage/' + item.attachment_path" target="_blank" class="text-blue-500 hover:text-blue-700 font-sans font-bold hover:underline">Chek</a>
+                                                <span v-else class="text-slate-300">-</span>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="(activeLedgerTab === 'expenses' ? expandedExpenses : expandedAdvances).length === 0">
+                                            <td :colspan="activeLedgerTab === 'expenses' ? 9 : 8" class="p-12 text-center text-slate-400 italic">Ma'lumot topilmadi.</td>
+                                        </tr>
+                                        <!-- JAMI (Total sum) row matching Image 2 -->
+                                        <tr class="bg-slate-50 font-bold border-t border-slate-300">
+                                            <td class="p-3 text-center border-r border-slate-200" colspan="2">JAMI</td>
+                                            <td class="p-3 border-r border-slate-200 text-slate-800" colspan="3">Barcha ro'yxat bo'yicha summa</td>
+                                            <td class="p-3 text-right text-base font-black text-slate-900 border-r border-slate-200">
+                                                {{ formatCurrency((activeLedgerTab === 'expenses' ? expandedExpenses : expandedAdvances).reduce((sum, item) => sum + Number(item.amount), 0)) }} UZS
+                                            </td>
+                                            <td class="p-3" :colspan="activeLedgerTab === 'expenses' ? 3 : 2"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALYTICS CHARTS TAB -->
+                    <div v-else class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl">
+                                <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Xarajatlar Toifasi (Donut)</h3>
+                                <div v-if="pieChartSeries.length > 0">
+                                    <VueApexCharts type="donut" height="250" :options="pieChartOptions" :series="pieChartSeries"></VueApexCharts>
+                                </div>
+                                <div v-else class="text-center text-xs font-mono text-gray-500 py-10">
+                                    Hech qanday xarajat kiritilmagan
+                                </div>
+                            </div>
+
+                            <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-gray-200 rounded-xl lg:col-span-2">
+                                <h3 class="text-sm font-mono text-gray-500 uppercase mb-4 text-center">Oylik Sarf va Avans Tahlili</h3>
+                                <VueApexCharts type="bar" height="250" :options="barChartOptions" :series="barChartSeries"></VueApexCharts>
+                            </div>
                         </div>
                     </div>
                 </div>

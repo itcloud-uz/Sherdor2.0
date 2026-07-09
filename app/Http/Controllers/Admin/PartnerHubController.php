@@ -89,8 +89,8 @@ class PartnerHubController extends Controller
                 ->whereIn('category', ['Partner Advance', 'Divident'])
                 ->sum('amount');
 
-            // Hisoblangan ulush: 50% (or share %) of the total balance / net profit
-            $umumiySumma = $netProfit > 0 ? $netProfit : ($dynamicUZS > 0 ? $dynamicUZS : 127180000);
+            // Hisoblangan ulush: 50% (or share %) of the total cash balance / net profit
+            $umumiySumma = $dynamicUZS > 0 ? $dynamicUZS : ($netProfit > 0 ? $netProfit : 0);
             $partner->calculated_share = ($umumiySumma * $partner->investment_share_percentage) / 100;
         }
 

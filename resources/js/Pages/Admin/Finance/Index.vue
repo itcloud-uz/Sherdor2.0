@@ -453,7 +453,7 @@ function exportReportToCsv() {
     const headers = ['Sana', 'Kategoriya', 'Kassa/Hisob', 'Kontragent', 'Turi', 'Summa (UZS)', 'Izoh'];
     const rows = reportFilteredTransactions.value.map(t => [
         new Date(t.transaction_date).toLocaleDateString(),
-        t.category?.name || 'Noma\'lum',
+        t.category_display || 'Noma\'lum',
         t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
         t.counterparty?.name || '-',
         t.type === 'income' ? 'Kirim' : 'Chiqim',
@@ -1015,7 +1015,7 @@ const filteredTelegramTransactions = computed(() => {
             (t.notes && t.notes.toLowerCase().includes(q)) ||
             (t.creator?.name && t.creator.name.toLowerCase().includes(q)) ||
             (t.cashRegister?.name && t.cashRegister.name.toLowerCase().includes(q)) ||
-            (t.category?.name && t.category.name.toLowerCase().includes(q)) ||
+            (t.category_display && t.category_display.toLowerCase().includes(q)) ||
             (t.amount && t.amount.toString().includes(q)) ||
             (t.status && t.status.toLowerCase().includes(q))
         );
@@ -1940,7 +1940,7 @@ watch(() => form.value.category_id, (newVal) => {
 });
 
 const pendingRefunds = computed(() => {
-    return (props.transactions || []).filter(t => t.category?.name === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
+    return (props.transactions || []).filter(t => t.category_display === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
 });
 
 function handleFileUpload(e) {
@@ -2483,7 +2483,7 @@ const categoriesSummary = computed(() => {
     const approvedTxns = props.transactions.filter(t => t.status === 'approved');
     const groups = {};
     approvedTxns.forEach(t => {
-        const catName = t.category?.name || 'Noma\'lum';
+        const catName = t.category_display || 'Noma\'lum';
         if (!groups[catName]) {
             groups[catName] = { name: catName, total_income: 0, total_expense: 0, transactions: [] };
         }
@@ -2914,13 +2914,13 @@ function deleteCategory(id) {
                                     <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
                                     <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
-                                    <td class="p-4 text-gray-700">{{ t.building?.name || t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                    <td class="p-4 text-gray-700">{{ t.building?.name || t.contract?.unit?.building?.name || '-' }}</td>
                                     <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
                                     </td>
                                     <td class="p-4">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                            {{ t.category_display || 'Mijoz to\'lovi' }}
                                         </span>
                                     </td>
                                     <td class="p-4 text-center">
@@ -3592,13 +3592,13 @@ function deleteCategory(id) {
                                         <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                         <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
                                         <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
-                                        <td class="p-4 text-gray-600">{{ t.building?.name || t.contract?.unit?.building?.name || 'Nuovo' }}</td>
+                                        <td class="p-4 text-gray-600">{{ t.building?.name || t.contract?.unit?.building?.name || '-' }}</td>
                                         <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                             {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
                                         </td>
                                         <td class="p-4">
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                                {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                                {{ t.category_display || 'Mijoz to\'lovi' }}
                                             </span>
                                         </td>
                                         <td class="p-4 text-center">
@@ -3676,7 +3676,7 @@ function deleteCategory(id) {
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
                                     <td class="p-4">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                            {{ t.category_display || 'Mijoz to\'lovi' }}
                                         </span>
                                     </td>
                                     <td class="p-4 text-gray-700 font-bold">#{{ t.id }}</td>
@@ -4421,7 +4421,7 @@ function deleteCategory(id) {
                                     <td class="p-3 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                            {{ t.category?.name || 'Kategoriyasiz' }}
+                                            {{ t.category_display || 'Kategoriyasiz' }}
                                         </span>
                                     </td>
                                     <td class="p-3 font-bold text-gray-900">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
@@ -4482,7 +4482,7 @@ function deleteCategory(id) {
                                     <td class="p-4 text-gray-750 font-bold">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
                                     <td class="p-4">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                            {{ t.category?.name || 'Telegram Bot' }}
+                                            {{ t.category_display || 'Telegram Bot' }}
                                         </span>
                                     </td>
                                     <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
@@ -4741,7 +4741,7 @@ function deleteCategory(id) {
                                     <td class="p-4 text-gray-750 font-bold">{{ t.cashRegister?.name || '-' }}</td>
                                     <td class="p-4">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
-                                            {{ t.category?.name || 'Mijoz to\'lovi' }}
+                                            {{ t.category_display || 'Mijoz to\'lovi' }}
                                         </span>
                                     </td>
                                     <td class="p-4 text-center">

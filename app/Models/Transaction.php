@@ -9,6 +9,25 @@ class Transaction extends Model
 {
     use SoftDeletes;
 
+    protected $appends = ['category_display'];
+
+    public function getCategoryDisplayAttribute()
+    {
+        if ($this->relationLoaded('category') && $this->getRelation('category')) {
+            return $this->getRelation('category')->name;
+        }
+
+        if (!empty($this->attributes['category_name'])) {
+            return $this->attributes['category_name'];
+        }
+
+        if (!empty($this->attributes['category'])) {
+            return $this->attributes['category'];
+        }
+
+        return null;
+    }
+
     protected $fillable = [
         'type', 'amount', 'currency', 'payment_method', 'status',
         'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes',

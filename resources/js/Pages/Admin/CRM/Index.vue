@@ -2012,7 +2012,7 @@ function getContractDownPaymentStats(contract) {
     contractTransactions.forEach(t => {
         if (t.status === 'approved' && t.type === 'income') {
             const isLinked = t.payment_schedule_id && dpScheduleIds.includes(t.payment_schedule_id);
-            const isInitial = t.category && (t.category.name.toLowerCase().includes('boshlang') || t.category.name.toLowerCase().includes('initial'));
+            const isInitial = t.category_display && (t.category_display.toLowerCase().includes('boshlang') || t.category_display.toLowerCase().includes('initial'));
             const isInitialNote = t.notes && (t.notes.toLowerCase().includes('boshlang') || t.notes.toLowerCase().includes('initial'));
             if (isLinked || ((isInitial || isInitialNote) && !payments.some(p => p.id === t.id))) {
                 payments.push({
@@ -2056,7 +2056,7 @@ function getContractPaymentRows(contract) {
         if (t.status === 'approved' && t.type === 'income') {
             // Determine type
             let pType = 'installment';
-            const catName = t.category?.name || '';
+            const catName = t.category_display || '';
             const notes = t.notes || '';
             if (
                 catName.toLowerCase().includes('boshlang') || 
@@ -2677,7 +2677,7 @@ function submitRefundSchedule() {
 const refundTransactions = computed(() => {
     if (!selectedContract.value || !selectedContract.value.transactions) return [];
     return selectedContract.value.transactions.filter(t => 
-        t.category && (t.category.name === 'Mijozga pulni qaytarish' || t.category.name === 'Mijozga to\'lov qilish')
+        t.category_display && (t.category_display === 'Mijozga pulni qaytarish' || t.category_display === 'Mijozga to\'lov qilish')
     );
 });
 
@@ -3705,7 +3705,7 @@ const ledgerReportData = computed(() => {
     
     const approvedTxns = (contract.transactions || []).filter(t => t.status === 'approved');
     const incomes = approvedTxns.filter(t => t.type === 'income').sort((a, b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
-    const refunds = approvedTxns.filter(t => t.type === 'expense' && t.category && (t.category.name.includes('qaytarish') || t.category.name.includes('to\'lov qilish'))).sort((a, b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
+    const refunds = approvedTxns.filter(t => t.type === 'expense' && t.category_display && (t.category_display.includes('qaytarish') || t.category_display.includes('to\'lov qilish'))).sort((a, b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
     
     const firstDueDate = schedules[0] ? new Date(schedules[0].due_date) : null;
     

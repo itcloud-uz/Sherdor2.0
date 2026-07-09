@@ -214,7 +214,7 @@ const expandedExpenses = computed(() => {
     
     // Filter to get sarmoyalar: expense transactions (excluding advances and dividends) plus any incomes
     const sarmoyalar = transactions.value.filter(t => {
-        const catName = t.category || '';
+        const catName = t.category_display || '';
         return t.type === 'income' || (t.type === 'expense' && catName !== 'Partner Advance' && catName !== 'Divident');
     });
 
@@ -246,7 +246,7 @@ const expandedExpenses = computed(() => {
                 id: t.id,
                 idx: idx++,
                 date: t.created_at,
-                tovar_nomi: t.category || 'Sarmoya',
+                tovar_nomi: t.category_display || 'Sarmoya',
                 soni: 1,
                 narxi: t.amount,
                 amount: t.amount,
@@ -273,7 +273,7 @@ const expandedAdvances = computed(() => {
     
     // Filter to get olingan pullar: Partner Advance and Divident
     const advances = transactions.value.filter(t => {
-        const catName = t.category || '';
+        const catName = t.category_display || '';
         return t.type === 'expense' && (catName === 'Partner Advance' || catName === 'Divident');
     });
 
@@ -305,7 +305,7 @@ const expandedAdvances = computed(() => {
                 id: t.id,
                 idx: idx++,
                 date: t.created_at,
-                tovar_nomi: t.category === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)',
+                tovar_nomi: t.category_display === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)',
                 soni: 1,
                 narxi: t.amount,
                 amount: t.amount,
@@ -370,7 +370,7 @@ function exportLedgerCSV() {
         return [
             formatDate(t.created_at),
             type,
-            t.category || '-',
+            t.category_display || '-',
             t.amount,
             `"${(t.notes || '-').replace(/"/g, '""')}"`
         ].join(',');
@@ -478,7 +478,7 @@ const categoryStats = computed(() => {
     const expenses = transactions.value.filter(t => t.notes && t.notes.includes('xarajati'));
     const map = {};
     expenses.forEach(t => {
-        const cat = t.category || 'Boshqa';
+        const cat = t.category_display || 'Boshqa';
         map[cat] = (map[cat] || 0) + Number(t.amount);
     });
     return Object.keys(map).map(k => ({ name: k, value: map[k] }));

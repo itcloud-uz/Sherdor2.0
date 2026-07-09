@@ -61,37 +61,38 @@ class LeadController extends Controller
 
             // Auto-convert to Client if full info is provided
             if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
-                $names = explode(' ', trim($lead->full_name));
-                $lastName = $names[0] ?? '';
-                $firstName = $names[1] ?? '';
-                $middleName = $names[2] ?? '';
+                // Check if phone already exists in clients
+                if (!\App\Models\Client::where('phone', $lead->phone)->exists()) {
+                    $names = explode(' ', trim($lead->full_name));
+                    $lastName = $names[0] ?? '';
+                    $firstName = $names[1] ?? '';
+                    $middleName = $names[2] ?? '';
 
-                if (empty($firstName)) {
-                    $firstName = $lastName;
-                    $lastName = '';
+                    if (empty($firstName)) {
+                        $firstName = $lastName;
+                        $lastName = '';
+                    }
+
+                    $client = \App\Models\Client::create([
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'middle_name' => $middleName,
+                        'phone' => $lead->phone,
+                        'phone_2' => $lead->phone_2,
+                        'passport_number' => $lead->passport_series,
+                        'region' => $lead->region,
+                        'district' => $lead->district,
+                        'address' => $lead->address,
+                        'source' => $lead->source,
+                    ]);
+
+                    $lead->delete();
+
+                    return response()->json([
+                        'message' => 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi!',
+                        'client' => $client
+                    ], 201);
                 }
-
-                $client = \App\Models\Client::create([
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'middle_name' => $middleName,
-                    'phone' => $lead->phone,
-                    'phone_2' => $lead->phone_2,
-                    'passport_number' => $lead->passport_series,
-                    'region' => $lead->region,
-                    'district' => $lead->district,
-                    'address' => $lead->address,
-                    'source' => $lead->source,
-                ]);
-
-                $lead->delete();
-
-                // Because frontend expects a success message and we might not need the lead object anymore,
-                // we can just return a success indicating it was auto-converted.
-                return response()->json([
-                    'message' => 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi!',
-                    'client' => $client
-                ], 201);
             }
 
             // Send Telegram Notification

@@ -474,8 +474,16 @@ class CrmController extends Controller
         }
     }
 
-    public function convertLeadToClient(Lead $lead)
+    public function convertLeadToClient(Lead $lead, \Illuminate\Http\Request $request = null)
     {
+        // Check if phone already exists
+        if (\App\Models\Client::where('phone', $lead->phone)->exists()) {
+            if ($request && $request->wantsJson()) {
+                return response()->json(['message' => 'Bunday telefon raqamli mijoz allaqachon mavjud!'], 400);
+            }
+            return redirect()->back()->withErrors(['message' => 'Bunday telefon raqamli mijoz allaqachon mavjud!']);
+        }
+
         $names = explode(' ', trim($lead->full_name));
         $lastName = $names[0] ?? '';
         $firstName = $names[1] ?? '';
@@ -500,6 +508,10 @@ class CrmController extends Controller
         ]);
 
         $lead->delete();
+
+        if ($request && $request->wantsJson()) {
+            return response()->json(['message' => 'Mijozlar bo\'limiga muvaffaqiyatli o\'tkazildi!']);
+        }
 
         return redirect()->back()->with('message', 'Mijozlar bo\'limiga muvaffaqiyatli o\'tkazildi!');
     }

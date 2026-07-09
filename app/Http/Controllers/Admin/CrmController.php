@@ -469,6 +469,36 @@ class CrmController extends Controller
         }
     }
 
+    public function convertLeadToClient(Lead $lead)
+    {
+        $names = explode(' ', trim($lead->full_name));
+        $lastName = $names[0] ?? '';
+        $firstName = $names[1] ?? '';
+        $middleName = $names[2] ?? '';
+
+        if (empty($firstName)) {
+            $firstName = $lastName;
+            $lastName = '';
+        }
+
+        \App\Models\Client::create([
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'middle_name' => $middleName,
+            'phone' => $lead->phone,
+            'phone_2' => $lead->phone_2,
+            'passport_number' => $lead->passport_series,
+            'region' => $lead->region,
+            'district' => $lead->district,
+            'address' => $lead->address,
+            'source' => $lead->source,
+        ]);
+
+        $lead->delete();
+
+        return redirect()->back()->with('message', 'Mijozlar bo\'limiga muvaffaqiyatli o\'tkazildi!');
+    }
+
     public function updateLead(Request $request, Lead $lead)
     {
         $validated = $request->validate([
@@ -504,6 +534,11 @@ class CrmController extends Controller
         if (isset($validated['user_id'])) $lead->user_id = $validated['user_id'];
         
         $lead->save();
+
+        if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
+            $this->convertLeadToClient($lead);
+            return redirect()->back()->with('message', 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi.');
+        }
 
         return redirect()->back()->with('message', 'Lid yangilandi.');
     }

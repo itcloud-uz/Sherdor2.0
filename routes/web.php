@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     
     // Leads / Kanban Actions
     Route::post('/crm/leads/{lead}/log-contact', [\App\Http\Controllers\Admin\CrmController::class, 'logContact'])->name('crm.leads.log_contact');
+    Route::post('/crm/leads/{lead}/convert', [\App\Http\Controllers\Admin\CrmController::class, 'convertLeadToClient'])->name('crm.leads.convert');
     Route::post('/crm/leads/{lead}/update-status', [\App\Http\Controllers\Admin\CrmController::class, 'updateLeadStatus'])->name('crm.leads.update_status');
     Route::post('/crm/leads/{lead}/quick-sms', [\App\Http\Controllers\Admin\CrmController::class, 'quickSms'])->name('crm.leads.quick_sms');
 
@@ -375,3 +376,5 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+R o u t e : : g e t ( ' / t e s t - p h o n e ' ,   f u n c t i o n ( )   {   \   =   \ A p p \ M o d e l s \ C l i e n t : : l a t e s t ( ) - > f i r s t ( ) ;   r e t u r n   r e s p o n s e ( ) - > j s o n ( [ ' p h o n e '   = >   \ - > p h o n e ,   ' r a w _ p h o n e '   = >   \ - > g e t R a w O r i g i n a l ( ' p h o n e ' ) ,   ' p h o n e _ 2 '   = >   \ - > p h o n e _ 2 ,   ' r a w _ p h o n e _ 2 '   = >   \ - > g e t R a w O r i g i n a l ( ' p h o n e _ 2 ' ) ] ) ;   } ) ;  
+ 

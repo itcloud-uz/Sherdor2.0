@@ -739,6 +739,23 @@ function submitNewLead() {
     }
 }
 
+function convertToClient(lead) {
+    if (!confirm("Haqiqatan ham ushbu lidni Mijozlar ro'yxatiga o'tkazmoqchimisiz?")) return;
+    
+    isProcessing.value = true;
+    axios.post(route('admin.crm.leads.convert', lead.id))
+        .then(() => {
+            alert("Mijozlar bo'limiga muvaffaqiyatli o'tkazildi!");
+            router.reload({ preserveScroll: true });
+        })
+        .catch(error => {
+            alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
+        })
+        .finally(() => {
+            isProcessing.value = false;
+        });
+}
+
 function deleteLead(id) {
     if (confirm("Haqiqatan ham ushbu lidni o'chirmoqchimisiz?")) {
         router.delete(route('admin.crm.leads.destroy', id), {
@@ -3991,6 +4008,9 @@ const ledgerReportData = computed(() => {
                                 </button>
                                 <button v-if="isAdmin" @click.stop="openEditLeadModal(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-amber-50 text-amber-600 hover:bg-amber-50 border border-amber-200 transition-colors shadow-sm text-xs" title="Tahrirlash">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </button>
+                                <button v-if="isAdmin" @click.stop="convertToClient(lead)" class="flex-1 flex justify-center items-center py-1 rounded bg-purple-50 text-purple-600 hover:bg-purple-50 border border-purple-200 transition-colors shadow-sm text-xs" title="Mijozlar bo'limiga o'tkazish">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                                 </button>
                                 <button v-if="isAdmin" @click.stop="deleteLead(lead.id)" class="flex-1 flex justify-center items-center py-1 rounded bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 transition-colors shadow-sm text-xs" title="O'chirish">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>

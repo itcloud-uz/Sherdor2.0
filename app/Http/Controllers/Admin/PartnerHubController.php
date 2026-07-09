@@ -38,11 +38,13 @@ class PartnerHubController extends Controller
             ->sum('amount');
             
         $netProfit = $totalIncome - $totalExpense;
+        $totalInvested = $partners->sum('total_invested');
+        $companyNetWorth = $totalInvested + $netProfit;
 
         return Inertia::render('Admin/Partners/Index', [
             'partners' => $partners,
             'users' => $users,
-            'companyNetWorth' => \App\Models\CompanyBalance::first()->total_balance ?? 0,
+            'companyNetWorth' => $companyNetWorth,
             'netProfit' => $netProfit,
             'fixedAssets' => FixedAsset::with('partner.user')->get()
         ]);

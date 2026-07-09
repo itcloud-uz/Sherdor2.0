@@ -225,6 +225,7 @@ const navItems = [
     { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
+    { name: 'Asosiy Vositalar', route: 'admin.fixed_assets', icon: '📦' },
     { name: 'Taminotchilar', route: 'admin.warehouse.index', icon: '📦' },
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
@@ -253,6 +254,7 @@ const filteredNavItems = computed(() => {
         if (item.name === 'facility_manager') return hasPerm('access objects');
         if (item.name === 'finance_core') return hasPerm('access finance');
         if (item.name === 'partner_hub') return hasPerm('access finance');
+        if (item.name === 'Asosiy Vositalar') return hasPerm('access finance');
         if (item.name === 'Taminotchilar') return hasPerm('access objects') || hasPerm('access finance');
         if (item.name === 'hr_payroll') return hasPerm('access hr');
         if (item.name === 'settings') return hasPerm('access settings');
@@ -264,9 +266,6 @@ const filteredNavItems = computed(() => {
 const currentNav = computed(() => {
     const currentRouteName = route().current();
     if (!currentRouteName) return null;
-    if (currentRouteName === 'admin.fixed_assets') {
-        return navItems.find(item => item.name === 'partner_hub');
-    }
     return navItems.find(item => currentRouteName.startsWith(item.route.replace('.index', '')));
 });
 
@@ -278,14 +277,8 @@ onMounted(() => {
     if (typeof window !== 'undefined') {
         window.addEventListener('storage', updateSidebarState);
     }
-    if (route().current('admin.partners') || route().current('admin.fixed_assets')) {
-        isPartnersMenuOpen.value = true;
-    }
     navigateUnregister = router.on('navigate', () => {
         updateSidebarState();
-        if (route().current('admin.partners') || route().current('admin.fixed_assets')) {
-            isPartnersMenuOpen.value = true;
-        }
     });
 
     const currentRoute = route().current();
@@ -780,45 +773,6 @@ const formattedDate = computed(() => {
                                 :class="route().current('admin.hr.texnikalar') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
                                 <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> Texnikalar
-                            </Link>
-                        </div>
-                    </div>
-
-                    <!-- Custom nested menu for partner_hub -->
-                    <div v-else-if="item.name === 'partner_hub'" class="space-y-1" :key="item.name + '-group'">
-                        <button
-                            @click="isPartnersMenuOpen = !isPartnersMenuOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
-                            :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
-                        >
-                            <div class="flex items-center gap-3">
-                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
-                            </div>
-                            <svg
-                                class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
-                                :class="isPartnersMenuOpen ? 'rotate-180' : ''"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            >
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        
-                        <div v-show="isPartnersMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
-                            <Link
-                                :href="route('admin.partners')"
-                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
-                                :class="isPartnerTabActive() ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
-                            >
-                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> TA'SISCHILAR
-                            </Link>
-                            
-                            <Link
-                                :href="route('admin.fixed_assets')"
-                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
-                                :class="isAssetTabActive() ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
-                            >
-                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span> ASOSIY VOSITALAR
                             </Link>
                         </div>
                     </div>

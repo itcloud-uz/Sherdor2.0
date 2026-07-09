@@ -222,7 +222,7 @@ function deleteAsset(id) {
                 </div>
                 
                 <div class="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-center ml-auto">
-                    <select v-model="filterType" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50/50">
+                    <select v-model="filterType" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" style="color-scheme: light;">
                         <option value="">Barcha turlar</option>
                         <option value="construction_equipment">Qurilish vositasi</option>
                         <option value="office_furniture">Ofis buyumi</option>
@@ -230,7 +230,7 @@ function deleteAsset(id) {
                         <option value="other">Boshqa</option>
                     </select>
 
-                    <select v-model="filterStatus" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50/50">
+                    <select v-model="filterStatus" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" style="color-scheme: light;">
                         <option value="">Barcha holatlar</option>
                         <option value="active">Faol</option>
                         <option value="sold">Sotilgan</option>
@@ -349,7 +349,7 @@ function deleteAsset(id) {
                         
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Turi</label>
-                            <select v-model="assetForm.type" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50" required>
+                            <select v-model="assetForm.type" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" required style="color-scheme: light;">
                                 <option value="construction_equipment">Qurilish vositasi</option>
                                 <option value="office_furniture">Ofis buyumi</option>
                                 <option value="light_structure">Yengil konsturuksiya</option>
@@ -359,7 +359,7 @@ function deleteAsset(id) {
 
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Holati</label>
-                            <select v-model="assetForm.status" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50" required>
+                            <select v-model="assetForm.status" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" required style="color-scheme: light;">
                                 <option value="active">Ishlatilmoqda (Aktiv)</option>
                                 <option value="sold">Sotilgan</option>
                                 <option value="retired">Ishdan chiqqan</option>
@@ -383,7 +383,7 @@ function deleteAsset(id) {
 
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Mas'ul Hamkor (Taqsimot)</label>
-                            <select v-model="assetForm.partner_id" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50">
+                            <select v-model="assetForm.partner_id" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" style="color-scheme: light;">
                                 <option value="">Kompaniya (Umumiy)</option>
                                 <option v-for="partner in partners" :key="partner.id" :value="partner.id">{{ partner.user?.name }}</option>
                             </select>

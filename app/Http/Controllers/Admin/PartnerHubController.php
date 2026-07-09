@@ -81,7 +81,7 @@ class PartnerHubController extends Controller
                 ->sum('amount');
 
             $partner->dynamic_sarmoya = $dynamicSarmoya;
-            $partner->total_sarmoya = $partner->total_invested + $dynamicSarmoya;
+            $partner->total_sarmoya = $partner->total_invested > 0 ? $partner->total_invested : $dynamicSarmoya;
 
             // Jami olingan so'mma: advances and dividends
             $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')

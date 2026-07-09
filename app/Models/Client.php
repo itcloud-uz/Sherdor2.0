@@ -35,6 +35,20 @@ class Client extends Model
         return trim("{$this->last_name} {$this->first_name} {$this->middle_name}");
     }
 
+    public function getPhoneAttribute($value)
+    {
+        $value = str_replace(', +998', '', $value ?? '');
+        return trim($value, ', ');
+    }
+
+    public function getPhone2Attribute($value)
+    {
+        if (trim($value) === '+998' || trim($value) === '') {
+            return null;
+        }
+        return trim($value);
+    }
+
     public function getPassportSeriesAttribute()
     {
         return $this->passport_number;

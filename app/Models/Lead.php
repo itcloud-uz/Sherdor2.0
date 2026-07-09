@@ -30,6 +30,20 @@ class Lead extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getPhoneAttribute($value)
+    {
+        $value = str_replace(', +998', '', $value ?? '');
+        return trim($value, ', ');
+    }
+
+    public function getPhone2Attribute($value)
+    {
+        if (trim($value) === '+998' || trim($value) === '') {
+            return null;
+        }
+        return trim($value);
+    }
+
     protected static function boot()
     {
         parent::boot();

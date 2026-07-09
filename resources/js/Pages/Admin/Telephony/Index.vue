@@ -1,5 +1,5 @@
 <template>
-    <AdminLayout>
+    <component :is="CurrentLayout">
         <Head title="IP Telefoniya" />
         
         <div class="p-6 h-screen flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar">
@@ -210,13 +210,25 @@
                 </div>
             </div>
         </div>
-    </AdminLayout>
+    </component>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
+import { usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+const CurrentLayout = computed(() => {
+    const roles = page.props.auth.user?.roles || [];
+    const roleNames = roles.map(r => typeof r === 'string' ? r : r.name);
+    if (roleNames.includes('Sotuvchi') || roleNames.includes('Operator')) {
+        return SellerLayout;
+    }
+    return AdminLayout;
+});
 import axios from 'axios';
 
 const dialerPhone = ref('');

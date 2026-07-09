@@ -1,5 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 import { Head, router, Link, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
@@ -11,6 +12,15 @@ import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
 
 const page = usePage();
 const gpsCoords = ref({ latitude: null, longitude: null });
+
+const CurrentLayout = computed(() => {
+    const roles = page.props.auth.user?.roles || [];
+    const roleNames = roles.map(r => typeof r === 'string' ? r : r.name);
+    if (roleNames.includes('Sotuvchi') || roleNames.includes('Operator')) {
+        return SellerLayout;
+    }
+    return AdminLayout;
+});
 
 onMounted(() => {
     if (navigator.geolocation) {
@@ -2639,7 +2649,7 @@ function deleteCategory(id) {
 
 <template>
     <Head :title="$t('finance_core')" />
-    <AdminLayout>
+    <component :is="CurrentLayout">
         <div class="space-y-6">
             <!-- TAB 0: Boshqaruv Paneli (Dashboard) -->
             <div v-if="activeTab === 0" class="space-y-6">
@@ -6082,7 +6092,7 @@ function deleteCategory(id) {
                 </form>
             </div>
         </Modal>
-    </AdminLayout>
+    </component>
 </template>
 
 <style>

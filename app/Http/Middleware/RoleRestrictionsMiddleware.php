@@ -54,7 +54,7 @@ class RoleRestrictionsMiddleware
                     abort(404, 'Sahifa topilmadi');
                 }
                 // General Finance access
-                if (!$user->hasPermissionTo('access finance')) {
+                if (!$user->hasPermissionTo('access finance') && !$user->hasPermissionTo('access transactions')) {
                     abort(404, 'Sahifa topilmadi');
                 }
             }

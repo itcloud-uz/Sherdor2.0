@@ -1,7 +1,18 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
+import { Head, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+
+const page = usePage();
+const CurrentLayout = computed(() => {
+    const roles = page.props.auth.user?.roles || [];
+    const roleNames = roles.map(r => typeof r === 'string' ? r : r.name);
+    if (roleNames.includes('Sotuvchi') || roleNames.includes('Operator')) {
+        return SellerLayout;
+    }
+    return AdminLayout;
+});
 
 const props = defineProps({
     campaigns: Array,
@@ -37,7 +48,7 @@ const aiLogs = ref([
 
 <template>
     <Head title="AI Agents & SMS" />
-    <AdminLayout>
+    <component :is="CurrentLayout">
         <div class="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 h-[calc(100vh-10rem)]">
             
             <!-- LEFT: Advanced SMS Hub -->
@@ -304,7 +315,7 @@ const aiLogs = ref([
             </div>
 
         </div>
-    </AdminLayout>
+    </component>
 </template>
 
 <style scoped>

@@ -3846,14 +3846,7 @@ const ledgerReportData = computed(() => {
                     <span class="text-xl md:text-2xl text-gray-500">🛒</span> 
                     <span class="truncate">{{ $t('sales_department') }}</span>
                 </h2>
-                <button 
-                    @click="refreshData" 
-                    :disabled="isProcessing"
-                    class="flex items-center gap-2 px-4 py-1.5 bg-gray-100 border border-gray-300 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-sm disabled:opacity-50 group"
-                >
-                    <span class="group-hover:rotate-180 transition-transform duration-500 inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span> 
-                    {{ $t('refresh_live') }}
-                </button>
+
             </div>
         </template>
 

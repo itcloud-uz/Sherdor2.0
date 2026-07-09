@@ -13,7 +13,7 @@ class ShowroomController extends Controller
     {
         $buildings = Building::with(['podezes.floors.units', 'floors.units'])->get();
         
-        return Inertia::render('Admin/Crm/Showroom/Index', [
+        return Inertia::render('Admin/CRM/Showroom/Index', [
             'buildings' => $buildings,
         ]);
     }

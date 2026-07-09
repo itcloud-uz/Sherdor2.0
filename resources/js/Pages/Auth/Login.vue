@@ -27,7 +27,9 @@ const showPassword = ref(false);
 </script>
 
 <template>
-    <Head title="Tizimga Kirish - SBE" />
+    <Head title="Tizimga Kirish - SBE">
+        <link rel="preload" as="image" href="/images/futuristic-city.png" />
+    </Head>
 
     <!-- Unified Full-Screen Background -->
     <div class="min-h-screen w-full relative flex items-center font-sans text-white overflow-hidden selection:bg-purple-500/30 selection:text-white">
@@ -63,16 +65,26 @@ const showPassword = ref(false);
                 <!-- Partners Bottom -->
                 <div class="mt-auto pt-8 border-t border-white/10">
                     <p class="text-sm text-gray-400 mb-4 font-semibold uppercase tracking-wider">Ishonchli Hamkorlar</p>
-                    <div class="flex items-center gap-6 opacity-80 flex-wrap drop-shadow-md">
-                        <span class="font-bold text-lg text-white">Sherdor</span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        <span class="font-bold text-lg text-white">Delta</span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        <span class="font-bold text-lg text-white">Hakim O'g'lu</span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        <span class="font-bold text-lg text-white text-center leading-tight">Göztepe Builder<br><span class="text-xs text-blue-300">Global</span></span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        <span class="font-bold text-lg text-white">Hayot House</span>
+                    <div class="flex flex-wrap items-center gap-y-3 gap-x-5 opacity-80 drop-shadow-md">
+                        <div class="flex items-center gap-5">
+                            <span class="font-bold text-lg text-white tracking-wide">Sherdor</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <span class="font-bold text-lg text-white tracking-wide">Delta</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <span class="font-bold text-lg text-white tracking-wide">Hakim O'g'lu</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <span class="font-bold text-lg text-white tracking-wide flex items-center gap-1.5">Göztepe Builder <span class="text-sm text-blue-300 font-medium">Global</span></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <span class="font-bold text-lg text-white tracking-wide">Hayot House</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -175,7 +187,7 @@ const showPassword = ref(false);
                 <!-- Mobile partners list (Only visible on mobile) -->
                 <div class="absolute bottom-4 left-0 w-full text-center lg:hidden px-4">
                     <div class="flex items-center justify-center gap-3 flex-wrap opacity-70 text-xs">
-                        <span>Sherdor</span>•<span>Delta</span>•<span>Hakim O'g'lu</span>•<span>Göztepe Builder</span>
+                        <span>Sherdor</span>•<span>Delta</span>•<span>Hakim O'g'lu</span>•<span>Göztepe Builder</span>•<span>Hayot House</span>
                     </div>
                 </div>
             </div>

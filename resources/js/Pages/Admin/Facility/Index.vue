@@ -2356,7 +2356,7 @@ function printCalculatorDetails() {
                 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
                 @page {
-                    size: A4;
+                    size: A4 landscape;
                     margin: 0;
                 }
 
@@ -2374,246 +2374,235 @@ function printCalculatorDetails() {
                     print-color-adjust: exact;
                 }
 
-                .print-container {
-                    width: 210mm;
-                    height: 297mm;
-                    padding: 15mm 20mm;
+                .page {
+                    width: 297mm;
+                    height: 210mm;
+                    position: relative;
+                    page-break-after: always;
+                    overflow: hidden;
                     background: #fff;
-                    display: flex;
-                    gap: 15mm;
                 }
                 
+                .page:last-child {
+                    page-break-after: auto;
+                }
+
+                /* --- Page 1: Cover --- */
+                .cover-page .cover-bg {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    z-index: 1;
+                }
+                .cover-page .cover-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
+                    z-index: 2;
+                }
+                .cover-rooms {
+                    position: absolute;
+                    top: 20mm;
+                    left: 0;
+                    z-index: 3;
+                    background: #ea580c;
+                    color: #fff;
+                    padding: 10mm 15mm 10mm 10mm;
+                    display: flex;
+                    align-items: baseline;
+                    gap: 10px;
+                    border-top-right-radius: 5px;
+                    border-bottom-right-radius: 5px;
+                }
+                .cover-rooms .rooms-num {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 80px;
+                    font-weight: 900;
+                    line-height: 0.8;
+                }
+                .cover-rooms .rooms-text {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 40px;
+                    font-weight: 800;
+                    letter-spacing: 2px;
+                }
+                .cover-building-name {
+                    position: absolute;
+                    bottom: 20mm;
+                    left: 20mm;
+                    z-index: 3;
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 100px;
+                    font-weight: 900;
+                    color: #fff;
+                    text-transform: uppercase;
+                    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+                }
+                .cover-blueprint-inset {
+                    position: absolute;
+                    bottom: 20mm;
+                    right: 20mm;
+                    z-index: 3;
+                    width: 60mm;
+                    height: 45mm;
+                    background: #fff;
+                    padding: 5mm;
+                    border-radius: 5px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                }
+                .cover-blueprint-inset img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                }
+
+                /* --- Page 2: Content --- */
+                .content-page {
+                    display: flex;
+                    padding: 15mm 20mm;
+                    gap: 15mm;
+                }
                 .left-col {
-                    width: 45%;
+                    width: 50%;
                     display: flex;
                     flex-direction: column;
                 }
-                
                 .right-col {
-                    width: 55%;
+                    width: 50%;
                     display: flex;
                     flex-direction: column;
                     position: relative;
                 }
-
-                /* Left Col Elements */
                 .unit-image {
                     width: 100%;
                     height: auto;
-                    max-height: 100mm;
+                    max-height: 120mm;
                     object-fit: contain;
                     margin-bottom: 5mm;
                 }
-                
-                .qr-blueprint-row {
-                    display: flex;
-                    justify-content: flex-start;
-                    align-items: center;
-                    gap: 20px;
-                    margin-bottom: 10mm;
-                }
-                
-                .qr-code {
-                    width: 35mm;
-                    height: 35mm;
-                }
-                
-                .blueprint-image {
-                    height: 45mm;
-                    width: auto;
-                    max-width: 50%;
+                .blueprint-image-large {
+                    width: 100%;
+                    height: auto;
+                    max-height: 60mm;
                     object-fit: contain;
                 }
-
-                /* Text Styles */
-                .title-xona {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 40px;
-                    font-weight: 800;
-                    color: #888;
-                    text-align: right;
-                    line-height: 0.9;
-                    margin-bottom: 15mm;
-                    text-transform: uppercase;
-                }
-
-                .title-xona span {
-                    font-size: 80px;
-                    color: #333;
-                    font-weight: 900;
-                }
-
+                
                 .section-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 16px;
+                    font-size: 18px;
                     font-weight: 800;
-                    color: #1e3a8a;
-                    border-bottom: 2px solid #cbd5e1;
-                    padding-bottom: 6px;
+                    color: #ea580c;
                     margin-bottom: 15px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                 }
-                
-                .section-title.dark {
-                    color: #334155;
-                }
-
                 .bullet-list {
                     list-style: none;
                     padding: 0;
                     margin: 0;
                     margin-bottom: 10mm;
                 }
-
                 .bullet-item {
                     position: relative;
                     padding-left: 14px;
-                    margin-bottom: 6px;
-                    font-size: 13px;
+                    margin-bottom: 8px;
+                    font-size: 14px;
                     color: #475569;
                     line-height: 1.4;
+                    display: flex;
+                    justify-content: space-between;
                 }
-
                 .bullet-item::before {
                     content: '•';
                     position: absolute;
                     left: 0;
-                    color: #475569;
+                    color: #ea580c;
                     font-weight: bold;
                 }
-
-                .bullet-item-val {
-                    position: relative;
-                    padding-left: 14px;
-                    margin-bottom: 12px;
-                    font-size: 14px;
-                    font-weight: 800;
+                .bullet-item strong {
                     color: #0f172a;
-                    line-height: 1.4;
-                }
-
-                .bullet-item-val.red-val {
-                    color: #dc2626;
+                    font-weight: 700;
                 }
                 
-                .bullet-item-val.blue-val {
-                    color: #2563eb;
-                    font-size: 18px;
+                .contact-card {
+                    margin-top: auto;
+                    display: flex;
+                    align-items: center;
+                    background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
+                    padding: 10px;
+                    border-radius: 10px;
+                    gap: 15px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
                 }
-
-                .bullet-item-val::before {
-                    content: '•';
-                    position: absolute;
-                    left: 0;
-                    color: transparent;
+                .qr-code {
+                    width: 30mm;
+                    height: 30mm;
+                    border-radius: 5px;
+                    background: #fff;
+                    padding: 2px;
                 }
-
-                /* Contact Styles */
-                .contact-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 14px;
-                    font-weight: 800;
-                    color: #000;
-                    margin-bottom: 15px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .phone-list {
+                .contact-info {
                     display: flex;
                     flex-direction: column;
-                    gap: 10px;
                 }
-
+                .contact-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 16px;
+                    font-weight: 900;
+                    color: #333;
+                    margin-bottom: 5px;
+                }
                 .phone-row {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 8px;
+                    margin-bottom: 4px;
                 }
-
                 .phone-icon-circle {
-                    width: 28px;
-                    height: 28px;
-                    background: #475569;
+                    width: 24px;
+                    height: 24px;
+                    background: #333;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #fff;
+                    color: #fde047;
                 }
-
                 .phone-icon-svg {
-                    width: 14px;
-                    height: 14px;
+                    width: 12px;
+                    height: 12px;
                     fill: currentColor;
                 }
-
                 .phone-number {
                     font-family: 'Inter', sans-serif;
-                    font-size: 15px;
-                    font-weight: 700;
-                    color: #334155;
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: #333;
                 }
 
-                /* Starburst Badge */
-                .discount-badge-container {
+                /* Burger Icon Top Right */
+                .burger-icon {
                     position: absolute;
-                    bottom: 20mm;
-                    right: 0mm;
-                    width: 130px;
-                    height: 130px;
-                    z-index: 20;
-                }
-
-                .badge-point {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: #ef4444;
-                    border-radius: 8px;
-                }
-
-                .badge-point.p1 { transform: rotate(0deg); }
-                .badge-point.p2 { transform: rotate(22.5deg); }
-                .badge-point.p3 { transform: rotate(45deg); }
-                .badge-point.p4 { transform: rotate(67.5deg); }
-
-                .badge-inner {
-                    position: absolute;
-                    top: 5%;
-                    left: 5%;
-                    width: 90%;
-                    height: 90%;
-                    background: #ef4444;
-                    border-radius: 50%;
-                    border: 2px dashed rgba(255,255,255,0.5);
+                    top: 15mm;
+                    right: 20mm;
+                    width: 30px;
+                    height: 20px;
                     display: flex;
                     flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 5;
+                    justify-content: space-between;
                 }
-
-                .badge-text {
-                    font-family: 'Montserrat', sans-serif;
-                    color: #ffffff;
-                    font-size: 13px;
-                    font-weight: 900;
-                    letter-spacing: 0.5px;
-                    text-transform: uppercase;
-                }
-                
-                .badge-percent {
-                    font-family: 'Montserrat', sans-serif;
-                    color: #fde047;
-                    font-size: 32px;
-                    font-weight: 900;
-                    line-height: 1;
-                    text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
-                    margin-bottom: 2px;
+                .burger-icon span {
+                    display: block;
+                    width: 100%;
+                    height: 4px;
+                    background-color: #ea580c;
+                    border-radius: 2px;
                 }
 
                 @media print {
@@ -2622,19 +2611,9 @@ function printCalculatorDetails() {
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .print-container {
-                        width: 210mm;
-                        height: 297mm;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    .phone-icon-circle {
-                        background: #475569 !important;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    .badge-point, .badge-inner {
-                        background: #ef4444 !important;
+                    .page {
+                        width: 297mm;
+                        height: 210mm;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
@@ -2642,93 +2621,81 @@ function printCalculatorDetails() {
             </style>
         </head>
         <body>
-            <div class="print-container">
+            <!-- PAGE 1: COVER -->
+            <div class="page cover-page">
+                <img src="${buildingPhoto}" class="cover-bg" />
+                <div class="cover-overlay"></div>
+                <div class="cover-rooms">
+                    <span class="rooms-num">${unit.rooms_count || 1}</span>
+                    <span class="rooms-text">XONA</span>
+                </div>
+                <div class="cover-building-name">${cleanedBuildingName}</div>
+                <div class="cover-blueprint-inset">
+                    <img src="${selectedUnitBlueprint.value}" />
+                </div>
+            </div>
+
+            <!-- PAGE 2: CONTENT -->
+            <div class="page content-page">
+                <div class="burger-icon">
+                    <span></span><span></span><span></span>
+                </div>
                 
                 <!-- LEFT COLUMN -->
                 <div class="left-col">
                     <img src="${selectedUnitDisplayImage.value}" alt="Unit Layout" class="unit-image" />
-                    
-                    <div class="qr-blueprint-row">
-                        <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
-                        <img src="${selectedUnitBlueprint.value}" alt="2D Blueprint" class="blueprint-image" />
-                    </div>
-                    
-                    <div class="section-title dark">YAKUNIY SHARTNOMA QIYMATI</div>
-                    <ul class="bullet-list">
-                        <li class="bullet-item">Boshlang'ich to'lov (${calcDownPaymentPercent.value}%)</li>
-                        <li class="bullet-item">Muddatli to'lovga qoldiq summa</li>
-                        <li class="bullet-item-val">${formatSoM(calculatedRemainingBalance.value)}</li>
-                        <li class="bullet-item">Bo'lib to'lash muddati</li>
-                        <li class="bullet-item-val">${calcTermMonths.value || 12} oy</li>
-                        <li class="bullet-item" style="margin-top: 15px; color: #1e3a8a; font-weight: 800; text-transform: uppercase;">OYLIK TO'LOV:</li>
-                        <li class="bullet-item-val blue-val">${formatSoM(monthlyPayment)} / oy</li>
-                    </ul>
-
-                    <div class="contact-title">BOG'LANISH UCHUN</div>
-                    <div class="phone-list">
-                        <div class="phone-row">
-                            <span class="phone-icon-circle">
-                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                </svg>
-                            </span>
-                            <span class="phone-number">+998 90 450 54 55</span>
-                        </div>
-                        <div class="phone-row">
-                            <span class="phone-icon-circle">
-                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                </svg>
-                            </span>
-                            <span class="phone-number">+998 93 573 29 29</span>
-                        </div>
-                        <div class="phone-row">
-                            <span class="phone-icon-circle">
-                                <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                </svg>
-                            </span>
-                            <span class="phone-number">+998 91 708 44 44</span>
-                        </div>
-                    </div>
+                    <img src="${selectedUnitBlueprint.value}" alt="2D Blueprint" class="blueprint-image-large" />
                 </div>
 
                 <!-- RIGHT COLUMN -->
                 <div class="right-col">
-                    <div class="title-xona"><span>${unit.rooms_count || 1}</span> XONA</div>
-                    
-                    <div class="section-title dark">XONADON MA'LUMOTLARI</div>
+                    <div class="section-title">YAKUNIY SHARTNOMA QIYMATI</div>
                     <ul class="bullet-list">
-                        <li class="bullet-item">Blok / Korpus: <strong>${cleanedBlockName}</strong></li>
-                        <li class="bullet-item">Qavat: <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
-                        <li class="bullet-item">${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami: <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
-                        <li class="bullet-item">Umumiy maydoni: <strong>${unit.area_sqm} kv.m</strong></li>
-                        <li class="bullet-item">Xonalar soni: <strong>${unit.rooms_count || 1} xonali</strong></li>
+                        <li class="bullet-item"><span>Boshlang'ich to'lov (${calcDownPaymentPercent.value}%)</span> <strong>${formatSoM(calcDownPayment.value)}</strong></li>
+                        <li class="bullet-item"><span>Muddatli to'lovga qoldiq summa</span> <strong>${formatSoM(calculatedRemainingBalance.value)}</strong></li>
+                        <li class="bullet-item"><span>Bo'lib to'lash muddati</span> <strong>${calcTermMonths.value || 12} oy</strong></li>
+                        <li class="bullet-item"><span>Umumiy summa</span> <strong>${formatSoM(calcPrice.value)}</strong></li>
+                        <li class="bullet-item"><span>Jami chegirma</span> <strong style="color:#ea580c;">${formatSoM(calcDiscount.value)}</strong></li>
+                        <li class="bullet-item"><span>Jami to'lanadigan summa</span> <strong style="color:#2563eb;">${formatSoM(calculatedGrandTotal.value)}</strong></li>
+                        <li class="bullet-item" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                            <span style="font-size: 16px; font-weight: 800; color: #ea580c; text-transform: uppercase;">OYLIK TO'LOV:</span>
+                            <span style="font-size: 20px; font-weight: 900; color: #2563eb;">${formatSoM(monthlyPayment)}</span>
+                        </li>
                     </ul>
 
-                    <div class="section-title dark">TO'LOV SHARTLARI</div>
+                    <div class="section-title">XONADON MA'LUMOTLARI</div>
                     <ul class="bullet-list">
-                        <li class="bullet-item">Kvadrat metr narxi</li>
-                        <li class="bullet-item-val">${formatSoM(calcPricePerSqm.value)} / kv.m</li>
-                        <li class="bullet-item">Jami chegirma summasi</li>
-                        <li class="bullet-item-val red-val">${formatSoM(calcDiscount.value)}</li>
+                        <li class="bullet-item"><span>Blok / Korpus:</span> <strong>${cleanedBlockName}</strong></li>
+                        <li class="bullet-item"><span>Qavat:</span> <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
+                        <li class="bullet-item"><span>${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami:</span> <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
+                        <li class="bullet-item"><span>Umumiy maydoni:</span> <strong>${unit.area_sqm} kv.m</strong></li>
+                        <li class="bullet-item"><span>Xonalar soni:</span> <strong>${unit.rooms_count || 1} xonali</strong></li>
+                        <li class="bullet-item"><span>1 kv.m narxi:</span> <strong>${formatSoM(calcPricePerSqm.value)}</strong></li>
                     </ul>
 
-                    <!-- Starburst Badge -->
-                    ${showDiscountBadge ? `
-                    <div class="discount-badge-container">
-                        <div class="badge-point p1"></div>
-                        <div class="badge-point p2"></div>
-                        <div class="badge-point p3"></div>
-                        <div class="badge-point p4"></div>
-                        <div class="badge-inner">
-                            <div class="badge-percent">${discountPercentage}%</div>
-                            <div class="badge-text">CHEGIRMA</div>
+                    <div class="contact-card">
+                        <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
+                        <div class="contact-info">
+                            <div class="contact-title">${cleanedBuildingName}</div>
+                            <div class="phone-row">
+                                <span class="phone-icon-circle">
+                                    <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                    </svg>
+                                </span>
+                                <span class="phone-number">+998 90 450 54 55</span>
+                            </div>
+                            <div class="phone-row">
+                                <span class="phone-icon-circle">
+                                    <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                    </svg>
+                                </span>
+                                <span class="phone-number">+998 93 573 29 29</span>
+                            </div>
                         </div>
                     </div>
-                    ` : ''}
                 </div>
-            </div>       </div>
             </div>
 
             <script>
@@ -2737,7 +2704,7 @@ function printCalculatorDetails() {
                         window.print();
                     }, 500);
                 }
-            <\/script>
+            <" + "/script>
         </body>
         </html>
     `);

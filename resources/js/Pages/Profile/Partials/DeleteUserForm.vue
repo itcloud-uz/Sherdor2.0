@@ -41,37 +41,33 @@ const closeModal = () => {
 <template>
     <section class="space-y-6">
         <header>
-            <h2 class="text-lg font-medium text-gray-900 ">
-                Delete Account
+            <h2 class="text-lg font-bold font-display text-red-600">
+                Hisobni o'chirish
             </h2>
 
-            <p class="mt-1 text-sm text-gray-600 ">
-                Once your account is deleted, all of its resources and data will
-                be permanently deleted. Before deleting your account, please
-                download any data or information that you wish to retain.
+            <p class="mt-1 text-sm text-gray-500 font-mono">
+                Hisobingiz o'chirilgach, uning barcha ma'lumotlari butunlay o'chiriladi.
             </p>
         </header>
 
-        <DangerButton @click="confirmUserDeletion">Delete Account</DangerButton>
+        <DangerButton @click="confirmUserDeletion" class="rounded-xl px-6 py-2.5 bg-red-600 hover:bg-red-700 shadow-sm text-xs tracking-wider">Hisobni o'chirish</DangerButton>
 
         <Modal :show="confirmingUserDeletion" @close="closeModal">
             <div class="p-6">
                 <h2
-                    class="text-lg font-medium text-gray-900 "
+                    class="text-lg font-bold font-display text-gray-900"
                 >
-                    Are you sure you want to delete your account?
+                    Hisobingizni o'chirishga ishonchingiz komilmi?
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-600 ">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Please enter your password to
-                    confirm you would like to permanently delete your account.
+                <p class="mt-1 text-sm text-gray-500 font-mono">
+                    Hisobingiz o'chirilgach, uning barcha ma'lumotlari butunlay o'chiriladi. Hisobingizni o'chirishni tasdiqlash uchun parolingizni kiriting.
                 </p>
 
                 <div class="mt-6">
                     <InputLabel
                         for="password"
-                        value="Password"
+                        value="Parol"
                         class="sr-only"
                     />
 
@@ -80,8 +76,8 @@ const closeModal = () => {
                         ref="passwordInput"
                         v-model="form.password"
                         type="password"
-                        class="mt-1 block w-3/4"
-                        placeholder="Password"
+                        class="mt-2 block w-3/4 border-gray-200 rounded-xl focus:border-red-500 focus:ring-red-500"
+                        placeholder="Parolingizni kiriting"
                         @keyup.enter="deleteUser"
                     />
 
@@ -89,17 +85,17 @@ const closeModal = () => {
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">
-                        Cancel
+                    <SecondaryButton @click="closeModal" class="rounded-xl">
+                        Bekor qilish
                     </SecondaryButton>
 
                     <DangerButton
-                        class="ms-3"
+                        class="ms-3 rounded-xl bg-red-600 hover:bg-red-700"
                         :class="{ 'opacity-25': form.processing }"
                         :disabled="form.processing"
                         @click="deleteUser"
                     >
-                        Delete Account
+                        O'chirish
                     </DangerButton>
                 </div>
             </div>

@@ -142,26 +142,11 @@ const isPodyezdActive = (blockId, podyezdNumber) => {
 };
 
 const isPartnerTabActive = () => {
-    const currentRoute = route().current();
-    if (currentRoute !== 'admin.partners') return false;
-    try {
-        const url = new URL(page.url, window.location.origin);
-        const tabParam = url.searchParams.get('tab');
-        return tabParam === null || tabParam === 'partners';
-    } catch (e) {
-        return true;
-    }
+    return route().current('admin.partners');
 };
 
 const isAssetTabActive = () => {
-    const currentRoute = route().current();
-    if (currentRoute !== 'admin.partners') return false;
-    try {
-        const url = new URL(page.url, window.location.origin);
-        return url.searchParams.get('tab') === 'assets';
-    } catch (e) {
-        return false;
-    }
+    return route().current('admin.fixed_assets');
 };
 
 // Automatically expand active facility and block on route/url changes
@@ -318,7 +303,7 @@ onMounted(() => {
         if (currentRoute.includes('hr')) {
             isHrMenuOpen.value = true;
         }
-        if (currentRoute.includes('partners')) {
+        if (currentRoute.includes('partners') || currentRoute.includes('fixed_assets')) {
             isPartnersMenuOpen.value = true;
         }
 
@@ -795,11 +780,11 @@ const formattedDate = computed(() => {
                         <button
                             @click="isPartnersMenuOpen = !isPartnersMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
-                            :class="route().current('admin.partners') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
+                            :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.partners') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.partners') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.partners') || route().current('admin.fixed_assets') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -812,7 +797,7 @@ const formattedDate = computed(() => {
                         
                         <div v-show="isPartnersMenuOpen" class="pl-4 space-y-1 transition-all duration-300 border-l border-gray-100 ml-5">
                             <Link
-                                :href="route('admin.partners', { tab: 'partners' })"
+                                :href="route('admin.partners')"
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isPartnerTabActive() ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
@@ -820,7 +805,7 @@ const formattedDate = computed(() => {
                             </Link>
                             
                             <Link
-                                :href="route('admin.partners', { tab: 'assets' })"
+                                :href="route('admin.fixed_assets')"
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isAssetTabActive() ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >

@@ -100,8 +100,18 @@ class PartnerHubController extends Controller
             'partners' => $partners,
             'users' => $users,
             'companyNetWorth' => $companyNetWorth,
-            'netProfit' => $netProfit,
-            'fixedAssets' => FixedAsset::with('partner.user')->get()
+            'netProfit' => $netProfit
+        ]);
+    }
+
+    public function fixedAssetsIndex()
+    {
+        $partners = Partner::with('user')->get();
+        $fixedAssets = FixedAsset::with('partner.user')->get();
+        
+        return Inertia::render('Admin/Partners/Assets', [
+            'partners' => $partners,
+            'fixedAssets' => $fixedAssets
         ]);
     }
 

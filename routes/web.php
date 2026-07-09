@@ -213,6 +213,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/finance/liabilities/{liability}/export/xlsx', [\App\Http\Controllers\Admin\LiabilityExportController::class, 'exportXlsx'])->name('finance.liabilities.export.xlsx');
     
     Route::get('/partners', [\App\Http\Controllers\Admin\PartnerHubController::class, 'index'])->name('partners');
+    Route::get('/fixed-assets', [\App\Http\Controllers\Admin\PartnerHubController::class, 'fixedAssetsIndex'])->name('fixed_assets');
     Route::post('/partners', [\App\Http\Controllers\Admin\PartnerHubController::class, 'storePartner'])->name('partners.store');
     Route::put('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'updatePartner'])->name('partners.update');
     Route::delete('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerHubController::class, 'destroyPartner'])->name('partners.destroy');

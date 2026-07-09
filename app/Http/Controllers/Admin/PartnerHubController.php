@@ -81,7 +81,7 @@ class PartnerHubController extends Controller
                 ->sum('amount');
 
             $partner->dynamic_sarmoya = $dynamicSarmoya;
-            $partner->total_sarmoya = $partner->total_invested > 0 ? $partner->total_invested : $dynamicSarmoya;
+            $partner->total_sarmoya = $partner->total_invested + $dynamicSarmoya;
 
             // Jami olingan so'mma: advances and dividends
             $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')
@@ -249,7 +249,6 @@ class PartnerHubController extends Controller
             'type' => 'required|string',
             'purchase_date' => 'required|date',
             'purchase_cost' => 'required|numeric|min:0',
-            'service_life_months' => 'required|integer|min:1',
             'status' => 'required|in:active,sold,retired',
             'description' => 'nullable|string',
             'partner_id' => 'nullable|exists:partners,id'
@@ -266,7 +265,6 @@ class PartnerHubController extends Controller
             'type' => 'required|string',
             'purchase_date' => 'required|date',
             'purchase_cost' => 'required|numeric|min:0',
-            'service_life_months' => 'required|integer|min:1',
             'status' => 'required|in:active,sold,retired',
             'description' => 'nullable|string',
             'partner_id' => 'nullable|exists:partners,id'

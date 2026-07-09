@@ -223,6 +223,7 @@ const navItems = [
     { name: 'crm', route: 'admin.crm', icon: '🛒' },
     { name: 'clients_database', route: 'admin.crm', icon: '👥' },
     { name: 'finance_core', route: 'admin.finance', icon: '🏦' },
+    { name: 'transactions', route: 'admin.finance', icon: '💸' },
     { name: 'hr_payroll', route: 'admin.hr', icon: '👥' },
     { name: 'partner_hub', route: 'admin.partners', icon: '🤝' },
     { name: 'Asosiy Vositalar', route: 'admin.fixed_assets', icon: '📦' },
@@ -253,6 +254,7 @@ const filteredNavItems = computed(() => {
         if (item.name === 'crm' || item.name === 'clients_database') return hasPerm('access clients');
         if (item.name === 'facility_manager') return hasPerm('access objects');
         if (item.name === 'finance_core') return hasPerm('access finance');
+        if (item.name === 'transactions') return hasPerm('access transactions') && !hasPerm('access finance');
         if (item.name === 'partner_hub') return hasPerm('access finance');
         if (item.name === 'Asosiy Vositalar') return hasPerm('access finance');
         if (item.name === 'Taminotchilar') return hasPerm('access objects') || hasPerm('access finance');
@@ -485,8 +487,33 @@ const formattedDate = computed(() => {
                                 <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
                                 Kategoriyalar
                             </Link>
+
+                            <!-- So'rovlar -->
+                            <Link
+                                v-if="hasPerm('delete_transaction')"
+                                :href="route('admin.finance.transaction_requests.index')"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="route().current('admin.finance.transaction_requests.index')
+                                    ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                            >
+                                <span class="w-[4px] h-[4px] rounded-full flex-shrink-0 bg-current opacity-60 mr-1"></span>
+                                So'rovlar (Tranzaksiyalar)
+                            </Link>
                         </div>
                     </div>
+
+                    <!-- Single menu for transactions (Sotuvchi / Operator) -->
+                    <Link
+                        v-else-if="item.name === 'transactions'"
+                        :href="route('admin.finance', { tab: 2 })"
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent"
+                        :class="route().current('admin.finance') && $page.url.includes('tab=2') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
+                    >
+                        <div class="flex items-center gap-3">
+                            <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors font-bold" :class="route().current('admin.finance') && $page.url.includes('tab=2') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                            <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.finance') && $page.url.includes('tab=2') ? 'text-blue-700 font-semibold' : ''">Tranzaksiyalar</span>
+                        </div>
+                    </Link>
 
                     <!-- Custom nested menu for crm -->
                     <div v-else-if="item.name === 'crm'" class="space-y-1" :key="item.name + '-group'">

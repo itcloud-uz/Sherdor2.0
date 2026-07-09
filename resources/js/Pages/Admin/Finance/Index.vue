@@ -126,6 +126,31 @@ const isAdmin = computed(() => {
     return roles.includes('admin') || roles.includes('super-admin') || roles.includes('super_admin');
 });
 
+const hasPerm = (perm) => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    if (isAdmin.value) return true;
+    const permissions = user.permissions || [];
+    // Also map role permissions or assume inertia passes all user permissions in user.permissions array
+    // Wait, spatie passes them in `user.permissions` usually if configured, or we can check roles.
+    // Partner has full access, so:
+    const roles = user.roles ? user.roles.map(r => (typeof r === 'string' ? r : r.name || '').toLowerCase()) : [];
+    if (roles.includes('partner')) {
+        if (['edit_transaction', 'delete_transaction', 'create_transaction', 'access finance'].includes(perm)) return true;
+    }
+    return permissions.includes(perm) || permissions.some(p => p.name === perm);
+};
+
+const requestTransactionEdit = (t, action) => {
+    const reason = prompt(`Iltimos, nima uchun ushbu tranzaksiyani ${action === 'edit' ? 'tahrirlash' : 'o\\'chirish'} kerakligini yozing:`);
+    if (!reason) return;
+    router.post(route('admin.finance.transaction_requests.store'), {
+        transaction_id: t.id,
+        action: action,
+        reason: reason
+    }, { preserveScroll: true, preserveState: true });
+};
+
 // Tab 11: Reports States
 const reportSubTab = ref('overview');
 const reportJournalSearch = ref('');
@@ -2930,12 +2955,18 @@ function deleteCategory(id) {
                                                 👁️
                                             </button>
                                             <!-- Edit -->
-                                            <button v-if="isAdmin" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
+                                            <button v-if="hasPerm('edit_transaction')" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
                                                 ✏️
                                             </button>
+                                            <button v-if="!hasPerm('edit_transaction') && t.status !== 'rejected'" @click="requestTransactionEdit(t, 'edit')" class="p-1 text-blue-500 hover:text-blue-700 border border-blue-200 rounded-md hover:bg-blue-50 transition-all" title="Adminga murojaat (Tahrirlash)">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                            </button>
                                             <!-- Delete -->
-                                            <button v-if="isAdmin" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
+                                            <button v-if="hasPerm('delete_transaction')" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
                                                 🗑️
+                                            </button>
+                                            <button v-if="!hasPerm('delete_transaction') && t.status !== 'rejected'" @click="requestTransactionEdit(t, 'delete')" class="p-1 text-orange-500 hover:text-orange-700 border border-orange-200 rounded-md hover:bg-orange-50 transition-all" title="Adminga murojaat (O\'chirish)">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             </button>
                                         </div>
                                     </td>
@@ -4510,12 +4541,18 @@ function deleteCategory(id) {
                                                 Rad Etish
                                             </button>
                                             <!-- Edit -->
-                                            <button v-if="isAdmin" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
+                                            <button v-if="hasPerm('edit_transaction')" @click="openEditTransactionModal(t)" class="p-1 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-md hover:bg-amber-50 transition-all" title="Tahrirlash">
                                                 ✏️
                                             </button>
+                                            <button v-if="!hasPerm('edit_transaction') && t.status !== 'rejected'" @click="requestTransactionEdit(t, 'edit')" class="p-1 text-blue-500 hover:text-blue-700 border border-blue-200 rounded-md hover:bg-blue-50 transition-all" title="Adminga murojaat (Tahrirlash)">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                            </button>
                                             <!-- Delete -->
-                                            <button v-if="isAdmin" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
+                                            <button v-if="hasPerm('delete_transaction')" @click="deleteTransaction(t.id)" class="p-1 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-md transition-all" title="O'chirish">
                                                 🗑️
+                                            </button>
+                                            <button v-if="!hasPerm('delete_transaction') && t.status !== 'rejected'" @click="requestTransactionEdit(t, 'delete')" class="p-1 text-orange-500 hover:text-orange-700 border border-orange-200 rounded-md hover:bg-orange-50 transition-all" title="Adminga murojaat (O\'chirish)">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             </button>
                                         </div>
                                     </td>

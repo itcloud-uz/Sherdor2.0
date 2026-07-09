@@ -196,6 +196,13 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         // Excel Exports
         Route::get('/invoices/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportInvoicesExcel'])->name('invoices.export.xlsx');
         Route::get('/transactions/export/xlsx', [\App\Http\Controllers\Admin\FinanceController::class, 'exportTransactionsExcel'])->name('transactions.export.xlsx');
+        
+        // Transaction Requests
+        Route::get('/transaction-requests', [\App\Http\Controllers\Admin\TransactionEditRequestController::class, 'index'])->name('transaction_requests.index');
+        Route::post('/transaction-requests', [\App\Http\Controllers\Admin\TransactionEditRequestController::class, 'store'])->name('transaction_requests.store');
+        Route::post('/transaction-requests/{transactionRequest}/approve', [\App\Http\Controllers\Admin\TransactionEditRequestController::class, 'approve'])->name('transaction_requests.approve');
+        Route::post('/transaction-requests/{transactionRequest}/reject', [\App\Http\Controllers\Admin\TransactionEditRequestController::class, 'reject'])->name('transaction_requests.reject');
+
         Route::post('/rates', [\App\Http\Controllers\Admin\FinanceController::class, 'updateRates'])->name('rates.update');
     });
 
@@ -360,12 +367,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     });
 });
 
-Route::get('/operator-panel', [\App\Http\Controllers\OperatorController::class, 'index'])->middleware(['auth', 'verified'])->name('operator');
-Route::post('/operator-panel/requests', [\App\Http\Controllers\OperatorController::class, 'submitRequest'])->middleware(['auth', 'verified'])->name('operator.requests.store');
 
-Route::get('/partner-panel', [\App\Http\Controllers\Admin\PartnerController::class, 'index'])->middleware(['auth', 'verified'])->name('partner');
-Route::post('/partner-panel/vote/{vote}', [\App\Http\Controllers\Admin\PartnerController::class, 'vote'])->middleware(['auth', 'verified'])->name('partner.vote');
-Route::post('/partner-panel/transaction', [\App\Http\Controllers\Admin\PartnerController::class, 'storeTransaction'])->middleware(['auth', 'verified'])->name('partner.transaction.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\UserSettingsController::class, 'index'])->name('settings.index');

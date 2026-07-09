@@ -1,0 +1,6 @@
+STDOUT:
+Already up to date.
+
+STDERR:
+From github.com:itcloud-uz/Sherdor2.0
+ * branch            main       -> FETCH_HEAD

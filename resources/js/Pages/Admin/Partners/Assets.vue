@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useForm, router, Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
     fixedAssets: Array,
@@ -13,6 +14,34 @@ const isProcessing = ref(false);
 const searchQuery = ref('');
 const filterType = ref('');
 const filterStatus = ref('');
+
+const typeOptions = [
+    { label: 'Qurilish vositasi', value: 'construction_equipment' },
+    { label: 'Ofis buyumi', value: 'office_furniture' },
+    { label: 'Yengil konsturuksiya', value: 'light_structure' },
+    { label: 'Boshqa', value: 'other' }
+];
+
+const statusOptions = [
+    { label: 'Ishlatilmoqda (Aktiv)', value: 'active' },
+    { label: 'Sotilgan', value: 'sold' },
+    { label: 'Ishdan chiqqan', value: 'retired' }
+];
+
+const partnerOptions = computed(() => [
+    { label: 'Kompaniya (Umumiy)', value: '' },
+    ...props.partners.map(p => ({ label: p.user?.name, value: p.id }))
+]);
+
+const filterTypeOptions = [
+    { label: 'Barcha turlar', value: '' },
+    ...typeOptions
+];
+
+const filterStatusOptions = [
+    { label: 'Barcha holatlar', value: '' },
+    ...statusOptions
+];
 
 // Filtered assets list
 const filteredAssets = computed(() => {
@@ -38,18 +67,11 @@ function formatDate(dateStr) {
     return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
 }
 
-// Calculate service months since purchase
-function calculateServiceMonths(purchaseDate) {
-    const start = new Date(purchaseDate);
-    const now = new Date();
-    const years = now.getFullYear() - start.getFullYear();
-    const months = now.getMonth() - start.getMonth();
-    return Math.max(0, (years * 12) + months);
-}
+
 
 // Export CSV
 function exportCSV() {
-    const headers = ['Nomi', 'Turi', 'Sotib olingan', 'Narxi', 'Xizmat muddati (oylarda)', 'Holati', 'Hamkor/Mas\'ul'];
+    const headers = ['Nomi', 'Turi', 'Sotib olingan', 'Narxi', 'Holati', 'Hamkor/Mas\'ul'];
     const rows = filteredAssets.value.map(asset => {
         const typeLabel = asset.type === 'construction_equipment' ? 'Qurilish vositasi' : 
                           asset.type === 'office_furniture' ? 'Ofis buyumi' : 
@@ -60,7 +82,6 @@ function exportCSV() {
             typeLabel,
             formatDate(asset.purchase_date),
             asset.purchase_cost,
-            asset.service_life_months,
             asset.status.toUpperCase(),
             partnerName
         ];
@@ -87,7 +108,6 @@ const assetForm = useForm({
     type: 'construction_equipment',
     purchase_date: '',
     purchase_cost: '',
-    service_life_months: 60,
     status: 'active',
     description: '',
     partner_id: ''
@@ -108,7 +128,6 @@ function openEditAssetModal(asset) {
     assetForm.type = asset.type;
     assetForm.purchase_date = asset.purchase_date.substring(0, 10);
     assetForm.purchase_cost = asset.purchase_cost;
-    assetForm.service_life_months = asset.service_life_months;
     assetForm.status = asset.status;
     assetForm.description = asset.description;
     assetForm.partner_id = asset.partner_id || '';
@@ -222,20 +241,19 @@ function deleteAsset(id) {
                 </div>
                 
                 <div class="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-center ml-auto">
-                    <select v-model="filterType" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" style="color-scheme: light;">
-                        <option value="">Barcha turlar</option>
-                        <option value="construction_equipment">Qurilish vositasi</option>
-                        <option value="office_furniture">Ofis buyumi</option>
-                        <option value="light_structure">Yengil konsturuksiya</option>
-                        <option value="other">Boshqa</option>
-                    </select>
+                    <SearchableSelect 
+                        v-model="filterType" 
+                        :options="filterTypeOptions" 
+                        placeholder="Barcha turlar"
+                        class="w-full sm:w-44 text-xs font-mono"
+                    />
 
-                    <select v-model="filterStatus" class="w-full sm:w-44 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" style="color-scheme: light;">
-                        <option value="">Barcha holatlar</option>
-                        <option value="active">Faol</option>
-                        <option value="sold">Sotilgan</option>
-                        <option value="retired">Ishdan chiqqan</option>
-                    </select>
+                    <SearchableSelect 
+                        v-model="filterStatus" 
+                        :options="filterStatusOptions" 
+                        placeholder="Barcha holatlar"
+                        class="w-full sm:w-44 text-xs font-mono"
+                    />
 
                     <button @click="exportCSV" class="w-full sm:w-auto px-4 py-2 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all">
                         📥 Excelga Yuklash
@@ -253,7 +271,6 @@ function deleteAsset(id) {
                                 <th class="p-5">Turi</th>
                                 <th class="p-5">Sana</th>
                                 <th class="p-5">Narxi</th>
-                                <th class="p-5">Xizmat muddati</th>
                                 <th class="p-5">Holati & Mas'ul</th>
                                 <th class="p-5 text-right">Amallar</th>
                             </tr>
@@ -278,25 +295,6 @@ function deleteAsset(id) {
                                 </td>
                                 <td class="p-5 font-bold text-slate-900 text-sm">
                                     {{ formatCurrency(asset.purchase_cost) }} <span class="text-[10px] text-slate-400 font-medium">UZS</span>
-                                </td>
-                                <td class="p-5">
-                                    <div class="flex flex-col gap-1 w-32">
-                                        <div class="flex justify-between text-[9px] font-bold">
-                                            <span :class="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months ? 'text-red-500' : 'text-emerald-600'">
-                                                {{ calculateServiceMonths(asset.purchase_date) }} oy
-                                            </span>
-                                            <span class="text-slate-400">Max: {{ asset.service_life_months }} oy</span>
-                                        </div>
-                                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                            <div 
-                                                class="h-full rounded-full transition-all"
-                                                :class="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months ? 'bg-red-500 shadow-sm' : 'bg-emerald-500 shadow-sm'"
-                                                :style="{ width: Math.min((calculateServiceMonths(asset.purchase_date) / asset.service_life_months) * 100, 100) + '%' }"
-                                            ></div>
-                                        </div>
-                                        <div v-if="calculateServiceMonths(asset.purchase_date) >= asset.service_life_months" class="text-[8px] text-red-500 font-black tracking-wider uppercase animate-pulse">MUDDAT TUGAGAN</div>
-                                        <div v-else class="text-[8px] text-emerald-600 font-bold tracking-wider uppercase">Faol xizmatda</div>
-                                    </div>
                                 </td>
                                 <td class="p-5">
                                     <span 
@@ -349,21 +347,24 @@ function deleteAsset(id) {
                         
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Turi</label>
-                            <select v-model="assetForm.type" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" required style="color-scheme: light;">
-                                <option value="construction_equipment">Qurilish vositasi</option>
-                                <option value="office_furniture">Ofis buyumi</option>
-                                <option value="light_structure">Yengil konsturuksiya</option>
-                                <option value="other">Boshqa</option>
-                            </select>
+                            <SearchableSelect 
+                                v-model="assetForm.type" 
+                                :options="typeOptions" 
+                                placeholder="Turi"
+                                class="text-xs"
+                                required
+                            />
                         </div>
 
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Holati</label>
-                            <select v-model="assetForm.status" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" required style="color-scheme: light;">
-                                <option value="active">Ishlatilmoqda (Aktiv)</option>
-                                <option value="sold">Sotilgan</option>
-                                <option value="retired">Ishdan chiqqan</option>
-                            </select>
+                            <SearchableSelect 
+                                v-model="assetForm.status" 
+                                :options="statusOptions" 
+                                placeholder="Holati"
+                                class="text-xs"
+                                required
+                            />
                         </div>
 
                         <div>
@@ -376,17 +377,15 @@ function deleteAsset(id) {
                             <input v-model="assetForm.purchase_cost" type="number" step="0.01" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50" required>
                         </div>
 
-                        <div>
-                            <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Xizmat muddati (oylarda)</label>
-                            <input v-model="assetForm.service_life_months" type="number" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50" required>
-                        </div>
 
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Mas'ul Hamkor (Taqsimot)</label>
-                            <select v-model="assetForm.partner_id" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50" style="color-scheme: light;">
-                                <option value="">Kompaniya (Umumiy)</option>
-                                <option v-for="partner in partners" :key="partner.id" :value="partner.id">{{ partner.user?.name }}</option>
-                            </select>
+                            <SearchableSelect 
+                                v-model="assetForm.partner_id" 
+                                :options="partnerOptions" 
+                                placeholder="Hamkor tanlang..."
+                                class="text-xs"
+                            />
                         </div>
 
                         <div class="md:col-span-2">

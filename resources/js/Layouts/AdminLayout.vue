@@ -264,6 +264,9 @@ const filteredNavItems = computed(() => {
 const currentNav = computed(() => {
     const currentRouteName = route().current();
     if (!currentRouteName) return null;
+    if (currentRouteName === 'admin.fixed_assets') {
+        return navItems.find(item => item.name === 'partner_hub');
+    }
     return navItems.find(item => currentRouteName.startsWith(item.route.replace('.index', '')));
 });
 
@@ -275,8 +278,14 @@ onMounted(() => {
     if (typeof window !== 'undefined') {
         window.addEventListener('storage', updateSidebarState);
     }
+    if (route().current('admin.partners') || route().current('admin.fixed_assets')) {
+        isPartnersMenuOpen.value = true;
+    }
     navigateUnregister = router.on('navigate', () => {
         updateSidebarState();
+        if (route().current('admin.partners') || route().current('admin.fixed_assets')) {
+            isPartnersMenuOpen.value = true;
+        }
     });
 
     const currentRoute = route().current();

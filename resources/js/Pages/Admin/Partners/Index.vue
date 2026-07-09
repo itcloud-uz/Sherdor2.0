@@ -618,63 +618,74 @@ function formatDate(dateString) {
 
             <!-- Partners View -->
             <div v-if="activeTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-[fadeIn_0.4s_ease-out]">
-                <div v-for="partner in partners" :key="partner.id" class="bg-white border border-slate-300 shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <!-- Partner Yellow Header -->
-                    <div class="bg-[#fce205] text-slate-900 border-b-2 border-slate-800 font-bold px-6 py-4 text-center uppercase tracking-widest text-base flex justify-between items-center">
-                        <span class="font-display font-black text-lg">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
-                        <div class="flex gap-2">
-                            <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-white/80 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Tahrirlash">
+                <div v-for="partner in partners" :key="partner.id" class="bg-white border border-slate-200/80 shadow-[0_5px_20px_rgba(0,0,0,0.05)] rounded-2xl overflow-hidden hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+                    <!-- Partner Premium Dark/Gold Header -->
+                    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[#fce205] border-b border-amber-500/20 px-6 py-5 flex justify-between items-center relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+                        <div class="flex items-center gap-3 z-10">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#fce205] font-black text-sm">
+                                {{ partner.user?.name ? partner.user.name.charAt(0) : 'P' }}
+                            </div>
+                            <span class="font-display font-black text-base tracking-wide uppercase">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
+                        </div>
+                        <div class="flex gap-2 z-10">
+                            <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-white/10 hover:bg-amber-500 text-white hover:text-black rounded-lg transition-all" title="Tahrirlash">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </button>
-                            <button @click="deletePartner(partner.id)" class="p-1.5 bg-white/80 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-colors" title="O'chirish">
+                            <button @click="deletePartner(partner.id)" class="p-1.5 bg-white/10 hover:bg-rose-600 text-white hover:text-white rounded-lg transition-all" title="O'chirish">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Comparison Table Grid matching Image 1 -->
-                    <div class="grid grid-cols-3 border-b border-slate-300 text-center font-sans text-xs">
-                        <!-- Column 1 Header: Sarmoya -->
-                        <div class="bg-[#fbcfe8]/40 border-r border-slate-300 p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
-                            Jami qilingan sarmoya
+                    <!-- Modern Premium Grid -->
+                    <div class="p-6 grid grid-cols-3 gap-4 bg-slate-50/50 border-b border-slate-100">
+                        <!-- Card 1: Sarmoya -->
+                        <div @click="openAnalytics(partner, 'expenses')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-amber-500 group-hover/card:text-white transition-colors duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
+                                <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_sarmoya) }}</span>
+                            </div>
+                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-amber-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>
-                        <!-- Column 2 Header: Olingan -->
-                        <div class="bg-[#a7f3d0]/30 border-r border-slate-300 p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
-                            Jami olingan so'mma
-                        </div>
-                        <!-- Column 3 Header: Ulush -->
-                        <div class="bg-[#dbeafe] p-4 font-bold text-slate-800 uppercase tracking-wider min-h-[50px] flex items-center justify-center">
-                            Hisoblangan ulush<br>{{ Number(partner.investment_share_percentage) }}%
-                        </div>
-                    </div>
 
-                    <div class="grid grid-cols-3 text-center font-mono text-sm">
-                        <!-- Column 1 Value: Sarmoya -->
-                        <div @click="openAnalytics(partner, 'expenses')" class="border-r border-slate-300 p-6 font-bold text-slate-900 bg-amber-50/10 hover:bg-amber-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
-                            <span class="text-base font-black text-slate-800">{{ formatCurrency(partner.total_sarmoya) }}</span>
-                            <span class="text-[9px] text-slate-400 mt-1 uppercase font-sans">Ko'rish uchun bosing</span>
+                        <!-- Card 2: Olingan -->
+                        <div @click="openAnalytics(partner, 'advances')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-emerald-500 group-hover/card:text-white transition-colors duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Olingan pul</span>
+                                <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_olingan) }}</span>
+                            </div>
+                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-emerald-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>
-                        <!-- Column 2 Value: Olingan -->
-                        <div @click="openAnalytics(partner, 'advances')" class="border-r border-slate-300 p-6 font-bold text-slate-900 bg-emerald-50/10 hover:bg-emerald-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
-                            <span class="text-base font-black text-slate-800">{{ formatCurrency(partner.total_olingan) }}</span>
-                            <span class="text-[9px] text-slate-400 mt-1 uppercase font-sans">Ko'rish uchun bosing</span>
-                        </div>
-                        <!-- Column 3 Value: Ulush -->
-                        <div @click="openAnalytics(partner, 'analytics')" class="p-6 font-bold text-blue-700 bg-blue-50/10 hover:bg-blue-50 cursor-pointer transition-colors flex flex-col justify-center items-center min-h-[90px]">
-                            <span class="text-base font-black text-blue-700">{{ formatCurrency(partner.calculated_share) }}</span>
-                            <span class="text-[8px] text-blue-500 mt-1 uppercase font-sans font-semibold">Umumiy balansning {{ Number(partner.investment_share_percentage) }}%</span>
+
+                        <!-- Card 3: Ulush -->
+                        <div @click="openAnalytics(partner, 'analytics')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-blue-500 group-hover/card:text-white transition-colors duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ulush {{ Number(partner.investment_share_percentage) }}%</span>
+                                <span class="block text-sm font-black text-blue-700 font-mono leading-none">{{ formatCurrency(partner.calculated_share) }}</span>
+                            </div>
+                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-blue-600 font-bold transition-colors">Hisobot &rarr;</span>
                         </div>
                     </div>
 
                     <!-- Footer Action Buttons -->
-                    <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex gap-4">
-                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                    <div class="bg-slate-100 border-t border-slate-200/60 px-6 py-4 flex gap-4">
+                        <button @click="openAdvanceModal(partner)" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
                             💸 Pul So'rash
                         </button>
-                        <button @click="openExpenseModal(partner)" class="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                        <button @click="openExpenseModal(partner)" class="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
                             📥 Chek Yuklash
                         </button>
-                        <button @click="openAnalytics(partner, 'analytics')" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                        <button @click="openAnalytics(partner, 'analytics')" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 flex items-center justify-center gap-1.5">
                             📊 Analitika
                         </button>
                     </div>

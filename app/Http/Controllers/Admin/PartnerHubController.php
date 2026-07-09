@@ -11,6 +11,32 @@ use Inertia\Inertia;
 
 class PartnerHubController extends Controller
 {
+    private function getPartnerRegisterIds($partner)
+    {
+        $partnerName = mb_strtolower(str_replace(' ', '', $partner->user->name ?? ''));
+        if (empty($partnerName)) return [];
+
+        $pWords = array_filter(explode(' ', mb_strtolower($partner->user->name ?? '')));
+        
+        $registerIds = \App\Models\CashRegister::all()->filter(function($reg) use ($partnerName, $pWords) {
+            $regName = mb_strtolower(str_replace(' ', '', $reg->name));
+            if (strpos($regName, $partnerName) !== false || strpos($partnerName, $regName) !== false) {
+                return true;
+            }
+            
+            $matches = 0;
+            foreach ($pWords as $word) {
+                if (strlen($word) < 3) continue;
+                if (strpos($regName, $word) !== false) {
+                    $matches++;
+                }
+            }
+            return $matches >= 2;
+        })->pluck('id')->toArray();
+
+        return $registerIds;
+    }
+
     public function index()
     {
         $partners = Partner::with('user')->get();
@@ -25,15 +51,24 @@ class PartnerHubController extends Controller
             
         $netProfit = $totalIncome - $totalExpense;
         $totalInvested = $partners->sum('total_invested');
-        $companyNetWorth = \App\Models\CompanyBalance::first()?->total_balance ?? 0;
+        
+        // Hardcode company net worth to 0 as requested by the user
+        $companyNetWorth = 0;
         
         // Get total UZS across cash registers
         $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
 
         foreach ($partners as $partner) {
-            // Jami qilingan sarmoya: sum of expense transactions reported by the partner (not advance/dividend) + any incomes
-            $partner->total_sarmoya = \App\Models\Transaction::where('partner_id', $partner->id)
-                ->where('status', 'approved')
+            $registerIds = $this->getPartnerRegisterIds($partner);
+
+            // Jami qilingan sarmoya: sum of expense transactions reported by the partner OR their cash registers (not advance/dividend) + any incomes
+            $partner->total_sarmoya = \App\Models\Transaction::where('status', 'approved')
+                ->where(function($q) use ($partner, $registerIds) {
+                    $q->where('partner_id', $partner->id);
+                    if (!empty($registerIds)) {
+                        $q->orWhereIn('account_id', $registerIds);
+                    }
+                })
                 ->where(function($q) {
                     $q->where(function($sq) {
                         $sq->where('type', 'expense')
@@ -43,14 +78,18 @@ class PartnerHubController extends Controller
                 ->sum('amount');
 
             // Jami olingan so'mma: advances and dividends
-            $partner->total_olingan = \App\Models\Transaction::where('partner_id', $partner->id)
-                ->where('status', 'approved')
+            $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')
+                ->where(function($q) use ($partner, $registerIds) {
+                    $q->where('partner_id', $partner->id);
+                    if (!empty($registerIds)) {
+                        $q->orWhereIn('account_id', $registerIds);
+                    }
+                })
                 ->where('type', 'expense')
                 ->whereIn('category', ['Partner Advance', 'Divident'])
                 ->sum('amount');
 
             // Hisoblangan ulush: 50% (or share %) of the total balance / net profit
-            // We use max of netProfit and dynamicUZS to make sure we show a positive share even if net profit is low during dev
             $umumiySumma = $netProfit > 0 ? $netProfit : ($dynamicUZS > 0 ? $dynamicUZS : 127180000);
             $partner->calculated_share = ($umumiySumma * $partner->investment_share_percentage) / 100;
         }
@@ -166,7 +205,14 @@ class PartnerHubController extends Controller
 
     public function getPartnerLedger(Request $request, Partner $partner)
     {
-        $query = $partner->transactions();
+        $registerIds = $this->getPartnerRegisterIds($partner);
+        
+        $query = \App\Models\Transaction::where(function($q) use ($partner, $registerIds) {
+            $q->where('partner_id', $partner->id);
+            if (!empty($registerIds)) {
+                $q->orWhereIn('account_id', $registerIds);
+            }
+        });
 
         if ($request->filled('from_date')) {
             $query->where('created_at', '>=', $request->from_date . ' 00:00:00');

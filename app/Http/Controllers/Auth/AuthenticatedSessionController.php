@@ -35,12 +35,20 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
+        if ($user->hasRole('Super_Admin') || $user->hasRole('Admin')) {
             return redirect()->intended(route('admin.dashboard', absolute: false));
-        } elseif ($user->hasRole('Operator')) {
-            return redirect()->intended(route('operator', absolute: false));
-        } elseif ($user->hasRole('Partner')) {
-            return redirect()->intended(route('partner', absolute: false));
+        }
+        
+        // Since all roles now use the unified AdminLayout, redirect them to a page they have access to
+        if ($user->hasPermissionTo('access dashboard')) {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        } elseif ($user->hasPermissionTo('access clients')) {
+            return redirect()->intended(route('admin.crm', absolute: false));
+        } elseif ($user->hasPermissionTo('access finance') || $user->hasPermissionTo('access transactions')) {
+            // Usually transactions is tab 2
+            return redirect()->intended(route('admin.finance', ['tab' => 2], absolute: false));
+        } elseif ($user->hasPermissionTo('access objects')) {
+            return redirect()->intended(route('admin.facility', absolute: false));
         }
 
         return redirect()->intended(route('admin.dashboard', absolute: false));

@@ -1,5 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import VueApexCharts from 'vue3-apexcharts';
@@ -11,6 +12,17 @@ import { regionsData } from '@/locations.js';
 
 const { t, locale } = useI18n();
 const page = usePage();
+
+const isSellerOrOperator = computed(() => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    const rawRoles = user.roles || [];
+    const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
+    return roles.includes('Sotuvchi') || roles.includes('Operator');
+});
+
+const currentLayout = computed(() => isSellerOrOperator.value ? SellerLayout : AdminLayout);
+
 const props = defineProps({
     leads: Array,
     clients: Array,
@@ -3827,7 +3839,7 @@ const ledgerReportData = computed(() => {
 
 <template>
     <Head :title="$t('crm_pipeline')" />
-    <AdminLayout>
+    <component :is="currentLayout">
         <template #header>
             <div class="flex items-center justify-between w-full">
                 <h2 class="text-lg md:text-xl font-display font-semibold text-gray-900 flex items-center gap-3 truncate">
@@ -9356,6 +9368,6 @@ const ledgerReportData = computed(() => {
             </div>
         </div>
 
-    </AdminLayout>
+    </component>
 </template>
 

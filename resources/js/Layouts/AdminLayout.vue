@@ -250,6 +250,15 @@ const filteredNavItems = computed(() => {
     const roles = rawRoles.map(r => typeof r === 'string' ? r : r.name);
 
     return navItems.filter(item => {
+        const isSellerOrOperator = roles.includes('Sotuvchi') || roles.includes('Operator');
+        
+        if (isSellerOrOperator) {
+            // Seller/Operator should ONLY see CRM and Transactions
+            if (item.name === 'crm') return true; // Always show CRM to them
+            if (item.name === 'transactions') return true; // Always show Transactions to them
+            return false; // Hide everything else (Admin Dashboard, Facility, Warehouse, etc.)
+        }
+
         if (item.name === 'dashboard') return hasPerm('access dashboard');
         if (item.name === 'crm' || item.name === 'clients_database') return hasPerm('access clients');
         if (item.name === 'facility_manager') return hasPerm('access objects');
@@ -551,7 +560,7 @@ const formattedDate = computed(() => {
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isCrmTabActive('leads') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                🎯 Lidlar
+                                <span class="text-[14px]">🎯</span> Lidlar
                             </Link>
                             
                             <!-- Postlar -->
@@ -560,16 +569,16 @@ const formattedDate = computed(() => {
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isCrmTabActive('posts') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                📝 Postlar
+                                <span class="text-[14px]">📝</span> Postlar
                             </Link>
 
-                            <!-- Sozlamalar -->
+                            <!-- Telefon / IP Telefoniya -->
                             <Link
-                                :href="route('admin.crm', { tab: 'settings' })"
+                                :href="route('admin.telephony.index')"
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
-                                :class="isCrmTabActive('settings') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                                :class="route().current('admin.telephony.index') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                ⚙️ Sozlamalar
+                                <span class="text-[14px]">📞</span> Telefon
                             </Link>
 
                             <!-- SMS -->
@@ -578,16 +587,25 @@ const formattedDate = computed(() => {
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="route().current('admin.ai_agents') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                💬 SMS
+                                <span class="text-[14px]">💬</span> SMS
                             </Link>
 
-                            <!-- IP Telefoniya -->
+                            <!-- Shou room -->
                             <Link
-                                :href="route('admin.telephony.index')"
+                                :href="route('admin.crm.showroom')"
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
-                                :class="route().current('admin.telephony.index') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                                :class="route().current('admin.crm.showroom') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
                             >
-                                📞 IP Telefoniya
+                                <span class="text-[14px]">🏢</span> Shou room
+                            </Link>
+
+                            <!-- Profil sozlamalari -->
+                            <Link
+                                :href="route('profile.edit')"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="route().current('profile.edit') ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                            >
+                                <span class="text-[14px]">⚙️</span> Profil sozlamalari
                             </Link>
                         </div>
                     </div>

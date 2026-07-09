@@ -62,6 +62,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/financial-reports', [\App\Http\Controllers\Admin\FinancialReportController::class, 'index'])->name('financial.reports');
     Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm');
+    Route::get('/crm/showroom', [\App\Http\Controllers\Admin\ShowroomController::class, 'index'])->name('crm.showroom');
     Route::post('/crm/clients', [\App\Http\Controllers\Admin\CrmController::class, 'storeClient'])->name('crm.clients.store');
     Route::put('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'updateClient'])->name('crm.clients.update');
     Route::delete('/crm/clients/{client}', [\App\Http\Controllers\Admin\CrmController::class, 'deleteClient'])->name('crm.clients.delete');

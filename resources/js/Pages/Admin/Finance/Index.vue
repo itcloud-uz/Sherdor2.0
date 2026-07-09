@@ -142,7 +142,8 @@ const hasPerm = (perm) => {
 };
 
 const requestTransactionEdit = (t, action) => {
-    const reason = prompt(`Iltimos, nima uchun ushbu tranzaksiyani ${action === 'edit' ? 'tahrirlash' : 'o\\'chirish'} kerakligini yozing:`);
+    const actionText = action === 'edit' ? 'tahrirlash' : "o'chirish";
+    const reason = prompt(`Iltimos, nima uchun ushbu tranzaksiyani ${actionText} kerakligini yozing:`);
     if (!reason) return;
     router.post(route('admin.finance.transaction_requests.store'), {
         transaction_id: t.id,

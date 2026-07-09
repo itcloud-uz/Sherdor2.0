@@ -3,8 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, useForm, usePage, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import OperatorLayout from '@/Layouts/OperatorLayout.vue';
-import PartnerLayout from '@/Layouts/PartnerLayout.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 
 const page = usePage();
 const user = page.props.auth.user;
@@ -13,8 +12,9 @@ const context = page.props.context || 'admin';
 const { locale } = useI18n();
 
 const CurrentLayout = computed(() => {
-    if (context === 'operator') return OperatorLayout;
-    if (context === 'partner') return PartnerLayout;
+    const roles = page.props.auth.user?.roles || [];
+    const roleNames = roles.map(r => typeof r === 'string' ? r : r.name);
+    if (roleNames.includes('Sotuvchi') || roleNames.includes('Operator')) return SellerLayout;
     return AdminLayout;
 });
 

@@ -28,7 +28,7 @@ class PartnerHubController extends Controller
         $companyNetWorth = \App\Models\CompanyBalance::first()?->total_balance ?? 0;
         
         // Get total UZS across cash registers
-        $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->sum('balance_uzs');
+        $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
 
         foreach ($partners as $partner) {
             // Jami qilingan sarmoya: sum of expense transactions reported by the partner (not advance/dividend) + any incomes

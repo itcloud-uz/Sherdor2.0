@@ -272,7 +272,6 @@ const onUnitLeave = () => {
                             Kvartira haqida ma'lumot ko'rish uchun shaxmatkadan tanlang
                         </div>
                     </div>
-                    </div>
                 </div>
             </div>
             <div v-else class="flex-1 flex items-center justify-center text-gray-500 font-bold bg-white rounded-2xl border border-gray-100">

@@ -25,7 +25,7 @@ class PartnerHubController extends Controller
             
         $netProfit = $totalIncome - $totalExpense;
         $totalInvested = $partners->sum('total_invested');
-        $companyNetWorth = $totalInvested + $netProfit;
+        $companyNetWorth = \App\Models\CompanyBalance::first()?->total_balance ?? 0;
         
         // Get total UZS across cash registers
         $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->sum('balance_uzs');

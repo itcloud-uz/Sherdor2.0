@@ -62,7 +62,7 @@ class PartnerHubController extends Controller
             $registerIds = $this->getPartnerRegisterIds($partner);
 
             // Jami qilingan sarmoya: sum of expense transactions reported by the partner OR their cash registers (not advance/dividend) + any incomes
-            $partner->total_sarmoya = \App\Models\Transaction::where('status', 'approved')
+            $dynamicSarmoya = \App\Models\Transaction::where('status', 'approved')
                 ->where(function($q) use ($partner, $registerIds) {
                     $q->where('partner_id', $partner->id);
                     if (!empty($registerIds)) {
@@ -72,10 +72,16 @@ class PartnerHubController extends Controller
                 ->where(function($q) {
                     $q->where(function($sq) {
                         $sq->where('type', 'expense')
-                            ->whereNotIn('category', ['Partner Advance', 'Divident']);
+                            ->where(function($cQuery) {
+                                $cQuery->whereNotIn('category', ['Partner Advance', 'Divident'])
+                                       ->orWhereNull('category');
+                            });
                     })->orWhere('type', 'income');
                 })
                 ->sum('amount');
+
+            $partner->dynamic_sarmoya = $dynamicSarmoya;
+            $partner->total_sarmoya = $partner->total_invested + $dynamicSarmoya;
 
             // Jami olingan so'mma: advances and dividends
             $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')

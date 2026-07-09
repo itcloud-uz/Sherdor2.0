@@ -760,19 +760,27 @@ function formatDate(dateString) {
                 </div>
 
                 <div v-else class="overflow-y-auto custom-scrollbar flex-1">
-                    <!-- Mini Table summary matching Image 1 inside the modal -->
-                    <div class="grid grid-cols-3 border border-slate-300 rounded-xl overflow-hidden mb-6 text-center font-sans text-xs">
-                        <div class="border-r border-slate-300">
-                            <div class="bg-[#fbcfe8]/40 p-2 font-bold text-slate-700 uppercase tracking-wider">Jami qilingan sarmoya</div>
-                            <div class="p-3 font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_sarmoya) }} UZS</div>
+                    <!-- Premium breakdown summary matching the edited and dynamic investments -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 border border-slate-200 rounded-2xl overflow-hidden mb-8 text-center font-sans text-xs bg-white shadow-sm">
+                        <div class="border-r border-slate-100 p-4">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Kiritilgan Sarmoya (Baza)</div>
+                            <div class="font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_invested) }} UZS</div>
                         </div>
-                        <div class="border-r border-slate-300">
-                            <div class="bg-[#a7f3d0]/30 p-2 font-bold text-slate-700 uppercase tracking-wider">Jami olingan so'mma</div>
-                            <div class="p-3 font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_olingan) }} UZS</div>
+                        <div class="border-r border-slate-100 p-4">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Aylanmadan Xarajatlar (Uskuna/Mulk)</div>
+                            <div class="font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.dynamic_sarmoya || 0) }} UZS</div>
                         </div>
-                        <div>
-                            <div class="bg-[#dbeafe] p-2 font-bold text-slate-700 uppercase tracking-wider">Hisoblangan ulush</div>
-                            <div class="p-3 font-mono font-black text-blue-700 text-sm">{{ formatCurrency(selectedPartner.calculated_share) }} UZS</div>
+                        <div class="border-r border-slate-100 p-4 bg-amber-50/30">
+                            <div class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1.5">Jami Qilingan Sarmoya</div>
+                            <div class="font-mono font-black text-amber-700 text-base leading-none">{{ formatCurrency(selectedPartner.total_sarmoya) }} UZS</div>
+                        </div>
+                        <div class="border-r border-slate-100 p-4">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jami olingan so'mma</div>
+                            <div class="font-mono font-black text-slate-800 text-sm">{{ formatCurrency(selectedPartner.total_olingan) }} UZS</div>
+                        </div>
+                        <div class="p-4 bg-blue-50/30">
+                            <div class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5">Hisoblangan ulush</div>
+                            <div class="font-mono font-black text-blue-700 text-sm">{{ formatCurrency(selectedPartner.calculated_share) }} UZS</div>
                         </div>
                     </div>
 

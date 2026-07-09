@@ -3803,6 +3803,55 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </button>
                                     </div>
                                 </div>
+
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <!-- Bino tanlash -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Bino (Blok) tanlang</label>
+                                            <select v-model="selectedBuilding" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm">
+                                                <option v-for="b in (groupedObjects[currentObject] || [])" :key="b.id" :value="b">
+                                                    {{ b.name }} {{ b.block_name ? '- ' + b.block_name : '' }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <!-- Xonadon qidirish -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Xonadon qidirish</label>
+                                            <div class="relative">
+                                                <input v-model="searchQuery" type="text" placeholder="Raqam..." class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm" />
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                            </div>
+                                        </div>
+                                        <!-- Holati -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Holati</label>
+                                            <select v-model="selectedStatusFilter" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm">
+                                                <option value="">Barchasi</option>
+                                                <option value="available">Sotuvda (Bo'sh)</option>
+                                                <option value="sold">Sotilgan</option>
+                                                <option value="reserved">Bron qilingan</option>
+                                            </select>
+                                        </div>
+                                        <!-- Xonalar soni -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Xonalar soni</label>
+                                            <select v-model="selectedRoomsFilter" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm">
+                                                <option value="">Barchasi</option>
+                                                <option value="1">1 xona</option>
+                                                <option value="2">2 xona</option>
+                                                <option value="3">3 xona</option>
+                                                <option value="4">4 xona</option>
+                                                <option value="5">5+ xona</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex justify-end" v-if="searchQuery || selectedStatusFilter || selectedRoomsFilter">
+                                        <button @click="searchQuery = ''; selectedStatusFilter = ''; selectedRoomsFilter = ''" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded flex items-center gap-2 transition-colors">
+                                            Filtrlarni tozalash
+                                        </button>
+                                    </div>
+                                </div>
  
                                  <!-- Chessboard Grid -->
                                  <div class="overflow-x-auto pb-4">

@@ -506,7 +506,7 @@ function formatDate(dateString) {
             </div>
 
             <!-- Partners View -->
-            <div v-if="activeTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-[fadeIn_0.4s_ease-out]">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-[fadeIn_0.4s_ease-out]">
                 <div v-for="partner in partners" :key="partner.id" class="bg-white border border-slate-200/80 shadow-[0_5px_20px_rgba(0,0,0,0.05)] rounded-2xl overflow-hidden hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
                     <!-- Partner Premium Dark/Gold Header -->
                     <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[#fce205] border-b border-amber-500/20 px-6 py-5 flex justify-between items-center relative overflow-hidden">

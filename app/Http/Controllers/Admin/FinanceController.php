@@ -373,6 +373,26 @@ class FinanceController extends Controller
 
         $transaction = Transaction::create($validated);
 
+        // --- CUSTOM LOGIC FOR FIXED ASSETS ---
+        if ($transaction->type === 'expense' && $transaction->category_id) {
+            $cat = \App\Models\TransactionCategory::find($transaction->category_id);
+            if ($cat && $cat->target_type === 'fixed_asset' && !$transaction->fixed_asset_id) {
+                $assetName = !empty($transaction->notes) ? trim(explode('|', $transaction->notes)[0]) : $cat->name;
+                $asset = \App\Models\FixedAsset::create([
+                    'name' => $assetName,
+                    'type' => 'other',
+                    'purchase_date' => $transaction->transaction_date ?: now()->toDateString(),
+                    'purchase_cost' => $transaction->amount,
+                    'status' => 'active',
+                    'description' => $transaction->notes ?? 'Tranzaksiyadan yaratildi.',
+                    'service_life_months' => 60
+                ]);
+                $transaction->fixed_asset_id = $asset->id;
+                $transaction->save();
+            }
+        }
+        // --- END CUSTOM LOGIC ---
+
         if ($overpaid > 0 && $contract) {
             $overpaymentCategory = \App\Models\TransactionCategory::firstOrCreate(
                 ['name' => 'Mijoz Ortiqcha To\'lovi (Bank)'],
@@ -1099,6 +1119,38 @@ class FinanceController extends Controller
         }
 
         $transaction->update($validated);
+
+        // --- CUSTOM LOGIC FOR FIXED ASSETS ---
+        if ($transaction->type === 'expense' && $transaction->category_id) {
+            $cat = \App\Models\TransactionCategory::find($transaction->category_id);
+            if ($cat && $cat->target_type === 'fixed_asset') {
+                if (!$transaction->fixed_asset_id) {
+                    $assetName = !empty($transaction->notes) ? trim(explode('|', $transaction->notes)[0]) : $cat->name;
+                    $asset = \App\Models\FixedAsset::create([
+                        'name' => $assetName,
+                        'type' => 'other',
+                        'purchase_date' => $transaction->transaction_date ?: now()->toDateString(),
+                        'purchase_cost' => $transaction->amount,
+                        'status' => 'active',
+                        'description' => $transaction->notes ?? 'Tranzaksiyadan yaratildi.',
+                        'service_life_months' => 60
+                    ]);
+                    $transaction->fixed_asset_id = $asset->id;
+                    $transaction->save();
+                } else {
+                    $asset = \App\Models\FixedAsset::find($transaction->fixed_asset_id);
+                    if ($asset) {
+                        $assetName = !empty($transaction->notes) ? trim(explode('|', $transaction->notes)[0]) : $asset->name;
+                        $asset->update([
+                            'name' => $assetName,
+                            'purchase_cost' => $transaction->amount,
+                            'description' => $transaction->notes
+                        ]);
+                    }
+                }
+            }
+        }
+        // --- END CUSTOM LOGIC ---
 
         return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli tahrirlandi.');
     }

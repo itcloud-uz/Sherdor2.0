@@ -2045,9 +2045,16 @@ function submitTransaction() {
         form.value.notes = clientPaymentType.value === 'initial' ? "Boshlang'ich to'lov" : "Oylik to'lov";
     }
     
-    // Combine extraNotesInput with form.notes
+    // Use extraNotesInput as the notes (Izohlar) - don't concatenate with maqsad (To'lov maqsadi)
     if (extraNotesInput.value) {
-        form.value.notes = form.value.notes ? (form.value.notes + ' | Izoh: ' + extraNotesInput.value) : extraNotesInput.value;
+        // Only append if notes is one of the special auto-set values (Boshlang'ich/Oylik to'lov)
+        // For all other cases, extra notes should simply be the notes field
+        if (!requiresClient.value) {
+            form.value.notes = extraNotesInput.value;
+        } else {
+            // For client payments, keep the payment type note and append extra note if any
+            form.value.notes = form.value.notes ? (form.value.notes + ' - ' + extraNotesInput.value) : extraNotesInput.value;
+        }
     }
 
     // Add selected invoices detail to notes and set primary invoice_id / payment_schedule_id
@@ -5896,13 +5903,6 @@ function deleteCategory(id) {
                             <p class="text-[9px] text-slate-400 mt-1">💡 Tanlangan ishning narxi avtomatik tarzda summa maydoniga qo'yiladi.</p>
                         </div>
 
-                        <!-- Row 5: Izohlar & Summa -->
-                        <div class="md:col-span-2">
-                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Izohlar
-                            </label>
-                            <textarea v-model="extraNotesInput" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izohlarni kiriting"></textarea>
-                        </div>
 
                         <!-- Row 6: Ilovalar -->
                         <div>

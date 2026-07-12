@@ -173,9 +173,7 @@ function deleteAsset(id) {
                     <p class="text-xs text-slate-400 font-medium mt-1">Kompaniyaning jismoniy aktivlari, uskunalar va jihozlar boshqaruvi</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
-                    <Link :href="route('admin.partners')" class="px-5 py-2.5 bg-slate-100 text-slate-700 text-xs font-mono font-bold rounded-xl hover:bg-slate-200 transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 border border-slate-200">
-                        ⬅ TA'SISCHILAR
-                    </Link>
+
                     <button @click="openAddAssetModal" class="px-5 py-2.5 bg-emerald-600 text-white text-xs font-mono font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 flex items-center justify-center gap-2 active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
                         Yangi Vosita Qo'shish

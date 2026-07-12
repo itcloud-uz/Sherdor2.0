@@ -465,9 +465,7 @@ function formatDate(dateString) {
                     <p class="text-xs text-slate-400 font-medium mt-1">Barcha ta'sischilar va ularning joriy moliyaviy hisobotlari</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
-                    <Link :href="route('admin.fixed_assets')" class="px-5 py-2.5 bg-slate-100 text-slate-700 text-xs font-mono font-bold rounded-xl hover:bg-slate-200 transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 border border-slate-200">
-                        📦 ASOSIY VOSITALAR
-                    </Link>
+
                     <button @click="showAddPartnerModal = true" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-mono font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 flex items-center justify-center gap-2 active:scale-95">
                         + TA'SISCHI QO'SHISH
                     </button>

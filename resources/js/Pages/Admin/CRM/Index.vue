@@ -479,6 +479,20 @@ async function onPassportPhotoChange(e) {
     }
 }
 
+function onLeadPassportPhotoChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+        newLeadForm.value.passport_photo = file;
+    }
+}
+
+function onLeadPassportPhotoBackChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+        newLeadForm.value.passport_photo_back = file;
+    }
+}
+
 function onRegionChange() {
     clientForm.value.district = '';
     clientForm.value.address = '';
@@ -646,6 +660,10 @@ function openEditLeadModal(lead) {
     editingLeadId.value = lead.id;
     newLeadForm.value = { 
         full_name: lead.full_name, 
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        middle_name: lead.middle_name || '',
+        pinfl: lead.pinfl || '',
         phone: lead.phone, 
         phone_2: lead.phone_2 || '', 
         passport_series: lead.passport_series || '', 
@@ -658,7 +676,9 @@ function openEditLeadModal(lead) {
         source: lead.source || 'manual', 
         is_manual: lead.source === 'manual',
         email: lead.email || '',
-        social_url: lead.social_url || ''
+        social_url: lead.social_url || '',
+        passport_photo: null,
+        passport_photo_back: null
     };
     showDetailedLeadModal.value = true;
 }
@@ -668,6 +688,10 @@ function openDetailedLeadModal() {
     editingLeadId.value = null;
     newLeadForm.value = { 
         full_name: '', 
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        pinfl: '',
         phone: '', 
         phone_2: '', 
         passport_series: '', 
@@ -681,7 +705,9 @@ function openDetailedLeadModal() {
         is_manual: true, 
         budget: '', 
         currency: 'uzs', 
-        comment: '' 
+        comment: '',
+        passport_photo: null,
+        passport_photo_back: null
     };
     showDetailedLeadModal.value = true;
 }
@@ -691,6 +717,10 @@ function openCreateLeadModal() {
     editingLeadId.value = null;
     newLeadForm.value = {
         full_name: '',
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        pinfl: '',
         phone: '',
         phone_2: '',
         passport_series: '',
@@ -704,15 +734,30 @@ function openCreateLeadModal() {
         is_manual: true,
         budget: '',
         currency: 'uzs',
-        comment: ''
+        comment: '',
+        passport_photo: null,
+        passport_photo_back: null
     };
     showCreateLeadModal.value = true;
 }
 
 function submitNewLead() {
     isProcessing.value = true;
+
+    const formData = new FormData();
+    for (const key in newLeadForm.value) {
+        if (newLeadForm.value[key] !== null && newLeadForm.value[key] !== undefined) {
+            formData.append(key, newLeadForm.value[key]);
+        }
+    }
+
     if (isEditingLead.value) {
-        axios.put(route('admin.crm.leads.update', editingLeadId.value), newLeadForm.value)
+        formData.append('_method', 'PUT');
+        axios.post(route('admin.crm.leads.update', editingLeadId.value), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
             .then(() => {
                 showCreateLeadModal.value = false;
                 showDetailedLeadModal.value = false;
@@ -725,12 +770,20 @@ function submitNewLead() {
                 isProcessing.value = false;
             });
     } else {
-        axios.post(route('api.leads.store'), newLeadForm.value)
+        axios.post(route('api.leads.store'), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
             .then(() => {
                 showCreateLeadModal.value = false;
                 showDetailedLeadModal.value = false;
                 newLeadForm.value = {
                     full_name: '',
+                    first_name: '',
+                    last_name: '',
+                    middle_name: '',
+                    pinfl: '',
                     phone: '',
                     phone_2: '',
                     passport_series: '',
@@ -744,7 +797,9 @@ function submitNewLead() {
                     is_manual: true,
                     budget: '',
                     currency: 'uzs',
-                    comment: ''
+                    comment: '',
+                    passport_photo: null,
+                    passport_photo_back: null
                 };
                 router.reload({ preserveScroll: true });
             })
@@ -8327,24 +8382,24 @@ const ledgerReportData = computed(() => {
                 
                 <div class="p-6 bg-white">
                     <form @submit.prevent="submitNewLead" class="space-y-4">
-                        <!-- Qator 1: Ism, Tel 1, Tel 2 -->
+                        <!-- Qator 1: Familiya, Ism, Sharif -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Mijoz ismi</label>
-                                <input v-model="newLeadForm.full_name" required type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Familiya ism sharifi">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">* Familiya</label>
+                                <input v-model="newLeadForm.last_name" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Familiyasini kiriting" required>
                             </div>
                             <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Telefon raqam</label>
-                                <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Telefon raqami">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">* Ism</label>
+                                <input v-model="newLeadForm.first_name" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Ismini kiriting" required>
                             </div>
                             <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Qo'shimcha raqami</label>
-                                <input v-model="newLeadForm.phone_2" type="tel" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Qo'shimcha raqami">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Otasining ismi</label>
+                                <input v-model="newLeadForm.middle_name" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Otasining ismini kiriting">
                             </div>
                         </div>
                         
-                        <!-- Qator 2: Passport, Birth Date -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Qator 2: Passport, Birth Date, Jinsi -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport seriyasi</label>
                                 <input v-model="newLeadForm.passport_series" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none uppercase" placeholder="Pasport seriyasi">
@@ -8352,6 +8407,14 @@ const ledgerReportData = computed(() => {
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tug'ilgan sanasi</label>
                                 <input v-model="newLeadForm.birth_date" type="date" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Jinsi</label>
+                                <select v-model="newLeadForm.gender" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                                    <option value="">Tanlang</option>
+                                    <option value="Erkak">Erkak</option>
+                                    <option value="Ayol">Ayol</option>
+                                </select>
                             </div>
                         </div>
 
@@ -8371,20 +8434,80 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Qator 4: Tashkilot xodimi, Manba, Izoh -->
+                        <!-- Qator 4: Telefon, Qo'shimcha telefon, Vakil/Manba -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tashkilot xodimi</label>
-                                <select v-model="newLeadForm.assigned_employee_id" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
-                                    <option value="">Xodimni tanlang</option>
-                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
-                                </select>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5"><span class="text-red-500">*</span> Telefon raqam</label>
+                                <input v-model="newLeadForm.phone" required type="tel" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Telefon raqami">
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Qo'shimcha raqami</label>
+                                <input v-model="newLeadForm.phone_2" type="tel" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Qo'shimcha raqami">
                             </div>
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Vakil / Manba</label>
                                 <select v-model="newLeadForm.source" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
                                     <option v-for="source in leadSources" :key="source.id" :value="source.name.toLowerCase()">{{ source.name }}</option>
                                     <option value="manual">Boshqa</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Qator 5: JSHSHIR (PINFL) va Pasport nusxalari upload -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">JSHSHIR (PINFL)</label>
+                                <input v-model="newLeadForm.pinfl" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="JSHSHIR kiriting">
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport nusxasi (old)</label>
+                                <label class="w-full h-20 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
+                                    <template v-if="!newLeadForm.passport_photo">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
+                                    </template>
+                                    <template v-else>
+                                        <svg class="w-5 h-5 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="newLeadForm.passport_photo.name">
+                                            {{ newLeadForm.passport_photo.name }}
+                                        </span>
+                                    </template>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" @change="onLeadPassportPhotoChange">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport nusxasi (orqa)</label>
+                                <label class="w-full h-20 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
+                                    <template v-if="!newLeadForm.passport_photo_back">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
+                                    </template>
+                                    <template v-else>
+                                        <svg class="w-5 h-5 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="newLeadForm.passport_photo_back.name">
+                                            {{ newLeadForm.passport_photo_back.name }}
+                                        </span>
+                                    </template>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" @change="onLeadPassportPhotoBackChange">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Qator 6: Tashkilot xodimi va Izoh -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Tashkilot xodimi</label>
+                                <select v-model="newLeadForm.assigned_employee_id" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                                    <option value="">Xodimni tanlang</option>
+                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                                 </select>
                             </div>
                             <div>

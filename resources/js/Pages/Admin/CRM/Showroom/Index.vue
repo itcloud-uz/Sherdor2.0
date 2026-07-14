@@ -1,6 +1,6 @@
 <script setup>
 import { Head, usePage, Link } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
 
@@ -20,7 +20,34 @@ const isSellerOrOperator = computed(() => {
 
 const currentLayout = computed(() => isSellerOrOperator.value ? SellerLayout : AdminLayout);
 
-const selectedBuildingId = ref(props.buildings?.length > 0 ? props.buildings[0].id : null);
+// Unique object names list
+const uniqueObjectNames = computed(() => {
+    if (!props.buildings) return [];
+    return [...new Set(props.buildings.map(b => b.name))];
+});
+
+// Selected object name state
+const selectedObjectName = ref(props.buildings?.length > 0 ? props.buildings[0].name : '');
+
+// Blocks belonging to the selected object
+const availableBlocks = computed(() => {
+    if (!selectedObjectName.value || !props.buildings) return [];
+    return props.buildings.filter(b => b.name === selectedObjectName.value);
+});
+
+// Selected block (building) ID state
+const selectedBuildingId = ref(null);
+
+// Watch object name changes to set selectedBuildingId to the first block
+watch(selectedObjectName, (newObjName) => {
+    const firstBlock = props.buildings?.find(b => b.name === newObjName);
+    if (firstBlock) {
+        selectedBuildingId.value = firstBlock.id;
+    } else {
+        selectedBuildingId.value = null;
+    }
+}, { immediate: true });
+
 const selectedBuilding = computed(() => props.buildings?.find(b => b.id === selectedBuildingId.value));
 const activeTab = ref('overview'); // overview, shaxmatka
 
@@ -100,15 +127,25 @@ const onUnitLeave = () => {
         </template>
 
         <div class="h-full flex flex-col gap-6">
-            <!-- Buildings Tabs & Filters -->
-            <div class="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <label class="text-sm font-bold text-gray-700 whitespace-nowrap">Bino (Blok) tanlang:</label>
-                    <select v-model="selectedBuildingId" class="border-gray-200 rounded-lg text-sm font-bold text-gray-800 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64">
-                        <option v-for="building in buildings" :key="building.id" :value="building.id">
-                            {{ building.name }}
-                        </option>
-                    </select>
+            <!-- Buildings Tabs & Filters (Object and Block Selector) -->
+            <div class="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full">
+                <div class="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm font-bold text-gray-700 whitespace-nowrap">Obyekt tanlang:</label>
+                        <select v-model="selectedObjectName" class="border-gray-200 rounded-lg text-sm font-bold text-gray-800 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64">
+                            <option v-for="name in uniqueObjectNames" :key="name" :value="name">
+                                {{ name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-3" v-if="selectedObjectName">
+                        <label class="text-sm font-bold text-gray-700 whitespace-nowrap">Blok tanlang:</label>
+                        <select v-model="selectedBuildingId" class="border-gray-200 rounded-lg text-sm font-bold text-gray-800 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64">
+                            <option v-for="building in availableBlocks" :key="building.id" :value="building.id">
+                                {{ building.block_name || building.corpus_name || 'Asosiy Blok' }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

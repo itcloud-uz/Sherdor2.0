@@ -137,6 +137,10 @@ const editingClientId = ref(null);
 
 const newLeadForm = ref({
     full_name: '',
+    first_name: '',
+    last_name: '',
+    middle_name: '',
+    pinfl: '',
     phone: '',
     phone_2: '',
     passport_series: '',
@@ -150,7 +154,9 @@ const newLeadForm = ref({
     is_manual: true,
     budget: '',
     currency: 'uzs',
-    comment: ''
+    comment: '',
+    passport_photo: null,
+    passport_photo_back: null
 });
 
 const clientForm = ref({

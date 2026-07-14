@@ -484,20 +484,26 @@ class CrmController extends Controller
             return redirect()->back()->withErrors(['message' => 'Bunday telefon raqamli mijoz allaqachon mavjud!']);
         }
 
-        $names = explode(' ', trim($lead->full_name));
-        $lastName = $names[0] ?? '';
-        $firstName = $names[1] ?? '';
-        $middleName = $names[2] ?? '';
+        $lastName = $lead->last_name;
+        $firstName = $lead->first_name;
+        $middleName = $lead->middle_name;
 
-        if (empty($firstName)) {
-            $firstName = $lastName;
-            $lastName = '';
+        if (empty($firstName) && empty($lastName)) {
+            $names = explode(' ', trim($lead->full_name));
+            $lastName = $names[0] ?? '';
+            $firstName = $names[1] ?? '';
+            $middleName = $names[2] ?? '';
+
+            if (empty($firstName)) {
+                $firstName = $lastName;
+                $lastName = '';
+            }
         }
 
         \App\Models\Client::create([
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'middle_name' => $middleName,
+            'first_name' => $firstName ?: '',
+            'last_name' => $lastName ?: '',
+            'middle_name' => $middleName ?: '',
             'phone' => $lead->phone,
             'phone_2' => $lead->phone_2,
             'passport_number' => $lead->passport_series,
@@ -505,6 +511,9 @@ class CrmController extends Controller
             'district' => $lead->district,
             'address' => $lead->address,
             'source' => $lead->source,
+            'pinfl' => $lead->pinfl,
+            'passport_photo' => $lead->passport_photo,
+            'passport_photo_back' => $lead->passport_photo_back,
         ]);
 
         $lead->delete();
@@ -519,7 +528,11 @@ class CrmController extends Controller
     public function updateLead(Request $request, Lead $lead)
     {
         $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
+            'full_name' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'pinfl' => 'nullable|string|max:255',
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
             'passport_series' => 'nullable|string|max:255',
@@ -533,9 +546,20 @@ class CrmController extends Controller
             'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
             'user_id' => 'nullable|exists:users,id',
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
+            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
         ]);
 
-        $lead->full_name = $validated['full_name'];
+        $fullName = trim(($validated['last_name'] ?? '') . ' ' . ($validated['first_name'] ?? '') . ' ' . ($validated['middle_name'] ?? ''));
+        if (empty($fullName)) {
+            $fullName = $validated['full_name'] ?? $lead->full_name;
+        }
+
+        $lead->full_name = $fullName;
+        $lead->first_name = $validated['first_name'] ?? $lead->first_name;
+        $lead->last_name = $validated['last_name'] ?? $lead->last_name;
+        $lead->middle_name = $validated['middle_name'] ?? $lead->middle_name;
+        $lead->pinfl = $validated['pinfl'] ?? $lead->pinfl;
         $lead->phone = $validated['phone'];
         $lead->phone_2 = $validated['phone_2'] ?? null;
         $lead->passport_series = $validated['passport_series'] ?? null;
@@ -550,6 +574,20 @@ class CrmController extends Controller
         if (isset($validated['source'])) $lead->source = $validated['source'];
         if (isset($validated['user_id'])) $lead->user_id = $validated['user_id'];
         
+        if ($request->hasFile('passport_photo')) {
+            if ($lead->passport_photo && \Storage::disk('public')->exists($lead->passport_photo)) {
+                \Storage::disk('public')->delete($lead->passport_photo);
+            }
+            $lead->passport_photo = $request->file('passport_photo')->store('passport_photos', 'public');
+        }
+
+        if ($request->hasFile('passport_photo_back')) {
+            if ($lead->passport_photo_back && \Storage::disk('public')->exists($lead->passport_photo_back)) {
+                \Storage::disk('public')->delete($lead->passport_photo_back);
+            }
+            $lead->passport_photo_back = $request->file('passport_photo_back')->store('passport_photos', 'public');
+        }
+
         $lead->save();
 
         if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {

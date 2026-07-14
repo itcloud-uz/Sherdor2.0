@@ -15,7 +15,11 @@ class LeadController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
+            'full_name' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'pinfl' => 'nullable|string|max:255',
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
             'passport_series' => 'nullable|string|max:255',
@@ -30,6 +34,8 @@ class LeadController extends Controller
             'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
             'user_id' => 'nullable|exists:users,id',
+            'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
+            'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
         ]);
 
         try {
@@ -40,8 +46,29 @@ class LeadController extends Controller
                 $source = 'manual';
             }
 
+            $fullName = trim(($validated['last_name'] ?? '') . ' ' . ($validated['first_name'] ?? '') . ' ' . ($validated['middle_name'] ?? ''));
+            if (empty($fullName)) {
+                $fullName = $validated['full_name'] ?? '';
+            }
+
+            $passportPhotoPath = null;
+            if ($request->hasFile('passport_photo')) {
+                $passportPhotoPath = $request->file('passport_photo')->store('passport_photos', 'public');
+            }
+
+            $passportPhotoBackPath = null;
+            if ($request->hasFile('passport_photo_back')) {
+                $passportPhotoBackPath = $request->file('passport_photo_back')->store('passport_photos', 'public');
+            }
+
             $lead = Lead::create([
-                'full_name' => $validated['full_name'],
+                'full_name' => $fullName,
+                'first_name' => $validated['first_name'] ?? null,
+                'last_name' => $validated['last_name'] ?? null,
+                'middle_name' => $validated['middle_name'] ?? null,
+                'pinfl' => $validated['pinfl'] ?? null,
+                'passport_photo' => $passportPhotoPath,
+                'passport_photo_back' => $passportPhotoBackPath,
                 'phone' => $validated['phone'],
                 'phone_2' => $validated['phone_2'] ?? null,
                 'passport_series' => $validated['passport_series'] ?? null,
@@ -63,20 +90,26 @@ class LeadController extends Controller
             if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
                 // Check if phone already exists in clients
                 if (!\App\Models\Client::where('phone', $lead->phone)->exists()) {
-                    $names = explode(' ', trim($lead->full_name));
-                    $lastName = $names[0] ?? '';
-                    $firstName = $names[1] ?? '';
-                    $middleName = $names[2] ?? '';
+                    $lastName = $lead->last_name;
+                    $firstName = $lead->first_name;
+                    $middleName = $lead->middle_name;
 
-                    if (empty($firstName)) {
-                        $firstName = $lastName;
-                        $lastName = '';
+                    if (empty($firstName) && empty($lastName)) {
+                        $names = explode(' ', trim($lead->full_name));
+                        $lastName = $names[0] ?? '';
+                        $firstName = $names[1] ?? '';
+                        $middleName = $names[2] ?? '';
+
+                        if (empty($firstName)) {
+                            $firstName = $lastName;
+                            $lastName = '';
+                        }
                     }
 
                     $client = \App\Models\Client::create([
-                        'first_name' => $firstName,
-                        'last_name' => $lastName,
-                        'middle_name' => $middleName,
+                        'first_name' => $firstName ?: '',
+                        'last_name' => $lastName ?: '',
+                        'middle_name' => $middleName ?: '',
                         'phone' => $lead->phone,
                         'phone_2' => $lead->phone_2,
                         'passport_number' => $lead->passport_series,
@@ -84,6 +117,9 @@ class LeadController extends Controller
                         'district' => $lead->district,
                         'address' => $lead->address,
                         'source' => $lead->source,
+                        'pinfl' => $lead->pinfl,
+                        'passport_photo' => $lead->passport_photo,
+                        'passport_photo_back' => $lead->passport_photo_back,
                     ]);
 
                     $lead->delete();

@@ -23,6 +23,12 @@ class Lead extends Model
         'address',
         'assigned_employee_id',
         'comment',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'pinfl',
+        'passport_photo',
+        'passport_photo_back',
     ];
 
     public function user()

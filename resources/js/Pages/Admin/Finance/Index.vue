@@ -5629,30 +5629,43 @@ function deleteCategory(id) {
                         </div>
 
 
-                        <!-- Row 2: Hisobni tanlash -->
-                        <div class="md:col-span-2 space-y-3">
+                        <!-- Row 2: Hisobni tanlash & To'lov turi -->
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3.5">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                        * Hisobni tanlash
+                                    </label>
+                                    <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                        <option value="" disabled>Hisobni tanlang</option>
+                                        <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
+                                            {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Sub-kassa (Optional/Conditional) -->
+                                <div v-if="subRegisters.length > 0">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                        * Sub kassa tanlash
+                                    </label>
+                                    <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                        <option value="" disabled>Sub kassa tanlang</option>
+                                        <option v-for="r in subRegisters" :key="r.id" :value="r.id">
+                                            {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Hisobni tanlash
+                                    * To'lov turi
                                 </label>
-                                <select v-model="selectedParentRegisterId" @change="handleParentRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Hisobni tanlang</option>
-                                    <option v-for="r in parentRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- Sub-kassa (Optional/Conditional) -->
-                            <div v-if="subRegisters.length > 0">
-                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                    * Sub kassa tanlash
-                                </label>
-                                <select v-model="selectedSubRegisterId" @change="handleSubRegisterChange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
-                                    <option value="" disabled>Sub kassa tanlang</option>
-                                    <option v-for="r in subRegisters" :key="r.id" :value="r.id">
-                                        {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
-                                    </option>
+                                <select v-model="form.payment_method" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                    <option value="cash">Naqd</option>
+                                    <option value="bank_transfer">Bank (O'tkazma)</option>
+                                    <option value="card">Plastik (Karta)</option>
                                 </select>
                             </div>
                         </div>

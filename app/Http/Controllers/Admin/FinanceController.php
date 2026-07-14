@@ -1772,6 +1772,7 @@ class FinanceController extends Controller
 
             fputcsv($file, [
                 'ID', 
+                'Sana',
                 'Turi', 
                 'Kassa / Bank', 
                 'Kontragent', 
@@ -1782,8 +1783,7 @@ class FinanceController extends Controller
                 'Konvertatsiya (UZS)', 
                 'To\'lov uslubi', 
                 'Holati', 
-                'Izoh', 
-                'Sana'
+                'Izoh'
             ], ';');
 
             foreach ($transactions as $txn) {
@@ -1813,20 +1813,28 @@ class FinanceController extends Controller
                            ($txn->payment_method === 'card' ? 'Karta' : 
                            ($txn->payment_method === 'bank_transfer' ? 'O\'tkazma (Bank)' : $txn->payment_method));
 
+                // Format transaction date as d.m.Y
+                $dateFormatted = $txn->transaction_date ? date('d.m.Y', strtotime($txn->transaction_date)) : '';
+
+                // Format amounts with spaces for thousands and comma for decimal
+                $amountFormatted = number_format($txn->amount, 2, ',', ' ');
+                $rateFormatted = $txn->exchange_rate ? number_format($txn->exchange_rate, 2, ',', ' ') : '';
+                $convertedFormatted = $txn->converted_amount ? number_format($txn->converted_amount, 2, ',', ' ') : '';
+
                 fputcsv($file, [
                     $txn->id,
+                    $dateFormatted,
                     $txn->type === 'income' ? 'Kirim' : 'Chiqim',
                     $txn->cashRegister->name ?? 'Asosiy',
                     $counterpartyName ?: 'Noma\'lum',
                     $txn->category->name ?? ($txn->category_display ?: 'Boshqa'),
-                    $txn->amount,
+                    $amountFormatted,
                     $txn->currency,
-                    $txn->exchange_rate,
-                    $txn->converted_amount,
+                    $rateFormatted,
+                    $convertedFormatted,
                     $methodUz,
                     $statusUz,
-                    $txn->notes,
-                    $txn->transaction_date
+                    $txn->notes
                 ], ';');
             }
 

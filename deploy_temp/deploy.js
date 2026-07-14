@@ -15,15 +15,26 @@ async function deploy() {
         });
         console.log('Connected!');
 
-        const diffOutput = execSync('git diff --name-only HEAD~12 HEAD -- . :!deploy_temp/node_modules', { cwd: path.resolve(__dirname, '..') }).toString();
-        const files = diffOutput.split('\n').map(f => f.trim()).filter(f => f && fs.existsSync(path.resolve(__dirname, '../' + f)));
+        const diffOutput = execSync('git diff --name-only origin/main HEAD -- . :!deploy_temp/node_modules', { cwd: path.resolve(__dirname, '..') }).toString();
+        const files = diffOutput.split('\n')
+            .map(f => f.trim())
+            .filter(f => {
+                if (!f) return false;
+                const isProjectFile = f.startsWith('app/') || 
+                                      f.startsWith('resources/') || 
+                                      f.startsWith('routes/') || 
+                                      f.startsWith('database/') || 
+                                      f.startsWith('config/') ||
+                                      f.startsWith('bootstrap/') ||
+                                      f.startsWith('public/');
+                return isProjectFile && fs.existsSync(path.resolve(__dirname, '../' + f));
+            });
 
-        console.log('Uploading files...');
+        console.log(`Uploading ${files.length} project files...`);
         for (const file of files) {
             const localPath = path.resolve(__dirname, '../' + file);
             const remotePath = '/home/itcloud/Sherdor2.0/' + file.replace(/\\/g, '/');
             
-            // create remote directory if it doesn't exist
             const remoteDir = path.dirname(remotePath).replace(/\\/g, '/');
             await ssh.execCommand(`mkdir -p "${remoteDir}"`);
             
@@ -31,13 +42,21 @@ async function deploy() {
             console.log(`Uploaded ${file}`);
         }
 
-        console.log('Running npm install...');
-        await ssh.execCommand('npm install', { cwd: '/home/itcloud/Sherdor2.0' });
+        console.log('Clearing optimization cache...');
+        await ssh.execCommand('php artisan optimize:clear', { cwd: '/home/itcloud/Sherdor2.0' });
+
+        console.log('Running migrations...');
+        const migrateResult = await ssh.execCommand('php artisan migrate --force', { cwd: '/home/itcloud/Sherdor2.0' });
+        console.log('Migration output:', migrateResult.stdout || migrateResult.stderr);
 
         console.log('Running npm run build...');
-        const result = await ssh.execCommand('npm run build', { cwd: '/home/itcloud/Sherdor2.0' });
-        console.log('STDOUT: ' + result.stdout);
-        console.log('STDERR: ' + result.stderr);
+        const buildResult = await ssh.execCommand('npm run build', { cwd: '/home/itcloud/Sherdor2.0' });
+        console.log('Build STDOUT:', buildResult.stdout);
+        console.log('Build STDERR:', buildResult.stderr);
+
+        console.log('Running final optimization and permission checks...');
+        await ssh.execCommand("echo 'clone1997' | sudo -S php artisan optimize", { cwd: '/home/itcloud/Sherdor2.0' });
+        await ssh.execCommand("echo 'clone1997' | sudo -S chown -R www-data:www-data storage bootstrap/cache", { cwd: '/home/itcloud/Sherdor2.0' });
 
         console.log('Deployment complete!');
         ssh.dispose();

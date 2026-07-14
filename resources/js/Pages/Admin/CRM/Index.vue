@@ -2881,10 +2881,10 @@ function openDocumentPreview(type, contract) {
         // Dynamically use PDF/DOCX export if a schedule template exists in templates list
         const hasScheduleTpl = props.contractTemplates?.some(t => t.type === 'schedule');
         if (hasScheduleTpl) {
-            docDownloadUrl.value = route('contracts.export.pdf', contract.id);
-            docDownloadDocxUrl.value = route('contracts.export.docx', contract.id);
+            docDownloadUrl.value = route('admin.contracts.export.pdf', contract.id);
+            docDownloadDocxUrl.value = route('admin.contracts.export.docx', contract.id);
         } else {
-            docDownloadUrl.value = route('contracts.export.xlsx', contract.id);
+            docDownloadUrl.value = route('admin.contracts.export.xlsx', contract.id);
             docDownloadDocxUrl.value = '';
         }
     }

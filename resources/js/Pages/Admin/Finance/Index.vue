@@ -2128,7 +2128,6 @@ function submitTransaction() {
             isEditingDocNumber.value = false;
             selectedParentRegisterId.value = '';
             selectedSubRegisterId.value = '';
-            activeTab.value = 1;
         },
         onError: () => isProcessing.value = false
     });

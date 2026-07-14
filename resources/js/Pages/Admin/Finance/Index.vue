@@ -2658,6 +2658,15 @@ const categoryForm = useForm({
     is_active: true
 });
 
+const onlyActiveCategories = ref(true);
+const filteredAllCategories = computed(() => {
+    if (!props.allCategories) return [];
+    if (onlyActiveCategories.value) {
+        return props.allCategories.filter(c => c.is_active);
+    }
+    return props.allCategories;
+});
+
 function openAddCategoryModal() {
     isEditCategory.value = false;
     categoryForm.reset();
@@ -4920,6 +4929,12 @@ function deleteCategory(id) {
                 </div>
 
                 <div class="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden p-6 space-y-4">
+                    <div class="flex justify-between items-center bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <input v-model="onlyActiveCategories" type="checkbox" id="onlyActiveCats" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="onlyActiveCats" class="text-xs font-semibold text-gray-700 cursor-pointer">Faqat faol kategoriyalarni ko'rsatish</label>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto border border-gray-150 rounded-xl">
                         <table class="w-full text-left text-sm font-mono">
                             <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
@@ -4933,7 +4948,7 @@ function deleteCategory(id) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="(cat, idx) in props.allCategories" :key="cat.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="(cat, idx) in filteredAllCategories" :key="cat.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 text-gray-400 font-bold">{{ idx + 1 }}</td>
                                     <td class="p-4 font-bold text-gray-900">{{ cat.name }}</td>
                                     <td class="p-4 font-bold">
@@ -4966,7 +4981,7 @@ function deleteCategory(id) {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="!props.allCategories?.length">
+                                <tr v-if="!filteredAllCategories.length">
                                     <td colspan="6" class="p-8 text-center text-gray-400">Kategoriyalar mavjud emas.</td>
                                 </tr>
                             </tbody>

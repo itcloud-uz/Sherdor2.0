@@ -1243,9 +1243,20 @@ watch(() => form.value.partner_id, (newVal) => {
 watch(() => form.value.worker_id, (newVal) => {
     fetchUnpaidWorks('worker', newVal);
     if (newVal && props.counterparties) {
-        const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id == newVal);
+        const c = props.counterparties.find(x => x.type === 'employee' && x.customable_id == newVal && !x.customable_type?.includes('User'));
         if (c) {
             form.value.counterparty_id = c.id;
+        }
+    }
+});
+
+watch(() => editTransactionForm.value?.counterparty_id, (newVal) => {
+    if (newVal && props.counterparties) {
+        const c = props.counterparties.find(x => x.id == newVal);
+        if (c) {
+            editTransactionForm.value.client_id = c.type === 'client' ? c.customable_id : '';
+            editTransactionForm.value.supplier_id = c.type === 'supplier' ? c.customable_id : '';
+            editTransactionForm.value.worker_id = (c.type === 'employee' && !c.customable_type?.includes('User')) ? c.customable_id : '';
         }
     }
 });
@@ -1376,7 +1387,7 @@ watch(() => form.value.counterparty_id, (newVal) => {
         if (c) {
             form.value.client_id = c.type === 'client' ? c.customable_id : '';
             form.value.supplier_id = c.type === 'supplier' ? c.customable_id : '';
-            form.value.worker_id = c.type === 'employee' ? c.customable_id : '';
+            form.value.worker_id = (c.type === 'employee' && !c.customable_type?.includes('User')) ? c.customable_id : '';
             if (c.type === 'client') {
                 clientSearchQuery.value = c.name;
                 
@@ -2180,8 +2191,14 @@ function submitTransaction() {
         form.value.target_type = 'brigade';
         form.value.target_id = form.value.brigade_id;
     } else if (requiresWorker.value) {
-        form.value.target_type = 'worker';
-        form.value.target_id = form.value.worker_id;
+        const c = props.counterparties.find(x => x.id == form.value.counterparty_id);
+        if (c && c.customable_type?.includes('User')) {
+            form.value.target_type = 'user';
+            form.value.target_id = c.customable_id;
+        } else {
+            form.value.target_type = 'worker';
+            form.value.target_id = form.value.worker_id;
+        }
     } else if (requiresSupplier.value) {
         form.value.target_type = 'supplier';
         form.value.target_id = form.value.supplier_id;
@@ -5410,10 +5427,10 @@ function deleteCategory(id) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Xodim / Ishchi
                             </label>
-                            <select v-model="editTransactionForm.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <select v-model="editTransactionForm.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Xodimni tanlang</option>
-                                <option v-for="w in workers" :key="w.id" :value="w.id">
-                                    {{ w.name }} ({{ w.role || 'Ishchi' }})
+                                <option v-for="c in counterparties.filter(x => x.type === 'employee')" :key="c.id" :value="c.id">
+                                    {{ c.name }} {{ c.customable_type?.includes('User') ? '(tizim xodimi)' : '' }}
                                 </option>
                             </select>
                         </div>
@@ -6126,10 +6143,10 @@ function deleteCategory(id) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Xodim / Ishchi
                             </label>
-                            <select v-model="form.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                            <select v-model="form.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Xodimni tanlang</option>
-                                <option v-for="w in workers" :key="w.id" :value="w.id">
-                                    {{ w.name }} ({{ w.role || 'Ishchi' }})
+                                <option v-for="c in counterparties.filter(x => x.type === 'employee')" :key="c.id" :value="c.id">
+                                    {{ c.name }} {{ c.customable_type?.includes('User') ? '(tizim xodimi)' : '' }}
                                 </option>
                             </select>
                         </div>

@@ -229,7 +229,7 @@ class FinanceController extends Controller
             'longitude' => 'nullable|string',
             'source' => 'nullable|string|max:50',
             'work_category' => 'nullable|string|max:255',
-            'target_type' => 'nullable|string|in:partner,supplier,client,worker,brigade,machine_owner',
+            'target_type' => 'nullable|string|in:partner,supplier,client,worker,brigade,machine_owner,user',
             'target_id' => 'nullable|integer',
             'exchange_rate' => 'nullable|numeric|min:0',
             'converted_amount' => 'nullable|numeric|min:0',
@@ -290,12 +290,15 @@ class FinanceController extends Controller
             $validated['requires_consensus'] = true;
         }
         
-        // Map polymorphic target_id if not present but counterparty is selected
         if (!empty($validated['counterparty_id']) && empty($validated['target_id'])) {
             $counterparty = Counterparty::find($validated['counterparty_id']);
             if ($counterparty) {
                 $validated['target_id'] = $counterparty->customable_id;
-                $validated['target_type'] = $counterparty->type === 'employee' ? 'worker' : $counterparty->type;
+                if ($counterparty->type === 'employee') {
+                    $validated['target_type'] = $counterparty->customable_type === \App\Models\User::class ? 'user' : 'worker';
+                } else {
+                    $validated['target_type'] = $counterparty->type;
+                }
             }
         }
 
@@ -338,6 +341,7 @@ class FinanceController extends Controller
                     case 'partner': $customableType = \App\Models\Partner::class; break;
                     case 'client': $customableType = \App\Models\Client::class; break;
                     case 'worker': $customableType = \App\Models\Worker::class; break;
+                    case 'user': $customableType = \App\Models\User::class; break;
                 }
                 if ($customableType) {
                     $cp = \App\Models\Counterparty::where('customable_type', $customableType)
@@ -624,6 +628,23 @@ class FinanceController extends Controller
                     'finance_transaction_id' => $transaction->id,
                     'linked_work_type' => $transaction->linked_work_type,
                     'linked_work_id' => $transaction->linked_work_id,
+                ]);
+            }
+        }
+
+        // 5b. User Transactions
+        if ($transaction->target_type === 'user' && $transaction->target_id) {
+            $userObj = \App\Models\User::find($transaction->target_id);
+            if ($userObj) {
+                DB::table('user_transactions')->insert([
+                    'user_id' => $userObj->id,
+                    'type' => $transaction->type === 'income' ? 'payment' : 'advance_payment',
+                    'amount' => $transaction->amount,
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'date' => $transaction->transaction_date ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'finance_transaction_id' => $transaction->id,
                 ]);
             }
         }
@@ -917,6 +938,11 @@ class FinanceController extends Controller
             if ($worker) {
                 $txnType === 'expense' ? $worker->decrement('balance', $amount) : null;
             }
+        } elseif ($type === 'user') {
+            $userObj = \App\Models\User::find($id);
+            if ($userObj) {
+                $txnType === 'expense' ? $userObj->decrement('balance', $amount) : $userObj->increment('balance', $amount);
+            }
         } elseif ($type === 'brigade') {
             $brigade = Brigade::find($id);
             if ($brigade) {
@@ -1090,11 +1116,31 @@ class FinanceController extends Controller
             'exchange_rate' => 'nullable|numeric|min:0',
             'converted_amount' => 'nullable|numeric|min:0',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'target_type' => 'nullable|string|in:partner,supplier,client,worker,brigade,machine_owner,user,fixed_asset',
+            'target_id' => 'nullable|integer',
         ]);
 
         foreach ($validated as $key => $value) {
             if ($value === '' && str_ends_with($key, '_id')) {
                 $validated[$key] = null;
+            }
+        }
+
+        if (!empty($validated['counterparty_id'])) {
+            $counterparty = Counterparty::find($validated['counterparty_id']);
+            if ($counterparty) {
+                $validated['target_id'] = $counterparty->customable_id;
+                if ($counterparty->type === 'employee') {
+                    $validated['target_type'] = $counterparty->customable_type === \App\Models\User::class ? 'user' : 'worker';
+                } else {
+                    $validated['target_type'] = $counterparty->type;
+                }
+                
+                // Clear other IDs to avoid contamination
+                $validated['client_id'] = $validated['target_type'] === 'client' ? $validated['target_id'] : null;
+                $validated['supplier_id'] = $validated['target_type'] === 'supplier' ? $validated['target_id'] : null;
+                $validated['worker_id'] = $validated['target_type'] === 'worker' ? $validated['target_id'] : null;
+                $validated['partner_id'] = $validated['target_type'] === 'partner' ? $validated['target_id'] : null;
             }
         }
 

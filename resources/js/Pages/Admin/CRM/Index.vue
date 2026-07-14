@@ -8453,50 +8453,30 @@ const ledgerReportData = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Qator 5: JSHSHIR (PINFL) va Pasport nusxalari upload -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Qator 5: JSHSHIR (PINFL) va Pasport fayli (PDF yoki Rasm) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[13px] font-medium text-gray-700 mb-1.5">JSHSHIR (PINFL)</label>
                                 <input v-model="newLeadForm.pinfl" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="JSHSHIR kiriting">
                             </div>
                             <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport nusxasi (old)</label>
-                                <label class="w-full h-20 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport faylini yuklash (PDF yoki Rasm)</label>
+                                <label class="w-full h-11 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm px-4">
                                     <template v-if="!newLeadForm.passport_photo">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                         </svg>
-                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
+                                        <span class="text-xs text-gray-500 font-medium">Faylni tanlang</span>
                                     </template>
                                     <template v-else>
-                                        <svg class="w-5 h-5 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                         </svg>
-                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="newLeadForm.passport_photo.name">
+                                        <span class="text-xs text-emerald-600 font-bold truncate max-w-full" :title="newLeadForm.passport_photo.name">
                                             {{ newLeadForm.passport_photo.name }}
                                         </span>
                                     </template>
                                     <input type="file" class="hidden" accept="image/*,application/pdf" @change="onLeadPassportPhotoChange">
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Pasport nusxasi (orqa)</label>
-                                <label class="w-full h-20 border border-dashed border-gray-300 hover:border-[#f2a900] rounded-xl flex flex-col justify-center items-center gap-1 cursor-pointer transition-all bg-white relative overflow-hidden shadow-sm">
-                                    <template v-if="!newLeadForm.passport_photo_back">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        <span class="text-[10px] text-gray-500 font-medium">Faylni tanlang</span>
-                                    </template>
-                                    <template v-else>
-                                        <svg class="w-5 h-5 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span class="text-[9px] text-emerald-600 font-bold px-1 truncate max-w-full" :title="newLeadForm.passport_photo_back.name">
-                                            {{ newLeadForm.passport_photo_back.name }}
-                                        </span>
-                                    </template>
-                                    <input type="file" class="hidden" accept="image/*,application/pdf" @change="onLeadPassportPhotoBackChange">
                                 </label>
                             </div>
                         </div>

@@ -61,7 +61,8 @@ class LedgerExportController extends Controller
                         $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
                     }
                     
-                    $convertCmd = $binary . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    $envParam = (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') ? ' -env:UserInstallation=file:///tmp/libreoffice_www-data' : '';
+                    $convertCmd = $binary . $envParam . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
                     shell_exec($convertCmd);
 
                     if (file_exists($absolutePdfPath)) {
@@ -200,7 +201,8 @@ class LedgerExportController extends Controller
                         $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
                     }
                     
-                    $convertCmd = $binary . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    $envParam = (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') ? ' -env:UserInstallation=file:///tmp/libreoffice_www-data' : '';
+                    $convertCmd = $binary . $envParam . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
                     shell_exec($convertCmd);
 
                     if (file_exists($absolutePdfPath)) {

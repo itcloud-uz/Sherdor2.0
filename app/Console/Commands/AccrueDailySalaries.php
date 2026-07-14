@@ -44,11 +44,11 @@ class AccrueDailySalaries extends Command
                              ->get();
 
             foreach ($workers as $worker) {
-                // Find active salary period for today
+                // Find active salary period for today (the one with the latest start_date <= today)
                 $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'worker')
                     ->where('employee_id', $worker->id)
                     ->whereDate('start_date', '<=', $today)
-                    ->whereDate('end_date', '>=', $today)
+                    ->orderBy('start_date', 'desc')
                     ->first();
 
                 $salaryAmount = $activePeriod ? $activePeriod->salary : $worker->base_rate;
@@ -82,11 +82,11 @@ class AccrueDailySalaries extends Command
             $users = User::where('salary_rate', '>', 0)->get();
 
             foreach ($users as $user) {
-                // Find active salary period for today
+                // Find active salary period for today (the one with the latest start_date <= today)
                 $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'user')
                     ->where('employee_id', $user->id)
                     ->whereDate('start_date', '<=', $today)
-                    ->whereDate('end_date', '>=', $today)
+                    ->orderBy('start_date', 'desc')
                     ->first();
 
                 $salaryAmount = $activePeriod ? $activePeriod->salary : $user->salary_rate;

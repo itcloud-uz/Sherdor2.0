@@ -443,8 +443,7 @@ function openEditEmployee(emp) {
     employeeForm.salary_periods = emp.salary_periods ? emp.salary_periods.map(p => ({
         id: p.id,
         salary: p.salary,
-        start_month: p.start_date ? p.start_date.substring(0, 7) : '',
-        end_month: p.end_date ? p.end_date.substring(0, 7) : ''
+        start_month: p.start_date ? p.start_date.substring(0, 7) : ''
     })) : [];
 
     if (emp.characteristics) {
@@ -627,8 +626,7 @@ function addSalaryPeriod() {
     const currentMonth = new Date().toISOString().substring(0, 7);
     employeeForm.salary_periods.push({
         salary: employeeForm.base_rate || 0,
-        start_month: currentMonth,
-        end_month: currentMonth
+        start_month: currentMonth
     });
 }
 
@@ -641,8 +639,7 @@ watch(() => employeeForm.base_rate, (newVal) => {
         const currentMonth = new Date().toISOString().substring(0, 7);
         employeeForm.salary_periods.push({
             salary: newVal,
-            start_month: currentMonth,
-            end_month: currentMonth
+            start_month: currentMonth
         });
     }
 });
@@ -2026,48 +2023,35 @@ const exportSalesStatsToExcel = () => {
                             <div 
                                 v-for="(period, index) in employeeForm.salary_periods" 
                                 :key="index" 
-                                class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-3 rounded-xl border border-gray-150 shadow-sm relative group"
+                                class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-3 rounded-xl border border-gray-150 shadow-sm relative group"
                             >
-                                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Maosh summasi</label>
-                                        <input 
-                                            v-model="period.salary" 
-                                            type="number" 
-                                            required
-                                            placeholder="Summa" 
-                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Boshlanish oyi</label>
-                                        <input 
-                                            v-model="period.start_month" 
-                                            type="month" 
-                                            required
-                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
-                                        />
-                                    </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Maosh summasi</label>
+                                    <input 
+                                        v-model="period.salary" 
+                                        type="number" 
+                                        required
+                                        placeholder="Summa" 
+                                        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
+                                    />
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:col-span-2">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tugash oyi</label>
-                                        <input 
-                                            v-model="period.end_month" 
-                                            type="month" 
-                                            required
-                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
-                                        />
-                                    </div>
-                                    <div class="flex items-end justify-end">
-                                        <button 
-                                            type="button" 
-                                            @click="removeSalaryPeriod(index)"
-                                            class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 font-semibold transition-all w-full text-center"
-                                        >
-                                            O'chirish
-                                        </button>
-                                    </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Boshlanish oyi</label>
+                                    <input 
+                                        v-model="period.start_month" 
+                                        type="month" 
+                                        required
+                                        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
+                                    />
+                                </div>
+                                <div class="flex items-end justify-end">
+                                    <button 
+                                        type="button" 
+                                        @click="removeSalaryPeriod(index)"
+                                        class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 font-semibold transition-all w-full text-center"
+                                    >
+                                        O'chirish
+                                    </button>
                                 </div>
                             </div>
                         </div>

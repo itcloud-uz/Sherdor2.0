@@ -1885,19 +1885,18 @@ class HrController extends Controller
             ->delete();
 
         foreach ($periods as $period) {
-            if (empty($period['start_month']) || empty($period['end_month']) || empty($period['salary'])) {
+            if (empty($period['start_month']) || empty($period['salary'])) {
                 continue;
             }
 
             $startDate = \Carbon\Carbon::createFromFormat('Y-m', $period['start_month'])->startOfMonth()->toDateString();
-            $endDate = \Carbon\Carbon::createFromFormat('Y-m', $period['end_month'])->endOfMonth()->toDateString();
 
             \App\Models\SalaryPeriod::create([
                 'employee_type' => $employeeType,
                 'employee_id' => $employeeId,
                 'salary' => $period['salary'],
                 'start_date' => $startDate,
-                'end_date' => $endDate,
+                'end_date' => null,
             ]);
         }
     }

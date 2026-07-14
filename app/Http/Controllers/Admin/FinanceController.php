@@ -1745,9 +1745,10 @@ class FinanceController extends Controller
         if ($request->filled('building_id')) {
             $query->where('building_id', $request->building_id);
         }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        
+        // Faqatgina tasdiqlanganlar ro'yxati yuklab olinsin (status = approved)
+        $query->where('status', 'approved');
+
         if ($request->filled('counterparty_id')) {
             $query->where('counterparty_id', $request->counterparty_id);
         }
@@ -1821,20 +1822,26 @@ class FinanceController extends Controller
                 $rateFormatted = $txn->exchange_rate ? number_format($txn->exchange_rate, 2, ',', ' ') : '';
                 $convertedFormatted = $txn->converted_amount ? number_format($txn->converted_amount, 2, ',', ' ') : '';
 
+                // Clean fields of semicolons, carriage returns and newlines to prevent broken columns in CSV
+                $cleanNotes = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->notes ?? '');
+                $cleanCounterparty = str_replace([";", "\r", "\n"], [" ", "", " "], $counterpartyName ?: 'Noma\'lum');
+                $cleanCategory = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->category->name ?? ($txn->category_display ?: 'Boshqa'));
+                $cleanCashRegister = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->cashRegister->name ?? 'Asosiy');
+
                 fputcsv($file, [
                     $txn->id,
                     $dateFormatted,
                     $txn->type === 'income' ? 'Kirim' : 'Chiqim',
-                    $txn->cashRegister->name ?? 'Asosiy',
-                    $counterpartyName ?: 'Noma\'lum',
-                    $txn->category->name ?? ($txn->category_display ?: 'Boshqa'),
+                    $cleanCashRegister,
+                    $cleanCounterparty,
+                    $cleanCategory,
                     $amountFormatted,
                     $txn->currency,
                     $rateFormatted,
                     $convertedFormatted,
                     $methodUz,
                     $statusUz,
-                    $txn->notes
+                    $cleanNotes
                 ], ';');
             }
 

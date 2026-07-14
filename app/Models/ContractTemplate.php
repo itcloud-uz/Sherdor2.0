@@ -136,7 +136,7 @@ class ContractTemplate extends Model
      */
     public function compileDocx(Contract $contract, array $selectedVariants = []): string
     {
-        $contract->load(['client', 'unit.floor.building']);
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
 
         $date = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
         $monthsUz = [
@@ -245,6 +245,28 @@ class ContractTemplate extends Model
             'ZAMON_BOSHLANGICH_FOIZ' => $downPaymentPercent,
             'ZAMON_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
         ];
+
+        $installmentsList = [];
+        $index = 1;
+        $sum = 0;
+        
+        $installments = $contract->paymentSchedules->filter(function($s) {
+            return $s->payment_type !== 'down_payment';
+        })->sortBy('due_date');
+
+        foreach ($installments as $inst) {
+            $sum += $inst->expected_amount;
+            $installmentsList[] = [
+                'index' => $index++,
+                'date' => \Carbon\Carbon::parse($inst->due_date)->format('d/m/Y') . '-yil',
+                'amount' => number_format($inst->expected_amount, 0, ',', ' '),
+                'amount_raw' => $inst->expected_amount
+            ];
+        }
+
+        $context['installments'] = $installmentsList;
+        $context['installments_total'] = number_format($sum, 0, ',', ' ');
+        $context['installments_count'] = count($installmentsList);
 
         $selectedVariants = $contract->selected_variants ?? [];
         if (isset($selectedVariants['custom_placeholders']) && is_array($selectedVariants['custom_placeholders'])) {

@@ -2877,8 +2877,16 @@ function openDocumentPreview(type, contract) {
     } else {
         docPreviewTitle.value = 'To\'lov Grafiki';
         docPreviewUrl.value = route('admin.contracts.ledger.preview', contract.id);
-        docDownloadUrl.value = route('admin.contracts.export.xlsx', contract.id);
-        docDownloadDocxUrl.value = '';
+        
+        // Dynamically use PDF/DOCX export if a schedule template exists in templates list
+        const hasScheduleTpl = props.contractTemplates?.some(t => t.type === 'schedule');
+        if (hasScheduleTpl) {
+            docDownloadUrl.value = route('contracts.export.pdf', contract.id);
+            docDownloadDocxUrl.value = route('contracts.export.docx', contract.id);
+        } else {
+            docDownloadUrl.value = route('contracts.export.xlsx', contract.id);
+            docDownloadDocxUrl.value = '';
+        }
     }
     showDocPreviewModal.value = true;
 }
@@ -6928,7 +6936,7 @@ const ledgerReportData = computed(() => {
 
                 <!-- Footer with Download Button -->
                 <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                    <template v-if="docPreviewTitle === 'Shartnoma'">
+                    <template v-if="docDownloadDocxUrl">
                         <a :href="docDownloadDocxUrl" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
                             💾 Word (.docx) Yuklab olish
                         </a>

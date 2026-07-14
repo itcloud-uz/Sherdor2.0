@@ -12,7 +12,77 @@ class LedgerExportController extends Controller
     public function exportPdf(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
-        $type = $request->query('type'); // 'down_payment' or 'installments'
+        $type = $request->query('type');
+
+        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
+        if ($template && $template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                $outputDirectory = dirname($absoluteDocxPath);
+                $pdfFileName = pathinfo($absoluteDocxPath, PATHINFO_FILENAME) . '.pdf';
+                $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
+
+                $isSofficeAvailable = false;
+                $sofficePath = 'soffice';
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                    $checkCmd = 'where soffice 2>nul';
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
+                        $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
+                    } else {
+                        $paths = [
+                            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+                            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+                        ];
+                        foreach ($paths as $p) {
+                            if (file_exists($p)) {
+                                $isSofficeAvailable = true;
+                                $sofficePath = '"' . $p . '"';
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
+                    $pathCheck = shell_exec($checkCmd);
+                    if ($pathCheck) {
+                        $isSofficeAvailable = true;
+                        $sofficePath = trim($pathCheck);
+                    }
+                }
+
+                if ($isSofficeAvailable) {
+                    $binary = $sofficePath;
+                    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+                        $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
+                    }
+                    
+                    $convertCmd = $binary . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                    shell_exec($convertCmd);
+
+                    if (file_exists($absolutePdfPath)) {
+                        $response = response()->download($absolutePdfPath, "tolov_grafigi_{$contract->id}.pdf")->deleteFileAfterSend(true);
+                        @unlink($absoluteDocxPath);
+                        return $response;
+                    }
+                }
+
+                $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
+                $previewData = json_decode($previewOutput, true);
+                
+                $content = $previewData['html'] ?? '';
+                @unlink($absoluteDocxPath);
+                
+                $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+                return $pdf->download("tolov_grafigi_{$contract->id}.pdf");
+            } catch (\Exception $e) {
+                // fallback
+            }
+        }
 
         $pdf = Pdf::loadView('exports.client_ledger', compact('contract', 'type'));
         $suffix = $type ? "_{$type}" : "";
@@ -23,6 +93,19 @@ class LedgerExportController extends Controller
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+
+        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
+        if ($template && $template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                return response()->download($absoluteDocxPath, "tolov_grafigi_{$contract->id}.docx")->deleteFileAfterSend(true);
+            } catch (\Exception $e) {
+                // fallback
+            }
+        }
         
         $suffix = $type ? "_{$type}" : "";
         $headers = [
@@ -199,6 +282,26 @@ class LedgerExportController extends Controller
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+
+        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
+        if ($template && $template->docx_path) {
+            try {
+                $selectedVariants = $contract->selected_variants ?? [];
+                $docxPath = $template->compileDocx($contract, $selectedVariants);
+                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+
+                $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
+                $previewData = json_decode($previewOutput, true);
+                
+                $content = $previewData['html'] ?? '';
+                @unlink($absoluteDocxPath);
+
+                return view('contracts.compiled', compact('content'));
+            } catch (\Exception $e) {
+                // fallback
+            }
+        }
+
         return view('exports.client_ledger', compact('contract', 'type'));
     }
 

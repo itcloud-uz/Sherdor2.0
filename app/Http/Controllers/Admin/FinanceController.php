@@ -1076,45 +1076,90 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
+            'category_id' => 'nullable|exists:transaction_categories,id',
+            'building_id' => 'nullable|exists:buildings,id',
+            'account_id' => 'required|exists:cash_registers,id',
+            'payment_method' => 'required|in:cash,card,bank_transfer',
+            'transaction_date' => 'nullable|date',
+            'counterparty_id' => 'nullable|exists:counterparties,id',
+            'partner_id' => 'nullable|exists:partners,id',
+            'worker_id' => 'nullable|exists:workers,id',
+            'brigade_id' => 'nullable|exists:brigades,id',
+            'machinery_id' => 'nullable|exists:machineries,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'exchange_rate' => 'nullable|numeric|min:0',
+            'converted_amount' => 'nullable|numeric|min:0',
         ]);
+
+        foreach ($validated as $key => $value) {
+            if ($value === '' && str_ends_with($key, '_id')) {
+                $validated[$key] = null;
+            }
+        }
 
         // Revert old balance changes if approved
         if ($transaction->status === 'approved') {
-            $register = CashRegister::find($transaction->account_id);
-            if ($register) {
+            // Revert old register balance
+            $oldRegister = CashRegister::find($transaction->account_id);
+            if ($oldRegister) {
                 if ($transaction->type === 'income') {
-                    $register->decrement('balance', $transaction->amount);
-                    $register->increment('balance', $validated['amount']);
+                    $oldRegister->decrement('balance', $transaction->amount);
                 } else {
-                    $register->increment('balance', $transaction->amount);
-                    $register->decrement('balance', $validated['amount']);
+                    $oldRegister->increment('balance', $transaction->amount);
                 }
             }
 
-            $counterparty = Counterparty::find($transaction->counterparty_id);
-            if ($counterparty) {
+            // Revert old counterparty balance
+            $oldCounterparty = Counterparty::find($transaction->counterparty_id);
+            if ($oldCounterparty) {
                 $oldConv = $transaction->converted_amount ?? $transaction->amount;
-                $newConv = ($transaction->exchange_rate ?? 1.0) * $validated['amount'];
-                
                 if ($transaction->type === 'income') {
-                    if ($counterparty->type === 'client') {
-                        $counterparty->decrement('balance', $oldConv);
-                        $counterparty->increment('balance', $newConv);
+                    if ($oldCounterparty->type === 'client') {
+                        $oldCounterparty->decrement('balance', $oldConv);
                     } else {
-                        $counterparty->increment('balance', $oldConv);
-                        $counterparty->decrement('balance', $newConv);
+                        $oldCounterparty->increment('balance', $oldConv);
                     }
                 } else {
-                    if ($counterparty->type === 'client') {
-                        $counterparty->increment('balance', $oldConv);
-                        $counterparty->decrement('balance', $newConv);
+                    if ($oldCounterparty->type === 'client') {
+                        $oldCounterparty->increment('balance', $oldConv);
                     } else {
-                        $counterparty->decrement('balance', $oldConv);
-                        $counterparty->increment('balance', $newConv);
+                        $oldCounterparty->decrement('balance', $oldConv);
                     }
                 }
-                
-                $transaction->converted_amount = $newConv;
+            }
+
+            // Apply new register balance
+            $newRegister = CashRegister::find($validated['account_id']);
+            if ($newRegister) {
+                if ($transaction->type === 'income') {
+                    $newRegister->increment('balance', $validated['amount']);
+                } else {
+                    $newRegister->decrement('balance', $validated['amount']);
+                }
+            }
+
+            // Apply new counterparty balance
+            $newCounterparty = Counterparty::find($validated['counterparty_id'] ?? null);
+            if ($newCounterparty) {
+                $rate = $validated['exchange_rate'] ?? $transaction->exchange_rate ?? 1.0;
+                $newConv = $rate * $validated['amount'];
+                $validated['converted_amount'] = $newConv;
+
+                if ($transaction->type === 'income') {
+                    if ($newCounterparty->type === 'client') {
+                        $newCounterparty->increment('balance', $newConv);
+                    } else {
+                        $newCounterparty->decrement('balance', $newConv);
+                    }
+                } else {
+                    if ($newCounterparty->type === 'client') {
+                        $newCounterparty->decrement('balance', $newConv);
+                    } else {
+                        $newCounterparty->increment('balance', $newConv);
+                    }
+                }
+            } else {
+                $validated['converted_amount'] = null;
             }
         }
 

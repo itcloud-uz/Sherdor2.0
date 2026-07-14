@@ -945,16 +945,44 @@ const showEditTransactionModal = ref(false);
 const editTransactionForm = ref({
     id: null,
     amount: '',
-    account_type: 'main',
-    notes: ''
+    notes: '',
+    category_id: '',
+    building_id: '',
+    account_id: '',
+    payment_method: 'cash',
+    transaction_date: '',
+    counterparty_id: '',
+    partner_id: '',
+    worker_id: '',
+    brigade_id: '',
+    machinery_id: '',
+    supplier_id: '',
+    fixed_asset_id: '',
+    exchange_rate: 1.0,
+    converted_amount: '',
+    type: 'expense'
 });
 
 function openEditTransactionModal(txn) {
     editTransactionForm.value = {
         id: txn.id,
         amount: txn.amount,
-        account_type: txn.account_type || 'main',
-        notes: txn.notes || ''
+        notes: txn.notes || '',
+        category_id: txn.category_id || '',
+        building_id: txn.building_id || '',
+        account_id: txn.account_id || '',
+        payment_method: txn.payment_method || 'cash',
+        transaction_date: txn.transaction_date ? txn.transaction_date.slice(0, 10) : '',
+        counterparty_id: txn.counterparty_id || '',
+        partner_id: txn.partner_id || '',
+        worker_id: txn.worker_id || '',
+        brigade_id: txn.brigade_id || '',
+        machinery_id: txn.machinery_id || '',
+        supplier_id: txn.supplier_id || '',
+        fixed_asset_id: txn.fixed_asset_id || '',
+        exchange_rate: txn.exchange_rate || 1.0,
+        converted_amount: txn.converted_amount || '',
+        type: txn.type || 'expense'
     };
     showEditTransactionModal.value = true;
 }
@@ -1781,6 +1809,22 @@ const requiresClient = computed(() => {
 });
 const requiresPartner = computed(() => selectedCategory.value?.target_type === 'partner');
 const requiresFixedAsset = computed(() => selectedCategory.value?.target_type === 'fixed_asset');
+
+// Edit Transaction specific computed properties
+const editSelectedCategory = computed(() => {
+    if (!props.categories) return null;
+    return props.categories.find(c => c.id === editTransactionForm.value.category_id) || null;
+});
+const editRequiresSupplier = computed(() => editSelectedCategory.value?.target_type === 'supplier');
+const editRequiresPartner = computed(() => editSelectedCategory.value?.target_type === 'partner');
+const editRequiresWorker = computed(() => editSelectedCategory.value?.target_type === 'worker');
+const editRequiresBrigade = computed(() => editSelectedCategory.value?.target_type === 'brigade');
+const editRequiresMachineOwner = computed(() => editSelectedCategory.value?.target_type === 'machine_owner');
+const editRequiresClient = computed(() => editSelectedCategory.value?.target_type === 'client');
+const editRequiresBuilding = computed(() => {
+    return editSelectedCategory.value?.target_type === 'supplier' || 
+           ((editSelectedCategory.value?.name || '').toLowerCase().includes('obyekt'));
+});
 
 const uniqueBuildingNames = computed(() => {
     if (!props.buildings) return [];
@@ -5183,23 +5227,178 @@ function deleteCategory(id) {
         </Modal>
 
         <!-- EDIT TRANSACTION MODAL -->
-        <Modal :show="showEditTransactionModal" @close="showEditTransactionModal = false" maxWidth="md">
-            <div class="p-6">
-                <button @click="showEditTransactionModal = false" class="absolute top-4 right-4 text-gray-500">✕</button>
-                <h3 class="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Tranzaksiyani tahrirlash</h3>
+        <Modal :show="showEditTransactionModal" @close="showEditTransactionModal = false" maxWidth="2xl">
+            <div class="p-5 font-sans text-xs">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider font-sans">
+                            Tranzaksiyani tahrirlash
+                        </h2>
+                    </div>
+                    <button type="button" @click="showEditTransactionModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
+                        ✕
+                    </button>
+                </div>
                 
-                <form @submit.prevent="submitEditTransaction" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Summa *</label>
-                        <input v-model="editTransactionForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                <form @submit.prevent="submitEditTransaction" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3.5">
+                        <!-- Tranzaksiya turi (Category) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Tranzaksiya turi
+                            </label>
+                            <select v-model="editTransactionForm.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Tranzaksiya turini tanlang</option>
+                                <option v-for="c in categories.filter(x => x.type === editTransactionForm.type || x.type === 'both')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Qurilish obyekti (Building) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Qurilish obyekti (Bino)
+                            </label>
+                            <select v-model="editTransactionForm.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors">
+                                <option value="">-- Umumiy kassa --</option>
+                                <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Hisobni tanlash (Cash Register) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Hisobni tanlash
+                            </label>
+                            <select v-model="editTransactionForm.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Hisobni tanlang</option>
+                                <option v-for="r in registers" :key="r.id" :value="r.id">
+                                    {{ r.name }} (Balans: {{ formatMoney(r.currency === 'USD' ? r.balance_usd : (r.currency === 'EUR' ? r.balance_eur : r.balance_uzs), r.currency) }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- To'lov turi (Payment Method) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * To'lov turi
+                            </label>
+                            <select v-model="editTransactionForm.payment_method" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="cash">Naqd</option>
+                                <option value="bank_transfer">Bank (O'tkazma)</option>
+                                <option value="card">Plastik (Karta)</option>
+                            </select>
+                        </div>
+
+                        <!-- Sana (Date) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Sana
+                            </label>
+                            <input v-model="editTransactionForm.transaction_date" type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                        </div>
+
+                        <!-- Summa (Amount) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Summa
+                            </label>
+                            <input v-model="editTransactionForm.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                        </div>
+
+                        <!-- Conditional Target Selections -->
+                        <!-- Supplier target -->
+                        <div v-if="editRequiresSupplier" class="md:col-span-2 border border-red-100 p-4 rounded-xl bg-red-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Ta'minotchi (Kontragent)
+                            </label>
+                            <select v-model="editTransactionForm.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Ta'minotchini tanlang</option>
+                                <option v-for="c in counterparties.filter(x => x.type === 'supplier')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Client target -->
+                        <div v-if="editRequiresClient" class="md:col-span-2 border border-orange-100 p-4 rounded-xl bg-orange-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Mijoz (Kontragent)
+                            </label>
+                            <select v-model="editTransactionForm.counterparty_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Mijozni tanlang</option>
+                                <option v-for="c in counterparties.filter(x => x.type === 'client')" :key="c.id" :value="c.id">
+                                    {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Partner target -->
+                        <div v-if="editRequiresPartner" class="md:col-span-2 border border-purple-100 p-4 rounded-xl bg-purple-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Hamkor (Ta'sischi)
+                            </label>
+                            <select v-model="editTransactionForm.partner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Hamkor tanlang</option>
+                                <option v-for="p in partners" :key="p.id" :value="p.id">
+                                    {{ p.user?.name || p.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Worker target -->
+                        <div v-if="editRequiresWorker" class="md:col-span-2 border border-blue-100 p-4 rounded-xl bg-blue-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Xodim / Ishchi
+                            </label>
+                            <select v-model="editTransactionForm.worker_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Xodimni tanlang</option>
+                                <option v-for="w in workers" :key="w.id" :value="w.id">
+                                    {{ w.name }} ({{ w.role || 'Ishchi' }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Brigade target -->
+                        <div v-if="editRequiresBrigade" class="md:col-span-2 border border-teal-100 p-4 rounded-xl bg-teal-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Brigada
+                            </label>
+                            <select v-model="editTransactionForm.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Brigadani tanlang</option>
+                                <option v-for="b in brigades" :key="b.id" :value="b.id">
+                                    {{ b.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Machine Owner target -->
+                        <div v-if="editRequiresMachineOwner" class="md:col-span-2 border border-amber-100 p-4 rounded-xl bg-amber-50/10">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                * Texnika Egasi
+                            </label>
+                            <select v-model="editTransactionForm.machine_owner_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                                <option value="" disabled>Texnika egasini tanlang</option>
+                                <option v-for="o in machineOwners" :key="o.id" :value="o.id">
+                                    {{ o.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Notes / Izoh -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Izoh
+                            </label>
+                            <textarea v-model="editTransactionForm.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izoh kiriting"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1 uppercase">Izoh</label>
-                        <textarea v-model="editTransactionForm.notes" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" rows="3"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button type="button" @click="showEditTransactionModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold">Saqlash</button>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" @click="showEditTransactionModal = false" class="px-6 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors">Bekor qilish</button>
+                        <button type="submit" :disabled="isProcessing" class="px-8 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors shadow-md">Saqlash</button>
                     </div>
                 </form>
             </div>

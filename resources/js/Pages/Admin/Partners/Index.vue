@@ -5,6 +5,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import VueApexCharts from 'vue3-apexcharts';
 import Modal from '@/Components/Modal.vue';
+import * as XLSX from 'xlsx';
 
 const props = defineProps({
     partners: Array,
@@ -324,49 +325,56 @@ function exportToExcel(type) {
         formatDate(item.date).split(' ')[0],
         item.tovar_nomi,
         item.soni,
-        item.narxi,
-        item.amount,
-        `"${(item.notes || '').replace(/"/g, '""')}"`,
+        Number(item.narxi),
+        Number(item.amount),
+        item.notes || '',
         item.status === 'approved' ? 'Tasdiqlangan' : item.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan'
     ]);
 
     const totalSum = list.reduce((sum, item) => sum + Number(item.amount), 0);
     rows.push(['', '', 'JAMI', '', '', totalSum, '', '']);
 
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
-        [title, '', headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${title.replace(/\s+/g, '_')}_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const ws = XLSX.utils.aoa_to_sheet([[title], [], headers, ...rows]);
+    
+    // Style the title
+    if (!ws['A1'].s) ws['A1'].s = {};
+    ws['A1'].s = { font: { bold: true, sz: 14 } };
+    
+    // Set column widths
+    ws['!cols'] = [
+        {wch: 5}, {wch: 12}, {wch: 35}, {wch: 8}, {wch: 15}, {wch: 20}, {wch: 25}, {wch: 15}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+    XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
 }
 
 function exportLedgerCSV() {
     if (transactions.value.length === 0) return;
+    const title = `${selectedPartner.value?.user?.name || 'Tasischi'} - Operatsiyalar tarixi`;
     const headers = ['Sana', 'Tur', 'Kategoriya', 'Summa', 'Izoh'];
-    const rows = transactions.value.map(t => {
-        const type = t.type === 'income' ? 'Kirim' : 'Chiqim';
-        return [
-            formatDate(t.created_at),
-            type,
-            t.category_display || '-',
-            t.amount,
-            `"${(t.notes || '-').replace(/"/g, '""')}"`
-        ].join(',');
-    });
     
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(','), ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Tasischi_Hisoboti_${selectedPartner.value?.user?.name}_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const rows = transactions.value.map(t => [
+        formatDate(t.created_at),
+        t.type === 'income' ? 'Kirim' : 'Chiqim',
+        t.category_display || '-',
+        Number(t.amount) || 0,
+        t.notes || '-'
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([[title], [], headers, ...rows]);
+    
+    if (!ws['A1'].s) ws['A1'].s = {};
+    ws['A1'].s = { font: { bold: true, sz: 14 } };
+    
+    ws['!cols'] = [
+        {wch: 15}, {wch: 10}, {wch: 25}, {wch: 15}, {wch: 35}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Operatsiyalar");
+    XLSX.writeFile(wb, `Operatsiyalar_${new Date().getTime()}.xlsx`);
 }
 
 // Charts Data Computations

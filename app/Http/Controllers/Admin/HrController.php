@@ -32,14 +32,14 @@ class HrController extends Controller
         $kpiSettings = null;
 
         if ($tab === '0' || $tab === '1' || $tab === '2' || $tab === 0 || $tab === 1 || $tab === 2) {
-            $users = \App\Models\User::with(['roles', 'transactions'])->withCount(['leads' => function($q) {
+            $users = \App\Models\User::with(['roles', 'transactions', 'salaryPeriods'])->withCount(['leads' => function($q) {
                 $q->where('status', 'qualified');
             }])->get();
         }
 
         if ($tab === '0' || $tab === '1' || $tab === 0 || $tab === 1) {
             $attendanceLogs = \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get();
-            $workers = Worker::with(['brigade', 'salaryHistories', 'transactions'])->get();
+            $workers = Worker::with(['brigade', 'salaryHistories', 'transactions', 'salaryPeriods'])->get();
             $brigades = \App\Models\Brigade::with('workers')->get();
             $machineries = Machinery::all();
             $machineOwners = \App\Models\MachineOwner::with('machineries')->get();
@@ -204,6 +204,8 @@ class HrController extends Controller
 
         $user->assignRole($validated['role']);
 
+        $this->syncSalaryPeriods('user', $user->id, $request->input('salary_periods', []));
+
         return redirect()->back()->with('message', 'User created and role assigned.');
     }
 
@@ -284,6 +286,8 @@ class HrController extends Controller
 
         \Illuminate\Support\Facades\DB::transaction(function() use ($validated, $request) {
             $worker = Worker::create($validated);
+
+            $this->syncSalaryPeriods('worker', $worker->id, $request->input('salary_periods', []));
             
             if ($worker->role === 'guard' && $worker->salary_type === 'fixed_monthly') {
                 $startDate = $request->input('start_date', now()->toDateString());
@@ -894,6 +898,8 @@ class HrController extends Controller
             $user->syncRoles([$validated['role']]);
         }
 
+        $this->syncSalaryPeriods('user', $user->id, $request->input('salary_periods', []));
+
         return redirect()->back()->with('message', 'Foydalanuvchi yangilandi.');
     }
 
@@ -1025,6 +1031,8 @@ class HrController extends Controller
         \Illuminate\Support\Facades\DB::transaction(function() use ($worker, $validated, $request) {
             $oldRate = $worker->base_rate;
             $worker->update($validated);
+
+            $this->syncSalaryPeriods('worker', $worker->id, $request->input('salary_periods', []));
             
             if ($worker->role === 'guard' && $worker->salary_type === 'fixed_monthly') {
                 if ((float)$oldRate !== (float)$worker->base_rate) {
@@ -1867,6 +1875,30 @@ class HrController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('getUnpaidWorks error: ' . $e->getMessage());
             return response()->json(['error' => 'Server error'], 500);
+        }
+    }
+
+    private function syncSalaryPeriods($employeeType, $employeeId, array $periods)
+    {
+        \App\Models\SalaryPeriod::where('employee_type', $employeeType)
+            ->where('employee_id', $employeeId)
+            ->delete();
+
+        foreach ($periods as $period) {
+            if (empty($period['start_month']) || empty($period['end_month']) || empty($period['salary'])) {
+                continue;
+            }
+
+            $startDate = \Carbon\Carbon::createFromFormat('Y-m', $period['start_month'])->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromFormat('Y-m', $period['end_month'])->endOfMonth()->toDateString();
+
+            \App\Models\SalaryPeriod::create([
+                'employee_type' => $employeeType,
+                'employee_id' => $employeeId,
+                'salary' => $period['salary'],
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
         }
     }
 }

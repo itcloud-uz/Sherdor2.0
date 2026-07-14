@@ -132,7 +132,8 @@ const allEmployees = computed(() => {
                 salary: u.salary_rate || 0,
                 photo_path: u.photo_path || '',
                 transactions: u.transactions || [],
-                leads_count: u.leads_count || 0
+                leads_count: u.leads_count || 0,
+                salary_periods: u.salary_periods || []
             });
         });
     }
@@ -167,7 +168,8 @@ const allEmployees = computed(() => {
                 salary: w.base_rate || w.rate || 0,
                 photo_path: w.photo_path || '',
                 transactions: w.transactions || [],
-                leads_count: 0
+                leads_count: 0,
+                salary_periods: w.salary_periods || []
             });
         });
     }
@@ -386,7 +388,8 @@ const employeeForm = useForm({
     passport_front: null,
     passport_back: null,
     additional_documents: [],
-    characteristics: []
+    characteristics: [],
+    salary_periods: []
 });
 
 function openAddEmployee() {
@@ -437,6 +440,12 @@ function openEditEmployee(emp) {
     employeeForm.currency = emp.currency || 'UZS';
     employeeForm.passport_front = emp.passport_front || null;
     employeeForm.passport_back = emp.passport_back || null;
+    employeeForm.salary_periods = emp.salary_periods ? emp.salary_periods.map(p => ({
+        id: p.id,
+        salary: p.salary,
+        start_month: p.start_date ? p.start_date.substring(0, 7) : '',
+        end_month: p.end_date ? p.end_date.substring(0, 7) : ''
+    })) : [];
 
     if (emp.characteristics) {
         if (typeof emp.characteristics === 'string') {
@@ -613,6 +622,30 @@ function addCharacteristic() {
 function removeCharacteristic(index) {
     employeeForm.characteristics.splice(index, 1);
 }
+
+function addSalaryPeriod() {
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    employeeForm.salary_periods.push({
+        salary: employeeForm.base_rate || 0,
+        start_month: currentMonth,
+        end_month: currentMonth
+    });
+}
+
+function removeSalaryPeriod(index) {
+    employeeForm.salary_periods.splice(index, 1);
+}
+
+watch(() => employeeForm.base_rate, (newVal) => {
+    if (newVal && employeeForm.salary_periods.length === 0) {
+        const currentMonth = new Date().toISOString().substring(0, 7);
+        employeeForm.salary_periods.push({
+            salary: newVal,
+            start_month: currentMonth,
+            end_month: currentMonth
+        });
+    }
+});
 
 // Tab 1: Salaries calculations
 const salaryList = computed(() => {
@@ -1749,7 +1782,7 @@ const exportSalesStatsToExcel = () => {
                 <form @submit.prevent="saveEmployee" class="p-6 space-y-6 overflow-y-auto flex-1">
                     <!-- Employee Type Selection (User vs Worker) -->
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div v-if="activeTab !== 0 || isEditMode">
+                        <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
                             <select 
                                 v-model="employeeForm.type" 
@@ -1759,15 +1792,6 @@ const exportSalesStatsToExcel = () => {
                                 <option value="worker">Qurilish ishchisi (Site Worker)</option>
                                 <option value="user">Tizim xodimi (System User)</option>
                             </select>
-                        </div>
-                        <div v-else>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Xodim turi</label>
-                            <input 
-                                type="text" 
-                                value="Tizim xodimi (System User)" 
-                                disabled
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-100 text-gray-600"
-                            />
                         </div>
                         <div v-if="employeeForm.type === 'user'">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Elektron pochta (Email) *</label>
@@ -1924,7 +1948,7 @@ const exportSalesStatsToExcel = () => {
                                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
                         </div>
-                        <div v-if="activeTab !== 0 || isEditMode">
+                        <div>
                             <label class="block text-xs font-bold text-gray-700 mb-1">
                                 <span class="text-red-500">*</span> Lavozim
                             </label>
@@ -1950,17 +1974,6 @@ const exportSalesStatsToExcel = () => {
                                 <option value="Partner">Hamkor</option>
                                 <option value="Sotuvchi">Sotuvchi</option>
                             </select>
-                        </div>
-                        <div v-else>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
-                                Lavozim
-                            </label>
-                            <input 
-                                type="text" 
-                                value="Sotuvchi" 
-                                disabled
-                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-100 text-gray-600"
-                            />
                         </div>
                     </div>
 
@@ -1989,6 +2002,74 @@ const exportSalesStatsToExcel = () => {
                                 <option value="UZS">UZS (So'm)</option>
                                 <option value="USD">USD (Dollar)</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <!-- Oylik maosh belgilangan davrlar (Salary Periods) -->
+                    <div v-if="employeeForm.base_rate" class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/85 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">🗓 Maosh faollik davrlari (Oylar bo'yicha)</span>
+                            <button 
+                                type="button" 
+                                @click="addSalaryPeriod"
+                                class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-amber-200 shadow-sm transition-all"
+                            >
+                                + Yangi maosh biriktirish
+                            </button>
+                        </div>
+
+                        <div v-if="employeeForm.salary_periods.length === 0" class="text-xs text-gray-500 py-2">
+                            Maosh uchun faollik davri belgilanmagan. Iltimos, maosh davrini qo'shing.
+                        </div>
+
+                        <div v-else class="space-y-3">
+                            <div 
+                                v-for="(period, index) in employeeForm.salary_periods" 
+                                :key="index" 
+                                class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-3 rounded-xl border border-gray-150 shadow-sm relative group"
+                            >
+                                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Maosh summasi</label>
+                                        <input 
+                                            v-model="period.salary" 
+                                            type="number" 
+                                            required
+                                            placeholder="Summa" 
+                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Boshlanish oyi</label>
+                                        <input 
+                                            v-model="period.start_month" 
+                                            type="month" 
+                                            required
+                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:col-span-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tugash oyi</label>
+                                        <input 
+                                            v-model="period.end_month" 
+                                            type="month" 
+                                            required
+                                            class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none bg-white text-gray-900"
+                                        />
+                                    </div>
+                                    <div class="flex items-end justify-end">
+                                        <button 
+                                            type="button" 
+                                            @click="removeSalaryPeriod(index)"
+                                            class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 font-semibold transition-all w-full text-center"
+                                        >
+                                            O'chirish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

@@ -44,8 +44,15 @@ class AccrueDailySalaries extends Command
                              ->get();
 
             foreach ($workers as $worker) {
-                // Calculate today's portion of the monthly salary
-                $dailyRate = $worker->base_rate / $daysInMonth;
+                // Find active salary period for today
+                $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'worker')
+                    ->where('employee_id', $worker->id)
+                    ->whereDate('start_date', '<=', $today)
+                    ->whereDate('end_date', '>=', $today)
+                    ->first();
+
+                $salaryAmount = $activePeriod ? $activePeriod->salary : $worker->base_rate;
+                $dailyRate = $salaryAmount / $daysInMonth;
 
                 // Check if already accrued today to prevent double counting
                 $exists = DB::table('worker_transactions')
@@ -75,7 +82,15 @@ class AccrueDailySalaries extends Command
             $users = User::where('salary_rate', '>', 0)->get();
 
             foreach ($users as $user) {
-                $dailyRate = $user->salary_rate / $daysInMonth;
+                // Find active salary period for today
+                $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'user')
+                    ->where('employee_id', $user->id)
+                    ->whereDate('start_date', '<=', $today)
+                    ->whereDate('end_date', '>=', $today)
+                    ->first();
+
+                $salaryAmount = $activePeriod ? $activePeriod->salary : $user->salary_rate;
+                $dailyRate = $salaryAmount / $daysInMonth;
 
                 $exists = DB::table('user_transactions')
                     ->where('user_id', $user->id)

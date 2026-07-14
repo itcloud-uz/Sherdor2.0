@@ -37,6 +37,12 @@ class User extends Authenticatable
         return $this->hasMany(UserTransaction::class);
     }
 
+    public function salaryPeriods()
+    {
+        return $this->hasMany(SalaryPeriod::class, 'employee_id')
+            ->where('employee_type', 'user');
+    }
+
     public function leads()
     {
         return $this->hasMany(Lead::class);

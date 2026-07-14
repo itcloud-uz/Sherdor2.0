@@ -51,4 +51,10 @@ class Worker extends Model
     {
         return $this->hasMany(WorkerTransaction::class);
     }
+
+    public function salaryPeriods()
+    {
+        return $this->hasMany(SalaryPeriod::class, 'employee_id')
+            ->where('employee_type', 'worker');
+    }
 }

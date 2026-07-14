@@ -137,7 +137,8 @@ const onUnitLeave = () => {
                     <div v-if="activeTab === 'overview'" class="flex flex-col lg:flex-row gap-8">
                         <div class="flex-1 space-y-6">
                             <div class="relative w-full h-80 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                                <img v-if="selectedBuilding.images && selectedBuilding.images.length > 0" :src="'/storage/' + selectedBuilding.images[0]" class="w-full h-full object-cover" />
+                                <img v-if="selectedBuilding.photo_path" :src="'/storage/' + selectedBuilding.photo_path" class="w-full h-full object-cover" />
+                                <img v-else-if="selectedBuilding.showroom_images && selectedBuilding.showroom_images.length > 0" :src="'/storage/' + selectedBuilding.showroom_images[0]" class="w-full h-full object-cover" />
                                 <div v-else class="w-full h-full flex items-center justify-center text-gray-400 font-bold text-2xl">
                                     {{ selectedBuilding.name }}
                                 </div>
@@ -173,7 +174,8 @@ const onUnitLeave = () => {
                         <div class="w-full lg:w-96 flex flex-col">
                             <h3 class="text-sm font-extrabold text-gray-800 uppercase tracking-widest mb-4">2D Chizma</h3>
                             <div class="flex-1 bg-gray-100 rounded-2xl border border-gray-200 overflow-hidden flex items-center justify-center min-h-[300px]">
-                                <img v-if="selectedBuilding.plan_image" :src="'/storage/' + selectedBuilding.plan_image" class="w-full h-full object-contain p-4" />
+                                <img v-if="selectedBuilding.blueprint_path" :src="'/storage/' + selectedBuilding.blueprint_path" class="w-full h-full object-contain p-4" />
+                                <img v-else-if="selectedBuilding.plan_image" :src="'/storage/' + selectedBuilding.plan_image" class="w-full h-full object-contain p-4" />
                                 <div v-else class="text-gray-400 font-bold">Chizma yuklanmagan</div>
                             </div>
                         </div>

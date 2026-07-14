@@ -942,10 +942,13 @@ const filteredClientDebts = computed(() => {
 
 // Edit & Delete Transaction actions
 const showEditTransactionModal = ref(false);
+const editFileInput = ref(null);
 const editTransactionForm = ref({
     id: null,
     amount: '',
-    notes: '',
+    notes: '', // To'lov maqsadi
+    extra_notes: '', // Izoh
+    attachment: null, // Chek fayli
     category_id: '',
     building_id: '',
     account_id: '',
@@ -963,11 +966,28 @@ const editTransactionForm = ref({
     type: 'expense'
 });
 
+function handleEditFileUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+        editTransactionForm.value.attachment = file;
+    }
+}
+
 function openEditTransactionModal(txn) {
+    let paymentPurpose = txn.notes || '';
+    let extraNotes = '';
+    if (paymentPurpose.includes('\n[Izoh]: ')) {
+        const parts = paymentPurpose.split('\n[Izoh]: ');
+        paymentPurpose = parts[0];
+        extraNotes = parts[1];
+    }
+
     editTransactionForm.value = {
         id: txn.id,
         amount: txn.amount,
-        notes: txn.notes || '',
+        notes: paymentPurpose,
+        extra_notes: extraNotes,
+        attachment: null,
         category_id: txn.category_id || '',
         building_id: txn.building_id || '',
         account_id: txn.account_id || '',
@@ -989,7 +1009,29 @@ function openEditTransactionModal(txn) {
 
 function submitEditTransaction() {
     isProcessing.value = true;
-    router.put(route('admin.finance.transactions.update', editTransactionForm.value.id), editTransactionForm.value, { preserveScroll: true, preserveState: true,
+
+    // Combine notes and extra_notes if extra_notes is set
+    let finalNotes = editTransactionForm.value.notes;
+    if (editTransactionForm.value.extra_notes) {
+        if (finalNotes) {
+            finalNotes = finalNotes + '\n[Izoh]: ' + editTransactionForm.value.extra_notes;
+        } else {
+            finalNotes = editTransactionForm.value.extra_notes;
+        }
+    }
+
+    // Create form data payload with Laravel method spoofing
+    const payload = {
+        ...editTransactionForm.value,
+        notes: finalNotes,
+        _method: 'put'
+    };
+    delete payload.extra_notes;
+
+    router.post(route('admin.finance.transactions.update', editTransactionForm.value.id), payload, {
+        preserveScroll: true,
+        preserveState: true,
+        forceFormData: true,
         onSuccess: () => {
             isProcessing.value = false;
             showEditTransactionModal.value = false;
@@ -5402,12 +5444,39 @@ function deleteCategory(id) {
                             </select>
                         </div>
 
-                        <!-- Notes / Izoh -->
+                        <!-- To'lov maqsadi -->
                         <div class="md:col-span-2">
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Izoh
+                                * To'lov maqsadi
                             </label>
-                            <textarea v-model="editTransactionForm.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Izoh kiriting"></textarea>
+                            <textarea v-model="editTransactionForm.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" required placeholder="To'lov maqsadini kiriting"></textarea>
+                        </div>
+
+                        <!-- Izohlar -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Izohlar
+                            </label>
+                            <textarea v-model="editTransactionForm.extra_notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors resize-none font-sans" placeholder="Qo'shimcha izoh kiriting (ixtiyoriy)"></textarea>
+                        </div>
+
+                        <!-- Chek faylini yuklash -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                Chek faylini yuklash
+                            </label>
+                            <div class="flex items-center gap-3 py-0.5">
+                                <input type="file" ref="editFileInput" class="hidden" @change="handleEditFileUpload">
+                                <button type="button" @click="$refs.editFileInput.click()" class="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm text-xs">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Fayl yuklash
+                                </button>
+                                <span v-if="editTransactionForm.attachment" class="text-xs text-slate-500 truncate max-w-[200px]" :title="editTransactionForm.attachment.name">
+                                    {{ editTransactionForm.attachment.name }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

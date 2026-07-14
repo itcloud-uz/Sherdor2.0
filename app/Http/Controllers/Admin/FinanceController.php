@@ -1089,12 +1089,21 @@ class FinanceController extends Controller
             'supplier_id' => 'nullable|exists:suppliers,id',
             'exchange_rate' => 'nullable|numeric|min:0',
             'converted_amount' => 'nullable|numeric|min:0',
+            'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
 
         foreach ($validated as $key => $value) {
             if ($value === '' && str_ends_with($key, '_id')) {
                 $validated[$key] = null;
             }
+        }
+
+        if ($request->hasFile('attachment')) {
+            if ($transaction->attachment_path && \Storage::disk('public')->exists($transaction->attachment_path)) {
+                \Storage::disk('public')->delete($transaction->attachment_path);
+            }
+            $path = $request->file('attachment')->store('transactions/attachments', 'public');
+            $validated['attachment_path'] = $path;
         }
 
         // Revert old balance changes if approved

@@ -4,7 +4,7 @@
       xmlns="http://www.w3.org/TR/REC-html40">
 <head>
     <meta charset="utf-8">
-    <title>Mijozning Shaxsiy Varaqasi</title>
+    <title>To'lov Grafigi - 2-Ilova</title>
     <!--[if gte mso 9]>
     <xml>
         <o:OfficeDocumentSettings>
@@ -14,7 +14,7 @@
         {!! "<{$x}ExcelWorkbook>" !!}
             {!! "<{$x}ExcelWorksheets>" !!}
                 {!! "<{$x}ExcelWorksheet>" !!}
-                    {!! "<{$x}Name>Shaxsiy Varaqa</{$x}Name>" !!}
+                    {!! "<{$x}Name>To'lov Grafigi</{$x}Name>" !!}
                     {!! "<{$x}WorksheetOptions>" !!}
                         {!! "<{$x}Print>" !!}
                             {!! "<{$x}ValidPrinterInfo/>" !!}
@@ -31,352 +31,202 @@
     </xml>
     <![endif]-->
     <style>
-        @page { size: A4 portrait; margin: 6mm 8mm; }
-        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 9px; line-height: 1.25; color: #000; margin: 0; padding: 0; }
+        @page { size: A4 portrait; margin: 8mm 10mm; }
+        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 9px; line-height: 1.35; color: #000; margin: 0; padding: 0; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
         
-        .header-title { font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 2px; text-transform: uppercase; }
-        .header-subtitle { font-size: 10px; font-weight: bold; text-align: center; margin-bottom: 12px; text-transform: uppercase; }
-        
-        .info-layout-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-        .info-layout-table td { border: none; padding: 0; vertical-align: top; }
-        
-        .nested-info-table { border-collapse: collapse; width: 99%; margin: 0 auto; }
-        .nested-info-table td { border: 1px solid #000; padding: 3px 5px; font-size: 8px; text-align: left; }
-        .nested-info-table td.label-cell { font-weight: bold; background-color: #f9f9f9; width: 50%; }
-        .nested-info-table td.value-cell { text-align: right; }
-        .nested-info-table.borderless td { border: none; background: none; }
-        .nested-info-table.borderless td.label-cell { font-weight: bold; width: 40%; }
-        .nested-info-table.borderless td.value-cell { text-align: left; }
-        
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }
-        .main-table th, .main-table td { border: 1px solid #000; padding: 4px 3px; font-size: 8px; text-align: center; }
-        .main-table th.yellow-header { background-color: #f2a900; color: #fff; font-weight: bold; font-size: 9px; }
-        .main-table th.gray-header { background-color: #555555; color: #fff; font-weight: bold; font-size: 9px; }
-        .main-table th.sub-header { background-color: #f2f2f2; font-weight: bold; font-size: 8px; color: #333; }
-        
-        .summary-table { width: 50%; border-collapse: collapse; margin: 10px auto; }
-        .summary-table td { border: 1px solid #000; padding: 4px 6px; font-size: 8px; font-weight: bold; }
-        .summary-table td.label-cell { text-align: left; background-color: #f9f9f9; }
-        .summary-table td.value-cell { text-align: right; }
-        .summary-table td.highlight { background-color: #f2f2f2; }
-        
-        .footer-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .footer-table td { border: none; padding: 4px; font-size: 8px; vertical-align: top; }
+        .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+        .main-table th { border: 1.5px solid #000; padding: 6px 4px; font-size: 9px; text-align: center; font-weight: bold; }
+        .main-table td { border: 1px solid #000; padding: 5px 4px; font-size: 8.5px; }
     </style>
 </head>
 <body>
 
     @php
-        $allSchedules = $contract->paymentSchedules->sortBy('due_date');
-        $allTransactions = $contract->transactions->filter(function($t) {
-            return $t->status === 'approved';
-        });
-        
-        $incomes = $allTransactions->filter(function($t) {
-            return $t->type === 'income';
-        })->sortBy(function($t) {
-            return $t->transaction_date ?: $t->created_at;
-        });
-
-        $refunds = $allTransactions->filter(function($t) {
-            return $t->type === 'expense' && $t->category && 
-                in_array($t->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish']);
-        })->sortBy(function($t) {
-            return $t->transaction_date ?: $t->created_at;
-        });
-
-        // Build the combined, split rows chronologically (matching Vue view)
-        $rows = [];
-        $totalPaidAll = 0;
-        $totalRefundedAll = 0;
-        $totalExpectedInstallment = 0;
-        $running_balance = 0;
-
-        // 1. Add all approved income transactions as completed rows
-        foreach ($incomes as $t) {
-            $convAmount = $t->converted_amount ?? $t->amount;
-            $running_balance += $convAmount;
-            $totalPaidAll += $convAmount;
-
-            // Determine type
-            $pType = 'installment';
-            $catName = $t->category ? strtolower($t->category->name) : '';
-            $notesText = strtolower($t->notes ?: '');
-            if (str_contains($catName, "boshlang") || str_contains($catName, "initial") ||
-                str_contains($notesText, "boshlang") || str_contains($notesText, "initial")) {
-                $pType = 'down_payment';
-            }
-
-            $rows[] = (object)[
-                'is_txn' => true,
-                'date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->startOfDay()->timestamp,
-                'due_date_label' => '',
-                'expected_amount' => null,
-                'paid_date' => \Carbon\Carbon::parse($t->transaction_date ?: $t->created_at)->format('d.m.Y'),
-                'paid_amount' => $convAmount,
-                'payment_method' => $t->payment_method ?: 'Naqd',
-                'refund_date' => null,
-                'refund_amount' => null,
-                'qoldiq' => $running_balance,
-                'is_down_payment' => ($pType === 'down_payment')
-            ];
-        }
-
-        // 2. Add all approved refunds
-        foreach ($refunds as $r) {
-            $running_balance -= $r->amount;
-            $totalRefundedAll += $r->amount;
-
-            $rows[] = (object)[
-                'is_txn' => true,
-                'date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->startOfDay()->timestamp,
-                'due_date_label' => '',
-                'expected_amount' => null,
-                'paid_date' => null,
-                'paid_amount' => null,
-                'payment_method' => null,
-                'refund_date' => \Carbon\Carbon::parse($r->transaction_date ?: $r->created_at)->format('d.m.Y'),
-                'refund_amount' => $r->amount,
-                'qoldiq' => $running_balance,
-                'is_down_payment' => false
-            ];
-        }
-
-        // 3. Add all unpaid/partially paid schedules
-        foreach ($allSchedules as $s) {
-            $remaining = $s->expected_amount - $s->paid_amount;
-            if ($remaining > 0.01) {
-                $running_balance -= $remaining;
-                $totalExpectedInstallment += $remaining;
-
-                $rows[] = (object)[
-                    'is_txn' => false,
-                    'date' => \Carbon\Carbon::parse($s->due_date)->startOfDay()->timestamp,
-                    'due_date_label' => ($s->payment_type === 'down_payment' ? "Bosh to'lov (" : "") . \Carbon\Carbon::parse($s->due_date)->format('d.m.Y') . ($s->payment_type === 'down_payment' ? ")" : ""),
-                    'expected_amount' => $remaining,
-                    'paid_date' => null,
-                    'paid_amount' => null,
-                    'payment_method' => null,
-                    'refund_date' => null,
-                    'refund_amount' => null,
-                    'qoldiq' => $running_balance,
-                    'is_down_payment' => ($s->payment_type === 'down_payment')
-                ];
-            }
-        }
-
-        // 4. Sort chronologically
-        usort($rows, function($a, $b) {
-            if ($a->date !== $b->date) {
-                return $a->date - $b->date;
-            }
-            if ($a->is_txn !== $b->is_txn) {
-                return $a->is_txn ? -1 : 1;
-            }
-            return 0;
-        });
-
-        // 5. Re-calculate the running balance in chronological order so the ledger math is 100% correct
-        $running_balance = 0;
-        foreach ($rows as $row) {
-            if ($row->is_txn) {
-                if ($row->refund_amount) {
-                    $running_balance -= $row->refund_amount;
-                } else {
-                    $running_balance += $row->paid_amount;
+        if (!function_exists('getShortName')) {
+            function getShortName($fullName) {
+                $parts = explode(' ', trim($fullName));
+                if (count($parts) >= 2) {
+                    $lastName = $parts[0];
+                    $firstName = $parts[1];
+                    $firstChar = mb_substr($firstName, 0, 1);
+                    return $firstChar . '. ' . $lastName;
                 }
-            } else {
-                $running_balance -= $row->expected_amount;
+                return $fullName;
             }
-            $row->qoldiq = $running_balance;
         }
 
-        // Calculate totals for summary box
-        $bankPaid = 0;
-        $cashPaid = 0;
-        foreach ($incomes as $t) {
-            $method = strtolower($t->payment_method ?: '');
-            if ($method === 'bank') {
-                $bankPaid += ($t->converted_amount ?? $t->amount);
-            } else {
-                $cashPaid += ($t->converted_amount ?? $t->amount);
-            }
-        }
+        $settings = \App\Models\SystemSetting::first();
+        $korxonaNomi = $settings->company_name ?? '“SHER-DOR” xususiy korxonasi';
+        $korxonaManzili = $settings->company_address ?? 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
+        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
+        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
+        $korxonaMfo = $settings->company_mfo ?? '00300';
+        $korxonaInn = $settings->company_inn ?? '202 162 496';
+        $korxonaDirector = $settings->company_director ?? 'J. Raxmonov';
+        $korxonaTelefon = $settings->company_phone ?? '91 708-44-44, 93 573-29-29';
+
+        $isZamon = (strpos(strtolower($korxonaNomi), 'zamon') !== false);
+        $buyerLabel = $isZamon ? '«БУЮРТМАЧИ»' : '«HARIDOR»';
+        $companyLabel = $isZamon ? '«БАЖАРУВЧИ»' : '«KORXONA»';
+
+        // Filter and sort schedule
+        $installments = $contract->paymentSchedules->filter(function($s) {
+            return $s->payment_type !== 'down_payment';
+        })->sortBy('due_date');
+
+        $contractDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d/m/Y') : date('d/m/Y');
+        $contractNum = $contract->contract_number ?: ('#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT));
         
-        $totalPenalty = $contract->total_penalty_accumulated ?: 0;
-        $remainingDebt = $contract->total_amount - ($totalPaidAll - $totalRefundedAll) + $totalPenalty;
+        $buildingType = 'uy-joy';
+        if ($contract->contract_type === 'commercial' || ($contract->unit && $contract->unit->type === 'commercial')) {
+            $buildingType = 'savdo do\'koni';
+        }
     @endphp
 
-    <div class="header-title">"SHER-DOR" XUSUSIY KORXONASI</div>
-    <div class="header-subtitle">MIJOZNING SHAXSIY VARAQASI</div>
+    @if(!$isZamon)
+        <!-- Sher-Dor Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
+            <tr>
+                <td style="width: 45%; font-size: 8.5px; text-align: center; border: none; padding: 0; line-height: 1.3; font-weight: bold; font-family: 'DejaVu Sans', sans-serif;">
+                    O`zbekiston Respublikasi<br>
+                    Samarqand viloyati<br>
+                    Urgut tumani<br>
+                    “Sher-dor”<br>
+                    xususiy korxonasi
+                </td>
+                <td style="width: 10%; border: none; padding: 0;"></td>
+                <td style="width: 45%; font-size: 8.5px; text-align: center; border: none; padding: 0; line-height: 1.3; font-weight: bold; font-family: 'DejaVu Sans', sans-serif;">
+                    Частное предприятие<br>
+                    “ШЕР-ДОР”<br>
+                    Ургутского района<br>
+                    Самаркандской области<br>
+                    Республики Узбекистан
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: center; font-size: 8px; border: none; border-bottom: 1.5px solid #000; padding: 6px 0; font-family: 'DejaVu Sans', sans-serif;">
+                    Manzil: Samarqand viloyati, Urgut shahar, Do`stlik MFY, Navoiy ko`chasi 83-uy; e-mail: sherdor.xk@mail.ru
+                </td>
+            </tr>
+        </table>
+    @else
+        <!-- Zamon Sifat Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
+            <tr>
+                <td style="font-size: 11px; text-align: center; border: none; padding: 0; line-height: 1.4; font-weight: bold;">
+                    {{ $korxonaNomi }}
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: center; font-size: 8.5px; border: none; border-bottom: 1.5px solid #000; padding: 6px 0;">
+                    Manzil: {{ $korxonaManzili }} | Tel: {{ $korxonaTelefon }}
+                </td>
+            </tr>
+        </table>
+    @endif
 
-    <!-- General Info Grid -->
-    <!-- General Info Grid (Flat Table for PDF & Excel alignment) -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-        <colgroup>
-            <col style="width: 15%;">
-            <col style="width: 13%;">
-            <col style="width: 12%;">
-            <col style="width: 13%;">
-            <col style="width: 11%;">
-            <col style="width: 12%;">
-            <col style="width: 12%;">
-            <col style="width: 12%;">
-        </colgroup>
-        <tbody>
-            <tr>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Shartnoma sanasi</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d.m.Y') : '___' }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Mijoz F.I.Sh:</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; font-size: 8px;">{{ $contract->client->full_name }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon umumiy narxi</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->total_amount, 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Shartnoma raqami:</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->contract_number ?: '#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">PINFL:</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->pinfl }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Boshlang'ich to'lov</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ number_format($contract->down_payment, 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Qavat</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->floor ?? ($contract->unit && $contract->unit->floor ? $contract->unit->floor->floor_number : '___') }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Pasport raqami:</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->passport_number ?: $contract->client->passport_series }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">To'lov muddati</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->term_months }} oy</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon raqami</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->unit ? $contract->unit->unit_number : '___' }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; text-align: right; font-size: 8px;">Telefon raqami:</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px; mso-number-format:'\@'; vnd.ms-excel.numberformat:@;">{{ $contract->client->phone }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Qoldiq so'mma</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->total_amount - $contract->down_payment, 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Xonadon maydoni</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-size: 8px;">{{ $contract->unit ? number_format($contract->unit->area_sqm, 2, ',', ' ') : '___' }}</td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-size: 8px;"></td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; font-size: 8px;"></td>
-                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; background-color: #f9f9f9; font-size: 8px;">Oylik to'lov so'mmasi</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 3px 4px; text-align: right; font-weight: bold; font-size: 8px;">{{ number_format($contract->paymentSchedules->first() ? $contract->paymentSchedules->first()->expected_amount : (($contract->total_amount - $contract->down_payment) / ($contract->term_months ?: 1)), 0, ',', ' ') }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="text-center font-bold" style="font-size: 9.5px; margin-top: 10px; line-height: 1.4;">
+        {{ $contractDate }}-yildagi №{{ $contractNum }}-sonli<br>
+        hissadorlik shartlari asosida<br>
+        {{ $buildingType }} qurish shartnomasi<br>
+        2-ilova
+    </div>
+    <div class="text-center" style="font-size: 9px; margin-top: 4px;">
+        Urgut shahri
+    </div>
+    <div class="text-center font-bold" style="font-size: 11px; margin-top: 8px; margin-bottom: 12px; letter-spacing: 0.5px;">
+        TO`LOV GRAFIGI
+    </div>
 
     <!-- Main Payment Ledger Table -->
-    <table class="main-table" style="width: 100%; border-collapse: collapse;">
+    <table class="main-table">
         <colgroup>
-            <col style="width: 15%;">
-            <col style="width: 13%;">
-            <col style="width: 12%;">
-            <col style="width: 13%;">
-            <col style="width: 11%;">
-            <col style="width: 12%;">
-            <col style="width: 12%;">
-            <col style="width: 12%;">
+            <col style="width: 8%;">
+            <col style="width: 25%;">
+            <col style="width: 23%;">
+            <col style="width: 22%;">
+            <col style="width: 22%;">
         </colgroup>
         <thead>
             <tr>
-                <th colspan="2" class="yellow-header">Kutilayotgan to'lov</th>
-                <th colspan="2" class="yellow-header">Haqiqatda qilingan to'lov</th>
-                <th rowspan="2" class="yellow-header" style="vertical-align: middle;">To'lov turi</th>
-                <th colspan="2" class="yellow-header">Mijozga qaytarilgan</th>
-                <th rowspan="2" class="gray-header" style="vertical-align: middle;">Qoldiq</th>
+                <th rowspan="2" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">№</th>
+                <th rowspan="2" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">To'lov sanasi</th>
+                <th colspan="3" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">To'lov</th>
             </tr>
             <tr>
-                <th class="sub-header" style="width: 12%;">To'lov sanasi</th>
-                <th class="sub-header" style="width: 13%;">Oylik to'lov so'mmasi</th>
-                <th class="sub-header" style="width: 12%;">To'langan sana</th>
-                <th class="sub-header" style="width: 13%;">To'langan so'mma</th>
-                <th class="sub-header" style="width: 12%;">Qaytarilgan sana</th>
-                <th class="sub-header" style="width: 13%;">Qaytarilgan so'mma</th>
+                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">
+                    {{ $contract->contract_type === 'commercial' ? "Savdo do'konining umumiy so'mmasi" : "Xonadonning umumiy so'mmasi" }}
+                </th>
+                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">Boshlang'ich to'lov</th>
+                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">Qoldiq so'mma</th>
+            </tr>
+            <tr style="font-weight: bold; text-align: center; background-color: #ffffff;">
+                <td style="border: 1px solid #000; padding: 5px;"></td>
+                <td style="border: 1px solid #000; padding: 5px;"></td>
+                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->total_amount, 0, ',', ' ') }}</td>
+                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->down_payment, 0, ',', ' ') }}</td>
+                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->total_amount - $contract->down_payment, 0, ',', ' ') }}</td>
             </tr>
         </thead>
         <tbody>
-            @foreach($rows as $row)
+            @php $index = 1; $sum = 0; @endphp
+            @foreach($installments as $inst)
+                @php $sum += $inst->expected_amount; @endphp
                 <tr>
-                    <td class="font-bold">{{ $row->due_date_label }}</td>
-                    <td class="font-bold text-right">{{ $row->expected_amount ? number_format($row->expected_amount, 0, ',', ' ') : '' }}</td>
-                    <td>{{ $row->paid_date ?: '' }}</td>
-                    <td class="text-right">{{ $row->paid_amount ? number_format($row->paid_amount, 0, ',', ' ') : '' }}</td>
-                    <td class="font-bold" style="text-transform: capitalize;">
-                        @if($row->payment_method)
-                            @php
-                                $m = strtolower($row->payment_method);
-                                if ($m === 'bank') echo 'Bank';
-                                elseif ($m === 'naqd' || $m === 'cash') echo 'Naqd';
-                                elseif ($m === 'plastik' || $m === 'karta') echo 'Plastik';
-                                else echo $row->payment_method;
-                            @endphp
-                        @endif
-                    </td>
-                    <td>{{ $row->refund_date ?: '' }}</td>
-                    <td class="text-right" style="color: red;">{{ $row->refund_amount ? number_format($row->refund_amount, 0, ',', ' ') : '' }}</td>
-                    <td class="font-bold text-right" style="{{ $row->qoldiq < 0 ? 'color: red;' : '' }}">
-                        @if($row->qoldiq !== null)
-                            {{ $row->qoldiq < 0 ? '-' : '' }} {{ number_format(abs($row->qoldiq), 0, ',', ' ') }}
-                        @endif
-                    </td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 8.5px;">{{ $index++ }}</td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 8.5px;">{{ \Carbon\Carbon::parse($inst->due_date)->format('d/m/Y') }}-yil</td>
+                    <td style="border: 1px solid #000; padding: 4px; background-color: #fafafa;"></td>
+                    <td style="border: 1px solid #000; padding: 4px; background-color: #fafafa;"></td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: right; font-weight: bold; font-size: 8.5px;">{{ number_format($inst->expected_amount, 0, ',', ' ') }}</td>
                 </tr>
             @endforeach
             
-            <!-- Totals row -->
-            <tr style="background-color: #f9f9f9; font-weight: bold;">
-                <td>JAMI:</td>
-                <td class="text-right">{{ number_format($totalExpectedInstallment, 0, ',', ' ') }}</td>
-                <td></td>
-                <td class="text-right">{{ number_format($totalPaidAll, 0, ',', ' ') }}</td>
-                <td></td>
-                <td></td>
-                <td class="text-right" style="color: red;">{{ number_format($totalRefundedAll, 0, ',', ' ') }}</td>
-                <td></td>
+            @if($installments->isEmpty())
+                <tr>
+                    <td colspan="5" style="border: 1px solid #000; padding: 12px; text-align: center; color: #777; font-size: 9px; font-style: italic;">
+                        To'lov grafigi hali shakllantirilmagan
+                    </td>
+                </tr>
+            @endif
+
+            <tr style="font-weight: bold; background-color: #f5f5f5;">
+                <td style="border: 1.5px solid #000; padding: 5px;"></td>
+                <td style="border: 1.5px solid #000; padding: 5px; text-align: center; font-size: 9px;">Жами</td>
+                <td style="border: 1px solid #000; padding: 5px; background-color: #fafafa;"></td>
+                <td style="border: 1px solid #000; padding: 5px; background-color: #fafafa;"></td>
+                <td style="border: 1.5px solid #000; padding: 5px; text-align: right; font-size: 9px;">{{ number_format($sum, 0, ',', ' ') }}</td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Bottom Summary Box -->
-    <table class="summary-table">
-        <tr>
-            <td class="label-cell">Naqt to'lov so'mmasi</td>
-            <td class="value-cell">{{ number_format($cashPaid, 0, ',', ' ') }}</td>
-        </tr>
-        <tr>
-            <td class="label-cell">Bankga to'lov so'mmasi</td>
-            <td class="value-cell">{{ number_format($bankPaid, 0, ',', ' ') }}</td>
-        </tr>
-        <tr>
-            <td class="label-cell">Jami qaytarilgan so'mma</td>
-            <td class="value-cell" style="color: red;">{{ number_format($totalRefundedAll, 0, ',', ' ') }}</td>
-        </tr>
-        <tr>
-            <td class="label-cell">Penya so'mmasi</td>
-            <td class="value-cell" style="color: red;">{{ number_format($totalPenalty, 0, ',', ' ') }}</td>
-        </tr>
-        <tr>
-            <td class="label-cell highlight">Umumiy qoldiq so'mma</td>
-            <td class="value-cell highlight" style="{{ $remainingDebt > 0 ? 'color: red;' : '' }}">{{ number_format($remainingDebt, 0, ',', ' ') }}</td>
-        </tr>
-    </table>
-
     <!-- Footer Signatures -->
-    <table class="footer-table">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
         <tr>
-            <td style="width: 50%;">
-                <div class="font-bold" style="text-decoration: underline;">«XARIDOR»</div>
-                <div style="margin-top: 15px;">F.I.Sh: &nbsp; &nbsp; {{ $contract->client->full_name }}</div>
-                <div style="margin-top: 15px;">Imzo: &nbsp; &nbsp; ____________________</div>
+            <td style="width: 48%; vertical-align: top; font-size: 8.5px; line-height: 1.45; border: none; padding: 0;">
+                <div class="font-bold" style="text-decoration: underline; margin-bottom: 5px;">{{ $buyerLabel }}</div>
+                <div><strong>F.I.SH:</strong> {{ $contract->client->full_name }}</div>
+                <div><strong>Pasport berilgan sana:</strong> {{ $contract->client->passport_date ? \Carbon\Carbon::parse($contract->client->passport_date)->format('d/m/Y') : '___' }}-yil</div>
+                <div><strong>Pasport berilgan joyi:</strong> {{ $contract->client->passport_issued_by ?? 'Urgut tuman IIB' }}</div>
+                <div><strong>Pasport seriyasi:</strong> {{ $contract->client->passport_series ?? 'AD' }} № {{ $contract->client->passport_number ?? '_______' }}</div>
+                <div><strong>Manzil:</strong> {{ $contract->client->address ?? 'Samarqand viloyati Urgut tumani' }}</div>
+                <div><strong>ЖШШИР:</strong> {{ $contract->client->pinfl ?? '_____________' }}</div>
+                <div><strong>Телефон:</strong> {{ $contract->client->phone ?? '_____________' }}</div>
+                <div style="margin-top: 15px;"><strong>{{ $isZamon ? 'Буюртмачи' : 'Haridor' }}:</strong> {{ getShortName($contract->client->full_name) }} ___________________</div>
             </td>
-            <td style="width: 50%; text-align: right;">
-                <div class="font-bold" style="text-decoration: underline; text-align: right;">«KORXONA»</div>
-                <div style="margin-top: 15px; text-align: right;">«SHER-DOR» XK direktor: J. Raxmonov</div>
-                <div style="margin-top: 15px; text-align: right;">Imzo: &nbsp; &nbsp; ____________________ &nbsp; (M.O'.)</div>
+            <td style="width: 4%; border: none; padding: 0;"></td>
+            <td style="width: 48%; vertical-align: top; font-size: 8.5px; line-height: 1.45; border: none; padding: 0;">
+                <div class="font-bold" style="text-decoration: underline; margin-bottom: 5px;">{{ $companyLabel }}</div>
+                <div><strong>{{ $korxonaNomi }}</strong></div>
+                <div><strong>Manzil:</strong> {{ $korxonaManzili }}</div>
+                <div><strong>H/R:</strong> {{ $korxonaHr }}</div>
+                <div><strong>Bank:</strong> {{ $korxonaBank }}</div>
+                <div><strong>MFO:</strong> {{ $korxonaMfo }}</div>
+                <div><strong>INN:</strong> {{ $korxonaInn }}</div>
+                <div><strong>Telefon:</strong> {{ $korxonaTelefon }}</div>
+                <div style="margin-top: 15px;"><strong>Direktor:</strong> {{ $korxonaDirector }} ___________________</div>
             </td>
         </tr>
     </table>

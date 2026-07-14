@@ -15,7 +15,7 @@ async function deploy() {
         });
         console.log('Connected!');
 
-        const diffOutput = execSync('git diff --name-only HEAD~12 HEAD', { cwd: path.resolve(__dirname, '..') }).toString();
+        const diffOutput = execSync('git diff --name-only HEAD~12 HEAD -- . :!deploy_temp/node_modules', { cwd: path.resolve(__dirname, '..') }).toString();
         const files = diffOutput.split('\n').map(f => f.trim()).filter(f => f && fs.existsSync(path.resolve(__dirname, '../' + f)));
 
         console.log('Uploading files...');

@@ -1722,7 +1722,10 @@ class FinanceController extends Controller
 
     public function exportTransactionsExcel(Request $request)
     {
-        $query = Transaction::with(['creator', 'approver', 'cashRegister', 'counterparty', 'category', 'building', 'contract.unit.floor.building']);
+        $query = Transaction::with([
+            'creator', 'approver', 'cashRegister', 'counterparty', 'category', 'building', 
+            'contract.unit.floor.building', 'client', 'partner.user', 'worker', 'supplier', 'brigade'
+        ]);
 
         if ($request->filled('start_date')) {
             $query->whereDate('transaction_date', '>=', $request->start_date);
@@ -1756,6 +1759,7 @@ class FinanceController extends Controller
         $callback = function() use ($transactions) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF"); // BOM for Excel UTF-8 support
+            fputs($file, "sep=;\n"); // Force Excel to recognize semicolon delimiter
 
             fputcsv($file, [
                 'ID', 
@@ -1774,18 +1778,44 @@ class FinanceController extends Controller
             ], ';');
 
             foreach ($transactions as $txn) {
+                // Robustly resolve counterparty name
+                $counterpartyName = 'Noma\'lum';
+                if ($txn->counterparty) {
+                    $counterpartyName = $txn->counterparty->name;
+                } elseif ($txn->client) {
+                    $counterpartyName = trim(($txn->client->last_name ?? '') . ' ' . ($txn->client->first_name ?? '') . ' ' . ($txn->client->middle_name ?? ''));
+                } elseif ($txn->partner) {
+                    $counterpartyName = $txn->partner->user ? $txn->partner->user->name : $txn->partner->name;
+                } elseif ($txn->worker) {
+                    $counterpartyName = $txn->worker->name;
+                } elseif ($txn->supplier) {
+                    $counterpartyName = $txn->supplier->name;
+                } elseif ($txn->brigade) {
+                    $counterpartyName = $txn->brigade->name;
+                }
+
+                // Translate status to Uzbek
+                $statusUz = $txn->status === 'approved' ? 'Tasdiqlangan' : 
+                           ($txn->status === 'pending' ? 'Kutilmoqda' : 
+                           ($txn->status === 'rejected' ? 'Rad etilgan' : $txn->status));
+
+                // Translate payment method to Uzbek
+                $methodUz = $txn->payment_method === 'cash' ? 'Naqd' : 
+                           ($txn->payment_method === 'card' ? 'Karta' : 
+                           ($txn->payment_method === 'bank_transfer' ? 'O\'tkazma (Bank)' : $txn->payment_method));
+
                 fputcsv($file, [
                     $txn->id,
                     $txn->type === 'income' ? 'Kirim' : 'Chiqim',
                     $txn->cashRegister->name ?? 'Asosiy',
-                    $txn->counterparty->name ?? 'Noma\'lum',
-                    $txn->category->name ?? 'Boshqa',
+                    $counterpartyName ?: 'Noma\'lum',
+                    $txn->category->name ?? ($txn->category_display ?: 'Boshqa'),
                     $txn->amount,
                     $txn->currency,
                     $txn->exchange_rate,
                     $txn->converted_amount,
-                    $txn->payment_method,
-                    $txn->status,
+                    $methodUz,
+                    $statusUz,
                     $txn->notes,
                     $txn->transaction_date
                 ], ';');

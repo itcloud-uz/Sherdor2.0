@@ -92,6 +92,26 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\RefundSchedule::class, 'refund_schedule_id');
     }
 
+    public function partner()
+    {
+        return $this->belongsTo(\App\Models\Partner::class);
+    }
+
+    public function worker()
+    {
+        return $this->belongsTo(\App\Models\Worker::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(\App\Models\Supplier::class);
+    }
+
+    public function brigade()
+    {
+        return $this->belongsTo(\App\Models\Brigade::class);
+    }
+
     public function linkedWork()
     {
         return $this->morphTo(__FUNCTION__, 'linked_work_type', 'linked_work_id');

@@ -765,6 +765,7 @@ function submitNewLead() {
             }
         })
             .then(() => {
+                alert("Muvaffaqiyatli saqlandi!");
                 showCreateLeadModal.value = false;
                 showDetailedLeadModal.value = false;
                 router.reload({ preserveScroll: true });
@@ -781,7 +782,10 @@ function submitNewLead() {
                 'Content-Type': 'multipart/form-data'
             }
         })
-            .then(() => {
+            .then((response) => {
+                const msg = response.data?.message || 'Muvaffaqiyatli saqlandi!';
+                alert(msg);
+
                 showCreateLeadModal.value = false;
                 showDetailedLeadModal.value = false;
                 newLeadForm.value = {
@@ -805,8 +809,15 @@ function submitNewLead() {
                     currency: 'uzs',
                     comment: '',
                     passport_photo: null,
-                    passport_photo_back: null
+                    passport_photo_back: null,
+                    passport_issued_date: '',
+                    passport_issued_by: '',
                 };
+                
+                if (response.data?.client) {
+                    activeTab.value = 'clients';
+                }
+                
                 router.reload({ preserveScroll: true });
             })
             .catch(error => {

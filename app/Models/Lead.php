@@ -29,6 +29,8 @@ class Lead extends Model
         'pinfl',
         'passport_photo',
         'passport_photo_back',
+        'passport_issued_date',
+        'passport_issued_by',
     ];
 
     public function user()

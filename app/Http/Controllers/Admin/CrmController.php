@@ -514,6 +514,8 @@ class CrmController extends Controller
             'pinfl' => $lead->pinfl,
             'passport_photo' => $lead->passport_photo,
             'passport_photo_back' => $lead->passport_photo_back,
+            'passport_issued_date' => $lead->passport_issued_date,
+            'passport_issued_by' => $lead->passport_issued_by,
         ]);
 
         $lead->delete();
@@ -548,6 +550,8 @@ class CrmController extends Controller
             'user_id' => 'nullable|exists:users,id',
             'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
             'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
+            'passport_issued_date' => 'nullable|date',
+            'passport_issued_by' => 'nullable|string|max:500',
         ]);
 
         $fullName = trim(($validated['last_name'] ?? '') . ' ' . ($validated['first_name'] ?? '') . ' ' . ($validated['middle_name'] ?? ''));
@@ -569,6 +573,8 @@ class CrmController extends Controller
         $lead->district = $validated['district'] ?? null;
         $lead->address = $validated['address'] ?? null;
         $lead->assigned_employee_id = $validated['assigned_employee_id'] ?? null;
+        $lead->passport_issued_date = $validated['passport_issued_date'] ?? null;
+        $lead->passport_issued_by = $validated['passport_issued_by'] ?? null;
         if (isset($validated['email'])) $lead->email = $validated['email'];
         if (isset($validated['social_url'])) $lead->social_url = $validated['social_url'];
         if (isset($validated['source'])) $lead->source = $validated['source'];

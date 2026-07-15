@@ -36,6 +36,8 @@ class LeadController extends Controller
             'user_id' => 'nullable|exists:users,id',
             'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
             'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
+            'passport_issued_date' => 'nullable|date',
+            'passport_issued_by' => 'nullable|string|max:500',
         ]);
 
         try {
@@ -84,6 +86,8 @@ class LeadController extends Controller
                 'source' => $source,
                 'status' => 'new',
                 'user_id' => $validated['user_id'] ?? null,
+                'passport_issued_date' => $validated['passport_issued_date'] ?? null,
+                'passport_issued_by' => $validated['passport_issued_by'] ?? null,
             ]);
 
             // Auto-convert to Client if full info is provided
@@ -120,6 +124,8 @@ class LeadController extends Controller
                         'pinfl' => $lead->pinfl,
                         'passport_photo' => $lead->passport_photo,
                         'passport_photo_back' => $lead->passport_photo_back,
+                        'passport_issued_date' => $lead->passport_issued_date,
+                        'passport_issued_by' => $lead->passport_issued_by,
                     ]);
 
                     $lead->delete();

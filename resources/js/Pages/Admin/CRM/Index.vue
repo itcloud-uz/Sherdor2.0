@@ -678,7 +678,9 @@ function openEditLeadModal(lead) {
         email: lead.email || '',
         social_url: lead.social_url || '',
         passport_photo: null,
-        passport_photo_back: null
+        passport_photo_back: null,
+        passport_issued_date: lead.passport_issued_date || '',
+        passport_issued_by: lead.passport_issued_by || '',
     };
     showDetailedLeadModal.value = true;
 }
@@ -707,7 +709,9 @@ function openDetailedLeadModal() {
         currency: 'uzs', 
         comment: '',
         passport_photo: null,
-        passport_photo_back: null
+        passport_photo_back: null,
+        passport_issued_date: '',
+        passport_issued_by: '',
     };
     showDetailedLeadModal.value = true;
 }
@@ -736,7 +740,9 @@ function openCreateLeadModal() {
         currency: 'uzs',
         comment: '',
         passport_photo: null,
-        passport_photo_back: null
+        passport_photo_back: null,
+        passport_issued_date: '',
+        passport_issued_by: '',
     };
     showCreateLeadModal.value = true;
 }
@@ -8478,6 +8484,18 @@ const ledgerReportData = computed(() => {
                                     </template>
                                     <input type="file" class="hidden" accept="image/*,application/pdf" @change="onLeadPassportPhotoChange">
                                 </label>
+                            </div>
+                        </div>
+
+                        <!-- Qator 5b: Passport Berilgan Vaqti va Kim tomonidan berilgan -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Berilgan vaqti</label>
+                                <input v-model="newLeadForm.passport_issued_date" type="date" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-medium text-gray-700 mb-1.5">Kim tomondan berilgan</label>
+                                <input v-model="newLeadForm.passport_issued_by" type="text" class="w-full border border-gray-200 rounded-lg p-2.5 text-gray-900 text-[14px] focus:border-[#f2a900] focus:ring-1 focus:ring-[#f2a900] transition-all outline-none" placeholder="Kim tomonidan berilgan">
                             </div>
                         </div>
 

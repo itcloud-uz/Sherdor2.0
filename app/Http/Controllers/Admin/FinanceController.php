@@ -2682,9 +2682,22 @@ class FinanceController extends Controller
         $comment = $request->input('comment');
 
         try {
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($file->getRealPath());
             $sheet = $spreadsheet->getActiveSheet();
-            $rows = $sheet->toArray(null, true, true, true);
+            
+            $highestRow = min($sheet->getHighestRow(), 5000);
+            
+            $rows = [];
+            for ($row = 1; $row <= $highestRow; $row++) {
+                $rowData = [];
+                // Only load columns A to K
+                foreach (range('A', 'K') as $col) {
+                    $rowData[$col] = $sheet->getCell($col . $row)->getValue();
+                }
+                $rows[$row] = $rowData;
+            }
             
             if (count($rows) < 2) {
                 return back()->with('error', 'Fayl bo\'sh yoki yetarli qatorlar mavjud emas.');

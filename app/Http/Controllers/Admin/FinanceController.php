@@ -216,6 +216,7 @@ class FinanceController extends Controller
             'client_id' => 'nullable|exists:clients,id',
             'partner_id' => 'nullable|exists:partners,id',
             'notes' => 'nullable|string',
+            'description' => 'nullable|string',
             'category_id' => 'nullable|exists:transaction_categories,id',
             'category_name' => 'nullable|string',
             'transaction_date' => 'nullable|date',
@@ -621,7 +622,7 @@ class FinanceController extends Controller
                     'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
                     'amount' => $transaction->amount,
                     'work_category' => $transaction->work_category,
-                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')) . ($transaction->description ? " [Izoh: " . $transaction->description . "]" : ""),
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -640,7 +641,7 @@ class FinanceController extends Controller
                     'user_id' => $userObj->id,
                     'type' => $transaction->type === 'income' ? 'payment' : 'advance_payment',
                     'amount' => $transaction->amount,
-                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')) . ($transaction->description ? " [Izoh: " . $transaction->description . "]" : ""),
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -659,7 +660,7 @@ class FinanceController extends Controller
                     'machinery_id' => $machinery->id,
                     'type' => $transaction->type === 'income' ? 'payment_received' : 'advance_payment',
                     'amount' => $transaction->amount,
-                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Texnika')),
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Texnika')) . ($transaction->description ? " [Izoh: " . $transaction->description . "]" : ""),
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -685,7 +686,7 @@ class FinanceController extends Controller
                     'brigade_id' => $brigade->id,
                     'type' => $transaction->type === 'income' ? 'payment_received' : 'payment',
                     'amount' => $transaction->amount,
-                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')) . ($transaction->description ? " [Izoh: " . $transaction->description . "]" : ""),
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -704,7 +705,7 @@ class FinanceController extends Controller
                     'machine_owner_id' => $owner->id,
                     'type' => $transaction->type === 'income' ? 'payment_received' : 'payment',
                     'amount' => $transaction->amount,
-                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')),
+                    'description' => "Moliya: " . ($transaction->notes ?? ($transaction->category->name ?? 'Xarajat')) . ($transaction->description ? " [Izoh: " . $transaction->description . "]" : ""),
                     'date' => $transaction->transaction_date ?? now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -1102,6 +1103,7 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
+            'description' => 'nullable|string',
             'category_id' => 'nullable|exists:transaction_categories,id',
             'building_id' => 'nullable|exists:buildings,id',
             'account_id' => 'required|exists:cash_registers,id',
@@ -1830,6 +1832,7 @@ class FinanceController extends Controller
                 'Konvertatsiya (UZS)', 
                 'To\'lov uslubi', 
                 'Holati', 
+                'To\'lov maqsadi',
                 'Izoh'
             ], ';');
 
@@ -1870,6 +1873,7 @@ class FinanceController extends Controller
 
                 // Clean fields of semicolons, carriage returns and newlines to prevent broken columns in CSV
                 $cleanNotes = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->notes ?? '');
+                $cleanDesc = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->description ?? '');
                 $cleanCounterparty = str_replace([";", "\r", "\n"], [" ", "", " "], $counterpartyName ?: 'Noma\'lum');
                 $cleanCategory = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->category->name ?? ($txn->category_display ?: 'Boshqa'));
                 $cleanCashRegister = str_replace([";", "\r", "\n"], [" ", "", " "], $txn->cashRegister->name ?? 'Asosiy');
@@ -1887,7 +1891,8 @@ class FinanceController extends Controller
                     $convertedFormatted,
                     $methodUz,
                     $statusUz,
-                    $cleanNotes
+                    $cleanNotes,
+                    $cleanDesc
                 ], ';');
             }
 

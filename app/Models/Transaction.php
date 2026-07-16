@@ -30,7 +30,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'type', 'amount', 'currency', 'payment_method', 'status',
-        'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes',
+        'payment_schedule_id', 'created_by', 'approved_by', 'receipt_hash', 'notes', 'description',
         'transaction_hash', 'category', 'category_id', 'transaction_date', 'attachment_path', 'contract_id', 'client_id', 'account_type', 'partner_id', 'source',
         'worker_id', 'machinery_id', 'building_id', 'supplier_id', 'latitude', 'longitude', 'work_category',
         'target_type', 'target_id', 'account_id', 'counterparty_id', 'invoice_id', 'refund_schedule_id',

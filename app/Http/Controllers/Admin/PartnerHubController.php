@@ -190,6 +190,7 @@ class PartnerHubController extends Controller
             'notes' => 'nullable|string',
             'items' => 'nullable|array',
             'attachment' => 'required|file|mimes:jpeg,png,jpg,pdf|max:10240',
+            'transaction_date' => 'nullable|date',
         ]);
 
         $path = null;
@@ -213,7 +214,8 @@ class PartnerHubController extends Controller
             'status' => 'pending',
             'created_by' => $partner->user_id,
             'partner_id' => $partner->id,
-            'attachment_path' => $path
+            'attachment_path' => $path,
+            'transaction_date' => $request->input('transaction_date') ?? now()->toDateString()
         ]);
 
         return redirect()->back()->with('message', 'Chek yuklandi va tasdiqlash uchun yuborildi.');
@@ -231,14 +233,14 @@ class PartnerHubController extends Controller
         });
 
         if ($request->filled('from_date')) {
-            $query->where('created_at', '>=', $request->from_date . ' 00:00:00');
+            $query->where(\DB::raw('COALESCE(transaction_date, DATE(created_at))'), '>=', $request->from_date);
         }
         
         if ($request->filled('to_date')) {
-            $query->where('created_at', '<=', $request->to_date . ' 23:59:59');
+            $query->where(\DB::raw('COALESCE(transaction_date, DATE(created_at))'), '<=', $request->to_date);
         }
 
-        $transactions = $query->orderBy('created_at', 'desc')->get();
+        $transactions = $query->orderByRaw('COALESCE(transaction_date, created_at) desc')->get();
         return response()->json($transactions);
     }
 

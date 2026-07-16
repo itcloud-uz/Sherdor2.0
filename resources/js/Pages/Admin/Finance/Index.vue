@@ -975,8 +975,8 @@ function handleEditFileUpload(e) {
 
 function openEditTransactionModal(txn) {
     let paymentPurpose = txn.notes || '';
-    let extraNotes = '';
-    if (paymentPurpose.includes('\n[Izoh]: ')) {
+    let extraNotes = txn.description || '';
+    if (!extraNotes && paymentPurpose.includes('\n[Izoh]: ')) {
         const parts = paymentPurpose.split('\n[Izoh]: ');
         paymentPurpose = parts[0];
         extraNotes = parts[1];
@@ -1010,20 +1010,10 @@ function openEditTransactionModal(txn) {
 function submitEditTransaction() {
     isProcessing.value = true;
 
-    // Combine notes and extra_notes if extra_notes is set
-    let finalNotes = editTransactionForm.value.notes;
-    if (editTransactionForm.value.extra_notes) {
-        if (finalNotes) {
-            finalNotes = finalNotes + '\n[Izoh]: ' + editTransactionForm.value.extra_notes;
-        } else {
-            finalNotes = editTransactionForm.value.extra_notes;
-        }
-    }
-
     // Create form data payload with Laravel method spoofing
     const payload = {
         ...editTransactionForm.value,
-        notes: finalNotes,
+        description: editTransactionForm.value.extra_notes || '',
         _method: 'put'
     };
     delete payload.extra_notes;
@@ -1178,6 +1168,7 @@ const form = ref({
     transaction_date: new Date().toLocaleString('sv').slice(0, 10),
     attachment: null,
     notes: '',
+    description: '',
     auto_approve: true,
     latitude: null,
     longitude: null,
@@ -2143,13 +2134,7 @@ function submitTransaction() {
     }
     
     // Izohlar (extra notes) — alohida maydon, To'lov maqsadi bilan aralashtirilmaydi
-    if (extraNotesInput.value) {
-        if (form.value.notes) {
-            form.value.notes = form.value.notes + '\n[Izoh]: ' + extraNotesInput.value;
-        } else {
-            form.value.notes = extraNotesInput.value;
-        }
-    }
+    form.value.description = extraNotesInput.value || '';
 
     // Add selected invoices detail to notes and set primary invoice_id / payment_schedule_id
     if (selectedInvoiceIds.value.length > 0) {

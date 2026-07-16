@@ -107,7 +107,8 @@ const expenseForm = useForm({
     category: 'Boshqa xarajatlar',
     notes: '',
     items: [],
-    attachment: null
+    attachment: null,
+    transaction_date: new Date().toISOString().split('T')[0]
 });
 
 const expenseItems = ref([
@@ -215,7 +216,7 @@ const expandedExpenses = computed(() => {
                 list.push({
                     id: t.id,
                     idx: idx++,
-                    date: t.created_at,
+                    date: t.transaction_date || t.created_at,
                     tovar_nomi: item.name || item.tovar_nomi || 'Nomalum',
                     soni: item.quantity || item.soni || 1,
                     narxi: item.price || item.narxi || 0,
@@ -229,7 +230,7 @@ const expandedExpenses = computed(() => {
             list.push({
                 id: t.id,
                 idx: idx++,
-                date: t.created_at,
+                date: t.transaction_date || t.created_at,
                 tovar_nomi: t.category_display || 'Sarmoya',
                 soni: 1,
                 narxi: t.amount,
@@ -274,7 +275,7 @@ const expandedAdvances = computed(() => {
                 list.push({
                     id: t.id,
                     idx: idx++,
-                    date: t.created_at,
+                    date: t.transaction_date || t.created_at,
                     tovar_nomi: item.name || item.tovar_nomi || 'Mablag\' olish',
                     soni: item.quantity || item.soni || 1,
                     narxi: item.price || item.narxi || 0,
@@ -288,7 +289,7 @@ const expandedAdvances = computed(() => {
             list.push({
                 id: t.id,
                 idx: idx++,
-                date: t.created_at,
+                date: t.transaction_date || t.created_at,
                 tovar_nomi: t.category_display === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)',
                 soni: 1,
                 narxi: t.amount,
@@ -690,15 +691,21 @@ function formatDate(dateString) {
                 <p class="text-xs font-mono text-gray-500 mb-4">Ushbu chek Moliya markazida tasdiqlangach hisobdorlik balansi qoldig'idan o'chiriladi.</p>
                 
                 <form @submit.prevent="submitExpense" class="space-y-4 font-mono text-xs">
-                    <div>
-                        <label class="block text-gray-500 mb-1">Kategoriya</label>
-                        <select v-model="expenseForm.category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
-                            <option value="Ovqatlanish">Ovqatlanish (Restoran)</option>
-                            <option value="Reklama va Marketing">Reklama va Marketing</option>
-                            <option value="Transport va Yoqilg'i">Transport va Yoqilg'i</option>
-                            <option value="Divident">Divident (Shaxsiy cho'ntakka)</option>
-                            <option value="Boshqa xarajatlar">Boshqa xarajatlar</option>
-                        </select>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-500 mb-1">Kategoriya</label>
+                            <select v-model="expenseForm.category" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                                <option value="Ovqatlanish">Ovqatlanish (Restoran)</option>
+                                <option value="Reklama va Marketing">Reklama va Marketing</option>
+                                <option value="Transport va Yoqilg'i">Transport va Yoqilg'i</option>
+                                <option value="Divident">Divident (Shaxsiy cho'ntakka)</option>
+                                <option value="Boshqa xarajatlar">Boshqa xarajatlar</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 mb-1">Xarajat sanasi</label>
+                            <input v-model="expenseForm.transaction_date" type="date" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+                        </div>
                     </div>
 
                     <!-- Dynamic Itemized Inputs -->

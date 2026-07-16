@@ -2814,16 +2814,14 @@ class FinanceController extends Controller
                 // Inferred counterparty
                 $inferredCounterpartyId = null;
                 if (!empty($purposeCol)) {
-                    $cp = \App\Models\Counterparty::where('is_active', true)
-                        ->where('name', 'like', '%' . $purposeCol . '%')
+                    $cp = \App\Models\Counterparty::where('name', 'like', '%' . $purposeCol . '%')
                         ->first();
                     if (!$cp) {
                         $parts = array_filter(explode(' ', $purposeCol), function($p) {
                             return strlen($p) > 2;
                         });
                         foreach ($parts as $p) {
-                            $cp = \App\Models\Counterparty::where('is_active', true)
-                                ->where('name', 'like', '%' . $p . '%')
+                            $cp = \App\Models\Counterparty::where('name', 'like', '%' . $p . '%')
                                 ->first();
                             if ($cp) {
                                 break;
@@ -2850,8 +2848,7 @@ class FinanceController extends Controller
                 $rowNum++;
             }
 
-            $counterparties = \App\Models\Counterparty::where('is_active', true)
-                ->orderBy('name')
+            $counterparties = \App\Models\Counterparty::orderBy('name')
                 ->get()
                 ->map(function($cp) {
                     return [

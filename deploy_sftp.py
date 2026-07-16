@@ -18,7 +18,8 @@ files_to_upload = [
     'resources/js/Pages/Admin/Facility/Index.vue',
     'resources/js/Pages/Admin/Finance/Index.vue',
     'resources/js/Pages/Admin/Partners/Index.vue',
-    'resources/views/exports/client_ledger.blade.php'
+    'resources/views/exports/client_ledger.blade.php',
+    'routes/web.php'
 ]
 
 try:

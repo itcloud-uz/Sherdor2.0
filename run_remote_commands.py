@@ -18,6 +18,7 @@ try:
         "cd /var/www/sellerarp && git stash",
         "cd /var/www/sellerarp && git fetch origin",
         "cd /var/www/sellerarp && git reset --hard origin/main",
+        "cd /var/www/sellerarp && php artisan migrate --force",
         "cd /var/www/sellerarp && php artisan optimize:clear",
         "cd /var/www/sellerarp && npm run build",
         "cd /var/www/sellerarp && echo 'clone2026' | sudo -S -u www-data php artisan optimize",

@@ -2814,7 +2814,10 @@ function deleteCategory(id) {
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-for="txn in paginatedIncomes" :key="txn.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="p-3 text-gray-500">{{ new Date(txn.transaction_date).toLocaleDateString() }}</td>
-                                        <td class="p-3 truncate max-w-xs">{{ txn.notes || '-' }}</td>
+                                        <td class="p-3 truncate max-w-xs" :title="txn.notes + (txn.description ? '\n[Izoh]: ' + txn.description : '')">
+                                             {{ txn.notes || '-' }}
+                                             <div v-if="txn.description" class="text-[9px] text-gray-400 font-sans italic mt-0.5 truncate">{{ txn.description }}</div>
+                                        </td>
                                         <td class="p-3">{{ txn.category?.name || '-' }}</td>
                                         <td class="p-3 text-right font-bold text-emerald-600">+ {{ formatMoney(txn.amount, txn.currency) }}</td>
                                     </tr>
@@ -2852,7 +2855,10 @@ function deleteCategory(id) {
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-for="txn in paginatedExpenses" :key="txn.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="p-3 text-gray-500">{{ new Date(txn.transaction_date).toLocaleDateString() }}</td>
-                                        <td class="p-3 truncate max-w-xs">{{ txn.notes || '-' }}</td>
+                                        <td class="p-3 truncate max-w-xs" :title="txn.notes + (txn.description ? '\n[Izoh]: ' + txn.description : '')">
+                                             {{ txn.notes || '-' }}
+                                             <div v-if="txn.description" class="text-[9px] text-gray-400 font-sans italic mt-0.5 truncate">{{ txn.description }}</div>
+                                        </td>
                                         <td class="p-3">{{ txn.category?.name || '-' }}</td>
                                         <td class="p-3 text-right font-bold text-red-600">- {{ formatMoney(txn.amount, txn.currency) }}</td>
                                     </tr>
@@ -2903,7 +2909,8 @@ function deleteCategory(id) {
                                 <p class="text-[10px] uppercase font-bold text-gray-400 mt-1">Hisob: {{ txn.cashRegister?.name || 'Asosiy' }}</p>
                             </div>
                             <div class="p-3 bg-white border border-gray-150 rounded-xl text-xs font-mono space-y-1">
-                                <p><span class="text-gray-400">Izoh:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
+                                <p><span class="text-gray-400">To'lov maqsadi:</span> {{ txn.notes || 'Kiritilmagan' }}</p>
+                                <p v-if="txn.description"><span class="text-gray-400">Izoh:</span> {{ txn.description }}</p>
                                 <p v-if="txn.counterparty"><span class="text-gray-400">Kontragent:</span> {{ txn.counterparty.name }}</p>
                                 <p><span class="text-gray-400">Yaratuvchi:</span> {{ txn.creator?.name }}</p>
                             </div>
@@ -4078,7 +4085,10 @@ function deleteCategory(id) {
                                         <td class="p-3 text-right font-black font-mono" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                             {{ formatMoneyKirimChiqim(t.amount) }}
                                         </td>
-                                        <td class="p-3 text-gray-700 max-w-xs truncate" :title="t.notes">{{ t.notes || '—' }}</td>
+                                        <td class="p-3 text-gray-700 max-w-xs truncate" :title="t.notes + (t.description ? '\n[Izoh]: ' + t.description : '')">
+                                             {{ t.notes || '—' }}
+                                             <div v-if="t.description" class="text-[10px] text-gray-400 font-sans italic mt-0.5 truncate">{{ t.description }}</div>
+                                         </td>
                                         <td class="p-3 text-gray-600 font-mono">{{ t.creator?.phone || t.creator?.name || '—' }}</td>
                                     </tr>
                                     <tr v-if="!displayedKirimChiqimTransactions.length">
@@ -4576,7 +4586,10 @@ function deleteCategory(id) {
                                             {{ t.type === 'income' ? 'Kirim' : 'Chiqim' }}
                                         </span>
                                     </td>
-                                    <td class="p-3 text-gray-500 truncate max-w-xs" :title="t.notes">{{ t.notes || '-' }}</td>
+                                    <td class="p-3 text-gray-500 truncate max-w-xs" :title="t.notes + (t.description ? '\n[Izoh]: ' + t.description : '')">
+                                        {{ t.notes || '-' }}
+                                        <div v-if="t.description" class="text-[9px] text-gray-400 font-sans italic mt-0.5 truncate">{{ t.description }}</div>
+                                    </td>
                                 </tr>
                                 <tr v-if="!reportFilteredTransactions.length">
                                     <td colspan="7" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
@@ -5825,7 +5838,8 @@ function deleteCategory(id) {
                 <div class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs space-y-2 font-mono text-gray-600">
                     <div>Turi: <strong class="text-gray-900 uppercase">{{ selectedApproveTxn?.type === 'income' ? 'Kirim' : 'Chiqim' }}</strong></div>
                     <div>Summa: <strong class="text-emerald-600 text-sm">{{ formatMoney(selectedApproveTxn?.amount, selectedApproveTxn?.currency) }}</strong></div>
-                    <div>Izoh: <strong class="text-gray-900">{{ selectedApproveTxn?.notes || '-' }}</strong></div>
+                    <div>To'lov maqsadi: <strong class="text-gray-900">{{ selectedApproveTxn?.notes || '-' }}</strong></div>
+                    <div v-if="selectedApproveTxn?.description">Izoh: <strong class="text-gray-900">{{ selectedApproveTxn?.description }}</strong></div>
                 </div>
 
                 <form @submit.prevent="submitApprove" class="space-y-4 font-mono text-xs">

@@ -3632,7 +3632,8 @@ function openEditTransactionModal(txn) {
     editTransactionForm.value = {
         id: txn.id,
         amount: txn.amount,
-        notes: txn.notes || ''
+        notes: txn.notes || '',
+        description: txn.description || ''
     };
     showEditTransactionModal.value = true;
 }
@@ -6844,7 +6845,10 @@ const ledgerReportData = computed(() => {
                                             <span class="px-2 py-0.5 border border-gray-300 rounded text-[10px]">{{ transaction.payment_method }}</span>
                                         </td>
                                         <td class="p-3 text-sm font-mono font-bold text-emerald-600">{{ $currency(transaction.amount) }}</td>
-                                        <td class="p-3 text-sm font-mono text-gray-900/60">{{ transaction.notes || '-' }}</td>
+                                        <td class="p-3 text-sm font-mono text-gray-900/60" :title="transaction.notes + (transaction.description ? '\n[Izoh]: ' + transaction.description : '')">
+                                            {{ transaction.notes || '-' }}
+                                            <div v-if="transaction.description" class="text-[10px] text-gray-400 font-sans italic mt-0.5">{{ transaction.description }}</div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -6974,7 +6978,10 @@ const ledgerReportData = computed(() => {
                                             <span class="px-2 py-0.5 border border-gray-300 rounded text-[10px]">{{ transaction.payment_method }}</span>
                                         </td>
                                         <td class="p-3 text-sm font-mono font-bold text-red-600">{{ $currency(transaction.amount) }}</td>
-                                        <td class="p-3 text-sm font-mono text-gray-900/60">{{ transaction.notes || '-' }}</td>
+                                        <td class="p-3 text-sm font-mono text-gray-900/60" :title="transaction.notes + (transaction.description ? '\n[Izoh]: ' + transaction.description : '')">
+                                            {{ transaction.notes || '-' }}
+                                            <div v-if="transaction.description" class="text-[10px] text-gray-400 font-sans italic mt-0.5">{{ transaction.description }}</div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -9040,10 +9047,16 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Notes -->
+                    <!-- Payment Purpose -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov maqsadi *</label>
+                        <input v-model="transactionForm.notes" type="text" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-semibold" placeholder="Masalan: Mijoz To'lovi (Shartnoma)">
+                    </div>
+
+                    <!-- Description / Izoh -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh (Eslatma)</label>
-                        <textarea v-model="transactionForm.notes" rows="3" placeholder="To'lov bo'yicha qo'shimcha ma'lumotlar..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 leading-relaxed"></textarea>
+                        <textarea v-model="transactionForm.description" rows="3" placeholder="To'lov bo'yicha qo'shimcha ma'lumotlar..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 leading-relaxed"></textarea>
                     </div>
 
                     <!-- Overpayment Account Selector (for Bank Overpayments) -->
@@ -9100,10 +9113,16 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Notes -->
+                    <!-- Payment Purpose -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh</label>
-                        <textarea v-model="editTransactionForm.notes" rows="3" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 leading-relaxed"></textarea>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov maqsadi *</label>
+                        <input v-model="editTransactionForm.notes" type="text" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold" placeholder="Masalan: Mijoz To'lovi (Shartnoma)">
+                    </div>
+
+                    <!-- Description / Izoh -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Izoh (Eslatma)</label>
+                        <textarea v-model="editTransactionForm.description" rows="3" placeholder="Qo'shimcha tafsilotlar..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 leading-relaxed"></textarea>
                     </div>
 
                     <!-- Action Buttons -->
@@ -9407,7 +9426,10 @@ const ledgerReportData = computed(() => {
                                             {{ t.payment_method === 'cash' ? 'Naqd' : (t.payment_method === 'card' ? 'Karta' : 'Bank') }}
                                         </span>
                                     </td>
-                                    <td class="p-3 font-sans text-gray-800 leading-relaxed truncate max-w-xs" :title="t.notes">{{ t.notes || '—' }}</td>
+                                    <td class="p-3 font-sans text-gray-800 leading-relaxed truncate max-w-xs" :title="t.notes + (t.description ? '\n[Izoh]: ' + t.description : '')">
+                                         {{ t.notes || '—' }}
+                                         <div v-if="t.description" class="text-[10px] text-gray-400 font-sans italic mt-0.5">{{ t.description }}</div>
+                                     </td>
                                     <td class="p-3 font-sans text-gray-700">{{ t.creator?.name || '—' }}</td>
                                     <td class="p-3 text-center">
                                         <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase" :class="t.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : (t.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600')">

@@ -138,13 +138,14 @@ function submitImport() {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
-            isImporting.value = false;
             showImportModal.value = false;
             importForm.value = { account_id: '', building_id: '', file: null, comment: '' };
         },
         onError: (errors) => {
-            isImporting.value = false;
             alert(Object.values(errors).join('\n'));
+        },
+        onFinish: () => {
+            isImporting.value = false;
         }
     });
 }
@@ -155,10 +156,7 @@ function confirmRollbackImport(importId) {
         router.delete(route('admin.finance.transactions.import.rollback', importId), {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                isImporting.value = false;
-            },
-            onError: () => {
+            onFinish: () => {
                 isImporting.value = false;
             }
         });

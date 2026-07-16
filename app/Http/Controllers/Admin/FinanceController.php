@@ -2833,10 +2833,24 @@ class FinanceController extends Controller
                     }
                 }
 
+                $rowType = 'expense';
+                if ($categoryId) {
+                    $cat = \App\Models\TransactionCategory::find($categoryId);
+                    if ($cat) {
+                        $rowType = $cat->type;
+                    }
+                } else {
+                    $typeColLower = mb_strtolower($typeCol);
+                    if (strpos($typeColLower, 'kirim') !== false || strpos($typeColLower, 'tasischi') !== false || strpos($typeColLower, 'invest') !== false || strpos($typeColLower, 'kirit') !== false) {
+                        $rowType = 'income';
+                    }
+                }
+
                 $parsedRows[] = [
                     'row_num' => $rowNum,
                     'category_name' => $typeCol,
                     'category_id' => $categoryId,
+                    'type' => $rowType,
                     'purpose' => $purposeCol,
                     'amount' => $amount,
                     'date' => $transactionDate,
@@ -2894,6 +2908,7 @@ class FinanceController extends Controller
             'rows' => 'required|array',
             'rows.*.category_id' => 'nullable|integer',
             'rows.*.category_name' => 'nullable|string',
+            'rows.*.type' => 'required|string|in:income,expense',
             'rows.*.counterparty_id' => 'nullable|integer',
             'rows.*.amount' => 'required|numeric',
             'rows.*.date' => 'required|date',
@@ -2987,15 +3002,24 @@ class FinanceController extends Controller
                     }
                 }
 
+                // Determine transaction type
+                $txType = $r['type'] ?? 'expense';
+                if (!empty($categoryId)) {
+                    $cat = \App\Models\TransactionCategory::find($categoryId);
+                    if ($cat) {
+                        $txType = $cat->type;
+                    }
+                }
+
                 // Create transaction
                 $tx = \App\Models\Transaction::create([
                     'transaction_import_id' => $import->id,
-                    'type' => 'expense',
+                    'type' => $txType,
                     'amount' => $amount,
                     'currency' => 'UZS',
                     'payment_method' => $paymentMethod,
                     'status' => 'approved',
-                    'notes' => $purpose ?: ($categoryNameAttr ?: 'Importlangan Xarajat'),
+                    'notes' => $purpose ?: ($categoryNameAttr ?: ($txType === 'income' ? 'Importlangan Kirim' : 'Importlangan Xarajat')),
                     'description' => $rowComments ?: null,
                     'category' => $categoryNameAttr ?: null,
                     'category_id' => $categoryId,

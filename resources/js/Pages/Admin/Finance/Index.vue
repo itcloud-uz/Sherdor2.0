@@ -222,6 +222,19 @@ function getCpTypeName(type) {
     return types[type] || type;
 }
 
+function updateRowType(row) {
+    if (!row.category_id) {
+        row.type = 'expense';
+        return;
+    }
+    const cat = importCategories.value.find(c => c.id === row.category_id);
+    if (cat) {
+        row.type = cat.type;
+    } else {
+        row.type = 'expense';
+    }
+}
+
 const selectedDeletedTransactions = ref([]);
 
 const isAllDeletedTransactionsSelected = computed(() => {
@@ -6680,14 +6693,20 @@ function deleteCategory(id) {
                                         <div class="font-bold text-slate-800 text-[11px]">{{ row.purpose || '-' }}</div>
                                         <div v-if="row.comments" class="text-[9px] text-slate-400 font-mono italic mt-0.5">{{ row.comments }}</div>
                                     </td>
-                                    <td class="p-2.5 text-right font-bold text-red-600">
-                                        {{ formatMoney(row.amount, 'UZS') }}
+                                    <td class="p-2.5 text-right font-bold">
+                                        <div :class="row.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                                            {{ row.type === 'income' ? '+' : '-' }} {{ formatMoney(row.amount, 'UZS') }}
+                                        </div>
+                                        <div class="mt-1">
+                                            <span v-if="row.type === 'income'" class="px-1.5 py-0.5 bg-green-50 text-green-700 rounded text-[9px] font-bold border border-green-200 uppercase tracking-wider">Kirim</span>
+                                            <span v-else class="px-1.5 py-0.5 bg-red-50 text-red-700 rounded text-[9px] font-bold border border-red-200 uppercase tracking-wider">Chiqim</span>
+                                        </div>
                                     </td>
                                     <td class="p-2.5 font-sans">
-                                        <select v-model="row.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none" :disabled="isImporting">
+                                        <select v-model="row.category_id" @change="updateRowType(row)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none font-bold" :disabled="isImporting">
                                             <option :value="null">-- Kategoriya tanlang --</option>
                                             <option v-for="cat in importCategories" :key="cat.id" :value="cat.id">
-                                                {{ cat.name }}
+                                                {{ cat.name }} ({{ cat.type === 'income' ? 'Kirim' : 'Chiqim' }})
                                             </option>
                                         </select>
                                     </td>

@@ -205,6 +205,10 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/transaction-requests/{transactionRequest}/reject', [\App\Http\Controllers\Admin\TransactionEditRequestController::class, 'reject'])->name('transaction_requests.reject');
 
         Route::post('/rates', [\App\Http\Controllers\Admin\FinanceController::class, 'updateRates'])->name('rates.update');
+
+        // Excel Imports
+        Route::post('/import', [\App\Http\Controllers\Admin\FinanceController::class, 'importTransactions'])->name('transactions.import');
+        Route::delete('/import/{import}', [\App\Http\Controllers\Admin\FinanceController::class, 'rollbackImport'])->name('transactions.import.rollback');
     });
 
     Route::put('/finance/liabilities/{liability}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateLiability'])->name('finance.liabilities.update');

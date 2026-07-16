@@ -169,6 +169,9 @@ class FinanceController extends Controller
             'deletedCounterparties' => Counterparty::onlyTrashed()
                 ->latest()
                 ->get(),
+            'imports' => \App\Models\TransactionImport::with(['account', 'building', 'creator'])
+                ->latest()
+                ->get(),
         ]);
     }
 
@@ -2662,5 +2665,225 @@ class FinanceController extends Controller
         \App\Models\FinanceAction::whereIn('id', $validated['ids'])->delete();
 
         return redirect()->back()->with('message', 'Tanlangan harakatlar jurnali yozuvlari muvaffaqiyatli o\'chirildi.');
+    }
+
+    public function importTransactions(Request $request)
+    {
+        $request->validate([
+            'account_id' => 'required|exists:cash_registers,id',
+            'building_id' => 'required|exists:buildings,id',
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'comment' => 'nullable|string',
+        ]);
+
+        $file = $request->file('file');
+        $accountId = $request->input('account_id');
+        $buildingId = $request->input('building_id');
+        $comment = $request->input('comment');
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, true);
+            
+            if (count($rows) < 2) {
+                return back()->with('error', 'Fayl bo\'sh yoki yetarli qatorlar mavjud emas.');
+            }
+
+            // Filter out rows that are entirely empty or don't have enough data
+            $dataRows = array_filter(array_slice($rows, 1), function($r) {
+                return !empty(array_filter($r));
+            });
+
+            if (empty($dataRows)) {
+                return back()->with('error', 'Faylda yuklash uchun ma\'lumotlar topilmadi.');
+            }
+
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $import = \App\Models\TransactionImport::create([
+                'file_name' => $file->getClientOriginalName(),
+                'account_id' => $accountId,
+                'building_id' => $buildingId,
+                'comment' => $comment,
+                'row_count' => 0,
+                'created_by' => auth()->id(),
+            ]);
+
+            $importedCount = 0;
+
+            foreach ($dataRows as $r) {
+                // Column A: Tranzaksiya turi (Transaction Type)
+                $typeCol = trim($r['A'] ?? '');
+                // Column B: Qurilish obyekti (Building)
+                $buildingCol = trim($r['B'] ?? '');
+                // Column C: Hisobni tanlash (Account)
+                $accountCol = trim($r['C'] ?? '');
+                // Column D: To'lov turi (Payment Method)
+                $payMethodCol = trim($r['D'] ?? '');
+                // Column E: Sana (Date)
+                $dateCol = trim($r['E'] ?? '');
+                // Column F: To'lov maqsadi (Purpose)
+                $purposeCol = trim($r['F'] ?? '');
+                // Column G: Hujjat raqami (Avtomatik)
+                $docNumCol = trim($r['G'] ?? '');
+                // Column H: Summa (Amount)
+                $amountCol = trim($r['H'] ?? '');
+                // Column I: Soni (Quantity)
+                $quantityCol = trim($r['I'] ?? '');
+                // Column J: Narxi (Price)
+                $priceCol = trim($r['J'] ?? '');
+                // Column K: Izohlar (Comments / Calculation)
+                $calcCol = trim($r['K'] ?? '');
+
+                if (empty($typeCol) && empty($amountCol)) {
+                    continue;
+                }
+
+                // Process category
+                $category = null;
+                $categoryId = null;
+                if (!empty($typeCol)) {
+                    $cat = \App\Models\TransactionCategory::where('name', 'like', $typeCol)
+                        ->first();
+                    if (!$cat) {
+                        $cat = \App\Models\TransactionCategory::create([
+                            'name' => $typeCol,
+                            'type' => 'expense',
+                            'is_active' => true
+                        ]);
+                    }
+                    $categoryId = $cat->id;
+                    $category = $cat->name;
+                }
+
+                // Process building
+                $rowBuildingId = $buildingId;
+                if (!empty($buildingCol)) {
+                    $b = \App\Models\Building::where('name', 'like', $buildingCol)->first();
+                    if ($b) {
+                        $rowBuildingId = $b->id;
+                    }
+                }
+
+                // Process account (Cash Register)
+                $rowAccountId = $accountId;
+                if (!empty($accountCol)) {
+                    $acc = \App\Models\CashRegister::where('name', 'like', '%' . $accountCol . '%')->first();
+                    if ($acc) {
+                        $rowAccountId = $acc->id;
+                    }
+                }
+
+                // Process payment method
+                $paymentMethod = 'cash';
+                $payMethodLower = mb_strtolower($payMethodCol);
+                if (strpos($payMethodLower, 'plast') !== false || strpos($payMethodLower, 'karta') !== false || strpos($payMethodLower, 'card') !== false) {
+                    $paymentMethod = 'card';
+                } elseif (strpos($payMethodLower, 'bank') !== false || strpos($payMethodLower, 'ko\'ch') !== false || strpos($payMethodLower, 'transfer') !== false) {
+                    $paymentMethod = 'bank';
+                }
+
+                // Process date
+                $transactionDate = now()->toDateString();
+                if (!empty($dateCol)) {
+                    $d = str_replace(['/', '_'], '.', $dateCol);
+                    $parts = explode('.', $d);
+                    if (count($parts) === 3) {
+                        if (strlen($parts[2]) === 4) { // dd.mm.yyyy
+                            $transactionDate = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+                        } elseif (strlen($parts[0]) === 4) { // yyyy.mm.dd
+                            $transactionDate = "{$parts[0]}-{$parts[1]}-{$parts[2]}";
+                        }
+                    } else {
+                        try {
+                            $transactionDate = date('Y-m-d', strtotime($dateCol));
+                        } catch (\Exception $ex) {}
+                    }
+                }
+
+                // Process amount
+                $amount = 0;
+                if (!empty($amountCol)) {
+                    $cleanAmount = preg_replace('/[^\d\.\,\-]/', '', $amountCol);
+                    if (strpos($cleanAmount, ',') !== false && strpos($cleanAmount, '.') !== false) {
+                        $cleanAmount = str_replace(',', '', $cleanAmount);
+                    } elseif (strpos($cleanAmount, ',') !== false) {
+                        $cleanAmount = str_replace(',', '.', $cleanAmount);
+                    }
+                    $amount = floatval($cleanAmount);
+                }
+
+                // Process comments
+                $rowComments = '';
+                $qty = intval(preg_replace('/[^\d]/', '', $quantityCol));
+                $prc = floatval(preg_replace('/[^\d\.\,\-]/', '', $priceCol));
+                if ($qty > 0 && $prc > 0) {
+                    $totVal = $qty * $prc;
+                    $rowComments = "{$qty} " . number_format($prc, 0, '', '') . " " . number_format($totVal, 0, '', '');
+                } else if (!empty($calcCol) && !is_numeric(str_replace(' ', '', $calcCol))) {
+                    $rowComments = $calcCol;
+                }
+
+                // Create transaction
+                $tx = \App\Models\Transaction::create([
+                    'transaction_import_id' => $import->id,
+                    'type' => 'expense',
+                    'amount' => $amount,
+                    'currency' => 'UZS',
+                    'payment_method' => $paymentMethod,
+                    'status' => 'approved',
+                    'notes' => $purposeCol ?: ($typeCol ?: 'Importlangan Xarajat'),
+                    'description' => $rowComments ?: null,
+                    'category' => $category,
+                    'category_id' => $categoryId,
+                    'transaction_date' => $transactionDate,
+                    'building_id' => $rowBuildingId,
+                    'account_id' => $rowAccountId,
+                    'created_by' => auth()->id(),
+                    'approved_by' => auth()->id(),
+                    'source' => 'import',
+                ]);
+
+                // Record FinanceAction
+                \App\Models\FinanceAction::create([
+                    'user_id' => auth()->id(),
+                    'transaction_id' => $tx->id,
+                    'action' => 'import',
+                    'amount' => $amount,
+                    'notes' => 'Excel orqali import qilindi. Import ID: ' . $import->id,
+                ]);
+
+                $importedCount++;
+            }
+
+            $import->update(['row_count' => $importedCount]);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return back()->with('success', "Muvaffaqiyatli import qilindi: {$importedCount} ta tranzaksiya yuklandi.");
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return back()->with('error', 'Faylni o\'qishda xatolik yuz berdi: ' . $e->getMessage());
+        }
+    }
+
+    public function rollbackImport(\App\Models\TransactionImport $import)
+    {
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $txIds = $import->transactions()->pluck('id');
+            \App\Models\FinanceAction::whereIn('transaction_id', $txIds)->delete();
+            $import->transactions()->forceDelete();
+            $import->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+            return back()->with('success', 'Import muvaffaqiyatli bekor qilindi (barcha bog\'langan tranzaksiyalar o\'chirildi).');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return back()->with('error', 'Importni bekor qilishda xatolik yuz berdi: ' . $e->getMessage());
+        }
     }
 }

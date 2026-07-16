@@ -409,7 +409,11 @@ const kassaReports = computed(() => {
 
 const reportBuildingsSummary = computed(() => {
     if (!props.buildings) return [];
-    let list = props.buildings.map(b => {
+    
+    const summaryMap = {};
+    
+    props.buildings.forEach(b => {
+        const name = (b.name || '').trim();
         const txs = (props.transactions || []).filter(t => t.building_id === b.id && t.status === 'approved');
         const incomes = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         const expenses = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -419,17 +423,28 @@ const reportBuildingsSummary = computed(() => {
         const totalInvoiced = buildingInvoices.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
         const paidInvoiced = buildingInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0);
         const unpaidInvoiced = totalInvoiced - paidInvoiced;
-
-        return {
-            id: b.id,
-            name: b.name,
-            incomes,
-            expenses,
-            netFlow,
-            totalInvoiced,
-            unpaidInvoiced
-        };
+        
+        if (!summaryMap[name]) {
+            summaryMap[name] = {
+                id: b.id, // Using first encountered building id as key
+                name: name,
+                incomes: 0,
+                expenses: 0,
+                netFlow: 0,
+                totalInvoiced: 0,
+                unpaidInvoiced: 0
+            };
+        }
+        
+        summaryMap[name].incomes += incomes;
+        summaryMap[name].expenses += expenses;
+        summaryMap[name].netFlow += netFlow;
+        summaryMap[name].totalInvoiced += totalInvoiced;
+        summaryMap[name].unpaidInvoiced += unpaidInvoiced;
     });
+    
+    let list = Object.values(summaryMap);
+    
     if (reportBuildingsSearchQuery.value) {
         const q = reportBuildingsSearchQuery.value.toLowerCase().trim();
         list = list.filter(b => b.name && b.name.toLowerCase().includes(q));

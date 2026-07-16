@@ -1827,13 +1827,10 @@ class FinanceController extends Controller
                 'Kontragent', 
                 'Kategoriya', 
                 'Summa', 
-                'Valyuta', 
-                'Kurs', 
-                'Konvertatsiya (UZS)', 
                 'To\'lov uslubi', 
-                'Holati', 
                 'To\'lov maqsadi',
-                'Izoh'
+                'Izoh',
+                'Holati'
             ], ';');
 
             foreach ($transactions as $txn) {
@@ -1886,13 +1883,10 @@ class FinanceController extends Controller
                     $cleanCounterparty,
                     $cleanCategory,
                     $amountFormatted,
-                    $txn->currency,
-                    $rateFormatted,
-                    $convertedFormatted,
                     $methodUz,
-                    $statusUz,
                     $cleanNotes,
-                    $cleanDesc
+                    $cleanDesc,
+                    $statusUz
                 ], ';');
             }
 

@@ -105,36 +105,17 @@ const showExpenseModal = ref(false);
 const expenseForm = useForm({
     amount: '',
     category: 'Boshqa xarajatlar',
+    tovar_nomi: '',
     notes: '',
     items: [],
     attachment: null,
     transaction_date: new Date().toISOString().split('T')[0]
 });
 
-const expenseItems = ref([
-    { name: '', quantity: 1, price: 0, total: 0 }
-]);
-
-function addItem() {
-    expenseItems.value.push({ name: '', quantity: 1, price: 0, total: 0 });
-}
-
-function removeItem(index) {
-    if (expenseItems.value.length > 1) {
-        expenseItems.value.splice(index, 1);
-    }
-}
-
-function updateItemTotal(item) {
-    item.total = (Number(item.quantity) || 0) * (Number(item.price) || 0);
-    expenseForm.amount = expenseItems.value.reduce((sum, i) => sum + i.total, 0);
-}
-
 function openExpenseModal(partner) {
     selectedPartner.value = partner;
     expenseForm.reset();
     expenseForm.category = 'Boshqa xarajatlar';
-    expenseItems.value = [{ name: '', quantity: 1, price: 0, total: 0 }];
     showExpenseModal.value = true;
 }
 
@@ -144,7 +125,14 @@ function handleFileUpload(event) {
 
 function submitExpense() {
     isProcessing.value = true;
-    expenseForm.items = expenseItems.value;
+    expenseForm.items = [
+        {
+            name: expenseForm.tovar_nomi || expenseForm.category || 'Sarmoya',
+            quantity: 1,
+            price: Number(expenseForm.amount),
+            total: Number(expenseForm.amount)
+        }
+    ];
     expenseForm.post(route('admin.partners.expense', selectedPartner.value.id), {
         forceFormData: true,
         onSuccess: () => {
@@ -319,21 +307,19 @@ function exportToExcel(type) {
         ? `${selectedPartner.value?.user?.name} tomonidan qilingan xarajatlar` 
         : `${selectedPartner.value?.user?.name} tomonidan olingan pul mablag'lari`;
 
-    const headers = ['No', 'Sana', 'Tovar nomi / Maqsad', 'Soni', 'Narxi (so\'m)', 'Jami so\'mma (so\'m)', 'Izoh', 'Holati'];
+    const headers = ['No', 'Sana', 'Tovar nomi / Maqsad', 'Summa (so\'m)', 'Izoh', 'Holati'];
     
     const rows = list.map(item => [
         item.idx,
         formatDate(item.date).split(' ')[0],
         item.tovar_nomi,
-        item.soni,
-        Number(item.narxi),
         Number(item.amount),
         item.notes || '',
         item.status === 'approved' ? 'Tasdiqlangan' : item.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan'
     ]);
 
     const totalSum = list.reduce((sum, item) => sum + Number(item.amount), 0);
-    rows.push(['', '', 'JAMI', '', '', totalSum, '', '']);
+    rows.push(['', '', 'JAMI', totalSum, '', '']);
 
     const ws = XLSX.utils.aoa_to_sheet([[title], [], headers, ...rows]);
     
@@ -343,7 +329,7 @@ function exportToExcel(type) {
     
     // Set column widths
     ws['!cols'] = [
-        {wch: 5}, {wch: 12}, {wch: 35}, {wch: 8}, {wch: 15}, {wch: 20}, {wch: 25}, {wch: 15}
+        {wch: 5}, {wch: 12}, {wch: 35}, {wch: 20}, {wch: 25}, {wch: 15}
     ];
 
     const wb = XLSX.utils.book_new();
@@ -708,39 +694,15 @@ function formatDate(dateString) {
                         </div>
                     </div>
 
-                    <!-- Dynamic Itemized Inputs -->
-                    <div class="border-t border-b border-gray-100 py-4 my-4 space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-slate-700 text-xs">Tovar/Xizmatlar ro'yxati</span>
-                            <button type="button" @click="addItem" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded text-[10px] font-bold uppercase transition-all shadow-sm">
-                                + Tovar qo'shish
-                            </button>
-                        </div>
-
-                        <div v-for="(item, index) in expenseItems" :key="index" class="grid grid-cols-12 gap-2 items-center border border-slate-100 p-2.5 rounded-lg bg-slate-50/50">
-                            <div class="col-span-5">
-                                <input v-model="item.name" type="text" placeholder="Tovar nomi (masalan: Shlang)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2" required>
-                            </div>
-                            <div class="col-span-2">
-                                <input v-model="item.quantity" type="number" step="any" min="0.01" placeholder="Soni" @input="updateItemTotal(item)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2 text-center" required>
-                            </div>
-                            <div class="col-span-2">
-                                <input v-model="item.price" type="number" min="0" placeholder="Narxi" @input="updateItemTotal(item)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-1 px-2 text-right" required>
-                            </div>
-                            <div class="col-span-2 text-right text-[10px] font-bold text-slate-800 font-mono">
-                                {{ formatCurrency(item.total) }}
-                            </div>
-                            <div class="col-span-1 text-center">
-                                <button type="button" @click="removeItem(index)" :disabled="expenseItems.length === 1" class="text-rose-500 hover:text-rose-700 disabled:opacity-30 text-base font-bold">
-                                    &times;
-                                </button>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">Tovar nomi / Maqsad</label>
+                        <input v-model="expenseForm.tovar_nomi" type="text" placeholder="Tovar nomi yoki xarajat maqsadi (masalan: Sarmoya, Kraska, Obed)" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm text-xs w-full py-2 px-3" required>
+                        <p v-if="expenseForm.errors?.tovar_nomi" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.tovar_nomi }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-gray-500 mb-1">Jami Xarajat Summasi (UZS)</label>
-                        <input :value="formatCurrency(expenseForm.amount)" type="text" class="bg-slate-100 border border-gray-300 text-slate-800 rounded-md shadow-sm w-full text-lg font-bold font-mono text-right" disabled>
+                        <label class="block text-gray-500 mb-1">Xarajat Summasi (UZS)</label>
+                        <input v-model="expenseForm.amount" type="number" min="1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm w-full text-lg font-bold font-mono text-right py-2 px-3" required placeholder="Xarajat summasini kiriting...">
                         <p v-if="expenseForm.errors?.amount" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.amount }}</p>
                     </div>
 
@@ -861,8 +823,6 @@ function formatDate(dateString) {
                                             <th class="p-3 border-r border-slate-200 text-center w-12">No</th>
                                             <th class="p-3 border-r border-slate-200 text-center w-24">Sana</th>
                                             <th class="p-3 border-r border-slate-200">Tovar nomi / Maqsad</th>
-                                            <th class="p-3 border-r border-slate-200 text-center w-20">Soni</th>
-                                            <th class="p-3 border-r border-slate-200 text-right w-32">Narxi (so'm)</th>
                                             <th class="p-3 border-r border-slate-200 text-right w-36">Jami so'mma</th>
                                             <th class="p-3 border-r border-slate-200">Izoh</th>
                                             <th class="p-3 border-r border-slate-200 text-center w-24">Holati</th>
@@ -874,8 +834,6 @@ function formatDate(dateString) {
                                             <td class="p-3 border-r border-slate-200 text-center text-slate-500 font-bold">{{ item.idx }}</td>
                                             <td class="p-3 border-r border-slate-200 text-center text-slate-600">{{ formatDate(item.date).split(' ')[0] }}</td>
                                             <td class="p-3 border-r border-slate-200 text-slate-900 font-sans font-semibold">{{ item.tovar_nomi }}</td>
-                                            <td class="p-3 border-r border-slate-200 text-center font-bold text-slate-800">{{ item.soni }}</td>
-                                            <td class="p-3 border-r border-slate-200 text-right text-slate-600">{{ formatCurrency(item.narxi) }}</td>
                                             <td class="p-3 border-r border-slate-200 text-right font-black text-slate-900">{{ formatCurrency(item.amount) }} UZS</td>
                                             <td class="p-3 border-r border-slate-200 text-slate-500 font-sans max-w-xs truncate" :title="item.notes">{{ item.notes || '-' }}</td>
                                             <td class="p-3 border-r border-slate-200 text-center">
@@ -896,12 +854,12 @@ function formatDate(dateString) {
                                             </td>
                                         </tr>
                                         <tr v-if="(activeLedgerTab === 'expenses' ? expandedExpenses : expandedAdvances).length === 0">
-                                            <td :colspan="activeLedgerTab === 'expenses' ? 9 : 8" class="p-12 text-center text-slate-400 italic">Ma'lumot topilmadi.</td>
+                                            <td :colspan="activeLedgerTab === 'expenses' ? 7 : 6" class="p-12 text-center text-slate-400 italic">Ma'lumot topilmadi.</td>
                                         </tr>
                                         <!-- JAMI (Total sum) row matching Image 2 -->
                                         <tr class="bg-slate-50 font-bold border-t border-slate-300">
                                             <td class="p-3 text-center border-r border-slate-200" colspan="2">JAMI</td>
-                                            <td class="p-3 border-r border-slate-200 text-slate-800" colspan="3">Barcha ro'yxat bo'yicha summa</td>
+                                            <td class="p-3 border-r border-slate-200 text-slate-800">Barcha ro'yxat bo'yicha summa</td>
                                             <td class="p-3 text-right text-base font-black text-slate-900 border-r border-slate-200">
                                                 {{ formatCurrency((activeLedgerTab === 'expenses' ? expandedExpenses : expandedAdvances).reduce((sum, item) => sum + Number(item.amount), 0)) }} UZS
                                             </td>

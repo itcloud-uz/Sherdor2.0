@@ -3824,6 +3824,8 @@ const ledgerReportData = computed(() => {
     let running_balance = 0;
     let totalPaidAll = 0;
     let totalRefundedAll = 0;
+    const matchedTxnIds = new Set();
+    const matchedRefundIds = new Set();
     
     preTransactions.forEach(t => {
         const amount = Number(t.amount);
@@ -3839,10 +3841,11 @@ const ledgerReportData = computed(() => {
             qoldiq: null
         });
         totalPaidAll += amount;
+        matchedTxnIds.add(t.id);
     });
     
     schedules.forEach((schedule, idx) => {
-        let schedulePayments = activePayments.filter(p => p.payment_schedule_id == schedule.id);
+        let schedulePayments = activePayments.filter(p => p.payment_schedule_id == schedule.id && !matchedTxnIds.has(p.id));
         
         if (schedulePayments.length === 0) {
             const currentDueDate = new Date(schedule.due_date);
@@ -3850,6 +3853,7 @@ const ledgerReportData = computed(() => {
             const nextDueDate = nextSchedule ? new Date(nextSchedule.due_date) : null;
             
             schedulePayments = activePayments.filter(p => {
+                if (matchedTxnIds.has(p.id)) return false;
                 const tDate = new Date(p.transaction_date || p.created_at);
                 const fiveDaysBefore = new Date(currentDueDate);
                 fiveDaysBefore.setDate(fiveDaysBefore.getDate() - 5);
@@ -3865,11 +3869,14 @@ const ledgerReportData = computed(() => {
             });
         }
         
+        schedulePayments.forEach(p => matchedTxnIds.add(p.id));
+        
         const currentDueDate = new Date(schedule.due_date);
         const nextSchedule = schedules[idx + 1];
         const nextDueDate = nextSchedule ? new Date(nextSchedule.due_date) : null;
         
         const scheduleRefunds = refunds.filter(r => {
+            if (matchedRefundIds.has(r.id)) return false;
             const rDate = new Date(r.transaction_date || r.created_at);
             const startOfMonth = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth(), 1);
             let isAfterStart = rDate >= startOfMonth;
@@ -3880,6 +3887,8 @@ const ledgerReportData = computed(() => {
             }
             return isAfterStart && isBeforeNextMonth;
         });
+        
+        scheduleRefunds.forEach(r => matchedRefundIds.add(r.id));
         
         const paid_amount = schedulePayments.reduce((sum, p) => sum + Number(p.amount), 0);
         const refunded_amount = scheduleRefunds.reduce((sum, r) => sum + Number(r.amount), 0);

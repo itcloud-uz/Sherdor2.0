@@ -51,7 +51,7 @@ class CrmController extends Controller
         }
 
         // Self-healing: automatically reconcile contracts with mismatched transaction/schedule sums
-        if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+        if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payment_reports'])) {
             $contractsToReconcile = Contract::whereIn('status', ['active', 'completed', 'awaiting_payment', 'awaiting_signature'])->get();
             foreach ($contractsToReconcile as $c) {
                 $schedPaidSum = \DB::table('payment_schedules')->where('contract_id', $c->id)->sum('paid_amount');

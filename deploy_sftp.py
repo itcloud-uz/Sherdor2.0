@@ -3,6 +3,7 @@ import os
 
 files_to_upload = [
     'app/Http/Controllers/Admin/ContractTemplateController.php',
+    'app/Http/Controllers/Admin/CrmController.php',
     'app/Http/Controllers/Admin/FinanceController.php',
     'app/Http/Controllers/Admin/LedgerExportController.php',
     'app/Http/Controllers/Admin/PartnerHubController.php',
@@ -11,6 +12,7 @@ files_to_upload = [
     'database/migrations/2026_07_16_160600_add_description_to_transactions_table.php',
     'resources/js/Pages/Admin/CRM/Index.vue',
     'resources/js/Pages/Admin/ContractTemplates/Index.vue',
+    'resources/js/Pages/Admin/Facility/Index.vue',
     'resources/js/Pages/Admin/Finance/Index.vue',
     'resources/js/Pages/Admin/Partners/Index.vue',
     'resources/views/exports/client_ledger.blade.php'

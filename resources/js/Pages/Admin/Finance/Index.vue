@@ -86,8 +86,15 @@ const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
 
 // Transaction Import refs & methods
+// Transaction Import refs & methods
 const showImportModal = ref(false);
 const isImporting = ref(false);
+const importStep = ref(1); // 1 = Upload, 2 = Preview & Map
+const importPreviewRows = ref([]);
+const importCounterparties = ref([]);
+const importCategories = ref([]);
+const importFileName = ref('');
+
 const importForm = ref({
     account_id: '',
     building_id: '',
@@ -106,6 +113,11 @@ function openImportModal() {
     if (fileInputRef.value) {
         fileInputRef.value.value = '';
     }
+    importStep.value = 1;
+    importPreviewRows.value = [];
+    importCounterparties.value = [];
+    importCategories.value = [];
+    importFileName.value = '';
     showImportModal.value = true;
 }
 
@@ -129,16 +141,46 @@ function submitImport() {
 
     isImporting.value = true;
 
-    router.post(route('admin.finance.transactions.import'), {
+    const formData = new FormData();
+    formData.append('file', importForm.value.file);
+
+    axios.post(route('admin.finance.transactions.import.preview'), formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    }).then(res => {
+        if (res.data.success) {
+            importPreviewRows.value = res.data.rows;
+            importCounterparties.value = res.data.counterparties;
+            importCategories.value = res.data.categories;
+            importFileName.value = res.data.file_name;
+            importStep.value = 2;
+        } else {
+            alert(res.data.message || 'Xatolik yuz berdi.');
+        }
+    }).catch(err => {
+        console.error(err);
+        alert(err.response?.data?.message || 'Faylni o\'qishda xatolik yuz berdi.');
+    }).finally(() => {
+        isImporting.value = false;
+    });
+}
+
+function saveImportMappedData() {
+    isImporting.value = true;
+    router.post(route('admin.finance.transactions.import.save'), {
         account_id: importForm.value.account_id,
         building_id: importForm.value.building_id,
-        file: importForm.value.file,
-        comment: importForm.value.comment || ''
+        file_name: importFileName.value,
+        comment: importForm.value.comment || '',
+        rows: importPreviewRows.value
     }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
             showImportModal.value = false;
+            importStep.value = 1;
+            importPreviewRows.value = [];
             importForm.value = { account_id: '', building_id: '', file: null, comment: '' };
         },
         onError: (errors) => {
@@ -148,6 +190,10 @@ function submitImport() {
             isImporting.value = false;
         }
     });
+}
+
+function backToImportStep1() {
+    importStep.value = 1;
 }
 
 function confirmRollbackImport(importId) {
@@ -161,6 +207,19 @@ function confirmRollbackImport(importId) {
             }
         });
     }
+}
+
+function getCpTypeName(type) {
+    const types = {
+        employee: 'Xodim',
+        supplier: 'Ta\'minotchi',
+        partner: 'Hamkor',
+        client: 'Mijoz',
+        brigade: 'Brigada',
+        machine_owner: 'Texnika egasi',
+        user: 'Foydalanuvchi'
+    };
+    return types[type] || type;
 }
 
 const selectedDeletedTransactions = ref([]);
@@ -6541,13 +6600,13 @@ function deleteCategory(id) {
                     <button type="button" @click="showImportModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">✕</button>
                 </div>
 
-                <!-- Form -->
-                <form @submit.prevent="submitImport" class="space-y-4">
+                <!-- Step 1: Upload Form -->
+                <form v-if="importStep === 1" @submit.prevent="submitImport" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Account Selection -->
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">* HISOBNI TANLASH</label>
-                            <select v-model="importForm.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required :disabled="isImporting">
+                            <select v-model="importForm.account_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" :disabled="isImporting">
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="r in registers.filter(x => x.is_active)" :key="r.id" :value="r.id">
                                     {{ r.name }} (Balans: {{ formatMoney(r.balance_uzs || 0, 'UZS') }})
@@ -6558,7 +6617,7 @@ function deleteCategory(id) {
                         <!-- Building Selection -->
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">* QURILISH OBYEKTI</label>
-                            <select v-model="importForm.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required :disabled="isImporting">
+                            <select v-model="importForm.building_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" :disabled="isImporting">
                                 <option value="" disabled>-- Tanlang --</option>
                                 <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">{{ b.name }}</option>
                             </select>
@@ -6567,7 +6626,7 @@ function deleteCategory(id) {
 
                     <!-- File Upload Button Row -->
                     <div class="flex items-center gap-3">
-                        <input type="file" ref="fileInputRef" @change="handleImportFileChange" class="hidden" accept=".xlsx,.xls,.csv" required :disabled="isImporting" />
+                        <input type="file" ref="fileInputRef" @change="handleImportFileChange" class="hidden" accept=".xlsx,.xls,.csv" :disabled="isImporting" />
                         <button type="button" @click="$refs.fileInputRef.click()" class="btn-upload flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors shadow-sm" :disabled="isImporting">
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -6580,16 +6639,82 @@ function deleteCategory(id) {
 
                     <!-- Comments / Notes -->
                     <div>
-                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">IZOHLAR</label>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 font-sans">IZOHLAR</label>
                         <textarea v-model="importForm.comment" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Qo'shimcha izoh kiritib (ixtiyoriy)" :disabled="isImporting"></textarea>
                     </div>
 
                     <!-- Footer buttons -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <button type="button" @click="showImportModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors" :disabled="isImporting">Bekor qilish</button>
-                        <button type="submit" :disabled="isImporting" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Yuklash</button>
+                        <button type="submit" :disabled="isImporting" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Yuklash va Ko'rish</button>
                     </div>
                 </form>
+
+                <!-- Step 2: Preview & Mapping Table -->
+                <div v-else class="space-y-4">
+                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-150 text-xs">
+                        <div>
+                            <p class="font-bold text-slate-700 font-sans">Fayl: {{ importFileName }}</p>
+                            <p class="text-[10px] text-slate-400 font-mono mt-0.5">Jami qatorlar: {{ importPreviewRows.length }} ta. Iltimos, xarajat kategoriyasi va kontragentlarni to'g'ri taqsimlang.</p>
+                        </div>
+                        <button type="button" @click="backToImportStep1" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] transition-colors" :disabled="isImporting">Faylni o'zgartirish</button>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[320px] border border-slate-100 rounded-xl">
+                        <table class="w-full text-left text-[11px] border-collapse">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-[9px] tracking-wider font-bold border-b border-slate-200 sticky top-0 z-10 font-sans">
+                                <tr>
+                                    <th class="p-2.5 text-center w-[50px]">Qator</th>
+                                    <th class="p-2.5 w-[90px]">Sana</th>
+                                    <th class="p-2.5 min-w-[150px]">Maqsad / Izoh</th>
+                                    <th class="p-2.5 text-right w-[100px]">Summa</th>
+                                    <th class="p-2.5 min-w-[160px]">Kategoriya *</th>
+                                    <th class="p-2.5 min-w-[200px]">Kontragent (Texnika Egasi va b.)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white font-mono">
+                                <tr v-for="(row, idx) in importPreviewRows" :key="idx" class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="p-2.5 text-center text-slate-400">#{{ row.row_num }}</td>
+                                    <td class="p-2.5 text-slate-600 font-bold">{{ row.date }}</td>
+                                    <td class="p-2.5 font-sans">
+                                        <div class="font-bold text-slate-800 text-[11px]">{{ row.purpose || '-' }}</div>
+                                        <div v-if="row.comments" class="text-[9px] text-slate-400 font-mono italic mt-0.5">{{ row.comments }}</div>
+                                    </td>
+                                    <td class="p-2.5 text-right font-bold text-red-600">
+                                        {{ formatMoney(row.amount, 'UZS') }}
+                                    </td>
+                                    <td class="p-2.5 font-sans">
+                                        <select v-model="row.category_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none" :disabled="isImporting">
+                                            <option :value="null">-- Kategoriya tanlang --</option>
+                                            <option v-for="cat in importCategories" :key="cat.id" :value="cat.id">
+                                                {{ cat.name }}
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td class="p-2.5 font-sans">
+                                        <select v-model="row.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none font-bold" :disabled="isImporting">
+                                            <option :value="null">-- Kategoriya bo'yicha (Yo'naltirilmagan) --</option>
+                                            <option v-for="cp in importCounterparties" :key="cp.id" :value="cp.id">
+                                                {{ cp.name }} ({{ getCpTypeName(cp.type) }})
+                                            </option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer buttons -->
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" @click="backToImportStep1" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors" :disabled="isImporting">Orqaga</button>
+                        <button type="button" @click="saveImportMappedData" :disabled="isImporting" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md flex items-center gap-2">
+                            <span>Importni tasdiqlash</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Uploaded Files History Section -->
                 <div class="mt-6 pt-6 border-t border-slate-100">

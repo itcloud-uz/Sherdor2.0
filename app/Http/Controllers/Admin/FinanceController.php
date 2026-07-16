@@ -2667,19 +2667,13 @@ class FinanceController extends Controller
         return redirect()->back()->with('message', 'Tanlangan harakatlar jurnali yozuvlari muvaffaqiyatli o\'chirildi.');
     }
 
-    public function importTransactions(Request $request)
+    public function previewImport(Request $request)
     {
         $request->validate([
-            'account_id' => 'required|exists:cash_registers,id',
-            'building_id' => 'required|exists:buildings,id',
             'file' => 'required|file|mimes:xlsx,xls,csv',
-            'comment' => 'nullable|string',
         ]);
 
         $file = $request->file('file');
-        $accountId = $request->input('account_id');
-        $buildingId = $request->input('building_id');
-        $comment = $request->input('comment');
 
         try {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
@@ -2709,7 +2703,10 @@ class FinanceController extends Controller
             }
             
             if (count($rows) < 2) {
-                return back()->with('error', 'Fayl bo\'sh yoki yetarli qatorlar mavjud emas.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fayl bo\'sh yoki yetarli qatorlar mavjud emas.'
+                ], 422);
             }
 
             // Filter out rows that are entirely empty or don't have enough data
@@ -2718,82 +2715,39 @@ class FinanceController extends Controller
             });
 
             if (empty($dataRows)) {
-                return back()->with('error', 'Faylda yuklash uchun ma\'lumotlar topilmadi.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Faylda yuklash uchun ma\'lumotlar topilmadi.'
+                ], 422);
             }
 
-            \Illuminate\Support\Facades\DB::beginTransaction();
-
-            $import = \App\Models\TransactionImport::create([
-                'file_name' => $file->getClientOriginalName(),
-                'account_id' => $accountId,
-                'building_id' => $buildingId,
-                'comment' => $comment,
-                'row_count' => 0,
-                'created_by' => auth()->id(),
-            ]);
-
-            $importedCount = 0;
+            $parsedRows = [];
+            $rowNum = 2; // Starts from row 2 (row 1 is header)
 
             foreach ($dataRows as $r) {
-                // Column A: Tranzaksiya turi (Transaction Type)
                 $typeCol = trim($r['A'] ?? '');
-                // Column B: Qurilish obyekti (Building)
                 $buildingCol = trim($r['B'] ?? '');
-                // Column C: Hisobni tanlash (Account)
                 $accountCol = trim($r['C'] ?? '');
-                // Column D: To'lov turi (Payment Method)
                 $payMethodCol = trim($r['D'] ?? '');
-                // Column E: Sana (Date)
                 $dateCol = trim($r['E'] ?? '');
-                // Column F: To'lov maqsadi (Purpose)
                 $purposeCol = trim($r['F'] ?? '');
-                // Column G: Hujjat raqami (Avtomatik)
                 $docNumCol = trim($r['G'] ?? '');
-                // Column H: Summa (Amount)
                 $amountCol = trim($r['H'] ?? '');
-                // Column I: Soni (Quantity)
                 $quantityCol = trim($r['I'] ?? '');
-                // Column J: Narxi (Price)
                 $priceCol = trim($r['J'] ?? '');
-                // Column K: Izohlar (Comments / Calculation)
                 $calcCol = trim($r['K'] ?? '');
 
                 if (empty($typeCol) && empty($amountCol)) {
+                    $rowNum++;
                     continue;
                 }
 
                 // Process category
-                $category = null;
                 $categoryId = null;
                 if (!empty($typeCol)) {
-                    $cat = \App\Models\TransactionCategory::where('name', 'like', $typeCol)
-                        ->first();
-                    if (!$cat) {
-                        $cat = \App\Models\TransactionCategory::create([
-                            'name' => $typeCol,
-                            'type' => 'expense',
-                            'is_active' => true
-                        ]);
-                    }
-                    $categoryId = $cat->id;
-                    $category = $cat->name;
-                }
-
-                // Process building
-                $rowBuildingId = $buildingId;
-                if (!empty($buildingCol)) {
-                    $b = \App\Models\Building::where('name', 'like', $buildingCol)->first();
-                    if ($b) {
-                        $rowBuildingId = $b->id;
-                    }
-                }
-
-                // Process account (Cash Register)
-                $rowAccountId = $accountId;
-                if (!empty($accountCol)) {
-                    $acc = \App\Models\CashRegister::where('name', 'like', '%' . $accountCol . '%')->first();
-                    if ($acc) {
-                        $rowAccountId = $acc->id;
+                    $cat = \App\Models\TransactionCategory::where('name', 'like', $typeCol)->first();
+                    if ($cat) {
+                        $categoryId = $cat->id;
                     }
                 }
 
@@ -2803,7 +2757,7 @@ class FinanceController extends Controller
                 if (strpos($payMethodLower, 'plast') !== false || strpos($payMethodLower, 'karta') !== false || strpos($payMethodLower, 'card') !== false) {
                     $paymentMethod = 'card';
                 } elseif (strpos($payMethodLower, 'bank') !== false || strpos($payMethodLower, 'ko\'ch') !== false || strpos($payMethodLower, 'transfer') !== false) {
-                    $paymentMethod = 'bank';
+                    $paymentMethod = 'bank_transfer';
                 }
 
                 // Process date
@@ -2813,9 +2767,7 @@ class FinanceController extends Controller
                         try {
                             $dateTime = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dateCol);
                             $transactionDate = $dateTime->format('Y-m-d');
-                        } catch (\Exception $ex) {
-                            $transactionDate = now()->toDateString();
-                        }
+                        } catch (\Exception $ex) {}
                     } else {
                         $d = str_replace(['/', '_'], '.', $dateCol);
                         $parts = explode('.', $d);
@@ -2859,6 +2811,185 @@ class FinanceController extends Controller
                     $rowComments = $calcCol;
                 }
 
+                // Inferred counterparty
+                $inferredCounterpartyId = null;
+                if (!empty($purposeCol)) {
+                    $cp = \App\Models\Counterparty::where('is_active', true)
+                        ->where('name', 'like', '%' . $purposeCol . '%')
+                        ->first();
+                    if (!$cp) {
+                        $parts = array_filter(explode(' ', $purposeCol), function($p) {
+                            return strlen($p) > 2;
+                        });
+                        foreach ($parts as $p) {
+                            $cp = \App\Models\Counterparty::where('is_active', true)
+                                ->where('name', 'like', '%' . $p . '%')
+                                ->first();
+                            if ($cp) {
+                                break;
+                            }
+                        }
+                    }
+                    if ($cp) {
+                        $inferredCounterpartyId = $cp->id;
+                    }
+                }
+
+                $parsedRows[] = [
+                    'row_num' => $rowNum,
+                    'category_name' => $typeCol,
+                    'category_id' => $categoryId,
+                    'purpose' => $purposeCol,
+                    'amount' => $amount,
+                    'date' => $transactionDate,
+                    'payment_method' => $paymentMethod,
+                    'comments' => $rowComments,
+                    'counterparty_id' => $inferredCounterpartyId,
+                ];
+
+                $rowNum++;
+            }
+
+            $counterparties = \App\Models\Counterparty::where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(function($cp) {
+                    return [
+                        'id' => $cp->id,
+                        'name' => $cp->name,
+                        'type' => $cp->type
+                    ];
+                });
+
+            $categories = \App\Models\TransactionCategory::orderBy('name')
+                ->get()
+                ->map(function($c) {
+                    return [
+                        'id' => $c->id,
+                        'name' => $c->name,
+                        'type' => $c->type
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'rows' => $parsedRows,
+                'counterparties' => $counterparties,
+                'categories' => $categories,
+                'file_name' => $file->getClientOriginalName(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faylni o\'qishda xatolik yuz berdi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function saveImport(Request $request)
+    {
+        $request->validate([
+            'account_id' => 'required|exists:cash_registers,id',
+            'building_id' => 'required|exists:buildings,id',
+            'file_name' => 'required|string',
+            'comment' => 'nullable|string',
+            'rows' => 'required|array',
+            'rows.*.category_id' => 'nullable|integer',
+            'rows.*.category_name' => 'nullable|string',
+            'rows.*.counterparty_id' => 'nullable|integer',
+            'rows.*.amount' => 'required|numeric',
+            'rows.*.date' => 'required|date',
+            'rows.*.payment_method' => 'required|string',
+            'rows.*.purpose' => 'nullable|string',
+            'rows.*.comments' => 'nullable|string',
+        ]);
+
+        $accountId = $request->input('account_id');
+        $buildingId = $request->input('building_id');
+        $fileName = $request->input('file_name');
+        $comment = $request->input('comment');
+        $rows = $request->input('rows');
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $import = \App\Models\TransactionImport::create([
+                'file_name' => $fileName,
+                'account_id' => $accountId,
+                'building_id' => $buildingId,
+                'comment' => $comment,
+                'row_count' => count($rows),
+                'created_by' => auth()->id(),
+            ]);
+
+            $importedCount = 0;
+
+            foreach ($rows as $r) {
+                $categoryId = $r['category_id'] ?? null;
+                $categoryName = $r['category_name'] ?? '';
+                $counterpartyId = $r['counterparty_id'] ?? null;
+                $amount = floatval($r['amount']);
+                $date = $r['date'];
+                $paymentMethod = $r['payment_method'];
+                $purpose = $r['purpose'] ?? '';
+                $rowComments = $r['comments'] ?? '';
+
+                // Handle payment_method mapping
+                if ($paymentMethod === 'bank') {
+                    $paymentMethod = 'bank_transfer';
+                }
+
+                // Create category if it doesn't exist but has a name
+                if (empty($categoryId) && !empty($categoryName)) {
+                    $cat = \App\Models\TransactionCategory::firstOrCreate(
+                        ['name' => $categoryName],
+                        ['type' => 'expense', 'is_active' => true]
+                    );
+                    $categoryId = $cat->id;
+                }
+
+                // Lookup category name for transaction category attribute
+                $categoryNameAttr = '';
+                if (!empty($categoryId)) {
+                    $cat = \App\Models\TransactionCategory::find($categoryId);
+                    if ($cat) {
+                        $categoryNameAttr = $cat->name;
+                    }
+                }
+
+                // Inferred target fields from counterparty
+                $targetId = null;
+                $targetType = null;
+                $workerId = null;
+                $supplierId = null;
+                $partnerId = null;
+                $clientId = null;
+                $brigadeId = null;
+                $machineOwnerId = null;
+
+                if (!empty($counterpartyId)) {
+                    $cp = \App\Models\Counterparty::find($counterpartyId);
+                    if ($cp) {
+                        $targetId = $cp->customable_id;
+                        if ($cp->type === 'employee') {
+                            $targetType = $cp->customable_type === \App\Models\User::class ? 'user' : 'worker';
+                        } else {
+                            $targetType = $cp->type;
+                        }
+
+                        // Map specific fields
+                        switch ($targetType) {
+                            case 'worker': $workerId = $targetId; break;
+                            case 'supplier': $supplierId = $targetId; break;
+                            case 'partner': $partnerId = $targetId; break;
+                            case 'client': $clientId = $targetId; break;
+                            case 'brigade': $brigadeId = $targetId; break;
+                            case 'machine_owner': $machineOwnerId = $targetId; break;
+                        }
+                    }
+                }
+
                 // Create transaction
                 $tx = \App\Models\Transaction::create([
                     'transaction_import_id' => $import->id,
@@ -2867,13 +2998,20 @@ class FinanceController extends Controller
                     'currency' => 'UZS',
                     'payment_method' => $paymentMethod,
                     'status' => 'approved',
-                    'notes' => $purposeCol ?: ($typeCol ?: 'Importlangan Xarajat'),
+                    'notes' => $purpose ?: ($categoryNameAttr ?: 'Importlangan Xarajat'),
                     'description' => $rowComments ?: null,
-                    'category' => $category,
+                    'category' => $categoryNameAttr ?: null,
                     'category_id' => $categoryId,
-                    'transaction_date' => $transactionDate,
-                    'building_id' => $rowBuildingId,
-                    'account_id' => $rowAccountId,
+                    'transaction_date' => $date,
+                    'building_id' => $buildingId,
+                    'account_id' => $accountId,
+                    'counterparty_id' => $counterpartyId,
+                    'target_id' => $targetId,
+                    'target_type' => $targetType,
+                    'worker_id' => $workerId,
+                    'supplier_id' => $supplierId,
+                    'partner_id' => $partnerId,
+                    'client_id' => $clientId,
                     'created_by' => auth()->id(),
                     'approved_by' => auth()->id(),
                     'source' => 'import',
@@ -2891,15 +3029,13 @@ class FinanceController extends Controller
                 $importedCount++;
             }
 
-            $import->update(['row_count' => $importedCount]);
-
             \Illuminate\Support\Facades\DB::commit();
 
             return back()->with('success', "Muvaffaqiyatli import qilindi: {$importedCount} ta tranzaksiya yuklandi.");
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
-            return back()->with('error', 'Faylni o\'qishda xatolik yuz berdi: ' . $e->getMessage());
+            return back()->with('error', 'Importni saqlashda xatolik yuz berdi: ' . $e->getMessage());
         }
     }
 

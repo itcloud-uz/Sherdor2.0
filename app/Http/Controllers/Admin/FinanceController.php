@@ -2684,10 +2684,19 @@ class FinanceController extends Controller
         try {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
             $reader->setReadDataOnly(true);
+            
+            // Set read filter to only load rows 1 to 500 and columns A to K
+            $filter = new class implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+                public function readCell($columnAddress, $row, $worksheetName = '') {
+                    return $row <= 500 && in_array($columnAddress, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']);
+                }
+            };
+            $reader->setReadFilter($filter);
+            
             $spreadsheet = $reader->load($file->getRealPath());
             $sheet = $spreadsheet->getActiveSheet();
             
-            $highestRow = min($sheet->getHighestRow(), 5000);
+            $highestRow = min($sheet->getHighestRow(), 500);
             
             $rows = [];
             for ($row = 1; $row <= $highestRow; $row++) {

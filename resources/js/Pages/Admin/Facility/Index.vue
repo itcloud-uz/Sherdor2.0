@@ -1310,7 +1310,10 @@ function downloadUnitsCSV() {
             const unitNumber = (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number;
             const area = unit.area_sqm || 0;
             const rooms = unit.rooms_count || 1;
-            const price = unit.price || 0;
+            const rawPrice = parseFloat(unit.price || 0);
+            const priceParts = rawPrice.toFixed(2).split('.');
+            const integerPart = priceParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            const price = `${integerPart},${priceParts[1]}`;
             
             let statusLabel = unit.status;
             if (statusLabel === 'available') statusLabel = "Bo'sh";

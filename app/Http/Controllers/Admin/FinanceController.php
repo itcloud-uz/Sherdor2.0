@@ -2809,18 +2809,30 @@ class FinanceController extends Controller
                 // Process date
                 $transactionDate = now()->toDateString();
                 if (!empty($dateCol)) {
-                    $d = str_replace(['/', '_'], '.', $dateCol);
-                    $parts = explode('.', $d);
-                    if (count($parts) === 3) {
-                        if (strlen($parts[2]) === 4) { // dd.mm.yyyy
-                            $transactionDate = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
-                        } elseif (strlen($parts[0]) === 4) { // yyyy.mm.dd
-                            $transactionDate = "{$parts[0]}-{$parts[1]}-{$parts[2]}";
+                    if (is_numeric($dateCol)) {
+                        try {
+                            $dateTime = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dateCol);
+                            $transactionDate = $dateTime->format('Y-m-d');
+                        } catch (\Exception $ex) {
+                            $transactionDate = now()->toDateString();
                         }
                     } else {
-                        try {
-                            $transactionDate = date('Y-m-d', strtotime($dateCol));
-                        } catch (\Exception $ex) {}
+                        $d = str_replace(['/', '_'], '.', $dateCol);
+                        $parts = explode('.', $d);
+                        if (count($parts) === 3) {
+                            if (strlen($parts[2]) === 4) { // dd.mm.yyyy
+                                $transactionDate = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+                            } elseif (strlen($parts[0]) === 4) { // yyyy.mm.dd
+                                $transactionDate = "{$parts[0]}-{$parts[1]}-{$parts[2]}";
+                            }
+                        } else {
+                            try {
+                                $parsedTime = strtotime($dateCol);
+                                if ($parsedTime !== false) {
+                                    $transactionDate = date('Y-m-d', $parsedTime);
+                                }
+                            } catch (\Exception $ex) {}
+                        }
                     }
                 }
 

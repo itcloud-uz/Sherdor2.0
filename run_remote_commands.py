@@ -15,17 +15,22 @@ try:
     ssh.connect(hostname, port, username, password, timeout=10)
     
     commands = [
-        "echo 'clone2026' | sudo -S rm -rf /var/www/sellerarp/bootstrap/cache/*.php",
-        "echo 'clone2026' | sudo -S rm -rf /var/www/sellerarp/storage/framework/views/*.php",
-        "cd /var/www/sellerarp && echo 'clone2026' | sudo -S -u www-data php artisan optimize:clear",
+        "cd /var/www/sellerarp && git stash",
+        "cd /var/www/sellerarp && git fetch origin",
+        "cd /var/www/sellerarp && git reset --hard origin/main",
+        "cd /var/www/sellerarp && php artisan optimize:clear",
+        "cd /var/www/sellerarp && npm run build",
+        "cd /var/www/sellerarp && echo 'clone2026' | sudo -S -u www-data php artisan optimize",
         "cd /var/www/sellerarp && bash restart_bot.sh"
     ]
     
     for cmd in commands:
         print(f"Executing: {cmd}")
         stdin, stdout, stderr = ssh.exec_command(cmd)
-        print("STDOUT:", stdout.read().decode('utf-8', errors='ignore'))
-        print("STDERR:", stderr.read().decode('utf-8', errors='ignore'))
+        out = stdout.read().decode('utf-8', errors='ignore')
+        err = stderr.read().decode('utf-8', errors='ignore')
+        print("STDOUT:", out.encode('ascii', 'replace').decode('ascii'))
+        print("STDERR:", err.encode('ascii', 'replace').decode('ascii'))
         
     ssh.close()
 except Exception as e:

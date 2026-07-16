@@ -181,6 +181,45 @@ async function openAnalytics(partner, defaultTab = 'expenses') {
     await fetchLedger();
 }
 
+function parseNotes(notesStr, descriptionStr) {
+    let purpose = notesStr || '';
+    let comment = descriptionStr || '';
+    
+    if (!purpose) {
+        return { purpose: 'Sarmoya', comment: comment || '-' };
+    }
+    
+    // If it's JSON format
+    if (purpose.startsWith('{') || purpose.startsWith('[')) {
+        try {
+            const parsed = JSON.parse(purpose);
+            let notes = parsed.notes || '';
+            if (notes.includes('[Izoh]:')) {
+                const parts = notes.split('[Izoh]:');
+                notes = parts[1].trim();
+            }
+            return {
+                isJson: true,
+                items: parsed.items || [],
+                comment: notes || comment || '-'
+            };
+        } catch (e) {}
+    }
+    
+    // If it's plain text with [Izoh]:
+    if (purpose.includes('[Izoh]:')) {
+        const parts = purpose.split('[Izoh]:');
+        purpose = parts[0].trim();
+        comment = parts[1].trim();
+    }
+    
+    return {
+        isJson: false,
+        purpose: purpose || 'Sarmoya',
+        comment: comment || '-'
+    };
+}
+
 const expandedExpenses = computed(() => {
     let list = [];
     let idx = 1;
@@ -192,24 +231,17 @@ const expandedExpenses = computed(() => {
     });
 
     sarmoyalar.forEach(t => {
-        let parsed = null;
-        try {
-            if (t.notes && (t.notes.startsWith('{') || t.notes.startsWith('['))) {
-                parsed = JSON.parse(t.notes);
-            }
-        } catch (e) {}
+        const parsedInfo = parseNotes(t.notes, t.description);
 
-        if (parsed && parsed.items && parsed.items.length > 0) {
-            parsed.items.forEach(item => {
+        if (parsedInfo.isJson && parsedInfo.items && parsedInfo.items.length > 0) {
+            parsedInfo.items.forEach(item => {
                 list.push({
                     id: t.id,
                     idx: idx++,
                     date: t.transaction_date || t.created_at,
                     tovar_nomi: item.name || item.tovar_nomi || 'Nomalum',
-                    soni: item.quantity || item.soni || 1,
-                    narxi: item.price || item.narxi || 0,
                     amount: item.total || item.amount || (item.quantity * item.price) || 0,
-                    notes: parsed.notes || '',
+                    notes: parsedInfo.comment,
                     status: t.status,
                     attachment_path: t.attachment_path
                 });
@@ -219,11 +251,9 @@ const expandedExpenses = computed(() => {
                 id: t.id,
                 idx: idx++,
                 date: t.transaction_date || t.created_at,
-                tovar_nomi: t.category_display || 'Sarmoya',
-                soni: 1,
-                narxi: t.amount,
+                tovar_nomi: parsedInfo.purpose || t.category_display || 'Sarmoya',
                 amount: t.amount,
-                notes: t.notes || '',
+                notes: parsedInfo.comment,
                 status: t.status,
                 attachment_path: t.attachment_path
             });
@@ -251,38 +281,30 @@ const expandedAdvances = computed(() => {
     });
 
     advances.forEach(t => {
-        let parsed = null;
-        try {
-            if (t.notes && (t.notes.startsWith('{') || t.notes.startsWith('['))) {
-                parsed = JSON.parse(t.notes);
-            }
-        } catch (e) {}
+        const parsedInfo = parseNotes(t.notes, t.description);
 
-        if (parsed && parsed.items && parsed.items.length > 0) {
-            parsed.items.forEach(item => {
+        if (parsedInfo.isJson && parsedInfo.items && parsedInfo.items.length > 0) {
+            parsedInfo.items.forEach(item => {
                 list.push({
                     id: t.id,
                     idx: idx++,
                     date: t.transaction_date || t.created_at,
                     tovar_nomi: item.name || item.tovar_nomi || 'Mablag\' olish',
-                    soni: item.quantity || item.soni || 1,
-                    narxi: item.price || item.narxi || 0,
                     amount: item.total || item.amount || (item.quantity * item.price) || 0,
-                    notes: parsed.notes || '',
+                    notes: parsedInfo.comment,
                     status: t.status,
                     attachment_path: t.attachment_path
                 });
             });
         } else {
+            let defaultName = t.category_display === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)';
             list.push({
                 id: t.id,
                 idx: idx++,
                 date: t.transaction_date || t.created_at,
-                tovar_nomi: t.category_display === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)',
-                soni: 1,
-                narxi: t.amount,
+                tovar_nomi: parsedInfo.purpose && parsedInfo.purpose !== 'Sarmoya' ? parsedInfo.purpose : defaultName,
                 amount: t.amount,
-                notes: t.notes || '',
+                notes: parsedInfo.comment,
                 status: t.status,
                 attachment_path: t.attachment_path
             });

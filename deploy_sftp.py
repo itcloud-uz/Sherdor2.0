@@ -51,10 +51,12 @@ try:
         exit_status = stdout.channel.recv_exit_status()
         out = stdout.read().decode('utf-8', errors='replace')
         err = stderr.read().decode('utf-8', errors='replace')
+        out_clean = out.encode('ascii', 'replace').decode('ascii')
+        err_clean = err.encode('ascii', 'replace').decode('ascii')
         print(f"Exit Status: {exit_status}")
-        print("STDOUT:", out[:1000] + '...' if len(out)>1000 else out)
+        print("STDOUT:", out_clean[:1000] + '...' if len(out_clean)>1000 else out_clean)
         if err:
-            print("STDERR:", err[:1000] + '...' if len(err)>1000 else err)
+            print("STDERR:", err_clean[:1000] + '...' if len(err_clean)>1000 else err_clean)
             
 except Exception as e:
     print('ERROR:', str(e))

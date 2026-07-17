@@ -168,7 +168,7 @@ class TransactionExportController extends Controller
     {
         $transactions = Transaction::whereHas('category', function($q) use ($categoryName) {
             $q->where('name', $categoryName);
-        })->where('status', 'approved')->with(['creator', 'approver'])->latest()->get();
+        })->where('status', 'approved')->with(['creator', 'approver'])->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
 
         $totalIncome = $transactions->where('type', 'income')->sum('amount');
         $totalExpense = $transactions->where('type', 'expense')->sum('amount');
@@ -237,7 +237,7 @@ class TransactionExportController extends Controller
     {
         $transactions = Transaction::whereHas('category', function($q) use ($categoryName) {
             $q->where('name', $categoryName);
-        })->where('status', 'approved')->with(['creator', 'approver'])->latest()->get();
+        })->where('status', 'approved')->with(['creator', 'approver'])->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
 
         $filename = 'hisobot_' . \Str::slug($categoryName) . '.csv';
 

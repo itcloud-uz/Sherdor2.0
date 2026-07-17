@@ -69,6 +69,18 @@ const props = defineProps({
 });
 
 const activeTab = ref(0);
+
+const sortedTransactions = computed(() => {
+    if (!props.transactions) return [];
+    return [...props.transactions].sort((a, b) => {
+        const dateA = a.transaction_date ? new Date(a.transaction_date) : new Date(a.created_at || 0);
+        const dateB = b.transaction_date ? new Date(b.transaction_date) : new Date(b.created_at || 0);
+        if (dateB - dateA !== 0) {
+            return dateB - dateA;
+        }
+        return b.id - a.id;
+    });
+});
 const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
@@ -209,7 +221,7 @@ function formatDateTime(dateStr) {
 }
 
 const filteredKirimChiqimTransactions = computed(() => {
-    let result = (props.transactions || []).filter(t => t && t.status === 'approved');
+    let result = sortedTransactions.value.filter(t => t && t.status === 'approved');
     if (kirimChiqimDateFrom.value) {
         result = result.filter(t => {
             const dateStr = t.transaction_date || t.created_at;
@@ -342,7 +354,7 @@ function exportKirimChiqimToExcel() {
 }
 
 const reportFilteredTransactions = computed(() => {
-    let result = (props.transactions || []).filter(t => t.status === 'approved');
+    let result = sortedTransactions.value.filter(t => t.status === 'approved');
     if (reportJournalSearch.value) {
         const query = reportJournalSearch.value.toLowerCase();
         result = result.filter(t => 
@@ -414,7 +426,7 @@ const reportBuildingsSummary = computed(() => {
     
     props.buildings.forEach(b => {
         const name = (b.name || '').trim();
-        const txs = (props.transactions || []).filter(t => t.building_id === b.id && t.status === 'approved');
+        const txs = sortedTransactions.value.filter(t => t.building_id === b.id && t.status === 'approved');
         const incomes = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         const expenses = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         const netFlow = incomes - expenses;
@@ -723,7 +735,7 @@ const selectedRegisterTransactions = computed(() => {
         .filter(r => r.parent_id === selectedRegisterId.value && r.is_active)
         .map(r => r.id);
     const targetIds = [selectedRegisterId.value, ...childIds];
-    return (props.transactions || []).filter(t => targetIds.includes(t.account_id) && t.status === 'approved');
+    return sortedTransactions.value.filter(t => targetIds.includes(t.account_id) && t.status === 'approved');
 });
 
 const isCreditType = computed(() => {
@@ -804,7 +816,7 @@ const jurnalBuildingId = ref('');
 const jurnalSearchQuery = ref('');
 
 const filteredJurnalTransactions = computed(() => {
-    let result = (props.transactions || []).filter(t => t.status === 'approved');
+    let result = sortedTransactions.value.filter(t => t.status === 'approved');
 
     if (jurnalSearchQuery.value) {
         const query = jurnalSearchQuery.value.toLowerCase();
@@ -920,7 +932,7 @@ const activeRegistersCount = computed(() => (props.registers || []).filter(r => 
 
 // Tab 10 Client Payments & Debts computations
 const clientPayments = computed(() => {
-    return (props.transactions || [])
+    return sortedTransactions.value
         .filter(t => t.counterparty?.type === 'client' && t.status === 'approved');
 });
 
@@ -1077,7 +1089,7 @@ function forceDeleteTransaction(id) {
 
 // Maker/Checker action queues
 const pendingTransactions = computed(() => {
-    let list = (props.transactions || []).filter(t => t.status === 'pending');
+    let list = sortedTransactions.value.filter(t => t.status === 'pending');
     if (pendingSearchQuery.value) {
         const q = pendingSearchQuery.value.toLowerCase().trim();
         list = list.filter(t => 
@@ -1090,7 +1102,7 @@ const pendingTransactions = computed(() => {
     }
     return list;
 });
-const historicalTransactions = computed(() => (props.transactions || []).filter(t => t.status !== 'pending'));
+const historicalTransactions = computed(() => sortedTransactions.value.filter(t => t.status !== 'pending'));
 
 const filteredFinancialLiabilities = computed(() => {
     let list = props.financialLiabilities || [];
@@ -1119,7 +1131,7 @@ const filteredSuppliers = computed(() => {
 });
 
 const filteredTelegramTransactions = computed(() => {
-    let list = (props.transactions || []).filter(x => x.source === 'telegram');
+    let list = sortedTransactions.value.filter(x => x.source === 'telegram');
     if (telegramSearchQuery.value) {
         const q = telegramSearchQuery.value.toLowerCase().trim();
         list = list.filter(t => 
@@ -2079,7 +2091,7 @@ watch(() => form.value.category_id, (newVal) => {
 });
 
 const pendingRefunds = computed(() => {
-    return (props.transactions || []).filter(t => t.category_display === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
+    return sortedTransactions.value.filter(t => t.category_display === 'Kutayotgan Naqdlashtirish' && t.status === 'pending');
 });
 
 function handleFileUpload(e) {
@@ -2621,8 +2633,8 @@ function deleteSupplier(id) {
 
 // Categories report summary
 const categoriesSummary = computed(() => {
-    if (!props.transactions) return [];
-    const approvedTxns = props.transactions.filter(t => t.status === 'approved');
+    if (!sortedTransactions.value) return [];
+    const approvedTxns = sortedTransactions.value.filter(t => t.status === 'approved');
     const groups = {};
     approvedTxns.forEach(t => {
         const catName = t.category_display || 'Noma\'lum';

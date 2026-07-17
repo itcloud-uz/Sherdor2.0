@@ -116,7 +116,11 @@ class FinanceController extends Controller
                 'counterparty', 
                 'invoice',
                 'building'
-            ])->latest()->limit(500)->get();
+            ])
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(500)
+            ->get();
         }
 
         if ($tab === 1 || $tab === 11) {
@@ -1804,7 +1808,7 @@ class FinanceController extends Controller
             $query->where('account_id', $request->account_id);
         }
 
-        $transactions = $query->latest()->get();
+        $transactions = $query->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",

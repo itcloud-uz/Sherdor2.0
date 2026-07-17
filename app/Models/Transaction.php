@@ -34,7 +34,7 @@ class Transaction extends Model
         'transaction_hash', 'category', 'category_id', 'transaction_date', 'attachment_path', 'contract_id', 'client_id', 'account_type', 'partner_id', 'source',
         'worker_id', 'machinery_id', 'building_id', 'supplier_id', 'latitude', 'longitude', 'work_category',
         'target_type', 'target_id', 'account_id', 'counterparty_id', 'invoice_id', 'refund_schedule_id',
-        'linked_work_type', 'linked_work_id'
+        'linked_work_type', 'linked_work_id', 'transaction_import_id'
     ];
 
     public function creator()
@@ -115,5 +115,10 @@ class Transaction extends Model
     public function linkedWork()
     {
         return $this->morphTo(__FUNCTION__, 'linked_work_type', 'linked_work_id');
+    }
+
+    public function import()
+    {
+        return $this->belongsTo(TransactionImport::class, 'transaction_import_id');
     }
 }

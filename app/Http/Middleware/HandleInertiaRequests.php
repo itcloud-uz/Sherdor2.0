@@ -72,6 +72,11 @@ class HandleInertiaRequests extends Middleware
                 'app_name' => $settings['app_name'] ?? 'Sher-Dor ERP',
             ],
             'locale' => $request->user()?->language ?? session('locale', config('app.locale')),
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+                'message' => session('message'),
+            ],
             'facilitiesMenu' => $request->user() ? \Illuminate\Support\Facades\Cache::remember('facilities_menu_tree_v2', 60, function () {
                 $res = [];
                 $buildings = \App\Models\Building::orderBy('name')->orderBy('block_name')->orderBy('corpus_name')->get();

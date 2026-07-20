@@ -242,9 +242,48 @@ function updateRowType(row) {
     const cat = importCategories.value.find(c => c.id === row.category_id);
     if (cat) {
         row.type = cat.type;
+        
+        // Reset counterparty if it's no longer valid for the selected category
+        if (row.counterparty_id) {
+            const validCps = getFilteredCounterparties(row);
+            const isValid = validCps.some(cp => cp.id === row.counterparty_id);
+            if (!isValid) {
+                row.counterparty_id = null;
+            }
+        }
     } else {
         row.type = 'expense';
     }
+}
+
+function getFilteredCounterparties(row) {
+    if (!row.category_id) {
+        return importCounterparties.value;
+    }
+    const cat = importCategories.value.find(c => c.id === row.category_id);
+    if (!cat || !cat.target_type) {
+        return importCounterparties.value;
+    }
+    
+    const targetType = cat.target_type;
+    return importCounterparties.value.filter(cp => {
+        if (targetType === 'machine_owner') {
+            return cp.customable_type === 'App\\Models\\MachineOwner';
+        }
+        if (targetType === 'worker') {
+            return cp.customable_type === 'App\\Models\\Worker';
+        }
+        if (targetType === 'partner') {
+            return cp.customable_type === 'App\\Models\\Partner';
+        }
+        if (targetType === 'client') {
+            return cp.customable_type === 'App\\Models\\Client';
+        }
+        if (targetType === 'supplier') {
+            return cp.customable_type === 'App\\Models\\Supplier' || (!cp.customable_type && cp.type === 'supplier');
+        }
+        return true;
+    });
 }
 
 const selectedDeletedTransactions = ref([]);
@@ -6725,7 +6764,7 @@ function deleteCategory(id) {
                                     <td class="p-2.5 font-sans">
                                         <select v-model="row.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none font-bold" :disabled="isImporting">
                                             <option :value="null">-- Kategoriya bo'yicha (Yo'naltirilmagan) --</option>
-                                            <option v-for="cp in importCounterparties" :key="cp.id" :value="cp.id">
+                                            <option v-for="cp in getFilteredCounterparties(row)" :key="cp.id" :value="cp.id">
                                                 {{ cp.name }} ({{ getCpTypeName(cp.type) }})
                                             </option>
                                         </select>

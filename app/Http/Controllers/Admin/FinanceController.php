@@ -2828,20 +2828,50 @@ class FinanceController extends Controller
                 // Inferred counterparty
                 $inferredCounterpartyId = null;
                 if (!empty($purposeCol)) {
-                    $cp = \App\Models\Counterparty::where('name', 'like', '%' . $purposeCol . '%')
-                        ->first();
+                    $targetType = null;
+                    if ($categoryId) {
+                        $catObj = \App\Models\TransactionCategory::find($categoryId);
+                        if ($catObj) {
+                            $targetType = $catObj->target_type;
+                        }
+                    }
+
+                    $cpQuery = \App\Models\Counterparty::query();
+                    if ($targetType) {
+                        if ($targetType === 'machine_owner') {
+                            $cpQuery->where('customable_type', \App\Models\MachineOwner::class);
+                        } elseif ($targetType === 'worker') {
+                            $cpQuery->where('customable_type', \App\Models\Worker::class);
+                        } elseif ($targetType === 'partner') {
+                            $cpQuery->where('customable_type', \App\Models\Partner::class);
+                        } elseif ($targetType === 'client') {
+                            $cpQuery->where('customable_type', \App\Models\Client::class);
+                        } elseif ($targetType === 'supplier') {
+                            $cpQuery->where(function($q) {
+                                $q->where('customable_type', \App\Models\Supplier::class)
+                                  ->orWhere(function($sq) {
+                                      $sq->whereNull('customable_type')->where('type', 'supplier');
+                                  });
+                            });
+                        }
+                    }
+
+                    $cpQueryClone = clone $cpQuery;
+                    $cp = $cpQueryClone->where('name', 'like', '%' . $purposeCol . '%')->first();
+
                     if (!$cp) {
                         $parts = array_filter(explode(' ', $purposeCol), function($p) {
                             return strlen($p) > 2;
                         });
                         foreach ($parts as $p) {
-                            $cp = \App\Models\Counterparty::where('name', 'like', '%' . $p . '%')
-                                ->first();
+                            $cpQueryClone = clone $cpQuery;
+                            $cp = $cpQueryClone->where('name', 'like', '%' . $p . '%')->first();
                             if ($cp) {
                                 break;
                             }
                         }
                     }
+
                     if ($cp) {
                         $inferredCounterpartyId = $cp->id;
                     }
@@ -2882,7 +2912,8 @@ class FinanceController extends Controller
                     return [
                         'id' => $cp->id,
                         'name' => $cp->name,
-                        'type' => $cp->type
+                        'type' => $cp->type,
+                        'customable_type' => $cp->customable_type
                     ];
                 });
 
@@ -2892,7 +2923,8 @@ class FinanceController extends Controller
                     return [
                         'id' => $c->id,
                         'name' => $c->name,
-                        'type' => $c->type
+                        'type' => $c->type,
+                        'target_type' => $c->target_type
                     ];
                 });
 

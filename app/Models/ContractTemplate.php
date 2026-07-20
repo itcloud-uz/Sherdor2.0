@@ -232,6 +232,10 @@ class ContractTemplate extends Model
         
         // Clean double phone prefixes
         $html = preg_replace('/(\+?998\s*){2,}/', '+998 ', $html);
+        
+        // Clean up excess underscores adjacent to words/numbers/parentheses in HTML preview
+        $html = preg_replace('/(?<=[a-zA-Z0-9\x{0400}-\x{04FF}\)])_+/u', ' ', $html);
+        $html = preg_replace('/_+(?=[a-zA-Z0-9\x{0400}-\x{04FF}\(])/u', ' ', $html);
         return $html;
     }
 

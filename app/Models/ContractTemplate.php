@@ -34,7 +34,7 @@ class ContractTemplate extends Model
      */
     public function compile(Contract $contract): string
     {
-        $contract->load(['client', 'unit.floor.building']);
+        $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
 
         $date = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
         $monthsUz = [
@@ -79,6 +79,8 @@ class ContractTemplate extends Model
         $unitDesc = self::formatUnitUz($unitVal, $unitType);
         $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
 
+        $mijozPhoneClean = self::cleanPhoneForContract($client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______');
+
         $replacements = [
             '{{ XONA_TAFSILOTI }}' => $combinedVal, '{{XONA_TAFSILOTI}}' => $combinedVal,
             '{{ XONADON_TAFSILOTI }}' => $combinedVal, '{{XONADON_TAFSILOTI}}' => $combinedVal,
@@ -109,7 +111,7 @@ class ContractTemplate extends Model
             '{{ BOSHLANGICH_TOLOV_FOIZ }}' => $downPaymentPercent, '{{BOSHLANGICH_TOLOV_FOIZ}}' => $downPaymentPercent,
             '{{ MUDDAT_OY }}' => $termMonths, '{{MUDDAT_OY}}' => $termMonths,
             '{{ MUDDAT_OY_SOZ_BILAN }}' => $termMonthsWords, '{{MUDDAT_OY_SOZ_BILAN}}' => $termMonthsWords,
-            '{{ MIJOZ_TELEFON }}' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______', '{{MIJOZ_TELEFON}}' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
+            '{{ MIJOZ_TELEFON }}' => $mijozPhoneClean, '{{MIJOZ_TELEFON}}' => $mijozPhoneClean,
             '{{ DIREKTOR }}' => $korxonaDirector, '{{DIREKTOR}}' => $korxonaDirector,
             '{{ KORXONA_NOMI }}' => $korxonaNomi, '{{KORXONA_NOMI}}' => $korxonaNomi,
             '{{ KORXONA_MANZILI }}' => $korxonaManzili, '{{KORXONA_MANZILI}}' => $korxonaManzili,
@@ -128,7 +130,80 @@ class ContractTemplate extends Model
             }
         }
 
-        return str_replace(array_keys($replacements), array_values($replacements), $this->preview_html ?? '');
+        // Process selected variants for dynamic clauses in HTML preview as well!
+        foreach ($this->variantGroups as $group) {
+            $anchorKey = trim($group->anchor, '{} ');
+            
+            $variantData = $selectedVariants[$group->anchor] ?? $selectedVariants[$anchorKey] ?? null;
+            $variant = null;
+            
+            if ($variantData && isset($variantData['key'])) {
+                $variant = $group->variants()->where('key', $variantData['key'])->first();
+            }
+            
+            // Fallback to first variant if none selected
+            if (!$variant) {
+                $variant = $group->variants()->first();
+            }
+            
+            if ($variant) {
+                $variantText = $variant->content;
+                $subPlaceholdersData = $variantData['placeholders'] ?? [];
+                
+                $subPlaceholdersData['JAMI_NARX'] = number_format($totalAmount, 0, ',', ' ');
+                $subPlaceholdersData['JAMI_NARX_SOZDA'] = $totalAmountWords;
+                $subPlaceholdersData['ZAMON_UMUMIY_NARX'] = number_format($totalAmount, 0, ',', ' ');
+                $subPlaceholdersData['ZAMON_UMUMIY_NARX_SOZ'] = $totalAmountWords;
+                
+                $foiz = isset($subPlaceholdersData['BOSHLANGICH_FOIZ']) 
+                    ? (float)$subPlaceholdersData['BOSHLANGICH_FOIZ'] 
+                    : (isset($subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ']) ? (float)$subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'] : null);
+                
+                if ($foiz !== null) {
+                    $calcDownPayment = round($totalAmount * ($foiz / 100));
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = self::numberToWords($calcDownPayment);
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = self::numberToWords($calcDownPayment);
+                } else {
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($downPayment, 0, ',', ' ');
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = $downPaymentWords;
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($downPayment, 0, ',', ' ');
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = $downPaymentWords;
+                }
+                
+                $m = isset($subPlaceholdersData['MUDDAT_OY']) ? (int)$subPlaceholdersData['MUDDAT_OY'] : $termMonths;
+                $subPlaceholdersData['MUDDAT_OY'] = $m;
+                $subPlaceholdersData['MUDDAT_OY_SOZ_BILAN'] = self::numberToWords($m);
+                $subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'] = $downPaymentPercent;
+                
+                $calcDownPayment = ($foiz !== null) ? round($totalAmount * ($foiz / 100)) : $downPayment;
+                $remaining = $totalAmount - $calcDownPayment;
+                $monthly = $m > 0 ? round($remaining / $m) : 0;
+                $subPlaceholdersData['OYLIK_TOLOV'] = number_format($monthly, 0, ',', ' ');
+                $subPlaceholdersData['OYLIK_TOLOV_SOZ_BILAN'] = self::numberToWords($monthly);
+                
+                $variantReplacements = [];
+                foreach ($subPlaceholdersData as $k => $v) {
+                    $variantReplacements["{{ $k }}"] = $v;
+                    $variantReplacements["{{$k}}"] = $v;
+                }
+                
+                $compiledVariantText = str_replace(array_keys($variantReplacements), array_values($variantReplacements), $variantText);
+                
+                $replacements["{{ {$anchorKey} }}"] = $compiledVariantText;
+                $replacements["{{{$anchorKey}}}"] = $compiledVariantText;
+            } else {
+                $replacements["{{ {$anchorKey} }}"] = '';
+                $replacements["{{{$anchorKey}}}"] = '';
+            }
+        }
+
+        $html = str_replace(array_keys($replacements), array_values($replacements), $this->preview_html ?? '');
+        
+        // Clean double phone prefixes
+        $html = preg_replace('/(\+?998\s*){2,}/', '+998 ', $html);
+        return $html;
     }
 
     /**
@@ -181,6 +256,8 @@ class ContractTemplate extends Model
         $unitDesc = self::formatUnitUz($unitVal, $unitType);
         $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
 
+        $mijozPhoneClean = self::cleanPhoneForContract($client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______');
+
         // Core placeholders context
         $context = [
             'XONA_TAFSILOTI' => $combinedVal,
@@ -214,7 +291,7 @@ class ContractTemplate extends Model
             'MUDDAT_OY' => $termMonths,
             'MUDDAT_OY_SOZ_BILAN' => $termMonthsWords,
             'TOLOV_MUDDAT_KUN' => ($contract->payment_limit_days ?? 6) . ' (' . self::numberToWords($contract->payment_limit_days ?? 6) . ') bank',
-            'MIJOZ_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
+            'MIJOZ_TELEFON' => $mijozPhoneClean,
             'DIREKTOR' => $korxonaDirector,
             'KORXONA_NOMI' => $korxonaNomi,
             'KORXONA_MANZILI' => $korxonaManzili,
@@ -243,7 +320,7 @@ class ContractTemplate extends Model
             'ZAMON_BOSHLANGICH_TOLOV' => number_format($downPayment, 0, ',', ' '),
             'ZAMON_BOSHLANGICH_TOLOV_SOZ' => $downPaymentWords,
             'ZAMON_BOSHLANGICH_FOIZ' => $downPaymentPercent,
-            'ZAMON_TELEFON' => $client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______',
+            'ZAMON_TELEFON' => $mijozPhoneClean,
         ];
 
         $installmentsList = [];
@@ -280,56 +357,65 @@ class ContractTemplate extends Model
             $anchorKey = trim($group->anchor, '{} '); // remove braces from {{ANCHOR}} to match key
             
             $variantData = $selectedVariants[$group->anchor] ?? $selectedVariants[$anchorKey] ?? null;
-            if ($variantData) {
-                $variantKey = $variantData['key'] ?? null;
-                $variant = $group->variants()->where('key', $variantKey)->first();
+            $variant = null;
+            
+            if ($variantData && isset($variantData['key'])) {
+                $variant = $group->variants()->where('key', $variantData['key'])->first();
+            }
+            
+            // Fallback to first variant if none selected
+            if (!$variant) {
+                $variant = $group->variants()->first();
+            }
+            
+            if ($variant) {
+                $variantText = $variant->content;
+                $subPlaceholdersData = $variantData['placeholders'] ?? [];
                 
-                if ($variant) {
-                    $variantText = $variant->content;
-                    $subPlaceholdersData = $variantData['placeholders'] ?? [];
-                    
-                    // Add automatic helper sub-placeholders:
-                    $subPlaceholdersData['JAMI_NARX'] = number_format($totalAmount, 0, ',', ' ');
-                    $subPlaceholdersData['JAMI_NARX_SOZDA'] = $totalAmountWords;
-                    
-                    // Calculate BOSHLANGICH_TOLOV based on percent if provided
-                    if (isset($subPlaceholdersData['BOSHLANGICH_FOIZ'])) {
-                        $foiz = (float)$subPlaceholdersData['BOSHLANGICH_FOIZ'];
-                        $calcDownPayment = round($totalAmount * ($foiz / 100));
-                        $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
-                        $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = self::numberToWords($calcDownPayment);
-                    }
-
-                    if (isset($subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'])) {
-                        $foiz = (float)$subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'];
-                        $calcDownPayment = round($totalAmount * ($foiz / 100));
-                        $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
-                        $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = self::numberToWords($calcDownPayment);
-                    }
-                    
-                    if (isset($subPlaceholdersData['MUDDAT_OY'])) {
-                        $m = (int)$subPlaceholdersData['MUDDAT_OY'];
-                        $subPlaceholdersData['MUDDAT_OY_SOZ_BILAN'] = self::numberToWords($m);
-                        
-                        $calcDownPayment = isset($subPlaceholdersData['BOSHLANGICH_FOIZ']) 
-                            ? round($totalAmount * ((float)$subPlaceholdersData['BOSHLANGICH_FOIZ'] / 100))
-                            : $downPayment;
-                        $remaining = $totalAmount - $calcDownPayment;
-                        $monthly = $m > 0 ? round($remaining / $m) : 0;
-                        $subPlaceholdersData['OYLIK_TOLOV'] = number_format($monthly, 0, ',', ' ');
-                        $subPlaceholdersData['OYLIK_TOLOV_SOZ_BILAN'] = self::numberToWords($monthly);
-                    }
-                    
-                    // Build substitutions for the variant text
-                    $variantReplacements = [];
-                    foreach ($subPlaceholdersData as $k => $v) {
-                        $variantReplacements["{{ $k }}"] = $v;
-                        $variantReplacements["{{$k}}"] = $v;
-                    }
-                    
-                    $compiledVariantText = str_replace(array_keys($variantReplacements), array_values($variantReplacements), $variantText);
-                    $context[$anchorKey] = $compiledVariantText;
+                // Add automatic helper sub-placeholders:
+                $subPlaceholdersData['JAMI_NARX'] = number_format($totalAmount, 0, ',', ' ');
+                $subPlaceholdersData['JAMI_NARX_SOZDA'] = $totalAmountWords;
+                $subPlaceholdersData['ZAMON_UMUMIY_NARX'] = number_format($totalAmount, 0, ',', ' ');
+                $subPlaceholdersData['ZAMON_UMUMIY_NARX_SOZ'] = $totalAmountWords;
+                
+                // Calculate BOSHLANGICH_TOLOV based on percent if provided
+                $foiz = isset($subPlaceholdersData['BOSHLANGICH_FOIZ']) 
+                    ? (float)$subPlaceholdersData['BOSHLANGICH_FOIZ'] 
+                    : (isset($subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ']) ? (float)$subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'] : null);
+                
+                if ($foiz !== null) {
+                    $calcDownPayment = round($totalAmount * ($foiz / 100));
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = self::numberToWords($calcDownPayment);
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($calcDownPayment, 0, ',', ' ');
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = self::numberToWords($calcDownPayment);
+                } else {
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV'] = number_format($downPayment, 0, ',', ' ');
+                    $subPlaceholdersData['BOSHLANGICH_TOLOV_SOZ_BILAN'] = $downPaymentWords;
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV'] = number_format($downPayment, 0, ',', ' ');
+                    $subPlaceholdersData['ZAMON_BOSHLANGICH_TOLOV_SOZ'] = $downPaymentWords;
                 }
+
+                $m = isset($subPlaceholdersData['MUDDAT_OY']) ? (int)$subPlaceholdersData['MUDDAT_OY'] : $termMonths;
+                $subPlaceholdersData['MUDDAT_OY'] = $m;
+                $subPlaceholdersData['MUDDAT_OY_SOZ_BILAN'] = self::numberToWords($m);
+                $subPlaceholdersData['ZAMON_BOSHLANGICH_FOIZ'] = $downPaymentPercent;
+                
+                $calcDownPayment = ($foiz !== null) ? round($totalAmount * ($foiz / 100)) : $downPayment;
+                $remaining = $totalAmount - $calcDownPayment;
+                $monthly = $m > 0 ? round($remaining / $m) : 0;
+                $subPlaceholdersData['OYLIK_TOLOV'] = number_format($monthly, 0, ',', ' ');
+                $subPlaceholdersData['OYLIK_TOLOV_SOZ_BILAN'] = self::numberToWords($monthly);
+                
+                // Build substitutions for the variant text
+                $variantReplacements = [];
+                foreach ($subPlaceholdersData as $k => $v) {
+                    $variantReplacements["{{ $k }}"] = $v;
+                    $variantReplacements["{{$k}}"] = $v;
+                }
+                
+                $compiledVariantText = str_replace(array_keys($variantReplacements), array_values($variantReplacements), $variantText);
+                $context[$anchorKey] = $compiledVariantText;
             } else {
                 $context[$anchorKey] = '';
             }
@@ -349,8 +435,6 @@ class ContractTemplate extends Model
         if (!file_exists($outputDirectory)) {
             mkdir($outputDirectory, 0755, true);
         }
-        $outputDocxPath = $outputDirectory . '/' . $outputDocxName;
-
         $outputDocxPath = $outputDirectory . '/' . $outputDocxName;
 
         try {
@@ -545,5 +629,15 @@ class ContractTemplate extends Model
             return "{$unitNumber}-({$word}) {$suffix}";
         }
         return "{$unitNumber}-{$suffix}";
+    }
+
+    public static function cleanPhoneForContract($phone): string
+    {
+        if (empty($phone) || trim($phone) === '_______') {
+            return '_______';
+        }
+        $cleaned = trim($phone);
+        $cleaned = preg_replace('/(\+?998\s*){2,}/', '+998 ', $cleaned);
+        return $cleaned;
     }
 }

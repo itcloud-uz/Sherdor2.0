@@ -602,9 +602,49 @@ def compile_document(template_path, context, output_path):
         
     doc = DocxTemplate(template_path)
     
-    # Replace standard python newlines with XML line breaks dynamically in context strings
-    # (actually docxtpl does this automatically for simple strings, but we can do it to be extra safe)
+    # Convert python newlines with XML line breaks dynamically in context strings
+    from docxtpl import RichText
+    for k, v in list(context.items()):
+        if isinstance(v, str) and '\n' in v:
+            rt = RichText()
+            parts = v.split('\n')
+            for i, part in enumerate(parts):
+                if i > 0:
+                    rt.add_break()
+                rt.add_text(part)
+            context[k] = rt
+
     doc.render(context)
+    
+    # Post-process the rendered document to clean up duplicate phone prefixes "+998 +998"
+    def clean_paragraphs(paragraphs):
+        for p in paragraphs:
+            for run in p.runs:
+                if run.text:
+                    run.text = re.sub(r'(\+?998\s*){2,}', '+998 ', run.text)
+
+    clean_paragraphs(doc.paragraphs)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                clean_paragraphs(cell.paragraphs)
+
+    for section in doc.sections:
+        for header in [section.header, section.first_page_header, section.even_page_header]:
+            if header:
+                clean_paragraphs(header.paragraphs)
+                for t in header.tables:
+                    for r in t.rows:
+                        for c in r.cells:
+                            clean_paragraphs(c.paragraphs)
+        for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
+            if footer:
+                clean_paragraphs(footer.paragraphs)
+                for t in footer.tables:
+                    for r in t.rows:
+                        for c in r.cells:
+                            clean_paragraphs(c.paragraphs)
+
     doc.save(output_path)
     return {"success": True}
 

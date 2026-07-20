@@ -1,0 +1,1 @@
+   Illuminate\Database\QueryException  SQLSTATE[42S22]: Column not found: 1054 Unknown column 'title' in 'field list' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: sherdor_db, SQL: select `id`, `title`, `type`, `docx_path` from `contract_templates`).

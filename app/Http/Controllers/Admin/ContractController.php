@@ -19,7 +19,7 @@ class ContractController extends Controller
             'partner_id' => 'required_if:buyer_type,partner|nullable|exists:partners,id',
             'employee_id' => 'required_if:buyer_type,employee|nullable|exists:users,id',
             'unit_id' => 'required|exists:units,id',
-            'contract_type' => 'required|string|in:residential,commercial',
+            'contract_type' => 'required|string|in:residential,commercial,parking',
             'price_per_sqm' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
             'payment_type' => 'nullable|string|in:full,installment',
@@ -250,7 +250,7 @@ class ContractController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'unit_id' => 'required|exists:units,id',
-            'contract_type' => 'required|string|in:residential,commercial',
+            'contract_type' => 'required|string|in:residential,commercial,parking',
             'price_per_sqm' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
             'payment_type' => 'nullable|string|in:full,installment',
@@ -430,7 +430,7 @@ class ContractController extends Controller
         }
         if (!$template) {
             $type = $contract->contract_type ?? 'residential';
-            if (!in_array($type, ['residential', 'commercial'])) {
+            if (!in_array($type, ['residential', 'commercial', 'parking'])) {
                 $type = 'residential';
             }
             $template = \App\Models\ContractTemplate::where('type', $type)->latest()->first();
@@ -523,7 +523,7 @@ class ContractController extends Controller
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.compiled', compact('content'));
         } else {
             $type = $contract->contract_type ?? 'residential';
-            if (!in_array($type, ['residential', 'commercial'])) {
+            if (!in_array($type, ['residential', 'commercial', 'parking'])) {
                 $type = 'residential';
             }
             $viewPath = "contracts.{$locale}.{$type}";

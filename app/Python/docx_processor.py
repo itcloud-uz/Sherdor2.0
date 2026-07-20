@@ -542,14 +542,14 @@ def auto_replace_room_specification_table(doc):
                         set_cell_text_preserving_format(cell, "{{ BLOK }}")
                     elif "қават" in header_txt or "qavat" in header_txt:
                         set_cell_text_preserving_format(cell, "{{ QAVAT }}")
-                    elif "хоna" in header_txt or "xona" in header_txt or "хона" in header_txt:
-                        set_cell_text_preserving_format(cell, "{{ XONALAR_SONI }}")
                     elif "майдон" in header_txt or "maydon" in header_txt:
                         set_cell_text_preserving_format(cell, "{{ MAYDON }}")
                     elif "1 kv" in header_txt or "1кв" in header_txt or "1 кв" in header_txt:
                         set_cell_text_preserving_format(cell, "{{ KV_METR_NARXI }}")
                     elif "умумий нарх" in header_txt or "umumiy narx" in header_txt or "umumiy summa" in header_txt or "умумий сумма" in header_txt:
                         set_cell_text_preserving_format(cell, "{{ UMUMIY_NARX }}")
+                    elif "хоna" in header_txt or "xona" in header_txt or "хона" in header_txt:
+                        set_cell_text_preserving_format(cell, "{{ XONALAR_SONI }}")
 
 def apply_replacements(docx_path, replacements, output_path):
     """
@@ -705,9 +705,8 @@ def compile_document(template_path, context, output_path):
     # Post-process the rendered document to clean up duplicate phone prefixes "+998 +998"
     def clean_paragraphs(paragraphs):
         for p in paragraphs:
-            for run in p.runs:
-                if run.text:
-                    run.text = re.sub(r'(\+?998\s*){2,}', '+998 ', run.text)
+            if re.search(r'(\+?998\s*){2,}', p.text):
+                p.text = re.sub(r'(\+?998\s*){2,}', '+998 ', p.text)
 
     clean_paragraphs(doc.paragraphs)
     for table in doc.tables:

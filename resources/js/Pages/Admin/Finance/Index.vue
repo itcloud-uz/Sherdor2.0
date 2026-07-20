@@ -261,26 +261,58 @@ function getFilteredCounterparties(row) {
         return importCounterparties.value;
     }
     const cat = importCategories.value.find(c => c.id === row.category_id);
-    if (!cat || !cat.target_type) {
+    if (!cat) {
         return importCounterparties.value;
     }
     
-    const targetType = cat.target_type;
+    let targetType = cat.target_type;
+    if (!targetType) {
+        const catNameLower = cat.name.toLowerCase();
+        if (catNameLower.includes('texnika') || catNameLower.includes('mashina')) {
+            targetType = 'machine_owner';
+        } else if (catNameLower.includes('ishchi') || catNameLower.includes('oylik') || catNameLower.includes('avans') || catNameLower.includes('ish haqi')) {
+            targetType = 'worker';
+        } else if (catNameLower.includes('hamkor')) {
+            targetType = 'partner';
+        } else if (catNameLower.includes('mijoz') || catNameLower.includes('shartnoma')) {
+            targetType = 'client';
+        } else if (catNameLower.includes('ta\'minot') || catNameLower.includes('taminot') || catNameLower.includes('material')) {
+            targetType = 'supplier';
+        } else if (catNameLower.includes('brigada')) {
+            targetType = 'brigade';
+        }
+    }
+
+    if (!targetType) {
+        return importCounterparties.value;
+    }
+    
+    // Safe case-insensitive helper to compare customable types ignoring backslashes
+    const matchType = (val, targetName) => {
+        if (!val) return false;
+        const cleanVal = val.replace(/\\/g, '').toLowerCase();
+        const cleanTarget = targetName.replace(/\\/g, '').toLowerCase();
+        return cleanVal.endsWith(cleanTarget);
+    };
+
     return importCounterparties.value.filter(cp => {
         if (targetType === 'machine_owner') {
-            return cp.customable_type === 'App\\Models\\MachineOwner';
+            return matchType(cp.customable_type, 'MachineOwner');
         }
         if (targetType === 'worker') {
-            return cp.customable_type === 'App\\Models\\Worker';
+            return matchType(cp.customable_type, 'Worker');
         }
         if (targetType === 'partner') {
-            return cp.customable_type === 'App\\Models\\Partner';
+            return matchType(cp.customable_type, 'Partner');
         }
         if (targetType === 'client') {
-            return cp.customable_type === 'App\\Models\\Client';
+            return matchType(cp.customable_type, 'Client');
         }
         if (targetType === 'supplier') {
-            return cp.customable_type === 'App\\Models\\Supplier' || (!cp.customable_type && cp.type === 'supplier');
+            return matchType(cp.customable_type, 'Supplier') || (!cp.customable_type && cp.type === 'supplier');
+        }
+        if (targetType === 'brigade') {
+            return matchType(cp.customable_type, 'Brigade');
         }
         return true;
     });

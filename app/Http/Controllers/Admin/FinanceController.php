@@ -2833,6 +2833,23 @@ class FinanceController extends Controller
                         $catObj = \App\Models\TransactionCategory::find($categoryId);
                         if ($catObj) {
                             $targetType = $catObj->target_type;
+                            
+                            if (empty($targetType)) {
+                                $catNameLower = mb_strtolower($catObj->name);
+                                if (str_contains($catNameLower, 'texnika') || str_contains($catNameLower, 'mashina')) {
+                                    $targetType = 'machine_owner';
+                                } elseif (str_contains($catNameLower, 'ishchi') || str_contains($catNameLower, 'oylik') || str_contains($catNameLower, 'avans') || str_contains($catNameLower, 'ish haqi')) {
+                                    $targetType = 'worker';
+                                } elseif (str_contains($catNameLower, 'hamkor')) {
+                                    $targetType = 'partner';
+                                } elseif (str_contains($catNameLower, 'mijoz') || str_contains($catNameLower, 'shartnoma')) {
+                                    $targetType = 'client';
+                                } elseif (str_contains($catNameLower, 'ta\'minot') || str_contains($catNameLower, 'taminot') || str_contains($catNameLower, 'material')) {
+                                    $targetType = 'supplier';
+                                } elseif (str_contains($catNameLower, 'brigada')) {
+                                    $targetType = 'brigade';
+                                }
+                            }
                         }
                     }
 

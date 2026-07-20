@@ -95,7 +95,7 @@ class ContractTemplate extends Model
             '{{ MIJOZ_FISH }}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum', '{{MIJOZ_FISH}}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
             '{{ MIJOZ_MANZILI }}' => $client ? ($client->address ?? '_______') : '_______', '{{MIJOZ_MANZILI}}' => $client ? ($client->address ?? '_______') : '_______',
             '{{ MIJOZ_JSHSHIR }}' => $client ? ($client->pinfl ?? '_______') : '_______', '{{MIJOZ_JSHSHIR}}' => $client ? ($client->pinfl ?? '_______') : '_______',
-            '{{ PASPORT_SERIYA }}' => $client ? ($client->passport_series ?? '_______') : '_______', '{{PASPORT_SERIYA}}' => $client ? ($client->passport_series ?? '_______') : '_______',
+            '{{ PASPORT_SERIYA }}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______', '{{PASPORT_SERIYA}}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
             '{{ PASPORT_SANA }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______', '{{PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
             '{{ PASPORT_JOYI }}' => $client ? ($client->passport_issued_by ?? '_______') : '_______', '{{PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
             '{{ BLOK }}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______', '{{BLOK}}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
@@ -120,6 +120,35 @@ class ContractTemplate extends Model
             '{{ KORXONA_MFO }}' => $korxonaMfo, '{{KORXONA_MFO}}' => $korxonaMfo,
             '{{ KORXONA_INN }}' => $korxonaInn, '{{KORXONA_INN}}' => $korxonaInn,
             '{{ KORXONA_TELEFON }}' => $korxonaTelefon, '{{KORXONA_TELEFON}}' => $korxonaTelefon,
+
+            // Zamon Sifat Servis placeholders mappings in compile method:
+            '{{ ZAMON_BUYURTMACHI_FISH }}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : '_______', '{{ZAMON_BUYURTMACHI_FISH}}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : '_______',
+            '{{ ZAMON_BUYURTMACHI_PROPISKA }}' => $client ? ($client->address ?? '_______') : '_______', '{{ZAMON_BUYURTMACHI_PROPISKA}}' => $client ? ($client->address ?? '_______') : '_______',
+            '{{ ZAMON_PASPORT_SERIYA }}' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______', '{{ZAMON_PASPORT_SERIYA}}' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______',
+            '{{ ZAMON_PASPORT_RAQAM }}' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______', '{{ZAMON_PASPORT_RAQAM}}' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______',
+            '{{ ZAMON_PASPORT_JOYI }}' => $client ? ($client->passport_issued_by ?? '_______') : '_______', '{{ZAMON_PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            '{{ ZAMON_PASPORT_SANA }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______', '{{ZAMON_PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            '{{ ZAMON_PASPORT_KUN }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___', '{{ZAMON_PASPORT_KUN}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___',
+            '{{ ZAMON_PASPORT_OY }}' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________', '{{ZAMON_PASPORT_OY}}' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________',
+            '{{ ZAMON_PASPORT_YIL }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____', '{{ZAMON_PASPORT_YIL}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____',
+            '{{ ZAMON_BUYURTMACHI_TUGILGAN_SANA }}' => ($client && $client->birth_date) 
+                ? (\Carbon\Carbon::parse($client->birth_date)->format('d') . ' ' . ($monthsUz[(int)\Carbon\Carbon::parse($client->birth_date)->format('m')] ?? 'avgust') . ' ' . \Carbon\Carbon::parse($client->birth_date)->format('Y') . ' yil') 
+                : '_______', '{{ZAMON_BUYURTMACHI_TUGILGAN_SANA}}' => ($client && $client->birth_date) 
+                ? (\Carbon\Carbon::parse($client->birth_date)->format('d') . ' ' . ($monthsUz[(int)\Carbon\Carbon::parse($client->birth_date)->format('m')] ?? 'avgust') . ' ' . \Carbon\Carbon::parse($client->birth_date)->format('Y') . ' yil') 
+                : '_______',
+            '{{ ZAMON_PODEZD }}' => $unit ? ($unit->podyezd ?: ($unit->podez ? $unit->podez->number : '_______')) : '_______', '{{ZAMON_PODEZD}}' => $unit ? ($unit->podyezd ?: ($unit->podez ? $unit->podez->number : '_______')) : '_______',
+            '{{ ZAMON_XONADON }}' => $unit ? $unit->unit_number : '_______', '{{ZAMON_XONADON}}' => $unit ? $unit->unit_number : '_______',
+            '{{ ZAMON_QAVAT }}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'), '{{ZAMON_QAVAT}}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'),
+            '{{ ZAMON_XONALAR }}' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'), '{{ZAMON_XONALAR}}' => $contract->rooms ?? ($unit ? $unit->rooms_count : '_______'),
+            '{{ ZAMON_MAYDON }}' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______', '{{ZAMON_MAYDON}}' => $unit ? number_format($unit->area_sqm, 2, ',', ' ') : '_______',
+            '{{ ZAMON_KV_METR_NARXI }}' => number_format($contract->price_per_sqm, 0, ',', ' '), '{{ZAMON_KV_METR_NARXI}}' => number_format($contract->price_per_sqm, 0, ',', ' '),
+            '{{ ZAMON_KV_METR_NARXI_SOZ }}' => self::numberToWords($contract->price_per_sqm), '{{ZAMON_KV_METR_NARXI_SOZ}}' => self::numberToWords($contract->price_per_sqm),
+            '{{ ZAMON_UMUMIY_NARX }}' => number_format($totalAmount, 0, ',', ' '), '{{ZAMON_UMUMIY_NARX}}' => number_format($totalAmount, 0, ',', ' '),
+            '{{ ZAMON_UMUMIY_NARX_SOZ }}' => $totalAmountWords, '{{ZAMON_UMUMIY_NARX_SOZ}}' => $totalAmountWords,
+            '{{ ZAMON_BOSHLANGICH_TOLOV }}' => number_format($downPayment, 0, ',', ' '), '{{ZAMON_BOSHLANGICH_TOLOV}}' => number_format($downPayment, 0, ',', ' '),
+            '{{ ZAMON_BOSHLANGICH_TOLOV_SOZ }}' => $downPaymentWords, '{{ZAMON_BOSHLANGICH_TOLOV_SOZ}}' => $downPaymentWords,
+            '{{ ZAMON_BOSHLANGICH_FOIZ }}' => $downPaymentPercent, '{{ZAMON_BOSHLANGICH_FOIZ}}' => $downPaymentPercent,
+            '{{ ZAMON_TELEFON }}' => $mijozPhoneClean, '{{ZAMON_TELEFON}}' => $mijozPhoneClean,
         ];
 
         $selectedVariants = $contract->selected_variants ?? [];
@@ -274,7 +303,7 @@ class ContractTemplate extends Model
             'MIJOZ_FISH_QISQA' => $client ? (mb_substr($client->first_name, 0, 1, 'UTF-8') . '. ' . ($client->last_name ?: '')) : '_______',
             'MIJOZ_MANZILI' => $client ? ($client->address ?? '_______') : '_______',
             'MIJOZ_JSHSHIR' => $client ? ($client->pinfl ?? '_______') : '_______',
-            'PASPORT_SERIYA' => $client ? ($client->passport_series ?? '_______') : '_______',
+            'PASPORT_SERIYA' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
             'PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
             'PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
             'BLOK' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
@@ -304,10 +333,16 @@ class ContractTemplate extends Model
             // Zamon Sifat Servis placeholders mappings:
             'ZAMON_BUYURTMACHI_FISH' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : '_______',
             'ZAMON_BUYURTMACHI_PROPISKA' => $client ? ($client->address ?? '_______') : '_______',
-            'ZAMON_PASPORT_SERIYA' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_series ?? '')), 0, 2) : '_______',
-            'ZAMON_PASPORT_RAQAM' => $client ? preg_replace('/[^0-9]/', '', $client->passport_series ?? '') : '_______',
+            'ZAMON_PASPORT_SERIYA' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______',
+            'ZAMON_PASPORT_RAQAM' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______',
             'ZAMON_PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
             'ZAMON_PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            'ZAMON_PASPORT_KUN' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___',
+            'ZAMON_PASPORT_OY' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________',
+            'ZAMON_PASPORT_YIL' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____',
+            'ZAMON_BUYURTMACHI_TUGILGAN_SANA' => ($client && $client->birth_date) 
+                ? (\Carbon\Carbon::parse($client->birth_date)->format('d') . ' ' . ($monthsUz[(int)\Carbon\Carbon::parse($client->birth_date)->format('m')] ?? 'avgust') . ' ' . \Carbon\Carbon::parse($client->birth_date)->format('Y') . ' yil') 
+                : '_______',
             'ZAMON_PODEZD' => $unit ? ($unit->podyezd ?: ($unit->podez ? $unit->podez->number : '_______')) : '_______',
             'ZAMON_XONADON' => $unit ? $unit->unit_number : '_______',
             'ZAMON_QAVAT' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'),

@@ -280,6 +280,92 @@ def detect_placeholders(docx_path):
             "type": "text"
         })
 
+    # 10.5. Zamon Sifat Servis specific detections
+    if "Тошпулатов Достон Толмас угли" in combined_text:
+        candidates.append({
+            "text": "Тошпулатов Достон Толмас угли",
+            "key": "ZAMON_BUYURTMACHI_FISH",
+            "label": "Zamon Buyurtmachi FISH",
+            "type": "text"
+        })
+    if "Худойкулов Зариф Ишанкулович" in combined_text:
+        candidates.append({
+            "text": "Худойкулов Зариф Ишанкулович",
+            "key": "ZAMON_BUYURTMACHI_FISH",
+            "label": "Zamon Buyurtmachi FISH",
+            "type": "text"
+        })
+    if "Бакаева Зебинисо Аминджановна" in combined_text:
+        candidates.append({
+            "text": "Бакаева Зебинисо Аминджановна",
+            "key": "ZAMON_BUYURTMACHI_FISH",
+            "label": "Zamon Buyurtmachi FISH",
+            "type": "text"
+        })
+    if "Самарканд вилояти Самарканд шахар Мадаткор МФЙ Узбекистон кучаси 116 Г- уй 23-хонадонда" in combined_text:
+        candidates.append({
+            "text": "Самарканд вилояти Самарканд шахар Мадаткор МФЙ Узбекистон кучаси 116 Г- уй 23-хонадонда",
+            "key": "ZAMON_BUYURTMACHI_PROPISKA",
+            "label": "Zamon Buyurtmachi Propiska",
+            "type": "text"
+        })
+    if "Самарканд вилояти Самарканд шахри Кул махаллласида" in combined_text:
+        candidates.append({
+            "text": "Самарканд вилояти Самарканд шахри Кул махаллласида",
+            "key": "ZAMON_BUYURTMACHI_PROPISKA",
+            "label": "Zamon Buyurtmachi Propiska",
+            "type": "text"
+        })
+    if "подъезднинг тартиб раками № 2" in combined_text:
+        candidates.append({
+            "text": "подъезднинг тартиб раками № 2",
+            "key": "ZAMON_PODEZD",
+            "label": "Zamon Podyezd Raqami",
+            "type": "text"
+        })
+    if "хонадоннинг тартиб раками № 157" in combined_text:
+        candidates.append({
+            "text": "хонадоннинг тартиб раками № 157",
+            "key": "ZAMON_XONADON",
+            "label": "Zamon Xonadon Raqami",
+            "type": "text"
+        })
+    if "қавати 9 (туккиз)" in combined_text:
+        candidates.append({
+            "text": "қавати 9 (туккиз)",
+            "key": "ZAMON_QAVAT",
+            "label": "Zamon Qavati",
+            "type": "text"
+        })
+    if "хоналар сони 2 (икки)" in combined_text:
+        candidates.append({
+            "text": "хоналар сони 2 (икки)",
+            "key": "ZAMON_XONALAR",
+            "label": "Zamon Xonalar Soni",
+            "type": "text"
+        })
+    if "умумий майдони 55,1" in combined_text:
+        candidates.append({
+            "text": "умумий майдони 55,1",
+            "key": "ZAMON_MAYDON",
+            "label": "Zamon Umumiy Maydoni",
+            "type": "text"
+        })
+    if "7 500 000" in combined_text:
+        candidates.append({
+            "text": "7 500 000",
+            "key": "ZAMON_KV_METR_NARXI",
+            "label": "Zamon 1kv.m Narxi",
+            "type": "number"
+        })
+    if "413 250 000" in combined_text:
+        candidates.append({
+            "text": "413 250 000",
+            "key": "ZAMON_UMUMIY_NARX",
+            "label": "Zamon Umumiy Narxi",
+            "type": "number"
+        })
+
     # 11. Detect combined block/floor/room description (e.g. 4-(to'rtinchi) blok 4-(to'rtinchi) qavati, 9-(to'qqizinchi) xonadoni)
     location_matches = re.findall(
         r'\d+\s*-\s*\([^)]+\)\s+blok[a-z]*\s+-?\d+\s*-\s*\([^)]+\)\s+qavat[a-z]*\s*,\s*\d+\s*-\s*\([^)]+\)\s+(?:xonadon[a-z]*|savdo\s+do[\'`ʻ’]koni[a-z]*)',

@@ -552,6 +552,13 @@ class FinanceController extends Controller
             ]);
         }
 
+        $this->executeTransactionApprovalSideEffects($transaction, $validated['applied_amount'] ?? null);
+
+        return redirect()->back()->with('message', 'Transaction approved.');
+    }
+
+    private function executeTransactionApprovalSideEffects(Transaction $transaction, $appliedAmount = null)
+    {
         // 1. Account / Cash Register Balance Update
         $register = CashRegister::find($transaction->account_id);
         if ($register) {
@@ -739,7 +746,7 @@ class FinanceController extends Controller
 
         // 8. Payment Schedule Reductions (Partitioned by down_payment vs installment)
         if ($transaction->contract_id && $transaction->type === 'income') {
-            $appliedAmount = $validated['applied_amount'] ?? ($transaction->converted_amount ?? $transaction->amount);
+            $appliedAmount = $appliedAmount ?? ($transaction->converted_amount ?? $transaction->amount);
 
             if ($appliedAmount > 0) {
                 $remainingAmount = $appliedAmount;
@@ -920,8 +927,6 @@ class FinanceController extends Controller
         if ($transaction->contract_id) {
             self::reconcileContractPayments($transaction->contract_id);
         }
-
-        return redirect()->back()->with('message', 'Transaction approved.');
     }
 
     private function updateTargetBalance($type, $id, $amount, $txnType)
@@ -1270,6 +1275,15 @@ class FinanceController extends Controller
             return redirect()->back()->withErrors(['error' => 'Hamkor kiritgan so\'rovni o\'chirib bo\'lmaydi! Iltimos, uni Tasdiqlar panelidan "Rad etish" (Reject) qiling.']);
         }
 
+        $this->executeTransactionDeletionSideEffects($transaction);
+
+        $transaction->delete();
+
+        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli o\'chirildi.');
+    }
+
+    private function executeTransactionDeletionSideEffects(Transaction $transaction)
+    {
         // Revert balance if approved
         if ($transaction->status === 'approved') {
             $register = CashRegister::find($transaction->account_id);
@@ -1417,10 +1431,6 @@ class FinanceController extends Controller
                 DB::table($table)->where('finance_transaction_id', $transaction->id)->delete();
             }
         }
-
-        $transaction->delete();
-
-        return redirect()->back()->with('message', 'Tranzaksiya muvaffaqiyatli o\'chirildi.');
     }
 
     public function internalTransfer(Request $request)
@@ -2988,11 +2998,18 @@ class FinanceController extends Controller
                     $cp = \App\Models\Counterparty::find($counterpartyId);
                     if ($cp) {
                         $targetId = $cp->customable_id;
-                        if ($cp->type === 'employee') {
-                            $targetType = $cp->customable_type === \App\Models\User::class ? 'user' : 'worker';
-                        } else {
-                            $targetType = $cp->type;
-                        }
+                        
+                        $classMap = [
+                            \App\Models\Worker::class => 'worker',
+                            \App\Models\Supplier::class => 'supplier',
+                            \App\Models\Partner::class => 'partner',
+                            \App\Models\Client::class => 'client',
+                            \App\Models\Brigade::class => 'brigade',
+                            \App\Models\MachineOwner::class => 'machine_owner',
+                            \App\Models\User::class => 'user',
+                        ];
+                        
+                        $targetType = $classMap[$cp->customable_type] ?? $cp->type;
 
                         // Map specific fields
                         switch ($targetType) {
@@ -3037,10 +3054,15 @@ class FinanceController extends Controller
                     'supplier_id' => $supplierId,
                     'partner_id' => $partnerId,
                     'client_id' => $clientId,
+                    'machine_owner_id' => $machineOwnerId,
+                    'brigade_id' => $brigadeId,
                     'created_by' => auth()->id(),
                     'approved_by' => auth()->id(),
                     'source' => 'import',
                 ]);
+
+                // Run approval side effects (updates register balances, creates ledger transactions etc.)
+                $this->executeTransactionApprovalSideEffects($tx);
 
                 // Record FinanceAction
                 \App\Models\FinanceAction::create([
@@ -3069,9 +3091,18 @@ class FinanceController extends Controller
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $txIds = $import->transactions()->pluck('id');
-            \App\Models\FinanceAction::whereIn('transaction_id', $txIds)->delete();
-            $import->transactions()->forceDelete();
+            $transactions = $import->transactions;
+            foreach ($transactions as $transaction) {
+                // Revert all balances and delete related ledger transactions
+                $this->executeTransactionDeletionSideEffects($transaction);
+                
+                // Delete FinanceAction log for this transaction
+                \App\Models\FinanceAction::where('transaction_id', $transaction->id)->delete();
+                
+                // Force delete the transaction itself
+                $transaction->forceDelete();
+            }
+
             $import->delete();
 
             \Illuminate\Support\Facades\DB::commit();

@@ -13,6 +13,7 @@ files_to_upload = [
     'app/Http/Middleware/HandleInertiaRequests.php',
     'database/migrations/2026_07_16_160600_add_description_to_transactions_table.php',
     'database/migrations/2026_07_16_205600_create_transaction_imports_table.php',
+    'database/migrations/2026_07_20_193000_alter_leads_source_column.php',
     'resources/js/Pages/Admin/CRM/Index.vue',
     'resources/js/Pages/Admin/ContractTemplates/Index.vue',
     'resources/js/Pages/Admin/Facility/Index.vue',

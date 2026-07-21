@@ -1437,8 +1437,10 @@ class FinanceController extends Controller
         $validated = $request->validate([
             'from_account_id' => 'required|exists:cash_registers,id',
             'to_account_id' => 'required|exists:cash_registers,id',
-            'sent_amount' => 'required|numeric|min:0',
+            'sent_amount' => 'required|numeric|min:0.01',
             'exchange_rate' => 'nullable|numeric|min:0',
+            'transaction_date' => 'nullable|date',
+            'notes' => 'nullable|string',
             'description' => 'nullable|string',
         ]);
 
@@ -1455,23 +1457,28 @@ class FinanceController extends Controller
 
         $rate = $validated['exchange_rate'] ?? 1.0;
         $receivedAmount = $validated['sent_amount'] * $rate;
+        $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : now()->toDateTimeString();
 
-        DB::transaction(function () use ($fromAcc, $toAcc, $validated, $rate, $receivedAmount) {
+        DB::transaction(function () use ($fromAcc, $toAcc, $validated, $rate, $receivedAmount, $txDate) {
             // Deduct
             $fromAcc->decrement('balance', $validated['sent_amount']);
             // Deposit
             $toAcc->increment('balance', $receivedAmount);
 
             // Record Transfer Log
+            $transferDesc = !empty($validated['notes'])
+                ? ($validated['notes'] . ($validated['description'] ? " - " . $validated['description'] : ""))
+                : ($validated['description'] ?? 'Ichki o\'tkazma');
+
             $transfer = MoneyTransfer::create([
                 'from_account_id' => $fromAcc->id,
                 'to_account_id' => $toAcc->id,
                 'sent_amount' => $validated['sent_amount'],
-                'sent_currency' => $fromAcc->currency,
+                'sent_currency' => $fromAcc->currency ?? 'UZS',
                 'exchange_rate' => $rate,
                 'received_amount' => $receivedAmount,
-                'received_currency' => $toAcc->currency,
-                'description' => $validated['description'] ?? 'Ichki o\'tkazma',
+                'received_currency' => $toAcc->currency ?? 'UZS',
+                'description' => $transferDesc,
             ]);
 
             // Save Informational Transactions
@@ -1480,17 +1487,21 @@ class FinanceController extends Controller
                 ['type' => 'transfer', 'description' => 'Ichki kassalararo o\'tkazmalar']
             );
 
+            $outflowNotes = !empty($validated['notes']) ? $validated['notes'] : "[Chiqim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? '');
+            $inflowNotes = !empty($validated['notes']) ? $validated['notes'] : "[Kirim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? '');
+
             // Outflow
             Transaction::create([
                 'type' => 'expense',
                 'amount' => $validated['sent_amount'],
-                'currency' => $fromAcc->currency,
+                'currency' => $fromAcc->currency ?? 'UZS',
                 'payment_method' => $fromAcc->type === 'bank' ? 'bank_transfer' : 'cash',
                 'account_id' => $fromAcc->id,
                 'category_id' => $transferCategory->id,
                 'status' => 'approved',
-                'transaction_date' => now(),
-                'notes' => "[Chiqim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? ''),
+                'transaction_date' => $txDate,
+                'notes' => $outflowNotes,
+                'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
                 'approved_by' => auth()->id()
             ]);
@@ -1499,13 +1510,14 @@ class FinanceController extends Controller
             Transaction::create([
                 'type' => 'income',
                 'amount' => $receivedAmount,
-                'currency' => $toAcc->currency,
+                'currency' => $toAcc->currency ?? 'UZS',
                 'payment_method' => $toAcc->type === 'bank' ? 'bank_transfer' : 'cash',
                 'account_id' => $toAcc->id,
                 'category_id' => $transferCategory->id,
                 'status' => 'approved',
-                'transaction_date' => now(),
-                'notes' => "[Kirim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? ''),
+                'transaction_date' => $txDate,
+                'notes' => $inflowNotes,
+                'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
                 'approved_by' => auth()->id()
             ]);

@@ -1451,6 +1451,8 @@ const transferForm = ref({
     to_account_id: '',
     sent_amount: '',
     exchange_rate: 1.0,
+    transaction_date: new Date().toLocaleString('sv').slice(0, 10),
+    notes: '',
     description: ''
 });
 
@@ -2493,7 +2495,8 @@ function submitTransfer() {
         onSuccess: () => {
             isProcessing.value = false;
             showQuickTransferModal.value = false;
-            transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, description: '' };
+            const today = new Date().toLocaleString('sv').slice(0, 10);
+            transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
             activeTab.value = 6;
         },
         onError: () => isProcessing.value = false
@@ -2559,6 +2562,7 @@ function openQuickTransaction(type) {
 }
 
 function openQuickTransfer(fromRegister = null) {
+    const today = new Date().toLocaleString('sv').slice(0, 10);
     const activeReg = fromRegister || (activeTab.value !== 6 ? selectedRegister.value : null);
     if (activeReg) {
         isTransferFromLocked.value = true;
@@ -2567,6 +2571,8 @@ function openQuickTransfer(fromRegister = null) {
             to_account_id: '', 
             sent_amount: '', 
             exchange_rate: 1.0, 
+            transaction_date: today,
+            notes: '',
             description: '' 
         };
     } else {
@@ -2576,6 +2582,8 @@ function openQuickTransfer(fromRegister = null) {
             to_account_id: '', 
             sent_amount: '', 
             exchange_rate: 1.0, 
+            transaction_date: today,
+            notes: '',
             description: '' 
         };
     }
@@ -6674,10 +6682,24 @@ function deleteCategory(id) {
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Transaction Date -->
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Sana *</label>
+                            <input v-model="transferForm.transaction_date" type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
+                        </div>
+
+                        <!-- Payment Purpose (Notes) -->
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">To'lov Maqsadi</label>
+                            <input v-model="transferForm.notes" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Masalan: Naqdlashtirish, Kassalararo o'tkazma...">
+                        </div>
+                    </div>
+
                     <!-- Description -->
                     <div>
-                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Izoh</label>
-                        <input v-model="transferForm.description" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Izoh (masalan, Naqdlashtirish)...">
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Izoh (Eslatma)</label>
+                        <input v-model="transferForm.description" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" placeholder="Qo'shimcha izoh yoki eslatma kiritishingiz mumkin...">
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">

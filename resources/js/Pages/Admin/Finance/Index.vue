@@ -983,13 +983,19 @@ const isCreditType = computed(() => {
 
 // Selected Register Totals
 const selectedRegisterKirimUzs = computed(() => {
-    return selectedRegisterTransactions.value
-        .filter(t => t.type === 'income' && t.currency === 'UZS')
+    if (selectedRegister.value && !registerSearchQuery.value && !registerDateFrom.value && !registerDateTo.value && !registerTypeFilter.value) {
+        return parseFloat(selectedRegister.value.total_income_uzs || 0);
+    }
+    return filteredRegisterTransactions.value
+        .filter(t => t.type === 'income' && (t.currency === 'UZS' || !t.currency))
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
 const selectedRegisterChiqimUzs = computed(() => {
-    return selectedRegisterTransactions.value
-        .filter(t => t.type === 'expense' && t.currency === 'UZS')
+    if (selectedRegister.value && !registerSearchQuery.value && !registerDateFrom.value && !registerDateTo.value && !registerTypeFilter.value) {
+        return parseFloat(selectedRegister.value.total_expense_uzs || 0);
+    }
+    return filteredRegisterTransactions.value
+        .filter(t => t.type === 'expense' && (t.currency === 'UZS' || !t.currency))
         .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 });
 
@@ -3877,6 +3883,12 @@ function deleteCategory(id) {
                                         <span class="text-gray-400">Holati:</span>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase border border-green-200">
                                             {{ selectedRegister.is_active ? 'Ish holatida' : 'Nofaol' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between items-center pt-1 border-t border-gray-100">
+                                        <span class="text-gray-400">Joriy Balans:</span>
+                                        <span class="font-bold text-sm font-mono" :class="parseFloat(selectedRegister.balance_uzs || 0) < 0 ? 'text-red-600' : 'text-emerald-600'">
+                                            {{ formatMoney(selectedRegister.balance_uzs || 0, 'UZS') }}
                                         </span>
                                     </div>
                                 </div>

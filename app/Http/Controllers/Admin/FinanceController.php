@@ -119,7 +119,6 @@ class FinanceController extends Controller
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
-            ->limit(500)
             ->get();
         }
 

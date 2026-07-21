@@ -3,6 +3,7 @@ import os
 
 files_to_upload = [
     'app/Http/Controllers/Admin/ContractTemplateController.php',
+    'app/Http/Controllers/Admin/ContractController.php',
     'app/Http/Controllers/Admin/CrmController.php',
     'app/Http/Controllers/Admin/FinanceController.php',
     'app/Http/Controllers/Admin/LedgerExportController.php',
@@ -15,11 +16,13 @@ files_to_upload = [
     'database/migrations/2026_07_16_160600_add_description_to_transactions_table.php',
     'database/migrations/2026_07_16_205600_create_transaction_imports_table.php',
     'database/migrations/2026_07_20_193000_alter_leads_source_column.php',
+    'database/migrations/2026_07_21_180000_fix_uzoqov_doston_kassa_initial_balance.php',
     'resources/js/Pages/Admin/CRM/Index.vue',
     'resources/js/Pages/Admin/ContractTemplates/Index.vue',
     'resources/js/Pages/Admin/Facility/Index.vue',
     'resources/js/Pages/Admin/Finance/Index.vue',
     'resources/js/Pages/Admin/Partners/Index.vue',
+    'resources/js/Pages/Admin/HR/Texnikalar.vue',
     'resources/views/exports/client_ledger.blade.php',
     'routes/web.php'
 ]

@@ -96,8 +96,8 @@ class ContractTemplate extends Model
             '{{ MIJOZ_MANZILI }}' => $client ? ($client->address ?? '_______') : '_______', '{{MIJOZ_MANZILI}}' => $client ? ($client->address ?? '_______') : '_______',
             '{{ MIJOZ_JSHSHIR }}' => $client ? ($client->pinfl ?? '_______') : '_______', '{{MIJOZ_JSHSHIR}}' => $client ? ($client->pinfl ?? '_______') : '_______',
             '{{ PASPORT_SERIYA }}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______', '{{PASPORT_SERIYA}}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
-            '{{ PASPORT_SANA }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______', '{{PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
-            '{{ PASPORT_JOYI }}' => $client ? ($client->passport_issued_by ?? '_______') : '_______', '{{PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            '{{ PASPORT_SANA }}' => self::formatPassportDate($client), '{{PASPORT_SANA}}' => self::formatPassportDate($client),
+            '{{ PASPORT_JOYI }}' => self::formatPassportAuthority($client), '{{PASPORT_JOYI}}' => self::formatPassportAuthority($client),
             '{{ BLOK }}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______', '{{BLOK}}' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
             '{{ QAVAT }}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'), '{{QAVAT}}' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'),
             '{{ XONA_RAQAMI }}' => $unit ? $unit->unit_number : '_______', '{{XONA_RAQAMI}}' => $unit ? $unit->unit_number : '_______',
@@ -126,8 +126,8 @@ class ContractTemplate extends Model
             '{{ ZAMON_BUYURTMACHI_PROPISKA }}' => $client ? ($client->address ?? '_______') : '_______', '{{ZAMON_BUYURTMACHI_PROPISKA}}' => $client ? ($client->address ?? '_______') : '_______',
             '{{ ZAMON_PASPORT_SERIYA }}' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______', '{{ZAMON_PASPORT_SERIYA}}' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______',
             '{{ ZAMON_PASPORT_RAQAM }}' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______', '{{ZAMON_PASPORT_RAQAM}}' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______',
-            '{{ ZAMON_PASPORT_JOYI }}' => $client ? ($client->passport_issued_by ?? '_______') : '_______', '{{ZAMON_PASPORT_JOYI}}' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
-            '{{ ZAMON_PASPORT_SANA }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______', '{{ZAMON_PASPORT_SANA}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            '{{ ZAMON_PASPORT_JOYI }}' => self::formatPassportAuthority($client), '{{ZAMON_PASPORT_JOYI}}' => self::formatPassportAuthority($client),
+            '{{ ZAMON_PASPORT_SANA }}' => self::formatPassportDate($client), '{{ZAMON_PASPORT_SANA}}' => self::formatPassportDate($client),
             '{{ ZAMON_PASPORT_KUN }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___', '{{ZAMON_PASPORT_KUN}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___',
             '{{ ZAMON_PASPORT_OY }}' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________', '{{ZAMON_PASPORT_OY}}' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________',
             '{{ ZAMON_PASPORT_YIL }}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____', '{{ZAMON_PASPORT_YIL}}' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____',
@@ -308,8 +308,8 @@ class ContractTemplate extends Model
             'MIJOZ_MANZILI' => $client ? ($client->address ?? '_______') : '_______',
             'MIJOZ_JSHSHIR' => $client ? ($client->pinfl ?? '_______') : '_______',
             'PASPORT_SERIYA' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
-            'PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
-            'PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
+            'PASPORT_SANA' => self::formatPassportDate($client),
+            'PASPORT_JOYI' => self::formatPassportAuthority($client),
             'BLOK' => ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '_______',
             'QAVAT' => $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '_______'),
             'XONA_RAQAMI' => $unit ? $unit->unit_number : '_______',
@@ -339,8 +339,8 @@ class ContractTemplate extends Model
             'ZAMON_BUYURTMACHI_PROPISKA' => $client ? ($client->address ?? '_______') : '_______',
             'ZAMON_PASPORT_SERIYA' => $client ? substr(preg_replace('/[^A-Z]/i', '', strtoupper($client->passport_number ?? $client->passport_series ?? '')), 0, 2) : '_______',
             'ZAMON_PASPORT_RAQAM' => $client ? preg_replace('/[^0-9]/', '', $client->passport_number ?? $client->passport_series ?? '') : '_______',
-            'ZAMON_PASPORT_JOYI' => $client ? ($client->passport_issued_by ?? '_______') : '_______',
-            'ZAMON_PASPORT_SANA' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '_______',
+            'ZAMON_PASPORT_JOYI' => self::formatPassportAuthority($client),
+            'ZAMON_PASPORT_SANA' => self::formatPassportDate($client),
             'ZAMON_PASPORT_KUN' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d') : '___',
             'ZAMON_PASPORT_OY' => ($client && $client->passport_issued_date) ? ($monthsUz[(int)\Carbon\Carbon::parse($client->passport_issued_date)->format('m')] ?? '_______') : '________',
             'ZAMON_PASPORT_YIL' => ($client && $client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('Y') : '____',
@@ -678,5 +678,34 @@ class ContractTemplate extends Model
         $cleaned = trim($phone);
         $cleaned = preg_replace('/(\+?998\s*){2,}/', '+998 ', $cleaned);
         return $cleaned;
+    }
+
+    public static function formatPassportAuthority(?Client $client): string
+    {
+        if (!$client || empty($client->passport_issued_by)) {
+            return '_______';
+        }
+        $joyi = trim($client->passport_issued_by);
+        $region = trim($client->region ?? '');
+        
+        if (!empty($region) && !preg_match('/(viloyat|shahar|respublika|toshkent)/i', $joyi)) {
+            $regionFormatted = str_contains(mb_strtolower($region, 'UTF-8'), 'viloyat') ? $region : ($region . ' viloyati');
+            $joyi = $regionFormatted . ' ' . $joyi;
+        }
+        
+        if (!preg_match('/tomonidan|berilgan/i', $joyi)) {
+            $joyi .= ' tomonidan berilgan';
+        }
+        
+        return $joyi;
+    }
+
+    public static function formatPassportDate(?Client $client): string
+    {
+        if (!$client || empty($client->passport_issued_date)) {
+            return '_______';
+        }
+        $formattedDate = \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y');
+        return $formattedDate . '-yilda';
     }
 }

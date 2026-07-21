@@ -103,6 +103,7 @@ const showImportModal = ref(false);
 const isImporting = ref(false);
 const importStep = ref(1); // 1 = Upload, 2 = Preview & Map
 const importPreviewRows = ref([]);
+const importErrors = ref([]);
 const importCounterparties = ref([]);
 const importCategories = ref([]);
 const importFileName = ref('');
@@ -127,6 +128,7 @@ function openImportModal() {
     }
     importStep.value = 1;
     importPreviewRows.value = [];
+    importErrors.value = [];
     importCounterparties.value = [];
     importCategories.value = [];
     importFileName.value = '';
@@ -163,8 +165,9 @@ function submitImport() {
     }).then(res => {
         if (res.data.success) {
             importPreviewRows.value = res.data.rows;
-            importCounterparties.value = res.data.counterparties;
-            importCategories.value = res.data.categories;
+            importErrors.value = res.data.errors || [];
+            importCounterparties.value = res.data.counterparties || [];
+            importCategories.value = res.data.categories || [];
             importFileName.value = res.data.file_name;
             importStep.value = 2;
         } else {
@@ -6780,17 +6783,29 @@ function deleteCategory(id) {
                     </div>
                 </form>
 
-                <!-- Step 2: Preview & Mapping Table -->
+                <!-- Step 2: Preview & Automatic AI Mapping Table -->
                 <div v-else class="space-y-4">
                     <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-150 text-xs">
                         <div>
                             <p class="font-bold text-slate-700 font-sans">Fayl: {{ importFileName }}</p>
-                            <p class="text-[10px] text-slate-400 font-mono mt-0.5">Jami qatorlar: {{ importPreviewRows.length }} ta. Iltimos, xarajat kategoriyasi va kontragentlarni to'g'ri taqsimlang.</p>
+                            <p class="text-[10px] text-slate-500 font-mono mt-0.5">Jami qatorlar: {{ importPreviewRows.length }} ta. Sun'iy intellekt (IA) ma'lumotlarni avtomatik aniqladi va taqsimladi.</p>
                         </div>
                         <button type="button" @click="backToImportStep1" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] transition-colors" :disabled="isImporting">Faylni o'zgartirish</button>
                     </div>
 
-                    <div class="overflow-x-auto max-h-[320px] border border-slate-100 rounded-xl">
+                    <!-- Xatoliklar Ro'yxati (Error Alert Box) -->
+                    <div v-if="importErrors && importErrors.length > 0" class="p-3 bg-red-50 border border-red-200 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2 text-red-700 font-bold text-xs font-sans">
+                            <span>⚠️ Xatoliklar Ro'yxati ({{ importErrors.length }} ta qatorda aniqlandi):</span>
+                        </div>
+                        <ul class="text-[11px] text-red-600 font-mono space-y-0.5 max-h-24 overflow-y-auto pl-4 list-disc">
+                            <li v-for="(err, eIdx) in importErrors" :key="eIdx">
+                                Qator #{{ err.row_num }}: {{ err.message }}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[340px] border border-slate-100 rounded-xl">
                         <table class="w-full text-left text-[11px] border-collapse">
                             <thead class="bg-slate-50 text-slate-500 uppercase text-[9px] tracking-wider font-bold border-b border-slate-200 sticky top-0 z-10 font-sans">
                                 <tr>
@@ -6798,8 +6813,8 @@ function deleteCategory(id) {
                                     <th class="p-2.5 w-[90px]">Sana</th>
                                     <th class="p-2.5 min-w-[150px]">Maqsad / Izoh</th>
                                     <th class="p-2.5 text-right w-[100px]">Summa</th>
-                                    <th class="p-2.5 min-w-[160px]">Kategoriya *</th>
-                                    <th class="p-2.5 min-w-[200px]">Kontragent (Texnika Egasi va b.)</th>
+                                    <th class="p-2.5 min-w-[160px]">Kategoriya (IA)</th>
+                                    <th class="p-2.5 min-w-[180px]">Yo'nalish / Kontragent (IA)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 bg-white font-mono">
@@ -6820,20 +6835,17 @@ function deleteCategory(id) {
                                         </div>
                                     </td>
                                     <td class="p-2.5 font-sans">
-                                        <select v-model="row.category_id" @change="updateRowType(row)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none font-bold" :disabled="isImporting">
-                                            <option :value="null">-- Kategoriya tanlang --</option>
-                                            <option v-for="cat in importCategories" :key="cat.id" :value="cat.id">
-                                                {{ cat.name }} ({{ cat.type === 'income' ? 'Kirim' : 'Chiqim' }})
-                                            </option>
-                                        </select>
+                                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-bold text-xs inline-block">
+                                            📁 {{ row.category_name || 'Obyekt Xarajati' }}
+                                        </span>
                                     </td>
                                     <td class="p-2.5 font-sans">
-                                        <select v-model="row.counterparty_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 focus:border-orange-500 outline-none font-bold" :disabled="isImporting">
-                                            <option :value="null">-- Kategoriya bo'yicha (Yo'naltirilmagan) --</option>
-                                            <option v-for="cp in getFilteredCounterparties(row)" :key="cp.id" :value="cp.id">
-                                                {{ cp.name }} ({{ getCpTypeName(cp.type) }})
-                                            </option>
-                                        </select>
+                                        <span v-if="row.matched_counterparty_name" class="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg font-bold text-xs inline-block">
+                                            👤 {{ row.matched_counterparty_name }}
+                                        </span>
+                                        <span v-else class="text-slate-400 font-sans text-xs italic">
+                                            Umumiy kassa xarajati
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>

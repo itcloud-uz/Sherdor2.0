@@ -2704,7 +2704,6 @@ class FinanceController extends Controller
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
             $reader->setReadDataOnly(true);
             
-            // Set read filter to only load rows 1 to 500 and columns A to K
             $filter = new class implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
                 public function readCell($columnAddress, $row, $worksheetName = '') {
                     return $row <= 500 && in_array($columnAddress, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']);
@@ -2720,7 +2719,6 @@ class FinanceController extends Controller
             $rows = [];
             for ($row = 1; $row <= $highestRow; $row++) {
                 $rowData = [];
-                // Only load columns A to K
                 foreach (range('A', 'K') as $col) {
                     $rowData[$col] = $sheet->getCell($col . $row)->getValue();
                 }
@@ -2734,7 +2732,6 @@ class FinanceController extends Controller
                 ], 422);
             }
 
-            // Filter out rows that are entirely empty or don't have enough data
             $dataRows = array_filter(array_slice($rows, 1), function($r) {
                 return !empty(array_filter($r));
             });
@@ -2746,8 +2743,12 @@ class FinanceController extends Controller
                 ], 422);
             }
 
+            $allCategories = \App\Models\TransactionCategory::all();
+            $allCounterparties = \App\Models\Counterparty::all();
+
             $parsedRows = [];
-            $rowNum = 2; // Starts from row 2 (row 1 is header)
+            $rowErrors = [];
+            $rowNum = 2;
 
             foreach ($dataRows as $r) {
                 $typeCol = trim($r['A'] ?? '');
@@ -2762,18 +2763,28 @@ class FinanceController extends Controller
                 $priceCol = trim($r['J'] ?? '');
                 $calcCol = trim($r['K'] ?? '');
 
-                if (empty($typeCol) && empty($amountCol)) {
+                if (empty($typeCol) && empty($amountCol) && empty($purposeCol)) {
                     $rowNum++;
                     continue;
                 }
 
-                // Process category
-                $categoryId = null;
-                if (!empty($typeCol)) {
-                    $cat = \App\Models\TransactionCategory::where('name', 'like', $typeCol)->first();
-                    if ($cat) {
-                        $categoryId = $cat->id;
+                // Process amount
+                $amount = 0;
+                if (!empty($amountCol)) {
+                    $cleanAmount = preg_replace('/[^\d\.\,\-]/', '', $amountCol);
+                    if (strpos($cleanAmount, ',') !== false && strpos($cleanAmount, '.') !== false) {
+                        $cleanAmount = str_replace(',', '', $cleanAmount);
+                    } elseif (strpos($cleanAmount, ',') !== false) {
+                        $cleanAmount = str_replace(',', '.', $cleanAmount);
                     }
+                    $amount = floatval($cleanAmount);
+                }
+
+                if ($amount <= 0) {
+                    $rowErrors[] = [
+                        'row_num' => $rowNum,
+                        'message' => "Summa 0 ga teng yoki noto'g'ri ko'rsatilgan ({$amountCol})"
+                    ];
                 }
 
                 // Process payment method
@@ -2792,7 +2803,9 @@ class FinanceController extends Controller
                         try {
                             $dateTime = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dateCol);
                             $transactionDate = $dateTime->format('Y-m-d');
-                        } catch (\Exception $ex) {}
+                        } catch (\Exception $ex) {
+                            $rowErrors[] = ['row_num' => $rowNum, 'message' => "Sana formati noto'g'ri: {$dateCol}"];
+                        }
                     } else {
                         $d = str_replace(['/', '_'], '.', $dateCol);
                         $parts = explode('.', $d);
@@ -2808,21 +2821,11 @@ class FinanceController extends Controller
                                 if ($parsedTime !== false) {
                                     $transactionDate = date('Y-m-d', $parsedTime);
                                 }
-                            } catch (\Exception $ex) {}
+                            } catch (\Exception $ex) {
+                                $rowErrors[] = ['row_num' => $rowNum, 'message' => "Sana formati noto'g'ri: {$dateCol}"];
+                            }
                         }
                     }
-                }
-
-                // Process amount
-                $amount = 0;
-                if (!empty($amountCol)) {
-                    $cleanAmount = preg_replace('/[^\d\.\,\-]/', '', $amountCol);
-                    if (strpos($cleanAmount, ',') !== false && strpos($cleanAmount, '.') !== false) {
-                        $cleanAmount = str_replace(',', '', $cleanAmount);
-                    } elseif (strpos($cleanAmount, ',') !== false) {
-                        $cleanAmount = str_replace(',', '.', $cleanAmount);
-                    }
-                    $amount = floatval($cleanAmount);
                 }
 
                 // Process comments
@@ -2836,91 +2839,83 @@ class FinanceController extends Controller
                     $rowComments = $calcCol;
                 }
 
-                // Inferred counterparty
+                // AI Smart Category Matching
+                $categoryId = null;
+                $categoryName = $typeCol;
+                $rowType = 'expense';
+
+                $typeColLower = mb_strtolower($typeCol);
+                $purposeLower = mb_strtolower($purposeCol);
+
+                if (strpos($typeColLower, 'kirim') !== false || strpos($typeColLower, 'tasischi') !== false || strpos($typeColLower, 'invest') !== false || strpos($typeColLower, 'kirit') !== false) {
+                    $rowType = 'income';
+                }
+
+                // 1. Direct Category Name Match
+                if (!empty($typeCol)) {
+                    $cat = $allCategories->first(function($c) use ($typeCol) {
+                        return mb_strtolower($c->name) === mb_strtolower($typeCol) || str_contains(mb_strtolower($c->name), mb_strtolower($typeCol));
+                    });
+                    if ($cat) {
+                        $categoryId = $cat->id;
+                        $categoryName = $cat->name;
+                        $rowType = $cat->type;
+                    }
+                }
+
+                // 2. Purpose Keyword Category Match if still unassigned
+                if (!$categoryId && !empty($purposeCol)) {
+                    if (str_contains($purposeLower, 'texnika') || str_contains($purposeLower, 'kamaz') || str_contains($purposeLower, 'kran') || str_contains($purposeLower, 'salyarka') || str_contains($purposeLower, 'yoqilg\'i')) {
+                        $cat = $allCategories->first(fn($c) => str_contains(mb_strtolower($c->name), 'texnika'));
+                        if ($cat) { $categoryId = $cat->id; $categoryName = $cat->name; $rowType = $cat->type; }
+                    } elseif (str_contains($purposeLower, 'ishchi') || str_contains($purposeLower, 'oylik') || str_contains($purposeLower, 'avans') || str_contains($purposeLower, 'ish haqi')) {
+                        $cat = $allCategories->first(fn($c) => str_contains(mb_strtolower($c->name), 'ishchi') || str_contains(mb_strtolower($c->name), 'ish haqi'));
+                        if ($cat) { $categoryId = $cat->id; $categoryName = $cat->name; $rowType = $cat->type; }
+                    } elseif (str_contains($purposeLower, 'material') || str_contains($purposeLower, 'sement') || str_contains($purposeLower, 'qum') || str_contains($purposeLower, 'arra') || str_contains($purposeLower, 'jilka') || str_contains($purposeLower, 'ambur') || str_contains($purposeLower, 'gidrouroven')) {
+                        $cat = $allCategories->first(fn($c) => str_contains(mb_strtolower($c->name), 'obyekt') || str_contains(mb_strtolower($c->name), 'material'));
+                        if ($cat) { $categoryId = $cat->id; $categoryName = $cat->name; $rowType = $cat->type; }
+                    }
+                }
+
+                // 3. Fallback Category if still null
+                if (!$categoryId) {
+                    $fallbackCat = $allCategories->first(fn($c) => $c->type === $rowType);
+                    if ($fallbackCat) {
+                        $categoryId = $fallbackCat->id;
+                        $categoryName = $fallbackCat->name;
+                    } else {
+                        $categoryName = !empty($typeCol) ? $typeCol : ($rowType === 'income' ? 'Kirim' : 'Obyekt Xarajati (Chiqim)');
+                    }
+                }
+
+                // AI Smart Counterparty Matching
                 $inferredCounterpartyId = null;
+                $matchedCounterpartyName = null;
+                $matchedCounterpartyType = null;
+
                 if (!empty($purposeCol)) {
-                    $targetType = null;
-                    if ($categoryId) {
-                        $catObj = \App\Models\TransactionCategory::find($categoryId);
-                        if ($catObj) {
-                            $targetType = $catObj->target_type;
-                            
-                            if (empty($targetType)) {
-                                $catNameLower = mb_strtolower($catObj->name);
-                                if (str_contains($catNameLower, 'texnika') || str_contains($catNameLower, 'mashina')) {
-                                    $targetType = 'machine_owner';
-                                } elseif (str_contains($catNameLower, 'ishchi') || str_contains($catNameLower, 'oylik') || str_contains($catNameLower, 'avans') || str_contains($catNameLower, 'ish haqi')) {
-                                    $targetType = 'worker';
-                                } elseif (str_contains($catNameLower, 'hamkor')) {
-                                    $targetType = 'partner';
-                                } elseif (str_contains($catNameLower, 'mijoz') || str_contains($catNameLower, 'shartnoma')) {
-                                    $targetType = 'client';
-                                } elseif (str_contains($catNameLower, 'ta\'minot') || str_contains($catNameLower, 'taminot') || str_contains($catNameLower, 'material')) {
-                                    $targetType = 'supplier';
-                                } elseif (str_contains($catNameLower, 'brigada')) {
-                                    $targetType = 'brigade';
-                                }
-                            }
-                        }
-                    }
-
-                    $cpQuery = \App\Models\Counterparty::query();
-                    if ($targetType) {
-                        if ($targetType === 'machine_owner') {
-                            $cpQuery->where('customable_type', \App\Models\MachineOwner::class);
-                        } elseif ($targetType === 'worker') {
-                            $cpQuery->where('customable_type', \App\Models\Worker::class);
-                        } elseif ($targetType === 'partner') {
-                            $cpQuery->where('customable_type', \App\Models\Partner::class);
-                        } elseif ($targetType === 'client') {
-                            $cpQuery->where('customable_type', \App\Models\Client::class);
-                        } elseif ($targetType === 'supplier') {
-                            $cpQuery->where(function($q) {
-                                $q->where('customable_type', \App\Models\Supplier::class)
-                                  ->orWhere(function($sq) {
-                                      $sq->whereNull('customable_type')->where('type', 'supplier');
-                                  });
-                            });
-                        }
-                    }
-
-                    $cpQueryClone = clone $cpQuery;
-                    $cp = $cpQueryClone->where('name', 'like', '%' . $purposeCol . '%')->first();
+                    $cp = $allCounterparties->first(function($c) use ($purposeCol) {
+                        return str_contains(mb_strtolower($c->name), mb_strtolower($purposeCol)) || str_contains(mb_strtolower($purposeCol), mb_strtolower($c->name));
+                    });
 
                     if (!$cp) {
-                        $parts = array_filter(explode(' ', $purposeCol), function($p) {
-                            return strlen($p) > 2;
-                        });
+                        $parts = array_filter(explode(' ', $purposeCol), fn($p) => mb_strlen($p) >= 3);
                         foreach ($parts as $p) {
-                            $cpQueryClone = clone $cpQuery;
-                            $cp = $cpQueryClone->where('name', 'like', '%' . $p . '%')->first();
-                            if ($cp) {
-                                break;
-                            }
+                            $cp = $allCounterparties->first(fn($c) => str_contains(mb_strtolower($c->name), mb_strtolower($p)));
+                            if ($cp) break;
                         }
                     }
 
                     if ($cp) {
                         $inferredCounterpartyId = $cp->id;
-                    }
-                }
-
-                $rowType = 'expense';
-                if ($categoryId) {
-                    $cat = \App\Models\TransactionCategory::find($categoryId);
-                    if ($cat) {
-                        $rowType = $cat->type;
-                    }
-                } else {
-                    $typeColLower = mb_strtolower($typeCol);
-                    if (strpos($typeColLower, 'kirim') !== false || strpos($typeColLower, 'tasischi') !== false || strpos($typeColLower, 'invest') !== false || strpos($typeColLower, 'kirit') !== false) {
-                        $rowType = 'income';
+                        $matchedCounterpartyName = $cp->name;
+                        $matchedCounterpartyType = $cp->type;
                     }
                 }
 
                 $parsedRows[] = [
                     'row_num' => $rowNum,
-                    'category_name' => $typeCol,
+                    'category_name' => $categoryName,
                     'category_id' => $categoryId,
                     'type' => $rowType,
                     'purpose' => $purposeCol,
@@ -2929,38 +2924,17 @@ class FinanceController extends Controller
                     'payment_method' => $paymentMethod,
                     'comments' => $rowComments,
                     'counterparty_id' => $inferredCounterpartyId,
+                    'matched_counterparty_name' => $matchedCounterpartyName,
+                    'matched_counterparty_type' => $matchedCounterpartyType,
                 ];
 
                 $rowNum++;
             }
 
-            $counterparties = \App\Models\Counterparty::orderBy('name')
-                ->get()
-                ->map(function($cp) {
-                    return [
-                        'id' => $cp->id,
-                        'name' => $cp->name,
-                        'type' => $cp->type,
-                        'customable_type' => $cp->customable_type
-                    ];
-                });
-
-            $categories = \App\Models\TransactionCategory::orderBy('name')
-                ->get()
-                ->map(function($c) {
-                    return [
-                        'id' => $c->id,
-                        'name' => $c->name,
-                        'type' => $c->type,
-                        'target_type' => $c->target_type
-                    ];
-                });
-
             return response()->json([
                 'success' => true,
                 'rows' => $parsedRows,
-                'counterparties' => $counterparties,
-                'categories' => $categories,
+                'errors' => $rowErrors,
                 'file_name' => $file->getClientOriginalName(),
             ]);
 

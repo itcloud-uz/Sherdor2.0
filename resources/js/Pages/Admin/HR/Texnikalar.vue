@@ -398,6 +398,24 @@ const formatMoney = (val) => {
     return new Intl.NumberFormat('uz-UZ').format(val || 0);
 };
 
+const formatTxnDate = (val) => {
+    if (!val) return '—';
+    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+        const [y, m, d] = val.trim().split('-');
+        return `${d}.${m}.${y}`;
+    }
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleString('ru-RU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+};
+
 const openAddWorkModal = () => {
     if (!selectedOwner.value) return;
     const today = new Date().toISOString().slice(0, 10);
@@ -888,7 +906,7 @@ const exportToExcel = () => {
                                     </tr>
                                     <tr v-for="(txn, index) in selectedOwner.transactions" :key="txn.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="px-4 py-3 text-center text-gray-500">{{ index + 1 }}</td>
-                                        <td class="px-4 py-3 text-gray-600">{{ new Date(txn.created_at || txn.date).toLocaleString('ru-RU') }}</td>
+                                        <td class="px-4 py-3 text-gray-600">{{ formatTxnDate(txn.date || txn.created_at) }}</td>
                                         <td class="px-4 py-3 text-gray-900 font-medium">{{ txn.description || 'Izohsiz to\'lov' }}</td>
                                         <td class="px-4 py-3 text-center">
                                             <span v-if="txn.description && (txn.description.toLowerCase().includes('salyarka') || txn.description.toLowerCase().includes('solyarka'))" class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Salyarka</span>

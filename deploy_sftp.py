@@ -1,31 +1,39 @@
 import paramiko
 import os
 
-files_to_upload = [
-    'app/Http/Controllers/Admin/ContractTemplateController.php',
-    'app/Http/Controllers/Admin/ContractController.php',
-    'app/Http/Controllers/Admin/CrmController.php',
-    'app/Http/Controllers/Admin/FinanceController.php',
-    'app/Http/Controllers/Admin/LedgerExportController.php',
-    'app/Http/Controllers/Admin/PartnerHubController.php',
-    'app/Models/ContractTemplate.php',
-    'app/Models/Transaction.php',
-    'app/Models/TransactionImport.php',
-    'app/Python/docx_processor.py',
-    'app/Http/Middleware/HandleInertiaRequests.php',
-    'database/migrations/2026_07_16_160600_add_description_to_transactions_table.php',
-    'database/migrations/2026_07_16_205600_create_transaction_imports_table.php',
-    'database/migrations/2026_07_20_193000_alter_leads_source_column.php',
-    'database/migrations/2026_07_21_180000_fix_uzoqov_doston_kassa_initial_balance.php',
-    'resources/js/Pages/Admin/CRM/Index.vue',
-    'resources/js/Pages/Admin/ContractTemplates/Index.vue',
-    'resources/js/Pages/Admin/Facility/Index.vue',
-    'resources/js/Pages/Admin/Finance/Index.vue',
-    'resources/js/Pages/Admin/Partners/Index.vue',
-    'resources/js/Pages/Admin/HR/Texnikalar.vue',
-    'resources/views/exports/client_ledger.blade.php',
-    'routes/web.php'
-]
+import subprocess
+
+try:
+    cmd = "git diff --name-only HEAD~15 HEAD"
+    diff_output = subprocess.check_output(cmd, shell=True, text=True)
+    files_to_upload = [f.strip() for f in diff_output.split('\n') if f.strip() and os.path.exists(f.strip()) and not f.startswith('deploy_temp/')]
+except Exception as e:
+    print("Failed to get git diff dynamically:", e)
+    files_to_upload = [
+        'app/Http/Controllers/Admin/ContractTemplateController.php',
+        'app/Http/Controllers/Admin/ContractController.php',
+        'app/Http/Controllers/Admin/CrmController.php',
+        'app/Http/Controllers/Admin/FinanceController.php',
+        'app/Http/Controllers/Admin/LedgerExportController.php',
+        'app/Http/Controllers/Admin/PartnerHubController.php',
+        'app/Models/ContractTemplate.php',
+        'app/Models/Transaction.php',
+        'app/Models/TransactionImport.php',
+        'app/Python/docx_processor.py',
+        'app/Http/Middleware/HandleInertiaRequests.php',
+        'database/migrations/2026_07_16_160600_add_description_to_transactions_table.php',
+        'database/migrations/2026_07_16_205600_create_transaction_imports_table.php',
+        'database/migrations/2026_07_20_193000_alter_leads_source_column.php',
+        'database/migrations/2026_07_21_180000_fix_uzoqov_doston_kassa_initial_balance.php',
+        'resources/js/Pages/Admin/CRM/Index.vue',
+        'resources/js/Pages/Admin/ContractTemplates/Index.vue',
+        'resources/js/Pages/Admin/Facility/Index.vue',
+        'resources/js/Pages/Admin/Finance/Index.vue',
+        'resources/js/Pages/Admin/Partners/Index.vue',
+        'resources/js/Pages/Admin/HR/Texnikalar.vue',
+        'resources/views/exports/client_ledger.blade.php',
+        'routes/web.php'
+    ]
 
 try:
     ssh = paramiko.SSHClient()
@@ -40,6 +48,17 @@ try:
         remote_path = "/home/itcloud/Sherdor2.0/" + file_path.replace("\\", "/")
         print(f"Uploading {file_path}...")
         try:
+            remote_dir = os.path.dirname(remote_path)
+            parts = remote_dir.split('/')
+            current = ''
+            for part in parts:
+                if not part:
+                    continue
+                current += '/' + part
+                try:
+                    sftp.stat(current)
+                except IOError:
+                    sftp.mkdir(current)
             sftp.put(local_path, remote_path)
         except Exception as e:
             print(f"Failed to upload {file_path}: {e}")

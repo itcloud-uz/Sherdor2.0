@@ -2906,22 +2906,44 @@ class FinanceController extends Controller
                 $matchedCounterpartyType = null;
 
                 if (!empty($purposeCol)) {
-                    $cp = $allCounterparties->first(function($c) use ($purposeCol) {
-                        return str_contains(mb_strtolower($c->name), mb_strtolower($purposeCol)) || str_contains(mb_strtolower($purposeCol), mb_strtolower($c->name));
-                    });
+                    $getWords = function($text) {
+                        $textLower = mb_strtolower($text);
+                        $textLower = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $textLower);
+                        $words = preg_split('/\s+/u', $textLower);
+                        return array_filter(array_map('trim', $words), fn($w) => mb_strlen($w) >= 3);
+                    };
 
-                    if (!$cp) {
-                        $parts = array_filter(explode(' ', $purposeCol), fn($p) => mb_strlen($p) >= 3);
-                        foreach ($parts as $p) {
-                            $cp = $allCounterparties->first(fn($c) => str_contains(mb_strtolower($c->name), mb_strtolower($p)));
-                            if ($cp) break;
+                    $stopWords = [
+                        'oylik', 'avans', 'ishhaqi', 'ish', 'haqi', 'maosh', 'kassa', 'kredit', 'bank', 'ko\'chirma', 
+                        'chiqim', 'kirim', 'xarajat', 'pul', 'summa', 'foiz', 'tushum', 'to\'lov', 'plastik', 'karta', 
+                        'obyekt', 'bino', 'uy', 'sement', 'qum', 'gips', 'kraska', 'sim', 'truba', 'ustoz', 'boshliq', 
+                        'prava', 'benzin', 'solyarka', 'gaz', 'mator', 'moy', 'shpaklyovka', 'gipsokarton', 'penoblok', 
+                        'gisht', 'g\'isht', 'shag\'al', 'tosh', 'sheben', 'armatura', 'beton', 'blok', 'oziq', 'ovqat', 
+                        'tushlik', 'obed', 'kechki', 'ovqatlanish'
+                    ];
+
+                    $purposeWords = $getWords($purposeCol);
+                    $filteredPurposeWords = array_diff($purposeWords, $stopWords);
+
+                    $matchedCp = null;
+                    if (!empty($filteredPurposeWords)) {
+                        foreach ($allCounterparties as $cp) {
+                            $cpWords = $getWords($cp->name);
+                            foreach ($filteredPurposeWords as $pw) {
+                                foreach ($cpWords as $cw) {
+                                    if (str_starts_with($cw, $pw)) {
+                                        $matchedCp = $cp;
+                                        break 2;
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    if ($cp) {
-                        $inferredCounterpartyId = $cp->id;
-                        $matchedCounterpartyName = $cp->name;
-                        $matchedCounterpartyType = $cp->type;
+                    if ($matchedCp) {
+                        $inferredCounterpartyId = $matchedCp->id;
+                        $matchedCounterpartyName = $matchedCp->name;
+                        $matchedCounterpartyType = $matchedCp->type;
                     }
                 }
 

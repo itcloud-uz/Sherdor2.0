@@ -2805,6 +2805,12 @@ function downloadScheduleExcel() {
     generatedSchedule.value.forEach(row => {
         csvContent.push(`${row.month};${row.date};${Math.round(row.payment)};${Math.round(row.principal)};${Math.round(row.interest)};${Math.round(row.balance)}`);
     });
+
+    // Total row
+    const totalPayment = generatedSchedule.value.reduce((sum, r) => sum + parseFloat(r.payment || 0), 0);
+    const totalPrincipal = generatedSchedule.value.reduce((sum, r) => sum + parseFloat(r.principal || 0), 0);
+    const totalInterest = generatedSchedule.value.reduce((sum, r) => sum + parseFloat(r.interest || 0), 0);
+    csvContent.push(`JAMI;;${Math.round(totalPayment)};${Math.round(totalPrincipal)};${Math.round(totalInterest)};`);
     
     const csvString = csvContent.join('\n');
     const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
@@ -5983,6 +5989,22 @@ function deleteCategory(id) {
                                 </td>
                             </tr>
                         </tbody>
+                        <tfoot class="bg-gray-50/70 border-t-2 border-gray-200 font-extrabold text-[11px] text-gray-900 sticky bottom-0">
+                            <tr>
+                                <td class="p-3 text-gray-500 font-bold uppercase tracking-wider text-[10px]">Jami</td>
+                                <td></td>
+                                <td class="p-3 text-right font-black text-emerald-600">
+                                    {{ formatMoney(generatedSchedule.reduce((sum, r) => sum + parseFloat(r.payment || 0), 0), selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td class="p-3 text-right text-gray-900 font-black">
+                                    {{ formatMoney(generatedSchedule.reduce((sum, r) => sum + parseFloat(r.principal || 0), 0), selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td class="p-3 text-right text-amber-600 font-black">
+                                    {{ formatMoney(generatedSchedule.reduce((sum, r) => sum + parseFloat(r.interest || 0), 0), selectedLiabilityForSchedule?.currency || 'UZS') }}
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>

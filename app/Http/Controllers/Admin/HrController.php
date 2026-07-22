@@ -932,12 +932,27 @@ class HrController extends Controller
         $accruals = [];
         $payments = [];
 
+        $salaryAccrualsGrouped = [];
         foreach ($allTx as $tx) {
             if ($tx->type === 'salary_accrual') {
-                $accruals[] = $tx;
+                $monthKey = date('Y-m', strtotime($tx->date));
+                if (!isset($salaryAccrualsGrouped[$monthKey])) {
+                    $salaryAccrualsGrouped[$monthKey] = [
+                        'amount' => 0,
+                        'date' => date('Y-m-t', strtotime($tx->date)),
+                        'description' => 'Oylik ish haqi (oylik maoshdan)',
+                        'type' => 'salary_accrual',
+                    ];
+                }
+                $salaryAccrualsGrouped[$monthKey]['amount'] += (float)$tx->amount;
             } else {
                 $payments[] = $tx;
             }
+        }
+
+        ksort($salaryAccrualsGrouped);
+        foreach ($salaryAccrualsGrouped as $acc) {
+            $accruals[] = (object)$acc;
         }
 
         $pairedRows = [];
@@ -1199,12 +1214,27 @@ class HrController extends Controller
         $accruals = [];
         $payments = [];
 
+        $salaryAccrualsGrouped = [];
         foreach ($allTx as $tx) {
             if ($tx->type === 'salary_accrual') {
-                $accruals[] = $tx;
+                $monthKey = date('Y-m', strtotime($tx->date));
+                if (!isset($salaryAccrualsGrouped[$monthKey])) {
+                    $salaryAccrualsGrouped[$monthKey] = [
+                        'amount' => 0,
+                        'date' => date('Y-m-t', strtotime($tx->date)),
+                        'description' => 'Oylik ish haqi (oylik maoshdan)',
+                        'type' => 'salary_accrual',
+                    ];
+                }
+                $salaryAccrualsGrouped[$monthKey]['amount'] += (float)$tx->amount;
             } else {
                 $payments[] = $tx;
             }
+        }
+
+        ksort($salaryAccrualsGrouped);
+        foreach ($salaryAccrualsGrouped as $acc) {
+            $accruals[] = (object)$acc;
         }
 
         $pairedRows = [];

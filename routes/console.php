@@ -8,7 +8,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-// Schedule::command('hr:accrue-daily-salaries')->daily(); // Qorovullar (va boshqalar) uchun kunlik hisoblash o'chirildi
+Schedule::command('hr:accrue-monthly-salaries')->lastDayOfMonth('23:59');
 Schedule::command('sms:debtors')->hourly();
 Schedule::command('sms:promo')->hourly();
 Schedule::command('sms:send-scheduled')->everyMinute();

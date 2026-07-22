@@ -8,35 +8,36 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class AccrueDailySalaries extends Command
+class AccrueMonthlySalaries extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'hr:accrue-daily-salaries';
+    protected $signature = 'hr:accrue-monthly-salaries';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Calculates and adds the daily portion of a fixed monthly salary to the balances of operators and guards';
+    protected $description = 'Calculates and adds the monthly salary to operators and workers';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Starting daily salary accrual...');
+        $this->info('Starting monthly salary accrual...');
 
-        $daysInMonth = Carbon::now()->daysInMonth;
         $today = Carbon::now()->toDateString();
+        $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
         
         $accruedCount = 0;
 
-        DB::transaction(function () use ($daysInMonth, $today, &$accruedCount) {
+        DB::transaction(function () use ($today, $startOfMonth, $endOfMonth, &$accruedCount) {
             
             // 1. Accrue for Workers (like Guards or any fixed_monthly workers)
             $workers = Worker::where('salary_type', 'fixed_monthly')
@@ -44,7 +45,7 @@ class AccrueDailySalaries extends Command
                              ->get();
 
             foreach ($workers as $worker) {
-                // Find active salary period for today (the one with the latest start_date <= today)
+                // Find active salary period for today
                 $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'worker')
                     ->where('employee_id', $worker->id)
                     ->whereDate('start_date', '<=', $today)
@@ -52,28 +53,26 @@ class AccrueDailySalaries extends Command
                     ->first();
 
                 $salaryAmount = $activePeriod ? $activePeriod->salary : $worker->base_rate;
-                $dailyRate = $salaryAmount / $daysInMonth;
 
-                // Check if already accrued today to prevent double counting
+                // Check if already accrued in this month
                 $exists = DB::table('worker_transactions')
                     ->where('worker_id', $worker->id)
                     ->where('type', 'salary_accrual')
-                    ->where('date', $today)
-                    ->where('description', 'Kunlik ish haqi (oylik maoshdan)')
+                    ->whereBetween('date', [$startOfMonth, $endOfMonth])
                     ->exists();
 
                 if (!$exists) {
                     DB::table('worker_transactions')->insert([
                         'worker_id' => $worker->id,
                         'type' => 'salary_accrual',
-                        'amount' => $dailyRate,
-                        'description' => 'Kunlik ish haqi (oylik maoshdan)',
+                        'amount' => $salaryAmount,
+                        'description' => 'Oylik ish haqi (oylik maoshdan)',
                         'date' => $today,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
 
-                    $worker->increment('balance', $dailyRate);
+                    $worker->increment('balance', $salaryAmount);
                     $accruedCount++;
                 }
             }
@@ -82,7 +81,7 @@ class AccrueDailySalaries extends Command
             $users = User::where('salary_rate', '>', 0)->get();
 
             foreach ($users as $user) {
-                // Find active salary period for today (the one with the latest start_date <= today)
+                // Find active salary period for today
                 $activePeriod = \App\Models\SalaryPeriod::where('employee_type', 'user')
                     ->where('employee_id', $user->id)
                     ->whereDate('start_date', '<=', $today)
@@ -90,32 +89,31 @@ class AccrueDailySalaries extends Command
                     ->first();
 
                 $salaryAmount = $activePeriod ? $activePeriod->salary : $user->salary_rate;
-                $dailyRate = $salaryAmount / $daysInMonth;
 
+                // Check if already accrued in this month
                 $exists = DB::table('user_transactions')
                     ->where('user_id', $user->id)
                     ->where('type', 'salary_accrual')
-                    ->where('date', $today)
-                    ->where('description', 'Kunlik ish haqi (oylik maoshdan)')
+                    ->whereBetween('date', [$startOfMonth, $endOfMonth])
                     ->exists();
 
                 if (!$exists) {
                     DB::table('user_transactions')->insert([
                         'user_id' => $user->id,
                         'type' => 'salary_accrual',
-                        'amount' => $dailyRate,
-                        'description' => 'Kunlik ish haqi (oylik maoshdan)',
+                        'amount' => $salaryAmount,
+                        'description' => 'Oylik ish haqi (oylik maoshdan)',
                         'date' => $today,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
 
-                    $user->increment('balance', $dailyRate);
+                    $user->increment('balance', $salaryAmount);
                     $accruedCount++;
                 }
             }
         });
 
-        $this->info("Successfully accrued daily salary for {$accruedCount} people.");
+        $this->info("Successfully accrued monthly salary for {$accruedCount} people.");
     }
 }

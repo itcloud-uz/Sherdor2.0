@@ -215,9 +215,54 @@ const showDetailModal = ref(false);
 const selectedEmployee = ref(null);
 const rightTab = ref('ariza'); // 'ariza' or 'buyruq'
 
+const workerLedgerRows = ref([]);
+const workerLedgerBalance = ref(0);
+const ledgerStartDate = ref('');
+const ledgerEndDate = ref('');
+const isLoadingLedger = ref(false);
+
 function openDetailModal(emp) {
     selectedEmployee.value = emp;
+    ledgerStartDate.value = '';
+    ledgerEndDate.value = '';
+    workerLedgerRows.value = [];
+    workerLedgerBalance.value = 0;
     showDetailModal.value = true;
+    fetchWorkerLedger();
+}
+
+function fetchWorkerLedger() {
+    if (!selectedEmployee.value) return;
+    isLoadingLedger.value = true;
+    const isUser = selectedEmployee.value.type === 'user';
+    const endpoint = isUser 
+        ? route('admin.hr.users.ledger', selectedEmployee.value.id)
+        : route('admin.hr.worker.ledger', selectedEmployee.value.id);
+        
+    axios.get(endpoint, {
+        params: {
+            start_date: ledgerStartDate.value,
+            end_date: ledgerEndDate.value
+        }
+    }).then(res => {
+        workerLedgerRows.value = res.data.paired_rows || [];
+        workerLedgerBalance.value = res.data.balance || 0;
+    }).catch(err => {
+        console.error(err);
+    }).finally(() => {
+        isLoadingLedger.value = false;
+    });
+}
+
+function exportWorkerLedger() {
+    if (!selectedEmployee.value) return;
+    const isUser = selectedEmployee.value.type === 'user';
+    const endpoint = isUser 
+        ? route('admin.hr.users.ledger.export', selectedEmployee.value.id)
+        : route('admin.hr.worker.ledger.export', selectedEmployee.value.id);
+        
+    const url = endpoint + `?start_date=${ledgerStartDate.value}&end_date=${ledgerEndDate.value}`;
+    window.open(url, '_blank');
 }
 
 // Add/Edit employee modal state
@@ -1753,6 +1798,120 @@ const exportSalesStatsToExcel = () => {
                             <div class="p-6 flex-1 flex items-center justify-center text-xs text-gray-400 font-semibold">
                                 Ma'lumot mavjud emas
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Full Width (col-span-12): Salary Ledger Table (Hisoblangan va Berilgan) -->
+                    <div class="lg:col-span-12 border-t border-gray-100 pt-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <h4 class="text-sm font-bold text-gray-900 flex items-center gap-1.5 font-display">
+                                💰 Oylik hisob-kitoblar (Ish haqi jurnali)
+                            </h4>
+                            
+                            <!-- Ledger Date Range & Export Filters -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input 
+                                    v-model="ledgerStartDate" 
+                                    type="date" 
+                                    class="border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-amber-500" 
+                                    placeholder="Dan"
+                                />
+                                <input 
+                                    v-model="ledgerEndDate" 
+                                    type="date" 
+                                    class="border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-amber-500" 
+                                    placeholder="Gacha"
+                                />
+                                <button 
+                                    type="button"
+                                    @click="fetchWorkerLedger" 
+                                    class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors"
+                                >
+                                    Filter
+                                </button>
+                                <button 
+                                    type="button"
+                                    @click="exportWorkerLedger" 
+                                    class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl flex items-center gap-1 transition-colors shadow-sm"
+                                >
+                                    <span>Yuklab olish</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Table rendering -->
+                        <div v-if="isLoadingLedger" class="py-8 text-center text-gray-400 font-medium text-xs font-mono animate-pulse">
+                            Yuklanmoqda...
+                        </div>
+                        <div v-else class="overflow-x-auto border border-gray-100 rounded-2xl">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <!-- Double Header Level -->
+                                    <tr class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold text-[10px] uppercase font-sans">
+                                        <th colspan="2" class="p-3 text-center border-r border-gray-100">Hisoblangan ish haqi</th>
+                                        <th colspan="2" class="p-3 text-center border-r border-gray-100">Berilgan ish haqi</th>
+                                        <th rowspan="2" class="p-3 text-right border-r border-gray-100 align-middle">Qoldiq</th>
+                                        <th rowspan="2" class="p-3 align-middle">Izoh</th>
+                                    </tr>
+                                    <tr class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold text-[10px] uppercase font-sans">
+                                        <th class="p-2.5 text-center border-r border-gray-100">Sana</th>
+                                        <th class="p-2.5 text-right border-r border-gray-100">Hisoblangan so`mma</th>
+                                        <th class="p-2.5 text-center border-r border-gray-100">Sana</th>
+                                        <th class="p-2.5 text-right border-r border-gray-100">Berilgan so`mma</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 font-mono text-[11px] text-gray-700 bg-white">
+                                    <tr v-for="(row, rIdx) in workerLedgerRows" :key="rIdx" class="hover:bg-gray-50/50 transition-colors">
+                                        <!-- Accrued Date -->
+                                        <td class="p-2.5 text-center border-r border-gray-100 text-gray-500 font-semibold">
+                                            {{ row.accrued_date ? formatDate(row.accrued_date) : '-' }}
+                                        </td>
+                                        <!-- Accrued Amount -->
+                                        <td class="p-2.5 text-right border-r border-gray-100 font-bold text-gray-900">
+                                            {{ row.accrued_amount ? formatPrice(row.accrued_amount) : '-' }}
+                                        </td>
+                                        <!-- Paid Date -->
+                                        <td class="p-2.5 text-center border-r border-gray-100 text-gray-500 font-semibold">
+                                            {{ row.paid_date ? formatDate(row.paid_date) : '-' }}
+                                        </td>
+                                        <!-- Paid Amount -->
+                                        <td class="p-2.5 text-right border-r border-gray-100 font-bold text-emerald-600">
+                                            {{ row.paid_amount ? formatPrice(row.paid_amount) : '-' }}
+                                        </td>
+                                        <!-- Qoldiq -->
+                                        <td class="p-2.5 text-right border-r border-gray-100 font-extrabold" :class="row.qoldiq < 0 ? 'text-red-600' : 'text-gray-900'">
+                                            {{ row.qoldiq < 0 ? '-' : '' }}{{ formatPrice(Math.abs(row.qoldiq)) }}
+                                        </td>
+                                        <!-- Izoh -->
+                                        <td class="p-2.5 font-sans font-medium text-gray-500">
+                                            {{ row.izoh || '-' }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="workerLedgerRows.length === 0">
+                                        <td colspan="6" class="p-8 text-center text-gray-400 font-sans font-semibold">
+                                            Ish haqi tarixi mavjud emas
+                                        </td>
+                                    </tr>
+                                    <!-- Total row -->
+                                    <tr v-if="workerLedgerRows.length > 0" class="bg-gray-50/70 border-t-2 border-gray-200 font-extrabold text-[11px] text-gray-900">
+                                        <td class="p-3 text-center border-r border-gray-100 font-sans uppercase">ЖАМИ</td>
+                                        <td class="p-3 text-right border-r border-gray-100">
+                                            {{ formatPrice(workerLedgerRows.reduce((sum, r) => sum + (r.accrued_amount || 0), 0)) }}
+                                        </td>
+                                        <td class="p-3 border-r border-gray-100"></td>
+                                        <td class="p-3 text-right border-r border-gray-100 text-emerald-600">
+                                            {{ formatPrice(workerLedgerRows.reduce((sum, r) => sum + (r.paid_amount || 0), 0)) }}
+                                        </td>
+                                        <td class="p-3 text-right border-r border-gray-100 font-black" :class="workerLedgerRows.reduce((sum, r) => sum + (r.qoldiq || 0), 0) < 0 ? 'text-red-600' : 'text-gray-900'">
+                                            {{ workerLedgerRows.reduce((sum, r) => sum + (r.qoldiq || 0), 0) < 0 ? '-' : '' }}{{ formatPrice(Math.abs(workerLedgerRows.reduce((sum, r) => sum + (r.qoldiq || 0), 0))) }}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

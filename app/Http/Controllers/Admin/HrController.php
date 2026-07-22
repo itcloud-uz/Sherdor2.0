@@ -912,13 +912,70 @@ class HrController extends Controller
         return redirect()->back()->with('message', 'Foydalanuvchi o\'chirildi.');
     }
 
-    public function getUserLedger(\App\Models\User $user)
+    public function getUserLedger(\App\Models\User $user, Request $request)
     {
-        $transactions = DB::table('user_transactions')->where('user_id', $user->id)->orderByDesc('date')->get();
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $txQuery = DB::table('user_transactions')
+            ->where('user_id', $user->id);
+
+        if ($startDate) {
+            $txQuery->where('date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $txQuery->where('date', '<=', $endDate);
+        }
+
+        $allTx = $txQuery->orderBy('date', 'asc')->get();
+
+        $accruals = [];
+        $payments = [];
+
+        foreach ($allTx as $tx) {
+            if ($tx->type === 'salary_accrual') {
+                $accruals[] = $tx;
+            } else {
+                $payments[] = $tx;
+            }
+        }
+
+        $pairedRows = [];
+        $maxLen = max(count($accruals), count($payments));
+        for ($i = 0; $i < $maxLen; $i++) {
+            $accRow = $accruals[$i] ?? null;
+            $payRow = $payments[$i] ?? null;
+
+            $accruedAmount = $accRow ? (float)$accRow->amount : 0;
+            $paidAmount = $payRow ? (float)$payRow->amount : 0;
+            $qoldiq = $paidAmount - $accruedAmount;
+
+            $pairedRows[] = [
+                'accrued_date' => $accRow ? $accRow->date : null,
+                'accrued_amount' => $accruedAmount ?: null,
+                'paid_date' => $payRow ? $payRow->date : null,
+                'paid_amount' => $paidAmount ?: null,
+                'qoldiq' => $qoldiq,
+                'izoh' => $payRow ? $payRow->description : ($accRow ? $accRow->description : ''),
+            ];
+        }
+
         return response()->json([
             'balance' => $user->balance,
-            'transactions' => $transactions
+            'transactions' => $allTx,
+            'paired_rows' => $pairedRows
         ]);
+    }
+
+    public function exportUserLedger(\App\Models\User $user, Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\EmployeeLedgerExport($user->id, 'user', $startDate, $endDate),
+            'Xodim_ish_haqi_hisoboti_' . str_replace(' ', '_', $user->name) . '_' . date('Y_m_d') . '.xlsx'
+        );
     }
 
     public function storeUserTransaction(Request $request, \App\Models\User $user)
@@ -1122,14 +1179,59 @@ class HrController extends Controller
         return redirect()->back()->with('message', 'Manual davomat yozildi!');
     }
 
-    public function getWorkerLedger(Worker $worker)
+    public function getWorkerLedger(Worker $worker, Request $request)
     {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $txQuery = DB::table('worker_transactions')
+            ->where('worker_id', $worker->id);
+
+        if ($startDate) {
+            $txQuery->where('date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $txQuery->where('date', '<=', $endDate);
+        }
+
+        $allTx = $txQuery->orderBy('date', 'asc')->get();
+
+        $accruals = [];
+        $payments = [];
+
+        foreach ($allTx as $tx) {
+            if ($tx->type === 'salary_accrual') {
+                $accruals[] = $tx;
+            } else {
+                $payments[] = $tx;
+            }
+        }
+
+        $pairedRows = [];
+        $maxLen = max(count($accruals), count($payments));
+        for ($i = 0; $i < $maxLen; $i++) {
+            $accRow = $accruals[$i] ?? null;
+            $payRow = $payments[$i] ?? null;
+
+            $accruedAmount = $accRow ? (float)$accRow->amount : 0;
+            $paidAmount = $payRow ? (float)$payRow->amount : 0;
+            $qoldiq = $paidAmount - $accruedAmount;
+
+            $pairedRows[] = [
+                'accrued_date' => $accRow ? $accRow->date : null,
+                'accrued_amount' => $accruedAmount ?: null,
+                'paid_date' => $payRow ? $payRow->date : null,
+                'paid_amount' => $paidAmount ?: null,
+                'qoldiq' => $qoldiq,
+                'izoh' => $payRow ? $payRow->description : ($accRow ? $accRow->description : ''),
+            ];
+        }
+
+        // Maintain original compatibility variables
         $transactions = DB::table('worker_transactions')->where('worker_id', $worker->id)->where('type', '!=', 'salary_accrual')->orderByDesc('date')->get();
         $logs = \App\Models\WorkLog::with('building')->where('type', 'worker')->where('worker_id', $worker->id)->orderByDesc('date')->get();
         
         $categoryBalances = [];
-
-        // Sum earnings from logs
         foreach ($logs as $log) {
             $cat = $log->work_category ?: 'Umumiy';
             if (!isset($categoryBalances[$cat])) {
@@ -1137,14 +1239,11 @@ class HrController extends Controller
             }
             $categoryBalances[$cat] += $log->calculated_cost;
         }
-
-        // Subtract payments from transactions
         foreach ($transactions as $t) {
             $cat = $t->work_category ?: 'Umumiy';
             if (!isset($categoryBalances[$cat])) {
                 $categoryBalances[$cat] = 0;
             }
-            // Assuming transactions are deductions (payments out to worker)
             $categoryBalances[$cat] -= $t->amount;
         }
 
@@ -1152,8 +1251,20 @@ class HrController extends Controller
             'balance' => $worker->balance,
             'category_balances' => $categoryBalances,
             'transactions' => $transactions,
-            'logs' => $logs
+            'logs' => $logs,
+            'paired_rows' => $pairedRows
         ]);
+    }
+
+    public function exportWorkerLedger(Worker $worker, Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\EmployeeLedgerExport($worker->id, 'worker', $startDate, $endDate),
+            'Xodim_ish_haqi_hisoboti_' . str_replace(' ', '_', $worker->name) . '_' . date('Y_m_d') . '.xlsx'
+        );
     }
 
     public function storeWorkerTransaction(Request $request, Worker $worker)

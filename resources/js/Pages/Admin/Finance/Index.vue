@@ -2092,6 +2092,17 @@ const filteredInvoicesList = computed(() => {
     });
 });
 const invoiceExportUrl = computed(() => route('admin.finance.invoices.export.xlsx', invoiceFilters.value));
+const transactionsExcelExportUrl = computed(() => {
+    const params = {};
+    if (jurnalDateFrom.value) params.start_date = jurnalDateFrom.value;
+    if (jurnalDateTo.value) params.end_date = jurnalDateTo.value;
+    if (jurnalAccountId.value) params.account_id = jurnalAccountId.value;
+    if (jurnalTypeFilter.value) params.type = jurnalTypeFilter.value;
+    if (jurnalCounterpartyId.value) params.counterparty_id = jurnalCounterpartyId.value;
+    if (jurnalBuildingId.value) params.building_id = jurnalBuildingId.value;
+    if (jurnalSearchQuery.value) params.search = jurnalSearchQuery.value;
+    return route('admin.finance.transactions.export.xlsx', params);
+});
 
 const isNewCategory = ref(false);
 const selectedCategoryName = computed(() => {
@@ -3226,7 +3237,7 @@ function deleteCategory(id) {
                     </div>
                     <div class="flex gap-3 w-full sm:w-auto">
                         <input v-model="jurnalSearchQuery" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 text-sm w-full sm:w-64">
-                        <a :href="route('admin.finance.transactions.export.xlsx')" target="_blank" class="px-5 py-2.5 border border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                        <a :href="transactionsExcelExportUrl" target="_blank" class="px-5 py-2.5 border border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
                             <span>📊 Excel</span>
                         </a>
                         <button @click="openQuickTransaction('income')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">

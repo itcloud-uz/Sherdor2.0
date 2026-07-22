@@ -1831,6 +1831,18 @@ class FinanceController extends Controller
         if ($request->filled('account_id')) {
             $query->where('account_id', $request->account_id);
         }
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('notes', 'like', "%{$search}%")
+                  ->orWhereHas('counterparty', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
 
         $transactions = $query->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
 

@@ -10,7 +10,7 @@ return new class extends Migration
         DB::table('cash_registers')
             ->where('name', 'like', '%UZOQOV DOSTON%')
             ->update([
-                'initial_balance_uzs' => 59980000.00,
+                'initial_balance_uzs' => 28299600.00,
             ]);
     }
 

@@ -806,4 +806,39 @@ class CrmController extends Controller
 
         return redirect()->back()->with('message', 'CRM sozlamalari muvaffaqiyatli saqlandi.');
     }
+
+    public function updateCustomSchedule(Request $request, \App\Models\Contract $contract)
+    {
+        $validated = $request->validate([
+            'schedules' => 'required|array',
+            'schedules.*.due_date' => 'required|date',
+            'schedules.*.expected_amount' => 'required|numeric|min:0.01',
+            'schedules.*.payment_type' => 'required|string|in:down_payment,installment,full',
+        ]);
+
+        \DB::transaction(function () use ($contract, $validated) {
+            // Delete existing payment schedules
+            $contract->paymentSchedules()->delete();
+
+            // Create new payment schedules
+            foreach ($validated['schedules'] as $index => $row) {
+                \App\Models\PaymentSchedule::create([
+                    'contract_id' => $contract->id,
+                    'expected_amount' => $row['expected_amount'],
+                    'remaining_debt' => $row['expected_amount'],
+                    'paid_amount' => 0,
+                    'due_date' => $row['due_date'],
+                    'status' => 'pending',
+                    'original_payment_amount' => $row['expected_amount'],
+                    'payment_type' => $row['payment_type'],
+                ]);
+            }
+
+            // Reconcile payments
+            \App\Http\Controllers\Admin\FinanceController::reconcileContractPayments($contract->id);
+        });
+
+        // Fetch client id to return with correct state
+        return redirect()->back()->with('message', 'To\'lov grafigi muvaffaqiyatli yangilandi.');
+    }
 }

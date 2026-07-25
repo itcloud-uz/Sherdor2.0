@@ -375,6 +375,72 @@ function handleExport(format) {
     closeExportFormatModal();
 }
 
+const showCustomScheduleModal = ref(false);
+const localSchedules = ref([]);
+const isSavingCustomSchedule = ref(false);
+
+const customScheduleTotal = computed(() => {
+    return localSchedules.value.reduce((sum, row) => sum + (parseFloat(row.expected_amount) || 0), 0);
+});
+
+const customScheduleDifference = computed(() => {
+    const contractTotal = parseFloat(selectedContract.value?.total_amount || 0);
+    return contractTotal - customScheduleTotal.value;
+});
+
+function openCustomScheduleModal() {
+    if (!selectedContract.value) return;
+    const currentSchedules = selectedContract.value.payment_schedules || selectedContract.value.paymentSchedules || [];
+    localSchedules.value = currentSchedules.map(s => ({
+        due_date: s.due_date ? s.due_date.substring(0, 10) : '',
+        expected_amount: parseFloat(s.expected_amount) || 0,
+        payment_type: s.payment_type || 'installment'
+    }));
+    showCustomScheduleModal.value = true;
+}
+
+function addLocalScheduleRow() {
+    let defaultDate = new Date().toISOString().substring(0, 10);
+    if (localSchedules.value.length > 0) {
+        const lastDateStr = localSchedules.value[localSchedules.value.length - 1].due_date;
+        if (lastDateStr) {
+            const lastDate = new Date(lastDateStr);
+            lastDate.setMonth(lastDate.getMonth() + 1);
+            defaultDate = lastDate.toISOString().substring(0, 10);
+        }
+    }
+    localSchedules.value.push({
+        due_date: defaultDate,
+        expected_amount: 0,
+        payment_type: 'installment'
+    });
+}
+
+function removeLocalScheduleRow(index) {
+    localSchedules.value.splice(index, 1);
+}
+
+function saveCustomSchedule() {
+    if (!selectedContract.value) return;
+    isSavingCustomSchedule.value = true;
+    axios.post(route('admin.crm.contracts.custom_schedule', selectedContract.value.id), {
+        schedules: localSchedules.value
+    })
+    .then(response => {
+        showCustomScheduleModal.value = false;
+        if (detailedClientData.value) {
+            selectClientForDetail(detailedClientData.value, false, selectedContract.value);
+        }
+    })
+    .catch(err => {
+        console.error('Grafikni saqlashda xatolik:', err);
+        alert(err.response?.data?.message || 'Grafikni saqlashda xatolik yuz berdi');
+    })
+    .finally(() => {
+        isSavingCustomSchedule.value = false;
+    });
+}
+
 const loadedScripts = {};
 function loadScript(src) {
     if (loadedScripts[src]) return loadedScripts[src];
@@ -5370,6 +5436,9 @@ const ledgerReportData = computed(() => {
                         <div class="flex justify-between items-center">
                             <h3 class="text-base font-bold text-gray-900 font-sans">To'lov jadvali</h3>
                             <div class="flex items-center gap-2">
+                                <button @click="openCustomScheduleModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                    Qo'lda grafik yaratish
+                                </button>
                                 <button @click="openPaymentNotesModal" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">
                                     To'lov izohi
                                 </button>
@@ -9535,6 +9604,106 @@ const ledgerReportData = computed(() => {
                 <button @click="closeExportFormatModal" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider font-sans">
                     Bekor qilish
                 </button>
+            </div>
+        </div>
+
+        <!-- 📊 Custom Schedule Modal -->
+        <div v-if="showCustomScheduleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all duration-300" @click.self="showCustomScheduleModal = false">
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 border border-gray-150 animate-fade-in-up">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center shrink-0 shadow-md">
+                    <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2 font-sans">
+                        <span>📊</span> Grafikni Qo'lda Yaratish / Tahrirlash
+                    </h3>
+                    <button @click="showCustomScheduleModal = false" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="flex-1 overflow-auto p-6 bg-slate-50 space-y-6">
+                    <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex flex-col md:flex-row justify-between gap-4 text-xs">
+                        <div>
+                            <span class="text-gray-400 font-medium font-sans">Shartnoma jami summasi:</span>
+                            <strong class="text-gray-900 ml-1 font-mono">{{ Number(selectedContract?.total_amount || 0).toLocaleString() }} UZS</strong>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 font-medium font-sans">Grafik jami summasi:</span>
+                            <strong :class="customScheduleTotal === Number(selectedContract?.total_amount || 0) ? 'text-emerald-600' : 'text-amber-600'" class="ml-1 font-mono">
+                                {{ customScheduleTotal.toLocaleString() }} UZS
+                            </strong>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 font-medium font-sans">Farq:</span>
+                            <strong :class="customScheduleDifference === 0 ? 'text-emerald-600' : 'text-red-500'" class="ml-1 font-mono">
+                                {{ customScheduleDifference.toLocaleString() }} UZS
+                            </strong>
+                        </div>
+                    </div>
+
+                    <!-- Alert message if sums do not match -->
+                    <div v-if="customScheduleDifference !== 0" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-700 font-sans">
+                        <strong>Diqqat!</strong> Grafikning jami summasi shartnoma summasiga teng bo'lishi tavsiya etiladi.
+                    </div>
+
+                    <!-- Schedule Rows Table -->
+                    <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-50 text-gray-500 font-bold border-b border-gray-150">
+                                <tr>
+                                    <th class="p-3 text-center w-12">№</th>
+                                    <th class="p-3">To'lov Sanasi</th>
+                                    <th class="p-3">To'lov Summasi (UZS)</th>
+                                    <th class="p-3">Turi</th>
+                                    <th class="p-3 text-center w-16">Amal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-sans text-xs">
+                                <tr v-for="(row, index) in localSchedules" :key="index" class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="p-3 text-center text-gray-400 font-mono">{{ index + 1 }}</td>
+                                    <td class="p-3">
+                                        <input type="date" v-model="row.due_date" required class="bg-white border border-gray-300 text-gray-900 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none w-36">
+                                    </td>
+                                    <td class="p-3">
+                                        <input type="number" step="0.01" v-model.number="row.expected_amount" required class="bg-white border border-gray-300 text-gray-900 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none font-mono w-48" placeholder="Summa">
+                                    </td>
+                                    <td class="p-3">
+                                        <select v-model="row.payment_type" required class="bg-white border border-gray-300 text-gray-900 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none w-36">
+                                            <option value="down_payment">Bosh to'lov</option>
+                                            <option value="installment">Oylik to'lov</option>
+                                            <option value="full">To'liq to'lov</option>
+                                        </select>
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <button type="button" @click="removeLocalScheduleRow(index)" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-colors">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="localSchedules.length === 0">
+                                    <td colspan="5" class="py-8 text-center text-gray-400 font-sans">Qatorlar mavjud emas. Yangi qator qo'shish uchun quyidagi tugmani bosing.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Add Row Button -->
+                    <button type="button" @click="addLocalScheduleRow" class="px-4 py-2 border border-blue-600 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-1.5 font-sans">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                        Yangi qator qo'shish
+                    </button>
+                </div>
+
+                <!-- Footer buttons -->
+                <div class="px-6 py-4 bg-slate-50 border-t border-gray-100 flex justify-end gap-3 shrink-0">
+                    <button type="button" @click="showCustomScheduleModal = false" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-100 transition-all uppercase tracking-wider font-sans">
+                        Yopish
+                    </button>
+                    <button type="button" @click="saveCustomSchedule" :disabled="isSavingCustomSchedule" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider disabled:opacity-50 font-sans">
+                        <span v-if="isSavingCustomSchedule" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Saqlash
+                    </button>
+                </div>
             </div>
         </div>
 

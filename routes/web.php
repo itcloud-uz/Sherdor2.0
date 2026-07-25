@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/crm/schedules/{schedule}/pay', [\App\Http\Controllers\Admin\CrmController::class, 'paySchedule'])->name('crm.schedules.pay');
     Route::post('/crm/schedules/{schedule}/send-warning-sms', [\App\Http\Controllers\Admin\CrmController::class, 'sendWarningSms'])->name('crm.schedules.send_warning_sms');
     Route::post('/crm/contracts/{contract}/recalculate-penalty', [\App\Http\Controllers\Admin\CrmController::class, 'recalculatePenalty'])->name('crm.contracts.recalculate_penalty');
+    Route::post('/crm/contracts/{contract}/custom-schedule', [\App\Http\Controllers\Admin\CrmController::class, 'updateCustomSchedule'])->name('crm.contracts.custom_schedule');
     Route::post('/crm/clients/{client}/comments', [\App\Http\Controllers\Admin\CrmController::class, 'addClientComment'])->name('crm.clients.comments.store');
     Route::get('/crm/clients/{client}/comments', [\App\Http\Controllers\Admin\CrmController::class, 'getClientComments'])->name('crm.clients.comments.index');
     Route::put('/crm/schedules/{schedule}/notes', [\App\Http\Controllers\Admin\CrmController::class, 'updateScheduleNotes'])->name('crm.schedules.notes.update');

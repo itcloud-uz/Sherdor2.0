@@ -1481,10 +1481,9 @@ class FinanceController extends Controller
                 'description' => $transferDesc,
             ]);
 
-            // Save Informational Transactions
             $transferCategory = TransactionCategory::firstOrCreate(
                 ['name' => 'Ichki O\'tkazma'],
-                ['type' => 'transfer', 'description' => 'Ichki kassalararo o\'tkazmalar']
+                ['type' => 'both']
             );
 
             $outflowNotes = !empty($validated['notes']) ? $validated['notes'] : "[Chiqim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? '');

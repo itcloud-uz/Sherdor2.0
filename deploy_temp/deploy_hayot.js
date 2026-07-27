@@ -39,6 +39,21 @@ async function deploy() {
         console.log('STDOUT: ' + result.stdout);
         console.log('STDERR: ' + result.stderr);
 
+        console.log('Running Laravel migrations and optimization...');
+        const clearOpt = await ssh.execCommand('php artisan optimize:clear', { cwd: '/var/www/sellerarp' });
+        console.log('Clear Opt STDOUT: ' + clearOpt.stdout);
+        
+        const migrateResult = await ssh.execCommand('php artisan migrate --force', { cwd: '/var/www/sellerarp' });
+        console.log('Migrate STDOUT: ' + migrateResult.stdout);
+        if (migrateResult.stderr) {
+            console.log('Migrate STDERR: ' + migrateResult.stderr);
+        }
+
+        const optResult = await ssh.execCommand('echo "clone2026" | sudo -S php artisan optimize', { cwd: '/var/www/sellerarp' });
+        console.log('Optimize STDOUT: ' + optResult.stdout);
+
+        await ssh.execCommand('echo "clone2026" | sudo -S chown -R www-data:www-data storage bootstrap/cache', { cwd: '/var/www/sellerarp' });
+
         console.log('Deployment complete!');
         ssh.dispose();
     } catch (err) {

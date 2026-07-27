@@ -96,6 +96,10 @@ const sortedTransactions = computed(() => {
 const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
+const isEditingTransfer = ref(false);
+const editingTransferId = ref(null);
+const showViewTransferModal = ref(false);
+const viewingTransfer = ref(null);
 
 // Transaction Import refs & methods
 // Transaction Import refs & methods
@@ -1459,6 +1463,8 @@ const transferForm = ref({
     description: ''
 });
 
+
+
 const selectedParentRegisterId = ref('');
 const selectedSubRegisterId = ref('');
 
@@ -2507,16 +2513,67 @@ function submitTransaction() {
 
 function submitTransfer() {
     isProcessing.value = true;
-    router.post(route('admin.finance.internal_transfer'), transferForm.value, { preserveScroll: true, preserveState: true,
-        onSuccess: () => {
-            isProcessing.value = false;
-            showQuickTransferModal.value = false;
-            const today = new Date().toLocaleString('sv').slice(0, 10);
-            transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
-            activeTab.value = 6;
-        },
-        onError: () => isProcessing.value = false
-    });
+    if (isEditingTransfer.value) {
+        router.put(route('admin.finance.internal_transfer.update', editingTransferId.value), transferForm.value, { preserveScroll: true, preserveState: true,
+            onSuccess: () => {
+                isProcessing.value = false;
+                showQuickTransferModal.value = false;
+                const today = new Date().toLocaleString('sv').slice(0, 10);
+                transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
+                isEditingTransfer.value = false;
+                editingTransferId.value = null;
+                activeTab.value = 6;
+            },
+            onError: () => isProcessing.value = false
+        });
+    } else {
+        router.post(route('admin.finance.internal_transfer'), transferForm.value, { preserveScroll: true, preserveState: true,
+            onSuccess: () => {
+                isProcessing.value = false;
+                showQuickTransferModal.value = false;
+                const today = new Date().toLocaleString('sv').slice(0, 10);
+                transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
+                activeTab.value = 6;
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function openEditTransferModal(t) {
+    isEditingTransfer.value = true;
+    editingTransferId.value = t.id;
+    isTransferFromLocked.value = false;
+    transferForm.value = {
+        from_account_id: t.from_account_id,
+        to_account_id: t.to_account_id,
+        sent_amount: parseFloat(t.sent_amount),
+        exchange_rate: parseFloat(t.exchange_rate || 1.0),
+        transaction_date: t.transaction_date || (t.created_at ? t.created_at.slice(0, 10) : new Date().toLocaleString('sv').slice(0, 10)),
+        notes: t.description || '',
+        description: ''
+    };
+    showQuickTransferModal.value = true;
+}
+
+function deleteTransferItem(id) {
+    if (confirm("Ushbu pul o'tkazmasini o'chirishni tasdiqlaysizmi? Kassalar balanslari avtomatik qaytariladi.")) {
+        isProcessing.value = true;
+        router.delete(route('admin.finance.internal_transfer.destroy', id), {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                isProcessing.value = false;
+                activeTab.value = 6;
+            },
+            onError: () => isProcessing.value = false
+        });
+    }
+}
+
+function viewTransferDetails(t) {
+    viewingTransfer.value = t;
+    showViewTransferModal.value = true;
 }
 
 function openQuickTransaction(type) {
@@ -2578,6 +2635,8 @@ function openQuickTransaction(type) {
 }
 
 function openQuickTransfer(fromRegister = null) {
+    isEditingTransfer.value = false;
+    editingTransferId.value = null;
     const today = new Date().toLocaleString('sv').slice(0, 10);
     const activeReg = fromRegister || (activeTab.value !== 6 ? selectedRegister.value : null);
     if (activeReg) {
@@ -3700,12 +3759,27 @@ function deleteCategory(id) {
                             <span class="text-orange-500 font-bold">→</span>
                             <span class="font-bold text-gray-700">{{ t.to_account?.name || 'Aloqa Bank Hisobi' }}</span>
                         </div>
-                        <!-- Right Price and Date -->
-                        <div class="text-right">
-                            <span class="block text-emerald-600 font-bold text-lg">{{ formatMoney(t.sent_amount, t.sent_currency) }}</span>
-                            <span class="text-xs text-gray-400 flex items-center gap-1 justify-end mt-1">
-                                📅 {{ new Date(t.created_at).toLocaleString() }}
-                            </span>
+                        <!-- Right Price, Date, and Actions -->
+                        <div class="flex items-center gap-4 ml-auto">
+                            <!-- View, Edit, Delete Actions -->
+                            <div class="flex gap-2">
+                                <button @click="viewTransferDetails(t)" class="p-1.5 text-gray-500 hover:text-blue-600 border border-gray-200 rounded-lg hover:bg-blue-50 bg-white shadow-sm transition-all" title="Ko'rish">
+                                    👁️
+                                </button>
+                                <button v-if="hasPerm('edit_transaction')" @click="openEditTransferModal(t)" class="p-1.5 text-gray-500 hover:text-amber-600 border border-gray-200 rounded-lg hover:bg-amber-50 bg-white shadow-sm transition-all" title="Tahrirlash">
+                                    ✏️
+                                </button>
+                                <button v-if="hasPerm('delete_transaction')" @click="deleteTransferItem(t.id)" class="p-1.5 text-red-600 hover:text-white border border-red-200 hover:bg-red-600 rounded-lg bg-white shadow-sm transition-all" title="O'chirish">
+                                    🗑️
+                                </button>
+                            </div>
+                            <!-- Price & Date details -->
+                            <div class="text-right min-w-[120px]">
+                                <span class="block text-emerald-600 font-bold text-lg">{{ formatMoney(t.sent_amount, t.sent_currency) }}</span>
+                                <span class="text-xs text-gray-400 flex items-center gap-1 justify-end mt-1">
+                                    📅 {{ new Date(t.created_at).toLocaleString() }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div v-if="!filteredTransfers.length" class="py-12 text-center text-gray-400">Pul o'tkazmalari topilmadi.</div>
@@ -6709,7 +6783,7 @@ function deleteCategory(id) {
                     <div class="flex items-center gap-2">
                         <span class="w-1 h-5 bg-orange-500 rounded-full"></span>
                         <h2 class="text-sm font-bold text-slate-800 font-sans">
-                            Ichki pul o'tkazmasi
+                            {{ isEditingTransfer ? 'Ichki pul o\'tkazmasini tahrirlash' : 'Ichki pul o\'tkazmasi' }}
                         </h2>
                     </div>
                     <button type="button" @click="showQuickTransferModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
@@ -6774,9 +6848,86 @@ function deleteCategory(id) {
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <button type="button" @click="showQuickTransferModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">Yuborish</button>
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
+                            {{ isEditingTransfer ? 'Saqlash' : 'Yuborish' }}
+                        </button>
                     </div>
                 </form>
+            </div>
+        </Modal>
+
+        <!-- VIEW TRANSFER DETAILS MODAL -->
+        <Modal :show="showViewTransferModal" @close="showViewTransferModal = false" maxWidth="md">
+            <div class="p-6 font-sans text-xs">
+                <!-- Header with Title & Close Icon -->
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-5 bg-blue-500 rounded-full"></span>
+                        <h2 class="text-sm font-bold text-slate-800">
+                            Pul o'tkazmasi tafsilotlari #{{ viewingTransfer?.id }}
+                        </h2>
+                    </div>
+                    <button type="button" @click="showViewTransferModal = false" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors text-xs font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-4" v-if="viewingTransfer">
+                    <!-- Registers/Accounts info -->
+                    <div class="bg-slate-50 border border-slate-150 rounded-2xl p-4 space-y-3 font-mono">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 uppercase tracking-wider text-[9px] font-semibold">Chiquvchi kassa:</span>
+                            <span class="font-bold text-slate-800">{{ viewingTransfer.from_account?.name || 'Noma\'lum' }}</span>
+                        </div>
+                        <div class="flex justify-center my-1 text-blue-500 font-bold text-sm">
+                            ⬇️
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 uppercase tracking-wider text-[9px] font-semibold">Kiruvchi kassa:</span>
+                            <span class="font-bold text-slate-800">{{ viewingTransfer.to_account?.name || 'Noma\'lum' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Amounts info -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 border border-slate-150 rounded-2xl p-3 text-center font-mono">
+                            <span class="text-slate-400 uppercase tracking-wider text-[9px] block mb-1">Yuborilgan summa</span>
+                            <span class="font-bold text-red-600 text-sm">
+                                -{{ formatMoney(viewingTransfer.sent_amount, viewingTransfer.sent_currency) }}
+                            </span>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-150 rounded-2xl p-3 text-center font-mono">
+                            <span class="text-slate-400 uppercase tracking-wider text-[9px] block mb-1">Qabul qilingan summa</span>
+                            <span class="font-bold text-emerald-600 text-sm">
+                                +{{ formatMoney(viewingTransfer.received_amount, viewingTransfer.received_currency) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Exchange Rate & Date -->
+                    <div class="border border-slate-100 rounded-xl divide-y divide-slate-100 text-slate-700">
+                        <div class="p-3 flex justify-between">
+                            <span class="text-slate-400 font-semibold">Ayirboshlash kursi:</span>
+                            <span class="font-mono font-bold">{{ viewingTransfer.exchange_rate }}</span>
+                        </div>
+                        <div class="p-3 flex justify-between">
+                            <span class="text-slate-400 font-semibold">O'tkazma sanasi:</span>
+                            <span class="font-mono">{{ new Date(viewingTransfer.created_at).toLocaleString() }}</span>
+                        </div>
+                        <div class="p-3">
+                            <span class="text-slate-400 block mb-1 font-semibold">Izoh (Eslatma):</span>
+                            <p class="font-mono text-slate-800 whitespace-pre-line bg-slate-50 p-2.5 rounded-lg border border-slate-150">
+                                {{ viewingTransfer.description || 'Izoh yo\'q' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4 mt-4 border-t border-slate-100">
+                    <button type="button" @click="showViewTransferModal = false" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
+                        Yopish
+                    </button>
+                </div>
             </div>
         </Modal>
 

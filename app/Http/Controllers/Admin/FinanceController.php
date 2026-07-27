@@ -1511,7 +1511,8 @@ class FinanceController extends Controller
                 'notes' => $outflowNotes,
                 'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
-                'approved_by' => auth()->id()
+                'approved_by' => auth()->id(),
+                'money_transfer_id' => $transfer->id
             ]);
 
             // Inflow
@@ -1527,11 +1528,145 @@ class FinanceController extends Controller
                 'notes' => $inflowNotes,
                 'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
-                'approved_by' => auth()->id()
+                'approved_by' => auth()->id(),
+                'money_transfer_id' => $transfer->id
             ]);
         });
 
         return redirect()->back()->with('message', 'Mablag\' muvaffaqiyatli o\'tkazildi.');
+    }
+
+    public function updateTransfer(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'from_account_id' => 'required|exists:cash_registers,id',
+            'to_account_id' => 'required|exists:cash_registers,id',
+            'sent_amount' => 'required|numeric|min:0.01',
+            'exchange_rate' => 'nullable|numeric|min:0',
+            'transaction_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+            'description' => 'nullable|string',
+        ]);
+
+        if ($validated['from_account_id'] == $validated['to_account_id']) {
+            return redirect()->back()->withErrors(['error' => 'Chiqish va kirish kassalari bir xil bo\'lishi mumkin emas']);
+        }
+
+        $transfer = MoneyTransfer::findOrFail($id);
+        $fromAcc = CashRegister::findOrFail($validated['from_account_id']);
+        $toAcc = CashRegister::findOrFail($validated['to_account_id']);
+
+        // Fetch old variables to revert balance correctly
+        $oldFromAcc = CashRegister::findOrFail($transfer->from_account_id);
+        $oldToAcc = CashRegister::findOrFail($transfer->to_account_id);
+
+        $rate = $validated['exchange_rate'] ?? 1.0;
+        $receivedAmount = $validated['sent_amount'] * $rate;
+        $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : now()->toDateTimeString();
+
+        // Check balance of fromAcc after revert if we are changing register or amount
+        $tempFromBalance = $fromAcc->balance_uzs;
+        if ($fromAcc->id === $oldFromAcc->id) {
+            $tempFromBalance += $transfer->sent_amount; // temporarily restore old amount
+        }
+        if ($tempFromBalance < $validated['sent_amount']) {
+            return redirect()->back()->withErrors(['error' => "Kassa balansi yetarli emas! Mavjud balans: {$tempFromBalance} UZS"]);
+        }
+
+        DB::transaction(function () use ($transfer, $oldFromAcc, $oldToAcc, $fromAcc, $toAcc, $validated, $rate, $receivedAmount, $txDate) {
+            // 1. Revert old balance changes
+            $oldFromAcc->increment('balance', $transfer->sent_amount);
+            $oldToAcc->decrement('balance', $transfer->received_amount);
+
+            // 2. Apply new balance changes
+            $fromAcc->decrement('balance', $validated['sent_amount']);
+            $toAcc->increment('balance', $receivedAmount);
+
+            // 3. Update transfer log
+            $transferDesc = !empty($validated['notes'])
+                ? ($validated['notes'] . ($validated['description'] ? " - " . $validated['description'] : ""))
+                : ($validated['description'] ?? 'Ichki o\'tkazma');
+
+            $transfer->update([
+                'from_account_id' => $fromAcc->id,
+                'to_account_id' => $toAcc->id,
+                'sent_amount' => $validated['sent_amount'],
+                'sent_currency' => $fromAcc->currency ?? 'UZS',
+                'exchange_rate' => $rate,
+                'received_amount' => $receivedAmount,
+                'received_currency' => $toAcc->currency ?? 'UZS',
+                'description' => $transferDesc,
+            ]);
+
+            // 4. Find and update the outflow and inflow transactions
+            $transferCategory = TransactionCategory::firstOrCreate(
+                ['name' => 'Ichki O\'tkazma'],
+                ['type' => 'both']
+            );
+
+            $outflowNotes = !empty($validated['notes']) ? $validated['notes'] : "[Chiqim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? '');
+            $inflowNotes = !empty($validated['notes']) ? $validated['notes'] : "[Kirim - O'tkazma] ID: #{$transfer->id}. " . ($validated['description'] ?? '');
+
+            // Recreate or update outflow transaction
+            Transaction::updateOrCreate(
+                ['money_transfer_id' => $transfer->id, 'type' => 'expense'],
+                [
+                    'amount' => $validated['sent_amount'],
+                    'currency' => $fromAcc->currency ?? 'UZS',
+                    'payment_method' => $fromAcc->type === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_id' => $fromAcc->id,
+                    'category_id' => $transferCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => $txDate,
+                    'notes' => $outflowNotes,
+                    'description' => $validated['description'] ?? null,
+                ]
+            );
+
+            // Recreate or update inflow transaction
+            Transaction::updateOrCreate(
+                ['money_transfer_id' => $transfer->id, 'type' => 'income'],
+                [
+                    'amount' => $receivedAmount,
+                    'currency' => $toAcc->currency ?? 'UZS',
+                    'payment_method' => $toAcc->type === 'bank' ? 'bank_transfer' : 'cash',
+                    'account_id' => $toAcc->id,
+                    'category_id' => $transferCategory->id,
+                    'status' => 'approved',
+                    'transaction_date' => $txDate,
+                    'notes' => $inflowNotes,
+                    'description' => $validated['description'] ?? null,
+                ]
+            );
+        });
+
+        return redirect()->back()->with('message', 'O\'tkazma muvaffaqiyatli tahrirlandi.');
+    }
+
+    public function destroyTransfer($id)
+    {
+        $transfer = MoneyTransfer::findOrFail($id);
+
+        DB::transaction(function () use ($transfer) {
+            // Revert balances
+            $fromAcc = CashRegister::find($transfer->from_account_id);
+            if ($fromAcc) {
+                $fromAcc->increment('balance', $transfer->sent_amount);
+            }
+
+            $toAcc = CashRegister::find($transfer->to_account_id);
+            if ($toAcc) {
+                $toAcc->decrement('balance', $transfer->received_amount);
+            }
+
+            // Delete associated transactions
+            Transaction::where('money_transfer_id', $transfer->id)->delete();
+
+            // Delete money transfer record
+            $transfer->delete();
+        });
+
+        return redirect()->back()->with('message', 'O\'tkazma muvaffaqiyatli o\'chirildi.');
     }
 
     // --- Cash Register CRUD ---

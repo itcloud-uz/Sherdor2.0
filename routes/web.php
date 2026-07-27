@@ -176,6 +176,8 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::delete('/categories/{id}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyCategory'])->name('categories.destroy');
         Route::post('/liabilities', [\App\Http\Controllers\Admin\FinanceController::class, 'storeLiability'])->name('liabilities.store');
         Route::post('/internal-transfer', [\App\Http\Controllers\Admin\FinanceController::class, 'internalTransfer'])->name('internal_transfer');
+        Route::put('/internal-transfer/{id}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateTransfer'])->name('internal_transfer.update');
+        Route::delete('/internal-transfer/{id}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyTransfer'])->name('internal_transfer.destroy');
 
         // Cash Registers
         Route::post('/registers', [\App\Http\Controllers\Admin\FinanceController::class, 'storeRegister'])->name('registers.store');

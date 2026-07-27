@@ -24,6 +24,7 @@ class CashRegister extends Model
         'total_amount',
         'interest_rate',
         'term_months',
+        'grace_period_months',
         'start_date',
         'end_date',
         'monthly_payment',

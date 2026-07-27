@@ -1693,6 +1693,7 @@ const registerForm = ref({
     total_amount: '',
     interest_rate: '',
     term_months: '',
+    grace_period_months: '',
     start_date: '',
     end_date: '',
     monthly_payment: '',
@@ -1733,7 +1734,7 @@ function openNewRegisterModal(parentId = '') {
         currency: 'UZS', building_id: '', is_active: true,
         bank_name: '', account_number: '', mfo_code: '', balance: 0,
         parent_id: parentIdVal || '', creditor_name: '', total_amount: '', interest_rate: '',
-        term_months: '', start_date: '', end_date: '', monthly_payment: '', description: ''
+        term_months: '', grace_period_months: '', start_date: '', end_date: '', monthly_payment: '', description: ''
     };
     showRegisterModal.value = true;
 }
@@ -1750,6 +1751,7 @@ function openEditRegisterModal(reg) {
         total_amount: reg.total_amount || '',
         interest_rate: reg.interest_rate || '',
         term_months: reg.term_months || '',
+        grace_period_months: reg.grace_period_months || '',
         start_date: reg.start_date || '',
         end_date: reg.end_date || '',
         monthly_payment: reg.monthly_payment || '',
@@ -2705,7 +2707,7 @@ const isEditMode = ref(false);
 const editingLiabilityId = ref(null);
 const liabilityForm = ref({
     type: 'bank_loan', creditor_name: '', total_amount: '', interest_rate: '', 
-    term_months: 12, start_date: new Date().toISOString().split('T')[0], 
+    term_months: 12, grace_period_months: '', start_date: new Date().toISOString().split('T')[0], 
     end_date: '', monthly_payment: '', description: '', status: 'active', fund_account: 'main'
 });
 
@@ -2714,7 +2716,7 @@ function openNewLiabilityModal() {
     editingLiabilityId.value = null;
     liabilityForm.value = {
         type: 'bank_loan', creditor_name: '', total_amount: '', interest_rate: '', 
-        term_months: 12, start_date: new Date().toISOString().split('T')[0], 
+        term_months: 12, grace_period_months: '', start_date: new Date().toISOString().split('T')[0], 
         end_date: '', monthly_payment: '', description: '', status: 'active', fund_account: 'main'
     };
     showLiabilityModal.value = true;
@@ -2725,7 +2727,8 @@ function openEditLiability(liability) {
     editingLiabilityId.value = liability.id;
     liabilityForm.value = {
         type: liability.type, creditor_name: liability.creditor_name, total_amount: liability.total_amount,
-        interest_rate: liability.interest_rate, term_months: liability.term_months, start_date: liability.start_date,
+        interest_rate: liability.interest_rate, term_months: liability.term_months,
+        grace_period_months: liability.grace_period_months || '', start_date: liability.start_date,
         end_date: liability.end_date, monthly_payment: liability.monthly_payment, description: liability.description,
         status: liability.status, fund_account: ''
     };
@@ -2758,27 +2761,49 @@ function openScheduleModal(liability) {
     let p = parseFloat(liability.total_amount);
     let n = parseInt(liability.term_months);
     let r_annual = parseFloat(liability.interest_rate || 0);
+    let gp = parseInt(liability.grace_period_months || 0);
     let m = parseFloat(liability.monthly_payment);
     
     if (p && n) {
         let balance = p;
         let r = (r_annual / 100) / 12;
-        if (!m) {
-            m = r > 0 ? (p * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)) : (p / n);
+        
+        // remaining period after grace period
+        let n_remaining = n - gp;
+        let m_after = m;
+        if (!m_after) {
+            if (n_remaining > 0) {
+                m_after = r > 0 ? (p * (r * Math.pow(1 + r, n_remaining)) / (Math.pow(1 + r, n_remaining) - 1)) : (p / n_remaining);
+            } else {
+                m_after = 0;
+            }
         }
+        
         let currentDate = new Date(liability.start_date);
         for (let i = 1; i <= n; i++) {
             let interest = balance * r;
-            let principal = m - interest;
-            if (i === n) {
-                principal = balance;
-                m = principal + interest;
+            let principal = 0;
+            let payment = 0;
+            
+            if (i <= gp) {
+                // Grace period: only pay interest
+                principal = 0;
+                payment = interest;
+            } else {
+                // After grace period
+                payment = m_after;
+                principal = payment - interest;
+                if (i === n) {
+                    principal = balance;
+                    payment = principal + interest;
+                }
             }
+            
             balance -= principal;
             currentDate.setMonth(currentDate.getMonth() + 1);
             generatedSchedule.value.push({
                 month: i, date: currentDate.toISOString().split('T')[0],
-                payment: m, principal: principal, interest: interest, balance: Math.max(0, balance)
+                payment: payment, principal: principal, interest: interest, balance: Math.max(0, balance)
             });
         }
     }
@@ -5542,10 +5567,14 @@ function deleteCategory(id) {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-[10px] text-gray-400 mb-1 uppercase">Muddati (Oy) *</label>
                                 <input v-model="registerForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1 uppercase">Imtiyozli davr (Oy)</label>
+                                <input v-model="registerForm.grace_period_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                             </div>
                             <div>
                                 <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik To'lov *</label>
@@ -5914,10 +5943,14 @@ function deleteCategory(id) {
                             <input v-model="liabilityForm.interest_rate" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Muddati (oy) *</label>
                             <input v-model="liabilityForm.term_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1 uppercase">Imtiyozli davr (oy)</label>
+                            <input v-model="liabilityForm.grace_period_months" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
                         </div>
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik to'lov</label>
@@ -5956,7 +5989,8 @@ function deleteCategory(id) {
                     Kredit: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.name || selectedLiabilityForSchedule.creditor_name || selectedLiabilityForSchedule.creditor || '-' }}</span> | 
                     Jami kredit summasi: <span class="font-bold text-purple-700">{{ formatMoney(selectedLiabilityForSchedule.total_amount, selectedLiabilityForSchedule.currency || 'UZS') }}</span> |
                     Muddati: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.term_months || 0 }} oy</span> |
-                    Foiz stavkasi: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.interest_rate || 0 }}%</span>
+                    Foiz stavkasi: <span class="font-bold text-gray-800">{{ selectedLiabilityForSchedule.interest_rate || 0 }}%</span> |
+                    Imtiyozli davr: <span class="font-bold text-amber-600">{{ selectedLiabilityForSchedule.grace_period_months || 0 }} oy</span>
                 </p>
                 
                 <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-xl">

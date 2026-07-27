@@ -1546,6 +1546,7 @@ class FinanceController extends Controller
             'total_amount' => 'nullable|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0',
             'term_months' => 'nullable|integer|min:1',
+            'grace_period_months' => 'nullable|integer|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'monthly_payment' => 'nullable|numeric|min:0',
@@ -1590,6 +1591,7 @@ class FinanceController extends Controller
             'total_amount' => 'nullable|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0',
             'term_months' => 'nullable|integer|min:1',
+            'grace_period_months' => 'nullable|integer|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'monthly_payment' => 'nullable|numeric|min:0',
@@ -1999,6 +2001,7 @@ class FinanceController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0',
             'term_months' => 'required|integer|min:1',
+            'grace_period_months' => 'nullable|integer|min:0',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
             'monthly_payment' => 'nullable|numeric|min:0',
@@ -2009,13 +2012,19 @@ class FinanceController extends Controller
         if (empty($validated['monthly_payment']) && !empty($validated['term_months'])) {
             $p = $validated['total_amount'];
             $n = $validated['term_months'];
+            $gp = $validated['grace_period_months'] ?? 0;
+            $n_remaining = $n - $gp;
             $r_annual = $validated['interest_rate'] ?? 0;
 
-            if ($r_annual > 0) {
-                $r = ($r_annual / 100) / 12;
-                $validated['monthly_payment'] = $p * ($r * pow(1 + $r, $n)) / (pow(1 + $r, $n) - 1);
+            if ($n_remaining > 0) {
+                if ($r_annual > 0) {
+                    $r = ($r_annual / 100) / 12;
+                    $validated['monthly_payment'] = $p * ($r * pow(1 + $r, $n_remaining)) / (pow(1 + $r, $n_remaining) - 1);
+                } else {
+                    $validated['monthly_payment'] = $p / $n_remaining;
+                }
             } else {
-                $validated['monthly_payment'] = $p / $n;
+                $validated['monthly_payment'] = 0;
             }
         }
 
@@ -2057,6 +2066,7 @@ class FinanceController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0',
             'term_months' => 'required|integer|min:1',
+            'grace_period_months' => 'nullable|integer|min:0',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
             'monthly_payment' => 'nullable|numeric|min:0',
@@ -2067,13 +2077,19 @@ class FinanceController extends Controller
         if (empty($validated['monthly_payment']) && !empty($validated['term_months'])) {
             $p = $validated['total_amount'];
             $n = $validated['term_months'];
+            $gp = $validated['grace_period_months'] ?? 0;
+            $n_remaining = $n - $gp;
             $r_annual = $validated['interest_rate'] ?? 0;
 
-            if ($r_annual > 0) {
-                $r = ($r_annual / 100) / 12;
-                $validated['monthly_payment'] = $p * ($r * pow(1 + $r, $n)) / (pow(1 + $r, $n) - 1);
+            if ($n_remaining > 0) {
+                if ($r_annual > 0) {
+                    $r = ($r_annual / 100) / 12;
+                    $validated['monthly_payment'] = $p * ($r * pow(1 + $r, $n_remaining)) / (pow(1 + $r, $n_remaining) - 1);
+                } else {
+                    $validated['monthly_payment'] = $p / $n_remaining;
+                }
             } else {
-                $validated['monthly_payment'] = $p / $n;
+                $validated['monthly_payment'] = 0;
             }
         }
 

@@ -2125,15 +2125,9 @@ class FinanceController extends Controller
     {
         $category = TransactionCategory::findOrFail($id);
         
-        $hasTransactions = \App\Models\Transaction::where('category_id', $category->id)->exists();
+        $category->update(['is_active' => false]);
         
-        if ($hasTransactions) {
-            $category->update(['is_active' => false]);
-            return redirect()->back()->with('message', 'Kategoriyaga tegishli tranzaksiyalar mavjud bo\'lganligi uchun u faqat passiv holatga o\'tkazildi.');
-        } else {
-            $category->delete();
-            return redirect()->back()->with('message', 'Kategoriya o\'chirildi.');
-        }
+        return redirect()->back()->with('message', 'Kategoriya passiv holatga o\'tkazildi.');
     }
 
     public function storeLiability(Request $request)

@@ -966,6 +966,44 @@ class FinanceController extends Controller
                 $txnType === 'expense' ? $owner->decrement('balance', $amount) : null;
             }
         }
+    private function revertTargetBalance($type, $id, $amount, $txnType)
+    {
+        if ($type === 'supplier') {
+            $supplier = Supplier::find($id);
+            if ($supplier) {
+                $txnType === 'income' ? $supplier->decrement('balance', $amount) : $supplier->increment('balance', $amount);
+            }
+        } elseif ($type === 'client') {
+            $client = Client::find($id);
+            if ($client && Schema::hasColumn('clients', 'debt_balance')) {
+                $txnType === 'income' ? $client->increment('debt_balance', $amount) : $client->decrement('debt_balance', $amount);
+            }
+        } elseif ($type === 'partner') {
+            $partner = Partner::find($id);
+            if ($partner) {
+                $txnType === 'income' ? $partner->decrement('invested_amount', $amount) : $partner->decrement('withdrawn_amount', $amount);
+            }
+        } elseif ($type === 'worker') {
+            $worker = Worker::find($id);
+            if ($worker) {
+                $txnType === 'expense' ? $worker->increment('balance', $amount) : null;
+            }
+        } elseif ($type === 'user') {
+            $userObj = \App\Models\User::find($id);
+            if ($userObj) {
+                $txnType === 'expense' ? $userObj->increment('balance', $amount) : $userObj->decrement('balance', $amount);
+            }
+        } elseif ($type === 'brigade') {
+            $brigade = Brigade::find($id);
+            if ($brigade) {
+                $txnType === 'expense' ? $brigade->increment('balance', $amount) : null;
+            }
+        } elseif ($type === 'machine_owner') {
+            $owner = MachineOwner::find($id);
+            if ($owner) {
+                $txnType === 'expense' ? $owner->increment('balance', $amount) : null;
+            }
+        }
     }
 
     public static function reconcileContractPayments($contractId)
@@ -1165,73 +1203,34 @@ class FinanceController extends Controller
             $validated['attachment_path'] = $path;
         }
 
-        // Revert old balance changes if approved
-        if ($transaction->status === 'approved') {
-            // Revert old register balance
-            $oldRegister = CashRegister::find($transaction->account_id);
-            if ($oldRegister) {
-                if ($transaction->type === 'income') {
-                    $oldRegister->decrement('balance', $transaction->amount);
+        $wasApproved = $transaction->status === 'approved';
+
+        DB::transaction(function () use ($transaction, $validated, $wasApproved) {
+            if ($wasApproved) {
+                // Revert all old side effects (balances, sub-ledgers, invoice paid amount, target balance, CRM schedules, etc.)
+                $this->executeTransactionDeletionSideEffects($transaction);
+            }
+
+            // Apply conversion calculation if counterparty is present
+            if (($validated['status'] ?? $transaction->status) === 'approved') {
+                $newCounterparty = Counterparty::find($validated['counterparty_id'] ?? $transaction->counterparty_id);
+                if ($newCounterparty) {
+                    $rate = $validated['exchange_rate'] ?? $transaction->exchange_rate ?? 1.0;
+                    $validated['converted_amount'] = $rate * $validated['amount'];
                 } else {
-                    $oldRegister->increment('balance', $transaction->amount);
+                    $validated['converted_amount'] = null;
                 }
             }
 
-            // Revert old counterparty balance
-            $oldCounterparty = Counterparty::find($transaction->counterparty_id);
-            if ($oldCounterparty) {
-                $oldConv = $transaction->converted_amount ?? $transaction->amount;
-                if ($transaction->type === 'income') {
-                    if ($oldCounterparty->type === 'client') {
-                        $oldCounterparty->decrement('balance', $oldConv);
-                    } else {
-                        $oldCounterparty->increment('balance', $oldConv);
-                    }
-                } else {
-                    if ($oldCounterparty->type === 'client') {
-                        $oldCounterparty->increment('balance', $oldConv);
-                    } else {
-                        $oldCounterparty->decrement('balance', $oldConv);
-                    }
-                }
+            // Update the transaction details
+            $transaction->update($validated);
+            $transaction->refresh();
+
+            if ($transaction->status === 'approved') {
+                // Re-apply all new side effects (using new amount, date, counterparty, account, target, etc.)
+                $this->executeTransactionApprovalSideEffects($transaction);
             }
-
-            // Apply new register balance
-            $newRegister = CashRegister::find($validated['account_id']);
-            if ($newRegister) {
-                if ($transaction->type === 'income') {
-                    $newRegister->increment('balance', $validated['amount']);
-                } else {
-                    $newRegister->decrement('balance', $validated['amount']);
-                }
-            }
-
-            // Apply new counterparty balance
-            $newCounterparty = Counterparty::find($validated['counterparty_id'] ?? null);
-            if ($newCounterparty) {
-                $rate = $validated['exchange_rate'] ?? $transaction->exchange_rate ?? 1.0;
-                $newConv = $rate * $validated['amount'];
-                $validated['converted_amount'] = $newConv;
-
-                if ($transaction->type === 'income') {
-                    if ($newCounterparty->type === 'client') {
-                        $newCounterparty->increment('balance', $newConv);
-                    } else {
-                        $newCounterparty->decrement('balance', $newConv);
-                    }
-                } else {
-                    if ($newCounterparty->type === 'client') {
-                        $newCounterparty->decrement('balance', $newConv);
-                    } else {
-                        $newCounterparty->increment('balance', $newConv);
-                    }
-                }
-            } else {
-                $validated['converted_amount'] = null;
-            }
-        }
-
-        $transaction->update($validated);
+        });
 
         // --- CUSTOM LOGIC FOR FIXED ASSETS ---
         if ($transaction->type === 'expense' && $transaction->category_id) {
@@ -1428,6 +1427,10 @@ class FinanceController extends Controller
                     }
                 }
                 DB::table($table)->where('finance_transaction_id', $transaction->id)->delete();
+            }
+
+            if (!empty($transaction->target_type) && !empty($transaction->target_id)) {
+                $this->revertTargetBalance($transaction->target_type, $transaction->target_id, $transaction->amount, $transaction->type);
             }
         }
     }

@@ -970,6 +970,8 @@ class FinanceController extends Controller
                 $txnType === 'expense' ? $owner->decrement('balance', $amount) : null;
             }
         }
+    }
+
     private function revertTargetBalance($type, $id, $amount, $txnType)
     {
         if ($type === 'supplier') {

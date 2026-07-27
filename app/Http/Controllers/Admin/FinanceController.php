@@ -73,7 +73,7 @@ class FinanceController extends Controller
         $partners = Partner::with('user')->latest()->get();
         $brigades = Brigade::latest()->get();
         $machineOwners = MachineOwner::latest()->get();
-        $counterparties = Counterparty::with(['customable', 'transactions'])->get();
+        $counterparties = Counterparty::with(['customable'])->get();
         $counterparties->loadMorph('customable', [
             \App\Models\Client::class => ['contracts.refundSchedules'],
         ]);
@@ -107,18 +107,17 @@ class FinanceController extends Controller
         // Tab-specific queries
         if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11 || $tab === 12) {
             $transactions = Transaction::with([
-                'creator', 
-                'approver', 
-                'contract.client', 
-                'contract.unit.floor.building', 
-                'category', 
-                'cashRegister', 
-                'counterparty', 
-                'invoice',
-                'building'
+                'creator:id,name,phone', 
+                'contract:id,contract_number,client_id,unit_id', 
+                'contract.client:id,first_name,last_name,middle_name', 
+                'category:id,name,type,target_type', 
+                'cashRegister:id,name', 
+                'counterparty:id,name,type', 
+                'building:id,name'
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
+            ->limit(400) // Optimal limit to avoid Inertia prop serialization bloat
             ->get();
         }
 
@@ -161,13 +160,18 @@ class FinanceController extends Controller
             'moneyTransfers' => $moneyTransfers,
             'rates' => $rates,
             'deletedTransactions' => Transaction::onlyTrashed()
-                ->with(['creator', 'category', 'cashRegister', 'counterparty'])
+                ->with([
+                    'creator:id,name,phone',
+                    'category:id,name',
+                    'cashRegister:id,name',
+                    'counterparty:id,name,type'
+                ])
                 ->latest()
-                ->limit(500)
+                ->limit(100)
                 ->get(),
-            'financeActions' => \App\Models\FinanceAction::with(['user', 'transaction'])
+            'financeActions' => \App\Models\FinanceAction::with(['user:id,name', 'transaction:id,amount,type,notes'])
                 ->latest()
-                ->limit(500)
+                ->limit(100)
                 ->get(),
             'deletedCounterparties' => Counterparty::onlyTrashed()
                 ->latest()

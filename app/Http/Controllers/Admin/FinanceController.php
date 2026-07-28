@@ -117,7 +117,6 @@ class FinanceController extends Controller
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
-            ->limit(400) // Optimal limit to avoid Inertia prop serialization bloat
             ->get();
         }
 

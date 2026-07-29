@@ -525,6 +525,50 @@ const displayedKirimChiqimTransactions = computed(() => {
     return list;
 });
 
+// Kirim-Chiqim client-side pagination
+const kirimChiqimCurrentPage = ref(1);
+const kirimChiqimPerPage = ref(50);
+const paginatedKirimChiqimTransactions = computed(() => {
+    const start = (kirimChiqimCurrentPage.value - 1) * kirimChiqimPerPage.value;
+    return displayedKirimChiqimTransactions.value.slice(start, start + kirimChiqimPerPage.value);
+});
+const totalKirimChiqimPages = computed(() => Math.max(1, Math.ceil(displayedKirimChiqimTransactions.value.length / kirimChiqimPerPage.value)));
+const visibleKirimChiqimPages = computed(() => {
+    const current = kirimChiqimCurrentPage.value;
+    const last = totalKirimChiqimPages.value;
+    const delta = 2;
+    const left = current - delta;
+    const right = current + delta + 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= last; i++) {
+        if (i === 1 || i === last || (i >= left && i < right)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l > 2) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+});
+
+// Reset page on filter changes
+watch([kirimChiqimDateFrom, kirimChiqimDateTo, kirimChiqimRegisterId, kirimChiqimSearch, kirimChiqimTableTab], () => {
+    kirimChiqimCurrentPage.value = 1;
+});
+
 const displayedKirimChiqimIncomeSum = computed(() => {
     return displayedKirimChiqimTransactions.value
         .filter(t => t.type === 'income')
@@ -618,6 +662,50 @@ const reportFilteredTransactions = computed(() => {
         result = result.filter(t => t.category_id === parseInt(reportJournalCategoryId.value));
     }
     return result;
+});
+
+// Tab 7 Report client-side pagination
+const reportJournalCurrentPage = ref(1);
+const reportJournalPerPage = ref(50);
+const paginatedReportFilteredTransactions = computed(() => {
+    const start = (reportJournalCurrentPage.value - 1) * reportJournalPerPage.value;
+    return reportFilteredTransactions.value.slice(start, start + reportJournalPerPage.value);
+});
+const totalReportJournalPages = computed(() => Math.max(1, Math.ceil(reportFilteredTransactions.value.length / reportJournalPerPage.value)));
+const visibleReportJournalPages = computed(() => {
+    const current = reportJournalCurrentPage.value;
+    const last = totalReportJournalPages.value;
+    const delta = 2;
+    const left = current - delta;
+    const right = current + delta + 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= last; i++) {
+        if (i === 1 || i === last || (i >= left && i < right)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l > 2) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+});
+
+// Reset page on filter changes
+watch([reportJournalSearch, reportJournalDateFrom, reportJournalDateTo, reportJournalAccountId, reportJournalType, reportJournalCategoryId], () => {
+    reportJournalCurrentPage.value = 1;
 });
 
 const reportOverviewStats = computed(() => {
@@ -1052,6 +1140,50 @@ const filteredRegisterTransactions = computed(() => {
     return txs;
 });
 
+// Register specific client-side pagination
+const registerDetailsCurrentPage = ref(1);
+const registerDetailsPerPage = ref(50);
+const paginatedRegisterTransactions = computed(() => {
+    const start = (registerDetailsCurrentPage.value - 1) * registerDetailsPerPage.value;
+    return filteredRegisterTransactions.value.slice(start, start + registerDetailsPerPage.value);
+});
+const totalRegisterDetailsPages = computed(() => Math.max(1, Math.ceil(filteredRegisterTransactions.value.length / registerDetailsPerPage.value)));
+const visibleRegisterDetailsPages = computed(() => {
+    const current = registerDetailsCurrentPage.value;
+    const last = totalRegisterDetailsPages.value;
+    const delta = 2;
+    const left = current - delta;
+    const right = current + delta + 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= last; i++) {
+        if (i === 1 || i === last || (i >= left && i < right)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l > 2) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+});
+
+// Reset page on filter changes or selection change
+watch([registerSearchQuery, registerDateFrom, registerDateTo, registerTypeFilter, selectedRegisterId], () => {
+    registerDetailsCurrentPage.value = 1;
+});
+
 // Tab 2 Jurnal Filters & Computeds
 const jurnalDateFrom = ref('');
 const jurnalDateTo = ref('');
@@ -1091,6 +1223,50 @@ const filteredJurnalTransactions = computed(() => {
     }
 
     return result;
+});
+
+// Jurnal client-side pagination
+const jurnalCurrentPage = ref(1);
+const jurnalPerPage = ref(50);
+const paginatedJurnalTransactions = computed(() => {
+    const start = (jurnalCurrentPage.value - 1) * jurnalPerPage.value;
+    return filteredJurnalTransactions.value.slice(start, start + jurnalPerPage.value);
+});
+const totalJurnalPages = computed(() => Math.max(1, Math.ceil(filteredJurnalTransactions.value.length / jurnalPerPage.value)));
+const visibleJurnalPages = computed(() => {
+    const current = jurnalCurrentPage.value;
+    const last = totalJurnalPages.value;
+    const delta = 2;
+    const left = current - delta;
+    const right = current + delta + 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= last; i++) {
+        if (i === 1 || i === last || (i >= left && i < right)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l > 2) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+});
+
+// Reset page on filter changes
+watch([jurnalDateFrom, jurnalDateTo, jurnalAccountId, jurnalTypeFilter, jurnalCounterpartyId, jurnalBuildingId, jurnalSearchQuery], () => {
+    jurnalCurrentPage.value = 1;
 });
 
 // Jurnal Summaries
@@ -3439,7 +3615,7 @@ function deleteCategory(id) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="t in filteredJurnalTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="t in paginatedJurnalTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
                                     <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
@@ -3480,6 +3656,49 @@ function deleteCategory(id) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Modern Pagination Controller -->
+                    <div v-if="filteredJurnalTransactions.length > jurnalPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border-t border-slate-100 font-sans text-xs bg-slate-50/50">
+                        <div class="text-slate-500 font-mono">
+                            Jami <span class="font-bold text-slate-800">{{ filteredJurnalTransactions.length }}</span> tadan 
+                            <span class="font-bold text-slate-800">{{ (jurnalCurrentPage - 1) * jurnalPerPage + 1 }}</span>-
+                            <span class="font-bold text-slate-800">{{ Math.min(jurnalCurrentPage * jurnalPerPage, filteredJurnalTransactions.length) }}</span>-tranzaksiyalar ko'rsatilmoqda
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Prev Button -->
+                            <button 
+                                @click="jurnalCurrentPage = Math.max(1, jurnalCurrentPage - 1)" 
+                                :disabled="jurnalCurrentPage === 1"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                ◀ Oldingi
+                            </button>
+                            
+                            <!-- Page numbers -->
+                            <template v-for="p in visibleJurnalPages" :key="p">
+                                <span v-if="p === '...'" class="text-slate-400 font-bold px-1.5 select-none">...</span>
+                                <button 
+                                    v-else
+                                    @click="jurnalCurrentPage = p"
+                                    class="w-7 h-7 rounded-lg font-bold transition-all border text-center flex items-center justify-center"
+                                    :class="jurnalCurrentPage === p 
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'"
+                                >
+                                    {{ p }}
+                                </button>
+                            </template>
+                            
+                            <!-- Next Button -->
+                            <button 
+                                @click="jurnalCurrentPage = Math.min(totalJurnalPages, jurnalCurrentPage + 1)" 
+                                :disabled="jurnalCurrentPage === totalJurnalPages"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Keyingi ▶
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4144,7 +4363,7 @@ function deleteCategory(id) {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="t in filteredRegisterTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                    <tr v-for="t in paginatedRegisterTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                         <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
                                         <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
@@ -4176,6 +4395,49 @@ function deleteCategory(id) {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Pagination Controller for Kassalar Details -->
+                        <div v-if="filteredRegisterTransactions.length > registerDetailsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border border-t-0 border-gray-150 rounded-b-2xl font-sans text-xs bg-slate-50/50">
+                            <div class="text-slate-500 font-mono">
+                                Jami <span class="font-bold text-slate-800">{{ filteredRegisterTransactions.length }}</span> tadan 
+                                <span class="font-bold text-slate-800">{{ (registerDetailsCurrentPage - 1) * registerDetailsPerPage + 1 }}</span>-
+                                <span class="font-bold text-slate-800">{{ Math.min(registerDetailsCurrentPage * registerDetailsPerPage, filteredRegisterTransactions.length) }}</span>-tranzaksiyalar ko'rsatilmoqda
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <!-- Prev Button -->
+                                <button 
+                                    @click="registerDetailsCurrentPage = Math.max(1, registerDetailsCurrentPage - 1)" 
+                                    :disabled="registerDetailsCurrentPage === 1"
+                                    class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    ◀ Oldingi
+                                </button>
+                                
+                                <!-- Page numbers -->
+                                <template v-for="p in visibleRegisterDetailsPages" :key="p">
+                                    <span v-if="p === '...'" class="text-slate-400 font-bold px-1.5 select-none">...</span>
+                                    <button 
+                                        v-else
+                                        @click="registerDetailsCurrentPage = p"
+                                        class="w-7 h-7 rounded-lg font-bold transition-all border text-center flex items-center justify-center"
+                                        :class="registerDetailsCurrentPage === p 
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'"
+                                    >
+                                        {{ p }}
+                                    </button>
+                                </template>
+                                
+                                <!-- Next Button -->
+                                <button 
+                                    @click="registerDetailsCurrentPage = Math.min(totalRegisterDetailsPages, registerDetailsCurrentPage + 1)" 
+                                    :disabled="registerDetailsCurrentPage === totalRegisterDetailsPages"
+                                    class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Keyingi ▶
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4479,8 +4741,8 @@ function deleteCategory(id) {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="(t, idx) in displayedKirimChiqimTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
-                                        <td class="p-3 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                    <tr v-for="(t, idx) in paginatedKirimChiqimTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-gray-400 font-bold text-center">{{ idx + 1 + (kirimChiqimCurrentPage - 1) * kirimChiqimPerPage }}</td>
                                         <td class="p-3 text-gray-600">{{ formatDateTime(t.transaction_date || t.created_at) }}</td>
                                         <td class="p-3 font-bold text-gray-800">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
                                         <td class="p-3">
@@ -4522,6 +4784,49 @@ function deleteCategory(id) {
                                     </tr>
                                 </tfoot>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- Modern Pagination Controller for Kirim-Chiqim -->
+                    <div v-if="displayedKirimChiqimTransactions.length > kirimChiqimPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border border-t-0 border-gray-150 rounded-b-2xl font-sans text-xs bg-slate-50/50">
+                        <div class="text-slate-500 font-mono">
+                            Jami <span class="font-bold text-slate-800">{{ displayedKirimChiqimTransactions.length }}</span> tadan 
+                            <span class="font-bold text-slate-800">{{ (kirimChiqimCurrentPage - 1) * kirimChiqimPerPage + 1 }}</span>-
+                            <span class="font-bold text-slate-800">{{ Math.min(kirimChiqimCurrentPage * kirimChiqimPerPage, displayedKirimChiqimTransactions.length) }}</span>-tranzaksiyalar ko'rsatilmoqda
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Prev Button -->
+                            <button 
+                                @click="kirimChiqimCurrentPage = Math.max(1, kirimChiqimCurrentPage - 1)" 
+                                :disabled="kirimChiqimCurrentPage === 1"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                ◀ Oldingi
+                            </button>
+                            
+                            <!-- Page numbers -->
+                            <template v-for="p in visibleKirimChiqimPages" :key="p">
+                                <span v-if="p === '...'" class="text-slate-400 font-bold px-1.5 select-none">...</span>
+                                <button 
+                                    v-else
+                                    @click="kirimChiqimCurrentPage = p"
+                                    class="w-7 h-7 rounded-lg font-bold transition-all border text-center flex items-center justify-center"
+                                    :class="kirimChiqimCurrentPage === p 
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'"
+                                >
+                                    {{ p }}
+                                </button>
+                            </template>
+                            
+                            <!-- Next Button -->
+                            <button 
+                                @click="kirimChiqimCurrentPage = Math.min(totalKirimChiqimPages, kirimChiqimCurrentPage + 1)" 
+                                :disabled="kirimChiqimCurrentPage === totalKirimChiqimPages"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Keyingi ▶
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4976,7 +5281,7 @@ function deleteCategory(id) {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="t in reportFilteredTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="t in paginatedReportFilteredTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-3 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 bg-gray-50">
@@ -5003,6 +5308,49 @@ function deleteCategory(id) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Modern Pagination Controller for Tab 7 (Category Reports) -->
+                    <div v-if="reportFilteredTransactions.length > reportJournalPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border border-t-0 border-gray-150 rounded-b-2xl font-sans text-xs bg-slate-50/50">
+                        <div class="text-slate-500 font-mono">
+                            Jami <span class="font-bold text-slate-800">{{ reportFilteredTransactions.length }}</span> tadan 
+                            <span class="font-bold text-slate-800">{{ (reportJournalCurrentPage - 1) * reportJournalPerPage + 1 }}</span>-
+                            <span class="font-bold text-slate-800">{{ Math.min(reportJournalCurrentPage * reportJournalPerPage, reportFilteredTransactions.length) }}</span>-tranzaksiyalar ko'rsatilmoqda
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Prev Button -->
+                            <button 
+                                @click="reportJournalCurrentPage = Math.max(1, reportJournalCurrentPage - 1)" 
+                                :disabled="reportJournalCurrentPage === 1"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                ◀ Oldingi
+                            </button>
+                            
+                            <!-- Page numbers -->
+                            <template v-for="p in visibleReportJournalPages" :key="p">
+                                <span v-if="p === '...'" class="text-slate-400 font-bold px-1.5 select-none">...</span>
+                                <button 
+                                    v-else
+                                    @click="reportJournalCurrentPage = p"
+                                    class="w-7 h-7 rounded-lg font-bold transition-all border text-center flex items-center justify-center"
+                                    :class="reportJournalCurrentPage === p 
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'"
+                                >
+                                    {{ p }}
+                                </button>
+                            </template>
+                            
+                            <!-- Next Button -->
+                            <button 
+                                @click="reportJournalCurrentPage = Math.min(totalReportJournalPages, reportJournalCurrentPage + 1)" 
+                                :disabled="reportJournalCurrentPage === totalReportJournalPages"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Keyingi ▶
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

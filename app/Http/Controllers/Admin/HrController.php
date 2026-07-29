@@ -32,18 +32,31 @@ class HrController extends Controller
         $kpiSettings = null;
 
         if ($tab === '0' || $tab === '1' || $tab === '2' || $tab === 0 || $tab === 1 || $tab === 2) {
-            $users = \App\Models\User::with(['roles', 'transactions', 'salaryPeriods'])->withCount(['leads' => function($q) {
+            $users = \App\Models\User::with([
+                'roles',
+                'transactions' => function($q) {
+                    $q->select('id', 'user_id', 'amount', 'type', 'date', 'description');
+                },
+                'salaryPeriods'
+            ])->withCount(['leads' => function($q) {
                 $q->where('status', 'qualified');
             }])->get();
         }
 
         if ($tab === '0' || $tab === '1' || $tab === 0 || $tab === 1) {
             $attendanceLogs = \App\Models\AttendanceLog::with('subject')->latest()->take(100)->get();
-            $workers = Worker::with(['brigade', 'salaryHistories', 'transactions', 'salaryPeriods'])->get();
+            $workers = Worker::with([
+                'brigade',
+                'salaryHistories',
+                'transactions' => function($q) {
+                    $q->select('id', 'worker_id', 'amount', 'type', 'date', 'description');
+                },
+                'salaryPeriods'
+            ])->get();
             $brigades = \App\Models\Brigade::with('workers')->get();
             $machineries = Machinery::all();
             $machineOwners = \App\Models\MachineOwner::with('machineries')->get();
-            $buildings = Building::with('floors.units')->get();
+            $buildings = Building::select('id', 'name')->get();
             $unpaidLogs = WorkLog::with(['worker', 'machinery', 'building', 'floor', 'unit'])->where('status', 'unpaid')->latest()->limit(500)->get();
             $unpaidTotal = WorkLog::where('status', 'unpaid')->sum('calculated_cost');
             $payrolls = Payroll::with('transaction')->latest()->limit(500)->get();
@@ -55,7 +68,7 @@ class HrController extends Controller
 
         if ($tab === 'sales_agents') {
             $users = \App\Models\User::role('Sotuvchi')->with(['leads', 'contracts.unit.floor.building', 'roles'])->get();
-            $buildings = Building::with('floors.units')->get();
+            $buildings = Building::select('id', 'name')->get();
         }
 
         return Inertia::render('Admin/HR/Index', [

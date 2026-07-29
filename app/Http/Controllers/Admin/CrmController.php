@@ -73,8 +73,17 @@ class CrmController extends Controller
         }
 
         // Always load units and partners to support contract modals and deep links on any tab
-        $units = \App\Models\Unit::with('floor.building')->get();
-        $partners = \App\Models\Partner::with('user')->get();
+        $units = \App\Models\Unit::with([
+            'floor' => function($q) {
+                $q->select('id', 'building_id', 'number');
+            },
+            'floor.building' => function($q) {
+                $q->select('id', 'name', 'block_name');
+            }
+        ])
+        ->select('id', 'floor_id', 'number', 'status', 'area_sqm', 'price', 'rooms_count', 'podyezd')
+        ->get();
+        $partners = \App\Models\Partner::with('user:id,name')->get();
 
         // 5. Overdue Tab
         if ($tab === 'overdue') {

@@ -159,66 +159,74 @@ class AdminController extends Controller
         // Lost leads for modal
         $lostLeads = \App\Models\Lead::where('status', 'lost')->select('id', 'full_name', 'phone', 'reason', 'updated_at')->get();
 
+        // Fetch all contract stats in a single query grouped by building_id
+        $contractStatsQuery = \DB::table('contracts')
+            ->join('units', 'contracts.unit_id', '=', 'units.id')
+            ->join('floors', 'units.floor_id', '=', 'floors.id')
+            ->select(
+                'floors.building_id',
+                \DB::raw('count(contracts.id) as sold_units'),
+                \DB::raw('sum(units.area_sqm) as sold_area'),
+                \DB::raw('sum(contracts.total_amount) as total_contract_amount')
+            )
+            ->where('contracts.status', '!=', 'cancelled');
+
+        if ($startDate && $endDate) {
+            $contractStatsQuery->whereBetween('contracts.created_at', [$startDate, $endDate]);
+        }
+        $contractStats = $contractStatsQuery->groupBy('floors.building_id')->get()->keyBy('building_id');
+
+        // Fetch all transaction sums in a single query grouped by building_id
+        $transactionSumsQuery = \DB::table('transactions')
+            ->join('contracts', 'transactions.contract_id', '=', 'contracts.id')
+            ->join('units', 'contracts.unit_id', '=', 'units.id')
+            ->join('floors', 'units.floor_id', '=', 'floors.id')
+            ->select(
+                'floors.building_id',
+                \DB::raw('sum(transactions.amount) as sold_sum')
+            )
+            ->where('transactions.status', 'approved')
+            ->where('transactions.type', 'income')
+            ->where('contracts.status', '!=', 'cancelled');
+
+        if ($startDate && $endDate) {
+            $transactionSumsQuery->whereBetween('transactions.transaction_date', [$startDate, $endDate]);
+        }
+        $transactionSums = $transactionSumsQuery->groupBy('floors.building_id')->get()->keyBy('building_id');
+
         // Buildings Summary for Object Cards
-        $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) use ($startDate, $endDate) {
-            $unitsQuery = \App\Models\Unit::whereHas('floor', function($q) use ($building) {
-                $q->where('building_id', $building->id);
+        $buildingsSummary = \App\Models\Building::with(['floors.units'])->get()->map(function($building) use ($contractStats, $transactionSums) {
+            $units = $building->floors->flatMap(function($floor) {
+                return $floor->units;
             });
             
-            $totalUnits = $unitsQuery->count();
-            $reservedUnits = (clone $unitsQuery)->where('status', 'reserved')->count();
-            $availableUnits = (clone $unitsQuery)->where('status', 'available')->count();
+            $totalUnits = $units->count();
+            $reservedUnits = $units->where('status', 'reserved')->count();
+            $availableUnits = $units->where('status', 'available')->count();
             
-            $totalArea = $unitsQuery->sum('area_sqm');
-            $availableArea = (clone $unitsQuery)->where('status', 'available')->sum('area_sqm');
+            $totalArea = $units->sum('area_sqm');
+            $availableArea = $units->where('status', 'available')->sum('area_sqm');
             
-            $roomsDistribution = (clone $unitsQuery)->whereIn('status', ['sold', 'reserved'])
-                ->selectRaw('rooms_count, count(*) as count')
+            $roomsDistribution = $units->whereIn('status', ['sold', 'reserved'])
                 ->groupBy('rooms_count')
-                ->orderBy('rooms_count')
-                ->get()
-                ->map(function($item) {
+                ->map(function($group, $roomsCount) {
                     return [
-                        'rooms' => $item->rooms_count,
-                        'count' => $item->count
+                        'rooms' => $roomsCount,
+                        'count' => $group->count()
                     ];
-                })->toArray();
+                })->values()->sortBy('rooms')->toArray();
                 
-            $totalSum = $unitsQuery->sum('price');
+            $totalSum = $units->sum('price');
             
-            $contractIds = \App\Models\Contract::whereHas('unit.floor', function($q) use ($building) {
-                $q->where('building_id', $building->id);
-            })->where('status', '!=', 'cancelled')->pluck('id');
+            $buildingContractStats = $contractStats->get($building->id);
+            $soldUnits = $buildingContractStats ? (int) $buildingContractStats->sold_units : 0;
+            $soldArea = $buildingContractStats ? (float) $buildingContractStats->sold_area : 0.0;
+            $totalContractAmount = $buildingContractStats ? (float) $buildingContractStats->total_contract_amount : 0.0;
 
-            // Filter contracts query by date range if provided
-            $contractsQuery = \App\Models\Contract::whereHas('unit.floor', function($q) use ($building) {
-                $q->where('building_id', $building->id);
-            })->where('status', '!=', 'cancelled');
-            if ($startDate && $endDate) {
-                $contractsQuery->whereBetween('created_at', [$startDate, $endDate]);
-            }
-            $filteredContractIds = $contractsQuery->pluck('id');
-            $soldUnits = $filteredContractIds->count();
-
-            // Calculate sold area for filtered contracts
-            $soldArea = \App\Models\Contract::whereIn('id', $filteredContractIds)
-                ->with('unit')
-                ->get()
-                ->sum(function($c) {
-                    return $c->unit->area_sqm ?? 0;
-                });
-
-            // Calculate sold sum within date range
-            $soldSumQuery = \App\Models\Transaction::whereIn('contract_id', $contractIds)
-                ->where('status', 'approved')
-                ->where('type', 'income');
-            if ($startDate && $endDate) {
-                $soldSumQuery->whereBetween('transaction_date', [$startDate, $endDate]);
-            }
-            $soldSum = $soldSumQuery->sum('amount');
-                
-            $totalContractAmount = \App\Models\Contract::whereIn('id', $filteredContractIds)->sum('total_amount');
-            $debtSum = max(0, $totalContractAmount - $soldSum);
+            $buildingTransactionSums = $transactionSums->get($building->id);
+            $soldSum = $buildingTransactionSums ? (float) $buildingTransactionSums->sold_sum : 0.0;
+            
+            $debtSum = max(0.0, $totalContractAmount - $soldSum);
             
             return [
                 'id' => $building->id,
@@ -267,67 +275,69 @@ class AdminController extends Controller
 
         // 9. Analytics by building (approved income & expense)
         $buildings = \App\Models\Building::all();
-        $analyticsByBuilding = $buildings->map(function($building) use ($startDate, $endDate) {
-            $incomeQuery = \App\Models\Transaction::where('building_id', $building->id)
-                ->where('type', 'income')
-                ->where('status', 'approved');
-            
-            $expenseQuery = \App\Models\Transaction::where('building_id', $building->id)
-                ->where('type', 'expense')
-                ->where('status', 'approved');
+        $buildingAnalyticsQuery = \DB::table('transactions')
+            ->select(
+                'building_id',
+                \DB::raw("sum(case when type = 'income' then amount else 0 end) as total_income"),
+                \DB::raw("sum(case when type = 'expense' then amount else 0 end) as total_expense")
+            )
+            ->where('status', 'approved')
+            ->whereNotNull('building_id');
 
-            if ($startDate && $endDate) {
-                $incomeQuery->whereBetween('transaction_date', [$startDate, $endDate]);
-                $expenseQuery->whereBetween('transaction_date', [$startDate, $endDate]);
-            }
+        if ($startDate && $endDate) {
+            $buildingAnalyticsQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+        }
 
+        $buildingAnalytics = $buildingAnalyticsQuery->groupBy('building_id')->get()->keyBy('building_id');
+
+        $analyticsByBuilding = $buildings->map(function($building) use ($buildingAnalytics) {
+            $stats = $buildingAnalytics->get($building->id);
             return [
                 'id' => $building->id,
                 'name' => $building->name,
-                'income' => (float) $incomeQuery->sum('amount'),
-                'expense' => (float) $expenseQuery->sum('amount'),
+                'income' => $stats ? (float) $stats->total_income : 0.0,
+                'expense' => $stats ? (float) $stats->total_expense : 0.0,
             ];
         });
 
         // 10. Analytics by month (approved income & expense)
+        $twelveMonthsAgo = \Carbon\Carbon::now()->subMonths(11)->startOfMonth();
+        $transactionsForAnalytics = \DB::table('transactions')
+            ->select('type', 'amount', 'transaction_date')
+            ->where('status', 'approved')
+            ->where('transaction_date', '>=', $twelveMonthsAgo)
+            ->get();
+
         $analyticsByMonth = [];
         for ($i = 11; $i >= 0; $i--) {
             $monthDate = \Carbon\Carbon::now()->subMonths($i);
             $monthKey = $monthDate->format('Y-m');
             $monthLabel = $monthDate->translatedFormat('M Y');
             
-            $startOfMonth = (clone $monthDate)->startOfMonth();
-            $endOfMonth = (clone $monthDate)->endOfMonth();
+            $startOfMonth = (clone $monthDate)->startOfMonth()->format('Y-m-d H:i:s');
+            $endOfMonth = (clone $monthDate)->endOfMonth()->format('Y-m-d H:i:s');
             
             if ($startDate && $endDate) {
-                $filterStart = \Carbon\Carbon::parse($startDate)->startOfDay();
-                $filterEnd = \Carbon\Carbon::parse($endDate)->endOfDay();
+                $filterStart = \Carbon\Carbon::parse($startDate)->startOfDay()->format('Y-m-d H:i:s');
+                $filterEnd = \Carbon\Carbon::parse($endDate)->endOfDay()->format('Y-m-d H:i:s');
                 
-                $actualStart = $startOfMonth->gt($filterStart) ? $startOfMonth : $filterStart;
-                $actualEnd = $endOfMonth->lt($filterEnd) ? $endOfMonth : $filterEnd;
-                
-                if ($actualStart->gt($actualEnd)) {
-                    $income = 0;
-                    $expense = 0;
-                } else {
-                    $income = (float) \App\Models\Transaction::where('type', 'income')
-                        ->where('status', 'approved')
-                        ->whereBetween('transaction_date', [$actualStart, $actualEnd])
-                        ->sum('amount');
-                    $expense = (float) \App\Models\Transaction::where('type', 'expense')
-                        ->where('status', 'approved')
-                        ->whereBetween('transaction_date', [$actualStart, $actualEnd])
-                        ->sum('amount');
-                }
+                $actualStart = max($startOfMonth, $filterStart);
+                $actualEnd = min($endOfMonth, $filterEnd);
             } else {
-                $income = (float) \App\Models\Transaction::where('type', 'income')
-                    ->where('status', 'approved')
-                    ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-                    ->sum('amount');
-                $expense = (float) \App\Models\Transaction::where('type', 'expense')
-                    ->where('status', 'approved')
-                    ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-                    ->sum('amount');
+                $actualStart = $startOfMonth;
+                $actualEnd = $endOfMonth;
+            }
+            
+            $income = 0.0;
+            $expense = 0.0;
+            
+            if ($actualStart <= $actualEnd) {
+                $monthTrans = $transactionsForAnalytics->filter(function($t) use ($actualStart, $actualEnd) {
+                    return $t->transaction_date >= $actualStart && $t->transaction_date <= $actualEnd;
+                });
+                
+                $income = (float) $monthTrans->where('type', 'income')->sum('amount');
+                $expense = (float) $monthTrans->where('type', 'expense')->sum('amount');
             }
             
             $analyticsByMonth[] = [

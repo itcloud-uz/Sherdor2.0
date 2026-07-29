@@ -77,21 +77,34 @@ class HandleInertiaRequests extends Middleware
                 'error' => session('error'),
                 'message' => session('message'),
             ],
-            'facilitiesMenu' => $request->user() ? \Illuminate\Support\Facades\Cache::remember('facilities_menu_tree_v2', 60, function () {
+            'facilitiesMenu' => $request->user() ? \Illuminate\Support\Facades\Cache::remember('facilities_menu_tree_v3', 1800, function () {
                 $res = [];
                 $buildings = \App\Models\Building::orderBy('name')->orderBy('block_name')->orderBy('corpus_name')->get();
+                
+                // Fetch all distinct building_id + podyezd mappings in a single query
+                $podyezdMap = \DB::table('units')
+                    ->join('floors', 'units.floor_id', '=', 'floors.id')
+                    ->select('floors.building_id', 'units.podyezd')
+                    ->whereNotNull('units.podyezd')
+                    ->where('units.podyezd', '!=', '')
+                    ->distinct()
+                    ->get()
+                    ->groupBy('building_id');
+
                 $grouped = $buildings->groupBy('name');
                 foreach ($grouped as $facilityName => $facilityBuildings) {
                     $blocks = [];
                     foreach ($facilityBuildings as $b) {
-                        $podyezds = \App\Models\Unit::whereHas('floor', function($q) use ($b) {
-                            $q->where('building_id', $b->id);
-                        })->select('podyezd')->distinct()->orderBy('podyezd')->pluck('podyezd')->toArray();
+                        $buildingPodyezds = $podyezdMap->get($b->id);
+                        $podyezds = [];
+                        if ($buildingPodyezds) {
+                            $podyezds = $buildingPodyezds->pluck('podyezd')->sort()->values()->toArray();
+                        }
                         
                         $blocks[] = [
                             'id' => $b->id,
                             'name' => $b->block_name ?? $b->corpus_name ?? 'Asosiy Blok',
-                            'podyezds' => array_values(array_filter($podyezds, fn($val) => !is_null($val) && $val !== ''))
+                            'podyezds' => $podyezds
                         ];
                     }
                     $res[] = [

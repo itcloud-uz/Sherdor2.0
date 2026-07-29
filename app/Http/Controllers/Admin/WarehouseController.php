@@ -40,16 +40,18 @@ class WarehouseController extends Controller
 
     public function inventory()
     {
-        $items = InventoryItem::all()->map(function ($item) {
-            $latestOrderItem = PurchaseOrderItem::where('item_name', $item->name)
-                ->whereHas('order', function ($query) {
-                    $query->where('status', 'delivered');
-                })
-                ->with('order.supplier')
-                ->latest()
-                ->first();
-            
-            $item->supplier_name = $latestOrderItem ? ($latestOrderItem->order->supplier->company_name ?: $latestOrderItem->order->supplier->name) : '—';
+        $latestOrderItems = PurchaseOrderItem::join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+            ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
+            ->where('purchase_orders.status', 'delivered')
+            ->select('purchase_order_items.item_name', 'suppliers.company_name', 'suppliers.name')
+            ->orderBy('purchase_order_items.id', 'desc')
+            ->get()
+            ->unique('item_name')
+            ->keyBy('item_name');
+
+        $items = InventoryItem::all()->map(function ($item) use ($latestOrderItems) {
+            $latest = $latestOrderItems->get($item->name);
+            $item->supplier_name = $latest ? ($latest->company_name ?: $latest->name) : '—';
             return $item;
         });
 

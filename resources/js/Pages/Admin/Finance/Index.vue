@@ -1042,7 +1042,7 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
             } else {
                 url.searchParams.delete('sub');
             }
-            router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: true, replace: true });
+            window.history.replaceState({}, '', url.pathname + url.search);
         }
     } catch (e) {
         console.error('URL replace error in activeTab watcher', e);

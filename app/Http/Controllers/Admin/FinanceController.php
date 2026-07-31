@@ -56,11 +56,13 @@ class FinanceController extends Controller
             ['name' => 'Boshqa xarajatlar', 'type' => 'expense'],
         ];
 
-        foreach ($defaultCategories as $cat) {
-            TransactionCategory::firstOrCreate(
-                ['name' => $cat['name']],
-                ['type' => $cat['type']]
-            );
+        if (!TransactionCategory::exists()) {
+            foreach ($defaultCategories as $cat) {
+                TransactionCategory::firstOrCreate(
+                    ['name' => $cat['name']],
+                    ['type' => $cat['type']]
+                );
+            }
         }
 
         $tab = (int)request('tab', 0);
@@ -141,7 +143,7 @@ class FinanceController extends Controller
         }
 
         if (in_array($tab, [0, 1, 2, 7, 8, 11, 12])) {
-            $transactions = Transaction::with([
+            $txQuery = Transaction::with([
                 'creator:id,name,phone', 
                 'contract:id,contract_number,client_id,unit_id', 
                 'contract.client:id,first_name,last_name,middle_name', 
@@ -151,8 +153,13 @@ class FinanceController extends Controller
                 'building:id,name'
             ])
             ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('id', 'desc');
+
+            if ($tab === 0) {
+                $transactions = $txQuery->limit(100)->get();
+            } else {
+                $transactions = $txQuery->limit(1000)->get();
+            }
         }
 
         if ($tab === 11) {

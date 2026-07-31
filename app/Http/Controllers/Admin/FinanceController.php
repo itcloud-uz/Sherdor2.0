@@ -65,33 +65,35 @@ class FinanceController extends Controller
 
         $tab = (int)request('tab', 0);
         
-        $categories = TransactionCategory::where('is_active', true)->get();
-        $allCategories = TransactionCategory::all();
-        $registers = CashRegister::with('building')->get();
-        $workers = Worker::latest()->get();
-        $suppliers = Supplier::latest()->get();
-        $partners = Partner::with('user')->latest()->get();
-        $brigades = Brigade::latest()->get();
-        $machineOwners = MachineOwner::latest()->get();
-        $counterparties = Counterparty::with(['customable'])->get();
-        $counterparties->loadMorph('customable', [
-            \App\Models\Client::class => ['contracts.refundSchedules'],
-        ]);
-        $buildings = Building::latest()->get();
-        $clients = Client::latest()->limit(500)->get();
-        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])->where('status', '!=', 'completed')->latest()->get();
-
+        // Define default empty values for all props
+        $categories = [];
+        $allCategories = [];
+        $registers = [];
+        $workers = [];
+        $suppliers = [];
+        $partners = [];
+        $brigades = [];
+        $machineOwners = [];
+        $counterparties = [];
+        $buildings = [];
+        $clients = [];
+        $contracts = [];
         $transactions = [];
         $financialLiabilities = [];
         $machineries = [];
         $fixedAssets = [];
-        $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
+        $invoices = [];
         $moneyTransfers = [];
         $rates = [];
+        $users = [];
+        $deletedTransactions = [];
+        $financeActions = [];
+        $deletedCounterparties = [];
+        $imports = [];
 
         // Always query balances and pending totals for top cards/headers
-        $dynamicUZS = CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
-        $creditBalance = CashRegister::where('type', 'credit')->whereNull('parent_id')->get()->sum('balance_uzs');
+        $dynamicUZS = CashRegister::whereNull('parent_id')->sum('balance_uzs');
+        $creditBalance = CashRegister::where('type', 'credit')->whereNull('parent_id')->sum('balance_uzs');
         $rawBalance = CompanyBalance::firstOrCreate([]);
         $balance = (object)[
             'total_balance' => $dynamicUZS,
@@ -104,8 +106,41 @@ class FinanceController extends Controller
         $pendingIncomes = Transaction::where('status', 'pending')->where('type', 'income')->sum('amount');
         $pendingExpenses = Transaction::where('status', 'pending')->where('type', 'expense')->sum('amount');
 
-        // Tab-specific queries
-        if ($tab === 0 || $tab === 1 || $tab === 2 || $tab === 8 || $tab === 10 || $tab === 11 || $tab === 12) {
+        // Tab-specific conditional database queries
+        if (in_array($tab, [0, 1, 2, 6, 8, 11, 12, 13])) {
+            $registers = CashRegister::with('building')->get();
+        }
+
+        if (in_array($tab, [1, 2, 7])) {
+            $categories = TransactionCategory::where('is_active', true)->get();
+        }
+
+        if (in_array($tab, [1, 14])) {
+            $allCategories = TransactionCategory::all();
+        }
+
+        if (in_array($tab, [1, 2, 10])) {
+            $counterparties = Counterparty::with(['customable'])->get();
+            $counterparties->loadMorph('customable', [
+                \App\Models\Client::class => ['contracts.refundSchedules'],
+            ]);
+            $buildings = Building::latest()->get();
+        }
+
+        if ($tab === 1) {
+            $workers = Worker::latest()->get();
+            $suppliers = Supplier::latest()->get();
+            $partners = Partner::with('user')->latest()->get();
+            $brigades = Brigade::latest()->get();
+            $machineOwners = MachineOwner::latest()->get();
+            $clients = Client::latest()->limit(500)->get();
+            $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])
+                ->where('status', '!=', 'completed')
+                ->latest()
+                ->get();
+        }
+
+        if (in_array($tab, [0, 1, 2, 7, 8, 11, 12])) {
             $transactions = Transaction::with([
                 'creator:id,name,phone', 
                 'contract:id,contract_number,client_id,unit_id', 
@@ -120,22 +155,48 @@ class FinanceController extends Controller
             ->get();
         }
 
-        if ($tab === 1 || $tab === 11) {
+        if ($tab === 11) {
             $financialLiabilities = FinancialLiability::with('payments')->latest()->get();
             $machineries = Machinery::latest()->get();
             $fixedAssets = FixedAsset::latest()->get();
         }
 
-        if ($tab === 2 || $tab === 8 || $tab === 10 || $tab === 11) {
+        if (in_array($tab, [2, 8, 10, 11])) {
             $rates = DB::table('currency_rates')->get();
+        }
+
+        if ($tab === 10) {
+            $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
         if ($tab === 6) {
             $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
         }
 
+        if ($tab === 13) {
+            $users = \App\Models\User::orderBy('name', 'asc')->get();
+            $deletedTransactions = Transaction::onlyTrashed()
+                ->with([
+                    'creator:id,name,phone',
+                    'category:id,name',
+                    'cashRegister:id,name',
+                    'counterparty:id,name,type'
+                ])
+                ->latest()
+                ->limit(100)
+                ->get();
+            $financeActions = \App\Models\FinanceAction::with(['user:id,name', 'transaction:id,amount,type,notes'])
+                ->latest()
+                ->limit(100)
+                ->get();
+            $deletedCounterparties = Counterparty::onlyTrashed()->latest()->get();
+            $imports = \App\Models\TransactionImport::with(['account', 'building', 'creator'])
+                ->latest()
+                ->get();
+        }
+
         return Inertia::render('Admin/Finance/Index', [
-            'users' => \App\Models\User::orderBy('name', 'asc')->get(),
+            'users' => $users,
             'transactions' => $transactions,
             'balance' => $balance,
             'pendingIncomes' => $pendingIncomes,
@@ -158,26 +219,10 @@ class FinanceController extends Controller
             'invoices' => $invoices,
             'moneyTransfers' => $moneyTransfers,
             'rates' => $rates,
-            'deletedTransactions' => Transaction::onlyTrashed()
-                ->with([
-                    'creator:id,name,phone',
-                    'category:id,name',
-                    'cashRegister:id,name',
-                    'counterparty:id,name,type'
-                ])
-                ->latest()
-                ->limit(100)
-                ->get(),
-            'financeActions' => \App\Models\FinanceAction::with(['user:id,name', 'transaction:id,amount,type,notes'])
-                ->latest()
-                ->limit(100)
-                ->get(),
-            'deletedCounterparties' => Counterparty::onlyTrashed()
-                ->latest()
-                ->get(),
-            'imports' => \App\Models\TransactionImport::with(['account', 'building', 'creator'])
-                ->latest()
-                ->get(),
+            'deletedTransactions' => $deletedTransactions,
+            'financeActions' => $financeActions,
+            'deletedCounterparties' => $deletedCounterparties,
+            'imports' => $imports,
         ]);
     }
 

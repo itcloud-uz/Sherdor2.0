@@ -1145,8 +1145,34 @@ class FacilityController extends Controller
             $startDate = $buildings;
             $buildings = Building::with(['floors.units'])->get();
         }
-        $grouped = $buildings->groupBy('name');
         
+        $allBuildingIds = $buildings->pluck('id')->toArray();
+        
+        // Single query to fetch all contracts for all these buildings
+        $allContracts = \App\Models\Contract::whereHas('unit.floor', function($q) use ($allBuildingIds) {
+            $q->whereIn('building_id', $allBuildingIds);
+        })
+        ->where('status', '!=', 'cancelled')
+        ->with(['unit.floor'])
+        ->get();
+
+        $allContractIds = $allContracts->pluck('id')->toArray();
+        $allPayments = [];
+        
+        if (!empty($allContractIds)) {
+            $allPaymentsQuery = \App\Models\Transaction::whereIn('contract_id', $allContractIds)
+                ->where('status', 'approved')
+                ->where('type', 'income');
+            if ($startDate && $endDate) {
+                $allPaymentsQuery->whereBetween('transaction_date', [$startDate, $endDate]);
+            }
+            $allPayments = $allPaymentsQuery->select('contract_id', \DB::raw('SUM(amount) as total_amount'))
+                ->groupBy('contract_id')
+                ->pluck('total_amount', 'contract_id')
+                ->toArray();
+        }
+
+        $grouped = $buildings->groupBy('name');
         $report = [];
         
         foreach ($grouped as $name => $blocks) {
@@ -1165,30 +1191,22 @@ class FacilityController extends Controller
                 }
             }
             
-            $contractsQuery = \App\Models\Contract::whereHas('unit.floor', function($q) use ($buildingIds) {
-                $q->whereIn('building_id', $buildingIds);
-            })->where('status', '!=', 'cancelled');
+            $projectContracts = $allContracts->filter(function($contract) use ($buildingIds) {
+                return $contract->unit && $contract->unit->floor && in_array($contract->unit->floor->building_id, $buildingIds);
+            });
             
-            $soldContractsQuery = clone $contractsQuery;
             if ($startDate && $endDate) {
-                $soldContractsQuery->whereBetween('created_at', [$startDate, $endDate]);
+                $projectContracts = $projectContracts->filter(function($contract) use ($startDate, $endDate) {
+                    return $contract->created_at >= $startDate && $contract->created_at <= $endDate;
+                });
             }
             
-            $soldContracts = $soldContractsQuery->with('unit')->get();
-            $soldApartments = $soldContracts->count();
-            $soldApartmentsPrice = $soldContracts->sum('total_amount');
-            
-            $contractIds = $soldContracts->pluck('id')->toArray();
+            $soldApartments = $projectContracts->count();
+            $soldApartmentsPrice = $projectContracts->sum('total_amount');
             
             $approvedPayments = 0;
-            if (!empty($contractIds)) {
-                $paymentsQuery = \App\Models\Transaction::whereIn('contract_id', $contractIds)
-                    ->where('status', 'approved')
-                    ->where('type', 'income');
-                if ($startDate && $endDate) {
-                    $paymentsQuery->whereBetween('transaction_date', [$startDate, $endDate]);
-                }
-                $approvedPayments = $paymentsQuery->sum('amount');
+            foreach ($projectContracts as $contract) {
+                $approvedPayments += $allPayments[$contract->id] ?? 0;
             }
             
             $debtPrice = max(0, $soldApartmentsPrice - $approvedPayments);

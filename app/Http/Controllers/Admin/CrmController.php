@@ -39,19 +39,60 @@ class CrmController extends Controller
         $transactions = [];
         $counterparties = [];
 
-        // 1. Dashboard Tab
+        $leadSources = [];
+        $cashRegisters = [];
+        $categories = [];
+        $buildings = [];
+        $contractTemplates = [];
+
+        // 1. Conditional eager-loaded helper tables depending on active tab
+        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
+            $leadSources = \App\Models\LeadSource::orderBy('name', 'asc')->get();
+        }
+
+        if (in_array($tab, ['dashboard', 'client_payments', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'leads'])) {
+            $cashRegisters = \App\Models\CashRegister::where('is_active', true)->get();
+        }
+
+        if (in_array($tab, ['client_payments', 'dashboard'])) {
+            $categories = \App\Models\TransactionCategory::all();
+        }
+
+        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'])) {
+            $buildings = \App\Models\Building::latest()->get();
+        }
+
+        if (in_array($tab, ['leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+            $contractTemplates = \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get();
+        }
+
+        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+            $partners = \App\Models\Partner::with('user:id,name')->get();
+            $units = \App\Models\Unit::with([
+                'floor' => function($q) {
+                    $q->select('id', 'building_id', 'number');
+                },
+                'floor.building' => function($q) {
+                    $q->select('id', 'name', 'block_name');
+                }
+            ])
+            ->select('id', 'floor_id', 'number', 'status', 'area_sqm', 'price', 'rooms_count', 'podyezd')
+            ->get();
+        }
+
+        // 2. Dashboard Tab
         if ($tab === 'dashboard') {
             $leads = Lead::with('user')->latest()->limit(500)->get();
         }
 
-        // 2. Leads Tab
+        // 3. Leads Tab
         if ($tab === 'leads') {
             $leads = Lead::with('user')->latest()->limit(500)->get();
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
 
-        // 3. Clients tabs
+        // 4. Clients tabs
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
             $clients = \App\Models\Client::with(['contracts.unit.floor.building', 'contracts.paymentSchedules'])->orderBy('id', 'asc')->limit(500)->get();
             $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
@@ -61,7 +102,7 @@ class CrmController extends Controller
             $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get();
         }
 
-        // 4. Contracts Tab
+        // 5. Contracts Tab
         if ($tab === 'contracts') {
             $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category', 'refundSchedules'])->latest()->limit(500)->get();
             $users = User::with('roles')->orderBy('name', 'asc')->get();
@@ -72,20 +113,7 @@ class CrmController extends Controller
             $users = User::role('Sotuvchi')->with(['leads', 'contracts.unit.floor.building', 'roles'])->get();
         }
 
-        // Always load units and partners to support contract modals and deep links on any tab
-        $units = \App\Models\Unit::with([
-            'floor' => function($q) {
-                $q->select('id', 'building_id', 'number');
-            },
-            'floor.building' => function($q) {
-                $q->select('id', 'name', 'block_name');
-            }
-        ])
-        ->select('id', 'floor_id', 'number', 'status', 'area_sqm', 'price', 'rooms_count', 'podyezd')
-        ->get();
-        $partners = \App\Models\Partner::with('user:id,name')->get();
-
-        // 5. Overdue Tab
+        // 6. Overdue Tab
         if ($tab === 'overdue') {
             $allOverdueSchedules = \App\Models\PaymentSchedule::with('contract.client')
                                 ->where('status', 'overdue')
@@ -182,13 +210,13 @@ class CrmController extends Controller
             'smsSettings' => $settings,
             'smsLogs' => $smsLogs,
             'isEskizConnected' => $isConnected,
-            'leadSources' => \App\Models\LeadSource::orderBy('name', 'asc')->get(),
-            'cashRegisters' => \App\Models\CashRegister::where('is_active', true)->get(),
+            'leadSources' => $leadSources,
+            'cashRegisters' => $cashRegisters,
             'transactions' => $transactions,
             'counterparties' => $counterparties,
-            'categories' => \App\Models\TransactionCategory::all(),
-            'buildings' => \App\Models\Building::latest()->get(),
-            'contractTemplates' => \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get(),
+            'categories' => $categories,
+            'buildings' => $buildings,
+            'contractTemplates' => $contractTemplates,
         ])->toResponse(request())->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',

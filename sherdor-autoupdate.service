@@ -1,0 +1,14 @@
+[Unit]
+Description=Sherdor 2.0 Auto Update on Boot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=itcloud
+WorkingDirectory=/home/itcloud/Sherdor2.0
+ExecStart=/bin/bash /home/itcloud/Sherdor2.0/deploy_on_boot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

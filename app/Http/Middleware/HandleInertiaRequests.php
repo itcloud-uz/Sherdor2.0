@@ -86,7 +86,6 @@ class HandleInertiaRequests extends Middleware
                     ->join('floors', 'units.floor_id', '=', 'floors.id')
                     ->select('floors.building_id', 'units.podyezd')
                     ->whereNotNull('units.podyezd')
-                    ->where('units.podyezd', '!=', '')
                     ->distinct()
                     ->get()
                     ->groupBy('building_id');

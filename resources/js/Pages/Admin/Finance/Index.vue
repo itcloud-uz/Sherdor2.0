@@ -5460,7 +5460,7 @@ function deleteCategory(id) {
             </div>
 
             <!-- TAB 13: Harakatlar va Savatcha -->
-            <div v-if="activeTab === 13" class="space-y-6 animate-[fadeIn_0.4s_ease-out]">
+            <div v-if="activeTab === 13" class="space-y-6 animate-[fadeIn_0.4s_ease-out] min-h-[calc(100vh-180px)] flex flex-col">
                 <!-- Title -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-150 shadow-sm">
                     <div>

@@ -187,11 +187,11 @@ class FinanceController extends Controller
                     'counterparty:id,name,type'
                 ])
                 ->latest()
-                ->limit(100)
+                ->limit(500)
                 ->get();
             $financeActions = \App\Models\FinanceAction::with(['user:id,name', 'transaction:id,amount,type,notes'])
                 ->latest()
-                ->limit(100)
+                ->limit(500)
                 ->get();
             $deletedCounterparties = Counterparty::onlyTrashed()->latest()->get();
             $imports = \App\Models\TransactionImport::with(['account', 'building', 'creator'])

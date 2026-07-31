@@ -364,6 +364,35 @@ const ownersWithStats = computed(() => {
     });
 });
 
+const currentSelectedOwnerCalculatedBalance = computed(() => {
+    if (!selectedOwner.value) return 0;
+    const found = ownersWithStats.value.find(o => o.id === selectedOwner.value.id);
+    return found ? found.calculatedBalance : (selectedOwner.value.balance || 0);
+});
+
+const sortedTransactions = computed(() => {
+    if (!selectedOwner.value || !selectedOwner.value.transactions) return [];
+    return [...selectedOwner.value.transactions].sort((a, b) => {
+        const dateA = new Date(a.date || a.created_at || 0).getTime();
+        const dateB = new Date(b.date || b.created_at || 0).getTime();
+        if (dateA !== dateB) {
+            return dateA - dateB;
+        }
+        return (a.id || 0) - (b.id || 0);
+    });
+});
+
+const sortedProcessedRows = computed(() => {
+    return [...processedRows.value].sort((a, b) => {
+        const dateA = new Date(a.date || a.created_at || 0).getTime();
+        const dateB = new Date(b.date || b.created_at || 0).getTime();
+        if (dateA !== dateB) {
+            return dateA - dateB;
+        }
+        return (a.id || 0) - (b.id || 0);
+    });
+});
+
 const globalStats = computed(() => {
     let totalWorksPrice = 0;
     let totalPaid = 0;
@@ -661,7 +690,7 @@ const getTxnTargetAndNote = (txn) => {
 
 const exportFinanceToExcel = () => {
     if (!selectedOwner.value) return;
-    if (!selectedOwner.value.transactions || selectedOwner.value.transactions.length === 0) {
+    if (!sortedTransactions.value || sortedTransactions.value.length === 0) {
         alert("Yuklab olish uchun ma'lumot yo'q!");
         return;
     }
@@ -670,7 +699,7 @@ const exportFinanceToExcel = () => {
         const headers = ['№', 'Sana', 'To\'lov maqsadi', 'Izoh', 'Turi', 'Summa (UZS)'];
         let totalAmount = 0;
         
-        const data = selectedOwner.value.transactions.map((txn, index) => {
+        const data = sortedTransactions.value.map((txn, index) => {
             const amount = parseFloat(txn.amount) || 0;
             totalAmount += amount;
             
@@ -863,7 +892,7 @@ const exportFinanceToExcel = () => {
                             </div>
                             <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
                                 <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
-                                <div class="text-sm font-bold" :class="selectedOwner.balance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(selectedOwner.balance) }} UZS</div>
+                                <div class="text-sm font-bold" :class="currentSelectedOwnerCalculatedBalance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(currentSelectedOwnerCalculatedBalance) }} UZS</div>
                             </div>
                         </div>
                     </div>
@@ -916,13 +945,13 @@ const exportFinanceToExcel = () => {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 bg-white">
-                                    <tr v-if="processedRows.length === 0">
+                                    <tr v-if="sortedProcessedRows.length === 0">
                                         <td colspan="11" class="px-6 py-12 text-center text-gray-400 text-sm">
                                             Ushbu texnik ta'minotchi uchun bajarilgan ishlar kiritilmagan.
                                         </td>
                                     </tr>
                                     <tr 
-                                        v-for="(row, index) in processedRows" 
+                                        v-for="(row, index) in sortedProcessedRows" 
                                         :key="row.id"
                                         class="hover:bg-blue-50/50 transition-colors"
                                     >
@@ -1024,10 +1053,10 @@ const exportFinanceToExcel = () => {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-if="!selectedOwner.transactions || selectedOwner.transactions.length === 0">
+                                    <tr v-if="!sortedTransactions || sortedTransactions.length === 0">
                                         <td colspan="6" class="px-6 py-12 text-center text-gray-400 text-sm">Hali hech qanday to'lov qilinmagan.</td>
                                     </tr>
-                                    <tr v-for="(txn, index) in selectedOwner.transactions" :key="txn.id" class="hover:bg-gray-50 transition-colors">
+                                    <tr v-for="(txn, index) in sortedTransactions" :key="txn.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="px-4 py-3 text-center text-gray-500">{{ index + 1 }}</td>
                                         <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ formatTxnDate(txn.date || txn.created_at) }}</td>
                                         <td class="px-4 py-3 text-gray-900 font-medium">{{ getTxnTargetAndNote(txn).target }}</td>

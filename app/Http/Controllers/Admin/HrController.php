@@ -126,7 +126,7 @@ class HrController extends Controller
                 $q->with('transactions')->orderBy('date', 'asc');
             },
             'transactions' => function($q) {
-                $q->select('id', 'machine_owner_id', 'type', 'amount', 'date', 'created_at', 'description');
+                $q->select('id', 'machine_owner_id', 'type', 'amount', 'date', 'created_at', 'description')->orderBy('date', 'asc');
             }
         ])->get();
         return Inertia::render('Admin/HR/Texnikalar', [

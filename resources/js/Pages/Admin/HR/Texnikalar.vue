@@ -627,6 +627,90 @@ const exportToExcel = () => {
         alert("Excel yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
     }
 };
+
+const exportFinanceToExcel = () => {
+    if (!selectedOwner.value) return;
+    if (!selectedOwner.value.transactions || selectedOwner.value.transactions.length === 0) {
+        alert("Yuklab olish uchun ma'lumot yo'q!");
+        return;
+    }
+    
+    try {
+        const headers = ['№', 'Sana', 'Tavsif (Izoh)', 'Turi', 'Summa (UZS)'];
+        let totalAmount = 0;
+        
+        const data = selectedOwner.value.transactions.map((txn, index) => {
+            const amount = parseFloat(txn.amount) || 0;
+            totalAmount += amount;
+            
+            let typeStr = "Kirim";
+            const desc = (txn.description || '').toLowerCase();
+            if (desc.includes('salyarka') || desc.includes('solyarka') || desc.includes('so\'lyarka')) {
+                typeStr = "Salyarka";
+            } else if (txn.type === 'payment') {
+                typeStr = "To'lov qilindi";
+            }
+            
+            return [
+                index + 1,
+                formatTxnDate(txn.date || txn.created_at),
+                txn.description || 'Izohsiz to\'lov',
+                typeStr,
+                amount
+            ];
+        });
+        
+        data.push([
+            '', 'JAMI:', '', '', totalAmount
+        ]);
+        
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+        
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+                if (!ws[cellAddress]) continue;
+                
+                const isHeader = (R === 0);
+                const isFooter = (R === range.e.r);
+                
+                ws[cellAddress].s = {
+                    border: {
+                        top: {style: 'thin', color: {rgb: "000000"}},
+                        bottom: {style: 'thin', color: {rgb: "000000"}},
+                        left: {style: 'thin', color: {rgb: "000000"}},
+                        right: {style: 'thin', color: {rgb: "000000"}}
+                    },
+                    font: {
+                        bold: isHeader || isFooter,
+                        color: isHeader ? {rgb: "000000"} : (isFooter ? {rgb: "000000"} : {rgb: "333333"})
+                    },
+                    fill: isHeader ? {fgColor: {rgb: "F3F4F6"}} : (isFooter ? {fgColor: {rgb: "F9FAFB"}} : undefined),
+                    alignment: {
+                        vertical: 'center',
+                        horizontal: C === 0 || C === 3 ? 'center' : (C === 4 ? 'right' : 'left')
+                    }
+                };
+                if (C === 4 && typeof ws[cellAddress].v === 'number') {
+                    ws[cellAddress].z = '#,##0';
+                }
+            }
+        }
+        
+        ws['!cols'] = [
+            {wch: 6}, {wch: 16}, {wch: 45}, {wch: 20}, {wch: 22}
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Moliya_Tranzaksiyalar");
+        const fileName = `${selectedOwner.value.name.replace(/\s+/g, '_')}_Moliya_Tranzaksiyalar.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    } catch (error) {
+        console.error("Excel yaratishda xatolik:", error);
+        alert("Excel yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
+    }
+};
 </script>
 
 <template>
@@ -882,6 +966,10 @@ const exportToExcel = () => {
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">Moliya va Tranzaksiyalar</h3>
                             <div class="flex gap-2">
+                                <button @click="exportFinanceToExcel" class="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Excel Yuklab Olish
+                                </button>
                                 <button @click="openTransactionModal(null, 'salyarka')" class="px-4 py-2 bg-orange-600 text-white rounded-lg shadow-sm hover:bg-orange-700 transition font-medium flex items-center text-sm">
                                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                                     Salyarka Berish

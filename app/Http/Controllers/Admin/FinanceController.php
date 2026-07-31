@@ -92,8 +92,8 @@ class FinanceController extends Controller
         $imports = [];
 
         // Always query balances and pending totals for top cards/headers
-        $dynamicUZS = CashRegister::whereNull('parent_id')->sum('balance_uzs');
-        $creditBalance = CashRegister::where('type', 'credit')->whereNull('parent_id')->sum('balance_uzs');
+        $dynamicUZS = CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
+        $creditBalance = CashRegister::where('type', 'credit')->whereNull('parent_id')->get()->sum('balance_uzs');
         $rawBalance = CompanyBalance::firstOrCreate([]);
         $balance = (object)[
             'total_balance' => $dynamicUZS,

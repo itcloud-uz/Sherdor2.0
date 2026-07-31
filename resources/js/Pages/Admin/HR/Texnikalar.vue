@@ -206,6 +206,7 @@ const openTransactionModal = (work = null, type = 'payment') => {
         amount: amount,
         machinery_id: '',
         description: desc,
+        note: '',
         date: new Date().toISOString().slice(0, 10),
         payment_method: 'cash',
         account_type: 'main',
@@ -220,6 +221,8 @@ const submitTransaction = () => {
     isSubmittingTransaction.value = true;
     
     const payload = { ...transactionForm.value };
+    let desc = payload.description || '';
+
     if (isSalyarkaMode.value) {
         let prefix = "Salyarka";
         if (payload.machinery_id) {
@@ -228,8 +231,15 @@ const submitTransaction = () => {
                 prefix += ` (${m.name}${m.driver_name ? ' - ' + m.driver_name : ''})`;
             }
         }
-        payload.description = payload.description ? `${prefix}: ${payload.description}` : prefix;
+        desc = desc ? `${prefix}: ${desc}` : prefix;
     }
+
+    if (payload.note && payload.note.trim()) {
+        desc += ` [Izoh: ${payload.note.trim()}]`;
+    }
+
+    payload.description = desc;
+    delete payload.note;
 
     router.post(route('admin.hr.owner.transaction.store', selectedOwner.value.id), payload, {
         preserveScroll: true,
@@ -628,6 +638,27 @@ const exportToExcel = () => {
     }
 };
 
+const getTxnTargetAndNote = (txn) => {
+    if (!txn) return { target: 'Izohsiz to\'lov', note: '' };
+    const raw = (txn.description || txn.notes || '').trim();
+    if (!raw) {
+        return { target: 'Izohsiz to\'lov', note: '' };
+    }
+    
+    const match = raw.match(/^(.*?)\s*\[[Ii]zoh:\s*(.*?)\]$/s);
+    if (match) {
+        return {
+            target: match[1].trim() || 'Izohsiz to\'lov',
+            note: match[2].trim()
+        };
+    }
+    
+    return {
+        target: raw,
+        note: ''
+    };
+};
+
 const exportFinanceToExcel = () => {
     if (!selectedOwner.value) return;
     if (!selectedOwner.value.transactions || selectedOwner.value.transactions.length === 0) {
@@ -636,7 +667,7 @@ const exportFinanceToExcel = () => {
     }
     
     try {
-        const headers = ['№', 'Sana', 'Tavsif (Izoh)', 'Turi', 'Summa (UZS)'];
+        const headers = ['№', 'Sana', 'To\'lov maqsadi', 'Izoh', 'Turi', 'Summa (UZS)'];
         let totalAmount = 0;
         
         const data = selectedOwner.value.transactions.map((txn, index) => {
@@ -651,17 +682,20 @@ const exportFinanceToExcel = () => {
                 typeStr = "To'lov qilindi";
             }
             
+            const parsed = getTxnTargetAndNote(txn);
+            
             return [
                 index + 1,
                 formatTxnDate(txn.date || txn.created_at),
-                txn.description || 'Izohsiz to\'lov',
+                parsed.target,
+                parsed.note,
                 typeStr,
                 amount
             ];
         });
         
         data.push([
-            '', 'JAMI:', '', '', totalAmount
+            '', 'JAMI:', '', '', '', totalAmount
         ]);
         
         const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -689,17 +723,17 @@ const exportFinanceToExcel = () => {
                     fill: isHeader ? {fgColor: {rgb: "F3F4F6"}} : (isFooter ? {fgColor: {rgb: "F9FAFB"}} : undefined),
                     alignment: {
                         vertical: 'center',
-                        horizontal: C === 0 || C === 3 ? 'center' : (C === 4 ? 'right' : 'left')
+                        horizontal: C === 0 || C === 1 || C === 4 ? 'center' : (C === 5 ? 'right' : 'left')
                     }
                 };
-                if (C === 4 && typeof ws[cellAddress].v === 'number') {
+                if (C === 5 && typeof ws[cellAddress].v === 'number') {
                     ws[cellAddress].z = '#,##0';
                 }
             }
         }
         
         ws['!cols'] = [
-            {wch: 6}, {wch: 16}, {wch: 45}, {wch: 20}, {wch: 22}
+            {wch: 6}, {wch: 16}, {wch: 35}, {wch: 25}, {wch: 18}, {wch: 22}
         ];
 
         const wb = XLSX.utils.book_new();
@@ -978,30 +1012,32 @@ const exportFinanceToExcel = () => {
                         </div>
 
                         <div class="overflow-auto rounded-xl border border-gray-200 bg-white flex-1 custom-scrollbar shadow-sm">
-                            <table class="w-full text-sm text-left text-gray-700 min-w-[800px]">
+                            <table class="w-full text-sm text-left text-gray-700 min-w-[900px]">
                                 <thead class="sticky top-0 bg-gray-100 text-gray-600 uppercase text-[11px] font-bold shadow-sm z-10">
                                     <tr>
                                         <th class="px-4 py-4 text-center w-12 rounded-tl-lg">№</th>
                                         <th class="px-4 py-4 whitespace-nowrap">Sana</th>
-                                        <th class="px-4 py-4 whitespace-nowrap">Tavsif (Izoh)</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">To'lov maqsadi</th>
+                                        <th class="px-4 py-4 whitespace-nowrap">Izoh</th>
                                         <th class="px-4 py-4 text-center whitespace-nowrap">Turi</th>
                                         <th class="px-4 py-4 text-right whitespace-nowrap rounded-tr-lg">Summa (UZS)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-if="!selectedOwner.transactions || selectedOwner.transactions.length === 0">
-                                        <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">Hali hech qanday to'lov qilinmagan.</td>
+                                        <td colspan="6" class="px-6 py-12 text-center text-gray-400 text-sm">Hali hech qanday to'lov qilinmagan.</td>
                                     </tr>
                                     <tr v-for="(txn, index) in selectedOwner.transactions" :key="txn.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="px-4 py-3 text-center text-gray-500">{{ index + 1 }}</td>
-                                        <td class="px-4 py-3 text-gray-600">{{ formatTxnDate(txn.date || txn.created_at) }}</td>
-                                        <td class="px-4 py-3 text-gray-900 font-medium">{{ txn.description || 'Izohsiz to\'lov' }}</td>
-                                        <td class="px-4 py-3 text-center">
+                                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ formatTxnDate(txn.date || txn.created_at) }}</td>
+                                        <td class="px-4 py-3 text-gray-900 font-medium">{{ getTxnTargetAndNote(txn).target }}</td>
+                                        <td class="px-4 py-3 text-gray-600 text-xs">{{ getTxnTargetAndNote(txn).note || '—' }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">
                                             <span v-if="txn.description && (txn.description.toLowerCase().includes('salyarka') || txn.description.toLowerCase().includes('solyarka'))" class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Salyarka</span>
                                             <span v-else-if="txn.type === 'payment'" class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">To'lov qilindi</span>
                                             <span v-else class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Kirim</span>
                                         </td>
-                                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ formatMoney(txn.amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">{{ formatMoney(txn.amount) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1136,8 +1172,13 @@ const exportFinanceToExcel = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tavsif (Qo'shimcha izoh)</label>
-                        <textarea v-model="transactionForm.description" rows="2" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: 100 litr"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To'lov maqsadi</label>
+                        <input v-model="transactionForm.description" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: Moliya: Ilxom aka pagruzchik" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Izoh (Alohida)</label>
+                        <input v-model="transactionForm.note" type="text" class="w-full border-gray-300 rounded-lg text-sm" placeholder="Masalan: 500$" />
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">

@@ -2,7 +2,7 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
 import { Head, router, Link, usePage, useForm } from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 import BrigadeLedgerModal from '@/Components/Ledger/BrigadeLedgerModal.vue';
 import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
@@ -1047,6 +1047,19 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
     } catch (e) {
         console.error('URL replace error in activeTab watcher', e);
     }
+// Instant sidebar tab switching listener
+const handleSwitchTabEvent = (e) => {
+    if (e && e.detail !== undefined) {
+        activeTab.value = e.detail;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('switch-finance-tab', handleSwitchTabEvent);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('switch-finance-tab', handleSwitchTabEvent);
 });
 
 // Exchange rates state and actions removed since only UZS exists

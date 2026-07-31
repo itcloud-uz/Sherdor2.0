@@ -28,9 +28,25 @@ const isTabActive = (tabId) => {
     }
 };
 
+const activeFinanceTabOverride = ref(null);
+
+const handleFinanceTabClick = (tabId, e) => {
+    if (route().current('admin.finance')) {
+        if (e && e.preventDefault) e.preventDefault();
+        activeFinanceTabOverride.value = tabId;
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tabId);
+        window.history.replaceState({}, '', url.pathname + url.search);
+        window.dispatchEvent(new CustomEvent('switch-finance-tab', { detail: tabId }));
+    }
+};
+
 const isFinanceSubTabActive = (tabId, subVal = null) => {
     const currentRoute = route().current();
     if (currentRoute !== 'admin.finance') return false;
+    if (activeFinanceTabOverride.value !== null) {
+        return activeFinanceTabOverride.value === tabId;
+    }
     try {
         const url = new URL(page.url, window.location.origin);
         const tabParam = url.searchParams.get('tab');
@@ -412,6 +428,7 @@ const formattedDate = computed(() => {
                             <!-- Kassalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 8 })"
+                                @click="handleFinanceTabClick(8, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -425,6 +442,7 @@ const formattedDate = computed(() => {
                             <!-- Tranzaksiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 2 })"
+                                @click="handleFinanceTabClick(2, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -438,6 +456,7 @@ const formattedDate = computed(() => {
                             <!-- Pul o'tkazmalari -->
                             <Link
                                 :href="route('admin.finance', { tab: 6 })"
+                                @click="handleFinanceTabClick(6, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -451,6 +470,7 @@ const formattedDate = computed(() => {
                             <!-- Botdan kirimlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 12 })"
+                                @click="handleFinanceTabClick(12, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -464,6 +484,7 @@ const formattedDate = computed(() => {
                             <!-- Qo'shimcha operatsiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 1 })"
+                                @click="handleFinanceTabClick(1, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -477,6 +498,7 @@ const formattedDate = computed(() => {
                             <!-- Hisobotlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 11 })"
+                                @click="handleFinanceTabClick(11, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -490,6 +512,7 @@ const formattedDate = computed(() => {
                             <!-- Harakatlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 13 })"
+                                @click="handleFinanceTabClick(13, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
@@ -503,6 +526,7 @@ const formattedDate = computed(() => {
                             <!-- Kategoriyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 14 })"
+                                @click="handleFinanceTabClick(14, $event)"
                                 preserve-state
                                 preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"

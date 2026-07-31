@@ -70,13 +70,13 @@ class CrmController extends Controller
             $partners = \App\Models\Partner::with('user:id,name')->get();
             $units = \App\Models\Unit::with([
                 'floor' => function($q) {
-                    $q->select('id', 'building_id', 'number');
+                    $q->select('id', 'building_id', 'floor_number', 'floor_number as number');
                 },
                 'floor.building' => function($q) {
                     $q->select('id', 'name', 'block_name');
                 }
             ])
-            ->select('id', 'floor_id', 'number', 'status', 'area_sqm', 'price', 'rooms_count', 'podyezd')
+            ->select('id', 'floor_id', 'unit_number', 'unit_number as number', 'status', 'area_sqm', 'price', 'rooms_count', 'podyezd')
             ->get();
         }
 

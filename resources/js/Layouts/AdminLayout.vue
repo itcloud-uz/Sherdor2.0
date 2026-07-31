@@ -412,6 +412,8 @@ const formattedDate = computed(() => {
                             <!-- Kassalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 8 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(8)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -423,6 +425,8 @@ const formattedDate = computed(() => {
                             <!-- Tranzaksiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 2 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(2, 'transactions')
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -434,6 +438,8 @@ const formattedDate = computed(() => {
                             <!-- Pul o'tkazmalari -->
                             <Link
                                 :href="route('admin.finance', { tab: 6 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(6)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -445,6 +451,8 @@ const formattedDate = computed(() => {
                             <!-- Botdan kirimlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 12 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(12)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -456,6 +464,8 @@ const formattedDate = computed(() => {
                             <!-- Qo'shimcha operatsiyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 1 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(1)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -467,6 +477,8 @@ const formattedDate = computed(() => {
                             <!-- Hisobotlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 11 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(11)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -478,6 +490,8 @@ const formattedDate = computed(() => {
                             <!-- Harakatlar -->
                             <Link
                                 :href="route('admin.finance', { tab: 13 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(13)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
@@ -489,6 +503,8 @@ const formattedDate = computed(() => {
                             <!-- Kategoriyalar -->
                             <Link
                                 :href="route('admin.finance', { tab: 14 })"
+                                preserve-state
+                                preserve-scroll
                                 class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
                                 :class="isFinanceSubTabActive(14)
                                     ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"

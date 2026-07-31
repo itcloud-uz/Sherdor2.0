@@ -122,8 +122,8 @@ class FinanceController extends Controller
         }
 
         if (in_array($tab, [1, 2, 10])) {
-            $counterparties = Counterparty::select('id', 'name', 'type', 'customable_id', 'customable_type', 'balance')->get();
-            $buildings = Building::select('id', 'name')->latest()->get();
+            $counterparties = Counterparty::with(['customable'])->get();
+            $buildings = Building::latest()->get();
         }
 
         if ($tab === 1) {

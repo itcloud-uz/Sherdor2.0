@@ -31,6 +31,7 @@ except Exception as e:
         'resources/js/Pages/Admin/Finance/Index.vue',
         'resources/js/Pages/Admin/Partners/Index.vue',
         'resources/js/Pages/Admin/HR/Texnikalar.vue',
+        'resources/js/Layouts/AdminLayout.vue',
         'resources/views/exports/client_ledger.blade.php',
         'routes/web.php'
     ]

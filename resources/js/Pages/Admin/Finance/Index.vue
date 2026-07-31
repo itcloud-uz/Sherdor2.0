@@ -1047,6 +1047,7 @@ watch([activeTab, invoiceSubTab], ([newTab, newSub]) => {
     } catch (e) {
         console.error('URL replace error in activeTab watcher', e);
     }
+});
 // Instant sidebar tab switching listener
 const handleSwitchTabEvent = (e) => {
     if (e && e.detail !== undefined) {

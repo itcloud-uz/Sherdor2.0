@@ -12,11 +12,16 @@ class MachineWork extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'date:Y-m-d',
         'quantity' => 'decimal:2',
         'price' => 'decimal:2',
         'total_price' => 'decimal:2',
     ];
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
 
     public function owner()
     {

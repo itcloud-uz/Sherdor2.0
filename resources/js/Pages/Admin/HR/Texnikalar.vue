@@ -437,22 +437,48 @@ const formatMoney = (val) => {
     return new Intl.NumberFormat('uz-UZ').format(val || 0);
 };
 
+const formatDateForInput = (val) => {
+    if (!val) return new Date().toISOString().slice(0, 10);
+    let str = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        let [y, m, d] = str.split('-');
+        let realY = y;
+        if (parseInt(y, 10) < 1000 && y.endsWith('21')) realY = '2021';
+        return `${realY}-${m}-${d}`;
+    }
+    const dt = new Date(str);
+    if (isNaN(dt.getTime())) return str.slice(0, 10);
+    
+    let year = dt.getFullYear();
+    if (year < 1000 && String(year).endsWith('21')) year = 2021;
+    
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+};
+
 const formatTxnDate = (val) => {
     if (!val) return '—';
-    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
-        const [y, m, d] = val.trim().split('-');
-        return `${d}.${m}.${y}`;
+    let str = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        let [y, m, d] = str.split('-');
+        let realY = y;
+        if (parseInt(y, 10) < 1000 && y.endsWith('21')) realY = '2021';
+        else if (parseInt(y, 10) < 1000 && y.endsWith('26')) realY = '2026';
+        return `${d}.${m}.${realY}`;
     }
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return val;
-    return d.toLocaleString('ru-RU', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    const dt = new Date(str);
+    if (isNaN(dt.getTime())) return str;
+    
+    let year = dt.getFullYear();
+    if (year < 1000 && String(year).endsWith('21')) year = 2021;
+    else if (year < 1000 && String(year).endsWith('26')) year = 2026;
+    
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    
+    return `${day}.${month}.${year}`;
 };
 
 const openAddWorkModal = () => {
@@ -469,6 +495,7 @@ const openAddWorkModal = () => {
 const openEditWorkModal = (row) => {
     workForm.value = { 
         ...row,
+        date: formatDateForInput(row.date),
         serviceName: row.service_name,
         totalPrice: row.total_price
     };
@@ -956,7 +983,7 @@ const exportFinanceToExcel = () => {
                                         class="hover:bg-blue-50/50 transition-colors"
                                     >
                                         <td class="px-4 py-3 text-center text-gray-500 font-medium">{{ index + 1 }}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ row.date }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">{{ formatTxnDate(row.date) }}</td>
                                         <td class="px-4 py-3 text-gray-700 font-semibold">{{ row.service_name }}</td>
                                         <td class="px-4 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
                                         <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>

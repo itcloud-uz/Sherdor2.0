@@ -19,6 +19,10 @@ class MachineOwnerTransaction extends Model
         'linked_work_id',
     ];
 
+    protected $casts = [
+        'date' => 'date:Y-m-d',
+    ];
+
     public function machineOwner()
     {
         return $this->belongsTo(MachineOwner::class);

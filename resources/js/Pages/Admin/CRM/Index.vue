@@ -611,9 +611,17 @@ function saveSchedulePayment(schedule) {
     });
 }
 
-const cancelContract = async (id) => {
-    if (!confirm('Haqiqatan ham ushbu shartnomani bekor qilmoqchimisiz? Ushbu amal ob\'yektni yana "sotuvda" holatiga qaytaradi.')) return;
-    
+const showCancelContractModal = ref(false);
+const contractToCancelOrDelete = ref(null);
+
+function openCancelContractModal(contract) {
+    if (!contract) return;
+    contractToCancelOrDelete.value = contract;
+    showCancelContractModal.value = true;
+}
+
+const executeCancelContract = async (id) => {
+    showCancelContractModal.value = false;
     isProcessing.value = true;
     try {
         await axios.post(route('admin.contracts.cancel', id));
@@ -621,13 +629,24 @@ const cancelContract = async (id) => {
             selectClientForDetail(selectedClientForDetail.value);
         } else {
             showModal.value = false;
-            router.reload({ only: ['contracts'] });
+            router.reload({ only: ['contracts', 'clients'] });
         }
     } catch (e) {
         alert('Xatolik yuz berdi: ' + (e.response?.data?.message || e.message));
     } finally {
         isProcessing.value = false;
     }
+};
+
+const executeDeleteContract = (id) => {
+    showCancelContractModal.value = false;
+    deleteContract(id);
+};
+
+const cancelContract = async (id) => {
+    // Fallback if called directly with ID
+    const foundContract = props.contracts?.find(c => c.id === id) || (selectedContract.value?.id === id ? selectedContract.value : { id });
+    openCancelContractModal(foundContract);
 };
 
 const showSotildiConfirmModal = ref(false);
@@ -4792,30 +4811,34 @@ const ledgerReportData = computed(() => {
                                 
                                 <!-- Amallar -->
                                 <td class="p-4 text-right">
-                                    <div class="flex items-center justify-end gap-2.5">
-                                        <!-- Delete -->
-                                        <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors p-1 rounded-lg hover:bg-rose-50" title="O'chirish">
-                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- Cancel / Delete Modal Button -->
+                                        <button v-if="client.contracts && client.contracts.length > 0" @click="openCancelContractModal(client.contracts[0])" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm" title="Bekor qilish yoki o'chirish">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636" />
+                                            </svg>
+                                        </button>
+                                        <button v-else-if="isAdmin" @click="deleteClient(client.id)" class="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm" title="O'chirish">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
                                         <!-- View Detail -->
-                                        <button @click="selectClientForDetail(client, true)" class="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded-lg hover:bg-blue-50" title="Mijoz va shartnoma batafsil">
-                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        <button @click="selectClientForDetail(client, true)" class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm" title="Mijoz va shartnoma batafsil">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-                                        <!-- Edit Contract (If contract exists) -->
-                                        <button v-if="client.contracts && client.contracts.length > 0" @click="editContract(client.contracts[0])" class="text-emerald-600 hover:text-emerald-800 transition-colors p-1 rounded-lg hover:bg-emerald-50" title="Shartnomani tahrirlash">
-                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <!-- Edit Contract or Edit Client -->
+                                        <button v-if="client.contracts && client.contracts.length > 0" @click="editContract(client.contracts[0])" class="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors shadow-sm" title="Shartnomani tahrirlash">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                             </svg>
                                         </button>
-                                        <!-- Edit Client Info -->
-                                        <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-100" title="Mijozni tahrirlash">
-                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        <button v-else-if="isAdmin" @click="openEditClientModal(client)" class="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors shadow-sm" title="Mijozni tahrirlash">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                             </svg>
                                         </button>
                                     </div>
@@ -7989,6 +8012,77 @@ const ledgerReportData = computed(() => {
                         <button type="submit" :disabled="isProcessing" class="px-8 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm">{{ isEditingContract ? 'Saqlash' : $t('create_pipeline') }}</button>
                     </div>
                 </form>
+        </div>
+
+        <!-- MODAL: BEKOR QILISH YOKI O'CHIRISH -->
+        <div v-if="showCancelContractModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-gray-100 space-y-6">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg">
+                            🚫
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900 leading-tight">Shartnomani Bekor Qilish yoki O'chirish</h3>
+                            <p class="text-xs text-gray-500 font-mono mt-0.5" v-if="contractToCancelOrDelete">
+                                Shartnoma #{{ contractToCancelOrDelete.contract_number || contractToCancelOrDelete.id }}
+                            </p>
+                        </div>
+                    </div>
+                    <button @click="showCancelContractModal = false" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Options Container -->
+                <div class="space-y-4">
+                    <!-- Option 1: Shartnomani Bekor Qilish -->
+                    <div class="p-4 rounded-2xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition-all">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-900">1. Shartnomani Bekor Qilish (Status: Canceled)</h4>
+                                <p class="text-xs text-amber-700 mt-1 leading-relaxed">
+                                    <strong>Nima sodir bo'ladi?</strong> Shartnoma holati "Bekor qilingan" deb o'zgartiriladi. Xonadon avtomatik ravishda bo'shatilib, qayta sotuvga chiqariladi (Available). Shartnoma va to'lovlar tarixi tizimda saqlanib qoladi.
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            @click="executeCancelContract(contractToCancelOrDelete.id)" 
+                            :disabled="isProcessing"
+                            class="mt-3 w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                            <span>🚫</span> Shartnomani Bekor Qilish
+                        </button>
+                    </div>
+
+                    <!-- Option 2: Shartnomani Butunlay O'chirish -->
+                    <div class="p-4 rounded-2xl border border-red-200 bg-red-50/50 hover:bg-red-50 transition-all">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-red-900">2. Shartnomani Butunlay O'chirish (Delete)</h4>
+                                <p class="text-xs text-red-700 mt-1 leading-relaxed">
+                                    <strong>Nima sodir bo'ladi?</strong> Shartnoma tizimdan va bazadan to'liq o'chiriladi. U bilan bog'liq barcha to'lov grafiklari va operatsiyalar tozalanadi hamda xonadon ochiq sotuvga chiqariladi.
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            @click="executeDeleteContract(contractToCancelOrDelete.id)" 
+                            :disabled="isProcessing"
+                            class="mt-3 w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                            <span>🗑️</span> Shartnomani Butunlay O'chirish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer / Cancel -->
+                <div class="pt-2 flex justify-end">
+                    <button @click="showCancelContractModal = false" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors">
+                        Yopish
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- LEAD DETAIL MODAL -->

@@ -1,0 +1,68 @@
+{
+    "modules": {
+        "AdminController": {
+            "dashboard": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "CrmController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "FinanceController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "FacilityController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "HrController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            },
+            "texnikalar": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "WarehouseController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "ContractTemplateController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "PartnerHubController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        },
+        "TelephonyController": {
+            "index": {
+                "status": "OK",
+                "message": "Renders successfully"
+            }
+        }
+    },
+    "summary": {
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "readiness_percent": 100
+    }
+}

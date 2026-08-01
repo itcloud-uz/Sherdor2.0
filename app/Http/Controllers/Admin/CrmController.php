@@ -192,6 +192,11 @@ class CrmController extends Controller
             $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category', 'refundSchedules'])->latest()->get();
         }
 
+        $conversionLogs = \App\Models\LeadConversionLog::with(['user:id,name', 'client:id,first_name,last_name,phone'])
+            ->latest()
+            ->limit(100)
+            ->get();
+
         return Inertia::render('Admin/CRM/Index', [
             'leads' => $leads,
             'clients' => $clients,
@@ -217,6 +222,7 @@ class CrmController extends Controller
             'categories' => $categories,
             'buildings' => $buildings,
             'contractTemplates' => $contractTemplates,
+            'conversionLogs' => $conversionLogs,
         ])->toResponse(request())->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',

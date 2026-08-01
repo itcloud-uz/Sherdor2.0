@@ -43,6 +43,7 @@ const props = defineProps({
     leadSources: Array,
     cashRegisters: Array,
     contractTemplates: Array,
+    conversionLogs: Array,
 });
 
 const isAdmin = computed(() => {
@@ -642,6 +643,26 @@ const executeDeleteContract = (id) => {
     showCancelContractModal.value = false;
     deleteContract(id);
 };
+
+const showConversionLogsModal = ref(false);
+const conversionLogSearch = ref('');
+const conversionLogFilter = ref('all');
+
+const filteredConversionLogs = computed(() => {
+    let logs = props.conversionLogs || [];
+    if (conversionLogSearch.value) {
+        const query = conversionLogSearch.value.toLowerCase();
+        logs = logs.filter(l => 
+            (l.lead_name && l.lead_name.toLowerCase().includes(query)) ||
+            (l.lead_phone && l.lead_phone.includes(query)) ||
+            (l.description && l.description.toLowerCase().includes(query))
+        );
+    }
+    if (conversionLogFilter.value !== 'all') {
+        logs = logs.filter(l => l.action === conversionLogFilter.value);
+    }
+    return logs;
+});
 
 const cancelContract = async (id) => {
     // Fallback if called directly with ID
@@ -4120,7 +4141,14 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Action buttons -->
-                <div class="flex items-center gap-2 self-end md:self-auto">
+                <div class="flex items-center gap-2 self-end md:self-auto flex-wrap">
+                    <button 
+                        @click="showConversionLogsModal = true"
+                        class="px-4 py-1.5 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-700 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5"
+                        title="Lidlarning mijozlar bo'limiga o'tkazilishi va so'nggi harakatlar tarixi"
+                    >
+                        📜 O'tkazmalar tarixi
+                    </button>
                     <button 
                         @click="openAiSettings"
                         class="px-4 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-2"
@@ -8080,6 +8108,128 @@ const ledgerReportData = computed(() => {
                 <!-- Footer / Cancel -->
                 <div class="pt-2 flex justify-end">
                     <button @click="showCancelContractModal = false" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors">
+                        Yopish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: LEAD CONVERSION & AUDIT LOGS -->
+        <div v-if="showConversionLogsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl border border-gray-100 space-y-6 max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg">
+                            📜
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900 leading-tight">Lidlar Konversiyasi va So'nggi Harakatlar Tarixi</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                Mijozlar bo'limiga o'tkazilgan lidlar, birlashtirishlar va tizim harakatlari jurnali (Audit Trail)
+                            </p>
+                        </div>
+                    </div>
+                    <button @click="showConversionLogsModal = false" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Controls: Search & Filter -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <!-- Search -->
+                    <div class="relative w-full sm:w-72">
+                        <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                        <input 
+                            v-model="conversionLogSearch" 
+                            type="text" 
+                            placeholder="Ism yoki telefon bo'yicha qidiruv..." 
+                            class="w-full bg-white border border-gray-300 text-gray-800 text-xs rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                        />
+                    </div>
+
+                    <!-- Action Filter -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select v-model="conversionLogFilter" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                            <option value="all">Barcha harakatlar</option>
+                            <option value="converted">Yangi Mijoz yaratilganlar</option>
+                            <option value="merged">Mavjud mijozga biriktirilganlar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Logs Table -->
+                <div class="flex-1 overflow-y-auto border border-gray-150 rounded-2xl bg-white">
+                    <table class="w-full text-left border-collapse text-xs font-sans">
+                        <thead class="bg-gray-50 sticky top-0 border-b border-gray-200 text-gray-500 font-bold uppercase text-[9px] tracking-wider z-10">
+                            <tr>
+                                <th class="p-3.5">Vaqt & Sana</th>
+                                <th class="p-3.5">Lid / Mijoz</th>
+                                <th class="p-3.5">Harakat</th>
+                                <th class="p-3.5">Batafsil Izoh</th>
+                                <th class="p-3.5">Ijrochi</th>
+                                <th class="p-3.5 text-right">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="log in filteredConversionLogs" :key="log.id" class="hover:bg-purple-50/20 transition-colors">
+                                <!-- Date -->
+                                <td class="p-3.5 text-gray-600 font-mono whitespace-nowrap text-[11px]">
+                                    {{ new Date(log.created_at).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+                                </td>
+
+                                <!-- Lead Name & Phone -->
+                                <td class="p-3.5">
+                                    <h4 class="font-bold text-gray-900 text-xs">{{ log.lead_name || 'Lid' }}</h4>
+                                    <p class="text-[10px] text-gray-500 font-mono mt-0.5">{{ log.lead_phone || '—' }}</p>
+                                </td>
+
+                                <!-- Action Badge -->
+                                <td class="p-3.5">
+                                    <span 
+                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border shadow-sm"
+                                        :class="log.action === 'converted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'"
+                                    >
+                                        {{ log.action === 'converted' ? '✓ Mijoz yaratildi' : '🔗 Biriktirildi' }}
+                                    </span>
+                                </td>
+
+                                <!-- Description -->
+                                <td class="p-3.5 text-gray-700 text-xs max-w-md leading-relaxed">
+                                    {{ log.description }}
+                                </td>
+
+                                <!-- User -->
+                                <td class="p-3.5 text-gray-600 font-medium whitespace-nowrap text-xs">
+                                    {{ log.user?.name || 'Tizim' }}
+                                </td>
+
+                                <!-- View Client Button -->
+                                <td class="p-3.5 text-right whitespace-nowrap">
+                                    <button 
+                                        v-if="log.client"
+                                        @click="showConversionLogsModal = false; selectClientForDetail(log.client, true)"
+                                        class="px-3 py-1 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white text-[11px] font-bold rounded-lg transition-colors border border-blue-200 flex items-center gap-1 ml-auto"
+                                        title="Mijoz profiliga o'tish"
+                                    >
+                                        👁️ Mijozni ko'rish
+                                    </button>
+                                    <span v-else class="text-gray-400 text-[10px]">—</span>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredConversionLogs.length === 0">
+                                <td colspan="6" class="py-16 text-center text-gray-400 font-mono text-xs">
+                                    Hozircha o'tkazilgan lidlar tarixi topilmadi.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-2 flex justify-between items-center border-t border-gray-100">
+                    <span class="text-xs text-gray-500 font-mono">Jami o'tkazmalar: {{ filteredConversionLogs.length }} ta</span>
+                    <button @click="showConversionLogsModal = false" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors">
                         Yopish
                     </button>
                 </div>

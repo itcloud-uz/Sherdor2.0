@@ -1,0 +1,886 @@
+{
+    "timestamp": "2026-07-31 13:33:02",
+    "database_tables": {
+        "approval_requests": {
+            "status": "OK",
+            "rows": 1
+        },
+        "attendance_logs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "audience_lists": {
+            "status": "OK",
+            "rows": 0
+        },
+        "brigade_transactions": {
+            "status": "OK",
+            "rows": 0
+        },
+        "brigade_works": {
+            "status": "OK",
+            "rows": 0
+        },
+        "brigades": {
+            "status": "OK",
+            "rows": 4
+        },
+        "buildings": {
+            "status": "OK",
+            "rows": 5
+        },
+        "cache": {
+            "status": "OK",
+            "rows": 0
+        },
+        "cache_locks": {
+            "status": "OK",
+            "rows": 0
+        },
+        "call_logs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "cash_registers": {
+            "status": "OK",
+            "rows": 7
+        },
+        "cash_requests": {
+            "status": "OK",
+            "rows": 0
+        },
+        "clause_variant_groups": {
+            "status": "OK",
+            "rows": 3
+        },
+        "clause_variants": {
+            "status": "OK",
+            "rows": 10
+        },
+        "client_comments": {
+            "status": "OK",
+            "rows": 0
+        },
+        "clients": {
+            "status": "OK",
+            "rows": 93
+        },
+        "company_balances": {
+            "status": "OK",
+            "rows": 1
+        },
+        "consensus_requests": {
+            "status": "OK",
+            "rows": 0
+        },
+        "consensus_votes": {
+            "status": "OK",
+            "rows": 0
+        },
+        "construction_stages": {
+            "status": "OK",
+            "rows": 0
+        },
+        "contract_templates": {
+            "status": "OK",
+            "rows": 3
+        },
+        "contracts": {
+            "status": "OK",
+            "rows": 2
+        },
+        "counterparties": {
+            "status": "OK",
+            "rows": 104
+        },
+        "crm_settings": {
+            "status": "OK",
+            "rows": 0
+        },
+        "currency_rates": {
+            "status": "OK",
+            "rows": 3
+        },
+        "eskiz_settings": {
+            "status": "OK",
+            "rows": 1
+        },
+        "expense_approvals": {
+            "status": "OK",
+            "rows": 0
+        },
+        "failed_jobs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "finance_actions": {
+            "status": "OK",
+            "rows": 2054
+        },
+        "financial_liabilities": {
+            "status": "OK",
+            "rows": 0
+        },
+        "fixed_assets": {
+            "status": "OK",
+            "rows": 3
+        },
+        "floors": {
+            "status": "OK",
+            "rows": 72
+        },
+        "hardware_api_keys": {
+            "status": "OK",
+            "rows": 1
+        },
+        "inventory_items": {
+            "status": "OK",
+            "rows": 2
+        },
+        "inventory_transactions": {
+            "status": "OK",
+            "rows": 0
+        },
+        "invoices": {
+            "status": "OK",
+            "rows": 0
+        },
+        "job_batches": {
+            "status": "OK",
+            "rows": 0
+        },
+        "jobs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "lead_sources": {
+            "status": "OK",
+            "rows": 5
+        },
+        "leads": {
+            "status": "OK",
+            "rows": 2
+        },
+        "liability_payments": {
+            "status": "OK",
+            "rows": 0
+        },
+        "machine_owner_transactions": {
+            "status": "OK",
+            "rows": 23
+        },
+        "machine_owners": {
+            "status": "OK",
+            "rows": 5
+        },
+        "machine_works": {
+            "status": "OK",
+            "rows": 7
+        },
+        "machineries": {
+            "status": "OK",
+            "rows": 12
+        },
+        "machinery_logs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "machinery_transactions": {
+            "status": "OK",
+            "rows": 0
+        },
+        "migrations": {
+            "status": "OK",
+            "rows": 214
+        },
+        "model_has_permissions": {
+            "status": "OK",
+            "rows": 0
+        },
+        "model_has_roles": {
+            "status": "OK",
+            "rows": 4
+        },
+        "money_transfers": {
+            "status": "OK",
+            "rows": 0
+        },
+        "partners": {
+            "status": "OK",
+            "rows": 2
+        },
+        "password_reset_tokens": {
+            "status": "OK",
+            "rows": 0
+        },
+        "payment_schedules": {
+            "status": "OK",
+            "rows": 44
+        },
+        "payrolls": {
+            "status": "OK",
+            "rows": 1
+        },
+        "permissions": {
+            "status": "OK",
+            "rows": 9
+        },
+        "personal_access_tokens": {
+            "status": "OK",
+            "rows": 0
+        },
+        "podezes": {
+            "status": "OK",
+            "rows": 8
+        },
+        "posts": {
+            "status": "OK",
+            "rows": 0
+        },
+        "purchase_order_items": {
+            "status": "OK",
+            "rows": 0
+        },
+        "purchase_orders": {
+            "status": "OK",
+            "rows": 0
+        },
+        "refund_schedules": {
+            "status": "OK",
+            "rows": 0
+        },
+        "role_has_permissions": {
+            "status": "OK",
+            "rows": 26
+        },
+        "roles": {
+            "status": "OK",
+            "rows": 5
+        },
+        "salary_accruals": {
+            "status": "OK",
+            "rows": 0
+        },
+        "salary_periods": {
+            "status": "OK",
+            "rows": 14
+        },
+        "scheduled_sms": {
+            "status": "OK",
+            "rows": 0
+        },
+        "sessions": {
+            "status": "OK",
+            "rows": 11
+        },
+        "settings": {
+            "status": "OK",
+            "rows": 0
+        },
+        "sms_automation_rules": {
+            "status": "OK",
+            "rows": 1
+        },
+        "sms_campaigns": {
+            "status": "OK",
+            "rows": 0
+        },
+        "sms_logs": {
+            "status": "OK",
+            "rows": 13
+        },
+        "sms_templates": {
+            "status": "OK",
+            "rows": 5
+        },
+        "sub_ledgers": {
+            "status": "OK",
+            "rows": 0
+        },
+        "supplier_contracts": {
+            "status": "OK",
+            "rows": 0
+        },
+        "suppliers": {
+            "status": "OK",
+            "rows": 1
+        },
+        "system_settings": {
+            "status": "OK",
+            "rows": 1
+        },
+        "telephony_audios": {
+            "status": "OK",
+            "rows": 0
+        },
+        "telephony_campaigns": {
+            "status": "OK",
+            "rows": 0
+        },
+        "telephony_leads": {
+            "status": "OK",
+            "rows": 0
+        },
+        "transaction_categories": {
+            "status": "OK",
+            "rows": 23
+        },
+        "transaction_edit_requests": {
+            "status": "OK",
+            "rows": 0
+        },
+        "transaction_imports": {
+            "status": "OK",
+            "rows": 19
+        },
+        "transactions": {
+            "status": "OK",
+            "rows": 1149
+        },
+        "units": {
+            "status": "OK",
+            "rows": 357
+        },
+        "user_transactions": {
+            "status": "OK",
+            "rows": 89
+        },
+        "users": {
+            "status": "OK",
+            "rows": 4
+        },
+        "visitors_and_deliveries": {
+            "status": "OK",
+            "rows": 0
+        },
+        "warehouses": {
+            "status": "OK",
+            "rows": 2
+        },
+        "work_logs": {
+            "status": "OK",
+            "rows": 0
+        },
+        "worker_salary_histories": {
+            "status": "OK",
+            "rows": 4
+        },
+        "worker_transactions": {
+            "status": "OK",
+            "rows": 127
+        },
+        "workers": {
+            "status": "OK",
+            "rows": 5
+        }
+    },
+    "modules": {
+        "Boshqaruv Paneli (Dashboard)": {
+            "total": 1,
+            "passed": 0,
+            "failed": 1,
+            "routes": [
+                {
+                    "name": "admin.dashboard",
+                    "uri": "admin\/dashboard",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Boshqa Bolimlar": {
+            "total": 8,
+            "passed": 0,
+            "failed": 8,
+            "routes": [
+                {
+                    "name": "admin.financial.reports",
+                    "uri": "admin\/financial-reports",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.contracts.cancelled",
+                    "uri": "admin\/contracts\/cancelled",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.partners",
+                    "uri": "admin\/partners",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.fixed_assets",
+                    "uri": "admin\/fixed-assets",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.partners.ledger",
+                    "uri": "admin\/partners\/{partner}\/ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.approvals",
+                    "uri": "admin\/approvals",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.ai_agents",
+                    "uri": "admin\/ai-agents",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.receipts",
+                    "uri": "admin\/receipts",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "CRM (Lidlar, Mijozlar, Shartnomalar)": {
+            "total": 16,
+            "passed": 0,
+            "failed": 16,
+            "routes": [
+                {
+                    "name": "admin.crm",
+                    "uri": "admin\/crm",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.showroom",
+                    "uri": "admin\/crm\/showroom",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.clients.details",
+                    "uri": "admin\/crm\/clients\/{client}\/details",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.crm.export.clients.excel",
+                    "uri": "admin\/crm\/clients\/export\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.export.contracts.excel",
+                    "uri": "admin\/crm\/contracts\/export\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.export.clients.pdf",
+                    "uri": "admin\/crm\/clients\/export\/pdf",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.export.overdue.excel",
+                    "uri": "admin\/crm\/overdue\/export\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.crm.clients.comments.index",
+                    "uri": "admin\/crm\/clients\/{client}\/comments",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.export.pdf",
+                    "uri": "admin\/crm\/ledger\/{contract}\/export\/pdf",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.export.docx",
+                    "uri": "admin\/crm\/ledger\/{contract}\/export\/docx",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.export.xlsx",
+                    "uri": "admin\/crm\/ledger\/{contract}\/export\/xlsx",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.ledger.preview",
+                    "uri": "admin\/crm\/ledger\/{contract}\/preview",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.document.export.pdf",
+                    "uri": "admin\/crm\/contracts\/{contract}\/export-doc\/pdf",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.document.export.docx",
+                    "uri": "admin\/crm\/contracts\/{contract}\/export-doc\/docx",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contracts.document.preview",
+                    "uri": "admin\/crm\/contracts\/{contract}\/preview-doc",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.contract-templates.index",
+                    "uri": "admin\/crm\/contract-templates",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Qurilish va Obyektlar (Facility & Buildings)": {
+            "total": 4,
+            "passed": 0,
+            "failed": 4,
+            "routes": [
+                {
+                    "name": "admin.facility.report.export",
+                    "uri": "admin\/facility\/report\/export",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.facility",
+                    "uri": "admin\/facility",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.facility.buildings.create",
+                    "uri": "admin\/facility\/buildings\/create",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.facility.buildings.edit",
+                    "uri": "admin\/facility\/buildings\/{building}\/edit",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Sozlamalar (Settings & Users)": {
+            "total": 2,
+            "passed": 0,
+            "failed": 2,
+            "routes": [
+                {
+                    "name": "admin.developer.settings",
+                    "uri": "admin\/developer\/settings",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.settings.index",
+                    "uri": "admin\/settings",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Moliya va Kassalar (Finance Core)": {
+            "total": 13,
+            "passed": 0,
+            "failed": 13,
+            "routes": [
+                {
+                    "name": "admin.finance",
+                    "uri": "admin\/finance",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.expenses.breakdown",
+                    "uri": "admin\/finance\/expenses-breakdown",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.expenses.report.export.pdf",
+                    "uri": "admin\/finance\/expenses-report\/export\/pdf",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.transactions.export.pdf",
+                    "uri": "admin\/finance\/transactions\/{transaction}\/export\/pdf",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.finance.transactions.export.print",
+                    "uri": "admin\/finance\/transactions\/{transaction}\/print",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.finance.invoices.export.xlsx",
+                    "uri": "admin\/finance\/invoices\/export\/xlsx",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.transactions.export.xlsx",
+                    "uri": "admin\/finance\/transactions\/export\/xlsx",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.transaction_requests.index",
+                    "uri": "admin\/finance\/transaction-requests",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.transactions.export.category.excel",
+                    "uri": "admin\/finance\/category-export\/{category}\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.transactions.export.category.pdf",
+                    "uri": "admin\/finance\/category-export\/{category}\/pdf",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.finance.liabilities.export.pdf",
+                    "uri": "admin\/finance\/liabilities\/{liability}\/export\/pdf",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.finance.liabilities.export.docx",
+                    "uri": "admin\/finance\/liabilities\/{liability}\/export\/docx",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.finance.liabilities.export.xlsx",
+                    "uri": "admin\/finance\/liabilities\/{liability}\/export\/xlsx",
+                    "status": "FAILED (404)"
+                }
+            ]
+        },
+        "Kadrlar va Texnikalar (HR & Machinery)": {
+            "total": 16,
+            "passed": 0,
+            "failed": 16,
+            "routes": [
+                {
+                    "name": "admin.hr",
+                    "uri": "admin\/hr",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.qurilish_ish_haqi",
+                    "uri": "admin\/hr\/qurilish-ish-haqi",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.texnikalar",
+                    "uri": "admin\/hr\/texnikalar",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.brigade.transactions",
+                    "uri": "admin\/hr\/brigades\/{brigade}\/transactions",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.brigade.ledger.export",
+                    "uri": "admin\/hr\/brigades\/{brigade}\/export-ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.brigade.works.index",
+                    "uri": "admin\/hr\/brigades\/{brigade}\/works",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.target.unpaid_works",
+                    "uri": "admin\/hr\/target\/{type}\/{id}\/unpaid-works",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.worker.ledger",
+                    "uri": "admin\/hr\/worker\/{worker}\/ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.worker.ledger.export",
+                    "uri": "admin\/hr\/worker\/{worker}\/ledger\/export",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.guard.transactions",
+                    "uri": "admin\/hr\/guard\/{guard}\/transactions",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.users.ledger",
+                    "uri": "admin\/hr\/users\/{user}\/ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.users.ledger.export",
+                    "uri": "admin\/hr\/users\/{user}\/ledger\/export",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.machinery.ledger",
+                    "uri": "admin\/hr\/machinery\/{machinery}\/ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.hr.owner.transactions",
+                    "uri": "admin\/hr\/owner\/{owner}\/transactions",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.owner.ledger.export",
+                    "uri": "admin\/hr\/owner\/{owner}\/ledger\/export",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.hr.payroll.print",
+                    "uri": "admin\/hr\/payroll\/{id}\/print",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Telefoniya (Telephony & Calls)": {
+            "total": 4,
+            "passed": 0,
+            "failed": 4,
+            "routes": [
+                {
+                    "name": "admin.telephony.index",
+                    "uri": "admin\/telephony",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.telephony.logs",
+                    "uri": "admin\/telephony\/logs",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.telephony.audios.get",
+                    "uri": "admin\/telephony\/audios",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.telephony.ai_config.get",
+                    "uri": "admin\/telephony\/ai-config",
+                    "status": "FAILED (500)"
+                }
+            ]
+        },
+        "Omborxona (Warehouse & Materials)": {
+            "total": 9,
+            "passed": 0,
+            "failed": 9,
+            "routes": [
+                {
+                    "name": "admin.warehouse.index",
+                    "uri": "admin\/warehouse",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.inventory",
+                    "uri": "admin\/warehouse\/inventory",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.inventory.export.excel",
+                    "uri": "admin\/warehouse\/inventory\/export\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.suppliers",
+                    "uri": "admin\/warehouse\/suppliers",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.suppliers.export.excel",
+                    "uri": "admin\/warehouse\/suppliers\/export\/excel",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.suppliers.ledger",
+                    "uri": "admin\/warehouse\/suppliers\/{supplier}\/ledger",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.warehouse.suppliers.ledger.excel",
+                    "uri": "admin\/warehouse\/suppliers\/{supplier}\/ledger\/excel",
+                    "status": "FAILED (404)"
+                },
+                {
+                    "name": "admin.warehouse.orders",
+                    "uri": "admin\/warehouse\/orders",
+                    "status": "FAILED (500)"
+                },
+                {
+                    "name": "admin.warehouse.orders.pdf",
+                    "uri": "admin\/warehouse\/orders\/{order}\/pdf",
+                    "status": "FAILED (404)"
+                }
+            ]
+        }
+    },
+    "errors_found": [
+        "Route error [admin.dashboard]: HTTP 500 on route admin\/dashboard",
+        "Route error [admin.financial.reports]: HTTP 500 on route admin\/financial-reports",
+        "Route error [admin.crm]: HTTP 500 on route admin\/crm",
+        "Route error [admin.crm.showroom]: HTTP 500 on route admin\/crm\/showroom",
+        "Route error [admin.crm.clients.details]: HTTP 404 on route admin\/crm\/clients\/{client}\/details",
+        "Route error [admin.crm.export.clients.excel]: HTTP 500 on route admin\/crm\/clients\/export\/excel",
+        "Route error [admin.crm.export.contracts.excel]: HTTP 500 on route admin\/crm\/contracts\/export\/excel",
+        "Route error [admin.crm.export.clients.pdf]: HTTP 500 on route admin\/crm\/clients\/export\/pdf",
+        "Route error [admin.crm.export.overdue.excel]: HTTP 500 on route admin\/crm\/overdue\/export\/excel",
+        "Route error [admin.crm.clients.comments.index]: HTTP 404 on route admin\/crm\/clients\/{client}\/comments",
+        "Route error [admin.contracts.cancelled]: HTTP 500 on route admin\/contracts\/cancelled",
+        "Route error [admin.contracts.export.pdf]: HTTP 404 on route admin\/crm\/ledger\/{contract}\/export\/pdf",
+        "Route error [admin.contracts.export.docx]: HTTP 404 on route admin\/crm\/ledger\/{contract}\/export\/docx",
+        "Route error [admin.contracts.export.xlsx]: HTTP 404 on route admin\/crm\/ledger\/{contract}\/export\/xlsx",
+        "Route error [admin.contracts.ledger.preview]: HTTP 404 on route admin\/crm\/ledger\/{contract}\/preview",
+        "Route error [admin.contracts.document.export.pdf]: HTTP 404 on route admin\/crm\/contracts\/{contract}\/export-doc\/pdf",
+        "Route error [admin.contracts.document.export.docx]: HTTP 404 on route admin\/crm\/contracts\/{contract}\/export-doc\/docx",
+        "Route error [admin.contracts.document.preview]: HTTP 404 on route admin\/crm\/contracts\/{contract}\/preview-doc",
+        "Route error [admin.contract-templates.index]: HTTP 500 on route admin\/crm\/contract-templates",
+        "Route error [admin.facility.report.export]: HTTP 500 on route admin\/facility\/report\/export",
+        "Route error [admin.facility]: HTTP 500 on route admin\/facility",
+        "Route error [admin.facility.buildings.create]: HTTP 500 on route admin\/facility\/buildings\/create",
+        "Route error [admin.facility.buildings.edit]: HTTP 500 on route admin\/facility\/buildings\/{building}\/edit",
+        "Route error [admin.developer.settings]: HTTP 500 on route admin\/developer\/settings",
+        "Route error [admin.finance]: HTTP 500 on route admin\/finance",
+        "Route error [admin.finance.expenses.breakdown]: HTTP 500 on route admin\/finance\/expenses-breakdown",
+        "Route error [admin.finance.expenses.report.export.pdf]: HTTP 500 on route admin\/finance\/expenses-report\/export\/pdf",
+        "Route error [admin.finance.transactions.export.pdf]: HTTP 404 on route admin\/finance\/transactions\/{transaction}\/export\/pdf",
+        "Route error [admin.finance.transactions.export.print]: HTTP 404 on route admin\/finance\/transactions\/{transaction}\/print",
+        "Route error [admin.finance.invoices.export.xlsx]: HTTP 500 on route admin\/finance\/invoices\/export\/xlsx",
+        "Route error [admin.finance.transactions.export.xlsx]: HTTP 500 on route admin\/finance\/transactions\/export\/xlsx",
+        "Route error [admin.finance.transaction_requests.index]: HTTP 500 on route admin\/finance\/transaction-requests",
+        "Route error [admin.finance.transactions.export.category.excel]: HTTP 500 on route admin\/finance\/category-export\/{category}\/excel",
+        "Route error [admin.finance.transactions.export.category.pdf]: HTTP 500 on route admin\/finance\/category-export\/{category}\/pdf",
+        "Route error [admin.finance.liabilities.export.pdf]: HTTP 404 on route admin\/finance\/liabilities\/{liability}\/export\/pdf",
+        "Route error [admin.finance.liabilities.export.docx]: HTTP 404 on route admin\/finance\/liabilities\/{liability}\/export\/docx",
+        "Route error [admin.finance.liabilities.export.xlsx]: HTTP 404 on route admin\/finance\/liabilities\/{liability}\/export\/xlsx",
+        "Route error [admin.partners]: HTTP 500 on route admin\/partners",
+        "Route error [admin.fixed_assets]: HTTP 500 on route admin\/fixed-assets",
+        "Route error [admin.partners.ledger]: HTTP 404 on route admin\/partners\/{partner}\/ledger",
+        "Route error [admin.approvals]: HTTP 500 on route admin\/approvals",
+        "Route error [admin.hr]: HTTP 500 on route admin\/hr",
+        "Route error [admin.hr.qurilish_ish_haqi]: HTTP 500 on route admin\/hr\/qurilish-ish-haqi",
+        "Route error [admin.hr.texnikalar]: HTTP 500 on route admin\/hr\/texnikalar",
+        "Route error [admin.hr.brigade.transactions]: HTTP 404 on route admin\/hr\/brigades\/{brigade}\/transactions",
+        "Route error [admin.hr.brigade.ledger.export]: HTTP 404 on route admin\/hr\/brigades\/{brigade}\/export-ledger",
+        "Route error [admin.hr.brigade.works.index]: HTTP 404 on route admin\/hr\/brigades\/{brigade}\/works",
+        "Route error [admin.hr.target.unpaid_works]: HTTP 500 on route admin\/hr\/target\/{type}\/{id}\/unpaid-works",
+        "Route error [admin.hr.worker.ledger]: HTTP 404 on route admin\/hr\/worker\/{worker}\/ledger",
+        "Route error [admin.hr.worker.ledger.export]: HTTP 404 on route admin\/hr\/worker\/{worker}\/ledger\/export",
+        "Route error [admin.hr.guard.transactions]: HTTP 404 on route admin\/hr\/guard\/{guard}\/transactions",
+        "Route error [admin.hr.users.ledger]: HTTP 404 on route admin\/hr\/users\/{user}\/ledger",
+        "Route error [admin.hr.users.ledger.export]: HTTP 404 on route admin\/hr\/users\/{user}\/ledger\/export",
+        "Route error [admin.hr.machinery.ledger]: HTTP 404 on route admin\/hr\/machinery\/{machinery}\/ledger",
+        "Route error [admin.hr.owner.transactions]: HTTP 500 on route admin\/hr\/owner\/{owner}\/transactions",
+        "Route error [admin.hr.owner.ledger.export]: HTTP 500 on route admin\/hr\/owner\/{owner}\/ledger\/export",
+        "Route error [admin.hr.payroll.print]: HTTP 500 on route admin\/hr\/payroll\/{id}\/print",
+        "Route error [admin.ai_agents]: HTTP 500 on route admin\/ai-agents",
+        "Route error [admin.telephony.index]: HTTP 500 on route admin\/telephony",
+        "Route error [admin.telephony.logs]: HTTP 500 on route admin\/telephony\/logs",
+        "Route error [admin.telephony.audios.get]: HTTP 500 on route admin\/telephony\/audios",
+        "Route error [admin.telephony.ai_config.get]: HTTP 500 on route admin\/telephony\/ai-config",
+        "Route error [admin.settings.index]: HTTP 500 on route admin\/settings",
+        "Route error [admin.receipts]: HTTP 500 on route admin\/receipts",
+        "Route error [admin.warehouse.index]: HTTP 500 on route admin\/warehouse",
+        "Route error [admin.warehouse.inventory]: HTTP 500 on route admin\/warehouse\/inventory",
+        "Route error [admin.warehouse.inventory.export.excel]: HTTP 500 on route admin\/warehouse\/inventory\/export\/excel",
+        "Route error [admin.warehouse.suppliers]: HTTP 500 on route admin\/warehouse\/suppliers",
+        "Route error [admin.warehouse.suppliers.export.excel]: HTTP 500 on route admin\/warehouse\/suppliers\/export\/excel",
+        "Route error [admin.warehouse.suppliers.ledger]: HTTP 404 on route admin\/warehouse\/suppliers\/{supplier}\/ledger",
+        "Route error [admin.warehouse.suppliers.ledger.excel]: HTTP 404 on route admin\/warehouse\/suppliers\/{supplier}\/ledger\/excel",
+        "Route error [admin.warehouse.orders]: HTTP 500 on route admin\/warehouse\/orders",
+        "Route error [admin.warehouse.orders.pdf]: HTTP 404 on route admin\/warehouse\/orders\/{order}\/pdf"
+    ],
+    "total_routes": 73,
+    "passed_routes": 0,
+    "failed_routes": 73,
+    "overall_readiness_percent": 0
+}

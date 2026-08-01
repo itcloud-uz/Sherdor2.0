@@ -994,7 +994,54 @@ function openEditClientModal(client) {
         contract_language: client.contract_language || 'O\'zbek tili',
         contract_id: client.contract_id || ''
     };
-    contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
+
+    if (client.contracts && client.contracts.length > 0) {
+        const contract = client.contracts[0];
+        isEditingContract.value = true;
+        currentContractId.value = contract.id;
+        
+        const incomeTxns = (contract.transactions || []).filter(t => t.type === 'income');
+        const existingPaidSum = incomeTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        const firstTx = incomeTxns.length > 0 ? incomeTxns[0] : null;
+
+        contractForm.value = { 
+            buyer_type: contract.partner_id ? 'partner' : 'client',
+            partner_id: contract.partner_id || '',
+            client_id: contract.client_id || client.id, 
+            unit_id: contract.unit_id, 
+            contract_number: contract.contract_number || '',
+            contract_type: contract.contract_type || 'residential', 
+            price_per_sqm: contract.price_per_sqm, 
+            total_amount: contract.total_amount, 
+            down_payment: contract.down_payment, 
+            term_months: contract.term_months, 
+            payment_type: contract.payment_type || 'installment',
+            created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
+            actual_paid_amount: existingPaidSum || '',
+            payment_method: firstTx ? firstTx.account_type || 'bank' : 'bank',
+            account_id: firstTx ? firstTx.account_id || '' : '',
+            floor: contract.floor || contract.unit?.floor?.floor_number || '',
+            rooms: contract.rooms || contract.unit?.rooms_count || '',
+            user_id: contract.user_id || '',
+            contract_template_id: contract.contract_template_id || '',
+            selected_variants: (() => {
+                const sv = contract.selected_variants || {};
+                if (!sv.custom_placeholders) {
+                    sv.custom_placeholders = {};
+                }
+                return sv;
+            })()
+        };
+        
+        if (contract.unit?.floor?.building_id || contract.unit?.floor?.building?.id) {
+            selectedBuildingId.value = contract.unit?.floor?.building_id || contract.unit?.floor?.building?.id;
+        }
+    } else {
+        isEditingContract.value = false;
+        currentContractId.value = null;
+        contractForm.value = { buyer_type: 'client', partner_id: '', client_id: client.id, unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
+    }
+
     showCreateClientModal.value = true;
 }
 
@@ -4747,27 +4794,27 @@ const ledgerReportData = computed(() => {
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-2.5">
                                         <!-- Delete -->
-                                        <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors" title="O'chirish">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <button v-if="isAdmin" @click="deleteClient(client.id)" class="text-rose-500 hover:text-rose-700 transition-colors p-1 rounded-lg hover:bg-rose-50" title="O'chirish">
+                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </button>
-                                        <!-- View -->
-                                        <button @click="selectClientForDetail(client, true)" class="text-blue-500 hover:text-blue-700 transition-colors" title="Mijoz haqida">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <!-- View Detail -->
+                                        <button @click="selectClientForDetail(client, true)" class="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded-lg hover:bg-blue-50" title="Mijoz va shartnoma batafsil">
+                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-                                        <!-- Edit Contract (if client has a contract) -->
-                                        <button v-if="client.contracts && client.contracts.length > 0" @click="editContract(client.contracts[0])" class="text-emerald-600 hover:text-emerald-800 transition-colors" title="Shartnomani tahrirlash">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <!-- Edit Contract (If contract exists) -->
+                                        <button v-if="client.contracts && client.contracts.length > 0" @click="editContract(client.contracts[0])" class="text-emerald-600 hover:text-emerald-800 transition-colors p-1 rounded-lg hover:bg-emerald-50" title="Shartnomani tahrirlash">
+                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </button>
-                                        <!-- Edit Client Profile -->
-                                        <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors" title="Mijoz ma'lumotlarini tahrirlash">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <!-- Edit Client Info -->
+                                        <button v-if="isAdmin" @click="openEditClientModal(client)" class="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-100" title="Mijozni tahrirlash">
+                                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                             </svg>
                                         </button>
@@ -4846,14 +4893,14 @@ const ledgerReportData = computed(() => {
                             Bekor qilish
                         </button>
                         <!-- Shartnomani Tahrirlash Button -->
-                        <button v-if="selectedContract || (detailedClientData.contracts && detailedClientData.contracts.length > 0)" @click="editContract(selectedContract || detailedClientData.contracts[0])" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 font-sans">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                            Shartnomani tahrirlash
+                        <button v-if="selectedContract" @click="editContract(selectedContract)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            Shartnomani Tahrirlash
                         </button>
                         <!-- Mijozni Tahrirlash Button -->
                         <button @click="openEditClientModal(detailedClientData)" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                            Mijozni tahrirlash
+                            Mijozni Tahrirlash
                         </button>
                     </div>
                 </div>

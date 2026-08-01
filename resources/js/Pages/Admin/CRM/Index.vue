@@ -1946,6 +1946,7 @@ const leadsSearchQuery = ref('');
 const leadsSourceFilter = ref('');
 const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
+const selectedStatusFilter = ref('');
 const clientContractFilter = ref('all'); // 'all', 'with_contract', 'without_contract'
 const clientSortBy = ref('contract_asc'); // 'contract_asc', 'contract_desc', 'newest', 'oldest', 'alphabet_asc', 'alphabet_desc'
 const selectedManagerFilter = ref('');

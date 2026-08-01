@@ -497,12 +497,45 @@ class CrmController extends Controller
 
     public function convertLeadToClient(Lead $lead, \Illuminate\Http\Request $request = null)
     {
-        // Check if phone already exists
-        if (\App\Models\Client::where('phone', $lead->phone)->exists()) {
-            if ($request && $request->wantsJson()) {
-                return response()->json(['message' => 'Bunday telefon raqamli mijoz allaqachon mavjud!'], 400);
+        $cleanLeadPhone = preg_replace('/[^0-9]/', '', $lead->phone ?? '');
+
+        // Search for existing client by exact phone or normalized phone digits
+        $existingClient = null;
+        if (!empty($lead->phone)) {
+            $existingClient = \App\Models\Client::where('phone', $lead->phone)->first();
+        }
+        if (!$existingClient && !empty($cleanLeadPhone)) {
+            $allClients = \App\Models\Client::select('id', 'phone', 'passport_number', 'region', 'district', 'address', 'source', 'pinfl')->get();
+            foreach ($allClients as $c) {
+                if (!empty($c->phone) && preg_replace('/[^0-9]/', '', $c->phone) === $cleanLeadPhone) {
+                    $existingClient = $c;
+                    break;
+                }
             }
-            return redirect()->back()->withErrors(['message' => 'Bunday telefon raqamli mijoz allaqachon mavjud!']);
+        }
+
+        if ($existingClient) {
+            // Update existing client with lead data if client fields are empty
+            $updateData = [];
+            if (empty($existingClient->passport_number) && !empty($lead->passport_series)) $updateData['passport_number'] = $lead->passport_series;
+            if (empty($existingClient->region) && !empty($lead->region)) $updateData['region'] = $lead->region;
+            if (empty($existingClient->district) && !empty($lead->district)) $updateData['district'] = $lead->district;
+            if (empty($existingClient->address) && !empty($lead->address)) $updateData['address'] = $lead->address;
+            if (empty($existingClient->source) && !empty($lead->source)) $updateData['source'] = $lead->source;
+            if (empty($existingClient->pinfl) && !empty($lead->pinfl)) $updateData['pinfl'] = $lead->pinfl;
+
+            if (!empty($updateData)) {
+                $existingClient->update($updateData);
+            }
+
+            // Delete the lead from leads table so it disappears from leads
+            $lead->delete();
+
+            if ($request && $request->wantsJson()) {
+                return response()->json(['message' => 'Mijoz allaqachon mavjud edi, ma\'lumotlar birlashtirildi va lid o\'tkazildi!']);
+            }
+
+            return redirect()->back()->with('message', 'Mijoz allaqachon mavjud edi, ma\'lumotlar birlashtirildi va lid o\'tkazildi!');
         }
 
         $lastName = $lead->last_name;
@@ -525,7 +558,7 @@ class CrmController extends Controller
             'first_name' => $firstName ?: '',
             'last_name' => $lastName ?: '',
             'middle_name' => $middleName ?: '',
-            'phone' => $lead->phone,
+            'phone' => $lead->phone ?: '',
             'phone_2' => $lead->phone_2,
             'passport_number' => $lead->passport_series,
             'region' => $lead->region,

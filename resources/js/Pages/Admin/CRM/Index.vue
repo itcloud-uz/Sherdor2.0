@@ -918,17 +918,18 @@ function convertToClient(lead) {
     if (!confirm("Haqiqatan ham ushbu lidni Mijozlar ro'yxatiga o'tkazmoqchimisiz?")) return;
     
     isProcessing.value = true;
-    axios.post(route('admin.crm.leads.convert', lead.id))
-        .then(() => {
+    router.post(route('admin.crm.leads.convert', lead.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
             alert("Mijozlar bo'limiga muvaffaqiyatli o'tkazildi!");
-            router.reload({ preserveScroll: true });
-        })
-        .catch(error => {
-            alert("Xatolik yuz berdi: " + (error.response?.data?.message || error.message));
-        })
-        .finally(() => {
+        },
+        onError: (err) => {
+            alert("Xatolik yuz berdi: " + (err.message || Object.values(err)[0] || "Lidni o'tkazib bo'lmadi"));
+        },
+        onFinish: () => {
             isProcessing.value = false;
-        });
+        }
+    });
 }
 
 function deleteLead(id) {

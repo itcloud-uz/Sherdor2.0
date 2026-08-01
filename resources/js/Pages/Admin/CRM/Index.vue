@@ -1946,10 +1946,20 @@ const leadsSearchQuery = ref('');
 const leadsSourceFilter = ref('');
 const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
-const selectedStatusFilter = ref('');
 const clientContractFilter = ref('all'); // 'all', 'with_contract', 'without_contract'
+const clientSortBy = ref('contract_asc'); // 'contract_asc', 'contract_desc', 'newest', 'oldest', 'alphabet_asc', 'alphabet_desc'
 const selectedManagerFilter = ref('');
 const showExtraFilters = ref(false);
+
+function toggleClientSort(key) {
+    if (key === 'contract') {
+        clientSortBy.value = clientSortBy.value === 'contract_asc' ? 'contract_desc' : 'contract_asc';
+    } else if (key === 'alphabet') {
+        clientSortBy.value = clientSortBy.value === 'alphabet_asc' ? 'alphabet_desc' : 'alphabet_asc';
+    } else if (key === 'date') {
+        clientSortBy.value = clientSortBy.value === 'newest' ? 'oldest' : 'newest';
+    }
+}
 
 const selectedContractStatusFilter = ref('');
 const selectedContractBuildingFilter = ref('');
@@ -2471,6 +2481,36 @@ const filteredClients = computed(() => {
             return true;
         });
     }
+
+    // Apply custom sorting
+    result = [...result].sort((a, b) => {
+        if (clientSortBy.value === 'contract_asc') {
+            const contractA = a.contracts && a.contracts.length > 0 ? a.contracts[0] : null;
+            const contractB = b.contracts && b.contracts.length > 0 ? b.contracts[0] : null;
+            const numA = contractA ? (contractA.contract_number || contractA.id) : 99999999;
+            const numB = contractB ? (contractB.contract_number || contractB.id) : 99999999;
+            return String(numA).localeCompare(String(numB), undefined, { numeric: true, sensitivity: 'base' });
+        } else if (clientSortBy.value === 'contract_desc') {
+            const contractA = a.contracts && a.contracts.length > 0 ? a.contracts[0] : null;
+            const contractB = b.contracts && b.contracts.length > 0 ? b.contracts[0] : null;
+            const numA = contractA ? (contractA.contract_number || contractA.id) : 0;
+            const numB = contractB ? (contractB.contract_number || contractB.id) : 0;
+            return String(numB).localeCompare(String(numA), undefined, { numeric: true, sensitivity: 'base' });
+        } else if (clientSortBy.value === 'newest') {
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        } else if (clientSortBy.value === 'oldest') {
+            return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        } else if (clientSortBy.value === 'alphabet_asc') {
+            const nameA = ((a.last_name || '') + ' ' + (a.first_name || '')).trim().toLowerCase();
+            const nameB = ((b.last_name || '') + ' ' + (b.first_name || '')).trim().toLowerCase();
+            return nameA.localeCompare(nameB, 'uz');
+        } else if (clientSortBy.value === 'alphabet_desc') {
+            const nameA = ((a.last_name || '') + ' ' + (a.first_name || '')).trim().toLowerCase();
+            const nameB = ((b.last_name || '') + ' ' + (b.first_name || '')).trim().toLowerCase();
+            return nameB.localeCompare(nameA, 'uz');
+        }
+        return 0;
+    });
     
     return result;
 });
@@ -4692,6 +4732,26 @@ const ledgerReportData = computed(() => {
                             </span>
                         </div>
 
+                        <!-- Sorting Dropdown (Tartiblash) -->
+                        <div class="relative">
+                            <select v-model="clientSortBy" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-8 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer font-medium shadow-sm">
+                                <option value="contract_asc">🔢 Shartnoma raqami (01 → 99)</option>
+                                <option value="contract_desc">🔢 Shartnoma raqami (99 → 01)</option>
+                                <option value="newest">🆕 Oxirgi qo'shilgan mijozlar</option>
+                                <option value="oldest">⏳ Ilk qo'shilgan mijozlar</option>
+                                <option value="alphabet_asc">🔤 Alifbo bo'yicha (A → Z)</option>
+                                <option value="alphabet_desc">🔤 Alifbo bo'yicha (Z → A)</option>
+                            </select>
+                            <span class="absolute left-2.5 top-2.5 text-gray-500 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                </svg>
+                            </span>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
                         <!-- Filtr Button to toggle advanced filters -->
                         <button 
                             @click="showExtraFilters = !showExtraFilters" 
@@ -4750,9 +4810,23 @@ const ledgerReportData = computed(() => {
                 <!-- Table -->
                     <table class="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                         <thead>
-                            <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
-                                <th class="p-4 w-36 text-center">Shartnoma raqami</th>
-                                <th class="p-4">Ism</th>
+                            <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider select-none">
+                                <th @click="toggleClientSort('contract')" class="p-4 w-36 text-center cursor-pointer hover:text-amber-600 transition-colors" title="Shartnoma raqami bo'yicha tartiblash">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span>Shartnoma raqami</span>
+                                        <span v-if="clientSortBy === 'contract_asc'" class="text-amber-600 font-bold text-xs">▲</span>
+                                        <span v-else-if="clientSortBy === 'contract_desc'" class="text-amber-600 font-bold text-xs">▼</span>
+                                        <span v-else class="text-gray-300 text-xs">⇅</span>
+                                    </div>
+                                </th>
+                                <th @click="toggleClientSort('alphabet')" class="p-4 cursor-pointer hover:text-amber-600 transition-colors" title="Ism alifbosi bo'yicha tartiblash">
+                                    <div class="flex items-center gap-1">
+                                        <span>Ism</span>
+                                        <span v-if="clientSortBy === 'alphabet_asc'" class="text-amber-600 font-bold text-xs">▲</span>
+                                        <span v-else-if="clientSortBy === 'alphabet_desc'" class="text-amber-600 font-bold text-xs">▼</span>
+                                        <span v-else class="text-gray-300 text-xs">⇅</span>
+                                    </div>
+                                </th>
                                 <th class="p-4">Bino</th>
                                 <th class="p-4">Blok</th>
                                 <th class="p-4">Xonadon</th>

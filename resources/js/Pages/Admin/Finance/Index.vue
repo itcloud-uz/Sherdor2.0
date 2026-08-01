@@ -1809,10 +1809,14 @@ watch(() => selectedUnitId.value, (newVal) => {
             if (buildingId) {
                 form.value.building_id = buildingId;
             }
-            if (c.client_id && props.counterparties) {
-                const cp = props.counterparties.find(x => x.type === 'client' && x.customable_id == c.client_id);
+            if (c.client_id) {
+                form.value.client_id = c.client_id;
+                const cp = props.counterparties?.find(x => x.type === 'client' && x.customable_id == c.client_id);
                 if (cp) {
                     form.value.counterparty_id = cp.id;
+                    clientSearchQuery.value = cp.name;
+                } else if (c.client) {
+                    clientSearchQuery.value = (c.client.first_name + ' ' + (c.client.last_name || '')).trim();
                 }
             }
         }
@@ -1835,10 +1839,7 @@ watch(() => form.value.building_id, (newVal) => {
 
 // Watch counterparty selection to sync polymorphic fields and reset sub-selections
 watch(() => form.value.counterparty_id, (newVal) => {
-    form.value.contract_id = '';
-    form.value.payment_schedule_id = '';
     selectedInvoiceIds.value = [];
-    selectedUnitId.value = '';
 
     if (newVal && props.counterparties) {
         const c = props.counterparties.find(x => x.id == newVal);
@@ -1849,20 +1850,31 @@ watch(() => form.value.counterparty_id, (newVal) => {
             if (c.type === 'client') {
                 clientSearchQuery.value = c.name;
                 
-                // Auto-select contract if client has only 1 active contract
-                if (props.contracts) {
+                // Keep selected contract if it already belongs to this client
+                if (form.value.contract_id && props.contracts) {
+                    const currentContract = props.contracts.find(x => x.id == form.value.contract_id);
+                    if (!currentContract || currentContract.client_id != c.customable_id) {
+                        form.value.contract_id = '';
+                        form.value.payment_schedule_id = '';
+                    }
+                } else if (props.contracts) {
                     const clientContractsList = props.contracts.filter(x => x.client_id == c.customable_id);
                     if (clientContractsList.length === 1) {
                         form.value.contract_id = clientContractsList[0].id;
                     }
                 }
+            } else {
+                form.value.contract_id = '';
+                form.value.payment_schedule_id = '';
             }
         }
-    } else {
-        clientSearchQuery.value = '';
+    } else if (!newVal) {
+        form.value.contract_id = '';
+        form.value.payment_schedule_id = '';
         form.value.client_id = '';
         form.value.supplier_id = '';
         form.value.worker_id = '';
+        clientSearchQuery.value = '';
     }
 });
 
@@ -2400,24 +2412,20 @@ const handleBlockIdChange = () => {
 const availableUnits = computed(() => {
     if (!props.contracts) return [];
     let list = props.contracts;
-    
-    // Developer console log to help identify any relation loading issues on the client side
-    console.log("[Antigravity DEBUG] availableUnits contracts list:", list);
-    console.log("[Antigravity DEBUG] current form.building_id:", form.value.building_id);
 
-    // Filter by building if selected, with safe fallback for missing/null building ID relations
+    // Filter by building if selected
     if (form.value.building_id) {
         list = list.filter(c => {
-            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.unit?.building_id || c.building_id;
             return !bId || bId == form.value.building_id;
         });
     }
-    
+
     // Filter by client if selected
     if (form.value.client_id) {
         list = list.filter(c => c.client_id == form.value.client_id);
     }
-    
+
     // Map to unique units
     const units = [];
     const seenIds = new Set();
@@ -2426,43 +2434,67 @@ const availableUnits = computed(() => {
             seenIds.add(c.unit.id);
             units.push({
                 id: c.unit.id,
-                unit_number: c.unit.unit_number,
-                building_name: c.unit.floor?.building?.name || ''
+                unit_number: c.unit.unit_number || c.unit.number,
+                building_name: c.unit.floor?.building?.name || c.building?.name || ''
             });
         }
     });
-    
+
     return units.sort((a, b) => String(a.unit_number).localeCompare(String(b.unit_number), undefined, {numeric: true}));
 });
 
 const filteredClientsList = computed(() => {
     let list = props.counterparties?.filter(x => x.type === 'client') || [];
-    
-    // IF search query is empty, filter suggestions by building and unit to guide selection (with resilient fallbacks)
-    if (!clientSearchQuery.value) {
-        if (form.value.building_id && props.contracts) {
-            list = list.filter(x => {
-                return props.contracts.some(c => {
-                    const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
-                    return c.client_id == x.customable_id && (!bId || bId == form.value.building_id);
+
+    // Include clients from props.clients if missing from counterparties
+    if (props.clients && props.clients.length) {
+        props.clients.forEach(cl => {
+            const exists = list.some(x => x.customable_id == cl.id);
+            if (!exists) {
+                list.push({
+                    id: 'client_' + cl.id,
+                    customable_id: cl.id,
+                    type: 'client',
+                    name: (cl.first_name + ' ' + (cl.last_name || '') + ' ' + (cl.middle_name || '')).trim(),
+                    phone: cl.phone || ''
                 });
-            });
-        }
-        if (selectedUnitId.value && props.contracts) {
-            list = list.filter(x => {
-                return props.contracts.some(c => {
-                    return c.client_id == x.customable_id && c.unit_id == selectedUnitId.value;
-                });
-            });
-        }
-        return list;
+            }
+        });
     }
-    
-    // IF search query is NOT empty, allow searching all clients globally across all buildings/units
-    const q = clientSearchQuery.value.toLowerCase().trim();
-    const selected = props.counterparties?.find(x => x.id === form.value.counterparty_id);
-    if (selected && selected.name.toLowerCase().trim() === q) return list;
-    return list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+
+    // Search query active -> filter by name or phone
+    if (clientSearchQuery.value && clientSearchQuery.value.trim()) {
+        const q = clientSearchQuery.value.toLowerCase().trim();
+        const selected = list.find(x => x.id === form.value.counterparty_id);
+        if (selected && selected.name.toLowerCase().trim() === q) return list;
+        return list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q));
+    }
+
+    // Filter by selected unit if set
+    if (selectedUnitId.value && props.contracts) {
+        const unitContract = props.contracts.find(c => c.unit_id == selectedUnitId.value);
+        if (unitContract && unitContract.client_id) {
+            const matched = list.filter(x => x.customable_id == unitContract.client_id);
+            if (matched.length > 0) return matched;
+        }
+    }
+
+    // Filter by building if set
+    if (form.value.building_id && props.contracts) {
+        const bClients = new Set();
+        props.contracts.forEach(c => {
+            const bId = c.unit?.floor?.building?.id || c.unit?.floor?.building_id || c.building_id;
+            if (!bId || bId == form.value.building_id) {
+                if (c.client_id) bClients.add(c.client_id);
+            }
+        });
+        if (bClients.size > 0) {
+            const filteredByBuilding = list.filter(x => bClients.has(x.customable_id));
+            if (filteredByBuilding.length > 0) return filteredByBuilding;
+        }
+    }
+
+    return list;
 });
 
 const closeClientDropdown = () => {
@@ -6814,12 +6846,15 @@ function deleteCategory(id) {
                                 <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                     * Mijoz (Kontragent)
                                 </label>
-                                <input type="text" v-model="clientSearchQuery" @focus="showClientDropdown = true" @blur="closeClientDropdown" placeholder="Mijoz ismini yozib qidiring..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required />
+                                <input type="text" v-model="clientSearchQuery" @focus="showClientDropdown = true" @click="showClientDropdown = true" @input="showClientDropdown = true" @blur="closeClientDropdown" placeholder="Mijoz ismini yozib qidiring..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required />
                                 
-                                <div v-show="showClientDropdown && filteredClientsList.length" class="absolute z-50 left-0 right-0 bg-white border border-slate-250 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                    <div v-for="c in filteredClientsList" :key="c.id" @mousedown="selectClientForQuickTransaction(c)" class="p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 flex justify-between items-center text-xs">
+                                <div v-show="showClientDropdown" class="absolute z-50 left-0 right-0 bg-white border border-slate-250 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                    <div v-for="c in filteredClientsList" :key="c.id" @mousedown.prevent="selectClientForQuickTransaction(c)" class="p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 flex justify-between items-center text-xs">
                                         <span class="font-medium text-slate-800">{{ c.name }}</span>
                                         <span v-if="c.phone" class="text-slate-400 font-mono text-[10px]">{{ c.phone }}</span>
+                                    </div>
+                                    <div v-if="!filteredClientsList.length" class="p-3 text-center text-slate-400 text-xs font-mono">
+                                        Mijozlar topilmadi
                                     </div>
                                 </div>
                                 <span v-if="form.counterparty_id" class="text-[10px] text-slate-500 mt-1 block">

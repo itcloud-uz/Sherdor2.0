@@ -121,10 +121,14 @@ class FinanceController extends Controller
             $allCategories = TransactionCategory::all();
         }
 
-        if (in_array($tab, [1, 2, 10])) {
-            $counterparties = Counterparty::with(['customable'])->get();
-            $buildings = Building::latest()->get();
-        }
+        // Counterparties, Buildings, Clients, and Contracts for quick transaction modals and filtering
+        $counterparties = Counterparty::with(['customable'])->get();
+        $buildings = Building::latest()->get();
+        $clients = Client::latest()->limit(1000)->get();
+        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])
+            ->where('status', '!=', 'completed')
+            ->latest()
+            ->get();
 
         if ($tab === 1) {
             $workers = Worker::latest()->get();
@@ -132,11 +136,6 @@ class FinanceController extends Controller
             $partners = Partner::with('user')->latest()->get();
             $brigades = Brigade::latest()->get();
             $machineOwners = MachineOwner::latest()->get();
-            $clients = Client::latest()->limit(500)->get();
-            $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])
-                ->where('status', '!=', 'completed')
-                ->latest()
-                ->get();
         }
 
         if (in_array($tab, [0, 1, 2, 7, 8, 11, 12])) {

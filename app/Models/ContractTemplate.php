@@ -362,27 +362,57 @@ class ContractTemplate extends Model
             'ZAMON_TELEFON' => $mijozPhoneClean,
         ];
 
+        $allSchedulesList = [];
         $installmentsList = [];
-        $index = 1;
-        $sum = 0;
+        $indexAll = 1;
+        $indexInst = 1;
+        $sumAll = 0;
+        $sumInst = 0;
         
-        $installments = $contract->paymentSchedules->filter(function($s) {
-            return $s->payment_type !== 'down_payment';
-        })->sortBy('due_date');
+        $schedules = $contract->paymentSchedules()->orderBy('due_date', 'asc')->get();
 
-        foreach ($installments as $inst) {
-            $sum += $inst->expected_amount;
-            $installmentsList[] = [
-                'index' => $index++,
-                'date' => \Carbon\Carbon::parse($inst->due_date)->format('d/m/Y') . '-yil',
-                'amount' => number_format($inst->expected_amount, 0, ',', ' '),
-                'amount_raw' => $inst->expected_amount
+        foreach ($schedules as $inst) {
+            $sumAll += $inst->expected_amount;
+            $formattedDate = \Carbon\Carbon::parse($inst->due_date)->format('d/m/Y') . '-yil';
+            $formattedSana = \Carbon\Carbon::parse($inst->due_date)->format('d.m.Y');
+            $formattedAmount = number_format($inst->expected_amount, 0, ',', ' ');
+            $typeText = $inst->payment_type === 'down_payment' ? "Boshlang'ich to'lov" : ($inst->payment_type === 'full' ? "Bir yo'la to'lov" : "Bo'lib to'lash");
+
+            $item = [
+                'index' => $indexAll++,
+                'date' => $formattedDate,
+                'sana' => $formattedSana,
+                'amount' => $formattedAmount,
+                'amount_raw' => $inst->expected_amount,
+                'type' => $typeText,
+                'status' => $inst->status === 'paid' ? "To'langan" : "Kutilmoqda"
             ];
+
+            $allSchedulesList[] = $item;
+
+            if ($inst->payment_type !== 'down_payment') {
+                $instItem = $item;
+                $instItem['index'] = $indexInst++;
+                $sumInst += $inst->expected_amount;
+                $installmentsList[] = $instItem;
+            }
         }
 
-        $context['installments'] = $installmentsList;
-        $context['installments_total'] = number_format($sum, 0, ',', ' ');
-        $context['installments_count'] = count($installmentsList);
+        // Provide installments (excluding down_payment) for standard 2-ilova loop templates
+        $context['installments'] = !empty($installmentsList) ? $installmentsList : $allSchedulesList;
+        $context['installments_total'] = number_format($sumInst > 0 ? $sumInst : $sumAll, 0, ',', ' ');
+        $context['installments_count'] = count(!empty($installmentsList) ? $installmentsList : $allSchedulesList);
+
+        // Provide all schedules under all common template placeholder aliases for 2-ilova
+        $context['schedules'] = $allSchedulesList;
+        $context['payment_schedules'] = $allSchedulesList;
+        $context['all_schedules'] = $allSchedulesList;
+        $context['ilova_2'] = $allSchedulesList;
+        $context['ilova2'] = $allSchedulesList;
+        $context['grafik'] = $allSchedulesList;
+        $context['tolov_jadvali'] = $allSchedulesList;
+        $context['schedules_total'] = number_format($sumAll, 0, ',', ' ');
+        $context['schedules_count'] = count($allSchedulesList);
 
         $selectedVariants = $contract->selected_variants ?? [];
         if (isset($selectedVariants['custom_placeholders']) && is_array($selectedVariants['custom_placeholders'])) {

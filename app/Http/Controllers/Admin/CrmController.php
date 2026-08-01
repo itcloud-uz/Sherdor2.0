@@ -870,7 +870,7 @@ class CrmController extends Controller
     public function updateCustomSchedule(Request $request, \App\Models\Contract $contract)
     {
         $validated = $request->validate([
-            'schedules' => 'required|array',
+            'schedules' => 'required|array|min:1',
             'schedules.*.due_date' => 'required|date',
             'schedules.*.expected_amount' => 'required|numeric|min:0.01',
             'schedules.*.payment_type' => 'required|string|in:down_payment,installment,full',
@@ -880,25 +880,48 @@ class CrmController extends Controller
             // Delete existing payment schedules
             $contract->paymentSchedules()->delete();
 
+            $totalSum = 0;
+            $downPaymentSum = 0;
+            $installmentCount = 0;
+
             // Create new payment schedules
             foreach ($validated['schedules'] as $index => $row) {
+                $amount = (float)$row['expected_amount'];
+                $totalSum += $amount;
+
+                if ($row['payment_type'] === 'down_payment') {
+                    $downPaymentSum += $amount;
+                } else {
+                    $installmentCount++;
+                }
+
                 \App\Models\PaymentSchedule::create([
                     'contract_id' => $contract->id,
-                    'expected_amount' => $row['expected_amount'],
-                    'remaining_debt' => $row['expected_amount'],
+                    'expected_amount' => $amount,
+                    'remaining_debt' => $amount,
                     'paid_amount' => 0,
                     'due_date' => $row['due_date'],
                     'status' => 'pending',
-                    'original_payment_amount' => $row['expected_amount'],
+                    'original_payment_amount' => $amount,
                     'payment_type' => $row['payment_type'],
                 ]);
             }
+
+            if ($installmentCount === 0) {
+                $installmentCount = count($validated['schedules']);
+            }
+
+            // Sync contract totals & installment term count so 2-ilova and contract header match custom schedule
+            $contract->update([
+                'total_amount' => $totalSum > 0 ? $totalSum : $contract->total_amount,
+                'down_payment' => $downPaymentSum,
+                'term_months' => $installmentCount,
+            ]);
 
             // Reconcile payments
             \App\Http\Controllers\Admin\FinanceController::reconcileContractPayments($contract->id);
         });
 
-        // Fetch client id to return with correct state
-        return redirect()->back()->with('message', 'To\'lov grafigi muvaffaqiyatli yangilandi.');
+        return redirect()->back()->with('message', 'To\'lov grafigi va 2-Ilova ma\'lumotlari muvaffaqiyatli yangilandi.');
     }
 }

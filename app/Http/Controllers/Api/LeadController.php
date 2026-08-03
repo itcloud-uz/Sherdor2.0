@@ -90,52 +90,104 @@ class LeadController extends Controller
                 'passport_issued_by' => $validated['passport_issued_by'] ?? null,
             ]);
 
-            // Auto-convert to Client if full info is provided
-            if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
-                // Check if phone already exists in clients
-                if (!\App\Models\Client::where('phone', $lead->phone)->exists()) {
-                    $lastName = $lead->last_name;
-                    $firstName = $lead->first_name;
-                    $middleName = $lead->middle_name;
-
-                    if (empty($firstName) && empty($lastName)) {
-                        $names = explode(' ', trim($lead->full_name));
-                        $lastName = $names[0] ?? '';
-                        $firstName = $names[1] ?? '';
-                        $middleName = $names[2] ?? '';
-
-                        if (empty($firstName)) {
-                            $firstName = $lastName;
-                            $lastName = '';
-                        }
+            // Always convert to Client directly so it lands in Mijozlar section!
+            $cleanLeadPhone = preg_replace('/[^0-9]/', '', $lead->phone ?? '');
+            $existingClient = null;
+            if (!empty($lead->phone)) {
+                $existingClient = \App\Models\Client::where('phone', $lead->phone)->first();
+            }
+            if (!$existingClient && !empty($cleanLeadPhone)) {
+                $allClients = \App\Models\Client::select('id', 'phone')->get();
+                foreach ($allClients as $c) {
+                    if (!empty($c->phone) && preg_replace('/[^0-9]/', '', $c->phone) === $cleanLeadPhone) {
+                        $existingClient = $c;
+                        break;
                     }
-
-                    $client = \App\Models\Client::create([
-                        'first_name' => $firstName ?: '',
-                        'last_name' => $lastName ?: '',
-                        'middle_name' => $middleName ?: '',
-                        'phone' => $lead->phone,
-                        'phone_2' => $lead->phone_2,
-                        'passport_number' => $lead->passport_series,
-                        'region' => $lead->region,
-                        'district' => $lead->district,
-                        'address' => $lead->address,
-                        'source' => $lead->source,
-                        'pinfl' => $lead->pinfl,
-                        'passport_photo' => $lead->passport_photo,
-                        'passport_photo_back' => $lead->passport_photo_back,
-                        'passport_issued_date' => $lead->passport_issued_date,
-                        'passport_issued_by' => $lead->passport_issued_by,
-                    ]);
-
-                    $lead->delete();
-
-                    return response()->json([
-                        'message' => 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi!',
-                        'client' => $client
-                    ], 201);
                 }
             }
+
+            if ($existingClient) {
+                $updateData = [];
+                if (empty($existingClient->passport_number) && !empty($lead->passport_series)) $updateData['passport_number'] = $lead->passport_series;
+                if (empty($existingClient->region) && !empty($lead->region)) $updateData['region'] = $lead->region;
+                if (empty($existingClient->district) && !empty($lead->district)) $updateData['district'] = $lead->district;
+                if (empty($existingClient->address) && !empty($lead->address)) $updateData['address'] = $lead->address;
+                if (empty($existingClient->source) && !empty($lead->source)) $updateData['source'] = $lead->source;
+                if (empty($existingClient->pinfl) && !empty($lead->pinfl)) $updateData['pinfl'] = $lead->pinfl;
+
+                if (!empty($updateData)) {
+                    $existingClient->update($updateData);
+                }
+
+                if (class_exists('\App\Models\LeadConversionLog')) {
+                    \App\Models\LeadConversionLog::create([
+                        'lead_id' => $lead->id,
+                        'client_id' => $existingClient->id,
+                        'user_id' => auth()->id() ?? 1,
+                        'lead_name' => $lead->full_name ?: ($lead->phone ?: 'Mijoz'),
+                        'lead_phone' => $lead->phone,
+                        'action' => 'merged',
+                        'description' => "Yangi kiritilgan ma'lumotlar mavjud mijozga (#{$existingClient->id}) biriktirildi va Mijozlar bo'limiga o'tkazildi.",
+                        'status' => 'merged',
+                    ]);
+                }
+
+                $lead->delete();
+
+                return response()->json([
+                    'message' => 'Mijoz allaqachon mavjud edi, ma\'lumotlar birlashtirildi va Mijozlar bo\'limiga o\'tkazildi!',
+                    'client' => $existingClient
+                ], 201);
+            }
+
+            $lastName = $lead->last_name;
+            $firstName = $lead->first_name;
+            $middleName = $lead->middle_name;
+
+            if (empty($firstName) && empty($lastName)) {
+                $names = explode(' ', trim($lead->full_name));
+                $lastName = $names[0] ?? '';
+                $firstName = $names[1] ?? '';
+                $middleName = $names[2] ?? '';
+
+                if (empty($firstName)) {
+                    $firstName = $lastName ?: ($lead->full_name ?: ('Mijoz #' . $lead->id));
+                    $lastName = '';
+                }
+            }
+
+            $client = \App\Models\Client::create([
+                'first_name' => $firstName ?: ($lead->full_name ?: 'Mijoz'),
+                'last_name' => $lastName ?: '',
+                'middle_name' => $middleName ?: '',
+                'phone' => $lead->phone,
+                'phone_2' => $lead->phone_2,
+                'passport_number' => $lead->passport_series,
+                'region' => $lead->region,
+                'district' => $lead->district,
+                'address' => $lead->address,
+                'source' => $lead->source,
+                'pinfl' => $lead->pinfl,
+                'passport_photo' => $lead->passport_photo,
+                'passport_photo_back' => $lead->passport_photo_back,
+                'passport_issued_date' => $lead->passport_issued_date,
+                'passport_issued_by' => $lead->passport_issued_by,
+            ]);
+
+            if (class_exists('\App\Models\LeadConversionLog')) {
+                \App\Models\LeadConversionLog::create([
+                    'lead_id' => $lead->id,
+                    'client_id' => $client->id,
+                    'user_id' => auth()->id() ?? 1,
+                    'lead_name' => $lead->full_name ?: ($lead->phone ?: 'Mijoz'),
+                    'lead_phone' => $lead->phone,
+                    'action' => 'converted',
+                    'description' => "Yangi Mijoz yaratildi va Mijozlar bo'limiga qo'shildi (#{$client->id} - {$client->last_name} {$client->first_name}).",
+                    'status' => 'success',
+                ]);
+            }
+
+            $lead->delete();
 
             // Send Telegram Notification
             $settings = \App\Models\SystemSetting::first();

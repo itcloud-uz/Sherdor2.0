@@ -2620,6 +2620,29 @@ function getInitials(first, last) {
     return ((first?.charAt(0) || '') + (last?.charAt(0) || '')).toUpperCase() || '?';
 }
 
+function getMissingInfoText(client) {
+    if (!client) return null;
+    const missing = [];
+    if (!client.passport_number && !client.passport_series) missing.push("Pasport seriyasi va raqami");
+    if (!client.pinfl) missing.push("JSHSHIR (PINFL)");
+    if (!client.region || !client.district || !client.address) missing.push("Yashash manzili (Viloyat/Tuman/Manzil)");
+    if (!client.passport_photo) missing.push("Pasport fayli/rasmi");
+    
+    if (missing.length === 0) return null;
+    return "Ma'lumotlar to'liq emas: " + missing.join(", ");
+}
+
+function getMissingInfoSummary(client) {
+    if (!client) return "";
+    const missing = [];
+    if (!client.passport_number && !client.passport_series) missing.push("Pasport");
+    if (!client.pinfl) missing.push("PINFL");
+    if (!client.address || !client.region) missing.push("Manzil");
+    if (!client.passport_photo) missing.push("Pasport fayli");
+    
+    return missing.join(", ") + " kiritilmagan";
+}
+
 function formatDate(dateStr) {
     if (!dateStr) return '—';
     const d = new Date(dateStr);
@@ -4858,17 +4881,29 @@ const ledgerReportData = computed(() => {
                                 <!-- Ism -->
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm shadow-sm shrink-0 bg-[#fef9c3] text-[#ca8a04]">
-                                             <img v-if="client.profile_photo" :src="'/storage/' + client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
-                                             <template v-else>
-                                                 {{ getInitials(client.first_name, client.last_name) }}
-                                             </template>
-                                         </div>
+                                        <div class="relative shrink-0">
+                                            <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm shadow-sm bg-[#fef9c3] text-[#ca8a04]">
+                                                 <img v-if="client.profile_photo" :src="'/storage/' + client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                                 <template v-else>
+                                                     {{ getInitials(client.first_name, client.last_name) }}
+                                                 </template>
+                                            </div>
+                                            <!-- Red Notification Badge for missing info -->
+                                            <div v-if="getMissingInfoText(client)" 
+                                                 :title="getMissingInfoText(client)"
+                                                 class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] font-extrabold border-2 border-white shadow-md animate-pulse cursor-help z-10"
+                                            >
+                                                !
+                                            </div>
+                                        </div>
                                         <div>
-                                            <h3 class="text-sm font-bold text-gray-900 leading-tight">
-                                                {{ client.last_name }} {{ client.first_name }}
+                                            <h3 class="text-sm font-bold text-gray-900 leading-tight flex items-center gap-1.5">
+                                                <span>{{ client.last_name }} {{ client.first_name }}</span>
+                                                <span v-if="getMissingInfoText(client)" class="inline-flex items-center gap-1 text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 font-normal" :title="getMissingInfoText(client)">
+                                                    ⚠️ {{ getMissingInfoSummary(client) }}
+                                                </span>
                                             </h3>
-                                            <div class="text-xs text-gray-500 mt-1 font-medium">{{ client.phone || 'N/A' }}</div>
+                                            <div class="text-xs text-gray-500 mt-0.5 font-medium">{{ client.phone || 'N/A' }}</div>
                                         </div>
                                     </div>
                                 </td>

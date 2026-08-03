@@ -93,13 +93,10 @@ class CrmController extends Controller
 
 
         // 4. Clients tabs
+        $clients = \App\Models\Client::with(['contracts.unit.floor.building', 'contracts.paymentSchedules'])->orderBy('id', 'desc')->limit(500)->get();
+        $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
-            $clients = \App\Models\Client::with(['contracts.unit.floor.building', 'contracts.paymentSchedules'])->orderBy('id', 'asc')->limit(500)->get();
-            $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
             $users = User::with('roles')->orderBy('name', 'asc')->get();
-        } else {
-            // Load lightweight clients list for modals/dropdowns on other tabs
-            $clients = \App\Models\Client::select('id', 'first_name', 'last_name')->orderBy('id', 'asc')->get();
         }
 
         // 5. Contracts Tab
@@ -471,6 +468,10 @@ class CrmController extends Controller
             'reason' => 'nullable|string'
         ]);
 
+        if ($validated['status'] === 'qualified') {
+            return $this->convertLeadToClient($lead, $request);
+        }
+
         $lead->status = $validated['status'];
         if ($validated['status'] === 'lost' && !empty($validated['reason'])) {
             $lead->reason = $validated['reason'];
@@ -478,8 +479,7 @@ class CrmController extends Controller
         $lead->save();
 
         if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
-            $this->convertLeadToClient($lead);
-            return redirect()->back()->with('message', 'Mijoz to\'liq to\'ldirilgani uchun avtomatik Mijozlar bo\'limiga o\'tkazildi.');
+            return $this->convertLeadToClient($lead, $request);
         }
 
         return redirect()->back()->with('message', 'Status yangilandi.');
@@ -504,6 +504,10 @@ class CrmController extends Controller
     public function convertLeadToClient(Lead $lead, \Illuminate\Http\Request $request = null)
     {
         $cleanLeadPhone = preg_replace('/[^0-9]/', '', $lead->phone ?? '');
+        $leadFullName = $lead->full_name ?: trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
+        if (empty($leadFullName)) {
+            $leadFullName = 'Lid #' . $lead->id;
+        }
 
         // Search for existing client by exact phone or normalized phone digits
         $existingClient = null;
@@ -511,7 +515,7 @@ class CrmController extends Controller
             $existingClient = \App\Models\Client::where('phone', $lead->phone)->first();
         }
         if (!$existingClient && !empty($cleanLeadPhone)) {
-            $allClients = \App\Models\Client::select('id', 'phone', 'passport_number', 'region', 'district', 'address', 'source', 'pinfl')->get();
+            $allClients = \App\Models\Client::select('id', 'phone', 'passport_number', 'region', 'district', 'address', 'source', 'pinfl', 'first_name', 'last_name')->get();
             foreach ($allClients as $c) {
                 if (!empty($c->phone) && preg_replace('/[^0-9]/', '', $c->phone) === $cleanLeadPhone) {
                     $existingClient = $c;
@@ -532,6 +536,20 @@ class CrmController extends Controller
 
             if (!empty($updateData)) {
                 $existingClient->update($updateData);
+            }
+
+            // Record conversion audit log
+            if (class_exists('\App\Models\LeadConversionLog')) {
+                \App\Models\LeadConversionLog::create([
+                    'lead_id' => $lead->id,
+                    'client_id' => $existingClient->id,
+                    'user_id' => auth()->id() ?? 1,
+                    'lead_name' => $leadFullName,
+                    'lead_phone' => $lead->phone,
+                    'action' => 'merged',
+                    'description' => "Mijoz allaqachon bazada borligi sababli, lid ({$leadFullName}, tel: {$lead->phone}) ma'lumotlari mavjud mijozga (#{$existingClient->id} - {$existingClient->last_name} {$existingClient->first_name}) biriktirildi hamda lid o'chirildi.",
+                    'status' => 'merged',
+                ]);
             }
 
             // Delete the lead from leads table so it disappears from leads
@@ -555,13 +573,13 @@ class CrmController extends Controller
             $middleName = $names[2] ?? '';
 
             if (empty($firstName)) {
-                $firstName = $lastName;
+                $firstName = $lastName ?: ($lead->full_name ?: ('Lid #' . $lead->id));
                 $lastName = '';
             }
         }
 
-        \App\Models\Client::create([
-            'first_name' => $firstName ?: '',
+        $newClient = \App\Models\Client::create([
+            'first_name' => $firstName ?: ($lead->full_name ?: 'Lid #' . $lead->id),
             'last_name' => $lastName ?: '',
             'middle_name' => $middleName ?: '',
             'phone' => $lead->phone ?: '',
@@ -577,6 +595,20 @@ class CrmController extends Controller
             'passport_issued_date' => $lead->passport_issued_date,
             'passport_issued_by' => $lead->passport_issued_by,
         ]);
+
+        // Record conversion audit log
+        if (class_exists('\App\Models\LeadConversionLog')) {
+            \App\Models\LeadConversionLog::create([
+                'lead_id' => $lead->id,
+                'client_id' => $newClient->id,
+                'user_id' => auth()->id() ?? 1,
+                'lead_name' => $leadFullName,
+                'lead_phone' => $lead->phone,
+                'action' => 'converted',
+                'description' => "Lid ({$leadFullName}, tel: {$lead->phone}) muvaffaqiyatli o'tkazilib, yangi Mijoz yaratildi (#{$newClient->id} - {$newClient->last_name} {$newClient->first_name}).",
+                'status' => 'success',
+            ]);
+        }
 
         $lead->delete();
 

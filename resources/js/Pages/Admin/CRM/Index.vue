@@ -44,6 +44,7 @@ const props = defineProps({
     cashRegisters: Array,
     contractTemplates: Array,
     conversionLogs: Array,
+    buildings: Array,
 });
 
 const isAdmin = computed(() => {
@@ -1972,6 +1973,8 @@ const leadsSearchQuery = ref('');
 const leadsSourceFilter = ref('');
 const canceledSearchQuery = ref('');
 const selectedBuildingFilter = ref('');
+const selectedBlockFilter = ref('');
+const selectedCorpusFilter = ref('');
 const selectedStatusFilter = ref('');
 const clientContractFilter = ref('all'); // 'all', 'with_contract', 'without_contract'
 const clientSortBy = ref('contract_asc'); // 'contract_asc', 'contract_desc', 'newest', 'oldest', 'alphabet_asc', 'alphabet_desc'
@@ -1990,6 +1993,8 @@ function toggleClientSort(key) {
 
 const selectedContractStatusFilter = ref('');
 const selectedContractBuildingFilter = ref('');
+const selectedContractBlockFilter = ref('');
+const selectedContractCorpusFilter = ref('');
 const selectedContractManagerFilter = ref('');
 const showContractExtraFilters = ref(false);
 
@@ -2428,20 +2433,74 @@ const leadsByStatus = computed(() => {
 
 const availableBuildings = computed(() => {
     const names = new Set();
+    props.buildings?.forEach(b => {
+        if (b.name) names.add(b.name);
+    });
     props.contracts?.forEach(c => {
-        const bName = c.unit?.floor?.building?.name;
+        const bName = c.unit?.floor?.building?.name || c.building?.name;
         if (bName) names.add(bName);
     });
-    return [...names];
+    props.clients?.forEach(client => {
+        client.contracts?.forEach(c => {
+            const bName = c.unit?.floor?.building?.name || c.building?.name;
+            if (bName) names.add(bName);
+        });
+    });
+    return [...names].filter(Boolean).sort();
+});
+
+const availableBlocks = computed(() => {
+    const blocks = new Set();
+    props.buildings?.forEach(b => {
+        if (b.block_name) blocks.add(b.block_name);
+    });
+    props.contracts?.forEach(c => {
+        const blk = c.unit?.floor?.building?.block_name || (c.unit?.podyezd ? `${c.unit.podyezd}-Blok` : null);
+        if (blk) blocks.add(blk);
+    });
+    props.clients?.forEach(client => {
+        client.contracts?.forEach(c => {
+            const blk = c.unit?.floor?.building?.block_name || (c.unit?.podyezd ? `${c.unit.podyezd}-Blok` : null);
+            if (blk) blocks.add(blk);
+        });
+    });
+    return [...blocks].filter(Boolean).sort();
+});
+
+const availableCorpuses = computed(() => {
+    const corpuses = new Set();
+    props.buildings?.forEach(b => {
+        if (b.corpus_name) corpuses.add(b.corpus_name);
+    });
+    props.contracts?.forEach(c => {
+        const corp = c.unit?.floor?.building?.corpus_name;
+        if (corp) corpuses.add(corp);
+    });
+    props.clients?.forEach(client => {
+        client.contracts?.forEach(c => {
+            const corp = c.unit?.floor?.building?.corpus_name;
+            if (corp) corpuses.add(corp);
+        });
+    });
+    return [...corpuses].filter(Boolean).sort();
 });
 
 const availableManagers = computed(() => {
     const names = new Set();
+    props.users?.forEach(u => {
+        if (u.name) names.add(u.name);
+    });
     props.contracts?.forEach(c => {
-        const pName = c.partner?.user?.name;
+        const pName = c.partner?.user?.name || c.user?.name;
         if (pName) names.add(pName);
     });
-    return [...names];
+    props.clients?.forEach(client => {
+        client.contracts?.forEach(c => {
+            const pName = c.partner?.user?.name || c.user?.name;
+            if (pName) names.add(pName);
+        });
+    });
+    return [...names].filter(Boolean).sort();
 });
 
 const filteredClients = computed(() => {
@@ -2482,17 +2541,37 @@ const filteredClients = computed(() => {
 
     if (selectedBuildingFilter.value) {
         result = result.filter(c => {
-            return c.contracts?.some(contract => 
-                contract.unit?.floor?.building?.name === selectedBuildingFilter.value
-            );
+            return c.contracts?.some(contract => {
+                const bName = contract.unit?.floor?.building?.name || contract.building?.name;
+                return bName === selectedBuildingFilter.value;
+            });
+        });
+    }
+
+    if (selectedBlockFilter.value) {
+        result = result.filter(c => {
+            return c.contracts?.some(contract => {
+                const blk = contract.unit?.floor?.building?.block_name || (contract.unit?.podyezd ? `${contract.unit.podyezd}-Blok` : null);
+                return blk === selectedBlockFilter.value;
+            });
+        });
+    }
+
+    if (selectedCorpusFilter.value) {
+        result = result.filter(c => {
+            return c.contracts?.some(contract => {
+                const corp = contract.unit?.floor?.building?.corpus_name;
+                return corp === selectedCorpusFilter.value;
+            });
         });
     }
 
     if (selectedManagerFilter.value) {
         result = result.filter(c => {
-            return c.contracts?.some(contract => 
-                contract.partner?.user?.name === selectedManagerFilter.value
-            );
+            return c.contracts?.some(contract => {
+                const pName = contract.partner?.user?.name || contract.user?.name;
+                return pName === selectedManagerFilter.value;
+            });
         });
     }
 
@@ -2585,12 +2664,25 @@ const groupedContracts = computed(() => {
 
     // Advanced building filter
     if (selectedContractBuildingFilter.value) {
-        contracts = contracts.filter(c => c.unit?.floor?.building?.name === selectedContractBuildingFilter.value);
+        contracts = contracts.filter(c => (c.unit?.floor?.building?.name || c.building?.name) === selectedContractBuildingFilter.value);
+    }
+
+    // Advanced block filter
+    if (selectedContractBlockFilter.value) {
+        contracts = contracts.filter(c => {
+            const blk = c.unit?.floor?.building?.block_name || (c.unit?.podyezd ? `${c.unit.podyezd}-Blok` : null);
+            return blk === selectedContractBlockFilter.value;
+        });
+    }
+
+    // Advanced corpus filter
+    if (selectedContractCorpusFilter.value) {
+        contracts = contracts.filter(c => c.unit?.floor?.building?.corpus_name === selectedContractCorpusFilter.value);
     }
 
     // Advanced manager filter
     if (selectedContractManagerFilter.value) {
-        contracts = contracts.filter(c => c.partner?.user?.name === selectedContractManagerFilter.value);
+        contracts = contracts.filter(c => (c.partner?.user?.name || c.user?.name) === selectedContractManagerFilter.value);
     }
 
     const groups = {};
@@ -4573,15 +4665,39 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Advanced Extra Filters Row (Toggled by showContractExtraFilters) -->
-                <div v-if="showContractExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
+                <div v-if="showContractExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
                     <!-- Obyektlar filter -->
                     <div class="relative">
                         <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Obyekt bo'yicha filter</label>
-                        <select v-model="selectedContractBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                        <select v-model="selectedContractBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
                             <option value="">Barcha obyektlar</option>
                             <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
                         </select>
-                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Blok filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Blok bo'yicha filter</label>
+                        <select v-model="selectedContractBlockFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha bloklar</option>
+                            <option v-for="blk in availableBlocks" :key="blk" :value="blk">{{ blk }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Korpus filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Korpus bo'yicha filter</label>
+                        <select v-model="selectedContractCorpusFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha korpuslar</option>
+                            <option v-for="corp in availableCorpuses" :key="corp" :value="corp">{{ corp }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </span>
                     </div>
@@ -4589,11 +4705,11 @@ const ledgerReportData = computed(() => {
                     <!-- Sotuv menejeri filter -->
                     <div class="relative">
                         <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Menejer bo'yicha filter</label>
-                        <select v-model="selectedContractManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                        <select v-model="selectedContractManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
                             <option value="">Barcha menejerlar</option>
                             <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
                         </select>
-                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </span>
                     </div>
@@ -4831,15 +4947,39 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Advanced Extra Filters Row (Toggled by showExtraFilters) -->
-                <div v-if="showExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
+                <div v-if="showExtraFilters" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-gray-50/70 p-4 rounded-xl border border-gray-150 animate-[fadeIn_0.3s_ease-out]">
                     <!-- Obyektlar filter -->
                     <div class="relative">
                         <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Obyekt bo'yicha filter</label>
-                        <select v-model="selectedBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                        <select v-model="selectedBuildingFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
                             <option value="">Barcha obyektlar</option>
                             <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
                         </select>
-                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Blok filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Blok bo'yicha filter</label>
+                        <select v-model="selectedBlockFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha bloklar</option>
+                            <option v-for="blk in availableBlocks" :key="blk" :value="blk">{{ blk }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Korpus filter -->
+                    <div class="relative">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Korpus bo'yicha filter</label>
+                        <select v-model="selectedCorpusFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                            <option value="">Barcha korpuslar</option>
+                            <option v-for="corp in availableCorpuses" :key="corp" :value="corp">{{ corp }}</option>
+                        </select>
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </span>
                     </div>
@@ -4847,11 +4987,11 @@ const ledgerReportData = computed(() => {
                     <!-- Sotuv menejeri filter -->
                     <div class="relative">
                         <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Menejer bo'yicha filter</label>
-                        <select v-model="selectedManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
+                        <select v-model="selectedManagerFilter" class="w-full bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#f2a900] appearance-none cursor-pointer">
                             <option value="">Barcha menejerlar</option>
                             <option v-for="manager in availableManagers" :key="manager" :value="manager">{{ manager }}</option>
                         </select>
-                        <span class="absolute right-2.5 top-8.5 text-gray-400 pointer-events-none">
+                        <span class="absolute right-2.5 top-7 text-gray-400 pointer-events-none">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </span>
                     </div>

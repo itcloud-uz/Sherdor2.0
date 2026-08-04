@@ -895,6 +895,17 @@ function navigateToContract(unit) {
     }
 }
 
+function getTooltipStyle(y, x) {
+    const screenH = typeof window !== 'undefined' ? (window.innerHeight || 800) : 800;
+    const screenW = typeof window !== 'undefined' ? (window.innerWidth || 1200) : 1200;
+    const top = Math.min((y || 0) + 15, screenH - 260);
+    const left = Math.min((x || 0) + 15, screenW - 320);
+    return {
+        top: Math.max(10, top) + 'px',
+        left: Math.max(10, left) + 'px'
+    };
+}
+
 // Watch for building changes to select the first floor, while respecting localStorage parameters on initial load
 watch(selectedBuilding, (newBuilding, oldBuilding) => {
     selectedFloorIdForBlueprint.value = null;
@@ -3928,7 +3939,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                              'fixed z-50 bg-white border p-4 rounded-2xl shadow-2xl transition-all max-w-xs',
                                              (hoveredUnit.status === 'sold' || hoveredUnit.status === 'reserved') ? 'pointer-events-auto cursor-pointer border-amber-300 hover:border-amber-500 hover:shadow-amber-200 ring-2 ring-amber-400/20' : 'pointer-events-none border-gray-200 shadow-lg'
                                          ]"
-                                         :style="{ top: Math.min(mouseY + 15, (window.innerHeight || 800) - 260) + 'px', left: Math.min(mouseX + 15, (window.innerWidth || 1200) - 320) + 'px' }"
+                                         :style="getTooltipStyle(mouseY, mouseX)"
                                          @click="navigateToContract(hoveredUnit)">
                                         <div class="flex items-center justify-between gap-3 mb-2 border-b border-gray-100 pb-2">
                                             <h4 class="text-blue-600 font-display text-lg flex items-center gap-2 font-sans font-bold">

@@ -1507,19 +1507,19 @@ class FinanceController extends Controller
         $fromAcc = CashRegister::findOrFail($validated['from_account_id']);
         $toAcc = CashRegister::findOrFail($validated['to_account_id']);
 
-        if ($fromAcc->balance_uzs < $validated['sent_amount']) {
-            return redirect()->back()->withErrors(['error' => "Kassa balansi yetarli emas! Mavjud balans: {$fromAcc->balance_uzs} UZS"]);
-        }
-
         $rate = $validated['exchange_rate'] ?? 1.0;
         $receivedAmount = $validated['sent_amount'] * $rate;
         $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : now()->toDateTimeString();
 
         DB::transaction(function () use ($fromAcc, $toAcc, $validated, $rate, $receivedAmount, $txDate) {
             // Deduct
-            $fromAcc->decrement('balance', $validated['sent_amount']);
+            if (isset($fromAcc->balance)) {
+                $fromAcc->decrement('balance', $validated['sent_amount']);
+            }
             // Deposit
-            $toAcc->increment('balance', $receivedAmount);
+            if (isset($toAcc->balance)) {
+                $toAcc->increment('balance', $receivedAmount);
+            }
 
             // Record Transfer Log
             $transferDesc = !empty($validated['notes'])
@@ -1611,23 +1611,22 @@ class FinanceController extends Controller
         $receivedAmount = $validated['sent_amount'] * $rate;
         $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : now()->toDateTimeString();
 
-        // Check balance of fromAcc after revert if we are changing register or amount
-        $tempFromBalance = $fromAcc->balance_uzs;
-        if ($fromAcc->id === $oldFromAcc->id) {
-            $tempFromBalance += $transfer->sent_amount; // temporarily restore old amount
-        }
-        if ($tempFromBalance < $validated['sent_amount']) {
-            return redirect()->back()->withErrors(['error' => "Kassa balansi yetarli emas! Mavjud balans: {$tempFromBalance} UZS"]);
-        }
-
         DB::transaction(function () use ($transfer, $oldFromAcc, $oldToAcc, $fromAcc, $toAcc, $validated, $rate, $receivedAmount, $txDate) {
             // 1. Revert old balance changes
-            $oldFromAcc->increment('balance', $transfer->sent_amount);
-            $oldToAcc->decrement('balance', $transfer->received_amount);
+            if (isset($oldFromAcc->balance)) {
+                $oldFromAcc->increment('balance', $transfer->sent_amount);
+            }
+            if (isset($oldToAcc->balance)) {
+                $oldToAcc->decrement('balance', $transfer->received_amount);
+            }
 
             // 2. Apply new balance changes
-            $fromAcc->decrement('balance', $validated['sent_amount']);
-            $toAcc->increment('balance', $receivedAmount);
+            if (isset($fromAcc->balance)) {
+                $fromAcc->decrement('balance', $validated['sent_amount']);
+            }
+            if (isset($toAcc->balance)) {
+                $toAcc->increment('balance', $receivedAmount);
+            }
 
             // 3. Update transfer log
             $transferDesc = !empty($validated['notes'])

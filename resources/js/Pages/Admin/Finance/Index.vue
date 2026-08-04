@@ -96,6 +96,7 @@ const sortedTransactions = computed(() => {
 const isProcessing = ref(false);
 const showQuickTransactionModal = ref(false);
 const showQuickTransferModal = ref(false);
+const transferError = ref('');
 const isEditingTransfer = ref(false);
 const editingTransferId = ref(null);
 const showViewTransferModal = ref(false);
@@ -2735,8 +2736,28 @@ function submitTransaction() {
 
 function submitTransfer() {
     isProcessing.value = true;
+    transferError.value = '';
+    
+    if (!transferForm.value.from_account_id || !transferForm.value.to_account_id) {
+        transferError.value = "Iltimos, chiqish va kirish kassalarini tanlang.";
+        isProcessing.value = false;
+        return;
+    }
+    if (transferForm.value.from_account_id == transferForm.value.to_account_id) {
+        transferError.value = "Chiqish va kirish kassalari bir xil bo'lishi mumkin emas.";
+        isProcessing.value = false;
+        return;
+    }
+    if (!transferForm.value.sent_amount || parseFloat(transferForm.value.sent_amount) <= 0) {
+        transferError.value = "Iltimos, to'g'ri o'tkazma summasini kiriting.";
+        isProcessing.value = false;
+        return;
+    }
+
     if (isEditingTransfer.value) {
-        router.put(route('admin.finance.internal_transfer.update', editingTransferId.value), transferForm.value, { preserveScroll: true, preserveState: true,
+        router.put(route('admin.finance.internal_transfer.update', editingTransferId.value), transferForm.value, { 
+            preserveScroll: true, 
+            preserveState: true,
             onSuccess: () => {
                 isProcessing.value = false;
                 showQuickTransferModal.value = false;
@@ -2744,20 +2765,34 @@ function submitTransfer() {
                 transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
                 isEditingTransfer.value = false;
                 editingTransferId.value = null;
+                transferError.value = '';
                 activeTab.value = 6;
             },
-            onError: () => isProcessing.value = false
+            onError: (errs) => {
+                isProcessing.value = false;
+                const msg = (errs && (errs.error || errs.from_account_id || errs.to_account_id || errs.sent_amount || Object.values(errs).flat().join('\n'))) || "Xatolik yuz berdi";
+                transferError.value = msg;
+                alert("Xatolik: " + msg);
+            }
         });
     } else {
-        router.post(route('admin.finance.internal_transfer'), transferForm.value, { preserveScroll: true, preserveState: true,
+        router.post(route('admin.finance.internal_transfer'), transferForm.value, { 
+            preserveScroll: true, 
+            preserveState: true,
             onSuccess: () => {
                 isProcessing.value = false;
                 showQuickTransferModal.value = false;
                 const today = new Date().toLocaleString('sv').slice(0, 10);
                 transferForm.value = { from_account_id: '', to_account_id: '', sent_amount: '', exchange_rate: 1.0, transaction_date: today, notes: '', description: '' };
+                transferError.value = '';
                 activeTab.value = 6;
             },
-            onError: () => isProcessing.value = false
+            onError: (errs) => {
+                isProcessing.value = false;
+                const msg = (errs && (errs.error || errs.from_account_id || errs.to_account_id || errs.sent_amount || Object.values(errs).flat().join('\n'))) || "Xatolik yuz berdi";
+                transferError.value = msg;
+                alert("Xatolik: " + msg);
+            }
         });
     }
 }
@@ -7189,6 +7224,9 @@ function deleteCategory(id) {
                 </div>
                 
                 <form @submit.prevent="submitTransfer" class="space-y-4 font-sans text-xs">
+                    <div v-if="transferError" class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2 font-medium">
+                        <span>⚠️ {{ transferError }}</span>
+                    </div>
                     <!-- From Account -->
                     <div v-if="isTransferFromLocked">
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Chiqish Kassasi</label>
@@ -7245,8 +7283,12 @@ function deleteCategory(id) {
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <button type="button" @click="showQuickTransferModal = false" class="btn-cancel px-5 py-2 border border-slate-200 rounded-xl text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors">Bekor qilish</button>
-                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
-                            {{ isEditingTransfer ? 'Saqlash' : 'Yuborish' }}
+                        <button type="submit" :disabled="isProcessing" class="btn-save px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition-colors shadow-md flex items-center justify-center gap-2">
+                            <svg v-if="isProcessing" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>{{ isProcessing ? 'Yuborilmoqda...' : (isEditingTransfer ? 'Saqlash' : 'Yuborish') }}</span>
                         </button>
                     </div>
                 </form>

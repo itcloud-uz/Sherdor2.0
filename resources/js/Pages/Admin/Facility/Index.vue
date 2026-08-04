@@ -832,15 +832,39 @@ onMounted(() => {
 const hoveredUnit = ref(null);
 const mouseX = ref(0);
 const mouseY = ref(0);
+let tooltipTimer = null;
+
+function clearTooltipTimer() {
+    if (tooltipTimer) {
+        clearTimeout(tooltipTimer);
+        tooltipTimer = null;
+    }
+}
 
 function onUnitHover(unit, event) {
+    clearTooltipTimer();
     hoveredUnit.value = unit;
     mouseX.value = event.clientX;
     mouseY.value = event.clientY;
 }
 
 function onUnitLeave() {
-    hoveredUnit.value = null;
+    clearTooltipTimer();
+    // 5-second delay so user has time to click the popover button
+    tooltipTimer = setTimeout(() => {
+        hoveredUnit.value = null;
+    }, 5000);
+}
+
+function onTooltipMouseEnter() {
+    clearTooltipTimer();
+}
+
+function onTooltipMouseLeave() {
+    clearTooltipTimer();
+    tooltipTimer = setTimeout(() => {
+        hoveredUnit.value = null;
+    }, 5000);
 }
 
 function getUnitContract(unit) {
@@ -881,8 +905,11 @@ function getUnitContractNumber(unit) {
 
 function navigateToContract(unit) {
     if (!unit) return;
+    clearTooltipTimer();
     const contract = getUnitContract(unit);
     const client = getUnitClient(unit);
+    hoveredUnit.value = null;
+
     if (contract && (unit.status === 'sold' || unit.status === 'reserved')) {
         const url = route('admin.crm', { 
             tab: 'clients', 
@@ -3940,6 +3967,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                              (hoveredUnit.status === 'sold' || hoveredUnit.status === 'reserved') ? 'pointer-events-auto cursor-pointer border-amber-300 hover:border-amber-500 hover:shadow-amber-200 ring-2 ring-amber-400/20' : 'pointer-events-none border-gray-200 shadow-lg'
                                          ]"
                                          :style="getTooltipStyle(mouseY, mouseX)"
+                                         @mouseenter="onTooltipMouseEnter"
+                                         @mouseleave="onTooltipMouseLeave"
                                          @click="navigateToContract(hoveredUnit)">
                                         <div class="flex items-center justify-between gap-3 mb-2 border-b border-gray-100 pb-2">
                                             <h4 class="text-blue-600 font-display text-lg flex items-center gap-2 font-sans font-bold">

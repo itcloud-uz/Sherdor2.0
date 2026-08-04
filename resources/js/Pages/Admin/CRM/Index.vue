@@ -125,11 +125,37 @@ const showDetailedLeadModal = ref(false);
 onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const preselectUnit = urlParams.get('unit_id');
+    const contractIdParam = urlParams.get('contract_id');
+    const clientIdParam = urlParams.get('client_id');
+    const tabParam = urlParams.get('tab');
+
+    if (tabParam) {
+        activeTab.value = tabParam;
+    }
+
     if (preselectUnit) {
         activeTab.value = 'contracts';
         contractForm.value.unit_id = Number(preselectUnit);
         showCreateContractModal.value = true;
+    } else if (contractIdParam) {
+        activeTab.value = 'clients';
+        const contract = (props.contracts || []).find(c => String(c.id) === String(contractIdParam));
+        if (contract && contract.client) {
+            selectClientForDetail(contract.client, true, contract);
+        } else if (clientIdParam) {
+            const client = (props.clients || []).find(c => String(c.id) === String(clientIdParam));
+            if (client) {
+                selectClientForDetail(client, true);
+            }
+        }
+    } else if (clientIdParam) {
+        activeTab.value = 'clients';
+        const client = (props.clients || []).find(c => String(c.id) === String(clientIdParam));
+        if (client) {
+            selectClientForDetail(client, true);
+        }
     }
+
     fetchTelephonyLogs();
     fetchAudios();
 });

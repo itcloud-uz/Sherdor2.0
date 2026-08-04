@@ -843,6 +843,58 @@ function onUnitLeave() {
     hoveredUnit.value = null;
 }
 
+function getUnitContract(unit) {
+    if (!unit) return null;
+    if (unit.active_contract) return unit.active_contract;
+    if (unit.activeContract) return unit.activeContract;
+    if (unit.contracts && unit.contracts.length > 0) {
+        return unit.contracts[unit.contracts.length - 1];
+    }
+    return null;
+}
+
+function getUnitClient(unit) {
+    const contract = getUnitContract(unit);
+    if (contract?.client) return contract.client;
+    if (unit.client) return unit.client;
+    return null;
+}
+
+function getUnitClientName(unit) {
+    const client = getUnitClient(unit);
+    if (client) {
+        const name = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim();
+        return name || client.phone || 'Mijoz';
+    }
+    return 'Mijoz ko\'rsatilmadi';
+}
+
+function getUnitClientPhone(unit) {
+    const client = getUnitClient(unit);
+    return client?.phone || '';
+}
+
+function getUnitContractNumber(unit) {
+    const contract = getUnitContract(unit);
+    return contract?.contract_number || contract?.id || '';
+}
+
+function navigateToContract(unit) {
+    if (!unit) return;
+    const contract = getUnitContract(unit);
+    const client = getUnitClient(unit);
+    if (contract && (unit.status === 'sold' || unit.status === 'reserved')) {
+        const url = route('admin.crm', { 
+            tab: 'clients', 
+            contract_id: contract.id,
+            client_id: client?.id || contract.client_id
+        });
+        router.visit(url);
+    } else {
+        selectUnit(unit);
+    }
+}
+
 // Watch for building changes to select the first floor, while respecting localStorage parameters on initial load
 watch(selectedBuilding, (newBuilding, oldBuilding) => {
     selectedFloorIdForBlueprint.value = null;
@@ -3872,13 +3924,22 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <!-- Unit Tooltip -->
                                 <Teleport to="body">
                                     <div v-if="hoveredUnit" 
-                                         class="fixed z-50 pointer-events-none bg-white border border-gray-200 p-4 rounded-xl shadow-lg"
-                                         :style="{ top: (mouseY + 15) + 'px', left: (mouseX + 15) + 'px' }">
-                                        <h4 class="text-blue-600 font-display text-lg mb-2 flex items-center gap-2 font-sans font-bold">
-                                            {{ (hoveredUnit.type === 'commercial' && /^\d+$/.test(String(hoveredUnit.unit_number).trim()) ? 'D-' : '') + hoveredUnit.unit_number }} 
-                                            <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
-                                        </h4>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-sans">
+                                         :class="[
+                                             'fixed z-50 bg-white border p-4 rounded-2xl shadow-2xl transition-all max-w-xs',
+                                             (hoveredUnit.status === 'sold' || hoveredUnit.status === 'reserved') ? 'pointer-events-auto cursor-pointer border-amber-300 hover:border-amber-500 hover:shadow-amber-200 ring-2 ring-amber-400/20' : 'pointer-events-none border-gray-200 shadow-lg'
+                                         ]"
+                                         :style="{ top: Math.min(mouseY + 15, (window.innerHeight || 800) - 260) + 'px', left: Math.min(mouseX + 15, (window.innerWidth || 1200) - 320) + 'px' }"
+                                         @click="navigateToContract(hoveredUnit)">
+                                        <div class="flex items-center justify-between gap-3 mb-2 border-b border-gray-100 pb-2">
+                                            <h4 class="text-blue-600 font-display text-lg flex items-center gap-2 font-sans font-bold">
+                                                {{ (hoveredUnit.type === 'commercial' && /^\d+$/.test(String(hoveredUnit.unit_number).trim()) ? 'D-' : '') + hoveredUnit.unit_number }} 
+                                                <span class="text-[10px] font-sans px-2 py-0.5 rounded text-gray-900 bg-gray-100">{{ hoveredUnit.type === 'commercial' ? "Do'kon" : 'Xonadon' }}</span>
+                                            </h4>
+                                            <span :class="['text-xs font-bold px-2 py-0.5 rounded-full', hoveredUnit.status === 'sold' ? 'bg-red-100 text-red-700' : hoveredUnit.status === 'reserved' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700']">
+                                                {{ hoveredUnit.status === 'sold' ? 'Sotilgan' : hoveredUnit.status === 'reserved' ? 'Band qilingan' : 'Bo\'sh' }}
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs font-sans">
                                             <span class="text-gray-500">Maydoni:</span>
                                             <span class="text-gray-900 text-right font-bold">{{ hoveredUnit.area_sqm }} m²</span>
                                             
@@ -3893,6 +3954,33 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             
                                             <span class="text-gray-500">Status:</span>
                                             <span :class="['text-right font-bold', getUnitTextColor(hoveredUnit.status)]">{{ $t(hoveredUnit.status) || hoveredUnit.status }}</span>
+                                        </div>
+
+                                        <!-- CLIENT & CONTRACT INFO FOR SOLD / RESERVED UNITS -->
+                                        <div v-if="hoveredUnit.status === 'sold' || hoveredUnit.status === 'reserved'" 
+                                             class="mt-3 pt-2.5 border-t border-amber-200 bg-amber-50/80 -mx-4 -mb-4 p-3 rounded-b-2xl">
+                                            <div class="flex items-center justify-between text-[11px] font-bold text-amber-900 uppercase tracking-wide mb-1.5">
+                                                <span>👤 {{ hoveredUnit.status === 'sold' ? 'Xaridor Mijoz' : 'Band Qilgan Mijoz' }}</span>
+                                                <span class="text-blue-600 flex items-center gap-0.5 text-[11px] font-bold">
+                                                    Shartnoma ↗
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="space-y-1 text-xs font-sans">
+                                                <div class="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
+                                                    <span>{{ getUnitClientName(hoveredUnit) }}</span>
+                                                </div>
+                                                <div v-if="getUnitClientPhone(hoveredUnit)" class="text-gray-700 text-xs flex items-center gap-1 font-semibold">
+                                                    <span class="text-gray-400">📞</span> {{ getUnitClientPhone(hoveredUnit) }}
+                                                </div>
+                                                <div v-if="getUnitContractNumber(hoveredUnit)" class="text-blue-700 text-xs font-bold flex items-center gap-1">
+                                                    <span>📄 Shartnoma:</span> #{{ getUnitContractNumber(hoveredUnit) }}
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-2.5 text-[11px] text-center font-bold text-white bg-amber-600 hover:bg-amber-700 py-1.5 px-3 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-1">
+                                                <span>📋</span> Mijoz shartnomasiga o'tish uchun bosing
+                                            </div>
                                         </div>
                                     </div>
                                 </Teleport>
@@ -4034,6 +4122,27 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <div class="col-span-2 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
                                             <span class="text-emerald-600 block text-[10px] uppercase mb-0.5">Narx:</span>
                                             <strong class="text-emerald-700 font-bold text-[15px]">{{ formatSoM(selectedUnit.price) }}</strong>
+                                        </div>
+
+                                        <!-- CLIENT & CONTRACT CARD FOR SOLD / RESERVED UNITS IN PANEL -->
+                                        <div v-if="selectedUnit.status === 'sold' || selectedUnit.status === 'reserved'" 
+                                             class="col-span-2 bg-amber-50 p-3.5 rounded-xl border border-amber-200 space-y-1.5 shadow-sm">
+                                            <div class="flex items-center justify-between text-[11px] font-bold text-amber-900 uppercase">
+                                                <span>👤 {{ selectedUnit.status === 'sold' ? 'Xaridor Mijoz' : 'Band Qilgan Mijoz' }}</span>
+                                            </div>
+                                            <div class="font-bold text-gray-900 text-sm">
+                                                {{ getUnitClientName(selectedUnit) }}
+                                            </div>
+                                            <div v-if="getUnitClientPhone(selectedUnit)" class="text-gray-700 text-xs font-semibold">
+                                                📞 {{ getUnitClientPhone(selectedUnit) }}
+                                            </div>
+                                            <div v-if="getUnitContractNumber(selectedUnit)" class="text-blue-700 text-xs font-bold">
+                                                📄 Shartnoma: #{{ getUnitContractNumber(selectedUnit) }}
+                                            </div>
+                                            <button @click="navigateToContract(selectedUnit)" 
+                                                    class="w-full mt-2 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
+                                                <span>📋</span> Mijoz Shartnomasiga O'tish
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

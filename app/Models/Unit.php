@@ -35,4 +35,14 @@ class Unit extends Model
     {
         return $this->belongsTo(Podez::class, 'podez_id');
     }
+
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class, 'unit_id');
+    }
+
+    public function activeContract()
+    {
+        return $this->hasOne(Contract::class, 'unit_id')->latestOfMany();
+    }
 }

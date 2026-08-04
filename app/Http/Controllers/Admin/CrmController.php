@@ -468,18 +468,18 @@ class CrmController extends Controller
             'reason' => 'nullable|string'
         ]);
 
-        if ($validated['status'] === 'qualified') {
-            return $this->convertLeadToClient($lead, $request);
-        }
-
         $lead->status = $validated['status'];
         if ($validated['status'] === 'lost' && !empty($validated['reason'])) {
             $lead->reason = $validated['reason'];
         }
         $lead->save();
 
+        if ($validated['status'] === 'qualified') {
+            return $this->syncLeadToClient($lead, $request, false);
+        }
+
         if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
-            return $this->convertLeadToClient($lead, $request);
+            return $this->syncLeadToClient($lead, $request, false);
         }
 
         return redirect()->back()->with('message', 'Status yangilandi.');
@@ -503,63 +503,15 @@ class CrmController extends Controller
 
     public function convertLeadToClient(Lead $lead, \Illuminate\Http\Request $request = null)
     {
+        return $this->syncLeadToClient($lead, $request, true);
+    }
+
+    public function syncLeadToClient(Lead $lead, \Illuminate\Http\Request $request = null, bool $deleteLead = false)
+    {
         $cleanLeadPhone = preg_replace('/[^0-9]/', '', $lead->phone ?? '');
         $leadFullName = $lead->full_name ?: trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
         if (empty($leadFullName)) {
             $leadFullName = 'Lid #' . $lead->id;
-        }
-
-        // Search for existing client by exact phone or normalized phone digits
-        $existingClient = null;
-        if (!empty($lead->phone)) {
-            $existingClient = \App\Models\Client::where('phone', $lead->phone)->first();
-        }
-        if (!$existingClient && !empty($cleanLeadPhone)) {
-            $allClients = \App\Models\Client::select('id', 'phone', 'passport_number', 'region', 'district', 'address', 'source', 'pinfl', 'first_name', 'last_name')->get();
-            foreach ($allClients as $c) {
-                if (!empty($c->phone) && preg_replace('/[^0-9]/', '', $c->phone) === $cleanLeadPhone) {
-                    $existingClient = $c;
-                    break;
-                }
-            }
-        }
-
-        if ($existingClient) {
-            // Update existing client with lead data if client fields are empty
-            $updateData = [];
-            if (empty($existingClient->passport_number) && !empty($lead->passport_series)) $updateData['passport_number'] = $lead->passport_series;
-            if (empty($existingClient->region) && !empty($lead->region)) $updateData['region'] = $lead->region;
-            if (empty($existingClient->district) && !empty($lead->district)) $updateData['district'] = $lead->district;
-            if (empty($existingClient->address) && !empty($lead->address)) $updateData['address'] = $lead->address;
-            if (empty($existingClient->source) && !empty($lead->source)) $updateData['source'] = $lead->source;
-            if (empty($existingClient->pinfl) && !empty($lead->pinfl)) $updateData['pinfl'] = $lead->pinfl;
-
-            if (!empty($updateData)) {
-                $existingClient->update($updateData);
-            }
-
-            // Record conversion audit log
-            if (class_exists('\App\Models\LeadConversionLog')) {
-                \App\Models\LeadConversionLog::create([
-                    'lead_id' => $lead->id,
-                    'client_id' => $existingClient->id,
-                    'user_id' => auth()->id() ?? 1,
-                    'lead_name' => $leadFullName,
-                    'lead_phone' => $lead->phone,
-                    'action' => 'merged',
-                    'description' => "Mijoz allaqachon bazada borligi sababli, lid ({$leadFullName}, tel: {$lead->phone}) ma'lumotlari mavjud mijozga (#{$existingClient->id} - {$existingClient->last_name} {$existingClient->first_name}) biriktirildi hamda lid o'chirildi.",
-                    'status' => 'merged',
-                ]);
-            }
-
-            // Delete the lead from leads table so it disappears from leads
-            $lead->delete();
-
-            if ($request && $request->wantsJson()) {
-                return response()->json(['message' => 'Mijoz allaqachon mavjud edi, ma\'lumotlar birlashtirildi va lid o\'tkazildi!']);
-            }
-
-            return redirect()->back()->with('message', 'Mijoz allaqachon mavjud edi, ma\'lumotlar birlashtirildi va lid o\'tkazildi!');
         }
 
         $lastName = $lead->last_name;
@@ -578,45 +530,105 @@ class CrmController extends Controller
             }
         }
 
-        $newClient = \App\Models\Client::create([
-            'first_name' => $firstName ?: ($lead->full_name ?: 'Lid #' . $lead->id),
-            'last_name' => $lastName ?: '',
-            'middle_name' => $middleName ?: '',
-            'phone' => $lead->phone ?: '',
-            'phone_2' => $lead->phone_2,
-            'passport_number' => $lead->passport_series,
-            'region' => $lead->region,
-            'district' => $lead->district,
-            'address' => $lead->address,
-            'source' => $lead->source,
-            'pinfl' => $lead->pinfl,
-            'passport_photo' => $lead->passport_photo,
-            'passport_photo_back' => $lead->passport_photo_back,
-            'passport_issued_date' => $lead->passport_issued_date,
-            'passport_issued_by' => $lead->passport_issued_by,
-        ]);
+        // Search for existing client ONLY if phone matches AND names are similar or existing client name is empty
+        $existingClient = null;
+        if (!empty($cleanLeadPhone) && strlen($cleanLeadPhone) >= 7) {
+            $allClients = \App\Models\Client::select('id', 'phone', 'passport_number', 'region', 'district', 'address', 'source', 'pinfl', 'first_name', 'last_name')->get();
+            foreach ($allClients as $c) {
+                $cleanClientPhone = preg_replace('/[^0-9]/', '', $c->phone ?? '');
+                if (!empty($cleanClientPhone) && strlen($cleanClientPhone) >= 7 && $cleanClientPhone === $cleanLeadPhone) {
+                    $cFullName = trim(($c->last_name ?? '') . ' ' . ($c->first_name ?? ''));
+                    if (empty($cFullName) || 
+                        mb_strtolower(trim($c->first_name)) === mb_strtolower(trim($firstName)) ||
+                        mb_strtolower(trim($c->last_name)) === mb_strtolower(trim($lastName)) ||
+                        str_contains(mb_strtolower($cFullName), mb_strtolower(trim($firstName))) ||
+                        str_contains(mb_strtolower($leadFullName), mb_strtolower(trim($c->first_name ?? '___')))) {
+                        $existingClient = $c;
+                        break;
+                    }
+                }
+            }
+        }
 
-        // Record conversion audit log
-        if (class_exists('\App\Models\LeadConversionLog')) {
-            \App\Models\LeadConversionLog::create([
-                'lead_id' => $lead->id,
-                'client_id' => $newClient->id,
-                'user_id' => auth()->id() ?? 1,
-                'lead_name' => $leadFullName,
-                'lead_phone' => $lead->phone,
-                'action' => 'converted',
-                'description' => "Lid ({$leadFullName}, tel: {$lead->phone}) muvaffaqiyatli o'tkazilib, yangi Mijoz yaratildi (#{$newClient->id} - {$newClient->last_name} {$newClient->first_name}).",
-                'status' => 'success',
+        if ($existingClient) {
+            // Update existing client with lead data if client fields are empty
+            $updateData = [];
+            if (empty($existingClient->passport_number) && !empty($lead->passport_series)) $updateData['passport_number'] = $lead->passport_series;
+            if (empty($existingClient->region) && !empty($lead->region)) $updateData['region'] = $lead->region;
+            if (empty($existingClient->district) && !empty($lead->district)) $updateData['district'] = $lead->district;
+            if (empty($existingClient->address) && !empty($lead->address)) $updateData['address'] = $lead->address;
+            if (empty($existingClient->source) && !empty($lead->source)) $updateData['source'] = $lead->source;
+            if (empty($existingClient->pinfl) && !empty($lead->pinfl)) $updateData['pinfl'] = $lead->pinfl;
+            if (empty($existingClient->first_name) && !empty($firstName)) $updateData['first_name'] = $firstName;
+            if (empty($existingClient->last_name) && !empty($lastName)) $updateData['last_name'] = $lastName;
+
+            if (!empty($updateData)) {
+                $existingClient->update($updateData);
+            }
+
+            if (class_exists('\App\Models\LeadConversionLog')) {
+                \App\Models\LeadConversionLog::create([
+                    'lead_id' => $lead->id,
+                    'client_id' => $existingClient->id,
+                    'user_id' => auth()->id() ?? 1,
+                    'lead_name' => $leadFullName,
+                    'lead_phone' => $lead->phone,
+                    'action' => 'merged',
+                    'description' => "Lid ({$leadFullName}, tel: {$lead->phone}) Saralanganlarga o'tkazildi hamda ma'lumotlari mavjud mijozga (#{$existingClient->id} - {$existingClient->last_name} {$existingClient->first_name}) biriktirildi.",
+                    'status' => 'merged',
+                ]);
+            }
+
+            $client = $existingClient;
+        } else {
+            $client = \App\Models\Client::create([
+                'first_name' => $firstName ?: ($lead->full_name ?: 'Lid #' . $lead->id),
+                'last_name' => $lastName ?: '',
+                'middle_name' => $middleName ?: '',
+                'phone' => $lead->phone ?: '',
+                'phone_2' => $lead->phone_2,
+                'passport_number' => $lead->passport_series,
+                'region' => $lead->region,
+                'district' => $lead->district,
+                'address' => $lead->address,
+                'source' => $lead->source,
+                'pinfl' => $lead->pinfl,
+                'passport_photo' => $lead->passport_photo,
+                'passport_photo_back' => $lead->passport_photo_back,
+                'passport_issued_date' => $lead->passport_issued_date,
+                'passport_issued_by' => $lead->passport_issued_by,
+            ]);
+
+            if (class_exists('\App\Models\LeadConversionLog')) {
+                \App\Models\LeadConversionLog::create([
+                    'lead_id' => $lead->id,
+                    'client_id' => $client->id,
+                    'user_id' => auth()->id() ?? 1,
+                    'lead_name' => $leadFullName,
+                    'lead_phone' => $lead->phone,
+                    'action' => 'converted',
+                    'description' => "Lid ({$leadFullName}, tel: {$lead->phone}) Saralanganlarga o'tkazildi hamda Mijozlar bazasiga qo'shildi (#{$client->id} - {$client->last_name} {$client->first_name}).",
+                    'status' => 'success',
+                ]);
+            }
+        }
+
+        if ($deleteLead) {
+            $lead->delete();
+        } else {
+            $lead->status = 'qualified';
+            $lead->save();
+        }
+
+        if ($request && $request->wantsJson()) {
+            return response()->json([
+                'message' => 'Lid Saralanganlarga o\'tkazildi va Mijozlar bazasiga qo\'shildi!',
+                'client' => $client,
+                'lead' => $lead
             ]);
         }
 
-        $lead->delete();
-
-        if ($request && $request->wantsJson()) {
-            return response()->json(['message' => 'Mijozlar bo\'limiga muvaffaqiyatli o\'tkazildi!']);
-        }
-
-        return redirect()->back()->with('message', 'Mijozlar bo\'limiga muvaffaqiyatli o\'tkazildi!');
+        return redirect()->back()->with('message', 'Lid Saralanganlarga o\'tkazildi va Mijozlar bazasiga qo\'shildi!');
     }
 
     public function updateLead(Request $request, Lead $lead)

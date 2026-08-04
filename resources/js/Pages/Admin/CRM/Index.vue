@@ -2487,9 +2487,6 @@ const availableCorpuses = computed(() => {
 
 const availableManagers = computed(() => {
     const names = new Set();
-    props.users?.forEach(u => {
-        if (u.name) names.add(u.name);
-    });
     props.contracts?.forEach(c => {
         const pName = c.partner?.user?.name || c.user?.name;
         if (pName) names.add(pName);
@@ -2500,6 +2497,12 @@ const availableManagers = computed(() => {
             if (pName) names.add(pName);
         });
     });
+    // Fallback to all users if no contract managers found
+    if (names.size === 0 && props.users) {
+        props.users.forEach(u => {
+            if (u.name) names.add(u.name);
+        });
+    }
     return [...names].filter(Boolean).sort();
 });
 

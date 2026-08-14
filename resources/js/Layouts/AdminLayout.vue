@@ -689,6 +689,15 @@ const formattedDate = computed(() => {
                                 👥 Mijozlar
                             </Link>
 
+                            <!-- Bekor qilingan shartnomalar -->
+                            <Link
+                                :href="route('admin.crm', { tab: 'canceled' })"
+                                class="flex items-center gap-2 py-2 pl-8 pr-3 rounded-lg text-[12px] font-normal transition-all duration-200"
+                                :class="isClientsTabActive('canceled') ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                            >
+                                ❌ Bekor qilingan shartnomalar
+                            </Link>
+
 
 
                             <!-- Shartnoma shablonlari -->

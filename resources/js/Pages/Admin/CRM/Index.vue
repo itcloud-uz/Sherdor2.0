@@ -4638,19 +4638,49 @@ const ledgerReportData = computed(() => {
         </div>
 
         <!-- TAB 2: CLIENTS ROSTER -->
-        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
+        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'canceled'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
             <div v-if="!selectedClientForDetail">
-                <!-- Breadcrumbs -->
-                <div class="flex items-center gap-2 text-xs text-gray-500 font-sans mb-6 font-medium">
-                <span class="flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Mijozlar bazasi
-                </span>
-                <span class="text-gray-300 font-bold">&gt;</span>
-                <span class="text-gray-900 font-bold">{{ activeTab === 'contracts' ? 'Shartnomalar' : 'Mijozlar' }}</span>
-            </div>
+                <!-- Breadcrumbs & Quick Sub-tabs Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div class="flex items-center gap-2 text-xs text-gray-500 font-sans font-medium">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Mijozlar bazasi
+                        </span>
+                        <span class="text-gray-300 font-bold">&gt;</span>
+                        <span class="text-gray-900 font-bold">{{ activeTab === 'contracts' ? 'Shartnomalar' : (activeTab === 'canceled' ? 'Bekor Qilingan Shartnomalar' : 'Mijozlar') }}</span>
+                    </div>
+
+                    <!-- Sub-tabs Navigation Buttons -->
+                    <div class="flex items-center gap-1.5 bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
+                        <button 
+                            @click="activeTab = 'clients'" 
+                            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                            :class="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'].includes(activeTab) ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+                        >
+                            👥 Mijozlar
+                        </button>
+                        <button 
+                            @click="activeTab = 'contracts'" 
+                            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                            :class="activeTab === 'contracts' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+                        >
+                            📄 Shartnomalar
+                        </button>
+                        <button 
+                            @click="activeTab = 'canceled'" 
+                            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                            :class="activeTab === 'canceled' ? 'bg-red-600 text-white shadow-sm' : 'text-red-600 hover:bg-red-50 border border-red-200/60'"
+                        >
+                            ❌ Bekor Qilingan Shartnomalar
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono" :class="activeTab === 'canceled' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-700'">
+                                {{ canceledContracts.length }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
 
             <!-- Contracts section inside Client Database Roster -->
             <div v-if="activeTab === 'contracts'" class="space-y-6">

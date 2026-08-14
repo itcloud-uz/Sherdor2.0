@@ -138,7 +138,7 @@ class FinanceController extends Controller
             $machineOwners = MachineOwner::latest()->get();
         }
 
-        if (in_array($tab, [0, 1, 2, 7, 8, 11, 12])) {
+        if (in_array($tab, [0, 1, 2, 6, 7, 8, 11, 12])) {
             $txQuery = Transaction::with([
                 'creator:id,name,phone', 
                 'contract:id,contract_number,client_id,unit_id', 
@@ -152,7 +152,7 @@ class FinanceController extends Controller
             ->orderBy('id', 'desc');
 
             if ($tab === 0) {
-                $transactions = $txQuery->limit(100)->get();
+                $transactions = $txQuery->limit(2000)->get();
             } else {
                 $transactions = $txQuery->get();
             }

@@ -173,7 +173,7 @@ class FinanceController extends Controller
         }
 
         if (in_array($tab, [0, 6, 8])) {
-            $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
+            $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount', 'transactions'])->latest()->get();
         }
 
         if ($tab === 13) {

@@ -2809,12 +2809,18 @@ function openEditTransferModal(t) {
     isEditingTransfer.value = true;
     editingTransferId.value = t.id;
     isTransferFromLocked.value = false;
+    
+    let transferTxDate = null;
+    if (t.transactions && t.transactions.length > 0 && t.transactions[0].transaction_date) {
+        transferTxDate = t.transactions[0].transaction_date.slice(0, 10);
+    }
+    
     transferForm.value = {
         from_account_id: t.from_account_id,
         to_account_id: t.to_account_id,
         sent_amount: parseFloat(t.sent_amount),
         exchange_rate: parseFloat(t.exchange_rate || 1.0),
-        transaction_date: t.transaction_date || (t.created_at ? t.created_at.slice(0, 10) : new Date().toLocaleString('sv').slice(0, 10)),
+        transaction_date: transferTxDate || (t.created_at ? t.created_at.slice(0, 10) : new Date().toLocaleString('sv').slice(0, 10)),
         notes: t.description || '',
         description: ''
     };

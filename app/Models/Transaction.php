@@ -121,4 +121,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(TransactionImport::class, 'transaction_import_id');
     }
+
+    public function moneyTransfer()
+    {
+        return $this->belongsTo(MoneyTransfer::class, 'money_transfer_id');
+    }
 }

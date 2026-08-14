@@ -146,7 +146,9 @@ class FinanceController extends Controller
                 'category:id,name,type,target_type', 
                 'cashRegister:id,name', 
                 'counterparty:id,name,type', 
-                'building:id,name'
+                'building:id,name',
+                'moneyTransfer.fromAccount:id,name',
+                'moneyTransfer.toAccount:id,name'
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc');

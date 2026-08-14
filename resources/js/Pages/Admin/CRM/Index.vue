@@ -3805,28 +3805,85 @@ const filteredClientPayments = computed(() => {
 });
 
 const filteredClientDebts = computed(() => {
-    const debts = (props.counterparties || [])
-        .filter(c => c.type === 'client' && Number(c.balance || 0) !== 0)
-        .map(c => {
-            const clientContracts = c.customable?.contracts || [];
-            const agreed = clientContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+    const list = [];
+    const processedClientIds = new Set();
+
+    // 1. Counterparties with non-zero balance
+    (props.counterparties || []).forEach(cp => {
+        if (cp.type === 'client' && Number(cp.balance || 0) !== 0) {
+            if (cp.customable_id) processedClientIds.add(cp.customable_id);
             
-            const paid = (c.transactions || [])
-                .filter(t => t.type === 'income' && t.status === 'approved')
+            const clientContracts = cp.customable?.contracts || [];
+            const agreed = clientContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+            const paid = (cp.transactions || [])
+                .filter(t => t.type === 'income' && (t.status === 'approved' || !t.status))
                 .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-            return {
-                ...c,
+            list.push({
+                ...cp,
+                id: `cp-${cp.id}`,
+                counterparty_id: cp.id,
+                client_id: cp.customable_id,
+                name: cp.name,
+                phone: cp.phone,
                 agreed_amount: agreed,
                 paid_amount: paid,
-                debt_amount: Math.abs(Number(c.balance))
-            };
+                balance: Number(cp.balance),
+                debt_amount: Math.abs(Number(cp.balance)),
+                is_cancelled_contract: clientContracts.some(ct => ct.status === 'cancelled' || ct.status === 'canceled'),
+                customable: cp.customable || cp
+            });
+        }
+    });
+
+    // 2. Clients with Cancelled Contracts where client paid money
+    (props.clients || []).forEach(client => {
+        if (processedClientIds.has(client.id)) return;
+
+        const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.phone || `Mijoz #${client.id}`;
+        const cancelledContracts = (client.contracts || []).filter(ct => ct.status === 'cancelled' || ct.status === 'canceled');
+        
+        cancelledContracts.forEach(contract => {
+            let contractPaid = 0;
+            if (contract.payment_schedules) {
+                contractPaid += contract.payment_schedules.reduce((sum, ps) => sum + Number(ps.paid_amount || 0), 0);
+            }
+            if (contract.transactions) {
+                const txPaid = contract.transactions
+                    .filter(t => t.type === 'income' && (t.status === 'approved' || !t.status))
+                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+                contractPaid = Math.max(contractPaid, txPaid);
+            }
+            if (!contractPaid && contract.down_payment && Number(contract.down_payment) > 0) {
+                contractPaid = Number(contract.down_payment);
+            }
+
+            if (contractPaid > 0) {
+                processedClientIds.add(client.id);
+                list.push({
+                    id: `client-cancelled-${client.id}-${contract.id}`,
+                    client_id: client.id,
+                    contract_id: contract.id,
+                    contract_number: contract.contract_number || `#${contract.id}`,
+                    name: clientName,
+                    phone: client.phone,
+                    agreed_amount: Number(contract.total_amount || 0),
+                    paid_amount: contractPaid,
+                    balance: contractPaid, // Company owes refund to client
+                    debt_amount: contractPaid,
+                    is_cancelled_contract: true,
+                    customable: client
+                });
+            }
         });
-    if (!clientDebtsSearch.value) return debts;
+    });
+
+    if (!clientDebtsSearch.value) return list;
     const q = clientDebtsSearch.value.toLowerCase();
-    return debts.filter(c => 
-        (c.name || '').toLowerCase().includes(q) ||
-        (c.phone || '').toLowerCase().includes(q)
+    return list.filter(item => 
+        (item.name || '').toLowerCase().includes(q) ||
+        (item.phone || '').toLowerCase().includes(q) ||
+        (item.contract_number || '').toLowerCase().includes(q)
     );
 });
 
@@ -6215,15 +6272,20 @@ const ledgerReportData = computed(() => {
                                 <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0" :class="c.is_cancelled_contract ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'">
                                             {{ getInitials(c.name ? c.name.split(' ')[1] : '', c.name ? c.name.split(' ')[0] : '') }}
                                         </div>
                                         <div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 flex-wrap">
                                                 <p class="font-bold text-gray-900 text-sm leading-tight">{{ c.name }}</p>
-                                                <span v-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                                <span v-if="c.is_cancelled_contract" class="px-2 py-0.5 text-[10px] bg-red-100 text-red-700 border border-red-200 rounded font-bold uppercase tracking-wider">Bekor qilingan shartnoma (Qaytariladi)</span>
+                                                <span v-else-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                                <span v-else class="px-2 py-0.5 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded font-bold uppercase tracking-wider">Mijoz qarzdorligi</span>
                                             </div>
-                                            <span class="text-xs text-gray-500 font-mono mt-1 inline-block">{{ c.phone || '-' }}</span>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-xs text-gray-500 font-mono">{{ c.phone || '-' }}</span>
+                                                <span v-if="c.contract_number" class="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded font-mono">Shartnoma: {{ c.contract_number }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -6232,20 +6294,20 @@ const ledgerReportData = computed(() => {
                                     <div class="text-[10px] text-gray-400 font-normal font-sans">Kelishilgan: {{ Number(c.agreed_amount || 0).toLocaleString() }} so'm</div>
                                 </td>
                                 <td class="p-4 text-right font-bold text-base" :class="c.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
-                                    {{ c.balance > 0 ? 'Qaytariladi: ' : '' }}{{ Number(c.debt_amount || 0).toLocaleString() }} so'm
+                                    {{ c.balance > 0 ? 'Qaytariladi: ' : 'Qarzdorlik: ' }}{{ Number(c.debt_amount || 0).toLocaleString() }} so'm
                                 </td>
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-3">
                                         <!-- Quick pay debt button -->
                                         <button @click="openQuickTransaction(c.balance > 0 ? 'expense' : 'income', c.customable)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans" :class="c.balance > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white'">
-                                            {{ c.balance > 0 ? '+ Qaytarish' : '+ Qarzni to\'lash' }}
+                                            {{ c.balance > 0 ? '+ Pulni Qaytarish' : '+ Qarzni to\'lash' }}
                                         </button>
                                         
                                         <!-- Edit/delete counterparty -->
-                                        <button @click="openEditCounterpartyModal(c)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                        <button v-if="c.counterparty_id" @click="openEditCounterpartyModal(c)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
                                             ✏️
                                         </button>
-                                        <button @click="deleteCounterparty(c.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
+                                        <button v-if="c.counterparty_id" @click="deleteCounterparty(c.counterparty_id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
                                             🗑️
                                         </button>
                                     </div>

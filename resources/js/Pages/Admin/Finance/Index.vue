@@ -461,6 +461,38 @@ function formatDateTime(dateStr) {
     }
 }
 
+const getTransactionSourceName = (t) => {
+    if (!t) return '-';
+    if (t.counterparty && t.counterparty.name) {
+        return t.counterparty.name;
+    }
+    if (t.contract && t.contract.client) {
+        const c = t.contract.client;
+        const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+        if (name) return name;
+    }
+    const transfer = t.money_transfer || t.moneyTransfer;
+    if (transfer) {
+        if (t.type === 'income') {
+            const fromName = transfer.from_account?.name || transfer.fromAccount?.name;
+            return fromName ? `O'tkazma (${fromName} kassasidan)` : `O'tkazma (Kassadan)`;
+        } else if (t.type === 'expense') {
+            const toName = transfer.to_account?.name || transfer.toAccount?.name;
+            return toName ? `O'tkazma (${toName} kassasiga)` : `O'tkazma (Kassaga)`;
+        }
+    }
+    if (t.notes && (t.notes.includes("kassasidan") || t.notes.includes("kassasiga"))) {
+        return t.notes;
+    }
+    if (t.category_display === "Ichki O'tkazma" || (t.category && t.category.name === "Ichki O'tkazma")) {
+        if (t.notes) {
+            return t.notes;
+        }
+        return `Ichki o'tkazma`;
+    }
+    return '-';
+};
+
 const filteredKirimChiqimTransactions = computed(() => {
     let result = sortedTransactions.value.filter(t => t && t.status === 'approved');
     if (kirimChiqimDateFrom.value) {
@@ -3713,7 +3745,7 @@ function deleteCategory(id) {
                                 <tr v-for="t in paginatedJurnalTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                     <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleDateString() }}</td>
-                                    <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
+                                    <td class="p-4 font-bold text-gray-800">{{ getTransactionSourceName(t) }}</td>
                                     <td class="p-4 text-gray-700">{{ t.building?.name || t.contract?.unit?.building?.name || '-' }}</td>
                                     <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
@@ -4461,7 +4493,7 @@ function deleteCategory(id) {
                                     <tr v-for="t in paginatedRegisterTransactions" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="p-4 font-bold text-gray-900">#{{ t.id }}</td>
                                         <td class="p-4 text-gray-500">{{ new Date(t.transaction_date).toLocaleString() }}</td>
-                                        <td class="p-4 font-bold text-gray-800">{{ t.counterparty?.name || '-' }}</td>
+                                        <td class="p-4 font-bold text-gray-800">{{ getTransactionSourceName(t) }}</td>
                                         <td class="p-4 text-gray-600">{{ t.building?.name || t.contract?.unit?.building?.name || '-' }}</td>
                                         <td class="p-4 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                             {{ t.type === 'income' ? '+' : '-' }} {{ formatMoney(t.amount, t.currency) }}
@@ -4580,9 +4612,9 @@ function deleteCategory(id) {
                                     <td class="p-4 font-bold text-gray-900">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm">
-                                                {{ t.counterparty?.name.charAt(0) || 'M' }}
+                                                {{ getTransactionSourceName(t).charAt(0) || 'M' }}
                                             </div>
-                                            <span>{{ t.counterparty?.name || '-' }}</span>
+                                            <span>{{ getTransactionSourceName(t) }}</span>
                                         </div>
                                     </td>
                                     <td class="p-4 text-right font-bold text-red-600">{{ formatMoney(t.amount, t.currency) }}</td>

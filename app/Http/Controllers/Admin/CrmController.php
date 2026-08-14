@@ -97,7 +97,8 @@ class CrmController extends Controller
             'contracts.unit.floor.building',
             'contracts.partner.user',
             'contracts.user',
-            'contracts.paymentSchedules'
+            'contracts.paymentSchedules',
+            'contracts.transactions'
         ])->orderBy('id', 'desc')->limit(500)->get();
         $latestClientId = \App\Models\Client::orderBy('id', 'desc')->first()?->id;
         if (in_array($tab, ['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist'])) {
@@ -184,9 +185,11 @@ class CrmController extends Controller
                 $q->where('type', 'client');
             })->latest()->limit(1000)->get();
 
-            $counterparties = \App\Models\Counterparty::with(['customable.contracts', 'transactions'])
-                            ->where('type', 'client')
-                            ->get();
+            $counterparties = \App\Models\Counterparty::with([
+                'customable.contracts.paymentSchedules',
+                'customable.contracts.transactions',
+                'transactions'
+            ])->where('type', 'client')->get();
         }
 
         // 10. Client Payment Reports Tab (MIJOZ TO'LOV HISOBOTLARI)

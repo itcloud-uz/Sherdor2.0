@@ -124,7 +124,7 @@ class FinanceController extends Controller
         // Counterparties, Buildings, Clients, and Contracts for quick transaction modals and filtering
         $counterparties = Counterparty::with(['customable'])->get();
         $buildings = Building::latest()->get();
-        $clients = Client::latest()->limit(1000)->get();
+        $clients = Client::latest()->get();
         $contracts = \App\Models\Contract::with(['client', 'unit.floor.building', 'paymentSchedules'])
             ->where('status', '!=', 'completed')
             ->latest()
@@ -154,7 +154,7 @@ class FinanceController extends Controller
             if ($tab === 0) {
                 $transactions = $txQuery->limit(100)->get();
             } else {
-                $transactions = $txQuery->limit(1000)->get();
+                $transactions = $txQuery->get();
             }
         }
 

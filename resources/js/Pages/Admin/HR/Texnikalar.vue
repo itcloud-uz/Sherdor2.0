@@ -332,13 +332,20 @@ const ownersWithStats = computed(() => {
     return props.owners.map(owner => {
         let paid = 0;
         let salyarka = 0;
+        let accruals = 0;
         
         if (owner.transactions && owner.transactions.length > 0) {
             owner.transactions.forEach(t => {
-                const amount = parseFloat(t.amount) || 0;
+                const amount = Math.abs(parseFloat(t.amount) || 0);
                 const desc = (t.description || '').toLowerCase();
+                const type = (t.type || '').toLowerCase();
+                
                 if (desc.includes('salyarka') || desc.includes('solyarka') || desc.includes('so\'lyarka')) {
                     salyarka += amount;
+                } else if (type === 'payment_received' || type === 'income' || type === 'refund') {
+                    paid -= amount;
+                } else if (type === 'salary_accrual' || type === 'work') {
+                    accruals += amount;
                 } else {
                     paid += amount;
                 }
@@ -351,23 +358,37 @@ const ownersWithStats = computed(() => {
                 worksPrice += parseFloat(w.total_price) || 0;
             });
         }
+        worksPrice += accruals;
 
-        const balance = worksPrice - (paid + salyarka);
+        const totalPaidAll = paid + salyarka;
+        const balance = worksPrice - totalPaidAll;
 
         return {
             ...owner,
             totalWorksPrice: worksPrice,
             totalPaid: paid,
             totalSalyarka: salyarka,
+            totalPaidAll: totalPaidAll,
             calculatedBalance: balance
         };
     });
 });
 
-const currentSelectedOwnerCalculatedBalance = computed(() => {
-    if (!selectedOwner.value) return 0;
+const currentOwnerStats = computed(() => {
+    if (!selectedOwner.value) return { totalWorksPrice: 0, totalPaid: 0, totalSalyarka: 0, totalPaidAll: 0, calculatedBalance: 0 };
     const found = ownersWithStats.value.find(o => o.id === selectedOwner.value.id);
-    return found ? found.calculatedBalance : (selectedOwner.value.balance || 0);
+    if (found) return found;
+    return {
+        totalWorksPrice: 0,
+        totalPaid: 0,
+        totalSalyarka: 0,
+        totalPaidAll: 0,
+        calculatedBalance: selectedOwner.value.balance || 0
+    };
+});
+
+const currentSelectedOwnerCalculatedBalance = computed(() => {
+    return currentOwnerStats.value.calculatedBalance;
 });
 
 const sortedTransactions = computed(() => {
@@ -912,14 +933,23 @@ const exportFinanceToExcel = () => {
                                 <p class="text-sm text-gray-700 mt-0.5">Telefon: <span class="font-semibold">{{ selectedOwner.phone || 'Kiritilmagan' }}</span></p>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
-                                <div class="text-[10px] text-gray-500 uppercase font-bold">Jami Xizmatlar</div>
-                                <div class="text-sm font-semibold text-gray-800">{{ stats.totalServices || 0 }} ta</div>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="bg-white rounded-lg px-3 py-1.5 border border-indigo-200 shadow-sm text-center">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold">Bajarilgan Ishlar Summasi</div>
+                                <div class="text-xs font-semibold text-gray-800">{{ formatMoney(currentOwnerStats.totalWorksPrice) }} UZS</div>
                             </div>
-                            <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
+                            <div class="bg-white rounded-lg px-3 py-1.5 border border-emerald-200 bg-emerald-50/50 shadow-sm text-center">
+                                <div class="text-[10px] text-emerald-700 uppercase font-bold">Jami Berilgan Pul</div>
+                                <div class="text-xs font-bold text-emerald-700">{{ formatMoney(currentOwnerStats.totalPaidAll) }} UZS</div>
+                            </div>
+                            <div class="bg-white rounded-lg px-3 py-1.5 border border-indigo-200 shadow-sm text-center">
                                 <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
-                                <div class="text-sm font-bold" :class="currentSelectedOwnerCalculatedBalance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(currentSelectedOwnerCalculatedBalance) }} UZS</div>
+                                <div class="text-xs font-bold" :class="currentOwnerStats.calculatedBalance > 0 ? 'text-green-600' : currentOwnerStats.calculatedBalance < 0 ? 'text-red-600' : 'text-gray-600'">
+                                    {{ currentOwnerStats.calculatedBalance > 0 ? '+' + formatMoney(currentOwnerStats.calculatedBalance) : (currentOwnerStats.calculatedBalance < 0 ? '-' + formatMoney(Math.abs(currentOwnerStats.calculatedBalance)) : '0') }} UZS
+                                    <span class="text-[9px] font-normal block text-gray-400">
+                                        {{ currentOwnerStats.calculatedBalance > 0 ? '(Bizning qarzimiz)' : (currentOwnerStats.calculatedBalance < 0 ? '(Ortiqcha to\'langan / Avans)' : '(Tenglashtirilgan)') }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

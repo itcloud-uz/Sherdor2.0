@@ -172,7 +172,7 @@ class FinanceController extends Controller
             $invoices = Invoice::with(['counterparty', 'building'])->latest()->get();
         }
 
-        if ($tab === 6) {
+        if (in_array($tab, [0, 6, 8])) {
             $moneyTransfers = MoneyTransfer::with(['fromAccount', 'toAccount'])->latest()->get();
         }
 

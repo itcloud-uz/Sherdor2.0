@@ -1438,6 +1438,14 @@ function handleEditFileUpload(e) {
 }
 
 function openEditTransactionModal(txn) {
+    if (txn.money_transfer_id) {
+        const transfer = (props.moneyTransfers || []).find(t => t.id === txn.money_transfer_id);
+        if (transfer) {
+            openEditTransferModal(transfer);
+            return;
+        }
+    }
+
     let paymentPurpose = txn.notes || '';
     let extraNotes = txn.description || '';
     if (!extraNotes && paymentPurpose.includes('\n[Izoh]: ')) {

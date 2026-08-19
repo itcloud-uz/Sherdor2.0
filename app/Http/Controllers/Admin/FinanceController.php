@@ -2014,6 +2014,11 @@ class FinanceController extends Controller
                     $invoice->created_at->format('Y-m-d H:i')
                 ], ';');
             }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 
     public function exportDebtLedgerExcel(Request $request)
     {

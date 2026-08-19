@@ -133,7 +133,6 @@ class ContractController extends Controller
                     $contract->status = 'active';
                     $contract->save();
                 }
-            }
             } else {
                 $initialDown = $request->input('initialDownPaymentPaid', 0);
                 $initialInst = $request->input('initialInstallmentPaid', 0);

@@ -379,7 +379,7 @@ const globalStats = computed(() => {
 
         totalWorksPrice += worksPrice;
         totalPaid += paid;
-        totalBalance += (worksPrice - paid);
+        totalBalance += Number(brigade.balance) || 0;
     });
 
     return { totalWorksPrice, totalPaid, totalBalance };
@@ -436,6 +436,47 @@ const exportToPDF = () => {
     } catch (error) {
         console.error("PDF yaratishda xatolik:", error);
         alert("PDF yaratishda xatolik yuz berdi.");
+    }
+};
+
+
+const exportTransactionsToExcel = () => {
+    if (!selectedBrigade.value) return;
+    if (!selectedBrigade.value.transactions || selectedBrigade.value.transactions.length === 0) {
+        alert("Yuklab olish uchun to'lovlar mavjud emas!");
+        return;
+    }
+    try {
+        const header = [["Sana", "Turi", "Izoh", "Summa (UZS)"]];
+        const rows = selectedBrigade.value.transactions.map(txn => {
+            let type = txn.type;
+            if (type === 'payment') type = "To'lov / Avans";
+            else if (type === 'salary_accrual') type = "Ish haqi yozilishi";
+            else if (type === 'penalty') type = "Jarima / Ushlanma";
+            
+            return [
+                new Date(txn.date || txn.created_at).toLocaleDateString('uz-UZ'),
+                type,
+                txn.description || '-',
+                Number(txn.amount || 0)
+            ];
+        });
+        
+        // Jami summa
+        const totalAmount = selectedBrigade.value.transactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        rows.push([]);
+        rows.push(["", "", "JAMI:", totalAmount]);
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
+        
+        // Formating
+        ws['!cols'] = [{wch: 15}, {wch: 25}, {wch: 40}, {wch: 20}];
+        
+        XLSX.utils.book_append_sheet(wb, ws, "To'lovlar");
+        XLSX.writeFile(wb, ${selectedBrigade.value.name.replace(/\s+/g, '_')}_Tolovlar.xlsx);
+    } catch (error) {
+        console.error("Excel yaratishda xatolik:", error);
     }
 };
 
@@ -589,7 +630,7 @@ const handleDragEnd = () => {
                                 <div class="flex justify-between items-center text-sm">
                                     <span class="text-gray-500">Qarzdorlik (Kompaniya):</span>
                                     <span class="font-bold text-red-600">
-                                        {{ brigade.calculatedBalance > 0 ? formatMoney(brigade.calculatedBalance) : 0 }} UZS
+                                        {{ brigade.balance > 0 ? formatMoney(brigade.balance) : 0 }} UZS
                                     </span>
                                 </div>
                                 <div class="flex justify-between items-center text-sm">
@@ -607,7 +648,7 @@ const handleDragEnd = () => {
                                 <div class="flex justify-between items-center text-sm">
                                     <span class="text-gray-500">Qarzdorlik (Jamoa):</span>
                                     <span class="font-bold text-orange-600">
-                                        {{ brigade.calculatedBalance < 0 ? formatMoney(Math.abs(brigade.calculatedBalance)) : 0 }} UZS
+                                        {{ brigade.balance < 0 ? formatMoney(Math.abs(brigade.balance)) : 0 }} UZS
                                     </span>
                                 </div>
                             </div>
@@ -733,9 +774,14 @@ const handleDragEnd = () => {
                         </div>
                     </div>
                             <!-- TRANZAKSIYALAR TAB -->
-                            <div v-else-if="brigadeTab === 'tranzaksiyalar'" class="p-6">
+                            <!-- TRANZAKSIYALAR TAB NOW EMBEDDED -->
+                            <div class="mt-8 pt-6 border-t border-gray-200">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-bold text-gray-800">Moliya Bo'limidan O'tkazmalar</h3>
+                                    <h3 class="text-lg font-bold text-gray-800">Moliya Bo'limidan O'tkazmalar (Avans va To'lovlar)</h3>
+                                    <button @click="exportTransactionsToExcel" class="px-3 py-2 bg-green-50 text-green-600 border border-green-200 rounded-lg hover:bg-green-100 transition flex items-center text-sm font-medium shadow-sm">
+                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        Excel (To'lovlar)
+                                    </button>
                                 </div>
                                 <div v-if="!selectedBrigade.transactions || selectedBrigade.transactions.length === 0" class="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
                                     <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

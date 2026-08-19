@@ -6572,11 +6572,11 @@ function deleteCategory(id) {
                                 </option>
                             </select>
                             <div v-if="editTransactionForm.brigade_id" class="mt-2 text-[11px]">
-                                <span v-if="(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
-                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0), 'UZS') }}
+                                <span v-if="(brigades?.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
+                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades?.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0), 'UZS') }}
                                 </span>
-                                <span v-else-if="(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
-                                    Firmamiz qarzdor: {{ formatCurrency(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0, 'UZS') }}
+                                <span v-else-if="(brigades?.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
+                                    Firmamiz qarzdor: {{ formatCurrency(brigades?.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0, 'UZS') }}
                                 </span>
                                 <span v-else class="text-slate-500 font-bold">
                                     Balans nolga teng (qarzdorlik yo'q).
@@ -7324,11 +7324,11 @@ function deleteCategory(id) {
                                 </option>
                             </select>
                             <div v-if="form.brigade_id" class="mt-2 text-[11px]">
-                                <span v-if="(brigades.find(b => b.id === form.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
-                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades.find(b => b.id === form.brigade_id)?.balance || 0), 'UZS') }}
+                                <span v-if="(brigades?.find(b => b.id === form.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
+                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades?.find(b => b.id === form.brigade_id)?.balance || 0), 'UZS') }}
                                 </span>
-                                <span v-else-if="(brigades.find(b => b.id === form.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
-                                    Firmamiz qarzdor: {{ formatCurrency(brigades.find(b => b.id === form.brigade_id)?.balance || 0, 'UZS') }}
+                                <span v-else-if="(brigades?.find(b => b.id === form.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
+                                    Firmamiz qarzdor: {{ formatCurrency(brigades?.find(b => b.id === form.brigade_id)?.balance || 0, 'UZS') }}
                                 </span>
                                 <span v-else class="text-slate-500 font-bold">
                                     Balans nolga teng (qarzdorlik yo'q).

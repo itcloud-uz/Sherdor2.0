@@ -1231,6 +1231,177 @@ watch([registerSearchQuery, registerDateFrom, registerDateTo, registerTypeFilter
     registerDetailsCurrentPage.value = 1;
 });
 
+// --- QARZ KASSALAR & DEBT LEDGER LOGIC (3-rasm & 4-rasm) ---
+const showTakeDebtModal = ref(false);
+const showRepayDebtModal = ref(false);
+const showDebtLedgerModal = ref(false);
+const selectedDebtRegister = ref(null);
+
+const debtLedgerBuildingFilter = ref('');
+const debtLedgerStartDate = ref('');
+const debtLedgerEndDate = ref('');
+
+const takeDebtForm = useForm({
+    name: '',
+    type: 'credit',
+    parent_id: '',
+    start_date: new Date().toISOString().substring(0, 10),
+    total_amount: '',
+    building_id: '',
+    description: '',
+    is_active: true
+});
+
+const repayDebtForm = useForm({
+    from_account_id: '',
+    to_account_id: '',
+    sent_amount: '',
+    transaction_date: new Date().toISOString().substring(0, 10),
+    building_id: '',
+    notes: ''
+});
+
+const debtRegistersSummary = computed(() => {
+    const parentQarzReg = props.registers?.find(r => r.name.toLowerCase().includes('qarz') && !r.parent_id);
+    const parentId = parentQarzReg ? parentQarzReg.id : null;
+    
+    const list = (props.registers || []).filter(r => {
+        return r.type === 'credit' || (parentId && r.parent_id === parentId) || r.name.toLowerCase().includes('qarz');
+    });
+
+    return list.map(reg => {
+        const transfers = (props.transfers || []).filter(t => t.from_account_id === reg.id || t.to_account_id === reg.id);
+        
+        let takenSum = 0;
+        let repaidSum = 0;
+
+        transfers.forEach(t => {
+            const amt = Number(t.sent_amount || t.amount || 0);
+            if (t.from_account_id === reg.id) {
+                takenSum += amt;
+            } else if (t.to_account_id === reg.id) {
+                repaidSum += amt;
+            }
+        });
+
+        if (!takenSum && reg.total_amount) {
+            takenSum = Number(reg.total_amount);
+        }
+        if (!takenSum && reg.initial_balance_uzs) {
+            takenSum = Number(reg.initial_balance_uzs);
+        }
+
+        const qoldiqRaw = takenSum - repaidSum;
+
+        return {
+            ...reg,
+            takenSum,
+            repaidSum,
+            qoldiqRaw,
+            buildingName: reg.building?.name || 'SHER-DOR TJM',
+            transfers
+        };
+    });
+});
+
+const totalDebtTakenSum = computed(() => {
+    return debtRegistersSummary.value.reduce((sum, r) => sum + r.takenSum, 0);
+});
+
+const totalDebtRepaidSum = computed(() => {
+    return debtRegistersSummary.value.reduce((sum, r) => sum + r.repaidSum, 0);
+});
+
+const totalNetDebtQoldiq = computed(() => {
+    return totalDebtTakenSum.value - totalDebtRepaidSum.value;
+});
+
+function openTakeDebtModal() {
+    takeDebtForm.reset();
+    takeDebtForm.type = 'credit';
+    takeDebtForm.start_date = new Date().toISOString().substring(0, 10);
+    showTakeDebtModal.value = true;
+}
+
+function submitTakeDebt() {
+    takeDebtForm.post(route('admin.finance.registers.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showTakeDebtModal.value = false;
+        }
+    });
+}
+
+function openRepayDebtModal(presetRegister = null) {
+    repayDebtForm.reset();
+    if (presetRegister) {
+        repayDebtForm.to_account_id = presetRegister.id;
+    }
+    repayDebtForm.transaction_date = new Date().toISOString().substring(0, 10);
+    showRepayDebtModal.value = true;
+}
+
+function submitRepayDebt() {
+    repayDebtForm.post(route('admin.finance.internal_transfer'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showRepayDebtModal.value = false;
+        }
+    });
+}
+
+function openDebtLedgerModal(reg) {
+    selectedDebtRegister.value = reg;
+    debtLedgerBuildingFilter.value = '';
+    debtLedgerStartDate.value = '';
+    debtLedgerEndDate.value = '';
+    showDebtLedgerModal.value = true;
+}
+
+const filteredDebtLedgerRows = computed(() => {
+    if (!selectedDebtRegister.value) return [];
+    const regId = selectedDebtRegister.value.id;
+    
+    let list = (props.transfers || []).filter(t => t.from_account_id === regId || t.to_account_id === regId);
+    
+    if (debtLedgerBuildingFilter.value) {
+        list = list.filter(t => t.building_id == debtLedgerBuildingFilter.value);
+    }
+    if (debtLedgerStartDate.value) {
+        list = list.filter(t => (t.transfer_date || t.created_at) >= debtLedgerStartDate.value);
+    }
+    if (debtLedgerEndDate.value) {
+        list = list.filter(t => (t.transfer_date || t.created_at) <= debtLedgerEndDate.value);
+    }
+
+    return list.map(t => {
+        const isDebtTaken = (t.from_account_id === regId);
+        const amt = Number(t.sent_amount || t.amount || 0);
+        
+        return {
+            id: t.id,
+            formattedDate: t.transfer_date ? new Date(t.transfer_date).toLocaleDateString('ru-RU') : new Date(t.created_at).toLocaleDateString('ru-RU'),
+            takenAmount: isDebtTaken ? amt : 0,
+            repaidAmount: !isDebtTaken ? amt : 0,
+            takenKassa: isDebtTaken ? (t.to_account?.name || t.toAccount?.name || 'Kassa') : '',
+            repaidKassa: !isDebtTaken ? (t.from_account?.name || t.fromAccount?.name || 'Korxona Balansi') : '',
+            description: t.description || t.notes || ''
+        };
+    });
+});
+
+const debtLedgerTotalTaken = computed(() => {
+    return filteredDebtLedgerRows.value.reduce((sum, r) => sum + r.takenAmount, 0);
+});
+
+const debtLedgerTotalRepaid = computed(() => {
+    return filteredDebtLedgerRows.value.reduce((sum, r) => sum + r.repaidAmount, 0);
+});
+
+const debtLedgerNetQoldiq = computed(() => {
+    return debtLedgerTotalTaken.value - debtLedgerTotalRepaid.value;
+});
+
 // Tab 2 Jurnal Filters & Computeds
 const jurnalDateFrom = ref('');
 const jurnalDateTo = ref('');
@@ -5219,15 +5390,85 @@ function deleteCategory(id) {
 
                 <!-- SUB-TAB 5: Debts (Detailed lists) -->
                 <div v-if="reportSubTab === 'debts'" class="space-y-6">
-                    <!-- Search input for debts -->
-                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Qarzdorliklar va Majburiyatlar Tahlili</h3>
-                            <p class="text-xs text-gray-500 font-mono mt-1 font-semibold">Tizimdagi barcha qarzdorliklarni qidirish va hisoblash.</p>
+                    <!-- QARZ KASSALAR (QARZ BERUVCHILAR) SECTION (3-rasm) -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+                            <div>
+                                <h3 class="text-sm font-bold uppercase tracking-wider text-purple-700 font-mono flex items-center gap-2">
+                                    <span>💳</span> Qarz Kassalar (Qarz Beruvchilar Hisob-Kitobi)
+                                </h3>
+                                <p class="text-xs text-gray-500 font-mono mt-0.5">Olingan va qaytarilgan qarzlar bo'yicha umumiy nazorat jadvali</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="openTakeDebtModal" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 font-mono">
+                                    + Qarz Olish
+                                </button>
+                                <button @click="openRepayDebtModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 font-mono">
+                                    + Qarzni Qaytarish
+                                </button>
+                            </div>
                         </div>
-                        <div class="relative w-full sm:w-64">
-                            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
-                            <input v-model="reportDebtsSearchQuery" type="text" placeholder="Ism yoki telefon orqali qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-1.5 text-xs w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+
+                        <!-- Summary Table (3-rasm style) -->
+                        <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                            <table class="w-full text-left text-xs font-mono border-collapse">
+                                <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 uppercase text-[11px]">
+                                    <tr>
+                                        <th class="p-3.5 border-r border-gray-200 w-10 text-center">№</th>
+                                        <th class="p-3.5 border-r border-gray-200">Qarz beruvchi FISH</th>
+                                        <th class="p-3.5 border-r border-gray-200">Bino / Obyekt</th>
+                                        <th class="p-3.5 border-r border-gray-200 text-right">Olingan summa</th>
+                                        <th class="p-3.5 border-r border-gray-200 text-right">Qaytarilgan summa</th>
+                                        <th class="p-3.5 border-r border-gray-200 text-right">
+                                            Qoldiq
+                                            <span class="block text-[9px] font-normal text-gray-400 font-sans lowercase">(qarz qizil, ortiqcha yashil)</span>
+                                        </th>
+                                        <th class="p-3.5 border-r border-gray-200">Izoh</th>
+                                        <th class="p-3.5 text-center">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 text-gray-800">
+                                    <tr v-for="(q, idx) in debtRegistersSummary" :key="q.id" @click="openDebtLedgerModal(q)" class="hover:bg-purple-50/30 cursor-pointer transition-colors">
+                                        <td class="p-3 border-r border-gray-200 text-center font-bold text-gray-500">{{ idx + 1 }}</td>
+                                        <td class="p-3 border-r border-gray-200 font-bold text-gray-900">{{ q.name }}</td>
+                                        <td class="p-3 border-r border-gray-200 text-gray-600">{{ q.buildingName }}</td>
+                                        <td class="p-3 border-r border-gray-200 text-right font-bold text-gray-900">{{ formatMoney(q.takenSum) }}</td>
+                                        <td class="p-3 border-r border-gray-200 text-right font-bold text-gray-900">{{ formatMoney(q.repaidSum) }}</td>
+                                        <td class="p-3 border-r border-gray-200 text-right font-bold text-sm" :class="q.qoldiqRaw > 0 ? 'text-red-600' : (q.qoldiqRaw < 0 ? 'text-emerald-600' : 'text-gray-400')">
+                                            <span v-if="q.qoldiqRaw > 0">- {{ formatMoney(q.qoldiqRaw) }}</span>
+                                            <span v-else-if="q.qoldiqRaw < 0">{{ formatMoney(Math.abs(q.qoldiqRaw)) }}</span>
+                                            <span v-else>-</span>
+                                        </td>
+                                        <td class="p-3 border-r border-gray-200 text-gray-500 text-[11px] truncate max-w-[200px]">{{ q.description || '-' }}</td>
+                                        <td class="p-3 text-center" @click.stop>
+                                            <div class="flex justify-center gap-1.5">
+                                                <button @click="openDebtLedgerModal(q)" class="px-2 py-1 text-[10px] bg-purple-50 text-purple-700 border border-purple-200 rounded font-bold hover:bg-purple-600 hover:text-white transition-all">
+                                                    📊 Hisob-kitob
+                                                </button>
+                                                <button @click="openRepayDebtModal(q)" class="px-2 py-1 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-bold hover:bg-emerald-600 hover:text-white transition-all">
+                                                    + Qaytarish
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!debtRegistersSummary.length">
+                                        <td colspan="8" class="p-8 text-center text-gray-400">Qarz kassalar topilmadi. "+ Qarz Olish" tugmasi orqali yangi qarz kassa qo'shing.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-gray-100 font-bold border-t-2 border-gray-300 text-xs">
+                                    <tr>
+                                        <td colspan="3" class="p-3.5 text-right font-bold uppercase text-gray-900">Jami:</td>
+                                        <td class="p-3.5 text-right text-gray-900 font-bold">{{ formatMoney(totalDebtTakenSum) }}</td>
+                                        <td class="p-3.5 text-right text-gray-900 font-bold">{{ formatMoney(totalDebtRepaidSum) }}</td>
+                                        <td class="p-3.5 text-right font-bold text-sm" :class="totalNetDebtQoldiq > 0 ? 'text-red-600' : (totalNetDebtQoldiq < 0 ? 'text-emerald-600' : 'text-gray-900')">
+                                            <span v-if="totalNetDebtQoldiq > 0">- {{ formatMoney(totalNetDebtQoldiq) }}</span>
+                                            <span v-else-if="totalNetDebtQoldiq < 0">{{ formatMoney(Math.abs(totalNetDebtQoldiq)) }}</span>
+                                            <span v-else>-</span>
+                                        </td>
+                                        <td colspan="2" class="p-3.5"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
 
@@ -7612,6 +7853,206 @@ function deleteCategory(id) {
                     <div v-else class="text-center py-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
                         Hozircha importlar tarixi mavjud emas.
                     </div>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- QARZ OLISH MODAL (2-rasm) -->
+        <Modal :show="showTakeDebtModal" @close="showTakeDebtModal = false" maxWidth="lg">
+            <div class="p-6 font-mono text-xs space-y-5">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span>💳</span> QARZ KASSA OLISH (YANGI QARZ)
+                    </h3>
+                    <button type="button" @click="showTakeDebtModal = false" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+                </div>
+
+                <form @submit.prevent="submitTakeDebt" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">1. Qarz kassa nomi (Qarz beruvchi FISH)</label>
+                        <input v-model="takeDebtForm.name" type="text" placeholder="Masalan: FARXOD AKA NEMATOV" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold" required />
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">2. Kirim kassani tanlash (Ota kassa)</label>
+                        <select v-model="takeDebtForm.parent_id" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold" required>
+                            <option value="" disabled>Chiqim qilingan/kirim bo'ladigan kassani tanlang</option>
+                            <option v-for="r in registers" :key="r.id" :value="r.id">
+                                {{ r.name }} ({{ formatMoney(r.balance_uzs, 'UZS') }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">3. Olingan sana</label>
+                            <input v-model="takeDebtForm.start_date" type="date" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold" required />
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">4. Olingan summa (UZS)</label>
+                            <input v-model.number="takeDebtForm.total_amount" type="number" placeholder="200000000" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold" required />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">5. Bino / Obyekt</label>
+                        <select v-model="takeDebtForm.building_id" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold">
+                            <option value="">Bino tanlanmagan (Umumiy)</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">6. Izoh</label>
+                        <textarea v-model="takeDebtForm.description" rows="2" placeholder="Moliyaviy yordam deb..." class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-mono"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                        <button type="button" @click="showTakeDebtModal = false" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs uppercase">Bekor qilish</button>
+                        <button type="submit" :disabled="takeDebtForm.processing" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm">
+                            {{ takeDebtForm.processing ? 'Saqlanmoqda...' : 'Qarz Kassa Yaratish' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- QARZ QAYTARISH MODAL -->
+        <Modal :show="showRepayDebtModal" @close="showRepayDebtModal = false" maxWidth="lg">
+            <div class="p-6 font-mono text-xs space-y-5">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span>💵</span> QARZNI QAYTARISH
+                    </h3>
+                    <button type="button" @click="showRepayDebtModal = false" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+                </div>
+
+                <form @submit.prevent="submitRepayDebt" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">1. Qarz beruvchi (Qarz kassa)</label>
+                        <select v-model="repayDebtForm.to_account_id" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-bold" required>
+                            <option value="" disabled>Qarz beruvchini tanlang</option>
+                            <option v-for="q in debtRegistersSummary" :key="q.id" :value="q.id">
+                                {{ q.name }} (Qoldiq: {{ formatMoney(q.qoldiqRaw) }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">2. Qarz qaytarilgan kassa / manba</label>
+                        <select v-model="repayDebtForm.from_account_id" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-bold" required>
+                            <option value="" disabled>Chiqim kassani tanlang</option>
+                            <option v-for="r in registers" :key="r.id" :value="r.id">
+                                {{ r.name }} (Balans: {{ formatMoney(r.balance_uzs, 'UZS') }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">3. Qaytarilgan sana</label>
+                            <input v-model="repayDebtForm.transaction_date" type="date" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-bold" required />
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">4. Qaytarilgan summa (UZS)</label>
+                            <input v-model.number="repayDebtForm.sent_amount" type="number" placeholder="171840000" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-bold" required />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">5. Izoh</label>
+                        <textarea v-model="repayDebtForm.notes" rows="2" placeholder="Masalan: Podvaldan do'kon berildi" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-mono"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                        <button type="button" @click="showRepayDebtModal = false" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs uppercase">Bekor qilish</button>
+                        <button type="submit" :disabled="repayDebtForm.processing" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm">
+                            {{ repayDebtForm.processing ? 'Saqlanmoqda...' : 'To\'lovni Saqlash' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- QARZ BERGANLARNING ICHKI HISOB-KITOBI MODAL (4-rasm) -->
+        <Modal :show="showDebtLedgerModal" @close="showDebtLedgerModal = false" maxWidth="4xl">
+            <div class="p-6 font-mono text-xs space-y-5">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 uppercase tracking-wider">
+                            {{ selectedDebtRegister?.name }} - ICHKI HISOB-KITOBI
+                        </h2>
+                        <p class="text-[11px] text-gray-500 font-sans mt-0.5">Olingan va qaytarilgan barcha mablag'lar harakati tarixi</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a :href="route('admin.finance.debt_ledger.export.excel', { register_id: selectedDebtRegister?.id, building_id: debtLedgerBuildingFilter, start_date: debtLedgerStartDate, end_date: debtLedgerEndDate })" 
+                           target="_blank"
+                           class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
+                            📥 Excelga yuklash
+                        </a>
+                        <button @click="showDebtLedgerModal = false" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold flex items-center justify-center">✕</button>
+                    </div>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Bino / Obyekt</label>
+                        <select v-model="debtLedgerBuildingFilter" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs w-full">
+                            <option value="">Barcha obyektlar</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Boshlanish sanasi</label>
+                        <input v-model="debtLedgerStartDate" type="date" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs w-full" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Tugash sanasi</label>
+                        <input v-model="debtLedgerEndDate" type="date" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs w-full" />
+                    </div>
+                </div>
+
+                <!-- Table (4-rasm style) -->
+                <div class="overflow-x-auto border border-gray-300 rounded-xl">
+                    <table class="w-full text-left text-xs font-mono border-collapse">
+                        <thead class="bg-gray-100 text-gray-800 font-bold border-b border-gray-300 text-center uppercase text-[11px]">
+                            <tr>
+                                <th class="p-3 border-r border-gray-300 w-24">Sana</th>
+                                <th class="p-3 border-r border-gray-300 w-36">Olingan summa</th>
+                                <th class="p-3 border-r border-gray-300 w-36">Qaytarilgan summa</th>
+                                <th class="p-3 border-r border-gray-300">Qarz olingan kassa</th>
+                                <th class="p-3 border-r border-gray-300">Qarz qaytarilgan kassa</th>
+                                <th class="p-3">Izoh</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr v-for="row in filteredDebtLedgerRows" :key="row.id" class="hover:bg-gray-50">
+                                <td class="p-3 border-r border-gray-200 text-center font-bold text-gray-700 whitespace-nowrap">{{ row.formattedDate }}</td>
+                                <td class="p-3 border-r border-gray-200 text-right font-bold text-gray-900 whitespace-nowrap">{{ row.takenAmount > 0 ? formatMoney(row.takenAmount) : '' }}</td>
+                                <td class="p-3 border-r border-gray-200 text-right font-bold text-gray-900 whitespace-nowrap">{{ row.repaidAmount > 0 ? formatMoney(row.repaidAmount) : '' }}</td>
+                                <td class="p-3 border-r border-gray-200 text-gray-700">{{ row.takenKassa || '—' }}</td>
+                                <td class="p-3 border-r border-gray-200 text-gray-700">{{ row.repaidKassa || '—' }}</td>
+                                <td class="p-3 text-gray-600 text-[11px]">{{ row.description || '—' }}</td>
+                            </tr>
+                            <tr v-if="!filteredDebtLedgerRows.length">
+                                <td colspan="6" class="p-8 text-center text-gray-400">Tranzaksiyalar topilmadi.</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                            <tr>
+                                <td class="p-3 border-r border-gray-300 font-bold uppercase text-gray-900">Jami</td>
+                                <td class="p-3 border-r border-gray-300 text-right font-bold text-gray-900">{{ formatMoney(debtLedgerTotalTaken) }}</td>
+                                <td class="p-3 border-r border-gray-300 text-right font-bold text-gray-900">{{ formatMoney(debtLedgerTotalRepaid) }}</td>
+                                <td colspan="2" class="p-3 border-r border-gray-300"></td>
+                                <td class="p-3 text-right font-bold text-sm" :class="debtLedgerNetQoldiq > 0 ? 'text-red-600' : (debtLedgerNetQoldiq < 0 ? 'text-emerald-600' : 'text-gray-900')">
+                                    <span v-if="debtLedgerNetQoldiq > 0">- {{ formatMoney(debtLedgerNetQoldiq) }}</span>
+                                    <span v-else-if="debtLedgerNetQoldiq < 0">{{ formatMoney(Math.abs(debtLedgerNetQoldiq)) }}</span>
+                                    <span v-else>0</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </Modal>

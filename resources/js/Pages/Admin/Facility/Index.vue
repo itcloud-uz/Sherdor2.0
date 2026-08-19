@@ -1957,7 +1957,62 @@ function submitUnifiedSell() {
         quickClientForm.value.contract_id = contractForm.value.contract_number;
     }
     
-    // First, save the client via axios with FormData to support files
+    // Function to submit contract after client is resolved
+    const doSubmitContract = (clientId) => {
+        const finalContractData = {
+            buyer_type: 'client',
+            client_id: clientId,
+            partner_id: null,
+            unit_id: currentSellingUnit.value.id,
+            contract_number: contractForm.value.contract_number || quickClientForm.value.contract_id,
+            contract_type: currentSellingUnit.value.type === 'commercial' ? 'commercial' : 'residential',
+            price_per_sqm: contractForm.value.price_per_sqm,
+            total_amount: contractForm.value.total_amount,
+            down_payment: contractForm.value.down_payment || contractForm.value.total_amount,
+            term_months: contractForm.value.payment_type === 'full' ? 1 : contractForm.value.term_months,
+            payment_type: contractForm.value.payment_type,
+            created_at: contractForm.value.created_at || quickClientForm.value.created_at,
+            actual_paid_amount: contractForm.value.actual_paid_amount || (contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment),
+            payment_method: 'bank',
+            floor: selectedFloor.value?.floor_number || '',
+            rooms: currentSellingUnit.value.rooms_count || '',
+            is_down_payment_split: contractForm.value.is_down_payment_split || false,
+            down_payment_split_months: contractForm.value.is_down_payment_split ? (contractForm.value.down_payment_split_months || 1) : 1
+        };
+
+        router.post(route('admin.contracts.store'), finalContractData, { preserveScroll: true, preserveState: true,
+            onSuccess: () => {
+                showUnifiedSellModal.value = false;
+                isProcessingUnified.value = false;
+                activeRightPanel.value = 'details';
+                selectedUnit.value = null;
+            },
+            onError: (errors) => {
+                isProcessingUnified.value = false;
+                alert("Shartnoma yaratishda xatolik: " + Object.values(errors).join("\n"));
+            },
+            onFinish: () => {
+                isProcessingUnified.value = false;
+            }
+        });
+    };
+
+    // Check if client already exists in props.clients by name or phone
+    const inputPhone = (quickClientForm.value.phone || '').trim().replace(/\D/g, '');
+    const inputFullName = `${quickClientForm.value.last_name || ''} ${quickClientForm.value.first_name || ''}`.trim().toLowerCase();
+    
+    const existingClient = props.clients?.find(c => {
+        const cPhone = (c.phone || '').trim().replace(/\D/g, '');
+        const cFullName = `${c.last_name || ''} ${c.first_name || ''}`.trim().toLowerCase();
+        return (inputPhone && cPhone && inputPhone === cPhone) || (inputFullName && cFullName && inputFullName === cFullName);
+    });
+
+    if (existingClient) {
+        doSubmitContract(existingClient.id);
+        return;
+    }
+
+    // Save new client via axios
     const formData = new FormData();
     Object.entries(quickClientForm.value).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -1971,44 +2026,8 @@ function submitUnifiedSell() {
         }
     })
         .then(response => {
-            if (response.data && response.data.status === 'success') {
-                const newClientId = response.data.client.id;
-                
-                // Now, prepare the contract form data
-                const finalContractData = {
-                    buyer_type: 'client',
-                    client_id: newClientId,
-                    partner_id: null,
-                    unit_id: currentSellingUnit.value.id,
-                    contract_number: contractForm.value.contract_number || quickClientForm.value.contract_id,
-                    contract_type: currentSellingUnit.value.type === 'commercial' ? 'commercial' : 'residential',
-                    price_per_sqm: contractForm.value.price_per_sqm,
-                    total_amount: contractForm.value.total_amount,
-                    down_payment: contractForm.value.down_payment || contractForm.value.total_amount,
-                    term_months: contractForm.value.payment_type === 'full' ? 1 : contractForm.value.term_months,
-                    payment_type: contractForm.value.payment_type,
-                    created_at: contractForm.value.created_at || quickClientForm.value.created_at,
-                    actual_paid_amount: contractForm.value.actual_paid_amount || (contractForm.value.payment_type === 'full' ? contractForm.value.total_amount : contractForm.value.down_payment),
-                    payment_method: 'bank',
-                    floor: selectedFloor.value?.floor_number || '',
-                    rooms: currentSellingUnit.value.rooms_count || '',
-                    is_down_payment_split: contractForm.value.is_down_payment_split || false,
-                    down_payment_split_months: contractForm.value.is_down_payment_split ? (contractForm.value.down_payment_split_months || 1) : 1
-                };
-
-                // Submit contract using Inertia router so that page reloads and state resets cleanly!
-                router.post(route('admin.contracts.store'), finalContractData, { preserveScroll: true, preserveState: true,
-                    onSuccess: () => {
-                        showUnifiedSellModal.value = false;
-                        isProcessingUnified.value = false;
-                        activeRightPanel.value = 'details';
-                        selectedUnit.value = null; // Close side panel
-                    },
-                    onError: (errors) => {
-                        isProcessingUnified.value = false;
-                        alert("Shartnoma yaratishda xatolik: " + Object.values(errors).join("\n"));
-                    }
-                });
+            if (response.data && response.data.status === 'success' && response.data.client?.id) {
+                doSubmitContract(response.data.client.id);
             } else {
                 isProcessingUnified.value = false;
                 alert("Mijoz yaratishda xatolik yuz berdi.");
@@ -2016,8 +2035,15 @@ function submitUnifiedSell() {
         })
         .catch(error => {
             isProcessingUnified.value = false;
-            const msg = error.response?.data?.message || error.message || "Ulanishda xatolik.";
-            alert("Mijozni saqlashda xatolik: " + msg);
+            let msg = "Mijozni saqlashda xatolik yuz berdi.";
+            if (error.response?.data?.errors) {
+                msg = Object.values(error.response.data.errors).flat().join("\n");
+            } else if (error.response?.data?.message) {
+                msg = error.response.data.message;
+            } else if (error.message) {
+                msg = error.message;
+            }
+            alert(msg);
         });
 }
 

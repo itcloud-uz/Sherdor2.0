@@ -1757,7 +1757,32 @@ class FinanceController extends Controller
 
         $validated['balance'] = $validated['initial_balance_uzs'];
 
-        CashRegister::create($validated);
+        $register = CashRegister::create($validated);
+
+        // If it's a debt/credit register created with a destination parent_id and amount > 0, record initial debt transfer into destination register
+        if ($validated['type'] === 'credit' && !empty($validated['parent_id']) && !empty($validated['total_amount']) && $validated['total_amount'] > 0) {
+            $destinationAcc = CashRegister::find($validated['parent_id']);
+            if ($destinationAcc) {
+                $amount = (float)$validated['total_amount'];
+                $txDate = !empty($validated['start_date']) ? $validated['start_date'] : now()->toDateString();
+                
+                $destinationAcc->increment('balance', $amount);
+
+                MoneyTransfer::create([
+                    'from_account_id' => $register->id,
+                    'to_account_id' => $destinationAcc->id,
+                    'sent_amount' => $amount,
+                    'amount' => $amount,
+                    'sent_currency' => 'UZS',
+                    'exchange_rate' => 1.0,
+                    'received_amount' => $amount,
+                    'received_currency' => 'UZS',
+                    'description' => $validated['description'] ?? 'Qarz kassa yaratilganda olingan qarz',
+                    'transfer_date' => $txDate,
+                    'building_id' => $validated['building_id'] ?? null
+                ]);
+            }
+        }
 
         return redirect()->back()->with('message', 'Yangi kassa muvaffaqiyatli qo\'shildi.');
     }
@@ -1991,6 +2016,92 @@ class FinanceController extends Controller
                     $invoice->created_at->format('Y-m-d H:i')
                 ], ';');
             }
+
+    public function exportDebtLedgerExcel(Request $request)
+    {
+        $registerId = $request->input('register_id');
+        $register = CashRegister::findOrFail($registerId);
+
+        $queryTransfers = \App\Models\MoneyTransfer::with(['fromAccount', 'toAccount', 'building'])
+            ->where(function($q) use ($registerId) {
+                $q->where('from_account_id', $registerId)
+                  ->orWhere('to_account_id', $registerId);
+            });
+
+        if ($request->filled('building_id')) {
+            $queryTransfers->where('building_id', $request->building_id);
+        }
+        if ($request->filled('start_date')) {
+            $queryTransfers->whereDate('transfer_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $queryTransfers->whereDate('transfer_date', '<=', $request->end_date);
+        }
+
+        $transfers = $queryTransfers->orderBy('transfer_date', 'asc')->get();
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=qarz_hisob_kitob_" . \Illuminate\Support\Str::slug($register->name) . "_" . date('Y-m-d') . ".csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($register, $transfers) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM
+            fputs($file, "sep=;\n");
+
+            fputcsv($file, [$register->name . " - QARZ BERGANLARNING ICHKI HISOB-KITOBI"], ';');
+            fputcsv($file, [], ';');
+            fputcsv($file, [
+                '№',
+                'Sana',
+                'Olingan summa (UZS)',
+                'Qaytarilgan summa (UZS)',
+                'Qarz olingan kassa',
+                'Qarz qaytarilgan kassa',
+                'Bino / Obyekt',
+                'Izoh'
+            ], ';');
+
+            $totalTaken = 0;
+            $totalRepaid = 0;
+            $idx = 1;
+
+            foreach ($transfers as $t) {
+                $isDebtTaken = ($t->from_account_id == $register->id);
+                $taken = $isDebtTaken ? (float)$t->amount : 0;
+                $repaid = !$isDebtTaken ? (float)$t->amount : 0;
+
+                $totalTaken += $taken;
+                $totalRepaid += $repaid;
+
+                fputcsv($file, [
+                    $idx++,
+                    $t->transfer_date ? \Carbon\Carbon::parse($t->transfer_date)->format('d.m.Y') : ($t->created_at ? $t->created_at->format('d.m.Y') : ''),
+                    $taken > 0 ? number_format($taken, 0, '', ' ') : '',
+                    $repaid > 0 ? number_format($repaid, 0, '', ' ') : '',
+                    $isDebtTaken ? ($t->toAccount->name ?? 'Kassa') : '',
+                    !$isDebtTaken ? ($t->fromAccount->name ?? 'Kassa') : '',
+                    $t->building->name ?? '',
+                    $t->notes ?? ''
+                ], ';');
+            }
+
+            fputcsv($file, [], ';');
+            $qoldiq = $totalTaken - $totalRepaid;
+            fputcsv($file, [
+                'Jami:',
+                '',
+                number_format($totalTaken, 0, '', ' '),
+                number_format($totalRepaid, 0, '', ' '),
+                '',
+                '',
+                'Qoldiq:',
+                ($qoldiq > 0 ? '-' : '') . number_format(abs($qoldiq), 0, '', ' ')
+            ], ';');
 
             fclose($file);
         };

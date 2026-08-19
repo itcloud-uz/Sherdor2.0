@@ -183,6 +183,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
         Route::post('/registers', [\App\Http\Controllers\Admin\FinanceController::class, 'storeRegister'])->name('registers.store');
         Route::put('/registers/{register}', [\App\Http\Controllers\Admin\FinanceController::class, 'updateRegister'])->name('registers.update');
         Route::delete('/registers/{register}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyRegister'])->name('registers.destroy');
+        Route::get('/debt-ledger/export/excel', [\App\Http\Controllers\Admin\FinanceController::class, 'exportDebtLedgerExcel'])->name('debt_ledger.export.excel');
 
         // Counterparties
         Route::post('/counterparties', [\App\Http\Controllers\Admin\FinanceController::class, 'storeCounterparty'])->name('counterparties.store');

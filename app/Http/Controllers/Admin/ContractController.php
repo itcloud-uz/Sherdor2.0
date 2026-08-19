@@ -98,56 +98,42 @@ class ContractController extends Controller
 
             $baseDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateTimeString() : now()->toDateTimeString();
 
-            // If it's a partner, create automatic transaction reducing their accountable balance
+            // If it's a partner (Ta'sischi), reduce partner's accountable balance without creating cash income
             if ($validated['buyer_type'] === 'partner') {
                 $partner = \App\Models\Partner::find($validated['partner_id']);
                 if ($partner) {
-                    // Ta'sischi ulushidan chiqim
+                    // Ta'sischi ulushidan/balansidan ushlanish
                     $partnerCategory = \App\Models\TransactionCategory::firstOrCreate(
-                        ['name' => 'Ta\'sischi Xaridi (Chiqim)'],
+                        ['name' => 'Ta\'sischi Xaridi (Ob\'yekt)'],
                         ['type' => 'expense', 'description' => 'Ta\'sischi o\'z ulushidan ob\'yekt xarid qildi']
                     );
                     
                     \App\Models\Transaction::create([
                         'type' => 'expense',
                         'amount' => $validated['total_amount'],
-                        'account_type' => 'main',
+                        'account_type' => 'partner',
+                        'account_id' => null, // Non-cash transaction
                         'contract_id' => $contract->id,
                         'category_id' => $partnerCategory->id,
-                        'status' => 'approved', // automatic approval for partner buy? Let's make it approved
+                        'status' => 'approved',
                         'transaction_date' => $baseDate,
                         'created_at' => $baseDate,
                         'updated_at' => $baseDate,
-                        'notes' => 'Ta\'sischi ob\'yekt xaridi: Unit ID ' . $validated['unit_id'],
+                        'notes' => 'Ta\'sischi ob\'yekt xaridi (Ulushidan ushlandi): Unit ID ' . $validated['unit_id'],
                         'created_by' => auth()->id() ?? 1,
                         'target_type' => 'partner',
                         'target_id' => $partner->id
                     ]);
 
-                    // Also record Income to the company
-                    $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
-                        ['name' => 'Ta\'sischi Xaridi (Kirim)'],
-                        ['type' => 'income', 'description' => 'Ta\'sischi ob\'yekt xarididan tushum']
-                    );
-                    
-                    \App\Models\Transaction::create([
-                        'type' => 'income',
-                        'amount' => $validated['total_amount'],
-                        'account_type' => 'main',
-                        'contract_id' => $contract->id,
-                        'category_id' => $incomeCategory->id,
-                        'status' => 'approved',
-                        'transaction_date' => $baseDate,
-                        'created_at' => $baseDate,
-                        'updated_at' => $baseDate,
-                        'notes' => 'Ta\'sischi ob\'yekt xaridi (Kompaniya hisobiga): Unit ID ' . $validated['unit_id'],
-                        'created_by' => auth()->id() ?? 1,
-                    ]);
-
-                    // Reduce partner balance
+                    // Reduce partner accountable balance
                     $partner->accountable_balance -= $validated['total_amount'];
                     $partner->save();
+
+                    // Automatically mark contract as active (since partner paid in full via their share)
+                    $contract->status = 'active';
+                    $contract->save();
                 }
+            }
             } else {
                 $initialDown = $request->input('initialDownPaymentPaid', 0);
                 $initialInst = $request->input('initialInstallmentPaid', 0);

@@ -35,7 +35,7 @@ class HrController extends Controller
             $users = \App\Models\User::with([
                 'roles',
                 'transactions' => function($q) {
-                    $q->select('id', 'user_id', 'amount', 'type', 'date', 'description');
+                    $q->select('id', 'user_id', 'amount', 'type', 'date', 'description', 'linked_work_id');
                 },
                 'salaryPeriods'
             ])->withCount(['leads' => function($q) {
@@ -49,7 +49,7 @@ class HrController extends Controller
                 'brigade',
                 'salaryHistories',
                 'transactions' => function($q) {
-                    $q->select('id', 'worker_id', 'amount', 'type', 'date', 'description');
+                    $q->select('id', 'worker_id', 'amount', 'type', 'date', 'description', 'linked_work_id');
                 },
                 'salaryPeriods'
             ])->get();
@@ -102,7 +102,7 @@ class HrController extends Controller
                 $q->select('id', 'brigade_id', 'name', 'phone');
             }, 
             'transactions' => function($q) {
-                $q->select('id', 'brigade_id', 'type', 'amount', 'date', 'created_at', 'description');
+                $q->select('id', 'brigade_id', 'type', 'amount', 'date', 'created_at', 'description', 'linked_work_id');
             },
             'works' => function($q) {
                 $q->select('id', 'brigade_id', 'calculated_sum');

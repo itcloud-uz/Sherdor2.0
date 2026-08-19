@@ -281,6 +281,17 @@ watch(serviceForm, (val) => {
 
 const processedRows = computed(() => {
     if (!selectedBrigade.value) return [];
+    
+    // Calculate total unlinked paid amount for this brigade
+    let unlinkedPaidAmount = 0;
+    if (selectedBrigade.value.transactions) {
+        selectedBrigade.value.transactions.forEach(t => {
+            if (!t.linked_work_id && t.type !== 'ovqat' && parseFloat(t.amount) > 0) {
+                unlinkedPaidAmount += parseFloat(t.amount);
+            }
+        });
+    }
+
     return rows.value.map(row => {
         let ovqat_amount = 0;
         let paid_amount = 0;
@@ -292,7 +303,15 @@ const processedRows = computed(() => {
         }
         
         const total = parseFloat(row.calculated_sum) || 0;
-        const qoldiq = total - paid_amount;
+        let qoldiq = total - paid_amount;
+        
+        // Distribute unlinked payments to this row's qoldiq
+        if (qoldiq > 0 && unlinkedPaidAmount > 0) {
+            let pay = Math.min(qoldiq, unlinkedPaidAmount);
+            qoldiq -= pay;
+            unlinkedPaidAmount -= pay;
+            paid_amount += pay;
+        }
         
         return {
             ...row,

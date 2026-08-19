@@ -1,4 +1,22 @@
 <?php
-$pdo = new PDO('sqlite:database/database.sqlite');
-$stmt = $pdo->query('SELECT id, amount, status, source FROM transactions ORDER BY created_at DESC LIMIT 5');
-echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC), JSON_PRETTY_PRINT);
+require __DIR__.'/vendor/autoload.php';
+\ = require_once __DIR__.'/bootstrap/app.php';
+\->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+echo "Brigade Transactions:\n";
+\ = DB::table('brigade_transactions')->get();
+foreach(\ as \) {
+    echo json_encode(\) . "\n";
+}
+
+echo "\nWorker Transactions:\n";
+\ = DB::table('worker_transactions')->get();
+foreach(\ as \) {
+    echo json_encode(\) . "\n";
+}
+
+echo "\nBrigades:\n";
+\ = DB::table('brigades')->get();
+foreach(\ as \) {
+    echo json_encode(\) . "\n";
+}

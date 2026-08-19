@@ -1,20 +1,7 @@
 <?php
-require __DIR__.'/vendor/autoload.php';
-$app = require_once __DIR__.'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+require __DIR__."/vendor/autoload.php";
+$app = require_once __DIR__."/bootstrap/app.php";
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-try {
-    $brigade = \App\Models\Brigade::first();
-    if (!$brigade) {
-        echo "No brigades found!\n";
-        exit;
-    }
-    
-    $controller = app()->make(\App\Http\Controllers\Admin\HrController::class);
-    $response = $controller->getBrigadeLedger($brigade);
-    echo $response->getContent();
-} catch (\Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString() . "\n";
-}
+echo json_encode(DB::table("brigade_transactions")->where("brigade_id", 2)->get()) . "\n";
+

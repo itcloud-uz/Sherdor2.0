@@ -1,23 +1,7 @@
 <?php
-require __DIR__.'/vendor/autoload.php';
-$app = require_once __DIR__.'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+require __DIR__."/vendor/autoload.php";
+$app = require_once __DIR__."/bootstrap/app.php";
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-$user = \App\Models\User::first();
-\Illuminate\Support\Facades\Auth::login($user);
+echo json_encode(DB::table("transactions")->where("amount", 1120000)->get()) . "\n";
 
-// Let's directly call the controller
-try {
-    $brigade = \App\Models\Brigade::first();
-    if (!$brigade) {
-        echo "No brigades found!\n";
-        exit;
-    }
-    
-    $controller = app()->make(\App\Http\Controllers\Admin\HrController::class);
-    $response = $controller->getBrigadeLedger($brigade);
-    echo $response->getContent();
-} catch (\Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString() . "\n";
-}

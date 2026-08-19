@@ -284,10 +284,14 @@ const processedRows = computed(() => {
     
     // Calculate total unlinked paid amount for this brigade
     let unlinkedPaidAmount = 0;
+    let unlinkedPaidDate = null;
     if (selectedBrigade.value.transactions) {
         selectedBrigade.value.transactions.forEach(t => {
             if (!t.linked_work_id && t.type !== 'ovqat' && parseFloat(t.amount) > 0) {
                 unlinkedPaidAmount += parseFloat(t.amount);
+                if (!unlinkedPaidDate || new Date(t.date) > new Date(unlinkedPaidDate)) {
+                    unlinkedPaidDate = t.date;
+                }
             }
         });
     }
@@ -295,10 +299,14 @@ const processedRows = computed(() => {
     return rows.value.map(row => {
         let ovqat_amount = 0;
         let paid_amount = 0;
+        let last_paid_date = null;
         
         if (row.transactions && row.transactions.length > 0) {
             row.transactions.forEach(t => {
                 paid_amount += parseFloat(t.amount) || 0;
+                if (!last_paid_date || new Date(t.date) > new Date(last_paid_date)) {
+                    last_paid_date = t.date;
+                }
             });
         }
         
@@ -311,12 +319,19 @@ const processedRows = computed(() => {
             qoldiq -= pay;
             unlinkedPaidAmount -= pay;
             paid_amount += pay;
+            
+            if (unlinkedPaidDate) {
+                if (!last_paid_date || new Date(unlinkedPaidDate) > new Date(last_paid_date)) {
+                    last_paid_date = unlinkedPaidDate;
+                }
+            }
         }
         
         return {
             ...row,
             paid_amount,
-            qoldiq
+            qoldiq,
+            last_paid_date
         };
     });
 });
@@ -765,7 +780,10 @@ const handleDragEnd = () => {
                                         <td class="px-4 py-3 text-center font-bold text-gray-900">{{ parseFloat(row.quantity) }}</td>
                                         <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatMoney(row.price) }}</td>
                                         <td class="px-4 py-3 text-right font-black text-gray-900 whitespace-nowrap bg-indigo-50/20">{{ formatMoney(row.calculated_sum) }}</td>
-                                        <td class="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/30">{{ formatMoney(row.paid_amount) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap bg-green-50/30">
+                                            <div>{{ formatMoney(row.paid_amount) }}</div>
+                                            <div v-if="row.last_paid_date && parseFloat(row.paid_amount) > 0" class="text-xs text-gray-500 font-normal mt-1">{{ row.last_paid_date }}</div>
+                                        </td>
                                         <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-gray-50/80" :class="row.qoldiq === 0 ? 'text-gray-400' : 'text-red-600'">{{ formatMoney(row.qoldiq) }}</td>
                                         <td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" :title="row.note">{{ row.note }}</td>
                                         

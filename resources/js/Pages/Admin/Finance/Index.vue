@@ -3494,6 +3494,20 @@ function selectScheduleAmount(s) {
 }
 
 // Format money values
+
+function formatSpaces(val) {
+    if (!val && val !== 0) return '';
+    let str = val.toString().replace(/\s/g, '');
+    let parts = str.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return parts.join('.');
+}
+
+function unformatSpaces(val) {
+    if (!val) return '';
+    return val.toString().replace(/\s/g, '');
+}
+
 function formatMoney(amount, currency = 'UZS') {
     const val = parseFloat(amount);
     if (isNaN(val)) return '0.00 ' + currency;
@@ -4073,7 +4087,7 @@ function deleteCategory(id) {
                         <!-- Amount input -->
                         <div>
                             <label class="block text-gray-500 mb-1">SUMMA *</label>
-                            <input v-model="form.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10 font-bold" required placeholder="0.00">
+                            <input :value="formatSpaces(form.amount)" @input="form.amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-10 font-bold" required placeholder="0.00">
                         </div>
                     </div>
 
@@ -6349,7 +6363,7 @@ function deleteCategory(id) {
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] text-gray-400 mb-1 uppercase">Umumiy Summa *</label>
-                                <input v-model="registerForm.total_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                                <input :value="formatSpaces(registerForm.total_amount)" @input="registerForm.total_amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                             </div>
                             <div>
                                 <label class="block text-[10px] text-gray-400 mb-1 uppercase">Foiz Stavkasi % (Yillik)</label>
@@ -6504,7 +6518,7 @@ function deleteCategory(id) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Summa
                             </label>
-                            <input v-model="editTransactionForm.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                            <input :value="formatSpaces(editTransactionForm.amount)" @input="editTransactionForm.amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
 
                         <!-- Conditional Target Selections -->
@@ -6737,7 +6751,7 @@ function deleteCategory(id) {
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Umumiy Summa *</label>
-                            <input v-model="liabilityForm.total_amount" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                            <input :value="formatSpaces(liabilityForm.total_amount)" @input="liabilityForm.total_amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                         </div>
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Foiz stavkasi (%)</label>
@@ -6854,7 +6868,7 @@ function deleteCategory(id) {
                 <form @submit.prevent="submitPayment" class="space-y-4 font-mono text-xs">
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Summa *</label>
-                        <input v-model="paymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        <input :value="formatSpaces(paymentForm.amount)" @input="paymentForm.amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                     </div>
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob turi *</label>
@@ -6888,7 +6902,7 @@ function deleteCategory(id) {
                 <form @submit.prevent="submitSupplierPayment" class="space-y-4 font-mono text-xs">
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">To'lov Summasi *</label>
-                        <input v-model="supplierPaymentForm.amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        <input :value="formatSpaces(supplierPaymentForm.amount)" @input="supplierPaymentForm.amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                     </div>
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Hisob turi *</label>
@@ -6947,11 +6961,11 @@ function deleteCategory(id) {
                 <form @submit.prevent="submitContractApprove" class="space-y-4 font-mono text-xs">
                     <div>
                         <label class="block text-gray-400 mb-1 uppercase">Shartnoma Qarziga Yo'naltirish *</label>
-                        <input v-model="contractApproveForm.applied_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+                        <input :value="formatSpaces(contractApproveForm.applied_amount)" @input="contractApproveForm.applied_amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1 uppercase">Qaytimga (Naqdlashtirishga) Ajratish</label>
-                        <input v-model="contractApproveForm.refund_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 px-3 font-bold" required>
+                        <input :value="formatSpaces(contractApproveForm.refund_amount)" @input="contractApproveForm.refund_amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9 px-3 font-bold" required>
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1 uppercase">Qabul qiluvchi Kassa / Hisob *</label>
@@ -7157,7 +7171,7 @@ function deleteCategory(id) {
                             <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                                 * Summa
                             </label>
-                            <input v-model="form.amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                            <input :value="formatSpaces(form.amount)" @input="form.amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
 
                         <!-- Conditional client section -->
@@ -7566,7 +7580,7 @@ function deleteCategory(id) {
                         <!-- Sent Amount -->
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">O'tkazma Summasi *</label>
-                            <input v-model="transferForm.sent_amount" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
+                            <input :value="formatSpaces(transferForm.sent_amount)" @input="transferForm.sent_amount = unformatSpaces($event.target.value)" type="text" inputmode="decimal" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required placeholder="0.00">
                         </div>
                     </div>
 

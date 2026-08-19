@@ -640,7 +640,9 @@ const handleDragEnd = () => {
                             </div>
                             <div class="bg-white rounded-lg px-4 py-2 border border-indigo-200 shadow-sm text-center">
                                 <div class="text-[10px] text-gray-500 uppercase font-bold">Joriy Balans</div>
-                                <div class="text-sm font-bold" :class="selectedBrigade.balance >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatMoney(selectedBrigade.balance) }} UZS</div>
+                                <div v-if="selectedBrigade.balance > 0" class="text-sm font-bold text-teal-600">Firmamiz qarzdor: {{ formatMoney(selectedBrigade.balance) }} UZS</div>
+                                <div v-else-if="selectedBrigade.balance < 0" class="text-sm font-bold text-red-600">Firmadan qarzdor (Avans): {{ formatMoney(Math.abs(selectedBrigade.balance)) }} UZS</div>
+                                <div v-else class="text-sm font-bold text-gray-500">Balans: 0 UZS</div>
                             </div>
                         </div>
                     </div>

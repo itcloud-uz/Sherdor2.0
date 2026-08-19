@@ -6568,9 +6568,20 @@ function deleteCategory(id) {
                             <select v-model="editTransactionForm.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Brigadani tanlang</option>
                                 <option v-for="b in brigades" :key="b.id" :value="b.id">
-                                    {{ b.name }}
+                                    {{ b.name }} (Joriy balans: {{ formatCurrency(b.balance || 0, 'UZS') }})
                                 </option>
                             </select>
+                            <div v-if="editTransactionForm.brigade_id" class="mt-2 text-[11px]">
+                                <span v-if="(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
+                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0), 'UZS') }}
+                                </span>
+                                <span v-else-if="(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
+                                    Firmamiz qarzdor: {{ formatCurrency(brigades.find(b => b.id === editTransactionForm.brigade_id)?.balance || 0, 'UZS') }}
+                                </span>
+                                <span v-else class="text-slate-500 font-bold">
+                                    Balans nolga teng (qarzdorlik yo'q).
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Machine Owner target -->
@@ -7309,9 +7320,20 @@ function deleteCategory(id) {
                             <select v-model="form.brigade_id" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors" required>
                                 <option value="" disabled>Brigadani tanlang</option>
                                 <option v-for="b in brigades" :key="b.id" :value="b.id">
-                                    {{ b.name }}
+                                    {{ b.name }} (Joriy balans: {{ formatCurrency(b.balance || 0, 'UZS') }})
                                 </option>
                             </select>
+                            <div v-if="form.brigade_id" class="mt-2 text-[11px]">
+                                <span v-if="(brigades.find(b => b.id === form.brigade_id)?.balance || 0) < 0" class="text-red-600 font-bold">
+                                    Firmadan qarzi bor (Avans): {{ formatCurrency(Math.abs(brigades.find(b => b.id === form.brigade_id)?.balance || 0), 'UZS') }}
+                                </span>
+                                <span v-else-if="(brigades.find(b => b.id === form.brigade_id)?.balance || 0) > 0" class="text-teal-600 font-bold">
+                                    Firmamiz qarzdor: {{ formatCurrency(brigades.find(b => b.id === form.brigade_id)?.balance || 0, 'UZS') }}
+                                </span>
+                                <span v-else class="text-slate-500 font-bold">
+                                    Balans nolga teng (qarzdorlik yo'q).
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Conditional machine owner section -->

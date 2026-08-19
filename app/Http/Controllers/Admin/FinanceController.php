@@ -130,13 +130,11 @@ class FinanceController extends Controller
             ->latest()
             ->get();
 
-        if ($tab === 1) {
-            $workers = Worker::latest()->get();
-            $suppliers = Supplier::latest()->get();
-            $partners = Partner::with('user')->latest()->get();
-            $brigades = Brigade::latest()->get();
-            $machineOwners = MachineOwner::latest()->get();
-        }
+        $workers = Worker::latest()->get();
+        $suppliers = Supplier::latest()->get();
+        $partners = Partner::with('user')->latest()->get();
+        $brigades = Brigade::latest()->get();
+        $machineOwners = MachineOwner::latest()->get();
 
         if (in_array($tab, [0, 1, 2, 6, 7, 8, 11, 12])) {
             $txQuery = Transaction::with([

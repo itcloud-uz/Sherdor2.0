@@ -474,7 +474,7 @@ const exportTransactionsToExcel = () => {
         ws['!cols'] = [{wch: 15}, {wch: 25}, {wch: 40}, {wch: 20}];
         
         XLSX.utils.book_append_sheet(wb, ws, "To'lovlar");
-        XLSX.writeFile(wb, ${selectedBrigade.value.name.replace(/\s+/g, '_')}_Tolovlar.xlsx);
+        XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Tolovlar.xlsx`);
     } catch (error) {
         console.error("Excel yaratishda xatolik:", error);
     }

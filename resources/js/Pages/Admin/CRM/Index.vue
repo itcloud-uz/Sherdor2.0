@@ -4020,8 +4020,8 @@ function openClientLedgerFromPayment(t) {
         }
     }
 
-    if (contract) {
-        openClientLedgerModal(contract, client);
+    if (contract && contract.id) {
+        window.open(`/admin/crm/ledger/${contract.id}/preview`, '_blank');
     } else if (clientId) {
         clientDetailLoading.value = true;
         axios.get(route('admin.crm.clients.details', clientId))
@@ -4029,7 +4029,7 @@ function openClientLedgerFromPayment(t) {
                 if (res.data.status === 'success' && res.data.client) {
                     const c = res.data.client;
                     if (c.contracts && c.contracts.length > 0) {
-                        openClientLedgerModal(c.contracts[0], c);
+                        window.open(`/admin/crm/ledger/${c.contracts[0].id}/preview`, '_blank');
                     } else {
                         selectClientForDetail(c, true, null);
                     }
@@ -4179,8 +4179,8 @@ function openClientLedgerFromGroup(entry) {
         }
     }
 
-    if (contract) {
-        openClientLedgerModal(contract, client);
+    if (contract && contract.id) {
+        window.open(`/admin/crm/ledger/${contract.id}/preview`, '_blank');
     } else if (entry.clientId) {
         clientDetailLoading.value = true;
         axios.get(route('admin.crm.clients.details', entry.clientId))
@@ -4188,7 +4188,7 @@ function openClientLedgerFromGroup(entry) {
                 if (res.data.status === 'success' && res.data.client) {
                     const c = res.data.client;
                     if (c.contracts && c.contracts.length > 0) {
-                        openClientLedgerModal(c.contracts[0], c);
+                        window.open(`/admin/crm/ledger/${c.contracts[0].id}/preview`, '_blank');
                     } else {
                         selectClientForDetail(c, true, null);
                     }

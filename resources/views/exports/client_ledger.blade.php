@@ -54,9 +54,36 @@
 
         .footer-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
         .footer-table td { border: none; padding: 5px; font-size: 10px; vertical-align: top; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; }
+        }
     </style>
 </head>
-<body>
+<body style="padding-bottom: 30px;">
+
+    <!-- TOP ACTION BAR FOR STANDALONE PAGE -->
+    <div class="no-print" style="background: #1e293b; color: white; padding: 12px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; font-family: system-ui, sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 18px;">📄</span>
+            <div>
+                <div style="font-weight: bold; font-size: 14px;">MIJOZNING SHAXSIY VARAQASI</div>
+                <div style="font-size: 11px; opacity: 0.8;">Sher-Dor ERP • Rasmiy Hisob-kitob Jurnali</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="window.print()" style="background: #2563eb; color: white; border: none; padding: 8px 18px; font-weight: bold; font-size: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                🖨️ Chop etish (Print)
+            </button>
+            <a href="/admin/crm/ledger/{{ $contract->id }}/export/xlsx" style="background: #059669; color: white; text-decoration: none; padding: 8px 16px; font-weight: bold; font-size: 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+                📊 Excel Yuklash
+            </a>
+            <a href="/admin/crm/ledger/{{ $contract->id }}/export/pdf" style="background: #dc2626; color: white; text-decoration: none; padding: 8px 16px; font-weight: bold; font-size: 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+                📄 PDF Yuklash
+            </a>
+        </div>
+    </div>
 
     @php
         $client = $contract->client;

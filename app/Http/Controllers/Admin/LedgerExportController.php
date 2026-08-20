@@ -285,25 +285,6 @@ class LedgerExportController extends Controller
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
 
-        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
-        if ($template && $template->docx_path) {
-            try {
-                $selectedVariants = $contract->selected_variants ?? [];
-                $docxPath = $template->compileDocx($contract, $selectedVariants);
-                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
-
-                $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
-                $previewData = json_decode($previewOutput, true);
-                
-                $content = $previewData['html'] ?? '';
-                @unlink($absoluteDocxPath);
-
-                return view('contracts.compiled', compact('content'));
-            } catch (\Exception $e) {
-                // fallback
-            }
-        }
-
         return view('exports.client_ledger', compact('contract', 'type'));
     }
 

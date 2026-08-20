@@ -102,335 +102,47 @@ return new class extends Migration
         });
 
         // 7. Data Seeding & Synchronization
-        $buildingId = DB::table('buildings')->where('name', 'Nuovo')->value('id');
-        if (!$buildingId) {
-            $buildingId = DB::table('buildings')->insertGetId([
-                'name' => 'Nuovo',
-                'address' => 'Tashkent City',
-                'total_floors' => 20,
-                'estimated_budget' => 5000000,
-                'status' => 'active',
-                'created_at' => now(),
-                'updated_at' => now(),
+        if (!DB::table('currency_rates')->where('code', 'USD')->exists()) {
+            DB::table('currency_rates')->insert([
+                ['code' => 'USD', 'rate' => 12350.0000, 'created_at' => now(), 'updated_at' => now()],
+                ['code' => 'EUR', 'rate' => 16890.0000, 'created_at' => now(), 'updated_at' => now()],
             ]);
         }
 
-        DB::table('currency_rates')->insert([
-            ['code' => 'USD', 'rate' => 12350.0000, 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'EUR', 'rate' => 16890.0000, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        $aloqaId = DB::table('cash_registers')->insertGetId([
-            'name' => 'Aloqa Bank Hisobi',
-            'type' => 'bank',
-            'initial_balance_uzs' => 0.00,
-            'initial_balance_usd' => 0.00,
-            'initial_balance_eur' => 0.00,
-            'bank_name' => 'Aloqa bank',
-            'account_number' => '0001 0002 0003 0004 0005',
-            'mfo_code' => '00015',
-            'building_id' => $buildingId,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $naqdId = DB::table('cash_registers')->insertGetId([
-            'name' => 'Naqd Kassa',
-            'type' => 'cash',
-            'initial_balance_uzs' => 10000000.00,
-            'initial_balance_usd' => 0.00,
-            'initial_balance_eur' => 0.00,
-            'building_id' => $buildingId,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Clients
-        $clientId1 = DB::table('clients')->insertGetId([
-            'first_name' => 'Azimjon',
-            'last_name' => 'Samirov',
-            'phone' => '+998 99 894 24 00',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $clientId2 = DB::table('clients')->insertGetId([
-            'first_name' => 'Ikrom',
-            'last_name' => 'Xusanov',
-            'phone' => '+998 97 705 56 10',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $clientId3 = DB::table('clients')->insertGetId([
-            'first_name' => 'Aziz',
-            'last_name' => 'Bluga',
-            'phone' => '+998 89 745 73 48',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Workers
-        $workerId1 = DB::table('workers')->insertGetId([
-            'name' => 'Call Centre3',
-            'phone' => '+998 99 834 32 43',
-            'role' => 'operator',
-            'salary_type' => 'fixed_monthly',
-            'base_rate' => 1500000,
-            'type' => 'fixed',
-            'rate' => 1500000,
-            'balance' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $workerId2 = DB::table('workers')->insertGetId([
-            'name' => 'Call Centre1',
-            'phone' => '+998 99 890 95 23',
-            'role' => 'operator',
-            'salary_type' => 'fixed_monthly',
-            'base_rate' => 1500000,
-            'type' => 'fixed',
-            'rate' => 1500000,
-            'balance' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $workerId3 = DB::table('workers')->insertGetId([
-            'name' => 'Doniyor Ziyaev',
-            'phone' => '+998 99 890 95 23',
-            'role' => 'operator',
-            'salary_type' => 'fixed_monthly',
-            'base_rate' => 2000000,
-            'type' => 'fixed',
-            'rate' => 2000000,
-            'balance' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Counterparties
-        $cpSamirov = DB::table('counterparties')->insertGetId([
-            'name' => 'Azimjon Samirov',
-            'type' => 'client',
-            'phone' => '+998 99 894 24 00',
-            'customable_type' => 'App\Models\Client',
-            'customable_id' => $clientId1,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpXusanov = DB::table('counterparties')->insertGetId([
-            'name' => 'Ikrom Xusanov',
-            'type' => 'client',
-            'phone' => '+998 97 705 56 10',
-            'customable_type' => 'App\Models\Client',
-            'customable_id' => $clientId2,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpBluga = DB::table('counterparties')->insertGetId([
-            'name' => 'Aziz Bluga',
-            'type' => 'client',
-            'phone' => '+998 89 745 73 48',
-            'customable_type' => 'App\Models\Client',
-            'customable_id' => $clientId3,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpCc3 = DB::table('counterparties')->insertGetId([
-            'name' => 'Call Centre3',
-            'type' => 'employee',
-            'phone' => '+998 99 834 32 43',
-            'customable_type' => 'App\Models\Worker',
-            'customable_id' => $workerId1,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpCc1 = DB::table('counterparties')->insertGetId([
-            'name' => 'Call Centre1',
-            'type' => 'employee',
-            'phone' => '+998 99 890 95 23',
-            'customable_type' => 'App\Models\Worker',
-            'customable_id' => $workerId2,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpDoniyor = DB::table('counterparties')->insertGetId([
-            'name' => 'Doniyor Ziyaev',
-            'type' => 'employee',
-            'phone' => '+998 99 890 95 23',
-            'customable_type' => 'App\Models\Worker',
-            'customable_id' => $workerId3,
-            'balance' => 0,
-            'is_active' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $cpZk = DB::table('counterparties')->insertGetId([
-            'name' => 'ZK',
-            'type' => 'supplier',
-            'phone' => '+998 90 999 88 77',
-            'balance' => 0,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Money Transfer
-        DB::table('money_transfers')->insert([
-            'from_account_id' => $naqdId,
-            'to_account_id' => $aloqaId,
-            'sent_amount' => 10000000.00,
-            'sent_currency' => 'UZS',
-            'exchange_rate' => 1.0000,
-            'received_amount' => 10000000.00,
-            'received_currency' => 'UZS',
-            'description' => 'Boshlang\'ich kassa to\'ldirish',
-            'created_at' => '2026-03-30 17:39:00',
-            'updated_at' => '2026-03-30 17:39:00',
-        ]);
-
-        // Transactions
-        // Outflow transfer from Naqd Kassa
-        DB::table('transactions')->insert([
-            'type' => 'expense',
-            'amount' => 10000000.00,
-            'currency' => 'UZS',
-            'payment_method' => 'cash',
-            'account_id' => $naqdId,
-            'status' => 'approved',
-            'transaction_date' => '2026-03-30 17:39:00',
-            'notes' => '[Chiqim - O\'tkazma] ID: #1. Boshlang\'ich kassa to\'ldirish',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'created_at' => '2026-03-30 17:39:00',
-            'updated_at' => '2026-03-30 17:39:00',
-        ]);
-
-        // Inflow transfer to Aloqa Bank
-        DB::table('transactions')->insert([
-            'type' => 'income',
-            'amount' => 10000000.00,
-            'currency' => 'UZS',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'status' => 'approved',
-            'transaction_date' => '2026-03-30 17:39:00',
-            'notes' => '[Kirim - O\'tkazma] ID: #1. Boshlang\'ich kassa to\'ldirish',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'created_at' => '2026-03-30 17:39:00',
-            'updated_at' => '2026-03-30 17:39:00',
-        ]);
-
-        // Transaction 1: Ikrom Xusanov payment of 69,683,854.00 UZS
-        DB::table('transactions')->insert([
-            'type' => 'income',
-            'amount' => 69683854.00,
-            'currency' => 'UZS',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'counterparty_id' => $cpXusanov,
-            'status' => 'approved',
-            'transaction_date' => '2026-04-22 22:10:00',
-            'notes' => 'Mijoz to\'lovi',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'building_id' => $buildingId,
-            'created_at' => '2026-04-22 22:10:00',
-            'updated_at' => '2026-04-22 22:10:00',
-        ]);
-
-        // Transaction 2: Ikrom Xusanov payment of 1,100.00 USD
-        DB::table('transactions')->insert([
-            'type' => 'income',
-            'amount' => 1100.00,
-            'currency' => 'USD',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'counterparty_id' => $cpXusanov,
-            'status' => 'approved',
-            'transaction_date' => '2026-04-22 22:09:00',
-            'notes' => 'Mijoz to\'lovi',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'building_id' => $buildingId,
-            'created_at' => '2026-04-22 22:09:00',
-            'updated_at' => '2026-04-22 22:09:00',
-        ]);
-
-        // Transaction 3: ZK expense of 200,000.00 UZS
-        DB::table('transactions')->insert([
-            'type' => 'expense',
-            'amount' => 200000.00,
-            'currency' => 'UZS',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'counterparty_id' => $cpZk,
-            'status' => 'approved',
-            'transaction_date' => '2026-04-30 14:35:00',
-            'notes' => 'Ta\'minotchi uchun',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'building_id' => $buildingId,
-            'created_at' => '2026-04-30 14:35:00',
-            'updated_at' => '2026-04-30 14:35:00',
-        ]);
-
-        // Transaction 4: Azimjon Samirov payment of 85,500,000.00 UZS
-        DB::table('transactions')->insert([
-            'type' => 'income',
-            'amount' => 85500000.00,
-            'currency' => 'UZS',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'counterparty_id' => $cpSamirov,
-            'status' => 'approved',
-            'transaction_date' => '2026-05-11 01:32:00',
-            'notes' => 'Mijoz to\'lovi',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'building_id' => $buildingId,
-            'created_at' => '2026-05-11 01:32:00',
-            'updated_at' => '2026-05-11 01:32:00',
-        ]);
-
-        // Transaction 5: Azimjon Samirov payment of 1,000.00 USD
-        DB::table('transactions')->insert([
-            'type' => 'income',
-            'amount' => 1000.00,
-            'currency' => 'USD',
-            'payment_method' => 'bank_transfer',
-            'account_id' => $aloqaId,
-            'counterparty_id' => $cpSamirov,
-            'status' => 'approved',
-            'transaction_date' => '2026-05-11 15:19:00',
-            'notes' => 'Mijoz to\'lovi',
-            'created_by' => 1,
-            'approved_by' => 1,
-            'building_id' => $buildingId,
-            'created_at' => '2026-05-11 15:19:00',
-            'updated_at' => '2026-05-11 15:19:00',
-        ]);
+        if (DB::table('cash_registers')->count() === 0) {
+            DB::table('cash_registers')->insert([
+                [
+                    'name' => 'Aloqa Bank Hisobi',
+                    'type' => 'bank',
+                    'initial_balance_uzs' => 0.00,
+                    'initial_balance_usd' => 0.00,
+                    'initial_balance_eur' => 0.00,
+                    'balance' => 0.00,
+                    'bank_name' => 'Aloqa bank',
+                    'account_number' => '0001 0002 0003 0004 0005',
+                    'mfo_code' => '00015',
+                    'building_id' => null,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'name' => 'Naqd Kassa',
+                    'type' => 'cash',
+                    'initial_balance_uzs' => 0.00,
+                    'initial_balance_usd' => 0.00,
+                    'initial_balance_eur' => 0.00,
+                    'balance' => 0.00,
+                    'bank_name' => null,
+                    'account_number' => null,
+                    'mfo_code' => null,
+                    'building_id' => null,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+        }
         Schema::enableForeignKeyConstraints();
     }
 

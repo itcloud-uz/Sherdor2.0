@@ -233,7 +233,9 @@ class ContractController extends Controller
         }
 
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
+            'buyer_type' => 'nullable|in:client,partner,employee',
+            'client_id' => 'required_if:buyer_type,client|nullable|exists:clients,id',
+            'partner_id' => 'required_if:buyer_type,partner|nullable|exists:partners,id',
             'unit_id' => 'required|exists:units,id',
             'contract_type' => 'required|string|in:residential,commercial,parking',
             'price_per_sqm' => 'required|numeric|min:0',
@@ -253,16 +255,44 @@ class ContractController extends Controller
             'selected_variants' => 'nullable|array'
         ]);
 
-        if (($validated['payment_type'] ?? 'installment') === 'full') {
+        $paymentType = $validated['payment_type'] ?? 'installment';
+        if ($paymentType === 'full') {
             $validated['down_payment'] = $validated['total_amount'];
             $validated['term_months'] = 1;
         }
 
+        $oldUnitId = $contract->unit_id;
+        $newUnitId = $validated['unit_id'];
+
+        if ($oldUnitId && $oldUnitId != $newUnitId) {
+            $oldUnit = \App\Models\Unit::find($oldUnitId);
+            if ($oldUnit) {
+                $oldUnit->update(['status' => 'available']);
+            }
+            $newUnit = \App\Models\Unit::find($newUnitId);
+            if ($newUnit) {
+                $newUnit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
+            }
+        }
+
         $contract->fill($validated);
+        if (!empty($validated['buyer_type'])) {
+            if ($validated['buyer_type'] === 'partner') {
+                $contract->client_id = null;
+                $contract->partner_id = $validated['partner_id'] ?? $contract->partner_id;
+            } elseif ($validated['buyer_type'] === 'client') {
+                $contract->partner_id = null;
+                $contract->client_id = $validated['client_id'] ?? $contract->client_id;
+            }
+        }
+
         if (!empty($validated['created_at'])) {
-            $contract->created_at = $validated['created_at'];
+            $contract->created_at = \Carbon\Carbon::parse($validated['created_at'])->toDateTimeString();
         }
         $contract->save();
+
+        // Rebuild payment schedules matching the updated contract values
+        $contract->rebuildPaymentSchedules();
 
         // Handle payment capture
         $paymentAmount = !empty($validated['actual_paid_amount']) && $validated['actual_paid_amount'] > 0 
@@ -361,7 +391,7 @@ class ContractController extends Controller
             }
         }
 
-        return redirect()->back()->with('message', 'Contract updated successfully.');
+        return redirect()->back()->with('message', 'Shartnoma muvaffaqiyatli tahrirlandi.');
     }
 
     public function destroy(\App\Models\Contract $contract)

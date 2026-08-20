@@ -258,6 +258,30 @@ class Contract extends Model
         }
     }
 
+    public function rebuildPaymentSchedules()
+    {
+        $paidSchedules = $this->paymentSchedules()->where('paid_amount', '>', 0)->get();
+        if ($paidSchedules->count() === 0) {
+            $this->paymentSchedules()->delete();
+            $this->generatePaymentSchedules();
+        } else {
+            $totalPaid = $paidSchedules->sum('paid_amount');
+            $remainingTotal = max(0, $this->total_amount - $totalPaid);
+            
+            $unpaidSchedules = $this->paymentSchedules()->where('paid_amount', '<=', 0)->orderBy('due_date')->get();
+            if ($unpaidSchedules->count() > 0 && $remainingTotal > 0) {
+                $monthly = $remainingTotal / $unpaidSchedules->count();
+                foreach ($unpaidSchedules as $idx => $sch) {
+                    $amt = ($idx === $unpaidSchedules->count() - 1) ? ($remainingTotal - ($monthly * $idx)) : $monthly;
+                    $sch->update([
+                        'expected_amount' => $amt,
+                        'remaining_debt' => $amt,
+                    ]);
+                }
+            }
+        }
+    }
+
     public function activateContract()
     {
         if (in_array($this->status, ['draft', 'awaiting_payment'])) {

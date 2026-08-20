@@ -1623,26 +1623,46 @@ watch(() => contractForm.value.contract_template_id, (newVal) => {
 });
 
 function editContract(contract) {
+    if (!contract) return;
     isEditingContract.value = true;
     currentContractId.value = contract.id;
+    
+    // Find building and facility for selected unit to initialize cascading dropdowns
+    let unitObj = contract.unit;
+    if (!unitObj && contract.unit_id && props.units) {
+        unitObj = props.units.find(u => u.id === contract.unit_id);
+    }
+    
+    if (unitObj && unitObj.floor && unitObj.floor.building) {
+        selectedFacilityName.value = unitObj.floor.building.name || '';
+        selectedBuildingId.value = unitObj.floor.building.id || '';
+    }
     
     const incomeTxns = (contract.transactions || []).filter(t => t.type === 'income');
     const existingPaidSum = incomeTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
     const firstTx = incomeTxns.length > 0 ? incomeTxns[0] : null;
 
+    let createdAtStr = '';
+    if (contract.created_at) {
+        const d = new Date(contract.created_at);
+        if (!isNaN(d.getTime())) {
+            createdAtStr = d.toISOString().split('T')[0];
+        }
+    }
+
     contractForm.value = { 
         buyer_type: contract.partner_id ? 'partner' : 'client',
         partner_id: contract.partner_id || '',
         client_id: contract.client_id || '', 
-        unit_id: contract.unit_id, 
+        unit_id: contract.unit_id || '', 
         contract_number: contract.contract_number || '',
         contract_type: contract.contract_type || 'residential', 
-        price_per_sqm: contract.price_per_sqm, 
-        total_amount: contract.total_amount, 
-        down_payment: contract.down_payment, 
-        term_months: contract.term_months, 
+        price_per_sqm: contract.price_per_sqm || '', 
+        total_amount: contract.total_amount || '', 
+        down_payment: contract.down_payment || '', 
+        term_months: contract.term_months || 36, 
         payment_type: contract.payment_type || 'installment',
-        created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
+        created_at: createdAtStr,
         actual_paid_amount: existingPaidSum || '',
         payment_method: firstTx ? firstTx.account_type || 'bank' : 'bank',
         account_id: firstTx ? firstTx.account_id || '' : '',
@@ -1665,7 +1685,7 @@ function deleteContract(id) {
     if (confirm(t('confirm_delete_contract'))) {
         router.delete(route('admin.contracts.destroy', id), {
             preserveScroll: true,
-            preserveState: true
+            preserveState: false
         });
     }
 }
@@ -1683,25 +1703,31 @@ function createContract() {
     if (isEditingContract.value) {
         router.put(route('admin.contracts.update', currentContractId.value), contractForm.value, {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
             onSuccess: () => {
                 showCreateContractModal.value = false;
                 isProcessing.value = false;
                 isEditingContract.value = false;
                 currentContractId.value = null;
             },
-            onError: () => isProcessing.value = false
+            onError: (errs) => {
+                console.error("Shartnoma tahrirlashda xatolik:", errs);
+                isProcessing.value = false;
+            }
         });
     } else {
         router.post(route('admin.contracts.store'), contractForm.value, {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
             onSuccess: () => {
                 showCreateContractModal.value = false;
                 contractForm.value = { buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} };
                 isProcessing.value = false;
             },
-            onError: () => isProcessing.value = false
+            onError: (errs) => {
+                console.error("Shartnoma yaratishda xatolik:", errs);
+                isProcessing.value = false;
+            }
         });
     }
 }

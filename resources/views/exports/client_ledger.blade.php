@@ -4,7 +4,7 @@
       xmlns="http://www.w3.org/TR/REC-html40">
 <head>
     <meta charset="utf-8">
-    <title>To'lov Grafigi - 2-Ilova</title>
+    <title>Mijozning Shaxsiy Varaqasi</title>
     <!--[if gte mso 9]>
     <xml>
         <o:OfficeDocumentSettings>
@@ -14,11 +14,11 @@
         {!! "<{$x}ExcelWorkbook>" !!}
             {!! "<{$x}ExcelWorksheets>" !!}
                 {!! "<{$x}ExcelWorksheet>" !!}
-                    {!! "<{$x}Name>To'lov Grafigi</{$x}Name>" !!}
+                    {!! "<{$x}Name>Shaxsiy Varaqa</{$x}Name>" !!}
                     {!! "<{$x}WorksheetOptions>" !!}
                         {!! "<{$x}Print>" !!}
                             {!! "<{$x}ValidPrinterInfo/>" !!}
-                            {!! "<{$x}PaperSizeIndex>9</{$x}PaperSizeIndex>" !!} <!-- A4 -->
+                            {!! "<{$x}PaperSizeIndex>9</{$x}PaperSizeIndex>" !!}
                             {!! "<{$x}HorizontalResolution>600</{$x}HorizontalResolution>" !!}
                             {!! "<{$x}VerticalResolution>600</{$x}VerticalResolution>" !!}
                         {!! "</{$x}Print>" !!}
@@ -31,202 +31,298 @@
     </xml>
     <![endif]-->
     <style>
-        @page { size: A4 portrait; margin: 8mm 10mm; }
-        body { font-family: 'DejaVu Sans', 'Arial', sans-serif; font-size: 9px; line-height: 1.35; color: #000; margin: 0; padding: 0; }
+        @page { size: A4 portrait; margin: 10mm; }
+        body { font-family: 'Arial', 'DejaVu Sans', sans-serif; font-size: 10px; color: #000; margin: 0; padding: 0; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
+        .text-left { text-align: left; }
         .font-bold { font-weight: bold; }
-        
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
-        .main-table th { border: 1.5px solid #000; padding: 6px 4px; font-size: 9px; text-align: center; font-weight: bold; }
-        .main-table td { border: 1px solid #000; padding: 5px 4px; font-size: 8.5px; }
+
+        .title-header { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; text-transform: uppercase; }
+
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .info-table td { padding: 4px 6px; font-size: 10px; border: 1px solid #000; vertical-align: middle; }
+        .info-label { font-weight: bold; background-color: #f2f2f2; }
+
+        .ledger-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .ledger-table th { border: 1.5px solid #000; padding: 6px 4px; font-size: 9.5px; font-weight: bold; text-align: center; background-color: #ffffff; }
+        .ledger-table td { border: 1px solid #000; padding: 5px 4px; font-size: 9px; vertical-align: middle; }
+
+        .summary-table { width: 60%; margin: 15px auto; border-collapse: collapse; }
+        .summary-table td { border: 1px solid #000; padding: 5px 8px; font-size: 9.5px; font-weight: bold; }
+        .summary-table td.val { text-align: right; font-family: monospace; }
+
+        .footer-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        .footer-table td { border: none; padding: 5px; font-size: 10px; vertical-align: top; }
     </style>
 </head>
 <body>
 
     @php
-        if (!function_exists('getShortName')) {
-            function getShortName($fullName) {
-                $parts = explode(' ', trim($fullName));
-                if (count($parts) >= 2) {
-                    $lastName = $parts[0];
-                    $firstName = $parts[1];
-                    $firstChar = mb_substr($firstName, 0, 1);
-                    return $firstChar . '. ' . $lastName;
-                }
-                return $fullName;
-            }
-        }
+        $client = $contract->client;
+        $unit = $contract->unit;
 
         $settings = \App\Models\SystemSetting::first();
-        $korxonaNomi = $settings->company_name ?? '“SHER-DOR” xususiy korxonasi';
-        $korxonaManzili = $settings->company_address ?? 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
-        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
-        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
-        $korxonaMfo = $settings->company_mfo ?? '00300';
-        $korxonaInn = $settings->company_inn ?? '202 162 496';
-        $korxonaDirector = $settings->company_director ?? 'J. Raxmonov';
-        $korxonaTelefon = $settings->company_phone ?? '91 708-44-44, 93 573-29-29';
+        $companyName = $settings->company_name ?? '"SHER-DOR" XUSUSIY KORXONASI';
+        $directorName = $settings->company_director ?? 'J. Raxmonov';
 
-        $isZamon = (strpos(strtolower($korxonaNomi), 'zamon') !== false);
-        $buyerLabel = $isZamon ? '«БУЮРТМАЧИ»' : '«HARIDOR»';
-        $companyLabel = $isZamon ? '«БАЖАРУВЧИ»' : '«KORXONA»';
+        $clientName = $client ? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '') . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum';
+        $pinfl = $client->pinfl ?? '-';
+        $passport = trim(($client->passport_series ?? '') . ' ' . ($client->passport_number ?? ''));
+        $phone = $client->phone ?? '-';
 
-        // Filter and sort schedule
-        $installments = $contract->paymentSchedules->filter(function($s) {
-            return $s->payment_type !== 'down_payment';
-        })->sortBy('due_date');
+        $contractDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d.m.Y') : date('d.m.Y');
+        $contractNumber = $contract->contract_number ?: ($unit ? "{$unit->floor->floor_number}/{$unit->unit_number}" : ('#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT)));
+        $floorNumber = $unit->floor->floor_number ?? '-';
+        $unitNumber = $unit->unit_number ?? '-';
+        $unitArea = $unit->area ? number_format($unit->area, 2, ',', ' ') : '-';
 
-        $contractDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->format('d/m/Y') : date('d/m/Y');
-        $contractNum = $contract->contract_number ?: ('#' . str_pad($contract->id, 5, '0', STR_PAD_LEFT));
-        
-        $buildingType = 'uy-joy';
-        if ($contract->contract_type === 'commercial' || ($contract->unit && $contract->unit->type === 'commercial')) {
-            $buildingType = 'savdo do\'koni';
+        $totalPrice = (float)($contract->total_amount ?? 0);
+        $downPayment = (float)($contract->down_payment ?? 0);
+
+        $schedules = $contract->paymentSchedules ? $contract->paymentSchedules->sortBy('due_date') : collect();
+        $monthlySchedules = $schedules->where('payment_type', '!=', 'down_payment');
+        $termMonths = $contract->installment_period ?? ($monthlySchedules->count() ?: 12);
+        $remPrice = max(0, $totalPrice - $downPayment);
+        $monthlyAmount = $monthlySchedules->first() ? $monthlySchedules->first()->expected_amount : ($termMonths > 0 ? $remPrice / $termMonths : 0);
+
+        $transactions = $contract->transactions ? $contract->transactions->where('type', 'income')->where('status', 'approved')->sortBy('transaction_date') : collect();
+        $refunds = $contract->transactions ? $contract->transactions->where('type', 'expense')->where('status', 'approved')->sortBy('transaction_date') : collect();
+
+        $downPaymentTxs = $transactions->filter(function($t) {
+            return strpos(strtolower($t->notes ?? ''), 'boshlang') !== false || strpos(strtolower($t->description ?? ''), 'boshlang') !== false;
+        });
+
+        $monthlyTxs = $transactions->reject(function($t) use ($downPaymentTxs) {
+            return $downPaymentTxs->contains('id', $t->id);
+        });
+
+        $cashPaid = 0;
+        $bankPaid = 0;
+        $cardPaid = 0;
+        foreach ($transactions as $t) {
+            if ($t->payment_method === 'bank_transfer' || $t->payment_method === 'bank') {
+                $bankPaid += $t->amount;
+            } elseif ($t->payment_method === 'card' || $t->payment_method === 'terminal') {
+                $cardPaid += $t->amount;
+            } else {
+                $cashPaid += $t->amount;
+            }
         }
+        $totalPaid = $cashPaid + $bankPaid + $cardPaid;
+        $totalRefunded = $refunds->sum('amount');
+        $penaltyAccrued = $contract->total_penalty_accumulated ?? 0;
+        $netBalance = max(0, $totalPrice - $totalPaid + $totalRefunded);
     @endphp
 
-    @if(!$isZamon)
-        <!-- Sher-Dor Header -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
-            <tr>
-                <td style="width: 45%; font-size: 8.5px; text-align: center; border: none; padding: 0; line-height: 1.3; font-weight: bold; font-family: 'DejaVu Sans', sans-serif;">
-                    O`zbekiston Respublikasi<br>
-                    Samarqand viloyati<br>
-                    Urgut tumani<br>
-                    “Sher-dor”<br>
-                    xususiy korxonasi
-                </td>
-                <td style="width: 10%; border: none; padding: 0;"></td>
-                <td style="width: 45%; font-size: 8.5px; text-align: center; border: none; padding: 0; line-height: 1.3; font-weight: bold; font-family: 'DejaVu Sans', sans-serif;">
-                    Частное предприятие<br>
-                    “ШЕР-ДОР”<br>
-                    Ургутского района<br>
-                    Самаркандской области<br>
-                    Республики Узбекистан
-                </td>
-            </tr>
-            <tr>
-                <td colspan="3" style="text-align: center; font-size: 8px; border: none; border-bottom: 1.5px solid #000; padding: 6px 0; font-family: 'DejaVu Sans', sans-serif;">
-                    Manzil: Samarqand viloyati, Urgut shahar, Do`stlik MFY, Navoiy ko`chasi 83-uy; e-mail: sherdor.xk@mail.ru
-                </td>
-            </tr>
-        </table>
-    @else
-        <!-- Zamon Sifat Header -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
-            <tr>
-                <td style="font-size: 11px; text-align: center; border: none; padding: 0; line-height: 1.4; font-weight: bold;">
-                    {{ $korxonaNomi }}
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align: center; font-size: 8.5px; border: none; border-bottom: 1.5px solid #000; padding: 6px 0;">
-                    Manzil: {{ $korxonaManzili }} | Tel: {{ $korxonaTelefon }}
-                </td>
-            </tr>
-        </table>
-    @endif
-
-    <div class="text-center font-bold" style="font-size: 9.5px; margin-top: 10px; line-height: 1.4;">
-        {{ $contractDate }}-yildagi №{{ $contractNum }}-sonli<br>
-        hissadorlik shartlari asosida<br>
-        {{ $buildingType }} qurish shartnomasi<br>
-        2-ilova
-    </div>
-    <div class="text-center" style="font-size: 9px; margin-top: 4px;">
-        Urgut shahri
-    </div>
-    <div class="text-center font-bold" style="font-size: 11px; margin-top: 8px; margin-bottom: 12px; letter-spacing: 0.5px;">
-        TO`LOV GRAFIGI
+    <!-- HEADER TITLE -->
+    <div class="title-header">
+        {{ $companyName }}<br>
+        MIJOZNING SHAXSIY VARAQASI
     </div>
 
-    <!-- Main Payment Ledger Table -->
-    <table class="main-table">
-        <colgroup>
-            <col style="width: 8%;">
-            <col style="width: 25%;">
-            <col style="width: 23%;">
-            <col style="width: 22%;">
-            <col style="width: 22%;">
-        </colgroup>
+    <!-- CLIENT & CONTRACT INFO HEADER TABLES (Sample Image Exact Layout) -->
+    <table class="info-table">
+        <tr>
+            <td class="info-label" style="width: 20%;">Mijoz F.I.Sh:</td>
+            <td class="font-bold" style="width: 30%;">{{ $clientName }}</td>
+            <td class="info-label" style="width: 20%;">PINFL:</td>
+            <td style="width: 30%;">{{ $pinfl }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Pasport raqami:</td>
+            <td>{{ $passport }}</td>
+            <td class="info-label">Telefon raqami:</td>
+            <td>{{ $phone }}</td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td class="info-label" style="width: 20%;">Shartnoma sanasi:</td>
+            <td style="width: 30%;">{{ $contractDate }}</td>
+            <td class="info-label" style="width: 20%;">Xonadon umumiy narx:</td>
+            <td class="font-bold text-right" style="width: 30%;">{{ number_format($totalPrice, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Shartnoma raqami:</td>
+            <td class="font-bold">{{ $contractNumber }}</td>
+            <td class="info-label">Boshlang'ich to'lov:</td>
+            <td class="text-right font-bold">{{ number_format($downPayment, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Qavat:</td>
+            <td>{{ $floorNumber }}</td>
+            <td class="info-label">To'lov muddati:</td>
+            <td class="text-right">{{ $termMonths }} oylik</td>
+        </tr>
+        <tr>
+            <td class="info-label">Xonadon raqami:</td>
+            <td>{{ $unitNumber }}</td>
+            <td class="info-label">Qoldiq so'mma:</td>
+            <td class="text-right font-bold">{{ number_format($remPrice, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Xonadon maydoni:</td>
+            <td>{{ $unitArea }} kv.m</td>
+            <td class="info-label">Oylik to'lov so'mmasi:</td>
+            <td class="text-right font-bold">{{ number_format($monthlyAmount, 0, ',', ' ') }}</td>
+        </tr>
+    </table>
+
+    <!-- MAIN SCHEDULE & PAYMENTS TABLE -->
+    <table class="ledger-table">
         <thead>
             <tr>
-                <th rowspan="2" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">№</th>
-                <th rowspan="2" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">To'lov sanasi</th>
-                <th colspan="3" style="background-color: #f5f5f5; border: 1.5px solid #000; padding: 5px; font-size: 9px;">To'lov</th>
+                <th colspan="2" style="width: 32%;">Kutilayotgan to'lov</th>
+                <th colspan="2" style="width: 32%;">Haqiqatda qilingan to'lov</th>
+                <th rowspan="2" style="width: 10%;">To'lov turi</th>
+                <th colspan="2" style="width: 16%;">Mijozga qaytarilgan</th>
+                <th rowspan="2" style="width: 10%;">Qoldiq</th>
             </tr>
             <tr>
-                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">
-                    {{ $contract->contract_type === 'commercial' ? "Savdo do'konining umumiy so'mmasi" : "Xonadonning umumiy so'mmasi" }}
-                </th>
-                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">Boshlang'ich to'lov</th>
-                <th style="background-color: #fafafa; border: 1px solid #000; padding: 4px; font-size: 8px;">Qoldiq so'mma</th>
-            </tr>
-            <tr style="font-weight: bold; text-align: center; background-color: #ffffff;">
-                <td style="border: 1px solid #000; padding: 5px;"></td>
-                <td style="border: 1px solid #000; padding: 5px;"></td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->total_amount, 0, ',', ' ') }}</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->down_payment, 0, ',', ' ') }}</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 8.5px;">{{ number_format($contract->total_amount - $contract->down_payment, 0, ',', ' ') }}</td>
+                <th style="width: 16%;">To'lov sanasi</th>
+                <th style="width: 16%;">Oylik to'lov so'mmasi</th>
+                <th style="width: 16%;">To'langan sana</th>
+                <th style="width: 16%;">To'langan so'mma</th>
+                <th style="width: 8%;">Qaytarilgan sana</th>
+                <th style="width: 8%;">Qaytarilgan so'mma</th>
             </tr>
         </thead>
         <tbody>
-            @php $index = 1; $sum = 0; @endphp
-            @foreach($installments as $inst)
-                @php $sum += $inst->expected_amount; @endphp
+            @php 
+                $runningBalance = 0;
+                $sumExpected = 0;
+                $sumPaid = 0;
+                $sumRefunded = 0;
+            @endphp
+
+            <!-- DOWN PAYMENT ROWS -->
+            @if($downPaymentTxs->count() > 0)
+                @foreach($downPaymentTxs as $dtx)
+                    @php
+                        $sumPaid += $dtx->amount;
+                        $runningBalance -= $dtx->amount;
+                        $pm = $dtx->payment_method === 'bank_transfer' ? 'Bank' : ($dtx->payment_method === 'card' ? 'Plastik' : 'Naqt');
+                    @endphp
+                    <tr>
+                        <td class="text-center font-bold">Boshlang'ich to'lov</td>
+                        <td class="text-right font-bold"></td>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($dtx->transaction_date ?: $dtx->created_at)->format('d.m.Y') }}</td>
+                        <td class="text-right font-bold">{{ number_format($dtx->amount, 0, ',', ' ') }}</td>
+                        <td class="text-center">{{ $pm }}</td>
+                        <td class="text-center"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right font-bold">{{ number_format($runningBalance, 0, ',', ' ') }}</td>
+                    </tr>
+                @endforeach
+            @else
+                <!-- Show row if down payment exists -->
                 <tr>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 8.5px;">{{ $index++ }}</td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 8.5px;">{{ \Carbon\Carbon::parse($inst->due_date)->format('d/m/Y') }}-yil</td>
-                    <td style="border: 1px solid #000; padding: 4px; background-color: #fafafa;"></td>
-                    <td style="border: 1px solid #000; padding: 4px; background-color: #fafafa;"></td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: right; font-weight: bold; font-size: 8.5px;">{{ number_format($inst->expected_amount, 0, ',', ' ') }}</td>
-                </tr>
-            @endforeach
-            
-            @if($installments->isEmpty())
-                <tr>
-                    <td colspan="5" style="border: 1px solid #000; padding: 12px; text-align: center; color: #777; font-size: 9px; font-style: italic;">
-                        To'lov grafigi hali shakllantirilmagan
-                    </td>
+                    <td class="text-center font-bold">Boshlang'ich to'lov</td>
+                    <td class="text-right font-bold">{{ number_format($downPayment, 0, ',', ' ') }}</td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right font-bold"></td>
                 </tr>
             @endif
 
-            <tr style="font-weight: bold; background-color: #f5f5f5;">
-                <td style="border: 1.5px solid #000; padding: 5px;"></td>
-                <td style="border: 1.5px solid #000; padding: 5px; text-align: center; font-size: 9px;">Жами</td>
-                <td style="border: 1px solid #000; padding: 5px; background-color: #fafafa;"></td>
-                <td style="border: 1px solid #000; padding: 5px; background-color: #fafafa;"></td>
-                <td style="border: 1.5px solid #000; padding: 5px; text-align: right; font-size: 9px;">{{ number_format($sum, 0, ',', ' ') }}</td>
+            <!-- MONTHLY SCHEDULE ROWS -->
+            @php
+                $monthlyTxsArray = $monthlyTxs->values();
+                $refundsArray = $refunds->values();
+                $maxRows = max($monthlySchedules->count(), $monthlyTxsArray->count());
+                $schList = $monthlySchedules->values();
+            @endphp
+
+            @for($i = 0; $i < $maxRows; $i++)
+                @php
+                    $sch = $schList->get($i);
+                    $tx = $monthlyTxsArray->get($i);
+                    $ref = $refundsArray->get($i);
+
+                    $expAmt = $sch ? $sch->expected_amount : 0;
+                    $paidAmt = $tx ? $tx->amount : 0;
+                    $refAmt = $ref ? $ref->amount : 0;
+
+                    $sumExpected += $expAmt;
+                    $sumPaid += $paidAmt;
+                    $sumRefunded += $refAmt;
+
+                    $runningBalance += ($expAmt - $paidAmt + $refAmt);
+
+                    $pmStr = '';
+                    if ($tx) {
+                        $pmStr = $tx->payment_method === 'bank_transfer' ? 'Bank' : ($tx->payment_method === 'card' ? 'Plastik' : 'Naqt');
+                    }
+                @endphp
+                <tr>
+                    <td class="text-center">{{ $sch ? \Carbon\Carbon::parse($sch->due_date)->format('d.m.Y') : '-' }}</td>
+                    <td class="text-right font-bold">{{ $sch ? number_format($sch->expected_amount, 0, ',', ' ') : '-' }}</td>
+                    <td class="text-center">{{ $tx ? \Carbon\Carbon::parse($tx->transaction_date ?: $tx->created_at)->format('d.m.Y') : '' }}</td>
+                    <td class="text-right font-bold">{{ $tx ? number_format($tx->amount, 0, ',', ' ') : '' }}</td>
+                    <td class="text-center">{{ $pmStr }}</td>
+                    <td class="text-center">{{ $ref ? \Carbon\Carbon::parse($ref->transaction_date ?: $ref->created_at)->format('d.m.Y') : '' }}</td>
+                    <td class="text-right font-bold">{{ $ref ? number_format($ref->amount, 0, ',', ' ') : '' }}</td>
+                    <td class="text-right font-bold">
+                        {{ number_format($runningBalance, 0, ',', ' ') }}
+                    </td>
+                </tr>
+            @endfor
+
+            <!-- TOTALS ROW -->
+            <tr style="font-weight: bold; background-color: #f9f9f9;">
+                <td class="text-center">JAMI</td>
+                <td class="text-right">{{ number_format($remPrice, 0, ',', ' ') }}</td>
+                <td class="text-center"></td>
+                <td class="text-right">{{ number_format($sumPaid, 0, ',', ' ') }}</td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-right">{{ number_format($sumRefunded, 0, ',', ' ') }}</td>
+                <td class="text-right"></td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Footer Signatures -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+    <!-- SUMMARY TOTALS BOX (Bottom Center matching sample image) -->
+    <table class="summary-table">
         <tr>
-            <td style="width: 48%; vertical-align: top; font-size: 8.5px; line-height: 1.45; border: none; padding: 0;">
-                <div class="font-bold" style="text-decoration: underline; margin-bottom: 5px;">{{ $buyerLabel }}</div>
-                <div><strong>F.I.SH:</strong> {{ $contract->client->full_name }}</div>
-                <div><strong>Pasport berilgan sana:</strong> {{ $contract->client->passport_date ? \Carbon\Carbon::parse($contract->client->passport_date)->format('d/m/Y') : '___' }}-yil</div>
-                <div><strong>Pasport berilgan joyi:</strong> {{ $contract->client->passport_issued_by ?? 'Urgut tuman IIB' }}</div>
-                <div><strong>Pasport seriyasi:</strong> {{ $contract->client->passport_series ?? 'AD' }} № {{ $contract->client->passport_number ?? '_______' }}</div>
-                <div><strong>Manzil:</strong> {{ $contract->client->address ?? 'Samarqand viloyati Urgut tumani' }}</div>
-                <div><strong>ЖШШИР:</strong> {{ $contract->client->pinfl ?? '_____________' }}</div>
-                <div><strong>Телефон:</strong> {{ $contract->client->phone ?? '_____________' }}</div>
-                <div style="margin-top: 15px;"><strong>{{ $isZamon ? 'Буюртмачи' : 'Haridor' }}:</strong> {{ getShortName($contract->client->full_name) }} ___________________</div>
+            <td>Naqt to'lov so'mmasi</td>
+            <td class="val">{{ number_format($cashPaid, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>Bankga to'lov so'mmasi</td>
+            <td class="val">{{ number_format($bankPaid + $cardPaid, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>Jami qaytarilgan so'mma</td>
+            <td class="val">{{ number_format($totalRefunded, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>Penya so'mmasi</td>
+            <td class="val">{{ number_format($penaltyAccrued, 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td style="background-color: #f2f2f2;">Umumiy qoldiq so'mma</td>
+            <td class="val" style="background-color: #f2f2f2;">{{ number_format($netBalance, 0, ',', ' ') }}</td>
+        </tr>
+    </table>
+
+    <!-- SIGNATURE FOOTER (Sample Image Exact Layout) -->
+    <table class="footer-table">
+        <tr>
+            <td style="width: 50%; text-align: center;">
+                <strong>«XARIDOR»</strong><br><br>
+                <strong>F.I.Sh:</strong> {{ $clientName }}<br><br>
+                ______________________________
             </td>
-            <td style="width: 4%; border: none; padding: 0;"></td>
-            <td style="width: 48%; vertical-align: top; font-size: 8.5px; line-height: 1.45; border: none; padding: 0;">
-                <div class="font-bold" style="text-decoration: underline; margin-bottom: 5px;">{{ $companyLabel }}</div>
-                <div><strong>{{ $korxonaNomi }}</strong></div>
-                <div><strong>Manzil:</strong> {{ $korxonaManzili }}</div>
-                <div><strong>H/R:</strong> {{ $korxonaHr }}</div>
-                <div><strong>Bank:</strong> {{ $korxonaBank }}</div>
-                <div><strong>MFO:</strong> {{ $korxonaMfo }}</div>
-                <div><strong>INN:</strong> {{ $korxonaInn }}</div>
-                <div><strong>Telefon:</strong> {{ $korxonaTelefon }}</div>
-                <div style="margin-top: 15px;"><strong>Direktor:</strong> {{ $korxonaDirector }} ___________________</div>
+            <td style="width: 50%; text-align: center;">
+                <strong>«KORXONA»</strong><br><br>
+                <strong>{{ $companyName }} direktor: {{ $directorName }}</strong><br><br>
+                ______________________________
             </td>
         </tr>
     </table>
